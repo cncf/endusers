@@ -15,6 +15,8 @@ const READ_ONLY_VALIDATORS = [
   'validate-architectures.mjs',
   'validate-architecture-assets.mjs',
   'validate-button-contrast.mjs',
+  'validate-case-studies.mjs',
+  'validate-radar-reports.mjs',
 ];
 
 for (const script of READ_ONLY_VALIDATORS) {
