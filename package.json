@@ -99,6 +99,9 @@
     "ajv@6": "^6.14.0",
     "cspell-glob": {
       "picomatch": "^4.0.4"
+    },
+    "sockjs": {
+      "uuid": "^11.1.1"
     }
   }
 }
