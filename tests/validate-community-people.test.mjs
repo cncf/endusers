@@ -12,8 +12,16 @@ const validPerson = {
   github: 'ada',
 };
 
+const validRoster = {
+  sections: {
+    tab: [{ name: 'Ada Lovelace', github: 'ada' }],
+    staff: [{ name: 'Ada Lovelace', github: 'ada' }],
+  },
+};
+
 function peopleFixture({
   fetchedAt = new Date().toISOString(),
+  roster = validRoster,
   tab = [validPerson],
   staff = [validPerson],
 } = {}) {
@@ -22,6 +30,7 @@ function peopleFixture({
       fetchedAt,
       people: { tab, staff },
     }),
+    'data/community-roster.json': JSON.stringify(roster),
   };
 }
 
@@ -38,6 +47,25 @@ test('rejects a non-ISO fetchedAt', () => {
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /ISO 8601/);
+});
+
+test('rejects a non-ISO-8601 fetchedAt syntax that Date.parse would still accept', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    peopleFixture({ fetchedAt: 'March 1, 2026' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /ISO 8601/);
+});
+
+test('rejects a future fetchedAt', () => {
+  const futureDate = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    peopleFixture({ fetchedAt: futureDate }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /in the future/);
 });
 
 test('rejects stale data past the staleness threshold', () => {
@@ -95,4 +123,34 @@ test('rejects a person with no public profile link', () => {
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /public profile link/);
+});
+
+test('rejects tab data missing a roster member', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    peopleFixture({
+      roster: {
+        sections: {
+          tab: [
+            { name: 'Ada Lovelace', github: 'ada' },
+            { name: 'Grace Hopper', github: 'grace' },
+          ],
+          staff: [{ name: 'Ada Lovelace', github: 'ada' }],
+        },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Grace Hopper is in the authoritative roster/);
+});
+
+test('rejects tab data with an extra, non-roster member', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    peopleFixture({
+      tab: [validPerson, { ...validPerson, name: 'Not On Roster', github: 'nope' }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /has 2 tab entries but the authoritative roster has 1/);
 });

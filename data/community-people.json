@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-27T03:55:56.226Z",
+  "fetchedAt": "2026-09-16T17:49:23.394Z",
   "people": {
     "tab": [
       {
@@ -14,8 +14,8 @@
         "twitter": "ahcorporto",
         "blog": "",
         "publicRepos": 100,
-        "followers": 107,
-        "profileUpdatedAt": "2026-04-28T09:57:35Z"
+        "followers": 106,
+        "profileUpdatedAt": "2026-08-04T12:01:03Z"
       },
       {
         "name": "Joseph Sandoval",
@@ -30,7 +30,7 @@
         "blog": "",
         "publicRepos": 18,
         "followers": 25,
-        "profileUpdatedAt": "2026-07-07T23:14:34Z"
+        "profileUpdatedAt": "2026-09-01T04:12:53Z"
       },
       {
         "name": "Ahmed Bebars",
@@ -43,9 +43,9 @@
         "linkedin": null,
         "twitter": null,
         "blog": "abebars.io",
-        "publicRepos": 49,
-        "followers": 40,
-        "profileUpdatedAt": "2026-07-23T13:43:14Z"
+        "publicRepos": 50,
+        "followers": 44,
+        "profileUpdatedAt": "2026-09-13T19:58:24Z"
       },
       {
         "name": "Alolita Sharma",
@@ -59,7 +59,7 @@
         "twitter": null,
         "blog": "https://www.alolitasharma.com",
         "publicRepos": 34,
-        "followers": 328,
+        "followers": 331,
         "profileUpdatedAt": "2025-12-22T05:37:21Z"
       },
       {
@@ -88,9 +88,9 @@
         "linkedin": null,
         "twitter": null,
         "blog": "",
-        "publicRepos": 13,
-        "followers": 12,
-        "profileUpdatedAt": "2026-07-01T14:13:57Z"
+        "publicRepos": 14,
+        "followers": 11,
+        "profileUpdatedAt": "2026-08-18T02:59:26Z"
       },
       {
         "name": "Katie Gamanji",
@@ -104,8 +104,8 @@
         "twitter": "k_gamanji",
         "blog": "https://kgamanji.medium.com/",
         "publicRepos": 24,
-        "followers": 343,
-        "profileUpdatedAt": "2026-07-20T14:24:05Z"
+        "followers": 342,
+        "profileUpdatedAt": "2026-09-01T11:44:37Z"
       },
       {
         "name": "Kenta Tada",
@@ -120,7 +120,7 @@
         "blog": "",
         "publicRepos": 20,
         "followers": 29,
-        "profileUpdatedAt": "2026-06-30T12:01:02Z"
+        "profileUpdatedAt": "2026-08-26T04:50:53Z"
       },
       {
         "name": "Michael Amundson",
@@ -148,9 +148,9 @@
         "linkedin": null,
         "twitter": null,
         "blog": "",
-        "publicRepos": 82,
+        "publicRepos": 83,
         "followers": 23,
-        "profileUpdatedAt": "2026-07-11T12:22:56Z"
+        "profileUpdatedAt": "2026-09-11T16:11:18Z"
       },
       {
         "name": "Xu Wang",
@@ -163,9 +163,9 @@
         "linkedin": "gnawux",
         "twitter": "gnawux",
         "blog": "http://wangxu.me",
-        "publicRepos": 51,
-        "followers": 323,
-        "profileUpdatedAt": "2026-07-20T12:49:38Z"
+        "publicRepos": 52,
+        "followers": 327,
+        "profileUpdatedAt": "2026-09-15T09:35:24Z"
       }
     ],
     "staff": [
@@ -180,9 +180,9 @@
         "linkedin": "jorgecastro",
         "twitter": null,
         "blog": "https://ypsidanger.com",
-        "publicRepos": 218,
-        "followers": 880,
-        "profileUpdatedAt": "2026-06-20T21:10:58Z"
+        "publicRepos": 233,
+        "followers": 914,
+        "profileUpdatedAt": "2026-09-10T23:50:40Z"
       },
       {
         "name": "Joanna Lee",
@@ -197,7 +197,7 @@
         "blog": "",
         "publicRepos": 8,
         "followers": 11,
-        "profileUpdatedAt": "2026-06-24T04:34:30Z"
+        "profileUpdatedAt": "2026-09-14T15:59:51Z"
       },
       {
         "name": "Bob Killen",
@@ -210,9 +210,9 @@
         "linkedin": "mrbobbytables",
         "twitter": null,
         "blog": "https://mrbobbytabl.es",
-        "publicRepos": 142,
-        "followers": 516,
-        "profileUpdatedAt": "2026-06-17T14:39:53Z"
+        "publicRepos": 168,
+        "followers": 515,
+        "profileUpdatedAt": "2026-09-02T19:52:54Z"
       },
       {
         "name": "Taylor Waggoner",

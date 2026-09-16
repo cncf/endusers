@@ -41,6 +41,7 @@
     "validate:button-contrast": "node scripts/validate-button-contrast.mjs",
     "validate:awards": "node scripts/validate-awards.mjs",
     "validate:community-people": "node scripts/validate-community-people.mjs",
+    "validate:community-group-links": "node scripts/validate-community-group-links.mjs",
     "docusaurus": "docusaurus",
     "fix:format": "npm run _check:format -- --write",
     "fix": "npm run seq -- $(npm -s run _list:fix:*)",

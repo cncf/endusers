@@ -1,0 +1,12 @@
+{
+  "_comment": "Upstream repos for each End User Group / working group linked from docs/community/. Used by scripts/validate-community-group-links.mjs (network check, run manually or in CI — see #79) to catch a renamed or archived upstream repo before it silently breaks a docs link.",
+  "groups": [
+    { "slug": "financial-services-user-group", "name": "Financial Services User Group", "repo": "cncf/financial-user-group" },
+    { "slug": "public-sector-user-group", "name": "Public Sector User Group", "repo": "cncf/public-sector-user-group" },
+    { "slug": "research-user-group", "name": "Research User Group", "repo": "cncf/research-user-group" },
+    { "slug": "telecom-user-group", "name": "Telecom User Group", "repo": "cncf/telecom-user-group" },
+    { "slug": "transportation-user-group", "name": "Transportation User Group", "repo": "cncf/transportation-user-group" },
+    { "slug": "cartografos-working-group", "name": "Cartografos Working Group", "repo": "cncf/cartografos" },
+    { "slug": "end-user-community", "name": "End User Community / TAB", "repo": "cncf/tab" }
+  ]
+}
