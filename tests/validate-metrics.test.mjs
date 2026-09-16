@@ -10,12 +10,12 @@ const validMetric = {
   value: 100,
   source: 'landscape',
   sourceUrl: 'https://landscape.cncf.io/',
-  collectedAt: '2026-08-07T00:00:00.000Z',
+  collectedAt: new Date().toISOString(),
 };
 
 const validData = {
   generated: true,
-  generatedAt: '2026-08-07T00:00:00.000Z',
+  generatedAt: new Date().toISOString(),
   sources: {
     landscape: { revision: 'abc123' },
     architectures: { revision: 'def456' },
@@ -49,6 +49,29 @@ test('rejects a non-ISO generatedAt', () => {
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /ISO 8601/);
+});
+
+test('rejects generatedAt older than the 48-hour freshness requirement', () => {
+  const staleDate = new Date(
+    Date.now() - 60 * 60 * 60 * 1000, // 60 hours ago
+  ).toISOString();
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({ ...validData, generatedAt: staleDate }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /exceeds the 48-hour freshness requirement/);
+});
+
+test('accepts generatedAt just inside the 48-hour freshness requirement', () => {
+  const recentDate = new Date(
+    Date.now() - 47 * 60 * 60 * 1000, // 47 hours ago
+  ).toISOString();
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({ ...validData, generatedAt: recentDate }),
+  );
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test('rejects missing source revisions', () => {
