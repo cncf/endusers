@@ -95,3 +95,40 @@ test('walks nested directories', () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Validated 2 architecture asset/);
 });
+
+test('rejects SVG containing a script element', () => {
+  const svg = VALID_SVG.replace(
+    '<rect width="100" height="100"/>',
+    '<script>alert(1)</script>',
+  );
+  const result = runScriptWithFixtures(SCRIPT, svgFixture(svg));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /active content: contains a <script> element/);
+});
+
+test('rejects SVG containing an event handler attribute', () => {
+  const svg = VALID_SVG.replace('<rect ', '<rect onload="alert(1)" ');
+  const result = runScriptWithFixtures(SCRIPT, svgFixture(svg));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /event handler attribute\(s\): onload/);
+});
+
+test('rejects SVG with a javascript: URI hidden behind entities', () => {
+  const svg = VALID_SVG.replace(
+    '<rect width="100" height="100"/>',
+    '<a xlink:href="java&#115;cript&#58;alert(1)"><rect/></a>',
+  );
+  const result = runScriptWithFixtures(SCRIPT, svgFixture(svg));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /script URI in xlink:href/);
+});
+
+test('rejects active content inside foreignObject', () => {
+  const svg = VALID_SVG.replace(
+    '<rect width="100" height="100"/>',
+    '<foreignObject><img src="x" onerror="alert(1)"/></foreignObject>',
+  );
+  const result = runScriptWithFixtures(SCRIPT, svgFixture(svg));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /event handler attribute\(s\): onerror/);
+});

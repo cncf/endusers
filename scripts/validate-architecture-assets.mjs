@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { collectError, reportAndExit } from './lib/validate-utils.mjs';
+import { findActiveContent } from './lib/svg-active-content.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const assetsDir = join(root, 'static/img/architectures');
@@ -69,6 +70,13 @@ function validateSvg(path) {
         'missing viewBox attribute and resolvable width/height',
       );
     }
+  }
+
+  // Critical: SVGs are served from the site origin, so a browser that opens one
+  // directly executes any script it carries. Never auto-fixed — active content
+  // in an imported asset is a finding a human needs to see, not silent churn.
+  for (const finding of findActiveContent(source)) {
+    record(path, 'error', `active content: ${finding}`);
   }
 
   // Critical: embedded raster data bloats SVGs and defeats the format's purpose.
