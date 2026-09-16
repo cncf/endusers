@@ -7,6 +7,17 @@ import { reportAndExit } from './lib/validate-utils.mjs';
 // TAB/staff data sit unnoticed indefinitely.
 const MAX_AGE_DAYS = 45;
 
+// TEMPORARY (see #122): refresh-community-people.yml cannot currently
+// succeed at all — every scheduled run fails at the create-pull-request
+// step because the repo-level "Allow GitHub Actions to create and approve
+// pull requests" setting is disabled, which only a repo admin can flip.
+// Since data is guaranteed to exceed MAX_AGE_DAYS through no fault of any
+// individual PR/commit, hard-failing every deploy on staleness alone would
+// just make the site un-deployable until an admin acts. Warn instead of
+// erroring on staleness until #122 is closed, then flip this back to
+// 'error' (or remove it, restoring the `else` branch's inherited severity).
+const STALENESS_SEVERITY = 'warn'; // TODO(#122): change to 'error' once the refresh pipeline is green again
+
 // Strict ISO 8601 (the subset actually emitted by Date#toISOString()):
 // YYYY-MM-DDTHH:mm:ss.sssZ. Date.parse() alone is too permissive — it also
 // accepts non-ISO formats like "March 1, 2026" — so validate the syntax
@@ -39,8 +50,8 @@ if (!ISO_8601_UTC.test(data.fetchedAt ?? '')) {
   if (ageDays > MAX_AGE_DAYS) {
     errors.push({
       path: 'community-people.json',
-      severity: 'error',
-      message: `fetchedAt is ${Math.floor(ageDays)} days old, exceeding the ${MAX_AGE_DAYS}-day staleness threshold. Run 'npm run fetch:community-people' or check refresh-community-people.yml.`,
+      severity: STALENESS_SEVERITY,
+      message: `fetchedAt is ${Math.floor(ageDays)} days old, exceeding the ${MAX_AGE_DAYS}-day staleness threshold. Run 'npm run fetch:community-people' or check refresh-community-people.yml (see #122 if it keeps failing).`,
     });
   }
 }

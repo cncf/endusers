@@ -68,7 +68,12 @@ test('rejects a future fetchedAt', () => {
   assert.match(result.stderr, /in the future/);
 });
 
-test('rejects stale data past the staleness threshold', () => {
+test('warns (not fails) on data past the staleness threshold, pending #122', () => {
+  // The refresh pipeline can't currently succeed at all (repo-level PR
+  // creation setting, #122), so staleness is intentionally downgraded to a
+  // non-blocking warning until that's fixed — see STALENESS_SEVERITY in
+  // validate-community-people.mjs. Flip this assertion back to status 1 /
+  // stderr once that's restored to 'error'.
   const staleDate = new Date(
     Date.now() - 60 * 24 * 60 * 60 * 1000,
   ).toISOString();
@@ -76,7 +81,7 @@ test('rejects stale data past the staleness threshold', () => {
     SCRIPT,
     peopleFixture({ fetchedAt: staleDate }),
   );
-  assert.equal(result.status, 1);
+  assert.equal(result.status, 0, result.stderr);
   assert.match(result.stderr, /staleness threshold/);
 });
 
@@ -148,9 +153,15 @@ test('rejects tab data with an extra, non-roster member', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
     peopleFixture({
-      tab: [validPerson, { ...validPerson, name: 'Not On Roster', github: 'nope' }],
+      tab: [
+        validPerson,
+        { ...validPerson, name: 'Not On Roster', github: 'nope' },
+      ],
     }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /has 2 tab entries but the authoritative roster has 1/);
+  assert.match(
+    result.stderr,
+    /has 2 tab entries but the authoritative roster has 1/,
+  );
 });
