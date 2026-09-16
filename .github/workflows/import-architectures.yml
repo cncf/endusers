@@ -19,8 +19,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run collect:metrics
-      - run: npm run validate:metrics
       - run: npm run import:architectures
       - run: npm run validate:architectures
       - run: npm run validate:architecture-assets
@@ -33,7 +31,6 @@ jobs:
           commit-message: 'chore: import reference architectures'
           title: 'chore: import latest reference architectures'
           body: |
-            Automated metrics refresh and architecture import.
             Automated import from https://github.com/cncf/architecture.
 
             The production build and architecture validation passed.

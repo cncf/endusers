@@ -1,0 +1,37 @@
+name: Refresh metrics
+
+on:
+  schedule:
+    - cron: '13 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run collect:metrics
+      - run: npm run validate:metrics
+      - run: npm run build
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/refresh-metrics
+          delete-branch: true
+          commit-message: 'chore: refresh metrics data'
+          title: 'chore: refresh metrics data'
+          body: |
+            Automated refresh of `data/metrics.json` from cncf/landscape and
+            cncf/architecture. `validate:metrics` and a production `build`
+            passed before this PR was opened.
+
+            Generated-data refresh per GOVERNANCE.md automerge-eligible classes.
+          labels: automated
