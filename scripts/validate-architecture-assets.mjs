@@ -133,11 +133,10 @@ if (fixed.length) {
 
 reportAndExit(issues, 'architecture assets');
 
-if (issues.length === 0) {
-  console.log(`Validated ${assets.length} architecture asset(s).`);
-  if (shouldFix) {
-    console.log('No fixes were needed.');
-  }
+// Reached only when there are no errors (warnings do not abort).
+console.log(`Validated ${assets.length} architecture asset(s).`);
+if (shouldFix && issues.length === 0) {
+  console.log('No fixes were needed.');
 }
 
 function exists(p) {

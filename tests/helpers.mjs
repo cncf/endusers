@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -18,24 +18,25 @@ export function runScriptWithFixtures(scriptName, fixtures = {}) {
       join(repoRoot, 'scripts', scriptName),
       join(work, 'scripts', scriptName),
     );
+    // Scripts import shared modules from scripts/lib/ — mirror it so the
+    // temp copy resolves the same relative imports.
+    cpSync(join(repoRoot, 'scripts', 'lib'), join(work, 'scripts', 'lib'), {
+      recursive: true,
+    });
     for (const [relativePath, content] of Object.entries(fixtures)) {
       const target = join(work, relativePath);
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, content);
     }
-    try {
-      const stdout = execFileSync('node', [join(work, 'scripts', scriptName)], {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-      return { status: 0, stdout, stderr: '' };
-    } catch (error) {
-      return {
-        status: error.status ?? 1,
-        stdout: error.stdout ?? '',
-        stderr: error.stderr ?? '',
-      };
-    }
+    const result = spawnSync('node', [join(work, 'scripts', scriptName)], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return {
+      status: result.status ?? 1,
+      stdout: result.stdout ?? '',
+      stderr: result.stderr ?? '',
+    };
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
