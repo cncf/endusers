@@ -196,6 +196,12 @@ const config = {
 
           // Right
           {
+            type: 'docSidebar',
+            sidebarId: 'resourcesSidebar',
+            position: 'right',
+            label: 'Resources',
+          },
+          {
             to: '/metrics/',
             label: 'Metrics',
             position: 'right',
