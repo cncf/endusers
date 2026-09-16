@@ -30,11 +30,11 @@ in mind for every page.
 Most pages are generated from data files. Contribute by editing the data, not by
 hand-building pages:
 
-| Page             | Data source                         | Validation                       |
-| ---------------- | ----------------------------------- | -------------------------------- |
-| `/awards`        | `data/awards.json`                  | `npm run validate:awards`        |
-| `/metrics`       | `data/metrics.json` (generated)     | `npm run validate:metrics`       |
-| `/architectures` | `data/architectures/records/*.json` | `npm run validate:architectures` |
+| Page                | Data source                         | Validation                       |
+| ------------------- | ----------------------------------- | -------------------------------- |
+| `/community/awards` | `data/awards.json`                  | `npm run validate:awards`        |
+| `/metrics`          | `data/metrics.json` (generated)     | `npm run validate:metrics`       |
+| `/architectures`    | `data/architectures/records/*.json` | `npm run validate:architectures` |
 
 Rules:
 

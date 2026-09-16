@@ -64,7 +64,7 @@ without an authoritative source are intentionally omitted.
 
 ## Awards data
 
-The `/awards` page is generated from `data/awards.json`. Each winner is a data entry
+The `/community/awards` page is generated from `data/awards.json`. Each winner is a data entry
 (year, award, organization, logo, citation, links) — see the schema notes in that file.
 Verify new entries against the linked cncf.io announcement before adding them.
 

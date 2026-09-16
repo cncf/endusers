@@ -57,7 +57,7 @@ architects, and organizations running cloud native technologies in production.
     height="597"
   />
   <figcaption>
-    SNCF Groupe accepting the <a href="/awards">2026 Top End User Award</a> at KubeCon +
+    SNCF Groupe accepting the <a href="/community/awards">2026 Top End User Award</a> at KubeCon +
     CloudNativeCon Europe.
   </figcaption>
 </figure>
@@ -68,7 +68,7 @@ architects, and organizations running cloud native technologies in production.
   organizations running cloud native at scale, reviewed by the End User TAB
 - **[Community](/community/)** — the End User Technical Advisory Board, End User
   Groups, and how to get involved
-- **[Awards](/awards/)** — the organizations recognized for advancing cloud
+- **[Awards](/community/awards)** — the organizations recognized for advancing cloud
   native as end users
 - **[Metrics](/metrics/)** — a transparent snapshot of ecosystem and end-user
   activity
@@ -77,7 +77,7 @@ architects, and organizations running cloud native technologies in production.
 
 ## Member proof and recognition
 
-The End User Community is where production experience gets recognized. Recent [Top End User Award](/awards) winners include [SNCF](/awards), [Michelin](/awards), [ANT Group](/awards), [Adobe](/awards), and [CERN](/awards) — organizations that have shared architectures, case studies, and operational lessons with the wider community.
+The End User Community is where production experience gets recognized. Recent [Top End User Award](/community/awards) winners include [SNCF](/community/awards), [Michelin](/community/awards), [ANT Group](/community/awards), [Adobe](/community/awards), and [CERN](/community/awards) — organizations that have shared architectures, case studies, and operational lessons with the wider community.
 
 <ProjectsBorn
   title="Lead the way, set the industry standard"
