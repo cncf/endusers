@@ -12,7 +12,7 @@ function profileUrl(value, type) {
 
 function PersonDialog({ person, onClose, triggerRef }) {
   const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
-  const { name, company, role, image, bio, location, blog, github, linkedin, twitter, publicRepos, followers } = person;
+  const { name, company, role, seat, image, bio, location, blog, github, linkedin, twitter, publicRepos, followers } = person;
 
   const links = [
     ['GitHub', profileUrl(github, 'github')],
@@ -33,6 +33,7 @@ function PersonDialog({ person, onClose, triggerRef }) {
             <p className={styles.profileKicker}>CNCF end-user community</p>
             <h3 id="profile-name">{name}</h3>
             <p className={styles.profileRole}>{role || 'Community member'}{role && company ? ` · ${company}` : company}</p>
+            {seat && <p className={styles.seat}>{seat}</p>}
             {location && <p className={styles.location}>{location}</p>}
           </div>
         </div>
@@ -55,7 +56,7 @@ function PersonDialog({ person, onClose, triggerRef }) {
 function PersonCard({ person }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
-  const { name, company, role, image } = person;
+  const { name, company, role, seat, image } = person;
   return (
     <article className={styles.personCard}>
       <button ref={triggerRef} type="button" className={styles.imageButton} onClick={() => setOpen(true)} aria-label={`Open ${name} profile`}>
@@ -66,6 +67,7 @@ function PersonCard({ person }) {
         <h4>{name}</h4>
         <p>{role || company}</p>
         {role && <span>{company}</span>}
+        {seat && <span className={styles.seat}>{seat}</span>}
       </div>
       {open && <PersonDialog person={person} onClose={() => setOpen(false)} triggerRef={triggerRef} />}
     </article>

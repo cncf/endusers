@@ -45,6 +45,7 @@
 .profileHeading h3 { font-size: clamp(1.5rem, 4vw, 2.25rem); margin: 0; text-wrap: balance; }
 .profileRole { font-size: 0.95rem; font-weight: 700; margin: 0.5rem 0 0; }
 .location { color: var(--ifm-color-emphasis-700); font-size: 0.8rem; margin: 0.25rem 0 0; }
+.seat { color: var(--ifm-color-emphasis-700); display: block; font-size: 0.8rem; margin: 0.15rem 0 0; font-style: italic; }
 .profileBody { padding: 1.5rem 2rem 2rem; }
 .bio { font-size: 1.05rem; line-height: 1.6; margin: 0; max-width: 55ch; }
 .bioMuted, .sourceNote { color: var(--ifm-color-emphasis-700); font-size: 0.85rem; }

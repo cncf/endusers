@@ -1,20 +1,6 @@
 {
-  "_comment": "Source-of-truth roster for TAB members and CNCF staff. Edit here — fetch-community-people.mjs reads this file and enriches each entry from the GitHub API.",
+  "_comment": "Source-of-truth roster for CNCF staff. Edit here — fetch-community-people.mjs reads this file and enriches each entry from the GitHub API. TAB roster entries are NOT edited here: they are fetched live from cncf/tab's gov.yaml (the authoritative source) and layered with curated supplemental identity fields from data/tab-overrides.json (see scripts/lib/tab-roster.mjs).",
   "sections": {
-    "tab": [
-      { "name": "Ricardo Rocha",  "company": "CERN",             "role": "Chair",                                   "github": "rochaporto",      "linkedin": "ricardo-rocha-739aa718", "twitter": "ahcorporto",    "seat": "At-large Seat" },
-      { "name": "Joseph Sandoval","company": "Adobe Inc",         "role": "Vice Chair",                              "github": "jrsapi",          "linkedin": "josephrsandoval",                                            "seat": "Silver Member Seat" },
-      { "name": "Kenta Tada",     "company": "Toyota",            "role": "APAC Chair",                              "github": "KentaTada",                                                      "seat": "Silver Member Seat" },
-      { "name": "Alolita Sharma", "company": "Apple",             "role": null,                                     "github": "alolita",                                                       "seat": "Platinum Member Seat" },
-      { "name": "Michael Amundson","company": "CVS Health",        "role": null,                                     "github": "ma-cvs",          "linkedin": "michaelamundson",                                            "seat": "Platinum Member Seat" },
-      { "name": "Juliano Martinez","company": "Adyen",             "role": null,                                     "github": "ncode",                                                         "seat": "Platinum Member Seat" },
-      { "name": "Xu Wang",        "company": "Ant Group",         "role": null,                                     "github": "gnawux",          "linkedin": "gnawux",                 "twitter": "gnawux",       "seat": "Gold Member Seat" },
-      { "name": "Ben Somogyi",    "company": "Lockheed Martin",   "role": null,                                     "github": "bsomogyi",                                                      "seat": "Silver Member Seat" },
-      { "name": "Ahmed Bebars",   "company": "The New York Times","role": null,                                     "github": "abebars",                                                       "seat": "At-large Seat" },
-      { "name": "Mike Bowen",     "company": "BlackRock",         "role": null,                                     "github": "michael-bowen-sc",                                              "seat": "At-large Seat" },
-      { "name": "Chad Beaudin",   "company": "Boeing",            "role": null,                                     "github": "chadbeaudin",                                                   "seat": "TOC Appointed Seat" },
-      { "name": "Katie Gamanji",  "company": "Apple",             "role": null,                                     "github": "kgamanji",        "linkedin": "katie-gamanji",          "twitter": "k_gamanji",    "seat": "TOC Appointed Seat" }
-    ],
     "staff": [
       { "name": "Jorge O. Castro","company": "CNCF",              "role": "Developer Relations",                    "github": "castrojo",        "linkedin": "jorgecastro" },
       { "name": "Joanna Lee",     "company": "CNCF",              "role": "VP of Strategic Programs and Legal",     "github": "joannalee333",    "linkedin": "joanna-lee-9630935" },
