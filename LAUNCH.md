@@ -17,7 +17,7 @@ Salt Lake City. **Today (2026-08-08) is 13 weeks out — launch Monday is
    labeled, CONTRIBUTING path verified by a non-author, maintainer bus
    factor > 1.
 3. Have the ownership question (ADR 0001, issue #46) decided before launch so
-   the announcement points at the site's permanent home.
+   the announcement points at the site's permanent home (settled: transferred to `cncf/endusers`).
 
 ## Non-goals
 
@@ -30,7 +30,7 @@ Salt Lake City. **Today (2026-08-08) is 13 weeks out — launch Monday is
 | Week | Date | Milestone |
 |------|------|-----------|
 | W-13 | 2026-08-11 | Merge LICENSE (#40) and close Phase 0; create the four GitHub milestones (#78) so every launch task is tagged |
-| W-12 | 2026-08-17 | ADR 0001 ownership decision made (#46/#99) — this gates the announcement target and DNS work |
+| W-12 | 2026-08-17 | ADR 0001 ownership decision made (#46/#99) — completed late on 2026-09-16: transferred to `cncf/endusers` (Option A Accepted) |
 | W-11 | 2026-08-24 | Metrics refresh workflow landed (#74); events page lists KubeCon NA 2026 co-located end-user events (#75) |
 | W-10 | 2026-08-31 | Awards list verified complete against cncf.io announcements (#77) |
 | W-9  | 2026-09-07 | Architectures freshness indicator on-page (#80); community/TAB staleness signal (#79) |
@@ -59,10 +59,11 @@ Baselines are as of 2026-08-08; capture the W-6 baseline snapshot in #100.
 
 ## Dependencies and risks
 
-- **Ownership decision (ADR 0001)** is the critical path: without it the
-  announcement can't say where the site lives permanently. If undecided by
-  W-9, launch announces the current URL with an explicit "permanent home
-  pending" note rather than slipping the date.
+- **Ownership decision (ADR 0001)**: resolved via transfer to `cncf/endusers`.
+  The canonical home is established under the CNCF org. Remaining operational
+  dependency before launch is DNS cutover to `endusers.cncf.io` (Phase 3);
+  if DNS is still propagating or pending at launch, the announcement links
+  `cncf.github.io/endusers`.
 - **Merge throughput** (#58): the plan assumes the human merge gate keeps its
   current burst cadence; the W-13 and W-12 items are all merge-gated, not
   work-gated.

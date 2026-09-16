@@ -52,7 +52,7 @@ jobs:
       # Open Graph URLs point to the production domain.
       - name: Build website
         env:
-          SITE_URL: https://castrojo.github.io
+          SITE_URL: https://cncf.github.io
           BASE_URL: /endusers/
         run: npm run build:production
 

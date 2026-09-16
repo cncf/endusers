@@ -1,11 +1,10 @@
-# Stakeholder outreach draft for ADR 0001
+# Historical: Stakeholder outreach draft for ADR 0001
 
-This is a ready-to-send draft supporting [ADR 0001](./0001-site-ownership-and-cutover-path.md)
-"Proposed next step" #1: opening a discussion with CNCF end-user/TAB
-stakeholders on the long-term home for this site. It exists so a maintainer
-can act on that step without first having to draft the outreach themselves.
-Nothing here commits the project to an option — the decision still belongs to
-the repo owner and CNCF stakeholders (see ADR 0001, "Decision").
+> **Historical Document**: This outreach draft was prepared prior to the repository's
+> transfer to the CNCF organization. On 2026-09-16, Option A (transfer to the `cncf`
+> GitHub org) was enacted, establishing `cncf/endusers` as the canonical upstream
+> repository and fulfilling ADR 0001 (Accepted). This draft is preserved solely as a
+> historical record of the options evaluated during the transition.
 
 ## Who to loop in
 
@@ -58,9 +57,5 @@ Thanks,
 
 ## After the conversation
 
-1. Record the outcome in ADR 0001's "Decision" section (update Status from
-   "Proposed" to "Accepted", with the chosen option and date).
-2. Update `ROADMAP.md` Phase 2/3 to reflect the decision and unblock the
-   dependent items (DNS cutover, cross-linking, or content-merge plan).
-3. Delete or trim this file once the outreach has happened — it is a
-   one-time aid, not a living document.
+*(Historical Note: The transfer was completed on 2026-09-16.
+ADR 0001 was updated to Accepted with Option A, and ROADMAP.md Phase 2 was updated.)*

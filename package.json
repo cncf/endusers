@@ -56,7 +56,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/castrojo/endusers.git"
+    "url": "git+https://github.com/cncf/endusers.git"
   },
   "author": "CNCF",
   "license": "CC-BY-4.0",

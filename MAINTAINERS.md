@@ -10,7 +10,7 @@ trust for a site that presents itself as a CNCF community property (see issue
 
 | Name | GitHub | Role |
 | --- | --- | --- |
-| Jorge Castro | [@castrojo](https://github.com/castrojo) | Maintainer (repo owner) |
+| Jorge Castro | [@castrojo](https://github.com/castrojo) | Maintainer |
 
 This list intentionally starts with one person. The goal of this document is
 the process below, not the roster above.

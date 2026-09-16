@@ -9,4 +9,4 @@ still pending) so future contributors understand why, not just what.
 
 | ADR | Title | Status |
 | --- | --- | --- |
-| [0001](./0001-site-ownership-and-cutover-path.md) | Site ownership and cutover path for endusers.cncf.io | Proposed |
+| [0001](./0001-site-ownership-and-cutover-path.md) | Site ownership and cutover path for endusers.cncf.io | Accepted |

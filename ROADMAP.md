@@ -56,10 +56,10 @@ shipped silently. Content completeness alone is not a launch plan.
       human contributors immediately before announcing, so launch impact is
       measurable rather than assumed. As of 2026-08-08 the baseline is 0 stars,
       0 watchers, 1 fork.
-- [ ] **DNS cutover dependency**: cutover to `endusers.cncf.io` is gated on the
-      Phase 2 ownership decision (issue #46, ADR 0001). If undecided by launch,
-      the announcement links the current GitHub Pages URL instead of slipping
-      the date.
+- [ ] **DNS cutover dependency**: repository ownership is settled under `cncf/endusers`
+      (ADR 0001 Accepted); remaining cutover to `endusers.cncf.io` is tracked in Phase 3.
+      If DNS cutover is pending at launch, the announcement links the GitHub Pages staging URL
+      (`cncf.github.io/endusers`) instead of slipping the date.
 - [ ] **30-day check-in**: compare stars/watchers/forks/contributors against the
       baseline snapshot and record whether the launch moved the needle.
 
@@ -73,15 +73,14 @@ Goal: the project can outlive any single maintainer.
 - [x] MAINTAINERS.md with an explicit process for adding maintainers (#55)
 - [x] Governance note describing review/merge expectations, including agent-automation policy (GOVERNANCE.md, #60)
 - [ ] Good-first-issue curation to recruit human contributors
-- [ ] Decide the long-term home of the site (issue #46, ADR 0001): transfer to a CNCF org,
-      remain a personal staging site, or merge into an existing CNCF property. Decision deadline: 2026-08-17
-      (see `adr/0001-site-ownership-and-cutover-path.md` for the documented options and path)
+- [x] Decide the long-term home of the site (issue #46, ADR 0001): transferred to the
+      CNCF organization as `cncf/endusers` (Option A Accepted). Remaining DNS cutover tracked in Phase 3.
 
 ## Phase 3 — Ecosystem integration
 
 Goal: endusers.cncf.io becomes the authoritative end-user destination.
 
-- [ ] DNS cutover to endusers.cncf.io (depends on Phase 2 ownership decision)
+- [ ] DNS cutover to endusers.cncf.io (Phase 2 ownership settled under `cncf/endusers`)
 - [ ] Cross-linking with contribute.cncf.io and cncf.io (clear audience
       boundaries)
 - [ ] Public feedback loop: content-issue templates and a visible changelog
