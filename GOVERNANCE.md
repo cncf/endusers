@@ -24,9 +24,9 @@ written policy instead of ad-hoc judgment (see issues #47 and #58).
   but is not a blocking requirement, for those changes.
 - Workflow and security-sensitive changes, governance changes, and major factual
   or structural changes require independent human review when another qualified
-  reviewer is available. If none is available, urgent maintenance may proceed on
-  the sole maintainer's documented decision after required checks pass; the lack
-  of a second maintainer must not deadlock urgent maintenance.
+  reviewer is available. If none is available, the sole maintainer may proceed
+  after required checks pass and the maintainer documents the rationale for the
+  decision; the lack of a second maintainer must not deadlock the change.
 - A human maintainer must make and record each maintainer decision. An
   agent-generated review, summary, or approval does not count as independent
   human review or replace that decision.

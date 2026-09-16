@@ -10,7 +10,7 @@ trust for a site that presents itself as a CNCF community property (see issue
 
 | Name | GitHub | Role |
 | --- | --- | --- |
-| Jorge Castro | [@castrojo](https://github.com/castrojo) | Maintainer (repo owner) |
+| Jorge Castro | [@castrojo](https://github.com/castrojo) | Maintainer |
 
 This list intentionally starts with one person. The goal of this document is
 the process below, not the roster above.
@@ -36,10 +36,8 @@ There is no formal nomination process yet. In the near term:
 4. A new maintainer is added by a pull request to this file, approved by at
    least one existing maintainer.
 
-This process is deliberately lightweight today and is expected to be
-formalized (e.g. a documented voting or consensus model) if and when this
-project moves toward CNCF org ownership — see the ownership/cutover
-discussion in issue #46.
+This process is deliberately lightweight; revisit it as the maintainer roster
+grows.
 
 ## Reducing the review bottleneck
 
@@ -53,9 +51,9 @@ making that maintainer a merge deadlock:
   changes.
 - Workflow and security-sensitive changes, governance changes, and major factual
   or structural changes require independent human review when another qualified
-  reviewer is available. When none is available, urgent maintenance may proceed
-  on the sole maintainer's documented decision after required checks pass; the
-  absence of a second maintainer must not deadlock urgent maintenance.
+  reviewer is available. When none is available, the sole maintainer may proceed
+  after required checks pass and the maintainer documents the rationale for the
+  decision; the absence of a second maintainer must not deadlock the change.
 - A maintainer may explicitly delegate an agent to merge a specific pull
   request, but only after required checks pass. The delegation must be a human
   maintainer decision; an agent-generated approval does not substitute for it or
@@ -64,4 +62,3 @@ making that maintainer a merge deadlock:
   instructions apply only when a hold is present or the work is Hive-assigned,
   not to all repository work by default.
 
-Revisit this policy as the maintainer list grows.
