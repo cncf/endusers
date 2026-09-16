@@ -22,7 +22,7 @@ if (process.env.GH_TOKEN) headers.Authorization = `Bearer ${process.env.GH_TOKEN
 
 for (const [section, entries] of Object.entries(people)) {
   result[section] = [];
-  for (const { name, company, role, github, linkedin, twitter } of entries) {
+  for (const { name, company, role, github, linkedin, twitter, seat } of entries) {
     const previous = existing[section]?.find((person) => person.github === github && github) ?? {};
     let profile = {};
     if (github) {
@@ -48,7 +48,8 @@ for (const [section, entries] of Object.entries(people)) {
       blog: profile.blog || previous.blog || '',
       publicRepos: profile.public_repos ?? previous.publicRepos ?? 0,
       followers: profile.followers ?? previous.followers ?? 0,
-      profileUpdatedAt: profile.updated_at || previous.profileUpdatedAt || null
+      profileUpdatedAt: profile.updated_at || previous.profileUpdatedAt || null,
+      seat: seat || previous.seat || null
     });
   }
 }
