@@ -1,0 +1,516 @@
+{
+  "sourceUrl": "https://github.com/cncf/landscape/blob/master/landscape.yml",
+  "sourceRevision": "7b645d00537919e743c10c7a8b55a65016a8bd8e",
+  "entries": [
+    {
+      "name": "Adyen",
+      "role": "member",
+      "homepage": "https://www.adyen.com",
+      "logo": "adyen.svg"
+    },
+    {
+      "name": "Apple",
+      "role": "member",
+      "homepage": "https://www.apple.com/",
+      "logo": "apple.svg"
+    },
+    {
+      "name": "CVS Health",
+      "role": "member",
+      "homepage": "https://www.cvshealth.com",
+      "logo": "cvshealth.svg"
+    },
+    {
+      "name": "American Express",
+      "role": "member",
+      "homepage": "https://www.americanexpress.com/",
+      "logo": "american-express.svg"
+    },
+    {
+      "name": "Ant Financial",
+      "role": "member",
+      "homepage": "https://www.antgroup.com",
+      "logo": "ant-financial-member.svg"
+    },
+    {
+      "name": "Capital One",
+      "role": "member",
+      "homepage": "https://www.capitalone.com/tech/",
+      "logo": "capital-one.svg"
+    },
+    {
+      "name": "Fidelity Investments",
+      "role": "member",
+      "homepage": "https://www.fidelity.com/",
+      "logo": "fidelity-investments.svg"
+    },
+    {
+      "name": "Intuit",
+      "role": "member",
+      "homepage": "https://www.intuit.com",
+      "logo": "intuit-member.svg"
+    },
+    {
+      "name": "Adobe",
+      "role": "member",
+      "homepage": "https://www.adobe.com/",
+      "logo": "adobe.svg"
+    },
+    {
+      "name": "Airbnb",
+      "role": "member",
+      "homepage": "https://www.airbnb.com/",
+      "logo": "airbnb.svg"
+    },
+    {
+      "name": "ASML",
+      "role": "member",
+      "homepage": "https://www.asml.com",
+      "logo": "asml.svg"
+    },
+    {
+      "name": "Banco de Cr\u00e9dito BCP",
+      "role": "member",
+      "homepage": "https://www.viabcp.com",
+      "logo": "banco-de-credito-bcp.svg"
+    },
+    {
+      "name": "BlackRock",
+      "role": "member",
+      "homepage": "https://www.blackrock.com/",
+      "logo": "blackrock.svg"
+    },
+    {
+      "name": "Block",
+      "role": "member",
+      "homepage": "https://block.xyz",
+      "logo": "block.svg"
+    },
+    {
+      "name": "Bloomberg",
+      "role": "member",
+      "homepage": "https://www.bloomberg.com/tosv2.html",
+      "logo": "bloomberg-member.svg"
+    },
+    {
+      "name": "Cathay Financial Holding",
+      "role": "member",
+      "homepage": "https://www.cathayholdings.com/",
+      "logo": "cathay.svg"
+    },
+    {
+      "name": "Citi",
+      "role": "member",
+      "homepage": "https://www.citigroup.com/citi/",
+      "logo": "citi.svg"
+    },
+    {
+      "name": "Cloud Community Labs",
+      "role": "member",
+      "homepage": "https://cloudcommunitylabs.io",
+      "logo": "cloud-community-labs.svg"
+    },
+    {
+      "name": "Cloud Native Texas",
+      "role": "member",
+      "homepage": "https://cloudnativetexas.com",
+      "logo": "cloud-native-texas.svg"
+    },
+    {
+      "name": "CME Group",
+      "role": "member",
+      "homepage": "https://www.cmegroup.com",
+      "logo": "cme-group.svg"
+    },
+    {
+      "name": "CoBank",
+      "role": "member",
+      "homepage": "https://cobank.com",
+      "logo": "cobank.svg"
+    },
+    {
+      "name": "Cybozu",
+      "role": "member",
+      "homepage": "https://cybozu-global.com/",
+      "logo": "cybozu.svg"
+    },
+    {
+      "name": "Dlocal",
+      "role": "member",
+      "homepage": "https://www.dlocal.com",
+      "logo": "dlocal.svg"
+    },
+    {
+      "name": "Docusign",
+      "role": "member",
+      "homepage": "https://www.docusign.com",
+      "logo": "docusign.svg"
+    },
+    {
+      "name": "E.ON",
+      "role": "member",
+      "homepage": "https://www.eon.com",
+      "logo": "e.on.svg"
+    },
+    {
+      "name": "eBay",
+      "role": "member",
+      "homepage": "https://www.ebay.com",
+      "logo": "e-bay-member.svg"
+    },
+    {
+      "name": "Framework",
+      "role": "member",
+      "homepage": "https://frame.work",
+      "logo": "framework.svg"
+    },
+    {
+      "name": "G-Research",
+      "role": "member",
+      "homepage": "https://www.gresearch.co.uk/",
+      "logo": "g-research.svg"
+    },
+    {
+      "name": "GIM UEMOA",
+      "role": "member",
+      "homepage": "https://www.gim-uemoa.org",
+      "logo": "gim-uemoa.svg"
+    },
+    {
+      "name": "Goldman Sachs",
+      "role": "member",
+      "homepage": "https://www.goldmansachs.com",
+      "logo": "goldman-sachs-member.svg"
+    },
+    {
+      "name": "Guidewire",
+      "role": "member",
+      "homepage": "https://www.guidewire.com",
+      "logo": "guidewire.svg"
+    },
+    {
+      "name": "Indeed",
+      "role": "member",
+      "homepage": "https://hk.indeed.com",
+      "logo": "indeed-member.svg"
+    },
+    {
+      "name": "JPMorgan Chase",
+      "role": "member",
+      "homepage": "https://www.jpmorganchase.com",
+      "logo": "jp-morgan-chase-member.svg"
+    },
+    {
+      "name": "Legora",
+      "role": "member",
+      "homepage": "https://legora.com",
+      "logo": "legora.svg"
+    },
+    {
+      "name": "Lockheed Martin",
+      "role": "member",
+      "homepage": "https://www.lockheedmartin.com/",
+      "logo": "lockheedmartin.svg"
+    },
+    {
+      "name": "Lovable",
+      "role": "member",
+      "homepage": "https://lovable.dev",
+      "logo": "lovable.svg"
+    },
+    {
+      "name": "LSEG",
+      "role": "member",
+      "homepage": "https://www.lseg.com/en",
+      "logo": "lseg.svg"
+    },
+    {
+      "name": "LY Corporation",
+      "role": "member",
+      "homepage": "https://www.lycorp.co.jp/en/",
+      "logo": "ly-corp.svg"
+    },
+    {
+      "name": "Mathworks",
+      "role": "member",
+      "homepage": "https://www.mathworks.com/",
+      "logo": "mathworks-member.svg"
+    },
+    {
+      "name": "Mercedes Benz AG",
+      "role": "member",
+      "homepage": "https://group.mercedes-benz.com/",
+      "logo": "mercedes-benz.svg"
+    },
+    {
+      "name": "Michelin",
+      "role": "member",
+      "homepage": "https://www.michelin.com",
+      "logo": "michelin.svg"
+    },
+    {
+      "name": "Morgan Stanley",
+      "role": "member",
+      "homepage": "https://www.morganstanley.com",
+      "logo": "morgan-stanley-member.svg"
+    },
+    {
+      "name": "MyFitnessPal",
+      "role": "member",
+      "homepage": "https://www.myfitnesspal.com/",
+      "logo": "myfitnesspal.svg"
+    },
+    {
+      "name": "Natwest",
+      "role": "member",
+      "homepage": "https://www.natwest.com",
+      "logo": "natwest.svg"
+    },
+    {
+      "name": "Non-Public Organization Camel",
+      "role": "member",
+      "homepage": "https://www.cncf.io/",
+      "logo": "camel.svg"
+    },
+    {
+      "name": "Non-Public Organization Moose",
+      "role": "member",
+      "homepage": "https://www.cncf.io/",
+      "logo": "moose.svg"
+    },
+    {
+      "name": "Non-Public Organization Narwhal",
+      "role": "member",
+      "homepage": "https://www.cncf.io/",
+      "logo": "narwhal.svg"
+    },
+    {
+      "name": "Novo Nordisk",
+      "role": "member",
+      "homepage": "https://www.novonordisk.com",
+      "logo": "novo-nordisk.svg"
+    },
+    {
+      "name": "Porch Financial",
+      "role": "member",
+      "homepage": "https://www.porchfinancial.com",
+      "logo": "porch-financial.svg"
+    },
+    {
+      "name": "Prodigy Education",
+      "role": "member",
+      "homepage": "https://www.prodigygame.com/main-en/",
+      "logo": "prodigy-education.svg"
+    },
+    {
+      "name": "Qube Research & Technologies",
+      "role": "member",
+      "homepage": "https://www.qube-rt.com",
+      "logo": "qrt.svg"
+    },
+    {
+      "name": "reo.dev",
+      "role": "member",
+      "homepage": "https://www.reo.dev",
+      "logo": "reo.dev.svg"
+    },
+    {
+      "name": "Royal Bank of Canada",
+      "role": "member",
+      "homepage": "https://www.rbc.com",
+      "logo": "royalbankofcanada.svg"
+    },
+    {
+      "name": "RTX",
+      "role": "member",
+      "homepage": "https://www.rtx.com/",
+      "logo": "raytheontechnologies.svg"
+    },
+    {
+      "name": "Spotify",
+      "role": "member",
+      "homepage": "https://open.spotify.com",
+      "logo": "spotify-member.svg"
+    },
+    {
+      "name": "Springer Nature",
+      "role": "member",
+      "homepage": "https://www.springernature.com/gp",
+      "logo": "springer-nature.svg"
+    },
+    {
+      "name": "Squarespace",
+      "role": "member",
+      "homepage": "https://www.squarespace.com",
+      "logo": "squarespace-member.svg"
+    },
+    {
+      "name": "Strava",
+      "role": "member",
+      "homepage": "https://www.strava.com/",
+      "logo": "strava.svg"
+    },
+    {
+      "name": "Teciem",
+      "role": "member",
+      "homepage": "https://teciem.com/",
+      "logo": "teciem.svg"
+    },
+    {
+      "name": "Telenor Norway",
+      "role": "member",
+      "homepage": "https://www.telenor.no/privat",
+      "logo": "telenor.svg"
+    },
+    {
+      "name": "Thales",
+      "role": "member",
+      "homepage": "https://www.thalesgroup.com/en",
+      "logo": "thales.svg"
+    },
+    {
+      "name": "Toyota Motor Corporation",
+      "role": "member",
+      "homepage": "https://global.toyota/",
+      "logo": "toyota.svg"
+    },
+    {
+      "name": "Uber",
+      "role": "member",
+      "homepage": "https://www.uber.com",
+      "logo": "uber.svg"
+    },
+    {
+      "name": "UBS",
+      "role": "member",
+      "homepage": "https://www.ubs.com",
+      "logo": "ubs.svg"
+    },
+    {
+      "name": "Upsider",
+      "role": "member",
+      "homepage": "https://corp.up-sider.com/en",
+      "logo": "upsider-supporter.svg"
+    },
+    {
+      "name": "Valve Software",
+      "role": "member",
+      "homepage": "https://www.valvesoftware.com/en/",
+      "logo": "Valve.svg"
+    },
+    {
+      "name": "Walmart",
+      "role": "member",
+      "homepage": "https://www.walmartlabs.com",
+      "logo": "walmart-member.svg"
+    },
+    {
+      "name": "Ziax",
+      "role": "member",
+      "homepage": "https://ziax.com",
+      "logo": "ziax.svg"
+    },
+    {
+      "name": "Golden Gate University",
+      "role": "member",
+      "homepage": "https://www.ggu.edu",
+      "logo": "golden-gate-university-member.svg"
+    },
+    {
+      "name": "Strategic Education",
+      "role": "member",
+      "homepage": "https://www.strategiceducation.com/home/default.aspx",
+      "logo": "strategic-education.svg"
+    },
+    {
+      "name": "Cambia Health Solutions",
+      "role": "member",
+      "homepage": "https://www.cambiahealth.com/",
+      "logo": "cambia-health-solutions-member.svg"
+    },
+    {
+      "name": "CERN",
+      "role": "member",
+      "homepage": "https://home.cern",
+      "logo": "cern.svg"
+    },
+    {
+      "name": "NAIC",
+      "role": "member",
+      "homepage": "https://content.naic.org",
+      "logo": "naic-member.svg"
+    },
+    {
+      "name": "NIPR",
+      "role": "member",
+      "homepage": "https://www.nipr.com/",
+      "logo": "nipr-member.svg"
+    },
+    {
+      "name": "Non-Public Organization Octopus",
+      "role": "member",
+      "homepage": "https://www.cncf.io/",
+      "logo": "octopus.svg"
+    },
+    {
+      "name": "Non-Public Organization Quail",
+      "role": "member",
+      "homepage": "https://www.cncf.io/",
+      "logo": "quail.svg"
+    },
+    {
+      "name": "Wikimedia",
+      "role": "member",
+      "homepage": "https://www.wikimedia.org/",
+      "logo": "wikimedia-member.svg"
+    },
+    {
+      "name": "Beneva",
+      "role": "contributor",
+      "homepage": "https://www.beneva.ca",
+      "logo": "beneva.svg"
+    },
+    {
+      "name": "Boeing",
+      "role": "contributor",
+      "homepage": "http://www.boeing.com/",
+      "logo": "boeing.svg"
+    },
+    {
+      "name": "Centrica Energy",
+      "role": "contributor",
+      "homepage": "https://www.centricaenergy.com",
+      "logo": "centrica.svg"
+    },
+    {
+      "name": "Decathlon",
+      "role": "contributor",
+      "homepage": "https://digital.decathlon.net/",
+      "logo": "decathlon.svg"
+    },
+    {
+      "name": "Shopify",
+      "role": "contributor",
+      "homepage": "https://www.shopify.com/",
+      "logo": "shopify-supporter.svg"
+    },
+    {
+      "name": "Sky Betting & Gaming",
+      "role": "contributor",
+      "homepage": "https://www.skybet.com/",
+      "logo": "sky-bet.svg"
+    },
+    {
+      "name": "Swiss Post",
+      "role": "contributor",
+      "homepage": "https://www.swisspost.com/",
+      "logo": "swisspost.svg"
+    },
+    {
+      "name": "Volvo",
+      "role": "contributor",
+      "homepage": "https://www.volvocars.com/us",
+      "logo": "volvo.svg"
+    }
+  ]
+}

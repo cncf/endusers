@@ -75,7 +75,9 @@ function MemberProfile({ member, onClose, triggerRef }) {
             )}
           </div>
           <div className={styles.profileHeading}>
-            <p className={styles.profileKicker}>End User Community member</p>
+            <p className={styles.profileKicker}>
+              End User Community {member.role}
+            </p>
             <h2 id="member-profile-name">{member.name}</h2>
             <p className={styles.profileMeta}>
               {member.architectures.length > 0 && (
@@ -246,7 +248,12 @@ function MemberCard({ member }) {
               </span>
             )}
             {member.architectures.length === 0 &&
-              member.awards.length === 0 && <span>Community member</span>}
+              member.awards.length === 0 && (
+                <span>
+                  End User{' '}
+                  {member.role === 'contributor' ? 'contributor' : 'member'}
+                </span>
+              )}
           </p>
           {member.industries.length > 0 && (
             <p className={styles.eyebrow}>
@@ -329,7 +336,7 @@ export default function MemberDirectory() {
   ].filter(Boolean).length;
 
   return (
-    <section aria-label="End User Community member directory">
+    <section aria-label="End User Community directory">
       <div className={styles.toolbar}>
         <div className={styles.searchRow}>
           <label htmlFor="member-search" className={styles.visuallyHidden}>
