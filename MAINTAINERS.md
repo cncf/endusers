@@ -8,12 +8,12 @@ trust for a site that presents itself as a CNCF community property (see issue
 
 ## Current maintainers
 
-| Name | GitHub | Role |
-| --- | --- | --- |
+| Name         | GitHub                                   | Role       |
+| ------------ | ---------------------------------------- | ---------- |
 | Jorge Castro | [@castrojo](https://github.com/castrojo) | Maintainer |
 
-This list intentionally starts with one person. The goal of this document is
-the process below, not the roster above.
+This list intentionally starts with one person. The goal of this document is the
+process below, not the roster above.
 
 ## What maintainers do
 
@@ -26,8 +26,8 @@ the process below, not the roster above.
 
 There is no formal nomination process yet. In the near term:
 
-1. Contribute several substantive, merged pull requests (content, code, or
-   data fixes — see `CONTRIBUTING.md`).
+1. Contribute several substantive, merged pull requests (content, code, or data
+   fixes — see `CONTRIBUTING.md`).
 2. Demonstrate familiarity with the review standards in this repository:
    audience fit (end users, not contributors), sourced facts, and the
    generated-data rules for `/metrics`, `/awards`, and `/architectures`.
@@ -58,7 +58,6 @@ making that maintainer a merge deadlock:
   request, but only after required checks pass. The delegation must be a human
   maintainer decision; an agent-generated approval does not substitute for it or
   for required independent human review.
-- `hold`, `on-hold`, and `do-not-merge` labels remain binding. Hive-specific hold
-  instructions apply only when a hold is present or the work is Hive-assigned,
-  not to all repository work by default.
-
+- `hold`, `on-hold`, and `do-not-merge` labels remain binding. Hive-specific
+  hold instructions apply only when a hold is present or the work is
+  Hive-assigned, not to all repository work by default.

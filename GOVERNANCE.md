@@ -1,20 +1,20 @@
 # Governance
 
 This document describes how decisions get made and how work lands in this
-repository. It complements `MAINTAINERS.md` (who) and `CONTRIBUTING.md` (how
-to contribute). It exists because agent automation opens pull requests faster
-than a single human can review them, and the project needs an explicit,
-written policy instead of ad-hoc judgment (see issues #47 and #58).
+repository. It complements `MAINTAINERS.md` (who) and `CONTRIBUTING.md` (how to
+contribute). It exists because agent automation opens pull requests faster than
+a single human can review them, and the project needs an explicit, written
+policy instead of ad-hoc judgment (see issues #47 and #58).
 
 ## Decision making
 
-- **Everyday changes** (content fixes, dependency bumps, CI repairs): decided
-  by the reviewing maintainer. No ceremony.
+- **Everyday changes** (content fixes, dependency bumps, CI repairs): decided by
+  the reviewing maintainer. No ceremony.
 - **Direction changes** (ownership, site architecture, new content pillars):
   record lasting design decisions as an ADR in `adr/`. See
   `adr/0001-site-ownership-and-cutover-path.md` for the format.
-- **Roadmap priorities**: `ROADMAP.md` is the source of truth; changes to it
-  are pull requests labeled `roadmap`, reviewed by a maintainer.
+- **Roadmap priorities**: `ROADMAP.md` is the source of truth; changes to it are
+  pull requests labeled `roadmap`, reviewed by a maintainer.
 
 ## Review and merge expectations
 
@@ -36,8 +36,8 @@ written policy instead of ad-hoc judgment (see issues #47 and #58).
 
 ## Agent-automation policy
 
-This repository is developed with AI-agent automation (hive agents). The
-policy for agent-authored work:
+This repository is developed with AI-agent automation (hive agents). The policy
+for agent-authored work:
 
 - Agent PRs follow the same merge policy as human PRs. The `[agent]`-style
   prefix in a title is a provenance marker, not a merge shortcut.
@@ -56,8 +56,8 @@ With green required checks, the sole maintainer may self-merge or explicitly
 delegate an agent to merge these low-risk classes:
 
 - Dependency bumps (dependabot) with passing validation and deploy.
-- Generated-data refreshes (metrics, architectures, community people) that
-  pass their `validate:*` checks.
+- Generated-data refreshes (metrics, architectures, community people) that pass
+  their `validate:*` checks.
 - Typo and link fixes.
 - Test-only changes that add coverage without touching production code.
 
@@ -74,12 +74,12 @@ path:
 
 To keep the queue from rotting (see issue #58):
 
-- Agent PRs that conflict with the base branch for more than 48 hours should
-  be rebased by their author agent or closed as superseded.
+- Agent PRs that conflict with the base branch for more than 48 hours should be
+  rebased by their author agent or closed as superseded.
 - Superseded PRs (e.g. a fix landed by a different route) are closed with a
   comment pointing at the replacement.
-- Maintainers aim to keep the open-PR queue in single digits; a growing queue
-  is a signal to adjust the low-risk merge classes above, not to lower the review
+- Maintainers aim to keep the open-PR queue in single digits; a growing queue is
+  a signal to adjust the low-risk merge classes above, not to lower the review
   bar.
 
 ## Changing this document
