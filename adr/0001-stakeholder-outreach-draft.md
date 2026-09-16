@@ -28,13 +28,13 @@ Subject: Decision needed — long-term home for endusers.cncf.io
 
 Hi TAB / TOC,
 
-The endusers.cncf.io site (currently developed at castrojo/endusers) has
+The endusers.cncf.io site (currently developed at cncf/endusers) has
 reached the point where its content pillars (architectures, metrics, awards,
 community, events) are taking shape, but its long-term ownership is still
 undecided. The repo currently:
 
 - lives in a personal GitHub account, not a CNCF-owned org
-- deploys to GitHub Pages at castrojo.github.io/endusers, not the
+- deploys to GitHub Pages at cncf.github.io/endusers, not the
   endusers.cncf.io domain
 - is otherwise built entirely from authoritative CNCF sources (cncf/tab,
   cncf/architecture, cncf/landscape)

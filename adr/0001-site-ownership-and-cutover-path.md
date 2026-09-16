@@ -1,18 +1,22 @@
 # ADR 0001: Site ownership and cutover path for endusers.cncf.io
 
-- **Status**: Proposed
+- **Status**: Superseded by transfer — the repository has since been
+  transferred to the `cncf` GitHub org (see #46, PR #167). Option A below was
+  the path taken; this ADR is kept for historical context on the decision
+  drivers and options considered.
 - **Date**: 2026-08-08
 - **Decision deadline**: 2026-08-17 (LAUNCH.md week W-12; see "Decision" below)
-- **Tracking issue**: [#46](https://github.com/castrojo/endusers/issues/46)
+- **Tracking issue**: [#46](https://github.com/cncf/endusers/issues/46)
 
 ## Context
 
 The README describes this site as "the home of the CNCF End User Community" and
-the build deploys content branded `endusers.cncf.io`. In practice today:
+the build deploys content branded `endusers.cncf.io`. At the time this ADR was
+written:
 
-- The source repository lives in a personal account (`castrojo/endusers`), not a
-  CNCF-owned GitHub org.
-- The repository's GitHub Pages homepage is `castrojo.github.io/endusers`, not
+- The source repository lived in a personal account (`castrojo/endusers`), not a
+  CNCF-owned GitHub org. It has since been transferred to `cncf/endusers`.
+- The repository's GitHub Pages homepage was `castrojo.github.io/endusers`, not
   the `endusers.cncf.io` domain.
 - Content is derived from authoritative CNCF sources (cncf/architecture,
   cncf/landscape, cncf/tab), so alignment with CNCF is already a stated
