@@ -1,0 +1,29 @@
+{
+  "_comment": "Source-of-truth roster for TAB members and CNCF staff. Edit here — fetch-community-people.mjs reads this file and enriches each entry from the GitHub API.",
+  "sections": {
+    "tab": [
+      { "name": "Ricardo Rocha",  "company": "CERN",             "role": "TAB Chair",                              "github": "rochaporto",      "linkedin": "ricardo-rocha-739aa718", "twitter": "ahcorporto" },
+      { "name": "Joseph Sandoval","company": "Adobe Inc",         "role": "TAB Vice Chair",                         "github": "jrsapi",          "linkedin": "josephrsandoval" },
+      { "name": "Ahmed Bebars",   "company": "The New York Times","role": null,                                     "github": "abebars" },
+      { "name": "Alolita Sharma", "company": "Apple",             "role": null,                                     "github": "alolita" },
+      { "name": "Ben Somogyi",    "company": "Lockheed Martin",   "role": null,                                     "github": "bsomogyi" },
+      { "name": "Chad Beaudin",   "company": "Boeing",            "role": null,                                     "github": "chadbeaudin" },
+      { "name": "Katie Gamanji",  "company": "Apple",             "role": null,                                     "github": "kgamanji",        "linkedin": "katie-gamanji",          "twitter": "k_gamanji" },
+      { "name": "Kenta Tada",     "company": "Toyota",            "role": null,                                     "github": "KentaTada" },
+      { "name": "Michael Amundson","company": "CVS Health",        "role": null,                                     "github": null,              "linkedin": "michaelamundson" },
+      { "name": "Mike Bowen",     "company": "BlackRock",         "role": null,                                     "github": "michael-bowen-sc" },
+      { "name": "Xu Wang",        "company": "Ant Group",         "role": null,                                     "github": "gnawux",          "linkedin": "gnawux",                 "twitter": "gnawux" }
+    ],
+    "staff": [
+      { "name": "Jorge O. Castro","company": "CNCF",              "role": "Developer Relations",                    "github": "castrojo",        "linkedin": "jorgecastro" },
+      { "name": "Joanna Lee",     "company": "CNCF",              "role": "VP of Strategic Programs and Legal",     "github": "joannalee333",    "linkedin": "joanna-lee-9630935" },
+      { "name": "Bob Killen",     "company": "CNCF",              "role": "Senior Technical Program Manager",       "github": "mrbobbytables",   "linkedin": "mrbobbytables" },
+      { "name": "Taylor Waggoner","company": "CNCF",              "role": "Program Manager",                        "github": "taylorwaggoner",  "linkedin": "taylor-waggoner" },
+      { "name": "Wendi West",     "company": "CNCF",              "role": "Event Manager",                          "github": null,              "linkedin": "wendi-west" }
+    ]
+  },
+  "fallbackImages": {
+    "Michael Amundson": "https://raw.githubusercontent.com/cncf/people/main/images/michael-amundson-headshot.jpg",
+    "Wendi West":       "https://raw.githubusercontent.com/cncf/people/main/images/wendi-west.jpg"
+  }
+}

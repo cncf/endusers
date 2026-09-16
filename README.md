@@ -20,7 +20,7 @@ reference architectures, awards, metrics, events, and pathways to participate.
 
 Ensure you have the following installed:
 
-- [Node.js](https://nodejs.org/) (LTS version 20 or above recommended)
+- [Node.js](https://nodejs.org/) (LTS version 22 or above recommended)
 - [npm](https://www.npmjs.com/) (comes with Node.js)
 
 ### Install dependencies
@@ -70,9 +70,10 @@ Verify new entries against the linked cncf.io announcement before adding them.
 
 ## Contributing
 
-File issues with your ideas, or dive in with a pull request. Content should speak to
-end users — the practitioners, architects, and organizations adopting cloud native —
-rather than to project contributors, who are served by
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and data
+contribution model. File issues with your ideas, or dive in with a pull request.
+Content should speak to end users — the practitioners, architects, and organizations
+adopting cloud native — rather than to project contributors, who are served by
 [contribute.cncf.io](https://contribute.cncf.io/). See
 [MAINTAINERS.md](./MAINTAINERS.md) for who reviews changes and how to become a
 maintainer.

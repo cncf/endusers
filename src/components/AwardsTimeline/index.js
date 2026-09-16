@@ -4,7 +4,16 @@ import awardsData from '@site/data/awards.json';
 import styles from './styles.module.css';
 
 function WinnerCard({ entry }) {
-  const { organization, awardLabel, citation, event, logo, announcementUrl, caseStudyUrl, talkUrl } = entry;
+  const {
+    organization,
+    awardLabel,
+    citation,
+    event,
+    logo,
+    announcementUrl,
+    caseStudyUrl,
+    talkUrl,
+  } = entry;
   const primaryUrl = announcementUrl || talkUrl;
   const logoUrl = useBaseUrl(logo || '');
   return (
@@ -17,7 +26,12 @@ function WinnerCard({ entry }) {
         aria-label={`${organization} — ${awardLabel}`}
       >
         {logo ? (
-          <img src={logoUrl} alt={`${organization} logo`} className={styles.logo} loading="lazy" />
+          <img
+            src={logoUrl}
+            alt={`${organization} logo`}
+            className={styles.logo}
+            loading="lazy"
+          />
         ) : (
           <span className={styles.logoFallback}>{organization}</span>
         )}
@@ -56,9 +70,25 @@ export default function AwardsTimeline() {
     byYear.get(entry.year).push(entry);
   }
   const years = Array.from(byYear.keys()).sort((a, b) => b - a);
+  const verifiedDate = awardsData.verifiedAt
+    ? new Date(awardsData.verifiedAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : null;
 
   return (
     <div className={styles.timeline}>
+      {verifiedDate && awardsData.verifiedAgainst && (
+        <p className={styles.verification}>
+          Winner history audited for completeness against{' '}
+          <a href={awardsData.verifiedAgainst} target="_blank" rel="noreferrer">
+            contribute.cncf.io/community/awards
+          </a>{' '}
+          on {verifiedDate}.
+        </p>
+      )}
       {years.map((year) => (
         <section key={year} className={styles.yearGroup}>
           <div className={styles.yearRail}>

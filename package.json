@@ -34,8 +34,9 @@
     "docus:swizzle": "docusaurus swizzle",
     "docus:write-heading-ids": "docusaurus write-heading-ids",
     "docus:write-translations": "docusaurus write-translations",
-    "import:architectures": "node scripts/import-architectures.mjs",
+    "import:architectures": "node scripts/import-architectures.mjs && npm run generate:members",
     "fetch:community-people": "node scripts/fetch-community-people.mjs",
+    "generate:members": "node scripts/generate-members.mjs",
     "validate:architectures": "node scripts/validate-architectures.mjs",
     "validate:architecture-assets": "node scripts/validate-architecture-assets.mjs",
     "validate:button-contrast": "node scripts/validate-button-contrast.mjs",
@@ -95,6 +96,12 @@
     "picomatch": "^2.3.2",
     "joi": "^17.13.4",
     "ajv@8": "^8.18.0",
-    "ajv@6": "^6.14.0"
+    "ajv@6": "^6.14.0",
+    "cspell-glob": {
+      "picomatch": "^4.0.4"
+    },
+    "sockjs": {
+      "uuid": "^11.1.1"
+    }
   }
 }

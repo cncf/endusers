@@ -9,3 +9,7 @@ announcements:
 community:
   label: Community
   description: CNCF Community updates
+
+metrics:
+  label: Metrics
+  description: Data-driven snapshots of ecosystem and end-user activity
