@@ -19,8 +19,8 @@ the process below, not the roster above.
 
 - Review and merge pull requests, including automated (hive/agent) PRs.
 - Triage issues and keep the roadmap (`ROADMAP.md`) current.
-- Make or delegate decisions recorded in `adr/` when they affect the project's
-  direction (ownership, governance, architecture of the site itself).
+- Make project-direction decisions and record lasting ownership or site
+  architecture decisions in `adr/`.
 
 ## Becoming a maintainer
 
@@ -43,16 +43,25 @@ discussion in issue #46.
 
 ## Reducing the review bottleneck
 
-Hive/agent automation regularly opens pull requests here, and only human
-maintainers can merge them. To keep the queue from growing unbounded when a
-maintainer is unavailable:
+The current roster has one maintainer. To preserve meaningful gates without
+making that maintainer a merge deadlock:
 
-- Low-risk, mechanical PRs (dependency bumps with green CI, generated-data
-  refreshes that pass validation, typo/link fixes) are good candidates for a
-  future automerge policy once CI coverage is trusted enough to gate on it.
-- Anything touching content accuracy (award winners, TAB scope, architecture
-  facts) or site structure should continue to require human review regardless
-  of automation.
+- Required CI checks must be green before every merge.
+- The sole maintainer may review and self-merge low-risk, routine changes such
+  as dependency bumps, validated generated-data refreshes, and typo or link
+  fixes. Independent human review is recommended, but does not block these
+  changes.
+- Workflow and security-sensitive changes, governance changes, and major factual
+  or structural changes require independent human review when another qualified
+  reviewer is available. When none is available, urgent maintenance may proceed
+  on the sole maintainer's documented decision after required checks pass; the
+  absence of a second maintainer must not deadlock urgent maintenance.
+- A maintainer may explicitly delegate an agent to merge a specific pull
+  request, but only after required checks pass. The delegation must be a human
+  maintainer decision; an agent-generated approval does not substitute for it or
+  for required independent human review.
+- `hold`, `on-hold`, and `do-not-merge` labels remain binding. Hive-specific hold
+  instructions apply only when a hold is present or the work is Hive-assigned,
+  not to all repository work by default.
 
-This is a starting point, not a final governance model; revisit it as the
-maintainer list grows.
+Revisit this policy as the maintainer list grows.
