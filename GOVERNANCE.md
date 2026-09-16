@@ -70,6 +70,29 @@ path:
   architecture facts.
 - Major site structure, navigation, and branding changes.
 
+## Hive App workflow-permission gap
+
+The kubestellar-hive GitHub App installation on this repo has `contents:write`
+but not the `workflows` permission, so hive agent branches that touch
+`.github/workflows/**` cannot be pushed through the App (see issue #120). This
+is a repo/organization admin setting (GitHub App installation → Permissions),
+not something a pull request can change, so until an admin grants it agents
+must follow this interim process instead of opening artifact-only PRs:
+
+- An agent that finds a fix requiring changes to `.github/workflows/**` must
+  not commit `.patch` files or other artifact-only evidence as a PR. Instead,
+  it posts the full proposed diff (as a fenced code block, not an attachment)
+  as a comment on the relevant tracking issue, so a maintainer can apply it
+  directly with normal write access.
+- The comment must state which workflow file(s) it touches and link back to
+  this section so reviewers understand why there is no branch.
+- Once a maintainer applies the change (either by hand or by re-running the
+  agent after the App gains the permission), the tracking issue is closed and
+  any duplicate artifact comments are marked superseded, per the cross-agent
+  duplicate-prevention rule below.
+- If the `workflows` permission is granted to the App, this section is
+  removed and agents resume opening normal branches/PRs for workflow changes.
+
 ## Merge-queue hygiene
 
 To keep the queue from rotting (see issue #58):
