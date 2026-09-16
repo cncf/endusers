@@ -4,18 +4,28 @@
 // The hive App can only see one repo's PR queue at a time, so mergeable PRs
 // pile up per-repo with no fleet-wide view for the human merge gate to
 // triage by value. This script queries each fleet repo's open PRs (public
-// data, read-only) and produces a markdown digest: per-repo open/mergeable/
-// conflicting counts, oldest-PR age, days-since-last-push, and a
-// security-first ordering of open PRs across the fleet.
+// data) and produces a markdown digest: per-repo open/mergeable/conflicting
+// counts, oldest-PR age, days-since-last-push, and a security-first
+// ordering of open PRs across the fleet.
 //
 // Usage: node scripts/fleet-merge-queue-digest.mjs
-// Requires: `gh` CLI authenticated with read access to the repos below
-// (all public). Prints the digest markdown to stdout.
+//
+// `gh pr list --json` goes through the GraphQL API, which (unlike the plain
+// REST API) rejects fully unauthenticated requests even for public repos --
+// so the cross-repo reads below do need *some* token. What they must NOT
+// use is the caller's own single-repo GITHUB_TOKEN, which isn't guaranteed
+// to have cross-repo read access to the rest of the fleet and shouldn't be
+// conflated with whatever credential is used to post the digest comment.
+// FLEET_READ_TOKEN lets the caller supply a token scoped for reading the
+// fleet (e.g. a fine-grained PAT with public-repo read access) separately
+// from GH_TOKEN/GITHUB_TOKEN, which stays reserved for the caller's own
+// follow-up (posting the digest). If FLEET_READ_TOKEN isn't set, this falls
+// back to GH_TOKEN/GITHUB_TOKEN so existing single-token setups keep working.
 
 import { execFileSync } from 'node:child_process';
 
 const FLEET_REPOS = [
-  'castrojo/endusers',
+  'cncf/endusers',
   'castrojo/peoplehub',
   'castrojo/bootc-ecosystem',
   'castrojo/firehose',
@@ -26,11 +36,64 @@ const FLEET_REPOS = [
 // (security > bugfix > feature > deps > other).
 const CLASS_ORDER = ['security', 'bugfix', 'feature', 'deps', 'other'];
 
-function gh(args) {
-  return execFileSync('gh', args, { encoding: 'utf8' });
+// Env for the read-only, cross-repo `gh` calls: prefers a dedicated
+// FLEET_READ_TOKEN over the ambient GH_TOKEN/GITHUB_TOKEN, so a caller can
+// supply credentials actually authorized for cross-repo reads without
+// changing what token is used to post the resulting comment (see module
+// comment above).
+function readEnv() {
+  const token =
+    process.env.FLEET_READ_TOKEN ||
+    process.env.GH_TOKEN ||
+    process.env.GITHUB_TOKEN;
+  const env = { ...process.env };
+  delete env.GH_TOKEN;
+  delete env.GITHUB_TOKEN;
+  if (token) env.GH_TOKEN = token;
+  return env;
 }
 
-function classify(title) {
+function gh(args) {
+  return execFileSync('gh', args, { encoding: 'utf8', env: readEnv() });
+}
+
+// Escapes Markdown special characters and neutralizes @mentions in
+// untrusted, PR-author-controlled text (titles) before it's embedded in a
+// digest comment that will be posted publicly -- otherwise a crafted PR
+// title could break table formatting or ping arbitrary GitHub users/teams.
+function sanitizeMarkdown(text) {
+  return String(text)
+    .replace(/[\\`*_{}[\]()#+\-.!|>~]/g, '\\$&')
+    .replace(/@/g, '@\u200b');
+}
+
+// Classifies a PR's triage priority using structured signals (labels, the
+// PR author, and body content referencing an advisory) rather than title
+// text alone, since a title like "fix: bump lodash" would otherwise be
+// misclassified as a plain bugfix even when it's actually a Dependabot
+// security-advisory fix. Falls back to the title heuristic only when none
+// of the structured signals apply.
+function classify({ title, labels = [], author, body = '' }) {
+  const labelNames = labels.map((l) =>
+    (typeof l === 'string' ? l : l.name).toLowerCase(),
+  );
+  if (labelNames.some((l) => /security|vulnerab|cve/.test(l)))
+    return 'security';
+
+  const isDependabot =
+    author?.login === 'dependabot[bot]' || author === 'dependabot[bot]';
+  const referencesAdvisory =
+    /\bGHSA-|\bCVE-\d{4}-\d+|security vulnerability|dependabot alert/i.test(
+      body,
+    );
+  if (isDependabot && referencesAdvisory) return 'security';
+
+  if (labelNames.some((l) => /\bfix\b|bug/.test(l))) return 'bugfix';
+  if (labelNames.some((l) => /\bfeature\b|enhancement/.test(l)))
+    return 'feature';
+  if (isDependabot || labelNames.some((l) => /\bdependencies\b/.test(l)))
+    return 'deps';
+
   const t = title.toLowerCase();
   if (/\bsec(urity)?\b|\bcve-|vulnerab|checksum|sha-?256/.test(t))
     return 'security';
@@ -59,7 +122,7 @@ function fetchRepoQueue(repo) {
     '--limit',
     '200',
     '--json',
-    'number,title,createdAt,mergeable,isDraft,url',
+    'number,title,createdAt,mergeable,isDraft,url,labels,author,body',
   ]);
   const prs = JSON.parse(prsRaw);
 
@@ -79,7 +142,7 @@ function fetchRepoQueue(repo) {
     mergeable,
     conflicting,
     oldestAgeDays: oldest ? daysSince(oldest.createdAt) : null,
-    prs: open.map((pr) => ({ ...pr, repo, class: classify(pr.title) })),
+    prs: open.map((pr) => ({ ...pr, repo, class: classify(pr) })),
   };
 }
 
@@ -143,7 +206,7 @@ function buildDigest(queues) {
     lines.push(`**${cls}** (${inClass.length})`);
     for (const pr of inClass) {
       lines.push(
-        `- [${pr.repo}#${pr.number}](${pr.url}) ${pr.title} (${daysSince(pr.createdAt)}d old)`,
+        `- [${pr.repo}#${pr.number}](${pr.url}) ${sanitizeMarkdown(pr.title)} (${daysSince(pr.createdAt)}d old)`,
       );
     }
   }
@@ -157,7 +220,14 @@ async function main() {
   process.stdout.write(digest + '\n');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exitCode = 1;
-});
+// Only run when executed directly (`node scripts/fleet-merge-queue-digest.mjs`),
+// not when imported by tests -- classify()/sanitizeMarkdown() are pure and
+// unit-testable without triggering the network-calling main().
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  });
+}
+
+export { classify, sanitizeMarkdown };
