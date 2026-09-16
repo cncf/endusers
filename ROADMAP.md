@@ -72,7 +72,7 @@ shipped silently. Content completeness alone is not a launch plan.
 - [ ] **30-day check-in**: compare stars/watchers/forks/contributors against the
       baseline snapshot and record whether the launch moved the needle.
 
-Related: #90 (this finding), #46 (ownership), #75 (events pillar), #77 (blog
+Related: #90 (this finding), #46 (ownership), #75 (events pillar), #76 (blog
 cadence).
 
 ## Phase 2 — Community and governance
