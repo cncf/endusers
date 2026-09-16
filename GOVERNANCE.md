@@ -48,6 +48,16 @@ the following classes are candidates for automerge with green CI:
   pass their `validate:*` checks.
 - Test-only changes that add coverage without touching production code.
 
+**Operational status**: `.github/workflows/automerge-eligible.yml` implements
+the dependency-bump and generated-data-refresh classes above. It never fires
+on its own — a maintainer applies the `automerge` label to a reviewed,
+eligible PR (the explicit delegation this policy requires), and the workflow
+double-checks eligibility before requesting GitHub's native auto-merge, which
+still waits on required status checks and reviews from branch protection.
+One-time setup (repo admin): enable "Allow auto-merge" in repository settings
+and create the `automerge` label. Test-only changes remain manual until
+eligibility can be detected reliably (e.g. by path).
+
 The following always require human review, regardless of CI:
 
 - Workflow and security-sensitive changes (`.github/workflows/`, install
@@ -67,6 +77,13 @@ To keep the queue from rotting (see issue #58):
 - Maintainers aim to keep the open-PR queue in single digits; a growing queue
   is a signal to adjust the automerge classes above, not to lower the review
   bar.
+
+**Operational status**: `.github/workflows/pr-queue-hygiene.yml` runs on a
+schedule and flags (labels `needs-rebase-or-close` + comments) any open PR
+that has been conflicting with the base branch for more than 48 hours. It
+does not close PRs automatically — judging whether a conflicting PR is
+superseded needs human or author-agent judgment — but it makes stale PRs
+visible without waiting for the next manual sweep.
 
 ## Changing this document
 

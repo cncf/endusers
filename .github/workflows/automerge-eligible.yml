@@ -1,0 +1,67 @@
+name: Automerge eligible PRs
+
+# Operationalizes the "Automerge-eligible classes" section of GOVERNANCE.md
+# (see issue #58): dependency bumps (dependabot) and generated-data
+# refreshes (metrics/architectures/community people, tagged `automated` by
+# their producing workflows) are candidates for automerge with green CI.
+#
+# This does not auto-enable merging on its own. GOVERNANCE.md is explicit
+# that "Agents never merge their own PRs. A human maintainer merges, or an
+# explicitly delegated automerge path does." So this workflow only fires
+# when a maintainer applies the `automerge` label to a PR they've reviewed
+# and judged eligible — the label is the explicit delegation. It then
+# double-checks the PR is actually in an eligible class before requesting
+# GitHub's native auto-merge, which still waits for required status checks
+# (and any required reviews) configured in branch protection before merging.
+#
+# One-time setup: a maintainer with repo admin needs to enable "Allow
+# auto-merge" in repo settings, and create the `automerge` label, before
+# this workflow has any effect.
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  enable-automerge:
+    if: github.event.label.name == 'automerge'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR is in an automerge-eligible class
+        id: eligibility
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          set -euo pipefail
+          labels=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '[.labels[].name] | join(",")')
+
+          eligible=false
+          reason=""
+          if [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
+            eligible=true
+            reason="dependency bump (dependabot)"
+          elif echo ",$labels," | grep -q ",automated,"; then
+            eligible=true
+            reason="generated-data refresh (automated label)"
+          fi
+
+          if [ "$eligible" != "true" ]; then
+            echo "PR #$PR_NUMBER is not in a GOVERNANCE.md automerge-eligible class (dependabot bump or automated-labeled generated-data refresh). Not enabling auto-merge." >&2
+            exit 1
+          fi
+          echo "Eligible: $reason"
+
+      - name: Enable auto-merge (squash)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr merge --auto --squash "$PR_NUMBER" --repo "$REPO"

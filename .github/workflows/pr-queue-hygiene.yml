@@ -1,0 +1,69 @@
+name: PR queue hygiene
+
+# Operationalizes the GOVERNANCE.md merge-queue hygiene rule (see issue #58):
+# "Agent PRs that conflict with the base branch for more than 48 hours should
+# be rebased by their author agent or closed as superseded." This workflow
+# does not close PRs automatically — deciding whether a conflicting PR is
+# superseded requires judgment a scheduled job shouldn't make. Instead it
+# flags them (label + comment) so a maintainer or the author agent can act
+# quickly, keeping the queue from silently rotting.
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  flag-stale-conflicts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure hygiene label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh label create "needs-rebase-or-close" \
+            --repo "$REPO" \
+            --color "d93f0b" \
+            --description "Conflicting with base >48h per GOVERNANCE.md merge-queue hygiene" \
+            2>/dev/null || true
+
+      - name: Flag PRs conflicting with base for more than 48h
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          now=$(date -u +%s)
+
+          gh pr list --repo "$REPO" --state open \
+            --json number,mergeable,updatedAt,labels \
+            --jq '.[] | @base64' | while read -r row; do
+            pr_json=$(echo "$row" | base64 -d)
+            number=$(echo "$pr_json" | jq -r '.number')
+            mergeable=$(echo "$pr_json" | jq -r '.mergeable')
+            updated=$(echo "$pr_json" | jq -r '.updatedAt')
+            labels=$(echo "$pr_json" | jq -r '[.labels[].name] | join(",")')
+
+            if [ "$mergeable" != "CONFLICTING" ]; then
+              continue
+            fi
+
+            updated_epoch=$(date -u -d "$updated" +%s)
+            age_hours=$(( (now - updated_epoch) / 3600 ))
+            if [ "$age_hours" -lt 48 ]; then
+              continue
+            fi
+
+            if echo ",$labels," | grep -q ",needs-rebase-or-close,"; then
+              continue
+            fi
+
+            echo "Flagging stale conflicting PR #$number (last updated ${age_hours}h ago)"
+            gh pr edit "$number" --repo "$REPO" --add-label "needs-rebase-or-close" || true
+            gh pr comment "$number" --repo "$REPO" --body "This PR has been conflicting with the base branch for more than 48 hours. Per [GOVERNANCE.md](../../blob/main/GOVERNANCE.md) merge-queue hygiene: please rebase, or close this PR if it has been superseded by other merged work. Flagged automatically by the PR queue hygiene workflow." || true
+          done
