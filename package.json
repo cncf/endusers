@@ -51,6 +51,7 @@
     "update:pkgs": "npx npm-check-updates -u",
     "collect:metrics": "node scripts/collect-metrics.mjs",
     "validate:metrics": "node scripts/validate-metrics.mjs",
+    "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
     "test:unit": "node --test"
   },
   "repository": {
