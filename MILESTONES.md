@@ -44,8 +44,8 @@ Tag these issues:
 Tag these issues/PRs:
 
 - #47 (MAINTAINERS.md / bus factor)
-- Governance/agent-automation policy issue (if filed)
-- Good-first-issue curation
+- PR #60 (governance/agent-automation policy)
+- #98 (good-first-issue curation)
 - #46 (long-term ownership decision)
 
 ## Milestone: Phase 3 — Ecosystem integration
