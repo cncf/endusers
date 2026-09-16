@@ -64,3 +64,29 @@ test('fails when catalog.json is absent', () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Missing data\/architectures\/catalog\.json/);
 });
+
+test('rejects active content in an imported architecture page', () => {
+  const fixtures = catalogFixture([validRecord], {
+    'docs/architectures/acme-platform.md':
+      '# Acme\n\n<script>fetch("https://evil.test")</script>\n',
+  });
+  const result = runScriptWithFixtures(SCRIPT, fixtures);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /acme-platform\.md:3/);
+  assert.match(result.stderr, /active content in imported page/);
+});
+
+test('accepts an imported architecture page with only inert content', () => {
+  const fixtures = catalogFixture([validRecord], {
+    'docs/architectures/acme-platform.md': [
+      "import CNCFProjectCard from '@site/src/components/CNCFProjectCard';",
+      '',
+      '# Acme',
+      '',
+      '<CNCFProjectCard name="Kubernetes" href="https://www.cncf.io/projects/kubernetes/" />',
+      '',
+    ].join('\n'),
+  });
+  const result = runScriptWithFixtures(SCRIPT, fixtures);
+  assert.equal(result.status, 0, result.stderr);
+});

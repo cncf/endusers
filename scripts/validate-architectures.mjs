@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { reportAndExit } from './lib/validate-utils.mjs';
+import { findActiveContent } from './lib/mdx-active-content.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const catalogPath = join(root, 'data/architectures/catalog.json');
@@ -15,6 +16,13 @@ for (const record of records) {
   if (ids.has(record.id)) errors.push({ path: record.id, severity: 'error', message: 'duplicate id' });
   ids.add(record.id);
   for (const asset of record.assets ?? []) if (!existsSync(join(root, 'static', asset.replace(/^\//, '')))) errors.push({ path: record.id, severity: 'error', message: `missing asset ${asset}` });
+  if (record.id) {
+    const docPath = join(root, 'docs/architectures', `${record.id}.md`);
+    if (existsSync(docPath)) {
+      for (const { line, reason, snippet } of findActiveContent(readFileSync(docPath, 'utf8')))
+        errors.push({ path: `${record.id}.md:${line}`, severity: 'error', message: `active content in imported page (${reason}): ${snippet}` });
+    }
+  }
 }
 reportAndExit(errors, 'architecture catalog');
 console.log(`Validated ${records.length} architecture records`);
