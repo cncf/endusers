@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import membersData from '@site/data/members.json';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './styles.module.css';
 
 function initials(name) {
@@ -33,42 +34,8 @@ function useFilterOptions(members) {
 }
 
 function MemberProfile({ member, onClose, triggerRef }) {
-  const dialogRef = useRef(null);
-  const closeRef = useRef(null);
+  const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
   const logoUrl = useBaseUrl(member.logo || '');
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    const previousFocus = document.activeElement;
-    document.body.style.overflow = 'hidden';
-    closeRef.current?.focus();
-
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        onClose();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const focusable = dialogRef.current?.querySelectorAll('button, a[href]');
-      if (!focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKeyDown);
-      (triggerRef.current || previousFocus)?.focus?.();
-    };
-  }, [onClose, triggerRef]);
 
   const hasDetails =
     member.industries.length > 0 ||

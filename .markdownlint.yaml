@@ -1,0 +1,18 @@
+# Markdownlint configuration for the endusers.cncf.io Docusaurus site.
+# Line length and a handful of Docusaurus-specific conventions are relaxed
+# because content is prose (not hard-wrapped) and pages intentionally use a
+# small set of inline HTML elements (figure/figcaption/a) for captions.
+default: true
+
+# Prose lines are not hard-wrapped in this repository.
+MD013: false
+
+# Docusaurus doc/blog frontmatter provides the H1 via `title`, so pages may
+# legitimately omit a Markdown H1, and some legacy pages have not yet been
+# split into single-H1 documents.
+MD025: false
+
+# Docusaurus pages routinely embed raw HTML and MDX/React components
+# (e.g. <div>, <CommunityPeople />, <AwardsTimeline />) as part of normal
+# page layout, so this rule is not practical for this repository.
+MD033: false

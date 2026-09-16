@@ -18,6 +18,15 @@ This repository defines specific skills for AI agents to follow when contributin
 
 - [Skill Manifest](docs/skills/manifest.md) - Index of all available agent skills.
 
+## Hive Configuration
+
+This repository does not contain a `hive.yaml` or any authorized-repository
+allowlist. The Hive orchestrator's `project.repos` configuration is
+maintained outside this codebase. If a Hive-filed issue reports a stale or
+nonexistent repo entry (for example, a 404 on an authorized repo), that
+config lives elsewhere and cannot be corrected with a PR here — flag it to
+the Hive maintainers directly.
+
 ## Build & Test
 
 - **Install**: `npm install`
