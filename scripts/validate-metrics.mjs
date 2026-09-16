@@ -1,4 +1,4 @@
-#!/usr bin/env node
+#!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import { reportAndExit } from './lib/validate-utils.mjs';
 const data = JSON.parse(readFileSync(new URL('../data/metrics.json', import.meta.url)));
