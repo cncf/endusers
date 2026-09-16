@@ -172,3 +172,209 @@ test('rejects breakdown values without a name', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /invalid breakdown value/);
 });
+
+test('rejects a metric without an id', () => {
+  const { id, ...withoutId } = validMetric;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({ ...validData, metrics: [withoutId] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /duplicate or missing metric id/);
+});
+
+test('rejects a metric with a null value', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      metrics: [{ ...validMetric, value: null }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /missing value/);
+});
+
+test('accepts an empty metrics array', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({ ...validData, metrics: [] }),
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 0 metrics/);
+});
+
+test('rejects omitted entries without an id', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({ ...validData, omitted: [{ reason: 'not collected' }] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /id and reason/);
+});
+
+test('rejects lifecycle cards with a non-finite value', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      referenceArchitectureLifecycle: {
+        cards: [{ id: 'open-submissions', label: 'Open submissions' }],
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /invalid lifecycle card/);
+});
+
+test('rejects lifecycle omissions without a reason', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      referenceArchitectureLifecycle: {
+        omitted: [{ id: 'acceptance-rate' }],
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /invalid lifecycle omission/);
+});
+
+test('accepts a fully populated lifecycle section', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      referenceArchitectureLifecycle: {
+        cards: [
+          { id: 'open-submissions', label: 'Open submissions', value: 0 },
+        ],
+        omitted: [{ id: 'acceptance-rate', reason: 'not public' }],
+      },
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('rejects a time series missing its sourceUrl', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      series: {
+        endUserMembers: {
+          label: 'Members',
+          values: [{ date: '2026-08-07', value: 42 }],
+        },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /invalid time series/);
+});
+
+test('rejects time-series points with a non-finite value', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      series: {
+        endUserMembers: {
+          label: 'Members',
+          sourceUrl: 'https://landscape.cncf.io/',
+          values: [{ date: '2026-08-07', value: null }],
+        },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /invalid time-series point/);
+});
+
+test('accepts a valid time series', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      series: {
+        endUserMembers: {
+          label: 'Members',
+          sourceUrl: 'https://landscape.cncf.io/',
+          values: [{ date: '2026-08-07', value: 42 }],
+        },
+      },
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('rejects a breakdown whose values are not an array', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      breakdowns: {
+        projectMaturity: {
+          label: 'Maturity',
+          sourceUrl: 'https://landscape.cncf.io/',
+          values: { graduated: 10 },
+        },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /invalid breakdown/);
+});
+
+test('rejects a breakdown missing its label', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      breakdowns: {
+        projectMaturity: {
+          sourceUrl: 'https://landscape.cncf.io/',
+          values: [{ name: 'graduated', value: 10 }],
+        },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /invalid breakdown/);
+});
+
+test('rejects breakdown values that are not finite numbers', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      breakdowns: {
+        projectMaturity: {
+          label: 'Maturity',
+          sourceUrl: 'https://landscape.cncf.io/',
+          values: [{ name: 'graduated', value: '10' }],
+        },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /invalid breakdown value/);
+});
+
+test('accepts a valid breakdown', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      breakdowns: {
+        projectMaturity: {
+          label: 'Maturity',
+          sourceUrl: 'https://landscape.cncf.io/',
+          values: [{ name: 'graduated', value: 10 }],
+        },
+      },
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
+});
