@@ -25,7 +25,7 @@ jobs:
         with:
           name: contribute-cncf-io
           # The output filename can be specified with --output option
-          path: pdf/contribute-cncf-io.pdf
+          path: pdf/contribute.pdf
           if-no-files-found: error
           overwrite: true
       - name: Upload Release Artifact

@@ -4,6 +4,12 @@
   margin-top: 2rem;
 }
 
+.verification {
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.85rem;
+  margin: -1rem 0 1.5rem;
+}
+
 .yearGroup {
   display: grid;
   grid-template-columns: 7rem 1fr;

@@ -52,6 +52,5 @@ body:
         - jeefy
         - krook
         - mrbobbytables
-        - nate-double-u
     validations:
       required: true
