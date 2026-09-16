@@ -7,6 +7,9 @@ const root = new URL('..', import.meta.url).pathname;
 const output = join(root, 'data/community-people.json');
 const rosterPath = join(root, 'data/community-roster.json');
 
+const PEOPLE_JSON_URL = 'https://raw.githubusercontent.com/cncf/people/main/people.json';
+const PEOPLE_IMAGE_BASE = 'https://raw.githubusercontent.com/cncf/people/main/images/';
+
 const roster = JSON.parse(readFileSync(rosterPath, 'utf8'));
 const fallbackImages = roster.fallbackImages;
 
@@ -52,9 +55,9 @@ for (const [section, entries] of Object.entries(people)) {
       name: name || profile.name || previous.name,
       company: company || cleanCompany(profile.company) || previous.company,
       role: role || previous.role || null,
-      bio: profile.bio || previous.bio || '',
+      bio: stripHtml(profile.bio) || previous.bio || '',
       location: profile.location || previous.location || '',
-      image: profile.avatar_url || previous.image || fallbackImages[name] || (github ? `https://github.com/${github}.png` : ''),
+      image: profileImage(profile.image) || previous.image || fallbackImages[name] || (github ? `https://github.com/${github}.png` : ''),
       github,
       linkedin: linkedin || previous.linkedin || null,
       twitter: twitter || previous.twitter || null,
@@ -82,6 +85,35 @@ writeFileSync(
 );
 console.log(`Refreshed ${Object.values(result).flat().length} community profiles${failures ? ` (${failures} fallback${failures === 1 ? '' : 's'})` : ''} (TAB roster @ cncf/tab#${tabRoster.revision.slice(0, 7)})`);
 
-function cleanCompany(value) {
-  return value?.replace(/^@/, '').trim() || '';
+async function fetchCncfPeopleIndex() {
+  const byGithub = new Map();
+  try {
+    const response = await fetch(PEOPLE_JSON_URL);
+    if (!response.ok) throw new Error(`cncf/people returned ${response.status}`);
+    const entries = await response.json();
+    for (const entry of entries) {
+      const handle = handleFromUrl(entry.github)?.toLowerCase();
+      if (handle) byGithub.set(handle, entry);
+    }
+  } catch (error) {
+    console.warn(`Could not load cncf/people/people.json: ${error.message}`);
+  }
+  return byGithub;
+}
+
+function profileImage(image) {
+  if (!image) return '';
+  if (/^https?:\/\//i.test(image)) return image;
+  return `${PEOPLE_IMAGE_BASE}${image}`;
+}
+
+function handleFromUrl(value) {
+  if (!value) return null;
+  const trimmed = value.trim().replace(/\/+$/, '');
+  const segments = trimmed.split('/');
+  return segments[segments.length - 1] || null;
+}
+
+function stripHtml(value) {
+  return value?.replace(/<[^>]*>/g, '').trim() || '';
 }
