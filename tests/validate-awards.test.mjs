@@ -15,8 +15,15 @@ const validEntry = {
   announcementUrl: 'https://www.cncf.io/announcements/2024/example',
 };
 
-function awardsFixture(awards) {
-  return { 'data/awards.json': JSON.stringify({ awards }) };
+function awardsFixture(awards, overrides = {}) {
+  return {
+    'data/awards.json': JSON.stringify({
+      verifiedAt: '2026-08-08',
+      verifiedAgainst: 'https://contribute.cncf.io/community/awards/',
+      awards,
+      ...overrides,
+    }),
+  };
 }
 
 test('accepts a valid awards file', () => {
@@ -29,6 +36,26 @@ test('rejects an empty awards array', () => {
   const result = runScriptWithFixtures(SCRIPT, awardsFixture([]));
   assert.equal(result.status, 1);
   assert.match(result.stderr, /non-empty array/);
+});
+
+test('rejects a missing verifiedAt', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([validEntry], { verifiedAt: undefined }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /verifiedAt must be a parseable date/);
+});
+
+test('rejects a non-https verifiedAgainst', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([validEntry], {
+      verifiedAgainst: 'contribute.cncf.io/community/awards/',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /verifiedAgainst must be an https URL/);
 });
 
 test('rejects years before 2015', () => {

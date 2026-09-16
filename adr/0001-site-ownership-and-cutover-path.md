@@ -2,6 +2,7 @@
 
 - **Status**: Proposed
 - **Date**: 2026-08-08
+- **Decision deadline**: 2026-08-17 (LAUNCH.md week W-12; see "Decision" below)
 - **Tracking issue**: [#46](https://github.com/castrojo/endusers/issues/46)
 
 ## Context
@@ -78,16 +79,32 @@ that CNCF end-user/TAB stakeholders and the repo owner can make an informed
 decision. The decision itself belongs to the owner and CNCF stakeholders, not
 to automated tooling.
 
+To keep this from stalling silently (see issue #99), a decision deadline is
+recorded above: **2026-08-17**. This date is not a default answer — it is the
+point by which the owner and CNCF stakeholders should have picked among
+Options A, B, and C (or explicitly extended the deadline in a follow-up PR to
+this ADR). `LAUNCH.md` treats this ADR's decision as its W-12 gating
+milestone, since the announcement plan cannot name the site's permanent home
+until this is resolved.
+
+If the deadline passes without a decision, the fallback is Option B (stay
+personal) by default, purely to avoid blocking Phase 1/2 content work — this
+default does not close the ADR or set Status to Accepted, it just documents
+what "no decision yet" means operationally for downstream work.
+
 ## Proposed next step
 
 1. Open a discussion with CNCF end-user community and TAB stakeholders on the
-   intended long-term home for this content (see options above).
+   intended long-term home for this content (see options above). A
+   ready-to-send outreach draft, with suggested venues and stakeholders, is
+   available at [0001-stakeholder-outreach-draft.md](./0001-stakeholder-outreach-draft.md)
+   (proposed in PR #113).
 2. Land the prerequisites shared by every option regardless of outcome:
-   LICENSE (#32 / PR #40) and a governance/MAINTAINERS note (#47).
-3. Once a decision is made, update this ADR's Status and Decision sections,
-   link the outcome from `ROADMAP.md` Phase 2, and open the follow-up
-   issues/PRs needed to execute it (org transfer, DNS cutover, or content
-   merge).
+   LICENSE (done: #32 / PR #40) and a governance/MAINTAINERS note (#47).
+3. By the decision deadline above, update this ADR's Status and Decision
+   sections, link the outcome from `ROADMAP.md` Phase 2, and open the
+   follow-up issues/PRs needed to execute it (org transfer, DNS cutover, or
+   content merge).
 
 ## Consequences
 
