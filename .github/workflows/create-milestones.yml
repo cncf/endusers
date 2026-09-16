@@ -1,0 +1,79 @@
+name: Create milestones
+
+on:
+  workflow_dispatch:
+    inputs:
+      retag:
+        description: Re-apply milestones to issues and pull requests that already have one
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  create-milestones:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Create milestones and assign issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RETAG: ${{ inputs.retag }}
+        run: |
+          set -euo pipefail
+
+          existing="$(
+            gh api --method GET "repos/${REPO}/milestones" \
+              -f state=all \
+              --paginate \
+              --jq '.[] | [.title, .number] | @tsv'
+          )"
+
+          jq -c '.milestones[]' data/milestones.json | while read -r milestone; do
+            title="$(jq -r '.title' <<<"$milestone")"
+            description="$(jq -r '.description' <<<"$milestone")"
+            number="$(
+              printf '%s\n' "$existing" |
+                awk -F '\t' -v title="$title" '$1 == title { print $2; exit }'
+            )"
+
+            if [[ -z "$number" ]]; then
+              echo "Creating milestone: $title"
+              number="$(
+                gh api --method POST "repos/${REPO}/milestones" \
+                  -f title="$title" \
+                  -f description="$description" \
+                  --jq '.number'
+              )"
+            else
+              echo "Milestone already exists: $title (#$number)"
+            fi
+
+            jq -r '.issues[]' <<<"$milestone" | while read -r issue; do
+              current_milestone="$(
+                gh api --method GET "repos/${REPO}/issues/${issue}" \
+                  --jq '.milestone.number // empty'
+              )"
+
+              if [[ -n "$current_milestone" && "$RETAG" != "true" ]]; then
+                echo "Skipping #$issue (already has milestone #$current_milestone)"
+                continue
+              fi
+
+              echo "Assigning #$issue to $title (#$number)"
+              gh api --method PATCH "repos/${REPO}/issues/${issue}" \
+                -F "milestone=$number" >/dev/null
+            done
+          done
+
+          gh api --method GET "repos/${REPO}/milestones" \
+            -f state=all \
+            --paginate \
+            --jq '.[] | "\(.title): \(.open_issues) open, \(.closed_issues) closed"'
