@@ -70,21 +70,28 @@ Goal: endusers.cncf.io becomes the authoritative end-user destination.
 
 ## Launch success metrics (tracking: #100)
 
-Goal: launch is measurable, not just announced. `data/launch-metrics.json` holds
-the baseline snapshot and 90-day post-launch target for each signal (validated
-by `npm run validate:launch-metrics`); update it by hand when a signal is
-re-measured rather than editing this table.
+Goal: launch is measurable, not just announced. `data/launch-metrics.json` is
+the source of truth for the baseline (captured at the W-6 pre-launch checkpoint)
+and 90-day post-launch target for each signal. The table below is **generated
+from that file** — do not hand-edit it. Run `npm run sync:launch-metrics-table`
+after changing the JSON, and `npm run validate:launch-metrics` fails the build
+if the two drift apart.
 
-| Signal                                                     | Baseline (2026-08-08)             | 90-day post-launch target |
-| ---------------------------------------------------------- | --------------------------------- | ------------------------- |
-| GitHub stars                                               | 0                                 | 50                        |
-| GitHub watchers                                            | 0                                 | 15                        |
-| GitHub forks                                               | 1 (maintainer's own working fork) | 8                         |
-| Good-first-issues claimed or closed by a non-maintainer    | 0                                 | 3                         |
-| Inbound links from cncf.io / contribute.cncf.io properties | 0                                 | 1                         |
+<!-- LAUNCH-METRICS-TABLE:START -->
+
+| Signal                                                     | Baseline (W-6 pre-launch checkpoint, 2026-08-08) | 90-day post-launch target |
+| ---------------------------------------------------------- | ------------------------------------------------ | ------------------------- |
+| GitHub stars                                               | 0                                                | 50                        |
+| GitHub watchers                                            | 0                                                | 15                        |
+| GitHub forks                                               | 1                                                | 8                         |
+| Good-first-issues claimed or closed by a non-maintainer    | 0                                                | 3                         |
+| Inbound links from cncf.io / contribute.cncf.io properties | 0                                                | 1                         |
+
+<!-- LAUNCH-METRICS-TABLE:END -->
 
 - [ ] Re-measure each signal at the 90-day mark and record the outcome in
-      `data/launch-metrics.json` and this table.
+      `data/launch-metrics.json`, then re-run
+      `npm run sync:launch-metrics-table`.
 - [ ] Add site analytics (e.g. a privacy-respecting tool such as Plausible or
       GoatCounter) so inbound-traffic signals can move beyond a manual check.
 

@@ -1,12 +1,15 @@
 {
   "generated": false,
-  "note": "Hand-curated baseline snapshot for the site launch (issue #100). Unlike data/metrics.json, this is not refreshed by an automated pipeline — update it manually when a signal is re-measured, recording the new snapshot date.",
-  "baselineSnapshotAt": "2026-08-08",
+  "note": "Hand-curated baseline snapshot for the site launch (issue #100). Unlike data/metrics.json, this is not refreshed by an automated pipeline — update it manually when a signal is re-measured, recording the new snapshot date. The ROADMAP.md launch-metrics table is generated FROM this file: run `npm run sync:launch-metrics-table` after any edit here, and `npm run validate:launch-metrics` fails if the two drift out of sync.",
+  "preLaunchCheckpointAt": "2026-08-08",
+  "checkpointLabel": "W-6 pre-launch checkpoint",
+  "inboundLinkMeasurementProcedure": "GitHub code search for the canonical repo URL restricted to the cncf.io/contribute.cncf.io properties' source repos: `gh search code \"cncf/endusers\" --owner cncf --repo cncf/foundation --repo cncf/contribute.cncf.io`. Re-run the identical query at the 90-day mark and record the resulting count as the new value; this keeps the measurement reproducible instead of an ad hoc manual search.",
   "signals": [
     {
       "id": "github-stars",
       "label": "GitHub stars",
-      "source": "https://github.com/castrojo/endusers",
+      "source": "https://github.com/cncf/endusers",
+      "historicalSource": "https://github.com/castrojo/endusers (repo lived here at snapshot time, since transferred to cncf/endusers)",
       "baseline": 0,
       "target90Day": 50,
       "targetWindow": "90 days post-launch",
@@ -15,7 +18,8 @@
     {
       "id": "github-watchers",
       "label": "GitHub watchers",
-      "source": "https://github.com/castrojo/endusers",
+      "source": "https://github.com/cncf/endusers",
+      "historicalSource": "https://github.com/castrojo/endusers (repo lived here at snapshot time, since transferred to cncf/endusers)",
       "baseline": 0,
       "target90Day": 15,
       "targetWindow": "90 days post-launch",
@@ -24,7 +28,8 @@
     {
       "id": "github-forks",
       "label": "GitHub forks",
-      "source": "https://github.com/castrojo/endusers",
+      "source": "https://github.com/cncf/endusers",
+      "historicalSource": "https://github.com/castrojo/endusers (repo lived here at snapshot time, since transferred to cncf/endusers)",
       "baseline": 1,
       "target90Day": 8,
       "targetWindow": "90 days post-launch",
@@ -33,7 +38,8 @@
     {
       "id": "good-first-issue-conversion",
       "label": "Good-first-issues claimed or closed by a non-maintainer",
-      "source": "https://github.com/castrojo/endusers/labels/good%20first%20issue",
+      "source": "https://github.com/cncf/endusers/labels/good%20first%20issue",
+      "historicalSource": "https://github.com/castrojo/endusers/labels/good%20first%20issue (repo lived here at snapshot time, since transferred to cncf/endusers)",
       "baseline": 0,
       "target90Day": 3,
       "targetWindow": "90 days post-launch",
@@ -42,11 +48,11 @@
     {
       "id": "inbound-links-cncf",
       "label": "Inbound links from cncf.io / contribute.cncf.io properties",
-      "source": "manual check via site search or referrer data once analytics exists",
+      "source": "see inboundLinkMeasurementProcedure above",
       "baseline": 0,
       "target90Day": 1,
       "targetWindow": "90 days post-launch",
-      "note": "At least one authoritative CNCF property should link to this site by the 90-day mark; there is no analytics pipeline yet to measure traffic directly, so this is checked manually until one is added."
+      "note": "At least one authoritative CNCF property should link to this site by the 90-day mark; there is no analytics pipeline yet to measure traffic directly, so this uses the reproducible code-search procedure above until one is added."
     }
   ]
 }
