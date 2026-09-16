@@ -12,7 +12,7 @@ function profileUrl(value, type) {
 
 function PersonDialog({ person, onClose, triggerRef }) {
   const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
-  const { name, company, role, seat, image, bio, location, blog, github, linkedin, twitter, publicRepos, followers } = person;
+  const { name, company, role, seat, image, bio, location, blog, github, linkedin, twitter } = person;
 
   const links = [
     ['GitHub', profileUrl(github, 'github')],
