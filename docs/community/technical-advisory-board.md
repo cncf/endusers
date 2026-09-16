@@ -9,9 +9,10 @@ import CommunityPeople from '@site/src/components/CommunityPeople';
 The [CNCF End User Technical Advisory Board](https://github.com/cncf/tab)
 represents end users within the CNCF community. The TAB helps surface end-user
 needs, improve visibility into CNCF project adoption, advise on technical
-direction, and review reference architectures. The TAB oversees the
-[User Groups](./user-groups/index.md) and operates under the
-[User Group governance](./governance.md).
+direction, and review reference architectures. The TAB governs the
+[User Groups](./user-groups/index.md) per the
+[User Group governance](./governance.md) document; the TAB itself operates under
+its own charter, not under User Group governance.
 
 ## TAB members
 

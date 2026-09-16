@@ -6,9 +6,15 @@ description:
   governed.
 ---
 
-> **Source:** This page is copied from the
-> [CNCF TAB governance repository](https://github.com/cncf/tab/blob/main/governance/ug-governance.md).
-> Refer to that document for the authoritative, most up-to-date version.
+> **Source:** This page is copied and reformatted from the
+> [CNCF TAB governance repository](https://github.com/cncf/tab/blob/main/governance/ug-governance.md)
+> ([Apache License 2.0](https://github.com/cncf/tab/blob/main/LICENSE)). Refer
+> to that document for the authoritative, most up-to-date version.
+>
+> **Modifications from the source:** paragraphs were re-wrapped for this site's
+> line-length convention and the original document's table of contents was
+> removed in favor of this site's generated sidebar; no substantive wording was
+> changed.
 
 **NOTE:** This document is a starting point. It is expected to change and be
 refined as User Groups take

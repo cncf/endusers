@@ -45,11 +45,13 @@ for your interests.
 - **[Governance](./governance.md)** — how CNCF User Groups, Initiatives, and
   Technical Community Groups are organized and led.
 - **[Technical Advisory Board](./technical-advisory-board.md)** — the group that
-  represents end users within CNCF and oversees the User Groups.
+  represents end users within CNCF and governs the User Groups.
 - **[User Groups](./user-groups/index.md)** — industry-focused communities,
-  including [Platform Engineering](./user-groups/platform-engineering.md),
-  [Public Sector](./user-groups/public-sector.md), and
+  including [Public Sector](./user-groups/public-sector.md) and
   [Telecom](./user-groups/telecom.md).
+- **[Technical Community Groups](./technical-community-groups/index.md)** —
+  lightweight, topic-focused groups, including
+  [Platform Engineering](./technical-community-groups/platform-engineering.md).
 - **[Awards](./awards.md)** — the organizations recognized for excellence in
   running cloud native in production.
 - **[Members](./members.md)** — the organizations that make up the CNCF End User
