@@ -26,3 +26,24 @@ Workflow for publishing posts on the CNCF End User Community blog.
 Community submissions arrive through the blog post issue template
 (`.github/ISSUE_TEMPLATE/blog-post.yml`). The author dropdown there must stay in sync
 with `blog/authors.yml`.
+
+## Publishing cadence
+
+Minimum sustainable cadence: **one post per month**. The default recurring post is
+"Month in Metrics" — a short, data-driven recap sourced from the current
+`data/metrics.json` (and, when relevant, new reference architectures, award
+announcements, or event recaps). This keeps the cadence nearly free to sustain because it
+reuses data the site already generates instead of requiring net-new reporting.
+
+To publish a Month in Metrics post:
+
+1. Refresh data first: `npm run collect:metrics` (and `npm run validate:metrics`) so the
+   post reflects the current `data/metrics.json`, not stale numbers.
+2. Create `blog/YYYY-MM-DD-month-in-metrics-<month>-<year>.md` following the post format
+   above, tagged `metrics`. Cite every figure with the same source links used on
+   `/metrics`; never restate a number without its `sourceUrl`.
+3. Note what changed since the previous Month in Metrics post (new architectures,
+   membership counts, award announcements) rather than repeating the same figures
+   unchanged.
+4. If there's no material change to report in a given month, skip the post rather than
+   publish filler — the cadence is a floor, not a quota.

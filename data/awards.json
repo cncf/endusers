@@ -1,5 +1,8 @@
 {
-  "description": "CNCF End User award winners rendered on /awards. Winners are data entries, not pages. Verify every entry against its cncf.io announcement before adding. Schema: year (int), award (slug), awardLabel (display name), organization, slug (kebab-case org id), logo (path under /static, or null for text fallback), citation (one sentence, from the announcement), event (where it was presented), announcementUrl, caseStudyUrl (nullable), talkUrl (nullable).",
+  "description": "CNCF End User award winners rendered on /awards. Winners are data entries, not pages. Verify every entry against its cncf.io announcement before adding. Canonical historical source for completeness checks: https://contribute.cncf.io/community/awards/ (Top End User sections, 2018-present). Schema: year (int), award (slug), awardLabel (display name), organization, slug (kebab-case org id), logo (path under /static, or null for text fallback), citation (one sentence, from the announcement), event (where it was presented), announcementUrl (nullable, only when cncf.io issued no standalone announcement), caseStudyUrl (nullable), talkUrl (nullable).",
+  "verifiedAt": "2026-08-08",
+  "verifiedAgainst": "https://contribute.cncf.io/community/awards/",
+  "verificationNote": "Audited all 15 entries (2018-2026) against the Top End User Award history on contribute.cncf.io/community/awards. Count matches the published history exactly (no gaps, no extras). Every announcementUrl, caseStudyUrl, and talkUrl was fetched and confirmed to resolve to the matching organization/award page as of this date.",
   "awards": [
     {
       "year": 2026,
