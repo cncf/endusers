@@ -30,11 +30,14 @@ in mind for every page.
 Most pages are generated from data files. Contribute by editing the data, not by
 hand-building pages:
 
-| Page             | Data source                         | Validation                       |
-| ---------------- | ----------------------------------- | -------------------------------- |
-| `/awards`        | `data/awards.json`                  | `npm run validate:awards`        |
-| `/metrics`       | `data/metrics.json` (generated)     | `npm run validate:metrics`       |
-| `/architectures` | `data/architectures/records/*.json` | `npm run validate:architectures` |
+| Page                            | Data source                                                                                 | Validation                        |
+| ------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------- |
+| `/awards`                       | `data/awards.json`                                                                          | `npm run validate:awards`         |
+| `/metrics`                      | `data/metrics.json` (generated)                                                             | `npm run validate:metrics`        |
+| `/architectures`                | `data/architectures/records/*.json`                                                         | `npm run validate:architectures`  |
+| `/members`                      | `data/members.json` (generated from `data/awards.json` + `data/architectures/catalog.json`) | `npm run generate:members`        |
+| Community people lightboxes     | `data/community-roster.json` (curated) → refreshed into `data/community-people.json`        | `npm run fetch:community-people`  |
+| ProjectsBorn (`/practitioners`) | `data/projects-born.json`                                                                   | manual edit, no validation script |
 
 Rules:
 
@@ -46,6 +49,14 @@ Rules:
   upstream, then re-import.
 - Verify CNCF facts (award winners, TAB scope, architecture counts) against
   authoritative sources. Never assert numbers without a source.
+- **Adding or editing an award winner requires re-running
+  `npm run generate:members`** so `/members` stays in sync with
+  `data/awards.json`.
+- **Never edit `data/community-people.json` by hand.** Add or fix a person in
+  `data/community-roster.json`, then refresh with
+  `npm run fetch:community-people`.
+- `data/projects-born.json` has no generator; edit it directly and verify the
+  origin story against a reliable source before adding an entry.
 
 ## Style rules
 
@@ -101,10 +112,13 @@ AI agents should start at [`AGENTS.md`](AGENTS.md) and the skill manifest in
 
 ## Project direction and policies
 
-- [`ROADMAP.md`](ROADMAP.md) — what the site is building toward and the current phase.
-- [`GOVERNANCE.md`](GOVERNANCE.md) — how decisions get made and how pull requests land.
+- [`ROADMAP.md`](ROADMAP.md) — what the site is building toward and the current
+  phase.
+- [`GOVERNANCE.md`](GOVERNANCE.md) — how decisions get made and how pull
+  requests land.
 - [`SECURITY.md`](SECURITY.md) — how to report a vulnerability.
-- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — community participation expectations.
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — community participation
+  expectations.
 
 ## Maintainers
 
