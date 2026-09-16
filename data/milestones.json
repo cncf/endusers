@@ -1,0 +1,29 @@
+{
+  "milestones": [
+    {
+      "title": "Phase 0 — Foundation",
+      "description": "A reliable, trustworthy site skeleton: green deploys, a license, supply-chain hygiene, and this planning infrastructure.",
+      "issues": [44, 32, 40, 38, 39, 41, 42, 43, 36, 37, 45, 50]
+    },
+    {
+      "title": "Phase 1 — Content completeness",
+      "description": "Every content pillar (architectures, metrics, awards, community, events, blog) is accurate, current, and self-maintaining.",
+      "issues": [74, 75, 76, 77, 79, 80]
+    },
+    {
+      "title": "Phase 2 — Community and governance",
+      "description": "The project can outlive any single maintainer.",
+      "issues": [47, 60, 98, 46]
+    },
+    {
+      "title": "Phase 3 — Ecosystem integration",
+      "description": "endusers.cncf.io becomes the authoritative end-user destination.",
+      "issues": []
+    },
+    {
+      "title": "KubeCon NA 2026 Launch",
+      "description": "Cross-cutting launch milestone for KubeCon + CloudNativeCon North America 2026 (Nov 9–12, Salt Lake City).",
+      "issues": [99, 90, 100, 104]
+    }
+  ]
+}
