@@ -4,48 +4,30 @@ import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
 const output = join(root, 'data/community-people.json');
+const rosterPath = join(root, 'data/community-roster.json');
 
-const people = {
-  tab: [
-    ['Ricardo Rocha', 'CERN', 'TAB Chair', 'rochaporto', 'ricardo-rocha-739aa718', 'ahcorporto'],
-    ['Joseph Sandoval', 'Adobe Inc', 'TAB Vice Chair', 'jrsapi', 'josephrsandoval'],
-    ['Ahmed Bebars', 'The New York Times', null, 'abebars'],
-    ['Alolita Sharma', 'Apple', null, 'alolita'],
-    ['Ben Somogyi', 'Lockheed Martin', null, 'bsomogyi'],
-    ['Chad Beaudin', 'Boeing', null, 'chadbeaudin'],
-    ['Katie Gamanji', 'Apple', null, 'kgamanji', 'katie-gamanji', 'k_gamanji'],
-    ['Kenta Tada', 'Toyota', null, 'KentaTada'],
-    ['Michael Amundson', 'CVS Health', null, null, 'michaelamundson'],
-    ['Mike Bowen', 'BlackRock', null, 'michael-bowen-sc'],
-    ['Xu Wang', 'Ant Group', null, 'gnawux', 'gnawux', 'gnawux']
-  ],
-  staff: [
-    ['Jorge O. Castro', 'CNCF', 'Developer Relations', 'castrojo', 'jorgecastro'],
-    ['Joanna Lee', 'CNCF', 'VP of Strategic Programs and Legal', 'joannalee333', 'joanna-lee-9630935'],
-    ['Bob Killen', 'CNCF', 'Senior Technical Program Manager', 'mrbobbytables', 'mrbobbytables'],
-    ['Taylor Waggoner', 'CNCF', 'Program Manager', 'taylorwaggoner', 'taylor-waggoner'],
-    ['Wendi West', 'CNCF', 'Event Manager', null, 'wendi-west']
-  ]
-};
+const roster = JSON.parse(readFileSync(rosterPath, 'utf8'));
+const people = roster.sections;
+const fallbackImages = roster.fallbackImages;
 
-const fallbackImages = {
-  'Michael Amundson': 'https://raw.githubusercontent.com/cncf/people/main/images/michael-amundson-headshot.jpg',
-  'Wendi West': 'https://raw.githubusercontent.com/cncf/people/main/images/wendi-west.jpg'
-};
 const existing = existsSync(output) ? JSON.parse(readFileSync(output, 'utf8')) : {};
 const result = {};
 let failures = 0;
 
+const headers = {
+  Accept: 'application/vnd.github+json',
+  'User-Agent': 'cncf-endusers-site-build',
+};
+if (process.env.GH_TOKEN) headers.Authorization = `Bearer ${process.env.GH_TOKEN}`;
+
 for (const [section, entries] of Object.entries(people)) {
   result[section] = [];
-  for (const [name, company, role, github, linkedin, twitter] of entries) {
+  for (const { name, company, role, github, linkedin, twitter } of entries) {
     const previous = existing[section]?.find((person) => person.github === github && github) ?? {};
     let profile = {};
     if (github) {
       try {
-        const response = await fetch(`https://api.github.com/users/${github}`, {
-          headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'cncf-endusers-site-build' }
-        });
+        const response = await fetch(`https://api.github.com/users/${github}`, { headers });
         if (!response.ok) throw new Error(`GitHub returned ${response.status}`);
         profile = await response.json();
       } catch (error) {

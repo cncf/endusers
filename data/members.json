@@ -1,6 +1,9 @@
 {
-  "description": "Curated CNCF End User Community member organizations derived from reference architectures and Top End User Award winners.",
-  "generatedFrom": ["data/architectures/catalog.json", "data/awards.json"],
+  "description": "CNCF End User Community member organisations derived from reference architectures and Top End User Award winners.",
+  "generatedFrom": [
+    "data/architectures/catalog.json",
+    "data/awards.json"
+  ],
   "schema": {
     "id": "kebab-case identifier",
     "name": "display name",
@@ -18,8 +21,17 @@
       "name": "Adobe",
       "slug": "adobe",
       "logo": "/img/architectures/adobe/Adobe_Wordmark_RGB_Red.svg",
-      "industries": ["Digital Experience", "Digital Media", "Software"],
-      "projects": ["Argo", "Backstage", "Helm", "Kubernetes"],
+      "industries": [
+        "Digital Experience",
+        "Digital Media",
+        "Software"
+      ],
+      "projects": [
+        "Argo",
+        "Backstage",
+        "Helm",
+        "Kubernetes"
+      ],
       "architectures": [
         {
           "id": "adobe",
@@ -52,7 +64,11 @@
       "slug": "allianz",
       "logo": "/img/architectures/allianz/allianz.svg",
       "industries": [],
-      "projects": ["Argo", "Helm", "Kubernetes"],
+      "projects": [
+        "Argo",
+        "Helm",
+        "Kubernetes"
+      ],
       "architectures": [
         {
           "id": "allianz",
@@ -111,7 +127,7 @@
           "talkUrl": "https://www.youtube.com/watch?v=9GIQyQjs36o"
         }
       ],
-      "sourceAttribution": ["https://www.youtube.com/watch?v=9GIQyQjs36o"]
+      "sourceAttribution": []
     },
     {
       "id": "bloomberg",
@@ -142,8 +158,11 @@
       "id": "cern",
       "name": "CERN",
       "slug": "cern",
-      "logo": "/img/awards/cern.svg",
-      "industries": ["Public Sector", "Research"],
+      "logo": "/img/architectures/cern-scientific-computing/logo.svg",
+      "industries": [
+        "Public Sector",
+        "Research"
+      ],
       "projects": [
         "Argo",
         "Bootc",
@@ -212,7 +231,11 @@
       "name": "Flipkart",
       "slug": "flipkart",
       "logo": "/img/architectures/flipkart-chaos-engineering/logo.png",
-      "industries": ["Digital Commerce", "E-commerce", "Retail"],
+      "industries": [
+        "Digital Commerce",
+        "E-commerce",
+        "Retail"
+      ],
       "projects": [
         "Argo Workflows",
         "Helm",
@@ -266,8 +289,9 @@
       ],
       "sourceAttribution": [
         "https://www.cncf.io/announcements/2022/10/26/cloud-native-computing-foundation-recognizes-intuit-as-top-end-user/",
+        "https://www.cncf.io/announcement/2019/05/21/cloud-native-computing-foundation-announces-intuit-as-winner-of-top-end-user-award/",
         "https://www.cncf.io/case-studies/intuit/",
-        "https://www.cncf.io/announcement/2019/05/21/cloud-native-computing-foundation-announces-intuit-as-winner-of-top-end-user-award/"
+        "https://www.cncf.io/case-studies/intuit/"
       ]
     },
     {
@@ -402,8 +426,9 @@
       ],
       "sourceAttribution": [
         "https://www.cncf.io/announcements/2023/11/08/cloud-native-computing-foundation-presents-the-top-end-user-award-to-spotify/",
+        "https://www.cncf.io/announcements/2021/05/05/cloud-native-computing-foundation-grants-spotify-the-top-end-user-award/",
         "https://www.cncf.io/case-studies/spotify/",
-        "https://www.cncf.io/announcements/2021/05/05/cloud-native-computing-foundation-grants-spotify-the-top-end-user-award/"
+        "https://www.cncf.io/case-studies/spotify/"
       ]
     },
     {
@@ -411,7 +436,12 @@
       "name": "Swisscom",
       "slug": "swisscom",
       "logo": "/img/architectures/swisscom-cloud-native-telco/swisscom.png",
-      "industries": ["Cloud", "Communication", "Software", "Telecommunication"],
+      "industries": [
+        "Cloud",
+        "Communication",
+        "Software",
+        "Telecommunication"
+      ],
       "projects": [
         "ArgoCD",
         "CloudNativePG",
@@ -435,15 +465,15 @@
       ],
       "architectures": [
         {
-          "id": "swisscom-kubernetes-service",
-          "title": "A modern and sovereign Private Cloud «Kubernetes Service» for Swiss-based enterprises.",
-          "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-kubernetes-service",
-          "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d"
-        },
-        {
           "id": "swisscom-cloud-native-telco",
           "title": "End-to-End Cloud Native Telco Platform Automation at Swisscom",
           "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-cloud-native-telco",
+          "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d"
+        },
+        {
+          "id": "swisscom-kubernetes-service",
+          "title": "A modern and sovereign Private Cloud «Kubernetes Service» for Swiss-based enterprises.",
+          "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-kubernetes-service",
           "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d"
         }
       ],
@@ -484,7 +514,13 @@
       "slug": "zeiss",
       "logo": "/img/architectures/zeiss/zeiss-logo-rgb.svg",
       "industries": [],
-      "projects": ["Dapr", "Helm", "KEDA", "Kubernetes", "OpenTelemetry"],
+      "projects": [
+        "Dapr",
+        "Helm",
+        "KEDA",
+        "Kubernetes",
+        "OpenTelemetry"
+      ],
       "architectures": [
         {
           "id": "zeiss",

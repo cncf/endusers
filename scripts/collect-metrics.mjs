@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSyn
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parse } from 'yaml';
+import { makeGitHubHeaders } from './lib/github.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const work = mkdtempSync(join(tmpdir(), 'cncf-metrics-'));
@@ -81,17 +82,16 @@ function memberTimeline(dir) {
   return [{ date: new Date().toISOString().slice(0, 10), value }];
 }
 async function collectLifecycleMetrics() {
-  const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'cncf-endusers-metrics' };
-  if (process.env.GH_TOKEN) headers.Authorization = `Bearer ${process.env.GH_TOKEN}`;
+  const headers = makeGitHubHeaders(process.env.GH_TOKEN, 'cncf-endusers-metrics');
   const [issues, pulls] = await Promise.all([
-    github('https://api.github.com/repos/cncf/tab/issues?state=all&per_page=100', headers),
-    github('https://api.github.com/repos/cncf/architecture/pulls?state=all&per_page=100', headers)
+    githubAll('https://api.github.com/repos/cncf/tab/issues?state=all&per_page=100', headers),
+    githubAll('https://api.github.com/repos/cncf/architecture/pulls?state=all&per_page=100', headers)
   ]);
   const submissions = issues.filter((item) => !item.pull_request && item.labels?.some((label) => /reference-architecture/i.test(label.name)));
   const architecturePRs = [];
   for (const pull of pulls) {
     let files = [];
-    try { files = await github(`https://api.github.com/repos/cncf/architecture/pulls/${pull.number}/files?per_page=100`, headers); } catch (error) { console.warn(`Could not inspect PR #${pull.number} files (${error.message}); using title/body fallback.`); }
+    try { files = await githubAll(`https://api.github.com/repos/cncf/architecture/pulls/${pull.number}/files?per_page=100`, headers); } catch (error) { console.warn(`Could not inspect PR #${pull.number} files (${error.message}); using title/body fallback.`); }
     if (files.some((file) => file.filename.startsWith('content/en/architectures/')) || /architecture/i.test(`${pull.title} ${pull.body || ''}`)) architecturePRs.push(pull);
   }
   const now = Date.now();
@@ -120,6 +120,19 @@ async function collectLifecycleMetrics() {
       { id: 'announcement-rate', reason: 'Announcement events are not represented as structured repository data.' }
     ]
   };
+}
+async function githubAll(url, headers) {
+  const results = [];
+  let next = url;
+  while (next) {
+    const response = await fetch(next, { headers });
+    if (!response.ok) throw new Error(`GitHub API ${response.status}: ${next}`);
+    results.push(...await response.json());
+    const link = response.headers.get('link') || '';
+    const match = link.match(/<([^>]+)>;\s*rel="next"/);
+    next = match ? match[1] : null;
+  }
+  return results;
 }
 async function github(url, headers) { const response = await fetch(url, { headers }); if (!response.ok) throw new Error(`GitHub API ${response.status}: ${url}`); return response.json(); }
 function median(values) { if (!values.length) return 0; const sorted = [...values].sort((a, b) => a - b); const middle = Math.floor(sorted.length / 2); return Math.round((sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2) * 10) / 10; }

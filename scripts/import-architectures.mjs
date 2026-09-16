@@ -12,6 +12,7 @@ import {
 import { execFileSync } from 'node:child_process';
 import { join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
+import { parse as yamlParse } from 'yaml';
 
 const root = new URL('..', import.meta.url).pathname;
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
@@ -48,10 +49,13 @@ try {
   mkdirSync(recordsDir, { recursive: true });
   mkdirSync(assetsDir, { recursive: true });
 
-  const records = readdirSync(source, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => importArchitecture(entry.name, commit))
-    .sort((a, b) => a.organization.localeCompare(b.organization));
+  const records = (
+    await Promise.all(
+      readdirSync(source, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => importArchitecture(entry.name, commit)),
+    )
+  ).sort((a, b) => a.organization.localeCompare(b.organization));
 
   writeFileSync(
     join(root, 'data/architectures/catalog.json'),
@@ -62,7 +66,7 @@ try {
   rmSync(upstream, { recursive: true, force: true });
 }
 
-function importArchitecture(id, commit) {
+async function importArchitecture(id, commit) {
   const dir = join(source, id);
   const markdown = readFileSync(join(dir, 'index.md'), 'utf8');
   const { frontmatter, body } = splitFrontmatter(markdown);
@@ -99,7 +103,7 @@ function importArchitecture(id, commit) {
     }
   }
   sanitizeArchitectureAssets(join(assetsDir, id));
-  mirrorProjectAssets(body);
+  await mirrorProjectAssets(body);
   const cleanBody = cleanMarkdown(renderProjectCards(body, id), id);
   record.summary = firstParagraph(cleanBody);
   writeFileSync(
@@ -116,23 +120,7 @@ function importArchitecture(id, commit) {
 function splitFrontmatter(text) {
   if (!text.startsWith('---')) return { frontmatter: {}, body: text };
   const end = text.indexOf('\n---', 3);
-  const raw = text.slice(4, end);
-  const frontmatter = {};
-  let key;
-  for (const line of raw.split('\n')) {
-    const list = line.match(/^([\w_]+):\s*$/);
-    const value = line.match(/^([\w_]+):\s*(.*)$/);
-    const item = line.match(/^[-]\s+(.*)$/);
-    if (list) {
-      key = list[1];
-      frontmatter[key] = [];
-    } else if (item && key)
-      frontmatter[key].push(item[1].replace(/^['"]|['"]$/g, ''));
-    else if (value) {
-      key = value[1];
-      frontmatter[key] = value[2].replace(/^['"]|['"]$/g, '');
-    }
-  }
+  const frontmatter = yamlParse(text.slice(4, end)) ?? {};
   return { frontmatter, body: text.slice(end + 4).trim() };
 }
 
@@ -188,7 +176,7 @@ function cleanMarkdown(body, id) {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
-function mirrorProjectAssets(body) {
+async function mirrorProjectAssets(body) {
   for (const [, project, file] of body.matchAll(
     /https?:\/\/raw\.githubusercontent\.com\/cncf\/artwork\/main\/projects\/([^/]+)\/icon\/color\/([^/\s)]+)/g,
   )) {
@@ -198,12 +186,11 @@ function mirrorProjectAssets(body) {
       `${project}-${file}`,
     );
     mkdirSync(join(destination, '..'), { recursive: true });
+    const url = `https://raw.githubusercontent.com/cncf/artwork/main/projects/${project}/icon/color/${file}`;
     try {
-      const content = execFileSync('curl', [
-        '-fsSL',
-        `https://raw.githubusercontent.com/cncf/artwork/main/projects/${project}/icon/color/${file}`,
-      ]);
-      writeFileSync(destination, content);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      writeFileSync(destination, Buffer.from(await response.arrayBuffer()));
     } catch {
       console.warn(`Could not mirror CNCF project asset: ${project}/${file}`);
     }

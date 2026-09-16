@@ -2,10 +2,38 @@ import React from 'react';
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import catalog from '@site/data/architectures/catalog.json';
+import metrics from '@site/data/metrics.json';
 import ArchitectureFilters, {
   useArchitectureFilters,
 } from '@site/src/components/ArchitectureFilters';
 import styles from './styles.module.css';
+
+function SyncStatus() {
+  const architectures = metrics?.sources?.architectures;
+  if (!architectures?.revision) return null;
+  const shortRevision = architectures.revision.slice(0, 7);
+  const commitUrl = `${architectures.repository}/commit/${architectures.revision}`;
+  const syncDate = metrics.generatedAt
+    ? new Date(metrics.generatedAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : null;
+  return (
+    <p className={styles.syncStatus}>
+      Last synced from{' '}
+      <a href={architectures.repository} target="_blank" rel="noreferrer">
+        cncf/architecture
+      </a>{' '}
+      @{' '}
+      <a href={commitUrl} target="_blank" rel="noreferrer">
+        <code>{shortRevision}</code>
+      </a>
+      {syncDate ? ` on ${syncDate}` : ''}.
+    </p>
+  );
+}
 
 function initials(name) {
   return name
@@ -70,6 +98,7 @@ export default function ReferenceArchitectures() {
       <p className={styles.catalogMeta}>
         {catalog.length} real-world architecture reports from CNCF end users.
       </p>
+      <SyncStatus />
       <ArchitectureFilters
         options={options}
         filters={filters}
