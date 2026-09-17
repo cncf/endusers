@@ -13,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parse as yamlParse } from 'yaml';
+import { projectAsset } from './lib/project-asset.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
@@ -150,9 +151,8 @@ function renderProjectCards(body, id) {
         .replace(/^\s*[-*]\s*/gm, '')
         .replace(/\s+/g, ' ')
         .trim();
-      const logoProp = logo
-        ? ` logo=${JSON.stringify(projectAsset(logo))}`
-        : '';
+      const localLogo = logo ? projectAsset(logo) : null;
+      const logoProp = localLogo ? ` logo=${JSON.stringify(localLogo)}` : '';
       return `<CNCFProjectCard name=${JSON.stringify(name)} href=${JSON.stringify(href)}${logoProp}${since ? ` since=${JSON.stringify(since)}` : ''}${version ? ` version=${JSON.stringify(version)}` : ''}${description ? ` description=${JSON.stringify(description)}` : ''} />`;
     },
   );
@@ -163,7 +163,7 @@ function cleanMarkdown(body, id) {
     .replace(/{{<\/?[^>]+>}}/g, '')
     .replace(/!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g, (_, alt, url) => {
       const asset = projectAsset(url);
-      return asset.startsWith('/img/')
+      return asset && asset.startsWith('/img/')
         ? `![${alt}](${asset})`
         : `[${alt}](${url})`;
     })
@@ -195,10 +195,6 @@ async function mirrorProjectAssets(body) {
       console.warn(`Could not mirror CNCF project asset: ${project}/${file}`);
     }
   }
-}
-function projectAsset(url) {
-  const match = url.match(/projects\/([^/]+)\/icon\/color\/([^/]+)$/);
-  return match ? `/img/cncf-projects/${match[1]}-${match[2]}` : url;
 }
 function firstParagraph(body) {
   const paragraph = body.split(/\n\s*\n/).find((part) => {

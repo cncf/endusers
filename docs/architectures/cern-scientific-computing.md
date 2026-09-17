@@ -13,7 +13,7 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
   <CNCFProjectCard name="Bootc" href="https://www.cncf.io/projects/bootc/" logo="/img/cncf-projects/bootc-bootc-icon-color.svg" description="Bootc provides transactional, in-place operating system images and updates using OCI/Docker container images. Bootc is used to build the minimal base images for our cluster nodes." />
 
-  <CNCFProjectCard name="ContainerSSH" href="https://www.cncf.io/projects/containerssh/" logo="https://raw.githubusercontent.com/cncf/artwork/main/projects/containerssh/icon/containerssh-icon-dark.svg" description="ContainerSSH offers a SSH frontend to containers/pods running on Kubernetes clusters. Used to expose SSH as a way to access existing sessions in the cluster, with multiple authentication mechanisms offered (Kerberos, OIDC/OAuth2)." />
+  <CNCFProjectCard name="ContainerSSH" href="https://www.cncf.io/projects/containerssh/" description="ContainerSSH offers a SSH frontend to containers/pods running on Kubernetes clusters. Used to expose SSH as a way to access existing sessions in the cluster, with multiple authentication mechanisms offered (Kerberos, OIDC/OAuth2)." />
 
   <CNCFProjectCard name="Longhorn" href="https://www.cncf.io/projects/longhorn/" logo="/img/cncf-projects/longhorn-longhorn-icon-color.svg" description="Longhorn offers cloud native distributed block storage for Kubernetes. Used to offer in-cluster shared storage to users, with individual and team getting dedicated volumes with read-write-multi access and automated backups." />
 
@@ -25,7 +25,7 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
   <CNCFProjectCard name="Kyverno" href="https://www.cncf.io/projects/kyverno/" logo="/img/cncf-projects/kyverno-kyverno-icon-color.svg" description="Kyverno offers policy as code with support for YAML and CEL based policies. Used as a key component for policy enforcement and mutating workloads according to those policies, adding required settings to expose storage systems, set resources based on GPUs, etc." />
 
-  <CNCFProjectCard name="Kueue" href="https://www.cncf.io/projects/kueue/" logo="https://raw.githubusercontent.com/kubernetes-sigs/kueue/main/site/static/images/logo.svg" description="Kueue is a kubernetes-native system offering advanced scheduling capabilities and quota management. Used to provide job queues and quotas, gang scheduling, fair sharing, among other capabilities." />
+  <CNCFProjectCard name="Kueue" href="https://www.cncf.io/projects/kueue/" description="Kueue is a kubernetes-native system offering advanced scheduling capabilities and quota management. Used to provide job queues and quotas, gang scheduling, fair sharing, among other capabilities." />
 
   <CNCFProjectCard name="Prometheus" href="https://www.cncf.io/projects/prometheus/" logo="/img/cncf-projects/prometheus-prometheus-icon-color.svg" description="Prometheus gathers the metrics and insights from all components in the cluster. Used for system and service metrics as well as providing individual workload performance insights on cpu, memory, power and other areas." />
 
