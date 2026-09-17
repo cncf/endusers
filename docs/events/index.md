@@ -46,7 +46,7 @@ The **End User Reception** was a networking event for members of the CNCF End Us
     height="525"
   />
   <figcaption>
-    Michelin receiving the <a href="/awards">2025 Top End User Award</a> at KubeCon +
+    Michelin receiving the <a href="/community/awards">2025 Top End User Award</a> at KubeCon +
     CloudNativeCon North America, Atlanta.
   </figcaption>
 </figure>

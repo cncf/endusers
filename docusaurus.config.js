@@ -179,17 +179,17 @@ const config = {
             label: 'Community',
           },
           {
-            to: '/community/end-user-community#projects-born-at-end-user-organizations',
+            to: '/community/#projects-born-at-end-user-organizations',
             label: 'Projects from end users',
             position: 'left',
           },
           {
-            to: '/members/',
+            to: '/community/members',
             label: 'Members',
             position: 'left',
           },
           {
-            to: '/awards/',
+            to: '/community/awards',
             label: 'Awards',
             position: 'left',
           },

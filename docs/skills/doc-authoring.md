@@ -21,12 +21,13 @@ Guidelines for technical documentation within this repository.
 - `docs/practitioners/`: The site homepage (slug `/`). Single page, no sidebars.
 - `docs/architectures/`: Reference architecture catalog. Generated pages are imported
   by `npm run import:architectures`; do not hand-edit imported architecture pages.
-- `docs/community/`: The End User TAB, End User Groups, and engagement pathways.
-- `docs/awards/`: The End User Awards timeline, rendered from `data/awards.json`.
+- `docs/community/`: Community governance, the Technical Advisory Board, User
+  Groups, Awards, and Members — plus engagement pathways.
 - `docs/metrics/`: The metrics dashboard, rendered from `data/metrics.json`.
 - `docs/events/`: End user events at KubeCon + CloudNativeCon.
 - Moved pages keep an `unlisted: true` stub at the old slug pointing to the new home
-  (see `docs/resources/index.md` and `docs/community/awards.md`).
+  (see `docs/resources/index.md`, `docs/awards/index.md`, `docs/members/index.md`,
+  and `docs/community/end-user-community.md`).
 
 ## Constraints
 

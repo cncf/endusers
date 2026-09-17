@@ -36,7 +36,7 @@ Never assert counts or winner lists from memory.
   `scripts/collect-metrics.mjs` instead.
 - `/architectures` content is imported from cncf/architecture via
   `npm run import:architectures`.
-- `/awards` is rendered from `data/awards.json`; winners are data entries, not pages.
+- `/community/awards` is rendered from `data/awards.json`; winners are data entries, not pages.
 
 ## Build
 

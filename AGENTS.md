@@ -54,5 +54,5 @@ The `/metrics` page is generated from `data/metrics.json`. Refresh it with `npm 
 
 ## Awards
 
-The `/awards` page is generated from `data/awards.json`. Winners are data entries, not
+The `/community/awards` page is generated from `data/awards.json`. Winners are data entries, not
 hand-built pages. Verify each entry against its cncf.io announcement link.
