@@ -122,6 +122,7 @@ async function collectLifecycleMetrics() {
   };
 }
 async function githubAll(url, headers) {
+  const origin = new URL(url).origin;
   const results = [];
   let next = url;
   while (next) {
@@ -130,9 +131,27 @@ async function githubAll(url, headers) {
     results.push(...await response.json());
     const link = response.headers.get('link') || '';
     const match = link.match(/<([^>]+)>;\s*rel="next"/);
-    next = match ? match[1] : null;
+    next = match ? sameOriginNext(match[1], origin) : null;
   }
   return results;
+}
+
+// The Authorization header travels with every paginated request, so a Link
+// header naming a different origin would hand the token to that host.  Only
+// continue paginating within the origin the first request was sent to.
+function sameOriginNext(candidate, origin) {
+  let parsed;
+  try {
+    parsed = new URL(candidate, origin);
+  } catch {
+    console.warn(`Ignoring unparseable Link rel="next" target: ${candidate}`);
+    return null;
+  }
+  if (parsed.origin !== origin) {
+    console.warn(`Ignoring cross-origin Link rel="next" target: ${parsed.origin}`);
+    return null;
+  }
+  return parsed.toString();
 }
 async function github(url, headers) { const response = await fetch(url, { headers }); if (!response.ok) throw new Error(`GitHub API ${response.status}: ${url}`); return response.json(); }
 function median(values) { if (!values.length) return 0; const sorted = [...values].sort((a, b) => a - b); const middle = Math.floor(sorted.length / 2); return Math.round((sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2) * 10) / 10; }
