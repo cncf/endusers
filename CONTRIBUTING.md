@@ -92,7 +92,11 @@ game: mention in your pull request which one you picked up.
 1. Fork the repository and create a branch from `main`.
 2. Make your change and run the relevant validation script.
 3. Verify with `npm run build` before opening a PR.
-4. Open a pull request against `main` describing what changed and why.
+4. Commit with a DCO sign-off: `git commit -s`. CI enforces this and will fail
+   the PR if any commit is missing a `Signed-off-by` trailer. If you forget,
+   fix it before pushing (or after, then force-push) with
+   `git rebase --signoff main`.
+5. Open a pull request against `main` describing what changed and why.
 
 ## Agent contributors
 
