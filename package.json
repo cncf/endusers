@@ -56,6 +56,7 @@
     "validate:case-studies": "node scripts/validate-case-studies.mjs",
     "collect:radar-reports": "node scripts/collect-radar-reports.mjs",
     "validate:radar-reports": "node scripts/validate-radar-reports.mjs",
+    "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
     "test:unit": "node --test"
   },
   "repository": {
