@@ -45,13 +45,10 @@
 .profileHeading h3 { font-size: clamp(1.5rem, 4vw, 2.25rem); margin: 0; text-wrap: balance; }
 .profileRole { font-size: 0.95rem; font-weight: 700; margin: 0.5rem 0 0; }
 .location { color: var(--ifm-color-emphasis-700); font-size: 0.8rem; margin: 0.25rem 0 0; }
+.seat { color: var(--ifm-color-emphasis-700); display: block; font-size: 0.8rem; margin: 0.15rem 0 0; font-style: italic; }
 .profileBody { padding: 1.5rem 2rem 2rem; }
 .bio { font-size: 1.05rem; line-height: 1.6; margin: 0; max-width: 55ch; }
 .bioMuted, .sourceNote { color: var(--ifm-color-emphasis-700); font-size: 0.85rem; }
-.stats { border-bottom: 1px solid var(--ifm-color-emphasis-200); border-top: 1px solid var(--ifm-color-emphasis-200); display: flex; gap: 2rem; margin: 1.5rem 0; padding: 1rem 0; }
-.stats div { display: flex; flex-direction: column; }
-.stats strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
-.stats span { color: var(--ifm-color-emphasis-700); font-size: 0.75rem; }
 .profileLinks { display: flex; flex-wrap: wrap; gap: 0.65rem; }
 .profileLinks a { border: 1px solid var(--ifm-color-emphasis-300); display: inline-flex; gap: 0.5rem; padding: 0.5rem 0.7rem; }
 .profileLinks a:hover { border-color: var(--ifm-color-primary); text-decoration: none; }
