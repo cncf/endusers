@@ -13,6 +13,12 @@ import { execFileSync } from 'node:child_process';
 import { join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parse as yamlParse } from 'yaml';
+import {
+  artworkMirrorPath,
+  artworkPath,
+  artworkUrls,
+  projectAsset,
+} from './lib/project-assets.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
@@ -150,9 +156,8 @@ function renderProjectCards(body, id) {
         .replace(/^\s*[-*]\s*/gm, '')
         .replace(/\s+/g, ' ')
         .trim();
-      const logoProp = logo
-        ? ` logo=${JSON.stringify(projectAsset(logo))}`
-        : '';
+      const localLogo = logo ? projectAsset(logo) : null;
+      const logoProp = localLogo ? ` logo=${JSON.stringify(localLogo)}` : '';
       return `<CNCFProjectCard name=${JSON.stringify(name)} href=${JSON.stringify(href)}${logoProp}${since ? ` since=${JSON.stringify(since)}` : ''}${version ? ` version=${JSON.stringify(version)}` : ''}${description ? ` description=${JSON.stringify(description)}` : ''} />`;
     },
   );
@@ -163,9 +168,7 @@ function cleanMarkdown(body, id) {
     .replace(/{{<\/?[^>]+>}}/g, '')
     .replace(/!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g, (_, alt, url) => {
       const asset = projectAsset(url);
-      return asset.startsWith('/img/')
-        ? `![${alt}](${asset})`
-        : `[${alt}](${url})`;
+      return asset ? `![${alt}](${asset})` : `[${alt}](${url})`;
     })
     .replace(/\[\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\]/g, '[$1]($2)')
     .replace(
@@ -177,28 +180,20 @@ function cleanMarkdown(body, id) {
     .trim();
 }
 async function mirrorProjectAssets(body) {
-  for (const [, project, file] of body.matchAll(
-    /https?:\/\/raw\.githubusercontent\.com\/cncf\/artwork\/main\/projects\/([^/]+)\/icon\/color\/([^/\s)]+)/g,
-  )) {
-    const destination = join(
-      root,
-      'static/img/cncf-projects',
-      `${project}-${file}`,
-    );
+  for (const url of artworkUrls(body)) {
+    const path = artworkPath(url);
+    const relativeDestination = artworkMirrorPath(path);
+    if (!relativeDestination) continue;
+    const destination = join(root, relativeDestination);
     mkdirSync(join(destination, '..'), { recursive: true });
-    const url = `https://raw.githubusercontent.com/cncf/artwork/main/projects/${project}/icon/color/${file}`;
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       writeFileSync(destination, Buffer.from(await response.arrayBuffer()));
     } catch {
-      console.warn(`Could not mirror CNCF project asset: ${project}/${file}`);
+      console.warn(`Could not mirror CNCF project asset: ${path}`);
     }
   }
-}
-function projectAsset(url) {
-  const match = url.match(/projects\/([^/]+)\/icon\/color\/([^/]+)$/);
-  return match ? `/img/cncf-projects/${match[1]}-${match[2]}` : url;
 }
 function firstParagraph(body) {
   const paragraph = body.split(/\n\s*\n/).find((part) => {

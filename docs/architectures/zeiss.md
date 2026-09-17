@@ -14,7 +14,7 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
   <CNCFProjectCard name="Kubernetes" href="https://www.cncf.io/projects/kubernetes/" logo="/img/cncf-projects/kubernetes-kubernetes-icon-color.svg" since="2020" version="1.32.3" description="- Hosts > 200 microservices supporting order fulfillment processes on managed Kubernetes. Provides the core compute platform for containerized services." />
 
-  <CNCFProjectCard name="Dapr" href="https://www.cncf.io/projects/dapr/" logo="https://raw.githubusercontent.com/cncf/artwork/main/projects/dapr/stacked/color/dapr-stacked-color.svg" since="2020" version="1.17.0" description="- Provides common building blocks like service invocation, pub/sub, and state management across microservices; vendor-neutral abstractions enable portability across cloud providers." />
+  <CNCFProjectCard name="Dapr" href="https://www.cncf.io/projects/dapr/" logo="/img/cncf-projects/dapr-dapr-stacked-color.svg" since="2020" version="1.17.0" description="- Provides common building blocks like service invocation, pub/sub, and state management across microservices; vendor-neutral abstractions enable portability across cloud providers." />
 
   <CNCFProjectCard name="KEDA" href="https://www.cncf.io/projects/keda/" logo="/img/cncf-projects/keda-keda-icon-color.svg" since="2021/2022" version="2.19.0" description="- Event-driven scaling. KEDA acts as an event-driven scaler; examples of triggers include message-broker queue depth and resource utilization." />
 
