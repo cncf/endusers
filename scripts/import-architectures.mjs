@@ -92,17 +92,24 @@ async function importArchitecture(id, commit) {
   };
 
   const imageDir = join(dir, 'images');
+  const destDir = join(assetsDir, id);
   if (existsSync(imageDir)) {
     for (const file of walkFiles(imageDir)) {
-      const destination = join(assetsDir, id, relative(imageDir, file));
+      const destination = join(destDir, relative(imageDir, file));
       mkdirSync(join(destination, '..'), { recursive: true });
       cpSync(file, destination);
+    }
+  }
+  sanitizeArchitectureAssets(destDir);
+  // Build the asset list from what actually landed on disk, since
+  // sanitizeArchitectureAssets may rename raster-embedded SVGs to PNGs.
+  if (existsSync(destDir)) {
+    for (const file of walkFiles(destDir)) {
       record.assets.push(
-        `/img/architectures/${id}/${relative(imageDir, file).replaceAll('\\', '/')}`,
+        `/img/architectures/${id}/${relative(destDir, file).replaceAll('\\', '/')}`,
       );
     }
   }
-  sanitizeArchitectureAssets(join(assetsDir, id));
   await mirrorProjectAssets(body);
   const cleanBody = cleanMarkdown(renderProjectCards(body, id), id);
   record.summary = firstParagraph(cleanBody);
