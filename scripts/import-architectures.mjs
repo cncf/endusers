@@ -97,14 +97,18 @@ async function importArchitecture(id, commit) {
       const destination = join(assetsDir, id, relative(imageDir, file));
       mkdirSync(join(destination, '..'), { recursive: true });
       cpSync(file, destination);
+    }
+  }
+  const renamed = sanitizeArchitectureAssets(join(assetsDir, id));
+  if (existsSync(join(assetsDir, id))) {
+    for (const file of walkFiles(join(assetsDir, id))) {
       record.assets.push(
-        `/img/architectures/${id}/${relative(imageDir, file).replaceAll('\\', '/')}`,
+        `/img/architectures/${id}/${relative(join(assetsDir, id), file).replaceAll('\\', '/')}`,
       );
     }
   }
-  sanitizeArchitectureAssets(join(assetsDir, id));
   await mirrorProjectAssets(body);
-  const cleanBody = cleanMarkdown(renderProjectCards(body, id), id);
+  const cleanBody = cleanMarkdown(renderProjectCards(body, id), id, renamed);
   record.summary = firstParagraph(cleanBody);
   writeFileSync(
     join(recordsDir, `${id}.json`),
@@ -157,7 +161,7 @@ function renderProjectCards(body, id) {
     },
   );
 }
-function cleanMarkdown(body, id) {
+function cleanMarkdown(body, id, renamed = new Map()) {
   return body
     .replace(/{{<[\s\S]*?>}}/g, '')
     .replace(/{{<\/?[^>]+>}}/g, '')
@@ -170,7 +174,8 @@ function cleanMarkdown(body, id) {
     .replace(/\[\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\]/g, '[$1]($2)')
     .replace(
       /!\[([^\]]*)\]\((?!(?:https?:)?\/\/)(?:\.\/)?(?:images\/)?([^/][^\)]*)\)/g,
-      `![$1](/img/architectures/${id}/$2)`,
+      (_, alt, path) =>
+        `![${alt}](/img/architectures/${id}/${renamed.get(path) ?? path})`,
     )
     .replace(/<>/g, '&lt;&gt;')
     .replace(/\n{3,}/g, '\n\n')
@@ -218,7 +223,8 @@ function walkFiles(dir) {
 }
 
 function sanitizeArchitectureAssets(dir) {
-  if (!existsSync(dir)) return;
+  const renamed = new Map();
+  if (!existsSync(dir)) return renamed;
   for (const file of walkFiles(dir)) {
     if (!file.endsWith('.svg')) continue;
     const original = readFileSync(file, 'utf8');
@@ -255,6 +261,10 @@ function sanitizeArchitectureAssets(dir) {
       try {
         execFileSync('rsvg-convert', ['-w', '1600', file, '-o', pngPath]);
         rmSync(file);
+        renamed.set(
+          relative(dir, file).replaceAll('\\', '/'),
+          relative(dir, pngPath).replaceAll('\\', '/'),
+        );
         console.log(
           `Converted raster-embedded SVG to PNG: ${relative(join(root, 'static'), pngPath)}`,
         );
@@ -265,4 +275,5 @@ function sanitizeArchitectureAssets(dir) {
       }
     }
   }
+  return renamed;
 }
