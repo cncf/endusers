@@ -24,7 +24,7 @@ const config = {
 
   // Set the production url of your site here.
   // Override with SITE_URL/BASE_URL for non-production deployments such as
-  // GitHub Pages previews (e.g. SITE_URL=https://castrojo.github.io BASE_URL=/endusers/).
+  // GitHub Pages previews (e.g. SITE_URL=https://cncf.github.io BASE_URL=/endusers/).
   url: siteUrl,
   baseUrl,
 
@@ -97,7 +97,7 @@ const config = {
         docs: {
           routeBasePath: '/', // Serve the docs at the site's root
           sidebarPath: './sidebars.js',
-          editUrl: 'https://github.com/castrojo/endusers/tree/main',
+          editUrl: 'https://github.com/cncf/endusers/tree/main',
         },
         blog: {
           showReadingTime: true,
@@ -105,7 +105,7 @@ const config = {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          editUrl: 'https://github.com/castrojo/endusers/tree/main/',
+          editUrl: 'https://github.com/cncf/endusers/tree/main/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
