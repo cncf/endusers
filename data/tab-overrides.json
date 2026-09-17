@@ -1,0 +1,11 @@
+{
+  "_comment": "Curated supplemental identity fields for TAB members that are NOT present in cncf/tab's gov.yaml (linkedin/twitter handles, or a github handle when gov.yaml omits one). Matched by github handle when available, otherwise by exact name. `company` is included only to detect drift versus gov.yaml (a mismatch is logged, gov.yaml always wins) — it is never used to override the authoritative value.",
+  "overrides": [
+    { "match": { "github": "rochaporto" }, "linkedin": "ricardo-rocha-739aa718", "twitter": "ahcorporto" },
+    { "match": { "github": "jrsapi" }, "linkedin": "josephrsandoval" },
+    { "match": { "github": "ma-cvs" }, "linkedin": "michaelamundson" },
+    { "match": { "github": "gnawux" }, "linkedin": "gnawux", "twitter": "gnawux" },
+    { "match": { "name": "Ben Somogyi" }, "github": "bsomogyi" },
+    { "match": { "github": "kgamanji" }, "linkedin": "katie-gamanji", "twitter": "k_gamanji" }
+  ]
+}

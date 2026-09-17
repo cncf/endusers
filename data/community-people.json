@@ -1,11 +1,16 @@
 {
-  "fetchedAt": "2026-07-27T03:55:56.226Z",
+  "fetchedAt": "2026-09-16T17:36:53.932Z",
+  "tabSource": {
+    "repo": "cncf/tab",
+    "path": "gov.yaml",
+    "revision": "635666d5c54b55262035095b4d20096558969524"
+  },
   "people": {
     "tab": [
       {
         "name": "Ricardo Rocha",
         "company": "CERN",
-        "role": "TAB Chair",
+        "role": "Chair",
         "bio": "Think Positive, Flaps Negative\r\n\r\nComputing Engineer @ CERN",
         "location": "Geneva, Switzerland ",
         "image": "https://avatars.githubusercontent.com/u/52753?v=4",
@@ -14,13 +19,14 @@
         "twitter": "ahcorporto",
         "blog": "",
         "publicRepos": 100,
-        "followers": 107,
-        "profileUpdatedAt": "2026-04-28T09:57:35Z"
+        "followers": 106,
+        "profileUpdatedAt": "2026-08-04T12:01:03Z",
+        "seat": "At-large Seat"
       },
       {
         "name": "Joseph Sandoval",
-        "company": "adobe",
-        "role": "TAB Vice Chair",
+        "company": "Adobe Inc",
+        "role": "Vice Chair",
         "bio": "Principal PM at Adobe · CNCF TOC · CNCF End User TAB Vice Chair · Former KubeCon Co-Chair · Cloud native, platform engineering, AI infrastructure",
         "location": "United States",
         "image": "https://avatars.githubusercontent.com/u/5437766?v=4",
@@ -30,26 +36,28 @@
         "blog": "",
         "publicRepos": 18,
         "followers": 25,
-        "profileUpdatedAt": "2026-07-07T23:14:34Z"
+        "profileUpdatedAt": "2026-09-01T04:12:53Z",
+        "seat": "Silver Member Seat"
       },
       {
-        "name": "Ahmed Bebars",
-        "company": "Principal Engineer @nytimes",
-        "role": null,
-        "bio": "hmmm ... I am sure I am doing something but it's hard to figure out what it exactly 😂 ",
-        "location": "United States",
-        "image": "https://avatars.githubusercontent.com/u/1381372?v=4",
-        "github": "abebars",
+        "name": "Kenta Tada",
+        "company": "Toyota",
+        "role": "APAC Chair",
+        "bio": "Software Engineer",
+        "location": "Yokohama, Japan",
+        "image": "https://avatars.githubusercontent.com/u/40852880?v=4",
+        "github": "KentaTada",
         "linkedin": null,
         "twitter": null,
-        "blog": "abebars.io",
-        "publicRepos": 49,
-        "followers": 40,
-        "profileUpdatedAt": "2026-07-23T13:43:14Z"
+        "blog": "",
+        "publicRepos": 20,
+        "followers": 29,
+        "profileUpdatedAt": "2026-08-26T04:50:53Z",
+        "seat": "Silver Member Seat"
       },
       {
         "name": "Alolita Sharma",
-        "company": "OpenTelemetry",
+        "company": "Apple",
         "role": null,
         "bio": "Open Source, Open Standards, \r\nAIML Observability, Search, Infra, i18n \r\nOpenTelemetry GC, CNCF Board & EU-TAB\r\nAlum: CNCF O11y TAG co-chair, Unicode, OSI",
         "location": "Silicon Valley",
@@ -59,8 +67,57 @@
         "twitter": null,
         "blog": "https://www.alolitasharma.com",
         "publicRepos": 34,
-        "followers": 328,
-        "profileUpdatedAt": "2025-12-22T05:37:21Z"
+        "followers": 331,
+        "profileUpdatedAt": "2025-12-22T05:37:21Z",
+        "seat": "Platinum Member Seat"
+      },
+      {
+        "name": "Michael Amundson",
+        "company": "CVS Health",
+        "role": null,
+        "bio": "",
+        "location": "",
+        "image": "https://avatars.githubusercontent.com/u/141959897?v=4",
+        "github": "ma-cvs",
+        "linkedin": "michaelamundson",
+        "twitter": null,
+        "blog": "",
+        "publicRepos": 1,
+        "followers": 0,
+        "profileUpdatedAt": "2025-12-02T14:39:15Z",
+        "seat": "Platinum Member Seat"
+      },
+      {
+        "name": "Juliano Martinez",
+        "company": "Adyen",
+        "role": null,
+        "bio": "",
+        "location": "Madrid, Spain",
+        "image": "https://avatars.githubusercontent.com/u/52380?v=4",
+        "github": "ncode",
+        "linkedin": null,
+        "twitter": null,
+        "blog": "http://martinez.io",
+        "publicRepos": 55,
+        "followers": 112,
+        "profileUpdatedAt": "2026-09-06T18:48:50Z",
+        "seat": "Platinum Member Seat"
+      },
+      {
+        "name": "Xu Wang",
+        "company": "Ant Group",
+        "role": null,
+        "bio": "Being responsible for Ant Group Open Source & Ant Group Container Infrastructure Team; A co-launcher of OIF Kata Containers; ",
+        "location": "Beijing, China",
+        "image": "https://avatars.githubusercontent.com/u/54124?v=4",
+        "github": "gnawux",
+        "linkedin": "gnawux",
+        "twitter": "gnawux",
+        "blog": "http://wangxu.me",
+        "publicRepos": 52,
+        "followers": 327,
+        "profileUpdatedAt": "2026-09-15T09:35:24Z",
+        "seat": "Gold Member Seat"
       },
       {
         "name": "Ben Somogyi",
@@ -75,7 +132,40 @@
         "blog": "",
         "publicRepos": 1,
         "followers": 4,
-        "profileUpdatedAt": "2018-10-31T18:37:51Z"
+        "profileUpdatedAt": "2018-10-31T18:37:51Z",
+        "seat": "Silver Member Seat"
+      },
+      {
+        "name": "Ahmed Bebars",
+        "company": "The New York Times",
+        "role": null,
+        "bio": "hmmm ... I am sure I am doing something but it's hard to figure out what it exactly 😂 ",
+        "location": "United States",
+        "image": "https://avatars.githubusercontent.com/u/1381372?v=4",
+        "github": "abebars",
+        "linkedin": null,
+        "twitter": null,
+        "blog": "abebars.io",
+        "publicRepos": 50,
+        "followers": 44,
+        "profileUpdatedAt": "2026-09-13T19:58:24Z",
+        "seat": "At-large Seat"
+      },
+      {
+        "name": "Mike Bowen",
+        "company": "Blackrock",
+        "role": null,
+        "bio": "",
+        "location": "South Carolina",
+        "image": "https://avatars.githubusercontent.com/u/29655728?v=4",
+        "github": "michael-bowen-sc",
+        "linkedin": null,
+        "twitter": null,
+        "blog": "",
+        "publicRepos": 83,
+        "followers": 23,
+        "profileUpdatedAt": "2026-09-11T16:11:18Z",
+        "seat": "At-large Seat"
       },
       {
         "name": "Chad Beaudin",
@@ -88,13 +178,14 @@
         "linkedin": null,
         "twitter": null,
         "blog": "",
-        "publicRepos": 13,
-        "followers": 12,
-        "profileUpdatedAt": "2026-07-01T14:13:57Z"
+        "publicRepos": 14,
+        "followers": 11,
+        "profileUpdatedAt": "2026-08-18T02:59:26Z",
+        "seat": "TOC Appointed Seat"
       },
       {
         "name": "Katie Gamanji",
-        "company": "",
+        "company": "Apple",
         "role": null,
         "bio": "Sailing open-source tooling and supporting the community\r\n",
         "location": "London",
@@ -104,74 +195,15 @@
         "twitter": "k_gamanji",
         "blog": "https://kgamanji.medium.com/",
         "publicRepos": 24,
-        "followers": 343,
-        "profileUpdatedAt": "2026-07-20T14:24:05Z"
-      },
-      {
-        "name": "Kenta Tada",
-        "company": "Toyota",
-        "role": null,
-        "bio": "Software Engineer",
-        "location": "Yokohama, Japan",
-        "image": "https://avatars.githubusercontent.com/u/40852880?v=4",
-        "github": "KentaTada",
-        "linkedin": null,
-        "twitter": null,
-        "blog": "",
-        "publicRepos": 20,
-        "followers": 29,
-        "profileUpdatedAt": "2026-06-30T12:01:02Z"
-      },
-      {
-        "name": "Michael Amundson",
-        "company": "CVS Health",
-        "role": null,
-        "bio": "",
-        "location": "",
-        "image": "https://raw.githubusercontent.com/cncf/people/main/images/michael-amundson-headshot.jpg",
-        "github": null,
-        "linkedin": "michaelamundson",
-        "twitter": null,
-        "blog": "",
-        "publicRepos": 0,
-        "followers": 0,
-        "profileUpdatedAt": null
-      },
-      {
-        "name": "MIchael Bowen",
-        "company": "BlackRock",
-        "role": null,
-        "bio": "",
-        "location": "South Carolina",
-        "image": "https://avatars.githubusercontent.com/u/29655728?v=4",
-        "github": "michael-bowen-sc",
-        "linkedin": null,
-        "twitter": null,
-        "blog": "",
-        "publicRepos": 82,
-        "followers": 23,
-        "profileUpdatedAt": "2026-07-11T12:22:56Z"
-      },
-      {
-        "name": "Xu Wang",
-        "company": "antgroup ( @alipay ) @kata-containers  @hyperhq",
-        "role": null,
-        "bio": "Being responsible for Ant Group Open Source & Ant Group Container Infrastructure Team; A co-launcher of OIF Kata Containers; ",
-        "location": "Beijing, China",
-        "image": "https://avatars.githubusercontent.com/u/54124?v=4",
-        "github": "gnawux",
-        "linkedin": "gnawux",
-        "twitter": "gnawux",
-        "blog": "http://wangxu.me",
-        "publicRepos": 51,
-        "followers": 323,
-        "profileUpdatedAt": "2026-07-20T12:49:38Z"
+        "followers": 342,
+        "profileUpdatedAt": "2026-09-01T11:44:37Z",
+        "seat": "TOC Appointed Seat"
       }
     ],
     "staff": [
       {
         "name": "Jorge O. Castro",
-        "company": "Cloud Native Computing Foundation",
+        "company": "CNCF",
         "role": "Developer Relations",
         "bio": "Developer Relations @ Cloud Native Computing Foundation (cncf.io)\r\n\r\nEmeritus: VMware • Heptio •  Kubernetes • Canonical • Ubuntu  • Stacklet • Cloud Custodian",
         "location": "Ann Arbor, MI",
@@ -180,13 +212,14 @@
         "linkedin": "jorgecastro",
         "twitter": null,
         "blog": "https://ypsidanger.com",
-        "publicRepos": 218,
-        "followers": 880,
-        "profileUpdatedAt": "2026-06-20T21:10:58Z"
+        "publicRepos": 233,
+        "followers": 914,
+        "profileUpdatedAt": "2026-09-10T23:50:40Z",
+        "seat": null
       },
       {
         "name": "Joanna Lee",
-        "company": "CNCF / The Linux Foundation",
+        "company": "CNCF",
         "role": "VP of Strategic Programs and Legal",
         "bio": "",
         "location": "Portland, Oregon, U.S.",
@@ -197,11 +230,12 @@
         "blog": "",
         "publicRepos": 8,
         "followers": 11,
-        "profileUpdatedAt": "2026-06-24T04:34:30Z"
+        "profileUpdatedAt": "2026-09-14T15:59:51Z",
+        "seat": null
       },
       {
         "name": "Bob Killen",
-        "company": "cncf",
+        "company": "CNCF",
         "role": "Senior Technical Program Manager",
         "bio": "Kubernetes & OSS Advocate | CNCF cat wrangler",
         "location": "Minneapolis, MN",
@@ -210,13 +244,14 @@
         "linkedin": "mrbobbytables",
         "twitter": null,
         "blog": "https://mrbobbytabl.es",
-        "publicRepos": 142,
-        "followers": 516,
-        "profileUpdatedAt": "2026-06-17T14:39:53Z"
+        "publicRepos": 168,
+        "followers": 515,
+        "profileUpdatedAt": "2026-09-02T19:52:54Z",
+        "seat": null
       },
       {
         "name": "Taylor Waggoner",
-        "company": "Cloud Native Computing Foundation",
+        "company": "CNCF",
         "role": "Program Manager",
         "bio": "",
         "location": "",
@@ -227,7 +262,8 @@
         "blog": "",
         "publicRepos": 13,
         "followers": 46,
-        "profileUpdatedAt": "2026-01-06T19:04:59Z"
+        "profileUpdatedAt": "2026-01-06T19:04:59Z",
+        "seat": null
       },
       {
         "name": "Wendi West",
@@ -242,7 +278,8 @@
         "blog": "",
         "publicRepos": 0,
         "followers": 0,
-        "profileUpdatedAt": null
+        "profileUpdatedAt": null,
+        "seat": null
       }
     ]
   }
