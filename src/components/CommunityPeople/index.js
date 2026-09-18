@@ -1,14 +1,8 @@
 import React, { useRef, useState } from 'react';
 import peopleData from '@site/data/community-people.json';
+import { profileUrl, websiteUrl } from '@site/src/lib/profile-links.mjs';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './styles.module.css';
-
-function profileUrl(value, type) {
-  if (!value) return null;
-  if (type === 'github') return `https://github.com/${value}`;
-  if (type === 'linkedin') return `https://www.linkedin.com/in/${value}`;
-  return `https://twitter.com/${value}`;
-}
 
 function PersonDialog({ person, onClose, triggerRef }) {
   const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
@@ -18,7 +12,7 @@ function PersonDialog({ person, onClose, triggerRef }) {
     ['GitHub', profileUrl(github, 'github')],
     ['LinkedIn', profileUrl(linkedin, 'linkedin')],
     ['Twitter', profileUrl(twitter, 'twitter')],
-    ['Website', blog ? (blog.startsWith('http') ? blog : `https://${blog}`) : null]
+    ['Website', websiteUrl(blog)]
   ].filter(([, href]) => href);
 
   return (
