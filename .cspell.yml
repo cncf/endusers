@@ -15,6 +15,11 @@ ignorePaths:
   - "**/*.svg"
   - "**/*.json"
 words:
+  - ACMM
+  - cutover
+  - linuxfoundation
+  - reprioritizations
+  - retag
   - endusers
   - Docusaurus
   - docusaurus
