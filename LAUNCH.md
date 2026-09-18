@@ -5,8 +5,9 @@ launch/promotion strategy), #100 (no success metrics), and #104 (KubeCon NA
 2026 launch window). It converts those findings into a single countdown.
 
 **Launch event**: KubeCon + CloudNativeCon North America 2026, November 9–12,
-Salt Lake City. **Today (2026-08-08) is 13 weeks out — launch Monday is
-2026-11-09.**
+Salt Lake City. **This plan was drafted on 2026-08-08, 13 weeks out from the
+launch Monday of 2026-11-09.** See the timeline table below for the current
+week-by-week status — it uses explicit dates and does not go stale.
 
 ## Goals
 
