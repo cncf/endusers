@@ -14,7 +14,7 @@ us end up adopting. This site is for them.
 Community](https://www.cncf.io/enduser/): the practitioners, architects, and
 organizations adopting cloud native technologies to build things that matter.
 
-{/* truncate */}
+{/*truncate*/}
 
 ## What lives here
 

@@ -28,28 +28,28 @@ Salt Lake City. **Today (2026-08-08) is 13 weeks out — launch Monday is
 ## Timeline (weeks are Mondays)
 
 | Week | Date | Milestone |
-|------|------|-----------|
+| ------ | ------ | ----------- |
 | W-13 | 2026-08-11 | Merge LICENSE (#40) and close Phase 0; create the four GitHub milestones (#78) so every launch task is tagged |
 | W-12 | 2026-08-17 | ADR 0001 ownership decision made (#46/#99) — this gates the announcement target and DNS work |
 | W-11 | 2026-08-24 | Metrics refresh workflow landed (#74); events page lists KubeCon NA 2026 co-located end-user events (#75) |
 | W-10 | 2026-08-31 | Awards list verified complete against cncf.io announcements (#77) |
-| W-9  | 2026-09-07 | Architectures freshness indicator on-page (#80); community/TAB staleness signal (#79) |
-| W-8  | 2026-09-14 | Good-first-issue curation done (#98); CONTRIBUTING walk-through by someone who didn't write it |
-| W-7  | 2026-09-21 | Blog cadence resumes: first post-welcome article (#76) — end-user story or architecture deep-dive |
-| W-6  | 2026-09-28 | Success-metrics baseline captured (see below) and dashboard/tracking issue live (#100) |
-| W-5  | 2026-10-05 | Launch blog post drafted; announcement channels confirmed (CNCF blog/Twitter amplification, end-user Slack, TAB mailing list) |
-| W-4  | 2026-10-12 | Full content freeze rehearsal: every generated-data workflow runs green end-to-end |
-| W-3  | 2026-10-19 | Launch blog post reviewed; DNS cutover executed if ownership decision landed on a CNCF org (Phase 3) |
-| W-2  | 2026-10-26 | Dry-run announcement to end-user community Slack; collect last-mile fixes |
-| W-1  | 2026-11-02 | Final content refresh; all Phase 1 issues closed or explicitly deferred |
-| W-0  | 2026-11-09 | **Launch during KubeCon NA week**: publish launch post, amplify on agreed channels, open feedback issue template |
+| W-9 | 2026-09-07 | Architectures freshness indicator on-page (#80); community/TAB staleness signal (#79) |
+| W-8 | 2026-09-14 | Good-first-issue curation done (#98); CONTRIBUTING walk-through by someone who didn't write it |
+| W-7 | 2026-09-21 | Blog cadence resumes: first post-welcome article (#76) — end-user story or architecture deep-dive |
+| W-6 | 2026-09-28 | Success-metrics baseline captured (see below) and dashboard/tracking issue live (#100) |
+| W-5 | 2026-10-05 | Launch blog post drafted; announcement channels confirmed (CNCF blog/Twitter amplification, end-user Slack, TAB mailing list) |
+| W-4 | 2026-10-12 | Full content freeze rehearsal: every generated-data workflow runs green end-to-end |
+| W-3 | 2026-10-19 | Launch blog post reviewed; DNS cutover executed if ownership decision landed on a CNCF org (Phase 3) |
+| W-2 | 2026-10-26 | Dry-run announcement to end-user community Slack; collect last-mile fixes |
+| W-1 | 2026-11-02 | Final content refresh; all Phase 1 issues closed or explicitly deferred |
+| W-0 | 2026-11-09 | **Launch during KubeCon NA week**: publish launch post, amplify on agreed channels, open feedback issue template |
 
 ## Success metrics (baseline + 30-day post-launch targets)
 
 Baselines are as of 2026-08-08; capture the W-6 baseline snapshot in #100.
 
 | Signal | Baseline (2026-08-08) | 30-day post-launch target |
-|--------|----------------------|---------------------------|
+| -------- | ---------------------- | --------------------------- |
 | GitHub stars | 0 | 50 |
 | Watchers / forks | 0 / 1 | 10 / 5 |
 | Unique contributors (humans, non-bot) | 1 | 5 |

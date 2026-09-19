@@ -196,6 +196,6 @@ since 2018 and how to nominate an organization.
 
 ## CNCF End User Support Staff
 
-Your membership in the CNCF [funds full time staff](https://www.cncf.io/membership-hub/) to help coordinate community efforts. This includes access to community experts with hundreds of years of collective OSS experience, as well as world class marketing and event support. 
+Your membership in the CNCF [funds full time staff](https://www.cncf.io/membership-hub/) to help coordinate community efforts. This includes access to community experts with hundreds of years of collective OSS experience, as well as world class marketing and event support.
 
 <CommunityPeople section="staff" />
