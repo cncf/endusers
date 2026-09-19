@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { makeGitHubHeaders } from './lib/github.mjs';
+
+// GitHub usernames are alphanumerics plus single internal hyphens, 1-39 chars.
+// A roster handle containing a path separator, dot segment, query or fragment
+// marker would re-point the api.github.com request at a different endpoint and
+// publish that response as somebody's profile, so reject it before fetching.
+const GITHUB_HANDLE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
 
 const root = new URL('..', import.meta.url).pathname;
 const output = join(root, 'data/community-people.json');
@@ -14,20 +21,25 @@ const existing = existsSync(output) ? JSON.parse(readFileSync(output, 'utf8')) :
 const result = {};
 let failures = 0;
 
-const headers = {
-  Accept: 'application/vnd.github+json',
-  'User-Agent': 'cncf-endusers-site-build',
-};
-if (process.env.GH_TOKEN) headers.Authorization = `Bearer ${process.env.GH_TOKEN}`;
+const headers = makeGitHubHeaders(process.env.GH_TOKEN);
 
 for (const [section, entries] of Object.entries(people)) {
   result[section] = [];
   for (const { name, company, role, github, linkedin, twitter } of entries) {
     const previous = existing[section]?.find((person) => person.github === github && github) ?? {};
     let profile = {};
+    if (github && !GITHUB_HANDLE.test(github)) {
+      console.error(
+        `data/community-roster.json: ${name} has an invalid GitHub handle: ${JSON.stringify(github)}`,
+      );
+      process.exit(1);
+    }
     if (github) {
       try {
-        const response = await fetch(`https://api.github.com/users/${github}`, { headers });
+        const response = await fetch(
+          `https://api.github.com/users/${encodeURIComponent(github)}`,
+          { headers },
+        );
         if (!response.ok) throw new Error(`GitHub returned ${response.status}`);
         profile = await response.json();
       } catch (error) {
