@@ -27,6 +27,14 @@ const EXTENSION_FOR_TYPE = {
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
+// Per the appmanifest spec, member URLs resolve against the manifest's own
+// URL, so both "/favicons/x.svg" and "favicons/x.svg" are valid and both land
+// under static/ here (the manifest sits at static/manifest.json). Only a
+// scheme-bearing URL leaves the site, which is what this rejects.
+function hasScheme(value) {
+  return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value) || value.startsWith('//');
+}
+
 // Docusaurus copies static/ into build/ verbatim, and GitHub Pages serves from
 // a case-sensitive filesystem. existsSync() on a case-insensitive development
 // machine happily resolves /favicons/Favicon.svg, so each segment is compared
@@ -88,8 +96,8 @@ test('manifest declares the fields browsers need to offer installation', () => {
     `display must be one of ${[...DISPLAY_MODES].join(', ')}, got ${manifest.display}`,
   );
   assert.ok(
-    manifest.start_url.startsWith('/'),
-    'start_url must be root-absolute so it resolves from every route',
+    !hasScheme(manifest.start_url),
+    'start_url must stay same-origin; an absolute URL points the installed app off-site',
   );
 });
 
@@ -104,7 +112,10 @@ test('manifest declares icons, so the assertions below cannot be vacuous', () =>
 test('every icon entry is fully described', () => {
   for (const icon of manifest.icons) {
     assert.equal(typeof icon.src, 'string', 'icon.src must be a string');
-    assert.ok(icon.src.startsWith('/'), `${icon.src} must be root-absolute`);
+    assert.ok(
+      !hasScheme(icon.src),
+      `${icon.src} must be a same-origin path, not an absolute URL`,
+    );
     assert.ok(
       !icon.src.split('/').includes('..'),
       `${icon.src} must not escape static/`,
