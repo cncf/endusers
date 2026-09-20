@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { existsSync, readdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { resolveRepoRoot, runScriptWithFixtures } from './helpers.mjs';
 
@@ -12,12 +11,6 @@ import { resolveRepoRoot, runScriptWithFixtures } from './helpers.mjs';
 // suite exercises the harness itself.
 
 const repoRoot = resolveRepoRoot(import.meta.url);
-
-function sandboxCount() {
-  return readdirSync(tmpdir()).filter((entry) =>
-    entry.startsWith('endusers-test-'),
-  ).length;
-}
 
 test('resolveRepoRoot decodes percent-encoded path segments', () => {
   // `new URL('..', url).pathname` returns '/tmp/space%20dir/repo/' here, which
@@ -113,12 +106,21 @@ test('each run gets a sandbox of its own', () => {
 });
 
 test('the sandbox directory is removed once the run returns', () => {
-  const before = sandboxCount();
-  runScriptWithFixtures('validate-button-contrast.mjs', {});
-  assert.equal(
-    sandboxCount(),
-    before,
-    'a sandbox directory survived the run and leaked into the temp directory',
+  // A run with no fixture dies in readFileSync, and the ENOENT names the
+  // sandbox it was reading. Recovering the path that way pins the assertion to
+  // this run's own directory; counting `endusers-test-*` entries in the shared
+  // temp directory instead races the sandboxes the other test files create and
+  // delete concurrently, which is what made this assertion fail in CI against
+  // a harness that cleans up correctly.
+  const result = runScriptWithFixtures('validate-button-contrast.mjs', {});
+  const match = result.stderr.match(/(\S*endusers-test-[^/\\]+)[/\\]src[/\\]/);
+  assert.ok(
+    match,
+    `could not recover the sandbox path from stderr: ${result.stderr}`,
+  );
+  assert.ok(
+    !existsSync(match[1]),
+    `sandbox ${match[1]} survived the run and leaked into the temp directory`,
   );
 });
 
