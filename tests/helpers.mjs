@@ -2,8 +2,18 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const repoRoot = new URL('..', import.meta.url).pathname;
+// `URL.prototype.pathname` stays percent-encoded, so a checkout whose path
+// contains a space (or any other character the URL parser escapes) yields
+// `/tmp/space%20dir/repo/` — a directory that does not exist. Every sandbox
+// run then dies in cpSync with ENOENT. fileURLToPath performs the decoding
+// that turns a file URL back into a filesystem path.
+export function resolveRepoRoot(moduleUrl) {
+  return fileURLToPath(new URL('..', moduleUrl));
+}
+
+const repoRoot = resolveRepoRoot(import.meta.url);
 
 // Runs a script from scripts/ against fixture data by mirroring the repo
 // layout in a temp directory. The scripts resolve inputs relative to their
