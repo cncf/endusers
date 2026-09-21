@@ -38,8 +38,12 @@ needs, improve visibility into CNCF project adoption, advise on technical
 direction, and review reference architectures.
 
 import CommunityPeople from '@site/src/components/CommunityPeople';
+import PeopleFreshness from '@site/src/components/PeopleFreshness';
+import GroupLinkStatus from '@site/src/components/GroupLinkStatus';
 
 ### TAB members
+
+<PeopleFreshness />
 
 <CommunityPeople section="tab" />
 
@@ -75,6 +79,8 @@ See the
 End User Groups are focused communities for organizations with shared
 operational, regulatory, or industry concerns. Each group page links to its
 charter, meeting details, and participation channels.
+
+<GroupLinkStatus />
 
 <div className="group-cards">
   <div className="group-card">
@@ -196,6 +202,12 @@ since 2018 and how to nominate an organization.
 
 ## CNCF End User Support Staff
 
-Your membership in the CNCF [funds full time staff](https://www.cncf.io/membership-hub/) to help coordinate community efforts. This includes access to community experts with hundreds of years of collective OSS experience, as well as world class marketing and event support.
+Your membership in the CNCF
+[funds full time staff](https://www.cncf.io/membership-hub/) to help coordinate
+community efforts. This includes access to community experts with hundreds of
+years of collective OSS experience, as well as world class marketing and event
+support.
+
+<PeopleFreshness />
 
 <CommunityPeople section="staff" />

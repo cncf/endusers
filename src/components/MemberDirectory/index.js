@@ -2,6 +2,8 @@ import React, { useMemo, useRef, useState } from 'react';
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import membersData from '@site/data/members.json';
+import metrics from '@site/data/metrics.json';
+import awardsData from '@site/data/awards.json';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './styles.module.css';
 
@@ -16,6 +18,46 @@ function initials(name) {
 
 function formatCount(count, singular, plural) {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function formatDate(isoDate) {
+  const parsed = new Date(isoDate);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+// Member profiles are compiled from reference architecture submissions and
+// award announcements (see scripts/generate-members.mjs); data/members.json
+// itself has no generatedAt of its own, so its freshness note reuses the
+// real sync/verification dates of those two upstream sources instead of
+// inventing a new timestamp.
+function DirectoryFreshness() {
+  const architectures = metrics?.sources?.architectures;
+  const architecturesDate = formatDate(metrics?.generatedAt);
+  const awardsDate = formatDate(awardsData?.verifiedAt);
+  if (!architecturesDate && !awardsDate) return null;
+  return (
+    <p className={styles.freshnessNote}>
+      {architecturesDate && (
+        <>
+          Architecture-derived profiles last synced from{' '}
+          {architectures?.repository ? (
+            <a href={architectures.repository} target="_blank" rel="noreferrer">
+              cncf/architecture
+            </a>
+          ) : (
+            'cncf/architecture'
+          )}{' '}
+          on {architecturesDate}.
+        </>
+      )}
+      {awardsDate && <> Award data last verified on {awardsDate}.</>}
+    </p>
+  );
 }
 
 function useFilterOptions(members) {
@@ -330,6 +372,7 @@ export default function MemberDirectory() {
 
   return (
     <section aria-label="End User Community member directory">
+      <DirectoryFreshness />
       <div className={styles.toolbar}>
         <div className={styles.searchRow}>
           <label htmlFor="member-search" className={styles.visuallyHidden}>
