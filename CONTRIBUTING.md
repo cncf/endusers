@@ -18,6 +18,24 @@ The dev server runs at `http://localhost:3000`. In the devcontainer:
 npm run docusaurus start -- --host 0.0.0.0 --port 3000 --poll 10000
 ```
 
+### Justfile shortcuts
+
+If you have [`just`](https://github.com/casey/just) installed, the repository's
+`Justfile` provides shortcuts that wrap the npm scripts above:
+
+- `just serve` — start the dev server bound to all interfaces.
+- `just import` — import reference architectures and run the same validation
+  steps as the import workflow (`import:architectures`,
+  `validate:architectures`, `validate:architecture-assets`).
+- `just build` — run the same validation steps as CI
+  (`validate:architectures`, `validate:architecture-assets`,
+  `validate:metrics`, `validate:awards`) followed by `build`.
+
+These recipes are kept in sync with the checks the "Validate repository" and
+"Import reference architectures" workflows run, so a green `just build`/`just
+import` locally should also pass in CI. `just` is optional — the npm scripts
+remain the canonical interface and work without it.
+
 ## Content audience
 
 Content on this site speaks to **end users** — the practitioners, architects,
