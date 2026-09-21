@@ -2,20 +2,6 @@
   "checkedAt": "2026-09-21T18:41:49.087Z",
   "groups": [
     {
-      "slug": "financial-services",
-      "name": "Financial Services User Group",
-      "repository": "https://github.com/cncf/financial-user-group",
-      "archived": true,
-      "reachable": true
-    },
-    {
-      "slug": "research",
-      "name": "Research User Group",
-      "repository": "https://github.com/cncf/research-user-group",
-      "archived": false,
-      "reachable": true
-    },
-    {
       "slug": "public-sector",
       "name": "Public Sector User Group",
       "repository": "https://github.com/cncf/public-sector-user-group",
@@ -26,20 +12,6 @@
       "slug": "telecom",
       "name": "Telecom User Group",
       "repository": "https://github.com/cncf/telecom-user-group",
-      "archived": false,
-      "reachable": true
-    },
-    {
-      "slug": "transportation",
-      "name": "Transportation User Group",
-      "repository": "https://github.com/cncf/transportation-user-group",
-      "archived": true,
-      "reachable": true
-    },
-    {
-      "slug": "cartografos",
-      "name": "Cartografos Working Group",
-      "repository": "https://github.com/cncf/cartografos",
       "archived": false,
       "reachable": true
     }

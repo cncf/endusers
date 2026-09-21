@@ -1,15 +1,13 @@
 ---
 title: Community
-description: 'The CNCF Community, End User TAB, and community groups'
+description:
+  'The CNCF End User Community, TAB, governance, and community groups.'
 sidebar_position: 1
 ---
 
-import DocCardList from '@theme/DocCardList';
-
-The CNCF Community is made up of practitioners, architects, and organizations
-working together to advance cloud native computing. This section provides
-information about the groups, initiatives, and real-world patterns that help the
-ecosystem grow.
+The CNCF End User Community connects organizations running cloud native
+technologies in production. Find the people, groups, meetings, and practical
+resources that help end users learn from one another and shape CNCF priorities.
 
 ## Start here
 
@@ -18,36 +16,109 @@ ecosystem grow.
   <a href="https://lists.cncf.io/g/cncf-enduser" className="secondary">Request mailing list access</a>
 </div>
 
-The End User mailing list and the `#enduser` channel on [CNCF
-Slack](https://slack.cncf.io/) are private spaces reserved for the End User
-Community, so end user organizations can compare notes with peers candidly
-while still building in the open. [Bring your organization
-in](https://www.cncf.io/enduser/) to request access; once approved, you can
-find the right group, meeting, or contribution path for your interests.
+The [End User mailing list](https://lists.cncf.io/g/cncf-enduser) and the
+`#enduser` channel in [CNCF Slack](https://slack.cncf.io/) are private,
+application-gated spaces for the End User Community, so end user organizations
+can have candid peer discussions while still building in the open.
 
-## Community Groups
+- **Request access:** Request to join the
+  [End User mailing list](https://lists.cncf.io/g/cncf-enduser) and the private
+  `#enduser` channel in [CNCF Slack](https://slack.cncf.io/).
+- **Bring your organization in:** Learn about
+  [joining the CNCF End User Community](https://www.cncf.io/enduser/).
+- **Find a peer group:** Browse the [User Groups](/community/user-groups) and
+  [Technical Community Groups](/community/technical-community-groups).
+- **Share an architecture:** Follow the
+  [Reference Architecture Submission Process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
+- **Explore adoption data:** Visit the
+  [CNCF Technology Radar](https://radar.cncf.io/) and the
+  [CNCF case studies](https://www.cncf.io/case-studies/).
 
-End User Groups and working groups are where peers with shared operational,
-regulatory, or industry concerns meet regularly to compare notes, share
-resources, and surface needs to the broader CNCF community.
+## Governance and leadership
+
+The [Technical Advisory Board](./technical-advisory-board.md) (TAB) oversees the
+End User Community, its User Groups, and its Technical Community Groups. See the
+[Governance](./governance.md) page for how these groups are formed, run, and
+held accountable.
+
+## Community meeting and communication channels
+
+- [CNCF End User mailing list](https://lists.cncf.io/g/cncf-enduser)
+- [CNCF Slack](https://slack.cncf.io/), including the `#tab` and `#enduser`
+  channels
+- [CNCF community platform](https://community.cncf.io/)
+- [Public TAB meeting project](https://github.com/orgs/cncf/projects/60)
+- [TAB public meeting](https://zoom.us/j/96509520391) — third Monday of each
+  month at 8:00 AM Pacific Time
+
+import DocCardList from '@theme/DocCardList';
+
+import GroupLinkStatus from '@site/src/components/GroupLinkStatus';
+
+## Explore the Community section
+
+<GroupLinkStatus />
 
 <DocCardList />
 
-## End User Community
+## Reference architectures
 
-Read the [End User Community guide](./end-user-community.md) for TAB governance,
-user groups, communication channels, reference architecture submissions, and
-end user metrics.
+The TAB-led
+[Reference Architecture Submission Process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md)
+describes how to submit a real-world architecture for peer and TAB review.
+Browse the [architecture catalog](/architectures/).
 
-## End User Awards
+Submissions can begin with a
+[GitHub issue using the reference architecture template](https://github.com/cncf/tab/issues/new?template=reference-architecture.yml),
+or with the
+[pull request template](https://github.com/cncf/tab/blob/main/operations/templates/template-reference-architecture.md)
+when the material is ready.
 
-The organizations recognized for excellence in running cloud native in
-production have a dedicated [Awards page](/awards).
+## Contribution ladder
 
-## Community Architecture Catalog
+You do not need to be a maintainer to contribute to the End User Community.
+Start small and move up as your time and interest allow.
 
-Explore the [reference architectures](/architectures/) contributed by CNCF end
-users. Each architecture describes how an organization applies cloud native
-technologies in practice, including the teams, trade-offs, tools, and lessons
-learned behind the design. For narrative adoption stories, see the
-[CNCF case studies](https://www.cncf.io/case-studies/).
+1. **Listen and connect** — Join `#enduser` on
+   [CNCF Slack](https://slack.cncf.io/) and subscribe to the
+   [End User mailing list](https://lists.cncf.io/g/cncf-enduser).
+2. **Show up** — Attend the public [TAB meeting](https://zoom.us/j/96509520391)
+   or a [User Group](/community/user-groups) or
+   [Technical Community Group](/community/technical-community-groups) call.
+3. **Share what you know** — Answer questions, recommend a resource, or point
+   peers to a [case study](https://www.cncf.io/case-studies/) from your
+   experience.
+4. **Contribute a reference architecture** — Document a real-world design
+   through the
+   [reference architecture submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
+5. **Help shape direction** — Join a User Group, a Technical Community Group, or
+   the TAB to advise on priorities and represent end user needs.
+
+## Projects born at end user organizations
+
+import ProjectsBorn from '@site/src/components/ProjectsBorn';
+
+<ProjectsBorn />
+
+## Related CNCF resources
+
+- [CNCF End User Community](https://www.cncf.io/enduser/)
+- [CNCF TAB repository](https://github.com/cncf/tab)
+- [CNCF architecture repository](https://github.com/cncf/architecture)
+- [CNCF End User Technology Radar](https://radar.cncf.io/)
+
+## CNCF End User Support Staff
+
+Your membership in the CNCF
+[funds full time staff](https://www.cncf.io/membership-hub/) to help coordinate
+community efforts. This includes access to community experts with hundreds of
+years of collective OSS experience, as well as world class marketing and event
+support.
+
+import CommunityPeople from '@site/src/components/CommunityPeople';
+
+import PeopleFreshness from '@site/src/components/PeopleFreshness';
+
+<PeopleFreshness />
+
+<CommunityPeople section="staff" />

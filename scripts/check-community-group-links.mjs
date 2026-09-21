@@ -15,19 +15,9 @@ const root = new URL('..', import.meta.url).pathname;
 const output = join(root, 'data/community-groups.json');
 
 // Source-of-truth list of End User Groups linked from
-// docs/community/end-user-community.md. Update here when a group is added,
+// docs/community/user-groups/. Update here when a group is added,
 // renamed, or its upstream repository changes.
 const GROUPS = [
-  {
-    slug: 'financial-services',
-    name: 'Financial Services User Group',
-    repo: 'cncf/financial-user-group',
-  },
-  {
-    slug: 'research',
-    name: 'Research User Group',
-    repo: 'cncf/research-user-group',
-  },
   {
     slug: 'public-sector',
     name: 'Public Sector User Group',
@@ -37,16 +27,6 @@ const GROUPS = [
     slug: 'telecom',
     name: 'Telecom User Group',
     repo: 'cncf/telecom-user-group',
-  },
-  {
-    slug: 'transportation',
-    name: 'Transportation User Group',
-    repo: 'cncf/transportation-user-group',
-  },
-  {
-    slug: 'cartografos',
-    name: 'Cartografos Working Group',
-    repo: 'cncf/cartografos',
   },
 ];
 
