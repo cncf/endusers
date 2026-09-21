@@ -36,6 +36,7 @@
     "docus:write-translations": "docusaurus write-translations",
     "import:architectures": "node scripts/import-architectures.mjs && npm run generate:members",
     "fetch:community-people": "node scripts/fetch-community-people.mjs",
+    "check:community-group-links": "node scripts/check-community-group-links.mjs",
     "generate:members": "node scripts/generate-members.mjs",
     "validate:architectures": "node scripts/validate-architectures.mjs",
     "validate:architecture-assets": "node scripts/validate-architecture-assets.mjs",
@@ -56,6 +57,8 @@
     "validate:case-studies": "node scripts/validate-case-studies.mjs",
     "collect:radar-reports": "node scripts/collect-radar-reports.mjs",
     "validate:radar-reports": "node scripts/validate-radar-reports.mjs",
+    "validate:community-people": "node scripts/validate-community-people.mjs",
+    "validate:community-groups": "node scripts/validate-community-groups.mjs",
     "test:unit": "node --test"
   },
   "repository": {
