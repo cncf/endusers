@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { basename, join, relative } from 'node:path';
+import { basename, extname, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parse as yamlParse } from 'yaml';
 import { isCncfProjectHref } from './lib/project-card-links.mjs';
@@ -21,6 +21,20 @@ const source = join(upstream, 'content/en/architectures');
 const recordsDir = join(root, 'data/architectures/records');
 const docsDir = join(root, 'docs/architectures');
 const assetsDir = join(root, 'static/img/architectures');
+
+// Only these file types are mirrored into static/, which Docusaurus publishes
+// verbatim at the site origin. Upstream controls these filenames, so anything
+// the browser would execute as markup or script (.html, .xhtml, .js, .svgz)
+// must never be copied: it would run in the site's own origin.
+const MIRRORABLE_ASSET_EXTENSIONS = new Set([
+  '.avif',
+  '.gif',
+  '.jpeg',
+  '.jpg',
+  '.png',
+  '.svg',
+  '.webp',
+]);
 
 try {
   execFileSync(
@@ -95,6 +109,13 @@ async function importArchitecture(id, commit) {
   const imageDir = join(dir, 'images');
   if (existsSync(imageDir)) {
     for (const file of walkFiles(imageDir)) {
+      const extension = extname(file).toLowerCase();
+      if (!MIRRORABLE_ASSET_EXTENSIONS.has(extension)) {
+        console.warn(
+          `Skipping ${relative(imageDir, file)} in ${id}: ${extension || 'no extension'} is not a mirrorable image type`,
+        );
+        continue;
+      }
       const destination = join(assetsDir, id, relative(imageDir, file));
       mkdirSync(join(destination, '..'), { recursive: true });
       cpSync(file, destination);
