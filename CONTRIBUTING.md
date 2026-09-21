@@ -60,32 +60,18 @@ Rules:
 New to this repository? Start with an issue labeled
 [`good first issue`](https://github.com/cncf/endusers/labels/good%20first%20issue).
 These are scoped for a first contribution: each names the file(s) to touch and
-the acceptance criteria for the change.
+the acceptance criteria for the change. There isn't always an open one — see
+below for what to do if the query comes up empty.
 
-- **#77 — Awards data verification**: Audit `data/awards.json` against the CNCF
-  End User Award history published on
-  [cncf.io/announcements](https://www.cncf.io/announcements/), add a `source`
-  URL per entry linking its announcement, and flag any missing years.
-  Acceptance: every entry has a source link and the count matches the published
-  history.
-- **#75 — Events page upcoming-event tracking**: Restructure
-  `docs/events/index.md` into "Upcoming" and "Past" sections and add the next
-  scheduled KubeCon + CloudNativeCon end-user events (End User Summit, End User
-  Reception) with authoritative
-  [events.linuxfoundation.org](https://events.linuxfoundation.org/) links.
-  Acceptance: at least one upcoming event is listed, and no past event appears
-  under "Upcoming".
-- **#80 — Architectures freshness indicator**: Surface the import revision/date
-  already recorded in `data/metrics.json`'s `sources.architectures` on the
-  architectures index page as a "last synced from cncf/architecture @ `<rev>`"
-  line. Acceptance: the architectures page shows the upstream revision and sync
-  date.
 - **Docs/typo sweep**: Read through `docs/` and the top-level `*.md` files for
   broken links, stale version numbers, or typos and open small, focused fixes.
   No issue required — a PR is enough for this one.
 
-If none of these have the `good first issue` label yet, they are still fair
-game: mention in your pull request which one you picked up.
+The label query above is the source of truth: pick any open issue carrying
+`good first issue` and mention in your pull request which one you picked up.
+If the query is empty, the docs/typo sweep above is always available, or
+check the [open issues list](https://github.com/cncf/endusers/issues) for
+something scoped enough for a first contribution.
 
 ## Making changes
 
