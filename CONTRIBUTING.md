@@ -39,7 +39,10 @@ hand-building pages:
 Rules:
 
 - **Never edit `data/metrics.json` by hand.** Refresh it with
-  `npm run collect:metrics`; change `scripts/collect-metrics.mjs` instead.
+  `npm run collect:metrics`; change `scripts/collect-metrics.mjs` instead. Set
+  `GH_TOKEN` to a GitHub personal access token with public-repo read access
+  before running it (and `npm run fetch:community-people`) — these scripts
+  make enough GitHub API calls to exceed the unauthenticated rate limit.
 - Verify award entries against the linked cncf.io announcement before adding.
 - Reference architectures are imported from
   [cncf/architecture](https://github.com/cncf/architecture) — fix content
