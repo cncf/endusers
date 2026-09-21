@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { makeGitHubHeaders } from './lib/github.mjs';
 
 // GitHub usernames are alphanumerics plus single internal hyphens, 1-39 chars.
@@ -9,7 +10,7 @@ import { makeGitHubHeaders } from './lib/github.mjs';
 // publish that response as somebody's profile, so reject it before fetching.
 const GITHUB_HANDLE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const output = join(root, 'data/community-people.json');
 const rosterPath = join(root, 'data/community-roster.json');
 

@@ -12,10 +12,11 @@ import {
 import { execFileSync } from 'node:child_process';
 import { basename, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { parse as yamlParse } from 'yaml';
 import { isCncfProjectHref } from './lib/project-card-links.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
 const source = join(upstream, 'content/en/architectures');
 const recordsDir = join(root, 'data/architectures/records');

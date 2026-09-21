@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { reportAndExit } from './lib/validate-utils.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const staticRoot = resolve(join(root, 'static'));
 const assetPrefix = '/img/architectures/';
 const assetRoot = resolve(join(staticRoot, assetPrefix.slice(1)));
