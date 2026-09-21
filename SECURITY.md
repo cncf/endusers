@@ -11,8 +11,9 @@ Please **do not** open a public issue for security vulnerabilities.
 
 - Use [GitHub private vulnerability reporting](../../security/advisories/new)
   to file a confidential report, or
-- Email the maintainer listed on
-  [MAINTAINERS.md](./MAINTAINERS.md) if private reporting is unavailable.
+- If private reporting is unavailable to you, email
+  [projects@cncf.io](mailto:projects@cncf.io) with the subject prefix
+  `[SECURITY]` to report vulnerabilities to the CNCF security team.
 
 Include a description of the issue, steps to reproduce, and the potential
 impact. You can expect an acknowledgement within a few days; the project is
@@ -21,6 +22,8 @@ maintained by volunteers, so timelines for fixes vary with severity.
 ## Scope
 
 This policy covers the site source, build scripts, and GitHub Actions
-workflows in this repository. Vulnerabilities in third-party dependencies
-should also be reported here if no fixed version is available — Dependabot
-and automated scanning handle routine dependency advisories.
+workflows in this repository. [Dependabot](.github/dependabot.yml) opens
+pull requests for routine npm and GitHub Actions version updates, but this
+repository has no automated vulnerability scanning (no CodeQL or SAST
+workflow). Report all vulnerabilities in third-party dependencies here,
+including ones with no fixed version available yet.

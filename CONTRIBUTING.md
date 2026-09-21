@@ -46,6 +46,10 @@ Rules:
   `GH_TOKEN` to a GitHub personal access token with public-repo read access
   before running it (and `npm run fetch:community-people`) — these scripts
   make enough GitHub API calls to exceed the unauthenticated rate limit.
+- **Never edit `data/launch-metrics.json` by hand.** It is the machine-checked
+  launch success-metrics baseline (issue #100, `LAUNCH.md`). Refresh it with
+  `npm run collect:launch-metrics` (needs `GH_TOKEN`) and validate with
+  `npm run validate:launch-metrics`.
 - Verify award entries against the linked cncf.io announcement before adding.
 - Reference architectures are imported from
   [cncf/architecture](https://github.com/cncf/architecture) — fix content
@@ -60,6 +64,13 @@ Rules:
   `npm run fetch:community-people`.
 - `data/projects-born.json` has no generator; edit it directly and verify the
   origin story against a reliable source before adding an entry.
+
+## Blog contributions
+
+The blog is hand-authored Markdown in `blog/`, not generated from a data file.
+See [`docs/skills/blog-management.md`](docs/skills/blog-management.md) for
+post format, front matter (`blog/authors.yml`/`blog/tags.yml` keys), and the
+publishing cadence.
 
 ## Style rules
 
@@ -93,7 +104,11 @@ something scoped enough for a first contribution.
 2. Make your change and run the relevant validation script.
 3. Run `npm run test:unit` — the required "Validate repository" check runs this on every PR.
 4. Verify with `npm run build` before opening a PR.
-5. Open a pull request against `main` describing what changed and why.
+5. Commit with a DCO sign-off: `git commit -s`. CI enforces this and will fail
+   the PR if any commit is missing a `Signed-off-by` trailer. If you forget,
+   fix it before pushing (or after, then force-push) with
+   `git rebase --signoff main`.
+6. Open a pull request against `main` describing what changed and why.
 
 ## Agent contributors
 
