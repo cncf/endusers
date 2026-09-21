@@ -12,14 +12,19 @@ resources that help end users learn from one another and shape CNCF priorities.
 ## Start here
 
 <div className="action-row">
-  <a href="https://slack.cncf.io/">Join CNCF Slack</a>
-  <a href="https://lists.cncf.io/g/cncf-enduser" className="secondary">Subscribe to the mailing list</a>
   <a href="https://www.cncf.io/enduser/" className="secondary">Bring your organization in</a>
+  <a href="https://lists.cncf.io/g/cncf-enduser" className="secondary">Request mailing list access</a>
 </div>
 
-- **Join the conversation:** Subscribe to the
-  [End User mailing list](https://lists.cncf.io/g/cncf-enduser) or join the
-  `#enduser` channel in [CNCF Slack](https://slack.cncf.io/).
+The [End User mailing list](https://lists.cncf.io/g/cncf-enduser) and the
+`#enduser` channel in [CNCF Slack](https://slack.cncf.io/) are private,
+application-gated spaces for the End User Community, so end user
+organizations can have candid peer discussions while still building in the
+open.
+
+- **Request access:** Request to join the
+  [End User mailing list](https://lists.cncf.io/g/cncf-enduser) and the
+  private `#enduser` channel in [CNCF Slack](https://slack.cncf.io/).
 - **Bring your organization in:** Learn about
   [joining the CNCF End User Community](https://www.cncf.io/enduser/).
 - **Find a peer group:** Browse the [End User Groups](#end-user-groups) for
@@ -33,7 +38,7 @@ resources that help end users learn from one another and shape CNCF priorities.
 ## End User Technical Advisory Board (TAB)
 
 The [CNCF End User Technical Advisory Board](https://github.com/cncf/tab)
-represents end users within the CNCF community. The TAB helps surface end-user
+represents end users within the CNCF community. The TAB helps surface end user
 needs, improve visibility into CNCF project adoption, advise on technical
 direction, and review reference architectures.
 
@@ -49,7 +54,7 @@ import CommunityPeople from '@site/src/components/CommunityPeople';
 - Advise the
   [CNCF Technical Oversight Committee (TOC)](https://github.com/cncf/toc) on
   technical directions and challenges in the cloud native ecosystem.
-- Improve visibility into end-user adoption of CNCF projects.
+- Improve visibility into end user adoption of CNCF projects.
 - Provide feedback on project usability, reliability, and performance.
 - Review and approve reference architectures.
 - Advise on End User Radar tools and techniques.
@@ -120,7 +125,7 @@ charter, meeting details, and participation channels.
   </div>
   <div className="group-card">
     <h3><a href="./transportation-user-group.md">Transportation User Group</a></h3>
-    <p>Transportation-focused end-user collaboration.</p>
+    <p>Transportation-focused end user collaboration.</p>
     <div className="group-actions">
       <a href="https://github.com/cncf/transportation-user-group">GitHub</a>
     </div>
@@ -152,7 +157,7 @@ when the material is ready.
 
 The
 [CNCF Technology Radar](https://github.com/cncf/tab/tree/main/end-user-tech-radar)
-captures end-user technology adoption data. The repository includes the
+captures end user technology adoption data. The repository includes the
 [radar data](https://github.com/cncf/tab/tree/main/end-user-tech-radar) and the
 [CNCF Radar application](https://github.com/cncf/radar).
 
@@ -161,8 +166,8 @@ captures end-user technology adoption data. The repository includes the
 You do not need to be a maintainer to contribute to the End User Community.
 Start small and move up as your time and interest allow.
 
-1. **Listen and connect** — Join `#enduser` on
-   [CNCF Slack](https://slack.cncf.io/) and subscribe to the
+1. **Listen and connect** — Request access to the private `#enduser` channel
+   on [CNCF Slack](https://slack.cncf.io/) and the
    [End User mailing list](https://lists.cncf.io/g/cncf-enduser).
 2. **Show up** — Attend the public [TAB meeting](https://zoom.us/j/96509520391)
    or an [End User Group](#end-user-groups) call.
@@ -173,7 +178,7 @@ Start small and move up as your time and interest allow.
    through the
    [reference architecture submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
 5. **Help shape direction** — Join an End User Group or the End User TAB to
-   advise on priorities and represent end-user needs.
+   advise on priorities and represent end user needs.
 
 ## Projects born at end user organizations
 

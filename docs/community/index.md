@@ -14,15 +14,16 @@ ecosystem grow.
 ## Start here
 
 <div className="action-row">
-  <a href="https://slack.cncf.io/">Join CNCF Slack</a>
-  <a href="https://lists.cncf.io/g/cncf-enduser" className="secondary">Subscribe to the mailing list</a>
   <a href="https://www.cncf.io/enduser/" className="secondary">Bring your organization in</a>
+  <a href="https://lists.cncf.io/g/cncf-enduser" className="secondary">Request mailing list access</a>
 </div>
 
-Not sure where to begin? The fastest way to participate is to join the
-`#enduser` channel on [CNCF Slack](https://slack.cncf.io/) and introduce
-yourself. From there you can find the right group, meeting, or contribution path
-for your interests.
+The End User mailing list and the `#enduser` channel on [CNCF
+Slack](https://slack.cncf.io/) are private spaces reserved for the End User
+Community, so end user organizations can compare notes with peers candidly
+while still building in the open. [Bring your organization
+in](https://www.cncf.io/enduser/) to request access; once approved, you can
+find the right group, meeting, or contribution path for your interests.
 
 ## Community Groups
 
@@ -36,7 +37,7 @@ resources, and surface needs to the broader CNCF community.
 
 Read the [End User Community guide](./end-user-community.md) for TAB governance,
 user groups, communication channels, reference architecture submissions, and
-end-user metrics.
+end user metrics.
 
 ## End User Awards
 
