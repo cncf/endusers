@@ -1,5 +1,5 @@
 {
-  "_comment": "Source-of-truth roster for TAB members and CNCF staff. Edit here — fetch-community-people.mjs reads this file and enriches each entry from the GitHub API.",
+  "_comment": "Source-of-truth roster for TAB members and CNCF staff. Edit here — fetch-community-people.mjs reads this file and enriches each entry from cncf/people's people.json.",
   "sections": {
     "tab": [
       { "name": "Ricardo Rocha",  "company": "CERN",             "role": "TAB Chair",                              "github": "rochaporto",      "linkedin": "ricardo-rocha-739aa718", "twitter": "ahcorporto" },

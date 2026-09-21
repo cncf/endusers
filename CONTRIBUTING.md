@@ -44,8 +44,8 @@ Rules:
 - **Never edit `data/metrics.json` by hand.** Refresh it with
   `npm run collect:metrics`; change `scripts/collect-metrics.mjs` instead. Set
   `GH_TOKEN` to a GitHub personal access token with public-repo read access
-  before running it (and `npm run fetch:community-people`) — these scripts
-  make enough GitHub API calls to exceed the unauthenticated rate limit.
+  before running it — this script makes enough GitHub API calls to exceed the
+  unauthenticated rate limit.
 - **Never edit `data/launch-metrics.json` by hand.** It is the machine-checked
   launch success-metrics baseline (issue #100, `LAUNCH.md`). Refresh it with
   `npm run collect:launch-metrics` (needs `GH_TOKEN`) and validate with
@@ -61,7 +61,10 @@ Rules:
   `data/awards.json`.
 - **Never edit `data/community-people.json` by hand.** Add or fix a person in
   `data/community-roster.json`, then refresh with
-  `npm run fetch:community-people`.
+  `npm run fetch:community-people`. This enriches roster entries with bio,
+  location, image, and social links from
+  [cncf/people](https://github.com/cncf/people)'s `people.json`, matched by
+  GitHub handle; roster name, company, and role stay authoritative.
 - `data/projects-born.json` has no generator; edit it directly and verify the
   origin story against a reliable source before adding an entry.
 
