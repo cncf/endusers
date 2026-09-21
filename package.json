@@ -53,6 +53,8 @@
     "update:pkgs": "npx npm-check-updates -u",
     "collect:metrics": "node scripts/collect-metrics.mjs",
     "validate:metrics": "node scripts/validate-metrics.mjs",
+    "collect:launch-metrics": "node scripts/collect-launch-metrics.mjs",
+    "validate:launch-metrics": "node scripts/validate-launch-metrics.mjs",
     "collect:case-studies": "node scripts/collect-case-studies.mjs",
     "validate:case-studies": "node scripts/validate-case-studies.mjs",
     "collect:radar-reports": "node scripts/collect-radar-reports.mjs",
