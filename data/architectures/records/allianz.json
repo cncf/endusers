@@ -4,18 +4,8 @@
   "organization": "Allianz Direct",
   "summary": "The PE team is internally organised in DDOs - Distributed DevOps, where each ddo owns a Domain. This setup follows the reverse Conway manoeuver where the reference architecture structure dictates the teams setup. The PE team consist of 13 m",
   "industries": [],
-  "tags": [
-    "finance",
-    "insurance",
-    "europe",
-    "public_cloud",
-    "aws"
-  ],
-  "projects": [
-    "Kubernetes",
-    "Helm",
-    "Argo"
-  ],
+  "tags": ["finance", "insurance", "europe", "public_cloud", "aws"],
+  "projects": ["Kubernetes", "Helm", "Argo"],
   "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/allianz",
   "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
   "assets": [

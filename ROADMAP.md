@@ -1,7 +1,8 @@
 # Roadmap: endusers.cncf.io
 
-This roadmap describes the planned evolution of the CNCF End User Community site.
-It is a living document; update it as priorities change. Tracking: issues labeled `roadmap`.
+This roadmap describes the planned evolution of the CNCF End User Community
+site. It is a living document; update it as priorities change. Tracking: issues
+labeled `roadmap`.
 
 ## Vision
 
@@ -13,10 +14,10 @@ metrics, events, and pathways to participate.
 
 **KubeCon + CloudNativeCon North America 2026 (Nov 9–12, Salt Lake City)** is
 the target announcement window (see issue #104): the largest concentration of
-CNCF end users this year, and every Phase 1 content pillar is exactly what
-that audience looks for. The week-by-week backwards plan lives in
-`LAUNCH.md` (PR #108); the ownership decision that must land before the
-announcement is tracked in ADR 0001 / issue #99.
+CNCF end users this year, and every Phase 1 content pillar is exactly what that
+audience looks for. The week-by-week backwards plan lives in `LAUNCH.md` (PR
+#108); the ownership decision that must land before the announcement is tracked
+in ADR 0001 / issue #99.
 
 ## Guiding principles
 
@@ -35,8 +36,10 @@ Goal: a reliable, trustworthy site skeleton.
 
 - [x] Restore a green deploy pipeline (#52)
 - [x] Add a LICENSE (#40, issue #32)
-- [ ] Pin GitHub Actions by SHA and verify downloaded installers (issues #38, #39; PRs #42, #43, #112 open)
-- [x] Shared validation utilities and test coverage for data pipelines (#37, #65)
+- [ ] Pin GitHub Actions by SHA and verify downloaded installers (issues #38,
+      #39; PRs #42, #43, #112 open)
+- [x] Shared validation utilities and test coverage for data pipelines (#37,
+      #65)
 - [x] This roadmap (#50), plus MILESTONES.md (#53)
 - [ ] Create GitHub milestones matching these phases (issue #78)
 
@@ -44,12 +47,20 @@ Goal: a reliable, trustworthy site skeleton.
 
 Goal: every pillar section is accurate, current, and self-maintaining.
 
-- [ ] Architectures: automated import from cncf/architecture stays in sync (scheduled workflow exists; add freshness indicator on the page — issue #80)
-- [ ] Metrics: scheduled refresh of data/metrics.json with validation gating the build (issue #74)
-- [x] Awards: complete historical winner list, each entry verified against its cncf.io announcement (issue #77)
-- [ ] Community: current TAB membership, End User Groups, and engagement pathways (issue #79)
+- [ ] Architectures: automated import from cncf/architecture stays in sync
+      (scheduled workflow exists; add freshness indicator on the page — issue
+      #80)
+- [ ] Metrics: scheduled refresh of data/metrics.json with validation gating the
+      build (issue #74)
+- [x] Awards: complete historical winner list, each entry verified against its
+      cncf.io announcement (issue #77)
+- [ ] Community: current TAB membership, End User Groups, and engagement
+      pathways (issue #79)
 - [ ] Events: upcoming end-user events at KubeCon + CloudNativeCon (issue #75)
-- [x] Blog: establish a publishing cadence beyond the welcome post — monthly "Month in Metrics" post sourced from `data/metrics.json` diffs (issue #76; cadence documented in [docs/skills/blog-management.md](docs/skills/blog-management.md#publishing-cadence))
+- [x] Blog: establish a publishing cadence beyond the welcome post — monthly
+      "Month in Metrics" post sourced from `data/metrics.json` diffs (issue #76;
+      cadence documented in
+      [docs/skills/blog-management.md](docs/skills/blog-management.md#publishing-cadence))
 
 ## Launch (tracking: #90)
 
@@ -80,11 +91,14 @@ cadence).
 Goal: the project can outlive any single maintainer.
 
 - [x] MAINTAINERS.md with an explicit process for adding maintainers (#55)
-- [x] Governance note describing review/merge expectations, including agent-automation policy (GOVERNANCE.md, #60)
+- [x] Governance note describing review/merge expectations, including
+      agent-automation policy (GOVERNANCE.md, #60)
 - [ ] Good-first-issue curation to recruit human contributors
-- [ ] Decide the long-term home of the site (issue #46, ADR 0001): transfer to a CNCF org,
-      remain a personal staging site, or merge into an existing CNCF property. Decision deadline: 2026-08-17
-      (see `adr/0001-site-ownership-and-cutover-path.md` for the documented options and path)
+- [ ] Decide the long-term home of the site (issue #46, ADR 0001): transfer to a
+      CNCF org, remain a personal staging site, or merge into an existing CNCF
+      property. Decision deadline: 2026-08-17 (see
+      `adr/0001-site-ownership-and-cutover-path.md` for the documented options
+      and path)
 
 ## Phase 3 — Ecosystem integration
 

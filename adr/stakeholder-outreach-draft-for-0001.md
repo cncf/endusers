@@ -1,18 +1,19 @@
 # Stakeholder outreach draft for ADR 0001
 
-This is a ready-to-send draft supporting [ADR 0001](./0001-site-ownership-and-cutover-path.md)
-"Proposed next step" #1: opening a discussion with CNCF end-user/TAB
-stakeholders on the long-term home for this site. It exists so a maintainer
-can act on that step without first having to draft the outreach themselves.
-Nothing here commits the project to an option — the decision still belongs to
-the repo owner and CNCF stakeholders (see ADR 0001, "Decision").
+This is a ready-to-send draft supporting
+[ADR 0001](./0001-site-ownership-and-cutover-path.md) "Proposed next step" #1:
+opening a discussion with CNCF end-user/TAB stakeholders on the long-term home
+for this site. It exists so a maintainer can act on that step without first
+having to draft the outreach themselves. Nothing here commits the project to an
+option — the decision still belongs to the repo owner and CNCF stakeholders (see
+ADR 0001, "Decision").
 
 ## Who to loop in
 
 - **CNCF End User TAB chairs/leads** — the group most directly represented by
   this site's content and audience.
-- **CNCF TOC liaison for the End User community** — for org-transfer process
-  and precedent from other CNCF-owned sites.
+- **CNCF TOC liaison for the End User community** — for org-transfer process and
+  precedent from other CNCF-owned sites.
 - **CNCF staff contact for cncf.io / contribute.cncf.io infrastructure** — for
   Option C feasibility (merging into an existing property) and DNS/hosting
   questions relevant to Option A.
@@ -62,5 +63,5 @@ Thanks,
    "Proposed" to "Accepted", with the chosen option and date).
 2. Update `ROADMAP.md` Phase 2/3 to reflect the decision and unblock the
    dependent items (DNS cutover, cross-linking, or content-merge plan).
-3. Delete or trim this file once the outreach has happened — it is a
-   one-time aid, not a living document.
+3. Delete or trim this file once the outreach has happened — it is a one-time
+   aid, not a living document.

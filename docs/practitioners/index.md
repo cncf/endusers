@@ -77,7 +77,11 @@ architects, and organizations running cloud native technologies in production.
 
 ## Member proof and recognition
 
-The End User Community is where production experience gets recognized. Recent [Top End User Award](/awards) winners include [SNCF](/awards), [Michelin](/awards), [ANT Group](/awards), [Adobe](/awards), and [CERN](/awards) — organizations that have shared architectures, case studies, and operational lessons with the wider community.
+The End User Community is where production experience gets recognized. Recent
+[Top End User Award](/awards) winners include [SNCF](/awards),
+[Michelin](/awards), [ANT Group](/awards), [Adobe](/awards), and [CERN](/awards)
+— organizations that have shared architectures, case studies, and operational
+lessons with the wider community.
 
 <ProjectsBorn
   title="Lead the way, set the industry standard"

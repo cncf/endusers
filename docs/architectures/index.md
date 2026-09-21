@@ -5,7 +5,9 @@ sidebar_position: 1
 
 # Reference architectures
 
-A growing catalog of real-world cloud native architectures contributed by CNCF end users. Browse by organization, industry, and the CNCF projects used in each architecture.
+A growing catalog of real-world cloud native architectures contributed by CNCF
+end users. Browse by organization, industry, and the CNCF projects used in each
+architecture.
 
 ## Why submit a reference architecture?
 
@@ -48,8 +50,8 @@ A growing catalog of real-world cloud native architectures contributed by CNCF e
 </div>
 
 Organizations with community-accepted Reference Architectures are
-[automatically eligible](https://www.cncf.io/enduser-contributor/) for the End User
-Contributor program free of charge.
+[automatically eligible](https://www.cncf.io/enduser-contributor/) for the End
+User Contributor program free of charge.
 
 ## Benefits for your Organization
 
@@ -91,10 +93,14 @@ or start with the
 
 ## The catalog
 
-import ReferenceArchitectures from '@site/src/components/ReferenceArchitectures';
+import ReferenceArchitectures from
+'@site/src/components/ReferenceArchitectures';
 
 <ReferenceArchitectures />
 
 ## About this catalog
 
-Architecture content is imported from the [CNCF Cloud Native Reference Architecture project](https://github.com/cncf/architecture). Each architecture includes its source revision and attribution. Documentation is distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Architecture content is imported from the
+[CNCF Cloud Native Reference Architecture project](https://github.com/cncf/architecture).
+Each architecture includes its source revision and attribution. Documentation is
+distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

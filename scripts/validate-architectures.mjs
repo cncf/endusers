@@ -10,7 +10,10 @@ const assetRoot = resolve(join(staticRoot, assetPrefix.slice(1)));
 const idPattern = /^[a-z0-9][a-z0-9-]*$/;
 
 const catalogPath = join(root, 'data/architectures/catalog.json');
-if (!existsSync(catalogPath)) throw new Error('Missing data/architectures/catalog.json; run npm run import:architectures');
+if (!existsSync(catalogPath))
+  throw new Error(
+    'Missing data/architectures/catalog.json; run npm run import:architectures',
+  );
 
 // The catalog is regenerated from the third-party cncf/architecture repository,
 // so every field that reaches an href or an <img src> is treated as untrusted.
@@ -28,7 +31,8 @@ function isHttpsUrl(value) {
 function resolveContainedAsset(asset) {
   if (typeof asset !== 'string' || !asset.startsWith(assetPrefix)) return null;
   const resolved = resolve(join(staticRoot, asset.slice(1)));
-  if (resolved !== assetRoot && !resolved.startsWith(assetRoot + sep)) return null;
+  if (resolved !== assetRoot && !resolved.startsWith(assetRoot + sep))
+    return null;
   return resolved;
 }
 
@@ -36,18 +40,49 @@ const records = JSON.parse(readFileSync(catalogPath, 'utf8'));
 const ids = new Set();
 const errors = [];
 for (const record of records) {
-  if (!record.id || !record.title || !record.organization) errors.push({ path: record.id || '<unknown>', severity: 'error', message: 'missing id, title, or organization' });
-  if (record.id && !idPattern.test(record.id)) errors.push({ path: record.id, severity: 'error', message: 'id must be a lowercase slug matching /^[a-z0-9][a-z0-9-]*$/; it is used as a route segment and as a filesystem path component' });
-  if (ids.has(record.id)) errors.push({ path: record.id, severity: 'error', message: 'duplicate id' });
+  if (!record.id || !record.title || !record.organization)
+    errors.push({
+      path: record.id || '<unknown>',
+      severity: 'error',
+      message: 'missing id, title, or organization',
+    });
+  if (record.id && !idPattern.test(record.id))
+    errors.push({
+      path: record.id,
+      severity: 'error',
+      message:
+        'id must be a lowercase slug matching /^[a-z0-9][a-z0-9-]*$/; it is used as a route segment and as a filesystem path component',
+    });
+  if (ids.has(record.id))
+    errors.push({
+      path: record.id,
+      severity: 'error',
+      message: 'duplicate id',
+    });
   ids.add(record.id);
-  if (!isHttpsUrl(record.sourceUrl)) errors.push({ path: record.id || '<unknown>', severity: 'error', message: 'sourceUrl must be an https URL; it is rendered as an href in the member directory' });
+  if (!isHttpsUrl(record.sourceUrl))
+    errors.push({
+      path: record.id || '<unknown>',
+      severity: 'error',
+      message:
+        'sourceUrl must be an https URL; it is rendered as an href in the member directory',
+    });
   for (const asset of record.assets ?? []) {
     const file = resolveContainedAsset(asset);
     if (!file) {
-      errors.push({ path: record.id, severity: 'error', message: `asset ${asset} must be a site-absolute path contained in ${assetPrefix}` });
+      errors.push({
+        path: record.id,
+        severity: 'error',
+        message: `asset ${asset} must be a site-absolute path contained in ${assetPrefix}`,
+      });
       continue;
     }
-    if (!existsSync(file)) errors.push({ path: record.id, severity: 'error', message: `missing asset ${asset}` });
+    if (!existsSync(file))
+      errors.push({
+        path: record.id,
+        severity: 'error',
+        message: `missing asset ${asset}`,
+      });
   }
 }
 reportAndExit(errors, 'architecture catalog');

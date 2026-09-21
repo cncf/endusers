@@ -9,5 +9,5 @@ events — you agree to abide by its terms.
 ## Reporting
 
 To report a violation, contact the maintainers listed in
-[MAINTAINERS.md](./MAINTAINERS.md). For incidents involving a maintainer,
-follow the escalation path in the CNCF Code of Conduct.
+[MAINTAINERS.md](./MAINTAINERS.md). For incidents involving a maintainer, follow
+the escalation path in the CNCF Code of Conduct.

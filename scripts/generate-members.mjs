@@ -32,19 +32,21 @@ const DISPLAY_NAME_OVERRIDES = {
 /** Converts an organisation display name to a URL-safe slug. */
 function orgToSlug(name) {
   if (SLUG_OVERRIDES[name]) return SLUG_OVERRIDES[name];
-  return name
-    .toLowerCase()
-    // Drop parenthetical qualifiers like "(Switzerland)"
-    .replace(/\s*\([^)]*\)\s*/g, ' ')
-    // Drop common legal suffixes
-    .replace(
-      /\b(ltd\.?|inc\.?|corp\.?|ag|gmbh|pvt\.?|s\.a\.|b\.v\.|direct|group)\b/gi,
-      '',
-    )
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+  return (
+    name
+      .toLowerCase()
+      // Drop parenthetical qualifiers like "(Switzerland)"
+      .replace(/\s*\([^)]*\)\s*/g, ' ')
+      // Drop common legal suffixes
+      .replace(
+        /\b(ltd\.?|inc\.?|corp\.?|ag|gmbh|pvt\.?|s\.a\.|b\.v\.|direct|group)\b/gi,
+        '',
+      )
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+  );
 }
 
 const catalog = JSON.parse(
@@ -69,7 +71,10 @@ for (const entry of catalog) {
 }
 
 // Collect all unique member slugs from both sources.
-const allSlugs = new Set([...Object.keys(awardsBySlug), ...Object.keys(catalogBySlug)]);
+const allSlugs = new Set([
+  ...Object.keys(awardsBySlug),
+  ...Object.keys(catalogBySlug),
+]);
 
 /** Picks the best logo path for a member.
  * Preference order:
@@ -85,7 +90,11 @@ const allSlugs = new Set([...Object.keys(awardsBySlug), ...Object.keys(catalogBy
  * @param {string} slug - canonical member slug
  */
 function pickLogo(allAssets, awardEntries, slug) {
-  const basename = (p) => p.split('/').pop().replace(/\.[^.]+$/, '');
+  const basename = (p) =>
+    p
+      .split('/')
+      .pop()
+      .replace(/\.[^.]+$/, '');
   // 1. Any asset explicitly named "logo.*"
   const namedLogo = allAssets.find((a) => basename(a) === 'logo');
   if (namedLogo) return namedLogo;
@@ -152,7 +161,11 @@ for (const slug of [...allSlugs].sort()) {
     id: slug,
     name,
     slug,
-    logo: pickLogo(catalogEntries.flatMap((e) => e.assets || []), awardEntries, slug),
+    logo: pickLogo(
+      catalogEntries.flatMap((e) => e.assets || []),
+      awardEntries,
+      slug,
+    ),
     industries,
     projects,
     architectures,
@@ -180,5 +193,8 @@ const output = {
 };
 
 mkdirSync(join(root, 'data'), { recursive: true });
-writeFileSync(join(root, 'data/members.json'), JSON.stringify(output, null, 2) + '\n');
+writeFileSync(
+  join(root, 'data/members.json'),
+  JSON.stringify(output, null, 2) + '\n',
+);
 console.log(`Generated ${members.length} member entries.`);

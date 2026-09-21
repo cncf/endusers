@@ -44,8 +44,8 @@ Rules:
 - **Never edit `data/metrics.json` by hand.** Refresh it with
   `npm run collect:metrics`; change `scripts/collect-metrics.mjs` instead. Set
   `GH_TOKEN` to a GitHub personal access token with public-repo read access
-  before running it (and `npm run fetch:community-people`) — these scripts
-  make enough GitHub API calls to exceed the unauthenticated rate limit.
+  before running it (and `npm run fetch:community-people`) — these scripts make
+  enough GitHub API calls to exceed the unauthenticated rate limit.
 - Verify award entries against the linked cncf.io announcement before adding.
 - Reference architectures are imported from
   [cncf/architecture](https://github.com/cncf/architecture) — fix content
@@ -82,16 +82,17 @@ below for what to do if the query comes up empty.
   No issue required — a PR is enough for this one.
 
 The label query above is the source of truth: pick any open issue carrying
-`good first issue` and mention in your pull request which one you picked up.
-If the query is empty, the docs/typo sweep above is always available, or
-check the [open issues list](https://github.com/cncf/endusers/issues) for
-something scoped enough for a first contribution.
+`good first issue` and mention in your pull request which one you picked up. If
+the query is empty, the docs/typo sweep above is always available, or check the
+[open issues list](https://github.com/cncf/endusers/issues) for something scoped
+enough for a first contribution.
 
 ## Making changes
 
 1. Fork the repository and create a branch from `main`.
 2. Make your change and run the relevant validation script.
-3. Run `npm run test:unit` — the required "Validate repository" check runs this on every PR.
+3. Run `npm run test:unit` — the required "Validate repository" check runs this
+   on every PR.
 4. Verify with `npm run build` before opening a PR.
 5. Open a pull request against `main` describing what changed and why.
 
