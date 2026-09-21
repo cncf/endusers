@@ -10,9 +10,11 @@ reference architectures, awards, metrics, events, and pathways to participate.
 - **Architectures** — real-world reference architectures imported from
   [cncf/architecture](https://github.com/cncf/architecture)
 - **Community** — the End User Technical Advisory Board (TAB), End User Groups, and ways to engage
+- **Members** — the directory of CNCF End User Community member organizations
 - **Awards** — the organizations recognized with CNCF End User awards
 - **Metrics** — ecosystem and end-user metrics generated from authoritative public sources
 - **Events** — end user gatherings at KubeCon + CloudNativeCon
+- **Blog** — stories and updates from the CNCF End User Community
 
 ## Setup locally
 

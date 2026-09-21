@@ -61,6 +61,13 @@ Rules:
 - `data/projects-born.json` has no generator; edit it directly and verify the
   origin story against a reliable source before adding an entry.
 
+## Blog contributions
+
+The blog is hand-authored Markdown in `blog/`, not generated from a data file.
+See [`docs/skills/blog-management.md`](docs/skills/blog-management.md) for
+post format, front matter (`blog/authors.yml`/`blog/tags.yml` keys), and the
+publishing cadence.
+
 ## Style rules
 
 - GitHub Flavored Markdown for all content.
