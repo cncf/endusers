@@ -8,10 +8,12 @@ description: How CNCF User Groups, Initiatives, and Technical Community Groups a
 
 This page reproduces the [CNCF TAB's User Group Governance](https://github.com/cncf/tab/blob/main/governance/ug-governance.md)
 document, licensed under the [Apache License 2.0](https://github.com/cncf/tab/blob/main/LICENSE).
-Paragraphs have been re-wrapped for this site's formatting and the source's
+Paragraphs have been re-wrapped for this site's formatting, the source's
 manual table of contents has been dropped in favor of this site's generated
-page navigation; no wording has been changed. `cncf/tab` is the source of
-truth — if the two documents disagree, `cncf/tab` wins.
+page navigation, and the source's truncated introductory sentences have been
+merged into one complete sentence; otherwise no wording has been changed.
+`cncf/tab` is the source of truth — if the two documents disagree, `cncf/tab`
+wins.
 
 :::
 
@@ -274,3 +276,4 @@ TCG's MAY have other roles, but they are **REQUIRED** to be documented in an eas
 {/* Common Links */}
 
 [Technical Leadership Principles]: https://github.com/cncf/toc/blob/main/PRINCIPLES.md#technical-leadership-principles
+[Community Group Organizer Requirements]: https://github.com/cncf/communitygroups/blob/main/organizers.md
