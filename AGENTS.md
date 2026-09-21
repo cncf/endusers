@@ -46,7 +46,7 @@ the Hive maintainers directly.
 - **No Emojis**: Do not use emojis in content, code, or commit messages.
 - **Lazy Loading**: Use the `docs/skills/` manifest to discover detailed instructions for specific tasks (e.g., blog posts, documentation updates).
 - **Structure**: Maintain Docusaurus file layout and sidebar configurations (`sidebars.js`).
-  Single-page sections (practitioners, events, metrics, awards) intentionally have no
+  Single-page sections (practitioners, events, metrics) intentionally have no
   sidebar; multi-page sections (architectures, community) do.
 - **Facts**: Verify CNCF facts (award winners, TAB scope, architecture counts) against
   authoritative sources: cncf/tab, cncf/architecture, cncf/landscape, and cncf.io
@@ -58,5 +58,5 @@ The `/metrics` page is generated from `data/metrics.json`. Refresh it with `npm 
 
 ## Awards
 
-The `/awards` page is generated from `data/awards.json`. Winners are data entries, not
+The `/community/awards` page is generated from `data/awards.json`. Winners are data entries, not
 hand-built pages. Verify each entry against its cncf.io announcement link.

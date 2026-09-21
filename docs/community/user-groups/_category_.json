@@ -1,0 +1,10 @@
+{
+  "label": "User Groups",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "slug": "/community/user-groups",
+    "title": "User Groups",
+    "description": "User Groups are long-lived groups aligned to an industry vertical or problem domain, that report directly to the TAB. See the Governance page for the full definition."
+  }
+}
