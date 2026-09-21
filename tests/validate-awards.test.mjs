@@ -128,6 +128,37 @@ test('rejects logos outside /img/awards/', () => {
   assert.match(result.stderr, /\/img\/awards\//);
 });
 
+test('rejects a logo that escapes /img/awards/ with .. segments', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([
+      { ...validEntry, logo: '/img/awards/../../../../../etc/hostname' },
+    ]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /logo must live under \/img\/awards\//);
+  assert.doesNotMatch(result.stderr, /logo file missing/);
+});
+
+test('rejects a logo that escapes static/ entirely via .. segments', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([{ ...validEntry, logo: '/img/awards/../../package.json' }]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /logo must live under \/img\/awards\//);
+});
+
+test('rejects a non-string logo without crashing', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([{ ...validEntry, logo: 42 }]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /logo must be a string path/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
 test('rejects logo files missing from static/', () => {
   const result = runScriptWithFixtures(
     SCRIPT,

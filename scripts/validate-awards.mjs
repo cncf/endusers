@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import { existsSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { reportAndExit } from './lib/validate-utils.mjs';
+
+const staticRoot = fileURLToPath(new URL('../static/', import.meta.url));
+const awardsLogoRoot = join(staticRoot, 'img', 'awards') + sep;
 const data = JSON.parse(
   readFileSync(new URL('../data/awards.json', import.meta.url)),
 );
@@ -65,21 +69,32 @@ for (const entry of data.awards || []) {
       });
   }
   if (entry.logo) {
-    if (!entry.logo.startsWith('/img/awards/'))
+    if (typeof entry.logo !== 'string') {
       errors.push({
         path: id,
         severity: 'error',
-        message: 'logo must live under /img/awards/',
+        message: 'logo must be a string path under /img/awards/',
       });
-    const file = fileURLToPath(
-      new URL(`../static${entry.logo}`, import.meta.url),
-    );
-    if (!existsSync(file))
-      errors.push({
-        path: id,
-        severity: 'error',
-        message: `logo file missing: ${entry.logo}`,
-      });
+    } else {
+      // Resolve before checking containment: a raw prefix test alone is
+      // defeated by '..' segments, which path resolution normalises away.
+      const file = resolve(staticRoot, `.${entry.logo}`);
+      if (
+        !entry.logo.startsWith('/img/awards/') ||
+        !file.startsWith(awardsLogoRoot)
+      )
+        errors.push({
+          path: id,
+          severity: 'error',
+          message: 'logo must live under /img/awards/',
+        });
+      else if (!existsSync(file))
+        errors.push({
+          path: id,
+          severity: 'error',
+          message: `logo file missing: ${entry.logo}`,
+        });
+    }
   }
 }
 reportAndExit(errors, 'awards');
