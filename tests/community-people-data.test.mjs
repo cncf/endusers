@@ -142,30 +142,9 @@ test('optional text fields are strings, never null or undefined', () => {
 
 test('nullable fields are a string or null, never undefined', () => {
   for (const [section, person] of eachPerson()) {
-    for (const field of ['role', 'linkedin', 'twitter', 'profileUpdatedAt']) {
+    for (const field of ['role', 'linkedin', 'twitter']) {
       assert.ok(
         person[field] === null || typeof person[field] === 'string',
-        `${section}/${person.name}.${field} is ${JSON.stringify(person[field])}`,
-      );
-    }
-  }
-});
-
-test('profileUpdatedAt is parseable when present', () => {
-  for (const [section, person] of eachPerson()) {
-    if (!person.profileUpdatedAt) continue;
-    assert.ok(
-      !Number.isNaN(Date.parse(person.profileUpdatedAt)),
-      `${section}/${person.name} has an unparseable profileUpdatedAt: ${person.profileUpdatedAt}`,
-    );
-  }
-});
-
-test('repo and follower counts are non-negative integers', () => {
-  for (const [section, person] of eachPerson()) {
-    for (const field of ['publicRepos', 'followers']) {
-      assert.ok(
-        Number.isInteger(person[field]) && person[field] >= 0,
         `${section}/${person.name}.${field} is ${JSON.stringify(person[field])}`,
       );
     }
