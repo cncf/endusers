@@ -2,8 +2,9 @@ import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { join } from 'node:path';
+import { resolveRepoRoot } from './helpers.mjs';
 
-const repoRoot = new URL('..', import.meta.url).pathname;
+const repoRoot = resolveRepoRoot(import.meta.url);
 
 // Read-only validators that must pass against the repository's current
 // generated data. Scripts that clone upstream repos or call network APIs
