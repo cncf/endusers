@@ -61,6 +61,7 @@
     "validate:radar-reports": "node scripts/validate-radar-reports.mjs",
     "validate:community-people": "node scripts/validate-community-people.mjs",
     "validate:community-groups": "node scripts/validate-community-groups.mjs",
+    "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
     "test:unit": "node --test"
   },
   "repository": {
