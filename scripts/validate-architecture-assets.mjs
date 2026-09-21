@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { collectError, reportAndExit } from './lib/validate-utils.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const assetsDir = join(root, 'static/img/architectures');
 const shouldFix = process.argv.includes('--fix');
 
