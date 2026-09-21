@@ -13,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { basename, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parse as yamlParse } from 'yaml';
+import { isCncfProjectHref } from './lib/project-card-links.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
@@ -157,7 +158,7 @@ function renderProjectCards(body, id) {
         (match) => match[1],
       );
       const href =
-        links.find((link) => link.includes('cncf.io/projects/')) ||
+        links.find(isCncfProjectHref) ||
         `https://www.cncf.io/projects/${name.toLowerCase().replace(/\s+/g, '-')}/`;
       const logo = (content.match(/!\[[^\]]*\]\((https?:\/\/[^)]+)\)/) ||
         [])[1];
