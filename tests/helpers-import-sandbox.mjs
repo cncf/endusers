@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import {
   chmodSync,
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -111,6 +112,11 @@ export function runImportArchitectures({
     join(work, 'scripts', 'import-architectures.mjs'),
     readFileSync(join(repoRoot, 'scripts', 'import-architectures.mjs'), 'utf8'),
   );
+  // The script imports helper modules from scripts/lib; mirror the whole
+  // directory so new lib imports do not break the sandbox.
+  cpSync(join(repoRoot, 'scripts', 'lib'), join(work, 'scripts', 'lib'), {
+    recursive: true,
+  });
   // `yaml` is imported by the script; resolve it from the repo install.
   symlinkSync(join(repoRoot, 'node_modules'), join(work, 'node_modules'));
   // The script writes docs pages without creating the directory first.
