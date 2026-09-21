@@ -72,6 +72,7 @@ export default function AwardsTimeline() {
   const years = Array.from(byYear.keys()).sort((a, b) => b - a);
   const verifiedDate = awardsData.verifiedAt
     ? new Date(awardsData.verifiedAt).toLocaleDateString('en-US', {
+        timeZone: 'UTC',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
