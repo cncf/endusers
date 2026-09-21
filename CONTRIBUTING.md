@@ -32,10 +32,10 @@ hand-building pages:
 
 | Page                            | Data source                                                                                 | Validation                        |
 | ------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------- |
-| `/awards`                       | `data/awards.json`                                                                          | `npm run validate:awards`         |
+| `/community/awards`             | `data/awards.json`                                                                          | `npm run validate:awards`         |
 | `/metrics`                      | `data/metrics.json` (generated)                                                             | `npm run validate:metrics`        |
 | `/architectures`                | `data/architectures/records/*.json`                                                         | `npm run validate:architectures`  |
-| `/members`                      | `data/members.json` (generated from `data/awards.json` + `data/architectures/catalog.json`) | `npm run generate:members`        |
+| `/community/members`            | `data/members.json` (generated from `data/awards.json` + `data/architectures/catalog.json`) | `npm run generate:members`        |
 | Community people lightboxes     | `data/community-roster.json` (curated) → refreshed into `data/community-people.json`        | `npm run fetch:community-people`  |
 | ProjectsBorn (`/practitioners`) | `data/projects-born.json`                                                                   | manual edit, no validation script |
 
@@ -57,7 +57,7 @@ Rules:
 - Verify CNCF facts (award winners, TAB scope, architecture counts) against
   authoritative sources. Never assert numbers without a source.
 - **Adding or editing an award winner requires re-running
-  `npm run generate:members`** so `/members` stays in sync with
+  `npm run generate:members`** so `/community/members` stays in sync with
   `data/awards.json`.
 - **Never edit `data/community-people.json` by hand.** Add or fix a person in
   `data/community-roster.json`, then refresh with
