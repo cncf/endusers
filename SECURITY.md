@@ -11,10 +11,9 @@ Please **do not** open a public issue for security vulnerabilities.
 
 - Use [GitHub private vulnerability reporting](../../security/advisories/new)
   to file a confidential report, or
-- If private reporting is unavailable to you (for example, you have no GitHub
-  account or are reporting on behalf of an organization), contact a
-  maintainer listed in [MAINTAINERS.md](./MAINTAINERS.md) directly through
-  their GitHub profile to arrange a private channel.
+- If private reporting is unavailable to you, email
+  [projects@cncf.io](mailto:projects@cncf.io) with the subject prefix
+  `[SECURITY]` to report vulnerabilities to the CNCF security team.
 
 Include a description of the issue, steps to reproduce, and the potential
 impact. You can expect an acknowledgement within a few days; the project is
