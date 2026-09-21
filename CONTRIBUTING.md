@@ -91,8 +91,9 @@ game: mention in your pull request which one you picked up.
 
 1. Fork the repository and create a branch from `main`.
 2. Make your change and run the relevant validation script.
-3. Verify with `npm run build` before opening a PR.
-4. Open a pull request against `main` describing what changed and why.
+3. Run `npm run test:unit` — the required "Validate repository" check runs this on every PR.
+4. Verify with `npm run build` before opening a PR.
+5. Open a pull request against `main` describing what changed and why.
 
 ## Agent contributors
 
