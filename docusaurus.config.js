@@ -39,7 +39,7 @@ const config = {
       tagName: 'link',
       attributes: {
         rel: 'manifest',
-        href: '/manifest.json',
+        href: `${baseUrl}manifest.json`,
       },
     },
     {
@@ -47,7 +47,7 @@ const config = {
       attributes: {
         rel: 'apple-touch-icon',
         sizes: '180x180',
-        href: '/favicons/apple-touch-icon.png',
+        href: `${baseUrl}favicons/apple-touch-icon.png`,
       },
     },
     {
