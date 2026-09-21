@@ -97,7 +97,7 @@ what "no decision yet" means operationally for downstream work.
 1. Open a discussion with CNCF end-user community and TAB stakeholders on the
    intended long-term home for this content (see options above). A
    ready-to-send outreach draft, with suggested venues and stakeholders, is
-   available at [0001-stakeholder-outreach-draft.md](./0001-stakeholder-outreach-draft.md)
+   available at [stakeholder-outreach-draft-for-0001.md](./stakeholder-outreach-draft-for-0001.md)
    (proposed in PR #113).
 2. Land the prerequisites shared by every option regardless of outcome:
    LICENSE (done: #32 / PR #40) and a governance/MAINTAINERS note (#47).
