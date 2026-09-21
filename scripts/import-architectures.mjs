@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { join, relative } from 'node:path';
+import { basename, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parse as yamlParse } from 'yaml';
 
@@ -97,14 +97,36 @@ async function importArchitecture(id, commit) {
       const destination = join(assetsDir, id, relative(imageDir, file));
       mkdirSync(join(destination, '..'), { recursive: true });
       cpSync(file, destination);
-      record.assets.push(
-        `/img/architectures/${id}/${relative(imageDir, file).replaceAll('\\', '/')}`,
-      );
     }
   }
-  sanitizeArchitectureAssets(join(assetsDir, id));
+  // Sanitization may convert raster-embedded SVGs to PNG and delete the
+  // originals, so capture SVG names beforehand and rebuild the asset list
+  // from disk afterward rather than trusting the copy-time list.
+  const archAssetsDir = join(assetsDir, id);
+  const svgsBefore = existsSync(archAssetsDir)
+    ? walkFiles(archAssetsDir).filter((file) => file.endsWith('.svg'))
+    : [];
+  sanitizeArchitectureAssets(archAssetsDir);
+  record.assets = existsSync(archAssetsDir)
+    ? walkFiles(archAssetsDir).map(
+        (file) =>
+          `/img/architectures/${id}/${relative(archAssetsDir, file).replaceAll('\\', '/')}`,
+      )
+    : [];
+  const convertedToPng = svgsBefore
+    .filter(
+      (file) =>
+        !existsSync(file) && existsSync(file.replace(/\.svg$/i, '.png')),
+    )
+    .map((file) => basename(file));
   await mirrorProjectAssets(body);
-  const cleanBody = cleanMarkdown(renderProjectCards(body, id), id);
+  let cleanBody = cleanMarkdown(renderProjectCards(body, id), id);
+  for (const svgName of convertedToPng) {
+    cleanBody = cleanBody.replaceAll(
+      `/img/architectures/${id}/${svgName}`,
+      `/img/architectures/${id}/${svgName.replace(/\.svg$/i, '.png')}`,
+    );
+  }
   record.summary = firstParagraph(cleanBody);
   writeFileSync(
     join(recordsDir, `${id}.json`),
