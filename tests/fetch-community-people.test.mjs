@@ -5,16 +5,21 @@ import { runScriptWithFetchMock } from './helpers-fetch-mock.mjs';
 
 const OUTPUT = 'data/community-people.json';
 const ROSTER = 'data/community-roster.json';
+const PEOPLE_MATCH = 'raw.githubusercontent.com/cncf/people/main/people.json';
 
 function roster(sections, fallbackImages = {}) {
   return JSON.stringify({ sections, fallbackImages });
 }
 
-function run({ fixtures, routes = [] }) {
+function peopleRoute(records) {
+  return { match: PEOPLE_MATCH, body: records };
+}
+
+function run({ fixtures, records = [], routes = [] }) {
   return runScriptWithFetchMock({
     script: 'fetch-community-people.mjs',
     fixtures,
-    routes,
+    routes: [peopleRoute(records), ...routes],
     outputs: [OUTPUT],
   });
 }
@@ -50,9 +55,6 @@ test('builds profiles from roster data alone when no GitHub handle is set', () =
   // rather than a broken https://github.com/undefined.png URL.
   assert.equal(person.image, '');
   assert.equal(person.bio, '');
-  assert.equal(person.publicRepos, 0);
-  assert.equal(person.followers, 0);
-  assert.equal(person.profileUpdatedAt, null);
 });
 
 test('writes a fetchedAt envelope with sections keyed under people', () => {
@@ -72,90 +74,89 @@ test('writes a fetchedAt envelope with sections keyed under people', () => {
   assert.equal(output.people.ambassadors[0].name, 'Grace Hopper');
 });
 
-test('prefers live GitHub profile fields over roster defaults', () => {
+test('fills in bio, location, image and links from a matching cncf/people record', () => {
   const result = run({
     fixtures: {
       [ROSTER]: roster({
         tab: [{ name: 'Roster Name', company: 'Roster Co', github: 'ada' }],
       }),
     },
-    routes: [
+    records: [
       {
-        match: '/users/ada',
-        body: {
-          name: 'Ada Lovelace',
-          company: '@Analytical',
-          bio: 'Computing pioneer',
-          location: 'London',
-          avatar_url: 'https://avatars.example/ada.png',
-          blog: 'https://ada.example',
-          public_repos: 12,
-          followers: 3400,
-          updated_at: '2026-01-02T03:04:05Z',
-        },
+        name: 'Ada Lovelace',
+        company: 'Analytical Engines',
+        bio: 'Computing pioneer',
+        location: 'London',
+        github: 'https://github.com/ada',
+        linkedin: 'https://www.linkedin.com/in/ada-lovelace',
+        twitter: 'https://twitter.com/ada',
+        website: 'https://ada.example',
+        image: 'ada.jpg',
       },
     ],
   });
 
   const person = parseOutput(result).people.tab[0];
-  assert.equal(person.name, 'Ada Lovelace');
-  // cleanCompany strips the leading @ that GitHub uses for org handles.
-  assert.equal(person.company, 'Analytical');
-  assert.equal(person.bio, 'Computing pioneer');
-  assert.equal(person.location, 'London');
-  assert.equal(person.image, 'https://avatars.example/ada.png');
-  assert.equal(person.blog, 'https://ada.example');
-  assert.equal(person.publicRepos, 12);
-  assert.equal(person.followers, 3400);
-  assert.equal(person.profileUpdatedAt, '2026-01-02T03:04:05Z');
-});
-
-test('keeps roster name and company when the GitHub profile omits them', () => {
-  const result = run({
-    fixtures: {
-      [ROSTER]: roster({
-        tab: [{ name: 'Roster Name', company: 'Roster Co', github: 'ada' }],
-      }),
-    },
-    routes: [
-      {
-        match: '/users/ada',
-        // A GitHub user with no display name or company set returns nulls.
-        body: {
-          name: null,
-          company: null,
-          avatar_url: 'https://a.example/x.png',
-        },
-      },
-    ],
-  });
-
-  const person = parseOutput(result).people.tab[0];
+  // Roster name/company stay authoritative even when cncf/people has values.
   assert.equal(person.name, 'Roster Name');
   assert.equal(person.company, 'Roster Co');
+  assert.equal(person.bio, 'Computing pioneer');
+  assert.equal(person.location, 'London');
+  assert.equal(
+    person.image,
+    'https://raw.githubusercontent.com/cncf/people/main/images/ada.jpg',
+  );
+  assert.equal(person.linkedin, 'ada-lovelace');
+  assert.equal(person.twitter, 'ada');
+  assert.equal(person.blog, 'https://ada.example');
 });
 
-test('preserves a genuine zero for repo and follower counts', () => {
+test('matches cncf/people handles case-insensitively', () => {
   const result = run({
     fixtures: {
-      [ROSTER]: roster({ tab: [{ name: 'New Member', github: 'newbie' }] }),
+      [ROSTER]: roster({
+        tab: [{ name: 'Ada Lovelace', github: 'Ada' }],
+      }),
     },
-    routes: [
+    records: [
+      { name: 'Ada Lovelace', bio: 'Computing pioneer', github: 'https://github.com/ada' },
+    ],
+  });
+
+  const person = parseOutput(result).people.tab[0];
+  assert.equal(person.bio, 'Computing pioneer');
+});
+
+test('roster linkedin and twitter handles take precedence over cncf/people', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({
+        tab: [
+          {
+            name: 'Ada Lovelace',
+            github: 'ada',
+            linkedin: 'roster-linkedin',
+            twitter: 'roster-twitter',
+          },
+        ],
+      }),
+    },
+    records: [
       {
-        match: '/users/newbie',
-        body: { public_repos: 0, followers: 0 },
+        name: 'Ada Lovelace',
+        github: 'https://github.com/ada',
+        linkedin: 'https://www.linkedin.com/in/people-linkedin',
+        twitter: 'https://twitter.com/people-twitter',
       },
     ],
   });
 
   const person = parseOutput(result).people.tab[0];
-  // These use ?? rather than ||, so a real zero must survive rather than
-  // falling through to the roster/previous defaults.
-  assert.equal(person.publicRepos, 0);
-  assert.equal(person.followers, 0);
+  assert.equal(person.linkedin, 'roster-linkedin');
+  assert.equal(person.twitter, 'roster-twitter');
 });
 
-test('falls back to roster data and warns when the GitHub API errors', () => {
+test('falls back to roster data and counts a fallback when no cncf/people record matches', () => {
   const result = run({
     fixtures: {
       [ROSTER]: roster({
@@ -164,59 +165,81 @@ test('falls back to roster data and warns when the GitHub API errors', () => {
         ],
       }),
     },
-    routes: [{ match: '/users/ada', status: 404 }],
+    records: [],
   });
 
   const output = parseOutput(result);
   const person = output.people.tab[0];
   assert.equal(person.name, 'Ada Lovelace');
   assert.equal(person.company, 'Analytical Co');
-  // Without a profile the avatar is derived from the handle.
+  // Without a cncf/people match the avatar is derived from the handle.
   assert.equal(person.image, 'https://github.com/ada.png');
-  assert.match(
-    result.stderr,
-    /Could not refresh Ada Lovelace: GitHub returned 404/,
-  );
   assert.match(result.stdout, /\(1 fallback\)/);
 });
 
-test('reports a network failure as a fallback without aborting the run', () => {
+test('preserves the previous run when a handle has no cncf/people match', () => {
   const result = run({
     fixtures: {
       [ROSTER]: roster({
-        tab: [
-          { name: 'Ada Lovelace', github: 'ada' },
-          { name: 'Grace Hopper' },
-        ],
+        tab: [{ name: 'Ada', company: 'Roster Co', github: 'ada' }],
+      }),
+      [OUTPUT]: JSON.stringify({
+        fetchedAt: '2020-01-01T00:00:00.000Z',
+        people: {
+          tab: [
+            {
+              name: 'Ada Lovelace',
+              company: 'Cached Co',
+              github: 'ada',
+              bio: 'cached bio',
+              location: 'London',
+              image: 'https://images.example/ada.png',
+            },
+          ],
+        },
       }),
     },
-    routes: [{ match: '/users/ada', networkError: 'socket hang up' }],
+    records: [],
   });
 
-  const output = parseOutput(result);
-  assert.equal(output.people.tab.length, 2);
-  assert.match(result.stderr, /Could not refresh Ada Lovelace: socket hang up/);
-  assert.match(result.stdout, /Refreshed 2 community profiles \(1 fallback\)/);
+  const person = parseOutput(result).people.tab[0];
+  assert.equal(person.bio, 'cached bio');
+  assert.equal(person.location, 'London');
+  assert.equal(person.image, 'https://images.example/ada.png');
+  assert.equal(person.company, 'Roster Co');
 });
 
-test('pluralises the fallback count across multiple failures', () => {
+test('fails closed and does not overwrite output when cncf/people cannot be loaded', () => {
+  const result = runScriptWithFetchMock({
+    script: 'fetch-community-people.mjs',
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+      [OUTPUT]: JSON.stringify({ fetchedAt: '2020-01-01T00:00:00.000Z', people: { tab: [] } }),
+    },
+    routes: [{ match: PEOPLE_MATCH, status: 500 }],
+    outputs: [OUTPUT],
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Could not load cncf\/people\/people\.json/);
+  assert.equal(
+    JSON.parse(result.outputs[OUTPUT]).fetchedAt,
+    '2020-01-01T00:00:00.000Z',
+    'output should be untouched when the upstream dataset fails to load',
+  );
+});
+
+test('rejects an invalid GitHub handle in the roster', () => {
   const result = run({
     fixtures: {
       [ROSTER]: roster({
-        tab: [
-          { name: 'Ada Lovelace', github: 'ada' },
-          { name: 'Grace Hopper', github: 'grace' },
-        ],
+        tab: [{ name: 'Bad Actor', github: '../evil' }],
       }),
     },
-    routes: [
-      { match: '/users/ada', status: 500 },
-      { match: '/users/grace', status: 500 },
-    ],
   });
 
-  assert.equal(parseOutput(result).people.tab.length, 2);
-  assert.match(result.stdout, /Refreshed 2 community profiles \(2 fallbacks\)/);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /invalid GitHub handle/);
 });
 
 test('uses fallbackImages for people without a GitHub handle', () => {
@@ -263,50 +286,4 @@ test('emits an empty section array when a roster section has no entries', () => 
   const output = parseOutput(result);
   assert.deepEqual(output.people.alumni, []);
   assert.match(output.fetchedAt, /T/);
-});
-
-// CHARACTERIZATION TEST — asserts current, known-incorrect behaviour.
-//
-// The script writes { fetchedAt, people: { <section>: [...] } } but reads the
-// previous run back as existing[section] rather than existing.people[section].
-// The lookup never matches, so the last-known-good cache is dead code and an
-// API failure resets each profile to a roster stub instead of retaining the
-// prior values. Tracked in the issue "fetch-community-people.mjs:
-// last-known-good cache never engages".
-//
-// When that defect is fixed this test will fail. That is intended: replace the
-// assertions below with the cached values noted in each comment.
-test('currently discards the previous run when the API fails (known defect)', () => {
-  const result = run({
-    fixtures: {
-      [ROSTER]: roster({
-        tab: [{ name: 'Ada', company: 'Roster Co', github: 'ada' }],
-      }),
-      [OUTPUT]: JSON.stringify({
-        fetchedAt: '2020-01-01T00:00:00.000Z',
-        people: {
-          tab: [
-            {
-              name: 'Ada Lovelace',
-              company: 'Cached Co',
-              github: 'ada',
-              bio: 'cached bio',
-              location: 'London',
-              followers: 42,
-              publicRepos: 7,
-            },
-          ],
-        },
-      }),
-    },
-    routes: [{ match: '/users/ada', status: 403 }],
-  });
-
-  const person = parseOutput(result).people.tab[0];
-  assert.equal(person.bio, ''); // once fixed: 'cached bio'
-  assert.equal(person.location, ''); // once fixed: 'London'
-  assert.equal(person.followers, 0); // once fixed: 42
-  assert.equal(person.publicRepos, 0); // once fixed: 7
-  assert.equal(person.company, 'Roster Co'); // once fixed: 'Cached Co'
-  assert.equal(person.name, 'Ada'); // once fixed: 'Ada Lovelace'
 });

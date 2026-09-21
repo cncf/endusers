@@ -7,7 +7,7 @@ description:
 ---
 
 The [CNCF End User Technical Advisory Board (TAB)](https://github.com/cncf/tab)
-represents end users within the CNCF community. The TAB helps surface end-user
+represents end users within the CNCF community. The TAB helps surface end user
 needs, improve visibility into CNCF project adoption, advise on technical
 direction, and review reference architectures.
 
@@ -20,7 +20,11 @@ itself subject to User Group Governance.
 
 import CommunityPeople from '@site/src/components/CommunityPeople';
 
+import PeopleFreshness from '@site/src/components/PeopleFreshness';
+
 ## TAB members
+
+<PeopleFreshness />
 
 <CommunityPeople section="tab" />
 
@@ -30,7 +34,7 @@ import CommunityPeople from '@site/src/components/CommunityPeople';
 - Advise the
   [CNCF Technical Oversight Committee (TOC)](https://github.com/cncf/toc) on
   technical directions and challenges in the cloud native ecosystem.
-- Improve visibility into end-user adoption of CNCF projects.
+- Improve visibility into end user adoption of CNCF projects.
 - Provide feedback on project usability, reliability, and performance.
 - Review and approve reference architectures.
 - Advise on End User Radar tools and techniques.
@@ -68,6 +72,6 @@ when the material is ready.
 
 The
 [CNCF Technology Radar](https://github.com/cncf/tab/tree/main/end-user-tech-radar)
-captures end-user technology adoption data. The repository includes the
+captures end user technology adoption data. The repository includes the
 [radar data](https://github.com/cncf/tab/tree/main/end-user-tech-radar) and the
 [CNCF Radar application](https://github.com/cncf/radar).

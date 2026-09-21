@@ -105,6 +105,17 @@ To keep the queue from rotting (see issue #58):
   a signal to adjust the low-risk merge classes above, not to lower the review
   bar.
 
+**Operational status**: `scripts/pr-queue-hygiene.mjs` flags (labels
+`needs-rebase-or-close` + comments) any open PR that has been conflicting with
+the base branch for more than 48 hours. It does not close PRs automatically —
+judging whether a conflicting PR is superseded needs human or author-agent
+judgment — but it makes stale PRs visible without waiting for manual sweeps.
+Mergeability is checked per-PR via the single-PR API endpoint to avoid stale
+cached list values, and PRs labeled `hold`, `on-hold`, or `do-not-merge` are
+skipped per agent-automation policy. The scheduled GitHub Actions workflow file
+(`.github/workflows/pr-queue-hygiene.yml`) is tracked in issue #318 awaiting
+maintainer commit per the Hive App workflow-permission gap.
+
 ### Cross-agent duplicate prevention
 
 Fleet-wide sweeps have repeatedly found duplicate PRs opening the same fix from

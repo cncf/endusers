@@ -9,8 +9,9 @@
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 
 // Manual slug overrides for organisation names whose automatic normalisation
 // would produce the wrong result (e.g. "Flipkart Internet Pvt. Ltd." would

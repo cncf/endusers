@@ -6,7 +6,7 @@ import styles from './styles.module.css';
 
 function PersonDialog({ person, onClose, triggerRef }) {
   const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
-  const { name, company, role, image, bio, location, blog, github, linkedin, twitter, publicRepos, followers } = person;
+  const { name, company, role, image, bio, location, blog, github, linkedin, twitter } = person;
 
   const links = [
     ['GitHub', profileUrl(github, 'github')],
@@ -32,10 +32,6 @@ function PersonDialog({ person, onClose, triggerRef }) {
         </div>
         <div className={styles.profileBody}>
           {bio ? <p className={styles.bio}>{bio}</p> : <p className={styles.bioMuted}>Public profile details are limited. Use the links below to learn more about {name}.</p>}
-          <div className={styles.stats} aria-label={`${name} public GitHub activity`}>
-            {github && <div><strong>{publicRepos}</strong><span>public repos</span></div>}
-            {github && <div><strong>{followers}</strong><span>followers</span></div>}
-          </div>
           <div className={styles.profileLinks}>
             {links.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer">{label}<span aria-hidden="true">↗</span></a>)}
           </div>

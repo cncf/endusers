@@ -87,6 +87,28 @@ test('warns on foreignObject but still passes', () => {
   assert.match(result.stdout, /Validated 1 architecture asset/);
 });
 
+test('rejects a non-image asset type', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/architectures/example/notes.html': '<script>alert(1)</script>',
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /\.html is not an allowed asset type; static\/ is served at the site origin/,
+  );
+});
+
+test('rejects an extensionless asset', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/architectures/example/README': 'hello',
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /extensionless file is not an allowed asset type/,
+  );
+});
+
 test('walks nested directories', () => {
   const result = runScriptWithFixtures(SCRIPT, {
     'static/img/architectures/a/one.svg': VALID_SVG,

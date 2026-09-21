@@ -12,18 +12,17 @@ resources that help end users learn from one another and shape CNCF priorities.
 ## Start here
 
 <div className="action-row">
-  <a href="https://slack.cncf.io/">Join CNCF Slack</a>
-  <a href="https://lists.cncf.io/g/cncf-enduser" className="secondary">Subscribe to the mailing list</a>
   <a href="https://www.cncf.io/enduser/" className="secondary">Bring your organization in</a>
+  <a href="https://lists.cncf.io/g/cncf-enduser" className="secondary">Request mailing list access</a>
 </div>
 
-Not sure where to begin? The fastest way to participate is to join the
-`#enduser` channel on [CNCF Slack](https://slack.cncf.io/) and introduce
-yourself. From there you can find the right group, meeting, or contribution path
-for your interests.
+The [End User mailing list](https://lists.cncf.io/g/cncf-enduser) and the
+`#enduser` channel in [CNCF Slack](https://slack.cncf.io/) are private,
+application-gated spaces for the End User Community, so end user organizations
+can have candid peer discussions while still building in the open.
 
-- **Join the conversation:** Subscribe to the
-  [End User mailing list](https://lists.cncf.io/g/cncf-enduser) or join the
+- **Request access:** Request to join the
+  [End User mailing list](https://lists.cncf.io/g/cncf-enduser) and the private
   `#enduser` channel in [CNCF Slack](https://slack.cncf.io/).
 - **Bring your organization in:** Learn about
   [joining the CNCF End User Community](https://www.cncf.io/enduser/).
@@ -54,7 +53,11 @@ held accountable.
 
 import DocCardList from '@theme/DocCardList';
 
+import GroupLinkStatus from '@site/src/components/GroupLinkStatus';
+
 ## Explore the Community section
+
+<GroupLinkStatus />
 
 <DocCardList />
 
@@ -89,7 +92,7 @@ Start small and move up as your time and interest allow.
    through the
    [reference architecture submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
 5. **Help shape direction** — Join a User Group, a Technical Community Group, or
-   the TAB to advise on priorities and represent end-user needs.
+   the TAB to advise on priorities and represent end user needs.
 
 ## Projects born at end user organizations
 
@@ -113,5 +116,9 @@ years of collective OSS experience, as well as world class marketing and event
 support.
 
 import CommunityPeople from '@site/src/components/CommunityPeople';
+
+import PeopleFreshness from '@site/src/components/PeopleFreshness';
+
+<PeopleFreshness />
 
 <CommunityPeople section="staff" />

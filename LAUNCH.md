@@ -45,18 +45,26 @@ week-by-week status — it uses explicit dates and does not go stale.
 | W-1 | 2026-11-02 | Final content refresh; all Phase 1 issues closed or explicitly deferred |
 | W-0 | 2026-11-09 | **Launch during KubeCon NA week**: publish launch post, amplify on agreed channels, open feedback issue template |
 
-## Success metrics (baseline + 30-day post-launch targets)
+## Success metrics (baseline + post-launch targets)
 
-Baselines are as of 2026-08-08; capture the W-6 baseline snapshot in #100.
+Five of the signals below are machine-collected in `data/launch-metrics.json`
+(issue #100) rather than hand-tracked here, so they can't go stale the way a
+one-time table does: refresh with `npm run collect:launch-metrics`, validate
+with `npm run validate:launch-metrics`. Re-run the collector at (or after) the
+W-6 checkpoint (2026-09-28) so the committed baseline reflects that
+checkpoint — see the file's own `checkpoint` field for the current status.
+The two signals without a GitHub API source (blog cadence, cncf.io referral)
+are tracked here as prose and checked manually.
 
-| Signal | Baseline (2026-08-08) | 30-day post-launch target |
-| -------- | ---------------------- | --------------------------- |
-| GitHub stars | 0 | 50 |
-| Watchers / forks | 0 / 1 | 10 / 5 |
-| Unique contributors (humans, non-bot) | 1 | 5 |
-| Open good-first-issues claimed | 0 labeled | 3 claimed |
-| Blog posts since launch | 0 | 2 (launch post + 1 community voice) |
-| Referral from cncf.io properties | none | cross-link merged on at least one CNCF property (Phase 3) |
+| Signal | Baseline | 90-day post-launch target | Source |
+| -------- | ---------------------- | --------------------------- | ------ |
+| GitHub stars | see `data/launch-metrics.json` | 50 | `data/launch-metrics.json` |
+| GitHub watchers | see `data/launch-metrics.json` | 10 | `data/launch-metrics.json` |
+| GitHub forks | see `data/launch-metrics.json` | 5 | `data/launch-metrics.json` |
+| New unique human contributors since baseline | 0 (by definition) | 5 | `data/launch-metrics.json` |
+| Good-first-issues claimed | see `data/launch-metrics.json` | 3 | `data/launch-metrics.json` |
+| Blog posts since launch | 0 | 2 (launch post + 1 community voice) | manual (blog/) |
+| Referral from cncf.io properties | none | cross-link merged on at least one CNCF property (Phase 3) | manual |
 
 ## Launch-readiness gate: zero-red content pipelines (#136)
 

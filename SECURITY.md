@@ -22,6 +22,8 @@ maintained by volunteers, so timelines for fixes vary with severity.
 ## Scope
 
 This policy covers the site source, build scripts, and GitHub Actions
-workflows in this repository. Vulnerabilities in third-party dependencies
-should also be reported here if no fixed version is available — Dependabot
-and automated scanning handle routine dependency advisories.
+workflows in this repository. [Dependabot](.github/dependabot.yml) opens
+pull requests for routine npm and GitHub Actions version updates, but this
+repository has no automated vulnerability scanning (no CodeQL or SAST
+workflow). Report all vulnerabilities in third-party dependencies here,
+including ones with no fixed version available yet.

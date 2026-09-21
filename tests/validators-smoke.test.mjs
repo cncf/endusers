@@ -12,12 +12,15 @@ const repoRoot = resolveRepoRoot(import.meta.url);
 // intentionally excluded.
 const READ_ONLY_VALIDATORS = [
   'validate-metrics.mjs',
+  'validate-launch-metrics.mjs',
   'validate-awards.mjs',
   'validate-architectures.mjs',
   'validate-architecture-assets.mjs',
   'validate-button-contrast.mjs',
   'validate-case-studies.mjs',
   'validate-radar-reports.mjs',
+  'validate-community-people.mjs',
+  'validate-community-groups.mjs',
 ];
 
 for (const script of READ_ONLY_VALIDATORS) {
