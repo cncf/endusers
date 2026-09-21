@@ -46,6 +46,10 @@ Rules:
   `GH_TOKEN` to a GitHub personal access token with public-repo read access
   before running it (and `npm run fetch:community-people`) — these scripts
   make enough GitHub API calls to exceed the unauthenticated rate limit.
+- **Never edit `data/launch-metrics.json` by hand.** It is the machine-checked
+  launch success-metrics baseline (issue #100, `LAUNCH.md`). Refresh it with
+  `npm run collect:launch-metrics` (needs `GH_TOKEN`) and validate with
+  `npm run validate:launch-metrics`.
 - Verify award entries against the linked cncf.io announcement before adding.
 - Reference architectures are imported from
   [cncf/architecture](https://github.com/cncf/architecture) — fix content
