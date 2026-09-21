@@ -58,6 +58,26 @@ Baselines are as of 2026-08-08; capture the W-6 baseline snapshot in #100.
 | Blog posts since launch | 0 | 2 (launch post + 1 community voice) |
 | Referral from cncf.io properties | none | cross-link merged on at least one CNCF property (Phase 3) |
 
+## Launch-readiness gate: zero-red content pipelines (#136)
+
+The site's differentiator over static CNCF documentation is *living,
+self-refreshing* community data. Launching with red scheduled pipelines
+means shipping stale content on day one — the exact failure this automation
+exists to prevent. Before the W-0 launch date, all scheduled content-refresh
+workflows must be green for **2 consecutive scheduled runs**:
+
+| Pipeline | Schedule | Tracking |
+|---|---|---|
+| Import reference architectures (`import-architectures.yml`) | daily | #121 |
+| Refresh community profiles (`refresh-community-people.yml`) | weekly | #122 |
+| Generate Docs PDF (`pdf.yml`) | weekly | #123 |
+| Metrics refresh (`refresh-metrics.yml`, not yet merged) | daily | #74, PR #125 |
+
+If any pipeline is still red at W-1, treat it the same as any other
+Phase 1 blocker under "Full content freeze rehearsal" (W-4): either land the
+fix or explicitly defer the affected content pillar in the launch post
+rather than presenting it as current.
+
 ## Dependencies and risks
 
 - **Ownership decision (ADR 0001)** is the critical path: without it the
@@ -77,4 +97,4 @@ slips, update the table in a PR labeled `roadmap` rather than letting the
 plan drift. After KubeCon, replace this file with a launch retrospective.
 
 ---
-*Filed by strategist agent (ACMM L6 — full mode). Tracks #90, #100, #104.*
+*Filed by strategist agent (ACMM L6 — full mode). Tracks #90, #100, #104, #136.*
