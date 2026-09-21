@@ -45,14 +45,22 @@ npm run docusaurus start -- --host 0.0.0.0 --port 3000 --poll 10000
 
 ## Deployment
 
-The site deploys to [endusers.cncf.io](https://endusers.cncf.io/). Site configuration:
+The site currently deploys to GitHub Pages at [cncf.github.io/endusers](https://cncf.github.io/endusers/).
+The build process is configured with:
+
+- `SITE_URL: 'https://castrojo.github.io'` (temporary override; see below)
+- `BASE_URL: '/endusers/'` (temporary override; see below)
+
+(These are set in `.github/workflows/deploy-gh-pages.yml` and will be updated when a custom domain is active.)
+
+The long-term target is [endusers.cncf.io](https://endusers.cncf.io/), which is currently a pending DNS 
+cutover. When that domain is verified and active, the workflow will update the configuration to:
 
 - `url: 'https://endusers.cncf.io'`
 - `baseUrl: '/'`
 
-The source repository is [castrojo/endusers](https://github.com/castrojo/endusers). The
-long-term ownership and CNCF-org cutover path for this site is not yet decided; see
-[ADR 0001](./adr/0001-site-ownership-and-cutover-path.md).
+See [ADR 0001](./adr/0001-site-ownership-and-cutover-path.md) and [issue #46](https://github.com/cncf/endusers/issues/46) 
+for the ownership and cutover plan.
 
 ## Metrics data
 
