@@ -51,6 +51,26 @@ const config = {
       },
     },
     {
+      tagName: 'meta',
+      attributes: {
+        'http-equiv': 'Content-Security-Policy',
+        // Defence in depth for content this site does not author: architecture
+        // MDX and image assets are mirrored from cncf/architecture, and several
+        // data/*.json files supply href and src values rendered by src/components.
+        // These three directives need no allowance for inline or bundled script,
+        // so they hold without constraining Docusaurus hydration or local search.
+        // script-src is deliberately omitted: Docusaurus emits inline bootstrap
+        // scripts, so it could only ship with 'unsafe-inline', which would add no
+        // protection. frame-ancestors is omitted because browsers ignore it when
+        // delivered via <meta http-equiv>; it needs a real response header.
+        content: [
+          "base-uri 'self'",
+          "object-src 'none'",
+          "form-action 'self'",
+        ].join('; '),
+      },
+    },
+    {
       tagName: 'script',
       attributes: {
         type: 'application/ld+json',
