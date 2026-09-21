@@ -149,6 +149,114 @@
     url('/fonts/ClarityCity-900.ttf') format('ttf');
 }
 
+@font-face {
+  font-family: 'Clarity City';
+  font-weight: 100;
+  font-style: italic;
+  src:
+    local('ClarityCity-ThinItalic'),
+    local('Clarity City'),
+    url('/fonts/ClarityCity-100Italic.woff2') format('woff2'),
+    url('/fonts/ClarityCity-100Italic.woff') format('woff'),
+    url('/fonts/ClarityCity-100Italic.ttf') format('ttf');
+}
+
+@font-face {
+  font-family: 'Clarity City';
+  font-weight: 200;
+  font-style: italic;
+  src:
+    local('ClarityCity-ExtraLightItalic'),
+    local('Clarity City'),
+    url('/fonts/ClarityCity-200Italic.woff2') format('woff2'),
+    url('/fonts/ClarityCity-200Italic.woff') format('woff'),
+    url('/fonts/ClarityCity-200Italic.ttf') format('ttf');
+}
+
+@font-face {
+  font-family: 'Clarity City';
+  font-weight: 300;
+  font-style: italic;
+  src:
+    local('ClarityCity-LightItalic'),
+    local('Clarity City'),
+    url('/fonts/ClarityCity-300Italic.woff2') format('woff2'),
+    url('/fonts/ClarityCity-300Italic.woff') format('woff'),
+    url('/fonts/ClarityCity-300Italic.ttf') format('ttf');
+}
+
+@font-face {
+  font-family: 'Clarity City';
+  font-weight: 400;
+  font-style: italic;
+  src:
+    local('ClarityCity-RegularItalic'),
+    local('Clarity City'),
+    url('/fonts/ClarityCity-400Italic.woff2') format('woff2'),
+    url('/fonts/ClarityCity-400Italic.woff') format('woff'),
+    url('/fonts/ClarityCity-400Italic.ttf') format('ttf');
+}
+
+@font-face {
+  font-family: 'Clarity City';
+  font-weight: 500;
+  font-style: italic;
+  src:
+    local('ClarityCity-MediumItalic'),
+    local('Clarity City'),
+    url('/fonts/ClarityCity-500Italic.woff2') format('woff2'),
+    url('/fonts/ClarityCity-500Italic.woff') format('woff'),
+    url('/fonts/ClarityCity-500Italic.ttf') format('ttf');
+}
+
+@font-face {
+  font-family: 'Clarity City';
+  font-weight: 600;
+  font-style: italic;
+  src:
+    local('ClarityCity-SemiBoldItalic'),
+    local('Clarity City'),
+    url('/fonts/ClarityCity-600Italic.woff2') format('woff2'),
+    url('/fonts/ClarityCity-600Italic.woff') format('woff'),
+    url('/fonts/ClarityCity-600Italic.ttf') format('ttf');
+}
+
+@font-face {
+  font-family: 'Clarity City';
+  font-weight: 700;
+  font-style: italic;
+  src:
+    local('ClarityCity-BoldItalic'),
+    local('Clarity City'),
+    url('/fonts/ClarityCity-700Italic.woff2') format('woff2'),
+    url('/fonts/ClarityCity-700Italic.woff') format('woff'),
+    url('/fonts/ClarityCity-700Italic.ttf') format('ttf');
+}
+
+@font-face {
+  font-family: 'Clarity City';
+  font-weight: 800;
+  font-style: italic;
+  src:
+    local('ClarityCity-ExtraBoldItalic'),
+    local('Clarity City'),
+    url('/fonts/ClarityCity-800Italic.woff2') format('woff2'),
+    url('/fonts/ClarityCity-800Italic.woff') format('woff'),
+    url('/fonts/ClarityCity-800Italic.ttf') format('ttf');
+}
+
+@font-face {
+  font-family: 'Clarity City';
+  font-weight: 900;
+  font-style: italic;
+  src:
+    local('ClarityCity-BlackItalic'),
+    local('Clarity City'),
+    url('/fonts/ClarityCity-900Italic.woff2') format('woff2'),
+    url('/fonts/ClarityCity-900Italic.woff') format('woff'),
+    url('/fonts/ClarityCity-900Italic.ttf') format('ttf');
+}
+
 .navbar__logo:not(#\#):not(#\#) {
   height: 2.5rem;
 }
