@@ -61,16 +61,22 @@ shipped silently. Content completeness alone is not a launch plan.
 - [ ] **Announcement channels**: a cncf.io blog post, a mention at an End User
       TAB meeting, and a KubeCon + CloudNativeCon mention or session are the
       minimum bar; amplify further via the End User community Slack.
-- [ ] **Baseline metrics snapshot**: capture stars, watchers, forks, and unique
-      human contributors immediately before announcing, so launch impact is
-      measurable rather than assumed. As of 2026-08-08 the baseline is 0 stars,
-      0 watchers, 1 fork.
+- [ ] **Launch success metrics** (issue #100): `data/launch-metrics.json`
+      defines the falsifiable signals — GitHub stars, watchers, forks, new
+      unique human contributors since baseline, and good-first-issues claimed
+      — each with a live-collected baseline and a 90-day post-launch target.
+      Refresh with `npm run collect:launch-metrics`, validate with
+      `npm run validate:launch-metrics`. The committed file is a rehearsal
+      capture; re-run it at (or after) the W-6 pre-launch checkpoint
+      (2026-09-28, see `LAUNCH.md`) so the baseline reflects that checkpoint
+      rather than an earlier snapshot that Phase 1 work has since made stale.
 - [ ] **DNS cutover dependency**: cutover to `endusers.cncf.io` is gated on the
       Phase 2 ownership decision (issue #46, ADR 0001). If undecided by launch,
       the announcement links the current GitHub Pages URL instead of slipping
       the date.
-- [ ] **30-day check-in**: compare stars/watchers/forks/contributors against the
-      baseline snapshot and record whether the launch moved the needle.
+- [ ] **90-day check-in**: re-run `npm run collect:launch-metrics` 90 days
+      after launch and compare each signal against its `data/launch-metrics.json`
+      baseline to record whether the launch moved the needle.
 
 Related: #90 (this finding), #46 (ownership), #75 (events pillar), #76 (blog
 cadence).
