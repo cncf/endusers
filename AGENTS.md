@@ -35,6 +35,10 @@ the Hive maintainers directly.
 
 ## Guidelines for Agents
 
+- **Duplicate PR prevention**: Before implementing a fix, search open (and
+  recently closed) PRs and issues touching the same files or problem. See the
+  "Cross-agent duplicate prevention" section of `GOVERNANCE.md` for the full
+  policy.
 - **Audience**: Content is for CNCF end users (adopters), not project contributors.
   Contributor-facing material belongs on contribute.cncf.io.
 - **Documentation Standards**: Follow GFM (GitHub Flavored Markdown).

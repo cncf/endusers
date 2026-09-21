@@ -105,6 +105,23 @@ To keep the queue from rotting (see issue #58):
   a signal to adjust the low-risk merge classes above, not to lower the review
   bar.
 
+### Cross-agent duplicate prevention
+
+Fleet-wide sweeps have repeatedly found duplicate PRs opening the same fix from
+different agents (see issue #119). To prevent this:
+
+- Before implementing a fix, an agent must search open (and recently closed)
+  PRs and issues touching the same file(s) or the same problem. If a match
+  exists, the agent links to it and either supersedes it (with a comment
+  explaining why the new PR replaces it) or stands down instead of opening a
+  parallel PR.
+- When an equivalent change lands, the superseded PR is closed with a comment
+  pointing at the replacement, per the merge-queue hygiene rule above.
+- Fixes that require changes to workflow files (`.github/workflows/`) or other
+  security-sensitive files should, where a tracking issue already exists,
+  reference that issue rather than opening a new artifact-patch PR that
+  duplicates work already queued against it.
+
 ## Changing this document
 
 Changes to this file are direction changes. Propose them as a pull request and
