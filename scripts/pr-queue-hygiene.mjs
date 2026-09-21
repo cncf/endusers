@@ -22,11 +22,19 @@
 //    PR's last unrelated update.
 // 3. Hold safety: PRs carrying `hold`, `on-hold`, or `do-not-merge` are
 //    skipped entirely per GOVERNANCE.md agent-automation policy.
+// 4. Marker authorship: the marker lives in a comment thread anyone can
+//    write to, so it is only honored when this job's own bot identity
+//    posted it and the timestamp is parseable and not in the future.
+//    Otherwise any commenter could post a far-future marker to exempt a PR
+//    from the 48h gate forever, or a backdated one to have this job label
+//    and nag somebody else's freshly-conflicting PR.
 //
 // Usage: node scripts/pr-queue-hygiene.mjs
 // Requires `gh` authenticated with `pull-requests: write` on this repo (as
 // the workflow already grants). Set DRY_RUN=1 to log intended actions
-// without labeling/commenting.
+// without labeling/commenting. Set MARKER_AUTHORS to a comma-separated list
+// of bot logins when the job comments under an identity other than
+// github-actions[bot] (a GitHub App, for example).
 
 import { execFileSync } from 'node:child_process';
 
@@ -37,6 +45,50 @@ const LABEL = 'needs-rebase-or-close';
 export const HOLD_LABELS = new Set(['hold', 'on-hold', 'do-not-merge']);
 export const MARKER_PREFIX = '<!-- pr-queue-hygiene:first-conflict-observed:';
 const MARKER_RE = /<!-- pr-queue-hygiene:first-conflict-observed:(.+?) -->/;
+
+// Logins whose markers are believed. The marker is this job's state store,
+// but it is kept in a comment thread every GitHub user can write to, so an
+// unauthenticated marker is an unauthenticated state write.
+export const TRUSTED_MARKER_AUTHORS = new Set(
+  (process.env.MARKER_AUTHORS || 'github-actions[bot]')
+    .split(',')
+    .map((login) => login.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+// A marker is this job's own only if a bot account on the allowlist wrote
+// it. GitHub reports App and Actions comments with user.type === 'Bot' and a
+// "<slug>[bot]" login; a human impersonating that login is not possible.
+export function isTrustedMarkerComment(
+  comment,
+  trustedLogins = TRUSTED_MARKER_AUTHORS,
+) {
+  const user = comment?.user;
+  if (!user || user.type !== 'Bot') return false;
+  return trustedLogins.has(String(user.login || '').toLowerCase());
+}
+
+// Extracts the first-conflict-observed timestamp (if any) from a PR's
+// issue comments, by finding this script's own hidden marker comment.
+//
+// Markers from anyone else are ignored rather than returned, and so are
+// markers whose payload is not a parseable past timestamp: a future value
+// would make hoursSince() negative and exempt the PR from the stale gate
+// permanently. Scanning continues past a rejected marker so a spoofed
+// comment cannot hide the genuine one behind it. When nothing is trusted the
+// caller records a fresh marker, so the state self-heals.
+export function findFirstConflictObservedAt(comments, options = {}) {
+  const { isTrusted = isTrustedMarkerComment, now = Date.now() } = options;
+  for (const comment of comments) {
+    const match = MARKER_RE.exec(comment.body || '');
+    if (!match) continue;
+    if (!isTrusted(comment)) continue;
+    const parsed = Date.parse(match[1]);
+    if (Number.isNaN(parsed) || parsed > now) continue;
+    return match[1];
+  }
+  return null;
+}
 
 function gh(args) {
   return execFileSync('gh', args, { encoding: 'utf8' });
@@ -59,16 +111,6 @@ export function fetchAllOpenPRs(repo) {
     page += 1;
   }
   return prs;
-}
-
-// Extracts the first-conflict-observed timestamp (if any) from a PR's
-// issue comments, by finding this script's own hidden marker comment.
-export function findFirstConflictObservedAt(comments) {
-  for (const comment of comments) {
-    const match = MARKER_RE.exec(comment.body || '');
-    if (match) return match[1];
-  }
-  return null;
 }
 
 export function hoursSince(isoString, now = Date.now()) {
