@@ -1,5 +1,11 @@
 # Stakeholder outreach draft for ADR 0001
 
+> **Historical note:** the repository has since been transferred to the
+> `cncf` GitHub org, resolving the ownership question this draft was written
+> to help discuss (see [ADR 0001](./0001-site-ownership-and-cutover-path.md),
+> "Decision"). This draft is kept for historical context on the options that
+> were considered; it does not need to be sent.
+
 This is a ready-to-send draft supporting [ADR 0001](./0001-site-ownership-and-cutover-path.md)
 "Proposed next step" #1: opening a discussion with CNCF end-user/TAB
 stakeholders on the long-term home for this site. It exists so a maintainer

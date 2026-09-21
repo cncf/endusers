@@ -3,10 +3,11 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import { makeGitHubHeaders } from './lib/github.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const work = mkdtempSync(join(tmpdir(), 'cncf-metrics-'));
 const landscapeDir = join(work, 'landscape');
 const architectureDir = join(work, 'architecture');

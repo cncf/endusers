@@ -70,7 +70,7 @@ architects, and organizations running cloud native technologies in production.
   Groups, and how to get involved
 - **[Awards](/awards/)** — the organizations recognized for advancing cloud
   native as end users
-- **[Metrics](/metrics/)** — a transparent snapshot of ecosystem and end-user
+- **[Metrics](/metrics/)** — a transparent snapshot of ecosystem and end user
   activity
 - **[Events](/events/)** — where the community gathers at KubeCon +
   CloudNativeCon
@@ -162,7 +162,7 @@ adds value and helps the next adopter.
     <span className="ladder-number">5</span>
     <div>
       <h3>Help shape direction</h3>
-      <p>Join an End User Group or the End User TAB to advise on priorities, review architectures, and represent end-user needs.</p>
+      <p>Join an End User Group or the End User TAB to advise on priorities, review architectures, and represent end user needs.</p>
     </div>
   </div>
 </div>

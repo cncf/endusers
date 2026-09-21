@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // GitHub usernames are alphanumerics plus single internal hyphens, 1-39 chars.
 // A roster handle containing a path separator, dot segment, query or fragment
@@ -11,7 +12,7 @@ const GITHUB_HANDLE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
 const PEOPLE_JSON_URL = 'https://raw.githubusercontent.com/cncf/people/main/people.json';
 const PEOPLE_IMAGE_BASE = 'https://raw.githubusercontent.com/cncf/people/main/images/';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const output = join(root, 'data/community-people.json');
 const rosterPath = join(root, 'data/community-roster.json');
 
