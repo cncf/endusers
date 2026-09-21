@@ -1,0 +1,6 @@
+# docs/architectures/*.md is generated content: scripts/import-architectures.mjs
+# deletes and rewrites these files from upstream sources on every daily import
+# run, so hand-applied lint fixes would be overwritten. Linting is enforced on
+# hand-maintained content only; generated pages are covered by
+# scripts/validate-architectures.mjs instead.
+docs/architectures/**

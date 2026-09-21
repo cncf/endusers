@@ -3,8 +3,8 @@
 This file lists the people responsible for reviewing and merging changes to
 endusers.cncf.io, and the process for adding more of them. It exists because a
 single point of failure on review/merge limits both continuity and community
-trust for a site that presents itself as a CNCF community property (see issue
-#47).
+trust for a site that presents itself as a CNCF community property
+(see issue #47).
 
 ## Current maintainers
 
