@@ -28,6 +28,14 @@
 //    Otherwise any commenter could post a far-future marker to exempt a PR
 //    from the 48h gate forever, or a backdated one to have this job label
 //    and nag somebody else's freshly-conflicting PR.
+// 5. Marker clearing: when a PR stops conflicting, its first-conflict
+//    marker is neutralized with a trusted "resolved" marker (and the
+//    `needs-rebase-or-close` label is removed), so a later reconflict
+//    starts a fresh 48h window instead of inheriting the old marker's
+//    timestamp and being flagged as stale immediately.
+// 6. Comment pagination: issue comments are fetched a page at a time
+//    instead of relying on a single `per_page=100` call, so a marker
+//    posted early in a PR with a long comment thread is still found.
 //
 // Usage: node scripts/pr-queue-hygiene.mjs
 // Requires `gh` authenticated with `pull-requests: write` on this repo (as
@@ -45,6 +53,13 @@ const LABEL = 'needs-rebase-or-close';
 export const HOLD_LABELS = new Set(['hold', 'on-hold', 'do-not-merge']);
 export const MARKER_PREFIX = '<!-- pr-queue-hygiene:first-conflict-observed:';
 const MARKER_RE = /<!-- pr-queue-hygiene:first-conflict-observed:(.+?) -->/;
+
+// Posted once a previously-conflicting PR is observed as no longer
+// conflicting, so a later re-conflict starts a fresh 48h window instead of
+// inheriting the stale first-conflict marker's timestamp (see
+// findFirstConflictObservedAt).
+export const RESOLVED_MARKER_PREFIX = '<!-- pr-queue-hygiene:resolved:';
+const RESOLVED_MARKER_RE = /<!-- pr-queue-hygiene:resolved:(.+?) -->/;
 
 // Logins whose markers are believed. The marker is this job's state store,
 // but it is kept in a comment thread every GitHub user can write to, so an
@@ -68,26 +83,53 @@ export function isTrustedMarkerComment(
   return trustedLogins.has(String(user.login || '').toLowerCase());
 }
 
+// A resolved marker is trusted under the same rule as a first-conflict
+// marker: only a bot login on the allowlist can clear the state, otherwise
+// anyone could post a fake resolution to reset another PR's 48h clock.
+export function isTrustedResolvedComment(
+  comment,
+  trustedLogins = TRUSTED_MARKER_AUTHORS,
+) {
+  return isTrustedMarkerComment(comment, trustedLogins);
+}
+
 // Extracts the first-conflict-observed timestamp (if any) from a PR's
 // issue comments, by finding this script's own hidden marker comment.
 //
-// Markers from anyone else are ignored rather than returned, and so are
-// markers whose payload is not a parseable past timestamp: a future value
-// would make hoursSince() negative and exempt the PR from the stale gate
-// permanently. Scanning continues past a rejected marker so a spoofed
-// comment cannot hide the genuine one behind it. When nothing is trusted the
-// caller records a fresh marker, so the state self-heals.
+// Comments are scanned in ascending (oldest-first) order. A trusted
+// "resolved" marker clears any first-conflict marker seen so far, so a PR
+// that stopped conflicting and later reconflicts gets a fresh candidate
+// timestamp from the marker posted *after* the resolution, rather than
+// reporting the stale pre-resolution marker and being immediately flagged
+// as >48h stale. Markers from anyone else are ignored rather than
+// returned, and so are markers whose payload is not a parseable past
+// timestamp: a future value would make hoursSince() negative and exempt
+// the PR from the stale gate permanently. Scanning continues past a
+// rejected marker so a spoofed comment cannot hide the genuine one behind
+// it. When nothing is trusted the caller records a fresh marker, so the
+// state self-heals.
 export function findFirstConflictObservedAt(comments, options = {}) {
-  const { isTrusted = isTrustedMarkerComment, now = Date.now() } = options;
+  const {
+    isTrusted = isTrustedMarkerComment,
+    isResolvedTrusted = isTrustedResolvedComment,
+    now = Date.now(),
+  } = options;
+  let candidate = null;
   for (const comment of comments) {
+    const resolvedMatch = RESOLVED_MARKER_RE.exec(comment.body || '');
+    if (resolvedMatch && isResolvedTrusted(comment)) {
+      candidate = null;
+      continue;
+    }
+
     const match = MARKER_RE.exec(comment.body || '');
     if (!match) continue;
     if (!isTrusted(comment)) continue;
     const parsed = Date.parse(match[1]);
     if (Number.isNaN(parsed) || parsed > now) continue;
-    return match[1];
+    candidate = match[1];
   }
-  return null;
+  return candidate;
 }
 
 function gh(args) {
@@ -111,6 +153,27 @@ export function fetchAllOpenPRs(repo) {
     page += 1;
   }
   return prs;
+}
+
+// Fetches every issue comment on a PR, paginating past the 100-per-page
+// cap. Issue comments sort ascending, so on a PR with more than 100
+// comments a single unpaginated page can miss the marker entirely if it
+// was posted early on -- this walks every page instead.
+export function fetchAllIssueComments(repo, number) {
+  const comments = [];
+  let page = 1;
+  const perPage = 100;
+  for (;;) {
+    const raw = gh([
+      'api',
+      `repos/${repo}/issues/${number}/comments?per_page=${perPage}&page=${page}`,
+    ]);
+    const batch = JSON.parse(raw);
+    comments.push(...batch);
+    if (batch.length < perPage) break;
+    page += 1;
+  }
+  return comments;
 }
 
 export function hoursSince(isoString, now = Date.now()) {
@@ -176,14 +239,37 @@ async function main() {
 
     const conflicting = await isConflicting(REPO, number);
 
-    const commentsRaw = gh([
-      'api',
-      `repos/${REPO}/issues/${number}/comments?per_page=100`,
-    ]);
-    const comments = JSON.parse(commentsRaw);
+    const comments = fetchAllIssueComments(REPO, number);
     const firstObservedAt = findFirstConflictObservedAt(comments);
 
     if (!conflicting) {
+      if (firstObservedAt) {
+        console.log(
+          `PR #${number}: no longer conflicting, clearing stale marker`,
+        );
+        if (!DRY_RUN) {
+          if (labelNames(pr).includes(LABEL)) {
+            gh([
+              'pr',
+              'edit',
+              String(number),
+              '--repo',
+              REPO,
+              '--remove-label',
+              LABEL,
+            ]);
+          }
+          gh([
+            'pr',
+            'comment',
+            String(number),
+            '--repo',
+            REPO,
+            '--body',
+            `${RESOLVED_MARKER_PREFIX}${new Date().toISOString()} -->`,
+          ]);
+        }
+      }
       continue;
     }
 
