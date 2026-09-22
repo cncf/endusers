@@ -1,3 +1,7 @@
+---
+unlisted: true
+---
+
 # Skill: Skill Improvement
 
 This meta-skill defines how to maintain and evolve the agent-facing documentation structure.

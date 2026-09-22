@@ -1,3 +1,7 @@
+---
+unlisted: true
+---
+
 # Agent Skills Manifest
 
 This manifest indexes specialized skills for agents working on this repository. Load these skills as needed to ensure compliance with repository standards.
