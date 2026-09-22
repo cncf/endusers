@@ -48,14 +48,15 @@ in mind for every page.
 Most pages are generated from data files. Contribute by editing the data, not by
 hand-building pages:
 
-| Page                            | Data source                                                                                 | Validation                        |
-| ------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------- |
-| `/community/awards`             | `data/awards.json`                                                                          | `npm run validate:awards`         |
-| `/metrics`                      | `data/metrics.json` (generated)                                                             | `npm run validate:metrics`        |
-| `/architectures`                | `data/architectures/records/*.json`                                                         | `npm run validate:architectures`  |
-| `/community/members`            | `data/members.json` (generated from `data/awards.json` + `data/architectures/catalog.json`) | `npm run generate:members`        |
-| Community people lightboxes     | `data/community-roster.json` (curated) → refreshed into `data/community-people.json`        | `npm run fetch:community-people`  |
-| ProjectsBorn (`/practitioners`) | `data/projects-born.json`                                                                   | manual edit, no validation script |
+| Page                            | Data source                                                                                 | Validation                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `/community/awards`             | `data/awards.json`                                                                          | `npm run validate:awards`           |
+| `/metrics`                      | `data/metrics.json` (generated)                                                             | `npm run validate:metrics`          |
+| `/architectures`                | `data/architectures/records/*.json`                                                         | `npm run validate:architectures`    |
+| `/community/members`            | `data/members.json` (generated from `data/awards.json` + `data/architectures/catalog.json`) | `npm run generate:members`          |
+| Community people lightboxes     | `data/community-roster.json` (curated) → refreshed into `data/community-people.json`        | `npm run validate:community-people` |
+| `docs/community/` user groups   | `data/community-groups.json` (generated)                                                    | `npm run validate:community-groups` |
+| ProjectsBorn (`/practitioners`) | `data/projects-born.json`                                                                   | manual edit, no validation script   |
 
 Rules:
 
@@ -85,6 +86,11 @@ Rules:
   GitHub handle; roster name, company, and role stay authoritative.
 - `data/projects-born.json` has no generator; edit it directly and verify the
   origin story against a reliable source before adding an entry.
+- **Never edit `data/community-groups.json` by hand.** Add or rename a group
+  in the `GROUPS` list in `scripts/check-community-group-links.mjs`, then
+  refresh with `npm run check:community-group-links` (needs `GH_TOKEN`), which
+  records each group's archived/reachable status. Validate with
+  `npm run validate:community-groups`.
 
 ## Blog contributions
 
