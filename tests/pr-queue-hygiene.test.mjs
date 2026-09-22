@@ -6,7 +6,9 @@ import {
   isConflicting,
   isHeld,
   isTrustedMarkerComment,
+  isTrustedResolvedComment,
   MARKER_PREFIX,
+  RESOLVED_MARKER_PREFIX,
 } from '../scripts/pr-queue-hygiene.mjs';
 
 const BOT = { login: 'github-actions[bot]', type: 'Bot' };
@@ -14,6 +16,10 @@ const HUMAN = { login: 'attacker', type: 'User' };
 
 function marker(timestamp, user = BOT) {
   return { body: `${MARKER_PREFIX}${timestamp} -->`, user };
+}
+
+function resolvedMarker(timestamp, user = BOT) {
+  return { body: `${RESOLVED_MARKER_PREFIX}${timestamp} -->`, user };
 }
 
 test('findFirstConflictObservedAt: finds the marker comment among others', () => {
@@ -75,6 +81,51 @@ test('findFirstConflictObservedAt: tolerates a comment with no author', () => {
     findFirstConflictObservedAt([{ body: `${MARKER_PREFIX}2020-01-01 -->` }]),
     null,
   );
+});
+
+test('findFirstConflictObservedAt: a trusted resolved marker clears an earlier stale marker', () => {
+  const comments = [
+    marker('2020-01-01T00:00:00.000Z'),
+    resolvedMarker('2020-01-02T00:00:00.000Z'),
+  ];
+  assert.equal(
+    findFirstConflictObservedAt(comments, {
+      now: Date.parse('2026-09-03T00:00:00.000Z'),
+    }),
+    null,
+  );
+});
+
+test('findFirstConflictObservedAt: a fresh marker after resolution is used, not the pre-resolution one', () => {
+  const comments = [
+    marker('2020-01-01T00:00:00.000Z'),
+    resolvedMarker('2020-01-02T00:00:00.000Z'),
+    marker('2026-09-01T00:00:00.000Z'),
+  ];
+  assert.equal(
+    findFirstConflictObservedAt(comments, {
+      now: Date.parse('2026-09-03T00:00:00.000Z'),
+    }),
+    '2026-09-01T00:00:00.000Z',
+  );
+});
+
+test('findFirstConflictObservedAt: an untrusted resolved marker does not clear the genuine one', () => {
+  const comments = [
+    marker('2020-01-01T00:00:00.000Z'),
+    resolvedMarker('2020-01-02T00:00:00.000Z', HUMAN),
+  ];
+  assert.equal(
+    findFirstConflictObservedAt(comments, {
+      now: Date.parse('2026-09-03T00:00:00.000Z'),
+    }),
+    '2020-01-01T00:00:00.000Z',
+  );
+});
+
+test('isTrustedResolvedComment: only an allowlisted bot login is trusted', () => {
+  assert.equal(isTrustedResolvedComment({ user: BOT }), true);
+  assert.equal(isTrustedResolvedComment({ user: HUMAN }), false);
 });
 
 test('isTrustedMarkerComment: only an allowlisted bot login is trusted', () => {
