@@ -27,11 +27,22 @@ nonexistent repo entry (for example, a 404 on an authorized repo), that
 config lives elsewhere and cannot be corrected with a PR here — flag it to
 the Hive maintainers directly.
 
+## Workflow
+
+Before opening a PR, read [`CONTRIBUTING.md#making-changes`](CONTRIBUTING.md#making-changes)
+for the full fork/branch/PR process. Two CI-enforced requirements to note up
+front: the "Validate repository" check runs `npm run test:unit` on every PR,
+and every commit must carry a DCO `Signed-off-by` trailer (`git commit -s`) or
+CI will fail the PR.
+
 ## Build & Test
 
 - **Install**: `npm install`
 - **Start Dev Server**: `npm run docus:start`
 - **Build**: `npm run build`
+- **Unit Tests**: `npm run test:unit` — required "Validate repository" CI check on every PR.
+- **Data Changes**: Data files under `/data/` have their own validators; see the
+  data contribution model table in [`CONTRIBUTING.md`](CONTRIBUTING.md#data-contribution-model).
 
 ## Guidelines for Agents
 
