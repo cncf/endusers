@@ -22,7 +22,7 @@
 // ship CommonJS with a `.js` extension, and rewriting those to ES modules
 // breaks their default exports.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { transformSync } from '@swc/core';
 
@@ -42,15 +42,44 @@ const CSS_STUB =
   'data:text/javascript,export default new Proxy({},{get:(_,key)=>' +
   '(typeof key==="string"?key:undefined)});';
 
+// Webpack resolves an extensionless or directory specifier by trying a list of
+// extensions and then `index.<ext>`; Node's ESM resolver does neither. Source
+// files written for the Docusaurus build rely on it — `@site/src/components/X`
+// is a directory — so the alias target is completed the same way here.
+const RESOLVE_EXTENSIONS = ['.js', '.jsx', '.mjs', '.ts', '.tsx', '.json'];
+
+function isFile(url) {
+  return statSync(fileURLToPath(url), { throwIfNoEntry: false })?.isFile();
+}
+
+function isDirectory(url) {
+  return statSync(fileURLToPath(url), { throwIfNoEntry: false })?.isDirectory();
+}
+
+function resolveAliasTarget(target) {
+  if (isFile(target)) return target.href;
+  for (const extension of RESOLVE_EXTENSIONS) {
+    const candidate = new URL(`${target.pathname}${extension}`, target);
+    if (isFile(candidate)) return candidate.href;
+  }
+  if (isDirectory(target)) {
+    for (const extension of RESOLVE_EXTENSIONS) {
+      const candidate = new URL(`${target.pathname}/index${extension}`, target);
+      if (isFile(candidate)) return candidate.href;
+    }
+  }
+  // Nothing matched: hand back the bare target so Node reports the missing
+  // module against the path the source actually asked for.
+  return target.href;
+}
+
 export function resolve(specifier, context, nextResolve) {
   if (CSS_SPECIFIER.test(specifier)) {
     return { url: CSS_STUB, format: 'module', shortCircuit: true };
   }
   if (specifier.startsWith(SITE_ALIAS)) {
-    return {
-      url: new URL(specifier.slice(SITE_ALIAS.length), REPO_ROOT).href,
-      shortCircuit: true,
-    };
+    const target = new URL(specifier.slice(SITE_ALIAS.length), REPO_ROOT);
+    return { url: resolveAliasTarget(target), shortCircuit: true };
   }
   if (specifier.startsWith(DOCUSAURUS_ALIAS)) {
     const name = specifier.slice(DOCUSAURUS_ALIAS.length);

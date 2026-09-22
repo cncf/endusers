@@ -62,3 +62,37 @@ test('the Link stub renders an anchor and maps `to` onto href', async () => {
   assert.equal(element.props.href, '/community');
   assert.equal(element.props.className, 'x');
 });
+
+test('a @site alias naming a directory resolves to its index file', async () => {
+  // src/theme/Footer imports '@site/src/components/ProjectsBorn', which
+  // webpack completes to .../ProjectsBorn/index.js. Without that completion
+  // the hooks hand Node a directory and the import dies with EISDIR.
+  const hooks = await import('./tools/jsx-hooks.mjs');
+  const next = () => {
+    throw new Error('the @site alias must be resolved by the hooks');
+  };
+  const { url } = hooks.resolve('@site/src/components/ProjectsBorn', {}, next);
+  assert.match(url, /\/src\/components\/ProjectsBorn\/index\.js$/);
+});
+
+test('a @site alias with no extension resolves to the matching source file', async () => {
+  const hooks = await import('./tools/jsx-hooks.mjs');
+  const next = () => {
+    throw new Error('the @site alias must be resolved by the hooks');
+  };
+  const { url } = hooks.resolve('@site/src/lib/profile-links.mjs', {}, next);
+  assert.match(url, /\/src\/lib\/profile-links\.mjs$/);
+  assert.match(
+    hooks.resolve('@site/sidebars', {}, next).url,
+    /\/sidebars\.js$/,
+  );
+});
+
+test('an unresolvable @site alias still names the requested path', async () => {
+  const hooks = await import('./tools/jsx-hooks.mjs');
+  const next = () => {
+    throw new Error('the @site alias must be resolved by the hooks');
+  };
+  const { url } = hooks.resolve('@site/src/components/NoSuchThing', {}, next);
+  assert.match(url, /\/src\/components\/NoSuchThing$/);
+});
