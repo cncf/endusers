@@ -17,6 +17,6 @@ still pending) so future contributors understand why, not just what.
 Supporting material is not part of the numbered ADR sequence and is not
 assigned an ADR number, but is listed here for discoverability:
 
-| Document                                                         | Supports | Purpose                                    |
+| Document | Supports | Purpose |
 | ----------------------------------------------------------------- | -------- | ------------------------------------------- |
-| [stakeholder-outreach-draft-for-0001.md](./stakeholder-outreach-draft-for-0001.md) | 0001     | Ready-to-send outreach draft for ADR 0001's stakeholder discussion step |
+| [stakeholder-outreach-draft-for-0001.md](./stakeholder-outreach-draft-for-0001.md) | 0001 | Ready-to-send outreach draft for ADR 0001's stakeholder discussion step |

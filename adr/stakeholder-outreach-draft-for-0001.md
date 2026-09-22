@@ -29,7 +29,7 @@ decision record is required.
 
 ## Draft message
 
-```
+```text
 Subject: Decision needed — long-term home for endusers.cncf.io
 
 Hi TAB / TOC,
