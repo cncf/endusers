@@ -35,10 +35,10 @@ Goal: a reliable, trustworthy site skeleton.
 
 - [x] Restore a green deploy pipeline (#52)
 - [x] Add a LICENSE (#40, issue #32)
-- [ ] Pin GitHub Actions by SHA and verify downloaded installers (issues #38, #39; PRs #42, #43, #112 open)
+- [x] Pin GitHub Actions by SHA and verify downloaded installers (issues #38, #39; PRs #42, #43, #112) — all `uses:` references across `.github/workflows/` are SHA-pinned; the Prince-installer workflow was removed
 - [x] Shared validation utilities and test coverage for data pipelines (#37, #65)
 - [x] This roadmap (#50), plus MILESTONES.md (#53)
-- [ ] Create GitHub milestones matching these phases (issue #78)
+- [x] Create GitHub milestones matching these phases (issue #78)
 
 ## Phase 1 — Content completeness
 
@@ -88,9 +88,10 @@ Goal: the project can outlive any single maintainer.
 - [x] MAINTAINERS.md with an explicit process for adding maintainers (#55)
 - [x] Governance note describing review/merge expectations, including agent-automation policy (GOVERNANCE.md, #60)
 - [ ] Good-first-issue curation to recruit human contributors
-- [ ] Decide the long-term home of the site (issue #46, ADR 0001): transfer to a CNCF org,
-      remain a personal staging site, or merge into an existing CNCF property. Decision deadline: 2026-08-17
-      (see `adr/0001-site-ownership-and-cutover-path.md` for the documented options and path)
+- [x] Decide the long-term home of the site (issue #46, ADR 0001): ADR 0001 is
+      Accepted — the repository has been transferred to the `cncf` GitHub org.
+      The remaining DNS cutover to `endusers.cncf.io` is tracked separately in
+      Phase 3 (see `adr/0001-site-ownership-and-cutover-path.md`)
 
 ## Phase 3 — Ecosystem integration
 
