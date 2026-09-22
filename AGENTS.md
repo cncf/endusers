@@ -58,7 +58,8 @@ CI will fail the PR.
 - **Lazy Loading**: Use the `docs/skills/` manifest to discover detailed instructions for specific tasks (e.g., blog posts, documentation updates).
 - **Structure**: Maintain Docusaurus file layout and sidebar configurations (`sidebars.js`).
   Single-page sections (practitioners, events, metrics) intentionally have no
-  sidebar; multi-page sections (architectures, community) do.
+  sidebar; multi-page sections (architectures, community which includes
+  awards and members, resources) do.
 - **Facts**: Verify CNCF facts (award winners, TAB scope, architecture counts) against
   authoritative sources: cncf/tab, cncf/architecture, cncf/landscape, and cncf.io
   announcements. Never assert numbers without a source.

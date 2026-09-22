@@ -98,8 +98,9 @@ publishing cadence.
 - GitHub Flavored Markdown for all content.
 - No emojis in content, code, or commit messages.
 - Maintain the Docusaurus layout and `sidebars.js` configuration. Single-page
-  sections (practitioners, events, metrics, awards) intentionally have no
-  sidebar; multi-page sections (architectures, community) do.
+  sections (practitioners, events, metrics) intentionally have no
+  sidebar; multi-page sections (architectures, community which includes
+  awards and members, resources) do.
 
 ## Good first issues
 
