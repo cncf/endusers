@@ -9,9 +9,10 @@ reference architectures, awards, metrics, events, and pathways to participate.
 - **Practitioners** — the landing page for people operating cloud native systems in production
 - **Architectures** — real-world reference architectures imported from
   [cncf/architecture](https://github.com/cncf/architecture)
-- **Community** — the End User Technical Advisory Board (TAB), End User Groups, and ways to engage
-- **Members** — the directory of CNCF End User Community member organizations
-- **Awards** — the organizations recognized with CNCF End User awards
+- **Community** — the End User Technical Advisory Board (TAB), End User Groups, ways to engage,
+  the directory of member organizations, and the organizations recognized with CNCF End User
+  awards
+- **Projects from end users** — open source projects born at end-user organizations
 - **Metrics** — ecosystem and end-user metrics generated from authoritative public sources
 - **Events** — end user gatherings at KubeCon + CloudNativeCon
 - **Blog** — stories and updates from the CNCF End User Community
