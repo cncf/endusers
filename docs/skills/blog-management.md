@@ -1,3 +1,7 @@
+---
+unlisted: true
+---
+
 # Skill: Blog Management
 
 Workflow for publishing posts on the CNCF End User Community blog.

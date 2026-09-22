@@ -1,3 +1,7 @@
+---
+unlisted: true
+---
+
 # Skill: Documentation Authoring
 
 Guidelines for technical documentation within this repository.

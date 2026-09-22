@@ -6,6 +6,7 @@ description:
 metadata:
   context7-sources:
     - /websites/docusaurus_io_3_9_2
+unlisted: true
 ---
 
 # Frontend UI Standards

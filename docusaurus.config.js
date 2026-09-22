@@ -134,6 +134,12 @@ const config = {
         theme: {
           customCss: './src/css/custom.css',
         },
+        sitemap: {
+          // /search is thin duplicate content; the plugin's own opt-out is
+          // emitted as property="robots", which neither Docusaurus nor a
+          // crawler honours. /skills/* is agent tooling, not site content.
+          ignorePatterns: ['/search', '/skills/**'],
+        },
       }),
     ],
   ],
