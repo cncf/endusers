@@ -2,6 +2,7 @@
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { firstAllowedImageUrl, profileImageUrl } from './lib/profile-image.mjs';
 
 // GitHub usernames are alphanumerics plus single internal hyphens, 1-39 chars.
 // A roster handle containing a path separator, dot segment, query or fragment
@@ -98,7 +99,7 @@ for (const [section, entries] of Object.entries(people)) {
       role: role || previous.role || null,
       bio: stripHtml(profile?.bio) || previous.bio || '',
       location: profile?.location || previous.location || '',
-      image: imageUrl(profile) || previous.image || fallbackImages[name] || (github ? `https://github.com/${github}.png` : ''),
+      image: resolveImage({ name, github, profile, previous, fallbackImages }),
       github,
       linkedin: linkedin || lastSegment(profile?.linkedin) || previous.linkedin || null,
       twitter: twitter || lastSegment(profile?.twitter) || previous.twitter || null,
@@ -114,7 +115,29 @@ console.log(`Refreshed ${Object.values(result).flat().length} community profiles
 function imageUrl(profile) {
   if (!profile?.image) return '';
   // cncf/people entries store either a repo-relative filename or, for some
-  // legacy records, a full URL already -- pass an existing URL through.
-  if (/^https?:\/\//i.test(profile.image)) return profile.image;
+  // legacy records, a full URL already -- pass an existing URL through. Any
+  // scheme counts as "already a URL" so that a non-http value is handed to the
+  // host gate below instead of being concatenated onto the mirror base.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(profile.image)) return profile.image;
   return PEOPLE_IMAGE_BASE + encodeURIComponent(profile.image);
+}
+
+// Picks the first image candidate that survives the host gate, in preference
+// order, so a rejected upstream URL degrades to the cached, curated or derived
+// avatar instead of being published. Every candidate is checked, not just the
+// upstream one: a value cached from a run that predates this gate, or hand-added
+// to the roster, reaches the same <img src> on the community page.
+function resolveImage({ name, github, profile, previous, fallbackImages }) {
+  const upstream = imageUrl(profile);
+  if (upstream && !profileImageUrl(upstream)) {
+    console.warn(
+      `cncf/people image for ${name} is not an https URL on an allowed host, ignoring: ${JSON.stringify(upstream)}`,
+    );
+  }
+  return firstAllowedImageUrl(
+    upstream,
+    previous.image,
+    fallbackImages[name],
+    github ? `https://github.com/${github}.png` : '',
+  );
 }

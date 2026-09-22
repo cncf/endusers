@@ -4,6 +4,7 @@
 // never edit this file by hand, refresh it with `npm run fetch:community-people`.
 import { readFileSync } from 'node:fs';
 import { collectError, reportAndExit } from './lib/validate-utils.mjs';
+import { profileImageUrl } from './lib/profile-image.mjs';
 
 const data = JSON.parse(
   readFileSync(new URL('../data/community-people.json', import.meta.url)),
@@ -68,6 +69,16 @@ for (const [section, rosterEntries] of Object.entries(roster.sections || {})) {
         `people.${section}`,
         'error',
         `${person.name || 'person'} missing image`,
+      );
+    // The image is rendered as an <img src> for every visitor, so it must be
+    // an https URL on an allowed host even if it was hand-edited in or cached
+    // from a run that predates the gate in fetch-community-people.mjs.
+    else if (!profileImageUrl(person.image))
+      collectError(
+        errors,
+        `people.${section}`,
+        'error',
+        `${person.name || 'person'} image must be an https URL on an allowed host: ${JSON.stringify(person.image)}`,
       );
     if (!person.github && !person.linkedin && !person.twitter && !person.blog) {
       collectError(
