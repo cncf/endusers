@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -305,4 +306,43 @@ test('the documented Node prerequisite matches the pinned Node major', () => {
       .map(({ doc, major }) => `${doc}=${major}`)
       .join(', ')}`,
   );
+});
+
+// node_modules once entered the tree as a symlink to one developer's absolute
+// path (#447). A tracked node_modules makes `npm ci` — the first documented
+// setup step — mutate tracked state, so every contributor's tree is dirty
+// before they have written a line. .gitignore alone cannot undo that: it never
+// applies to paths git already tracks.
+test('no node_modules path is tracked by git', () => {
+  const tracked = execFileSync(
+    'git',
+    ['ls-files', '--', 'node_modules', '*/node_modules'],
+    { cwd: root, encoding: 'utf8' },
+  )
+    .split('\n')
+    .filter(Boolean);
+  assert.deepEqual(
+    tracked,
+    [],
+    `git tracks dependency paths that npm ci overwrites: ${tracked.join(', ')}`,
+  );
+});
+
+// A trailing slash only matches directories, so `node_modules/` lets a stray
+// node_modules *symlink* be staged without a warning — exactly how #447
+// happened. The slashless rule matches both shapes.
+test('.gitignore ignores node_modules as a file as well as a directory', () => {
+  const rules = readFileSync(join(root, '.gitignore'), 'utf8')
+    .split('\n')
+    .map((line) => line.trim());
+  assert.ok(
+    rules.includes('node_modules'),
+    '.gitignore must list node_modules without a trailing slash so a symlink is ignored too',
+  );
+  const status = execFileSync(
+    'git',
+    ['check-ignore', '-q', 'node_modules'],
+    { cwd: root, encoding: 'utf8', stdio: 'pipe' },
+  );
+  assert.equal(status, '');
 });
