@@ -193,7 +193,7 @@ test('preserves the previous run when a handle has no cncf/people match', () => 
               github: 'ada',
               bio: 'cached bio',
               location: 'London',
-              image: 'https://images.example/ada.png',
+              image: 'https://avatars.githubusercontent.com/u/1?v=4',
             },
           ],
         },
@@ -205,7 +205,7 @@ test('preserves the previous run when a handle has no cncf/people match', () => 
   const person = parseOutput(result).people.tab[0];
   assert.equal(person.bio, 'cached bio');
   assert.equal(person.location, 'London');
-  assert.equal(person.image, 'https://images.example/ada.png');
+  assert.equal(person.image, 'https://avatars.githubusercontent.com/u/1?v=4');
   assert.equal(person.company, 'Roster Co');
 });
 
@@ -247,13 +247,13 @@ test('uses fallbackImages for people without a GitHub handle', () => {
     fixtures: {
       [ROSTER]: roster(
         { tab: [{ name: 'Grace Hopper' }] },
-        { 'Grace Hopper': 'https://images.example/grace.png' },
+        { 'Grace Hopper': 'https://www.cncf.io/img/grace.png' },
       ),
     },
   });
 
   const person = parseOutput(result).people.tab[0];
-  assert.equal(person.image, 'https://images.example/grace.png');
+  assert.equal(person.image, 'https://www.cncf.io/img/grace.png');
 });
 
 test('normalises optional social links to null when absent', () => {
@@ -286,4 +286,94 @@ test('emits an empty section array when a roster section has no entries', () => 
   const output = parseOutput(result);
   assert.deepEqual(output.people.alumni, []);
   assert.match(output.fetchedAt, /T/);
+});
+
+test('ignores an upstream image on a host outside the allowlist', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({
+        tab: [{ name: 'Ada Lovelace', github: 'ada' }],
+      }),
+    },
+    records: [
+      {
+        name: 'Ada Lovelace',
+        github: 'https://github.com/ada',
+        image: 'https://tracker.example/beacon.png',
+      },
+    ],
+  });
+
+  const output = parseOutput(result);
+  // The rejected upstream URL degrades to the derived GitHub avatar rather
+  // than being published as an <img src> on the community page.
+  assert.equal(output.people.tab[0].image, 'https://github.com/ada.png');
+  assert.match(result.stderr, /not an https URL on an allowed host/);
+});
+
+test('ignores an upstream image whose userinfo disguises the real host', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+    },
+    records: [
+      {
+        name: 'Ada Lovelace',
+        github: 'https://github.com/ada',
+        image: 'https://www.cncf.io@evil.example/ada.png',
+      },
+    ],
+  });
+
+  assert.equal(
+    parseOutput(result).people.tab[0].image,
+    'https://github.com/ada.png',
+  );
+});
+
+test('ignores a plaintext http upstream image', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+    },
+    records: [
+      {
+        name: 'Ada Lovelace',
+        github: 'https://github.com/ada',
+        image:
+          'http://raw.githubusercontent.com/cncf/people/main/images/ada.jpg',
+      },
+    ],
+  });
+
+  assert.equal(
+    parseOutput(result).people.tab[0].image,
+    'https://github.com/ada.png',
+  );
+});
+
+test('drops a cached image on a host outside the allowlist', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada', github: 'ada' }] }),
+      [OUTPUT]: JSON.stringify({
+        fetchedAt: '2020-01-01T00:00:00.000Z',
+        people: {
+          tab: [
+            {
+              name: 'Ada',
+              github: 'ada',
+              image: 'https://tracker.example/a.png',
+            },
+          ],
+        },
+      }),
+    },
+    records: [],
+  });
+
+  assert.equal(
+    parseOutput(result).people.tab[0].image,
+    'https://github.com/ada.png',
+  );
 });
