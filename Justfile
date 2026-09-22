@@ -11,4 +11,9 @@ build:
     npm run validate:architecture-assets
     npm run validate:metrics
     npm run validate:awards
+    npm run validate:community-people
+    npm run validate:community-groups
+    npm run validate:launch-metrics
+    npm run validate:case-studies
+    npm run validate:radar-reports
     npm run build
