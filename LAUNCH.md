@@ -75,7 +75,7 @@ exists to prevent. Before the W-0 launch date, all scheduled content-refresh
 workflows must be green for **2 consecutive scheduled runs**:
 
 | Pipeline | Schedule | Tracking |
-|---|---|---|
+| --- | --- | --- |
 | Import reference architectures (`import-architectures.yml`) | daily | #121 |
 | Refresh community profiles (`refresh-community-people.yml`) | weekly | #122 |
 | Generate Docs PDF (`pdf.yml`) | weekly | #123 |

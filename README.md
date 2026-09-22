@@ -55,13 +55,13 @@ The build process is configured with:
 
 (These are set in `.github/workflows/deploy-gh-pages.yml` and will be updated when a custom domain is active.)
 
-The long-term target is [endusers.cncf.io](https://endusers.cncf.io/), which is currently a pending DNS 
+The long-term target is [endusers.cncf.io](https://endusers.cncf.io/), which is currently a pending DNS
 cutover. When that domain is verified and active, the workflow will update the configuration to:
 
 - `url: 'https://endusers.cncf.io'`
 - `baseUrl: '/'`
 
-See [ADR 0001](./adr/0001-site-ownership-and-cutover-path.md) and [issue #46](https://github.com/cncf/endusers/issues/46) 
+See [ADR 0001](./adr/0001-site-ownership-and-cutover-path.md) and [issue #46](https://github.com/cncf/endusers/issues/46)
 for the ownership and cutover plan.
 
 ## Metrics data
