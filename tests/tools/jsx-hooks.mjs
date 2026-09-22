@@ -1,13 +1,15 @@
 // Module customization hooks that let `node --test` import the repository's
 // React sources directly.
 //
-// Four things stop plain Node from loading `src/components/**/index.js`:
+// Five things stop plain Node from loading `src/components/**/index.js`:
 //
 //   1. The files contain JSX, which Node cannot parse.
 //   2. They import `./styles.module.css`, which Node cannot resolve.
 //   3. They import the `@site/...` alias, which only webpack understands.
 //   4. They import `@docusaurus/useBaseUrl` and `@docusaurus/Link`, which are
 //      theme aliases rather than installed packages.
+//   5. They import relative paths with no file extension, such as
+//      `../hooks/useFocusTrap`, which webpack completes and Node does not.
 //
 // These hooks transpile JSX with @swc/core (already used by the Docusaurus
 // build through @docusaurus/faster) and substitute a CSS Modules stub that
@@ -29,6 +31,7 @@ import { transformSync } from '@swc/core';
 const CSS_SPECIFIER = /\.(css|scss|sass|less)$/;
 const SCRIPT_URL = /\.(js|jsx|mjs)$/;
 const SITE_ALIAS = '@site/';
+const RELATIVE_SPECIFIER = /^\.\.?\//;
 const DOCUSAURUS_ALIAS = '@docusaurus/';
 
 const REPO_ROOT = new URL('../../', import.meta.url);
@@ -44,8 +47,9 @@ const CSS_STUB =
 
 // Webpack resolves an extensionless or directory specifier by trying a list of
 // extensions and then `index.<ext>`; Node's ESM resolver does neither. Source
-// files written for the Docusaurus build rely on it — `@site/src/components/X`
-// is a directory — so the alias target is completed the same way here.
+// files written for the Docusaurus build rely on it for both alias targets
+// (`@site/src/components/X` is a directory) and plain relative imports
+// (`../hooks/useFocusTrap` names no extension), so both are completed here.
 const RESOLVE_EXTENSIONS = ['.js', '.jsx', '.mjs', '.ts', '.tsx', '.json'];
 
 function isFile(url) {
@@ -56,7 +60,7 @@ function isDirectory(url) {
   return statSync(fileURLToPath(url), { throwIfNoEntry: false })?.isDirectory();
 }
 
-function resolveAliasTarget(target) {
+function completeTarget(target) {
   if (isFile(target)) return target.href;
   for (const extension of RESOLVE_EXTENSIONS) {
     const candidate = new URL(`${target.pathname}${extension}`, target);
@@ -79,7 +83,7 @@ export function resolve(specifier, context, nextResolve) {
   }
   if (specifier.startsWith(SITE_ALIAS)) {
     const target = new URL(specifier.slice(SITE_ALIAS.length), REPO_ROOT);
-    return { url: resolveAliasTarget(target), shortCircuit: true };
+    return { url: completeTarget(target), shortCircuit: true };
   }
   if (specifier.startsWith(DOCUSAURUS_ALIAS)) {
     const name = specifier.slice(DOCUSAURUS_ALIAS.length);
@@ -89,6 +93,25 @@ export function resolve(specifier, context, nextResolve) {
         format: 'module',
         shortCircuit: true,
       };
+    }
+  }
+  // A relative specifier is left to Node unless it names nothing on disk, in
+  // which case webpack's extension completion is applied. Completion is only
+  // attempted for sources outside node_modules/, so a dependency's own
+  // resolution — including its package exports — is never intercepted.
+  if (
+    RELATIVE_SPECIFIER.test(specifier) &&
+    context.parentURL?.startsWith('file:') &&
+    !context.parentURL.includes('/node_modules/')
+  ) {
+    const target = new URL(specifier, context.parentURL);
+    if (!isFile(target)) {
+      const completed = completeTarget(target);
+      // completeTarget hands back the bare target when nothing matched; fall
+      // through so Node reports the miss against the requested path.
+      if (completed !== target.href) {
+        return { url: completed, shortCircuit: true };
+      }
     }
   }
   return nextResolve(specifier, context);
