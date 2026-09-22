@@ -131,6 +131,7 @@ function signal(id, label, baseline, sourceUrl, collectedAt) {
 }
 
 async function githubAll(url, token) {
+  const origin = new URL(url).origin;
   const results = [];
   let next = url;
   while (next) {
@@ -145,9 +146,29 @@ async function githubAll(url, token) {
     results.push(...(await response.json()));
     const link = response.headers.get('link') || '';
     const match = link.match(/<([^>]+)>;\s*rel="next"/);
-    next = match ? match[1] : null;
+    next = match ? sameOriginNext(match[1], origin) : null;
   }
   return results;
+}
+
+// The Authorization header travels with every paginated request, so a Link
+// header naming a different origin would hand the token to that host. Only
+// continue paginating within the origin the first request was sent to.
+function sameOriginNext(candidate, origin) {
+  let parsed;
+  try {
+    parsed = new URL(candidate, origin);
+  } catch {
+    console.warn(`Ignoring unparseable Link rel="next" target: ${candidate}`);
+    return null;
+  }
+  if (parsed.origin !== origin) {
+    console.warn(
+      `Ignoring cross-origin Link rel="next" target: ${parsed.origin}`,
+    );
+    return null;
+  }
+  return parsed.toString();
 }
 
 main();
