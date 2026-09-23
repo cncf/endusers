@@ -121,7 +121,6 @@ test('the decorative arrow is hidden from assistive technology', () => {
   );
   assert.ok(arrows.length > 0, 'expected the ↗ affordance');
   for (const arrow of arrows) {
-    if (textOf(arrow) === '↗')
-      assert.equal(arrow.props['aria-hidden'], 'true');
+    if (textOf(arrow) === '↗') assert.equal(arrow.props['aria-hidden'], 'true');
   }
 });

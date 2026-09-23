@@ -4,11 +4,7 @@
     "title": "Scaling Adobe’s Service Delivery Foundation with a Cell-based Architecture",
     "organization": "Adobe",
     "summary": "Security, Compliance, Support and Cost Efficiency are cross-cutting concerns for both infrastructure and developer experience.",
-    "industries": [
-      "Software",
-      "Digital Media",
-      "Digital Experience"
-    ],
+    "industries": ["Software", "Digital Media", "Digital Experience"],
     "tags": [
       "adobe",
       "ci-cd",
@@ -17,12 +13,7 @@
       "developer-platforms",
       "developer-experience"
     ],
-    "projects": [
-      "Kubernetes",
-      "Helm",
-      "Argo",
-      "Backstage"
-    ],
+    "projects": ["Kubernetes", "Helm", "Argo", "Backstage"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/adobe",
     "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
     "assets": [
@@ -40,18 +31,8 @@
     "organization": "Allianz Direct",
     "summary": "The PE team is internally organised in DDOs - Distributed DevOps, where each ddo owns a Domain. This setup follows the reverse Conway manoeuver where the reference architecture structure dictates the teams setup. The PE team consist of 13 m",
     "industries": [],
-    "tags": [
-      "finance",
-      "insurance",
-      "europe",
-      "public_cloud",
-      "aws"
-    ],
-    "projects": [
-      "Kubernetes",
-      "Helm",
-      "Argo"
-    ],
+    "tags": ["finance", "insurance", "europe", "public_cloud", "aws"],
+    "projects": ["Kubernetes", "Helm", "Argo"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/allianz",
     "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
     "assets": [
@@ -65,16 +46,8 @@
     "title": "A Cloud Native Scientific Computing Platform for CERN NextGen AI",
     "organization": "CERN",
     "summary": "Some additional projects outside the CNCF are essential to this deployment. [MLFlow](https://mlflow.org/), a project under the Linux Foundation used for model management and versioning [Nvidia GPU operator](https://github.com/NVIDIA/gpu-ope",
-    "industries": [
-      "Research",
-      "Public Sector"
-    ],
-    "tags": [
-      "cloud_native",
-      "private_cloud",
-      "kubernetes",
-      "switzerland"
-    ],
+    "industries": ["Research", "Public Sector"],
+    "tags": ["cloud_native", "private_cloud", "kubernetes", "switzerland"],
     "projects": [
       "Argo",
       "Bootc",
@@ -102,11 +75,7 @@
     "title": "From Afterthought to Practice: Flipkart’s Multi-Tenant Chaos Engineering Platform on LitmusChaos",
     "organization": "Flipkart Internet Pvt. Ltd.",
     "summary": "Flipkart is one of India’s leading digital commerce companies, running hundreds of tightly coupled microservices across Kubernetes and VM workloads that must withstand the traffic surges of Big Billion Days and other festive sales. The Cent",
-    "industries": [
-      "E-commerce",
-      "Retail",
-      "Digital Commerce"
-    ],
+    "industries": ["E-commerce", "Retail", "Digital Commerce"],
     "tags": [
       "Chaos engineering",
       "Resilience",
@@ -137,10 +106,7 @@
     "title": "End-to-End Cloud Native Telco Platform Automation at Swisscom",
     "organization": "Swisscom (Switzerland) Ltd",
     "summary": "Swisscom has built a cloud native telco platform for the end-to-end automation of its 5G standalone core network and cross-domain resource orchestration. The architecture replaces traditional imperative network management (Jenkins pipelines",
-    "industries": [
-      "Communication",
-      "Telecommunication"
-    ],
+    "industries": ["Communication", "Telecommunication"],
     "tags": [
       "cloud_native",
       "telco",
@@ -177,12 +143,7 @@
     "title": "A modern and sovereign Private Cloud «Kubernetes Service» for Swiss-based enterprises.",
     "organization": "Swisscom (Switzerland) Ltd",
     "summary": "Our next generation Private Cloud Container as a Service offering «Kubernetes Service» for the B2B market addresses customer’s need for scalable and highly available Kubernetes workload as a flexible and secure IT foundation. It is part of ",
-    "industries": [
-      "Communication",
-      "Telecommunication",
-      "Software",
-      "Cloud"
-    ],
+    "industries": ["Communication", "Telecommunication", "Software", "Cloud"],
     "tags": [
       "service-delivery",
       "cloud_native",
@@ -218,13 +179,7 @@
     "summary": "Our Business Enablement & IT team develops, designs, and operates the order fulfillment platform that underpins this process.",
     "industries": [],
     "tags": [],
-    "projects": [
-      "Kubernetes",
-      "Dapr",
-      "KEDA",
-      "OpenTelemetry",
-      "Helm"
-    ],
+    "projects": ["Kubernetes", "Dapr", "KEDA", "OpenTelemetry", "Helm"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/zeiss",
     "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
     "assets": [

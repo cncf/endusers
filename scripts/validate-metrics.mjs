@@ -44,12 +44,12 @@ for (const item of data.referenceArchitectureLifecycle?.omitted || []) if (!item
 for (const [id, series] of Object.entries(data.series || {})) {
   if (!series.label || !series.sourceUrl || !Array.isArray(series.values) || !series.values.length) errors.push({ path: 'metrics.json', severity: 'error', message: 'invalid time series' });
   checkUrl(`series.${id}`, 'sourceUrl', series.sourceUrl);
-  for (const point of series.values || []) if (!point.date || !Number.isFinite(point.value)) errors.push({ path: 'metrics.json', severity: 'error', message: 'invalid time-series point' });
+  for (const point of Array.isArray(series.values) ? series.values : []) if (!point.date || !Number.isFinite(point.value)) errors.push({ path: 'metrics.json', severity: 'error', message: 'invalid time-series point' });
 }
 for (const [id, chart] of Object.entries(data.breakdowns || {})) {
   if (!chart.label || !chart.sourceUrl || !Array.isArray(chart.values)) errors.push({ path: 'metrics.json', severity: 'error', message: 'invalid breakdown' });
   checkUrl(`breakdowns.${id}`, 'sourceUrl', chart.sourceUrl);
-  for (const item of chart.values || []) if (!item.name || !Number.isFinite(item.value)) errors.push({ path: 'metrics.json', severity: 'error', message: 'invalid breakdown value' });
+  for (const item of Array.isArray(chart.values) ? chart.values : []) if (!item.name || !Number.isFinite(item.value)) errors.push({ path: 'metrics.json', severity: 'error', message: 'invalid breakdown value' });
 }
 reportAndExit(errors, 'metrics');
 console.log(`Validated ${data.metrics.length} metrics`);

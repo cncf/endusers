@@ -137,6 +137,25 @@ test('rejects time series with empty values', () => {
   assert.match(result.stderr, /invalid time series/);
 });
 
+test('rejects a time series whose values are not an array', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      series: {
+        endUserMembers: {
+          label: 'Members',
+          sourceUrl: 'https://landscape.cncf.io/',
+          values: { 2026: 42 },
+        },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /invalid time series/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
 test('rejects time-series points without a date', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
@@ -325,6 +344,7 @@ test('rejects a breakdown whose values are not an array', () => {
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /invalid breakdown/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
 });
 
 test('rejects a breakdown missing its label', () => {

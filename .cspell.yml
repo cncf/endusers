@@ -1,4 +1,4 @@
-version: "0.2"
+version: '0.2'
 language: en
 dictionaries:
   - en_US
@@ -12,8 +12,8 @@ ignorePaths:
   - node_modules/**
   - build/**
   - package-lock.json
-  - "**/*.svg"
-  - "**/*.json"
+  - '**/*.svg'
+  - '**/*.json'
 words:
   - ACMM
   - cutover
