@@ -69,7 +69,7 @@ if (!Array.isArray(data.awards) || !data.awards.length)
     message: 'awards must be a non-empty array',
   });
 let lastYear = Infinity;
-for (const entry of data.awards || []) {
+for (const entry of Array.isArray(data.awards) ? data.awards : []) {
   const id = `${entry.year}/${entry.slug}`;
   if (!Number.isInteger(entry.year) || entry.year < 2015)
     errors.push({ path: id, severity: 'error', message: 'invalid year' });
