@@ -65,8 +65,8 @@ Tag issues/PRs covering:
 North America 2026 (Nov 9–12, Salt Lake City).
 
 See `LAUNCH.md` (PR #108) for the full date-backed plan. This milestone tracks
-launch-specific coordination. The six content-pillar issues (#74, #75, #76, #77,
-#79, and #80) remain in Phase 1 because GitHub supports one milestone per issue;
+launch-specific coordination. GitHub supports one milestone per issue, so the
+six content-pillar issues (#74, #75, #76, #77, #79, and #80) remain in Phase 1;
 the launch milestone depends on that phase instead of duplicating those
 assignments.
 

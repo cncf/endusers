@@ -2,24 +2,24 @@
   "name": "CNCF End User Community",
   "short_name": "CNCF End Users",
   "description": "The CNCF End User Community connects practitioners, architects, and organizations running cloud native technologies in production.",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0086FF",
   "icons": [
     {
-      "src": "/favicons/favicon.svg",
+      "src": "favicons/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/favicons/android-chrome-192x192.png",
+      "src": "favicons/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/favicons/android-chrome-512x512.png",
+      "src": "favicons/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

@@ -1,11 +1,26 @@
 #!/usr/bin/env node
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { extname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { collectError, reportAndExit } from './lib/validate-utils.mjs';
+import { findActiveContent } from './lib/svg-active-content.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const assetsDir = join(root, 'static/img/architectures');
 const shouldFix = process.argv.includes('--fix');
+
+// Mirrors MIRRORABLE_ASSET_EXTENSIONS in scripts/import-architectures.mjs.
+// static/ is published verbatim at the site origin, so a file the browser
+// executes as markup or script must never be present here.
+const ALLOWED_ASSET_EXTENSIONS = new Set([
+  '.avif',
+  '.gif',
+  '.jpeg',
+  '.jpg',
+  '.png',
+  '.svg',
+  '.webp',
+]);
 
 const issues = [];
 const fixed = [];
@@ -71,6 +86,13 @@ function validateSvg(path) {
     }
   }
 
+  // Critical: SVGs are served from the site origin, so a browser that opens one
+  // directly executes any script it carries. Never auto-fixed — active content
+  // in an imported asset is a finding a human needs to see, not silent churn.
+  for (const finding of findActiveContent(source)) {
+    record(path, 'error', `active content: ${finding}`);
+  }
+
   // Critical: embedded raster data bloats SVGs and defeats the format's purpose.
   if (/data:image\/(jpeg|png|gif|bmp|webp)/i.test(source)) {
     record(path, 'error', 'contains embedded raster image data');
@@ -114,6 +136,16 @@ function validateAsset(path) {
       'warn',
       `asset is ${(stats.size / 1024 / 1024).toFixed(2)} MB (consider optimization)`,
     );
+  }
+
+  const extension = extname(path).toLowerCase();
+  if (!ALLOWED_ASSET_EXTENSIONS.has(extension)) {
+    record(
+      path,
+      'error',
+      `${extension || 'extensionless file'} is not an allowed asset type; static/ is served at the site origin`,
+    );
+    return;
   }
 
   if (path.endsWith('.svg')) {

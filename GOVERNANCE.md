@@ -70,6 +70,29 @@ path:
   architecture facts.
 - Major site structure, navigation, and branding changes.
 
+## Hive App workflow-permission gap
+
+The kubestellar-hive GitHub App installation on this repo has `contents:write`
+but not the `workflows` permission, so hive agent branches that touch
+`.github/workflows/**` cannot be pushed through the App (see issue #120). This
+is a repo/organization admin setting (GitHub App installation → Permissions),
+not something a pull request can change, so until an admin grants it agents must
+follow this interim process instead of opening artifact-only PRs:
+
+- An agent that finds a fix requiring changes to `.github/workflows/**` must not
+  commit `.patch` files or other artifact-only evidence as a PR. Instead, it
+  posts the full proposed diff (as a fenced code block, not an attachment) as a
+  comment on the relevant tracking issue, so a maintainer can apply it directly
+  with normal write access.
+- The comment must state which workflow file(s) it touches and link back to this
+  section so reviewers understand why there is no branch.
+- Once a maintainer applies the change (either by hand or by re-running the
+  agent after the App gains the permission), the tracking issue is closed and
+  any duplicate artifact comments are marked superseded, per the cross-agent
+  duplicate-prevention rule below.
+- If the `workflows` permission is granted to the App, this section is removed
+  and agents resume opening normal branches/PRs for workflow changes.
+
 ## Merge-queue hygiene
 
 To keep the queue from rotting (see issue #58):
@@ -81,6 +104,33 @@ To keep the queue from rotting (see issue #58):
 - Maintainers aim to keep the open-PR queue in single digits; a growing queue is
   a signal to adjust the low-risk merge classes above, not to lower the review
   bar.
+
+**Operational status**: `scripts/pr-queue-hygiene.mjs` flags (labels
+`needs-rebase-or-close` + comments) any open PR that has been conflicting with
+the base branch for more than 48 hours. It does not close PRs automatically —
+judging whether a conflicting PR is superseded needs human or author-agent
+judgment — but it makes stale PRs visible without waiting for manual sweeps.
+Mergeability is checked per-PR via the single-PR API endpoint to avoid stale
+cached list values, and PRs labeled `hold`, `on-hold`, or `do-not-merge` are
+skipped per agent-automation policy. The scheduled GitHub Actions workflow file
+(`.github/workflows/pr-queue-hygiene.yml`) is tracked in issue #318 awaiting
+maintainer commit per the Hive App workflow-permission gap.
+
+### Cross-agent duplicate prevention
+
+Fleet-wide sweeps have repeatedly found duplicate PRs opening the same fix from
+different agents (see issue #119). To prevent this:
+
+- Before implementing a fix, an agent must search open (and recently closed) PRs
+  and issues touching the same file(s) or the same problem. If a match exists,
+  the agent links to it and either supersedes it (with a comment explaining why
+  the new PR replaces it) or stands down instead of opening a parallel PR.
+- When an equivalent change lands, the superseded PR is closed with a comment
+  pointing at the replacement, per the merge-queue hygiene rule above.
+- Fixes that require changes to workflow files (`.github/workflows/`) or other
+  security-sensitive files should, where a tracking issue already exists,
+  reference that issue rather than opening a new artifact-patch PR that
+  duplicates work already queued against it.
 
 ## Changing this document
 
