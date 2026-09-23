@@ -25,6 +25,8 @@ jobs:
       - run: npm ci
       - run: npm run test:unit
       - run: npm run collect:metrics
+        env:
+          GH_TOKEN: ${{ github.token }}
       - run: npm run validate:metrics
       - run: npm run import:architectures
       - run: npm run validate:architectures
