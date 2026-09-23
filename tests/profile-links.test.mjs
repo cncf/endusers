@@ -78,3 +78,65 @@ test('profileUrl returns null for a missing handle', () => {
   assert.equal(profileUrl(null, 'linkedin'), null);
   assert.equal(profileUrl(undefined, 'twitter'), null);
 });
+
+// profileUrl resolves its base through `PROFILE_BASES[type] ?? PROFILE_BASES.twitter`.
+// Every call site in src/components/CommunityPeople/index.js passes one of the
+// three known literals, so the `??` fallback arm had never been evaluated by
+// the suite and the branch showed as uncovered.
+test('profileUrl falls back to the twitter base for an unrecognised type', () => {
+  assert.equal(
+    profileUrl('castrojo', 'mastodon'),
+    'https://twitter.com/castrojo',
+  );
+  assert.equal(profileUrl('castrojo'), 'https://twitter.com/castrojo');
+  assert.equal(profileUrl('castrojo', null), 'https://twitter.com/castrojo');
+});
+
+test('the unrecognised-type fallback still percent-encodes the handle', () => {
+  assert.equal(
+    profileUrl('../../attacker', 'mastodon'),
+    'https://twitter.com/..%2F..%2Fattacker',
+  );
+});
+
+// Known defect, tracked in #504: PROFILE_BASES is a plain object literal, so
+// a `type` naming an Object.prototype member resolves to that inherited value
+// instead of missing and falling back. `PROFILE_BASES.constructor` is truthy,
+// so `??` does not fire and the function returns a string that is not a URL at
+// all — today `profileUrl('castrojo', 'constructor')` yields
+// "function Object() { [native code] }castrojo", which would be rendered
+// straight into an href. No caller passes an inherited key today, so this is
+// latent rather than exploitable; the fix is a null-prototype map or an
+// explicit allow-list in src/lib/profile-links.mjs, which is production code.
+test(
+  'profileUrl treats an inherited Object.prototype key as unrecognised',
+  { todo: true },
+  () => {
+    for (const inherited of ['constructor', 'toString', 'valueOf']) {
+      assert.equal(
+        profileUrl('castrojo', inherited),
+        'https://twitter.com/castrojo',
+        `type="${inherited}" must not resolve through Object.prototype`,
+      );
+    }
+  },
+);
+
+// websiteUrl guards `!url.hostname` after parsing. For the two protocols it
+// allows that guard is unreachable: http/https are WHATWG "special" schemes, so
+// the parser either supplies a host or throws. These cases pin the observable
+// halves of that contract so the guard is not mistaken for live validation.
+test('websiteUrl throws-and-drops rather than accepting an empty http authority', () => {
+  assert.equal(websiteUrl('http://'), null);
+  assert.equal(websiteUrl('https://?q=1'), null);
+  assert.equal(websiteUrl('https://#frag'), null);
+});
+
+test('websiteUrl reports the host the URL parser actually derives', () => {
+  // An extra slash after the scheme does not produce an empty host: the parser
+  // promotes the first path segment to the authority, so the link points at
+  // host "etc", not at the origin's /etc/passwd.
+  assert.equal(websiteUrl('http:///etc/passwd'), 'http://etc/passwd');
+  // A missing slash is normalised the same way rather than rejected.
+  assert.equal(websiteUrl('http:/example.test'), 'http://example.test/');
+});
