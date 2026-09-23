@@ -59,7 +59,8 @@
     "validate:community-people": "node scripts/validate-community-people.mjs",
     "validate:community-groups": "node scripts/validate-community-groups.mjs",
     "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
-    "test:unit": "node --test"
+    "test:unit": "node --test",
+    "test:unit:coverage": "node tests/tools/coverage-report.mjs"
   },
   "repository": {
     "type": "git",
