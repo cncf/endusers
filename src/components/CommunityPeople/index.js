@@ -26,7 +26,7 @@ function PersonDialog({ person, onClose, triggerRef }) {
           <div className={styles.profileHeading}>
             <p className={styles.profileKicker}>CNCF end-user community</p>
             <h3 id="profile-name">{name}</h3>
-            <p className={styles.profileRole}>{role || 'Community member'}{role && company ? ` · ${company}` : company}</p>
+            <p className={styles.profileRole}>{[role, company].filter(Boolean).join(' · ') || 'Community member'}</p>
             {location && <p className={styles.location}>{location}</p>}
           </div>
         </div>
