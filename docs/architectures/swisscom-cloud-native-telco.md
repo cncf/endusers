@@ -22,11 +22,11 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
   <CNCFProjectCard name="Headlamp" href="https://www.cncf.io/projects/headlamp/" logo="/img/cncf-projects/headlamp-headlamp-icon-color.svg" since="2025" description="Kubernetes dashboard for the management cluster, providing cluster visibility, RBAC-based access control, a CRD documentation browser, and extensible plugin system. Swisscom is listed as an official Headlamp adopter." />
 
-  <CNCFProjectCard name="SDC (Schema Driven Configuration)" href="https://www.cncf.io/projects/sdc-(schema-driven-configuration)/" logo="https://landscape.cncf.io/logos/c5f5fbc1c0b595d28bcfc1f443d46b7c0e4aa4c0dc9f239b0e0fa90ca3a4fda4.svg" since="2024" description="Used as the Config Sync Operator to push assembled configurations to CNFs. SDC enables vendor-agnostic, declarative configuration management using YANG schemas and NETCONF/gNMI protocols. Swisscom adopted SDC as its strategic configuration management solution and actively contributes features including config blame, drift detection, validation, testing compatibility with CNFs, and NETCONF Actions support. Swisscom is listed as an official SDC adopter." />
+  <CNCFProjectCard name="SDC (Schema Driven Configuration)" href="https://www.cncf.io/projects/sdc-(schema-driven-configuration)/" since="2024" description="Used as the Config Sync Operator to push assembled configurations to CNFs. SDC enables vendor-agnostic, declarative configuration management using YANG schemas and NETCONF/gNMI protocols. Swisscom adopted SDC as its strategic configuration management solution and actively contributes features including config blame, drift detection, validation, testing compatibility with CNFs, and NETCONF Actions support. Swisscom is listed as an official SDC adopter." />
 
   <CNCFProjectCard name="CoreDNS" href="https://www.cncf.io/projects/coredns/" logo="/img/cncf-projects/coredns-coredns-icon-color.svg" since="2021" description="In-cluster DNS service discovery for Kubernetes services. Also used with conditional forwarding to route queries for private 5G zones (e.g., 3gppnetwork.org) to the authoritative PowerDNS servers." />
 
-  <CNCFProjectCard name="ExternalDNS" href="https://www.cncf.io/projects/externaldns/" logo="https://kubernetes-sigs.github.io/external-dns/latest/docs/img/external-dns.png" since="2023" description="Kubernetes-native automation of DNS records in PowerDNS using Custom Resources and annotations." />
+  <CNCFProjectCard name="ExternalDNS" href="https://www.cncf.io/projects/externaldns/" since="2023" description="Kubernetes-native automation of DNS records in PowerDNS using Custom Resources and annotations." />
 
   <CNCFProjectCard name="MetalLB" href="https://www.cncf.io/projects/metallb/" logo="/img/cncf-projects/metallb-metallb-icon-color.svg" since="2022" description="Load balancer for bare-metal Kubernetes clusters. MetalLB IP address pools are managed via KRM, with IP addresses dynamically allocated from NetBox via the NetBox Operator." />
 
@@ -34,11 +34,11 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
 ### Other Projects
 
-  <CNCFProjectCard name="PowerDNS" href="https://www.cncf.io/projects/powerdns/" logo="https://upload.wikimedia.org/wikipedia/commons/9/9e/Logo_of_PowerDNS.svg" since="2023" description="Authoritative DNS server supporting automation of advanced resource records (NAPTR, SRV) required for 5G/SIP via ExternalDNS." />
+  <CNCFProjectCard name="PowerDNS" href="https://www.cncf.io/projects/powerdns/" since="2023" description="Authoritative DNS server supporting automation of advanced resource records (NAPTR, SRV) required for 5G/SIP via ExternalDNS." />
 
-  <CNCFProjectCard name="NetBox Operator" href="https://www.cncf.io/projects/netbox-operator/" logo="https://raw.githubusercontent.com/netbox-community/netbox/main/docs/netbox_logo_light.svg" since="2024" description="Kubernetes operator for IPAM integration, open-sourced by Swisscom. Brings IPAM into the Kubernetes API with a claim model inspired by PersistentVolumeClaims — dynamically allocating IP prefixes and addresses from NetBox, managing their lifecycle through Kubernetes garbage collection, and supporting sticky IPs for disaster recovery." />
+  <CNCFProjectCard name="NetBox Operator" href="https://www.cncf.io/projects/netbox-operator/" since="2024" description="Kubernetes operator for IPAM integration, open-sourced by Swisscom. Brings IPAM into the Kubernetes API with a claim model inspired by PersistentVolumeClaims — dynamically allocating IP prefixes and addresses from NetBox, managing their lifecycle through Kubernetes garbage collection, and supporting sticky IPs for disaster recovery." />
 
-  <CNCFProjectCard name="NetBox" href="https://www.cncf.io/projects/netbox/" logo="https://raw.githubusercontent.com/netbox-community/netbox/main/docs/netbox_logo_light.svg" since="2023" description="IP Address Management (IPAM) and network infrastructure modeling. Used as the IPAM backend for dynamic IP allocation across all CNFs and platform services." />
+  <CNCFProjectCard name="NetBox" href="https://www.cncf.io/projects/netbox/" since="2023" description="IP Address Management (IPAM) and network infrastructure modeling. Used as the IPAM backend for dynamic IP allocation across all CNFs and platform services." />
 
 ## TL;DR or Synopsis
 

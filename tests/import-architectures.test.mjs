@@ -267,7 +267,7 @@ Intro paragraph.
     assert.equal(run.status, 0, run.stderr);
     assert.match(
       run.stderr,
-      /Could not mirror CNCF project asset: envoy\/envoy-icon-color\.svg/,
+      /Could not mirror CNCF project asset: projects\/envoy\/icon\/color\/envoy-icon-color\.svg/,
     );
     assert.equal(
       run.exists('static/img/cncf-projects/envoy-envoy-icon-color.svg'),
