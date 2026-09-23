@@ -33,7 +33,7 @@ if (!Array.isArray(data.groups) || data.groups.length === 0) {
 }
 
 const slugs = new Set();
-for (const group of data.groups || []) {
+for (const group of Array.isArray(data.groups) ? data.groups : []) {
   const label = group.slug || group.name || 'unknown group';
   if (!group.slug || !group.name || !group.repository) {
     collectError(

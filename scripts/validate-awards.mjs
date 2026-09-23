@@ -11,6 +11,42 @@ const data = JSON.parse(
   readFileSync(new URL('../data/awards.json', import.meta.url)),
 );
 const errors = [];
+
+// The award link fields are rendered as <a href> on /awards and in the member
+// directory, so they are resolved through the URL parser rather than a string
+// prefix test: `/^https:\/\//` accepts "https://cncf.io@evil.example", whose
+// visible prefix and real host disagree, and accepts unparseable values such
+// as "https://". Mirrors checkUrl() in validate-launch-metrics.mjs and
+// websiteUrl() in src/lib/profile-links.mjs.
+function checkHttpsUrl(path, field, value) {
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    errors.push({
+      path,
+      severity: 'error',
+      message: `${field} must be an absolute https URL`,
+    });
+    return;
+  }
+  if (parsed.protocol !== 'https:') {
+    errors.push({
+      path,
+      severity: 'error',
+      message: `${field} must use https, got ${parsed.protocol}`,
+    });
+    return;
+  }
+  if (parsed.username || parsed.password) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: `${field} must not carry a userinfo component, which only disguises the real host (${parsed.hostname})`,
+    });
+  }
+}
+
 if (Number.isNaN(Date.parse(data.verifiedAt)))
   errors.push({
     path: 'awards.json',
@@ -18,13 +54,14 @@ if (Number.isNaN(Date.parse(data.verifiedAt)))
     message:
       'verifiedAt must be a parseable date recording the last completeness audit against verifiedAgainst',
   });
-if (!data.verifiedAgainst || !/^https:\/\//.test(data.verifiedAgainst))
+if (!data.verifiedAgainst)
   errors.push({
     path: 'awards.json',
     severity: 'error',
     message:
       'verifiedAgainst must be an https URL to the canonical award history source',
   });
+else checkHttpsUrl('awards.json', 'verifiedAgainst', data.verifiedAgainst);
 if (!Array.isArray(data.awards) || !data.awards.length)
   errors.push({
     path: 'awards.json',
@@ -32,7 +69,7 @@ if (!Array.isArray(data.awards) || !data.awards.length)
     message: 'awards must be a non-empty array',
   });
 let lastYear = Infinity;
-for (const entry of data.awards || []) {
+for (const entry of Array.isArray(data.awards) ? data.awards : []) {
   const id = `${entry.year}/${entry.slug}`;
   if (!Number.isInteger(entry.year) || entry.year < 2015)
     errors.push({ path: id, severity: 'error', message: 'invalid year' });
@@ -61,12 +98,7 @@ for (const entry of data.awards || []) {
       message: 'entry needs an announcementUrl or talkUrl',
     });
   for (const field of ['announcementUrl', 'caseStudyUrl', 'talkUrl']) {
-    if (entry[field] && !/^https:\/\//.test(entry[field]))
-      errors.push({
-        path: id,
-        severity: 'error',
-        message: `${field} must be https`,
-      });
+    if (entry[field]) checkHttpsUrl(id, field, entry[field]);
   }
   if (entry.logo) {
     if (typeof entry.logo !== 'string') {

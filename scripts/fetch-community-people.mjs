@@ -10,8 +10,10 @@ import { firstAllowedImageUrl, profileImageUrl } from './lib/profile-image.mjs';
 // publish that response as somebody's profile, so reject it before matching.
 const GITHUB_HANDLE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
 
-const PEOPLE_JSON_URL = 'https://raw.githubusercontent.com/cncf/people/main/people.json';
-const PEOPLE_IMAGE_BASE = 'https://raw.githubusercontent.com/cncf/people/main/images/';
+const PEOPLE_JSON_URL =
+  'https://raw.githubusercontent.com/cncf/people/main/people.json';
+const PEOPLE_IMAGE_BASE =
+  'https://raw.githubusercontent.com/cncf/people/main/images/';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const output = join(root, 'data/community-people.json');
@@ -21,7 +23,9 @@ const roster = JSON.parse(readFileSync(rosterPath, 'utf8'));
 const people = roster.sections;
 const fallbackImages = roster.fallbackImages;
 
-const existing = existsSync(output) ? JSON.parse(readFileSync(output, 'utf8')) : {};
+const existing = existsSync(output)
+  ? JSON.parse(readFileSync(output, 'utf8'))
+  : {};
 const existingPeople = existing.people ?? {};
 
 // Extracts the bare handle from a cncf/people github field, which is a full
@@ -87,7 +91,10 @@ for (const [section, entries] of Object.entries(people)) {
       process.exit(1);
     }
 
-    const previous = existingPeople[section]?.find((person) => person.github === github && github) ?? {};
+    const previous =
+      existingPeople[section]?.find(
+        (person) => person.github === github && github,
+      ) ?? {};
     const profile = (github && peopleIndex.get(github.toLowerCase())) || null;
     if (github && !profile) fallbacks += 1;
 
@@ -101,16 +108,27 @@ for (const [section, entries] of Object.entries(people)) {
       location: profile?.location || previous.location || '',
       image: resolveImage({ name, github, profile, previous, fallbackImages }),
       github,
-      linkedin: linkedin || lastSegment(profile?.linkedin) || previous.linkedin || null,
-      twitter: twitter || lastSegment(profile?.twitter) || previous.twitter || null,
+      linkedin:
+        linkedin || lastSegment(profile?.linkedin) || previous.linkedin || null,
+      twitter:
+        twitter || lastSegment(profile?.twitter) || previous.twitter || null,
       blog: profile?.website || previous.blog || '',
     });
   }
 }
 
 mkdirSync(join(root, 'data'), { recursive: true });
-writeFileSync(output, JSON.stringify({ fetchedAt: new Date().toISOString(), people: result }, null, 2) + '\n');
-console.log(`Refreshed ${Object.values(result).flat().length} community profiles${fallbacks ? ` (${fallbacks} fallback${fallbacks === 1 ? '' : 's'})` : ''}`);
+writeFileSync(
+  output,
+  JSON.stringify(
+    { fetchedAt: new Date().toISOString(), people: result },
+    null,
+    2,
+  ) + '\n',
+);
+console.log(
+  `Refreshed ${Object.values(result).flat().length} community profiles${fallbacks ? ` (${fallbacks} fallback${fallbacks === 1 ? '' : 's'})` : ''}`,
+);
 
 function imageUrl(profile) {
   if (!profile?.image) return '';

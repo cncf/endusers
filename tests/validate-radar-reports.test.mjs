@@ -47,6 +47,16 @@ test('rejects an empty radarReports array', () => {
   assert.match(result.stderr, /non-empty array/);
 });
 
+test('rejects a truthy non-array radarReports without crashing', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, radarReports: { 1: validEntry } }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /non-empty array/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
 test('rejects duplicate ids', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
