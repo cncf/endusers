@@ -139,6 +139,16 @@ test('reports a repository-less group once, not also as a bad URL', () => {
   assert.doesNotMatch(result.stderr, /absolute URL/);
 });
 
+test('rejects a truthy non-array groups without crashing', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, groups: { research: validGroup() } }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /non-empty array/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
 test('rejects a duplicate slug', () => {
   const result = runScriptWithFixtures(
     SCRIPT,

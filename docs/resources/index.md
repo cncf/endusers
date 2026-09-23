@@ -23,8 +23,9 @@ research — real production stories and survey-based technology trend reports.
 </div>
 
 Both pages are generated from the public [cncf.io](https://www.cncf.io/)
-WordPress API and refreshed on a schedule by a GitHub Action, so they stay in
-sync with the source pages automatically. See
+WordPress API and regenerated manually by a maintainer running
+`npm run collect:case-studies` / `npm run collect:radar-reports`; there is no
+scheduled workflow yet. See
 [`data/case-studies.json`](https://github.com/cncf/endusers/blob/main/data/case-studies.json)
 and
 [`data/radar-reports.json`](https://github.com/cncf/endusers/blob/main/data/radar-reports.json)

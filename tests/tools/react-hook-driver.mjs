@@ -13,11 +13,13 @@ function sameDeps(a, b) {
 }
 
 /**
- * Drives a hook that uses only useRef and useEffect.
+ * Drives a hook that uses useRef, useEffect, useState, useMemo or useCallback.
  *
  * Effects run after the hook body returns, mirroring React's ordering, and
  * re-run on rerender only when their dependency array changes — the previous
- * cleanup fires first, as React does.
+ * cleanup fires first, as React does. A state setter records the new value and
+ * immediately re-runs the hook body, so `api.result` reflects the update the
+ * way a re-render would.
  *
  * @param {Function} hook - Invokes the hook under test and returns its result.
  * @returns {{ result: any, rerender: Function, unmount: Function }}
@@ -25,11 +27,16 @@ function sameDeps(a, b) {
 export function renderHook(hook) {
   const refs = [];
   const effects = [];
+  const states = [];
+  const memos = [];
   let unmounted = false;
+  let rendering = false;
 
   function runHookBody() {
     let refIndex = 0;
     let effectIndex = 0;
+    let stateIndex = 0;
+    let memoIndex = 0;
     const pending = [];
     const previousDispatcher = Internals.H;
     Internals.H = {
@@ -40,11 +47,42 @@ export function renderHook(hook) {
       useEffect(create, deps) {
         pending.push({ slot: effectIndex++, create, deps });
       },
+      useState(initial) {
+        const slot = stateIndex++;
+        if (slot === states.length) {
+          states.push({
+            value: typeof initial === 'function' ? initial() : initial,
+            setter: (next) => {
+              const current = states[slot].value;
+              const value = typeof next === 'function' ? next(current) : next;
+              if (Object.is(value, current)) return;
+              states[slot].value = value;
+              // React batches updates and re-renders once; a setter called
+              // from inside the hook body must not recurse here.
+              if (!rendering && !unmounted) api.result = runHookBody();
+            },
+          });
+        }
+        return [states[slot].value, states[slot].setter];
+      },
+      useMemo(factory, deps) {
+        const slot = memoIndex++;
+        const previous = memos[slot];
+        if (previous && sameDeps(previous.deps, deps)) return previous.value;
+        const value = factory();
+        memos[slot] = { deps, value };
+        return value;
+      },
+      useCallback(fn, deps) {
+        return Internals.H.useMemo(() => fn, deps);
+      },
     };
     let result;
+    rendering = true;
     try {
       result = hook();
     } finally {
+      rendering = false;
       Internals.H = previousDispatcher;
     }
 
