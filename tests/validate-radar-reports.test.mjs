@@ -38,10 +38,45 @@ test('rejects a non-parseable generatedAt', () => {
   assert.match(result.stderr, /generatedAt must be a parseable date/);
 });
 
+// `sourceUrl` is the provenance link rendered by `SyncStatus` in
+// src/components/RadarReports/index.js. An absent value renders `href=
+// "undefined"` and an http:// value downgrades an outbound link to plaintext,
+// so both halves of the guard are asserted rather than just its presence.
+test('rejects a missing sourceUrl', () => {
+  const { sourceUrl, ...withoutSourceUrl } = validData;
+  const result = runScriptWithFixtures(SCRIPT, fixture(withoutSourceUrl));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+});
+
+test('rejects a non-https sourceUrl', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      sourceUrl: 'http://www.cncf.io/reports',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+});
+
 test('rejects an empty radarReports array', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
     fixture({ ...validData, radarReports: [] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /non-empty array/);
+});
+
+// The array guard is a two-term disjunction: the empty-array test above only
+// reaches the `!length` term. A null value — what a collector writes when an
+// upstream fetch yields nothing — takes the `!Array.isArray` term instead.
+test('rejects a null radarReports value', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, radarReports: null }),
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /non-empty array/);
@@ -64,6 +99,70 @@ test('rejects duplicate ids', () => {
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /duplicate or missing id/);
+});
+
+// The duplicate case above always supplies an id, so the `entry.id ??
+// entry.slug ?? 'unknown'` label fallback is only reached by an entry that
+// omits it. The label is what a maintainer reads to find the offending record.
+test('labels an id-less entry by its slug', () => {
+  const { id, ...withoutId } = validEntry;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, radarReports: [withoutId] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /example-radar-report: duplicate or missing id/,
+    'an id-less entry should be reported against its slug',
+  );
+});
+
+test('labels an entry with neither id nor slug as unknown', () => {
+  const { id, slug, ...anonymous } = validEntry;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, radarReports: [anonymous] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /unknown: duplicate or missing id/);
+});
+
+test('rejects an entry missing a title', () => {
+  const { title, ...withoutTitle } = validEntry;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, radarReports: [withoutTitle] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /missing title/);
+});
+
+// Each entry url becomes a `target="_blank"` card link on /reports. A missing
+// value renders `href="undefined"`; an http:// value ships a plaintext
+// outbound link. The guard covers both, so both are asserted.
+test('rejects an entry missing a url', () => {
+  const { url, ...withoutUrl } = validEntry;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, radarReports: [withoutUrl] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /missing url/);
+});
+
+test('rejects an entry whose url is not https', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      radarReports: [
+        { ...validEntry, url: 'http://www.cncf.io/reports/example/' },
+      ],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /missing url/);
 });
 
 test('rejects an entry missing a summary', () => {
