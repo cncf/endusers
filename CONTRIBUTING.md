@@ -29,7 +29,9 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
   `validate:architectures`, `validate:architecture-assets`).
 - `just build` — run the same validation steps as CI
   (`validate:architectures`, `validate:architecture-assets`,
-  `validate:metrics`, `validate:awards`) followed by `build`.
+  `validate:metrics`, `validate:awards`, `validate:community-people`,
+  `validate:community-groups`, `validate:launch-metrics`,
+  `validate:case-studies`, `validate:radar-reports`) followed by `build`.
 
 These recipes are kept in sync with the checks the "Validate repository" and
 "Import reference architectures" workflows run, so a green `just build`/`just
