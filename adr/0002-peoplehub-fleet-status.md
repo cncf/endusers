@@ -7,8 +7,8 @@
 ## Context
 
 `peoplehub` (`castrojo/peoplehub`) is one of five repositories in the hive agent
-fleet alongside this one (see `scripts/fleet-merge-queue-digest.mjs`). As of
-this ADR:
+fleet alongside this one (see `scripts/fleet-merge-queue-digest.mjs`, proposed
+in PR #131, not merged). As of this ADR:
 
 - The default branch has not been pushed to since **2026-06-16** (53 days).
 - **14 mergeable PRs** are queued against it, including a build-breaking bug
@@ -81,10 +81,10 @@ reversible without cost.
 Concretely, until a `peoplehub` maintainer re-engages:
 
 1. The hive agent fleet should stop opening new PRs against `peoplehub`.
-2. The weekly fleet digest (`scripts/fleet-merge-queue-digest.mjs`, `#81`)
-   should keep reporting `peoplehub`'s queue depth and dormancy so the pause is
-   visible and not forgotten, without individual agents each re-filing the same
-   finding.
+2. The weekly fleet digest (`scripts/fleet-merge-queue-digest.mjs`, proposed in
+   PR #131, not merged; tracked in `#81`) should keep reporting `peoplehub`'s
+   queue depth and dormancy so the pause is visible and not forgotten, without
+   individual agents each re-filing the same finding.
 3. This ADR's status should move to Superseded, with a new ADR recording the
    outcome, if a maintainer chooses to revive or archive the repository instead.
 

@@ -9,7 +9,10 @@
  * @param {string} [userAgent] - User-Agent string for the calling script
  * @returns {Record<string, string>}
  */
-export function makeGitHubHeaders(token, userAgent = 'cncf-endusers-site-build') {
+export function makeGitHubHeaders(
+  token,
+  userAgent = 'cncf-endusers-site-build',
+) {
   const headers = {
     Accept: 'application/vnd.github+json',
     'User-Agent': userAgent,
@@ -27,7 +30,9 @@ export function makeGitHubHeaders(token, userAgent = 'cncf-endusers-site-build')
  * @returns {Promise<unknown>}
  */
 export async function githubFetch(url, token, userAgent) {
-  const response = await fetch(url, { headers: makeGitHubHeaders(token, userAgent) });
+  const response = await fetch(url, {
+    headers: makeGitHubHeaders(token, userAgent),
+  });
   if (!response.ok) throw new Error(`GitHub API ${response.status}: ${url}`);
   return response.json();
 }

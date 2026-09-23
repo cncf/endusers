@@ -1,0 +1,5 @@
+.freshnessNote {
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.85rem;
+  margin: -0.5rem 0 1.5rem;
+}

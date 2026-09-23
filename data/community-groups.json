@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-09-23T10:36:35.435Z",
+  "groups": [
+    {
+      "slug": "public-sector",
+      "name": "Public Sector User Group",
+      "repository": "https://github.com/cncf/public-sector-user-group",
+      "archived": false,
+      "reachable": true
+    },
+    {
+      "slug": "telecom",
+      "name": "Telecom User Group",
+      "repository": "https://github.com/cncf/telecom-user-group",
+      "archived": false,
+      "reachable": true
+    }
+  ]
+}

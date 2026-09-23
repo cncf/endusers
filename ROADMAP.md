@@ -1,7 +1,8 @@
 # Roadmap: endusers.cncf.io
 
-This roadmap describes the planned evolution of the CNCF End User Community site.
-It is a living document; update it as priorities change. Tracking: issues labeled `roadmap`.
+This roadmap describes the planned evolution of the CNCF End User Community
+site. It is a living document; update it as priorities change. Tracking: issues
+labeled `roadmap`.
 
 ## Vision
 
@@ -13,10 +14,10 @@ metrics, events, and pathways to participate.
 
 **KubeCon + CloudNativeCon North America 2026 (Nov 9–12, Salt Lake City)** is
 the target announcement window (see issue #104): the largest concentration of
-CNCF end users this year, and every Phase 1 content pillar is exactly what
-that audience looks for. The week-by-week backwards plan lives in
-`LAUNCH.md` (PR #108); the ownership decision that must land before the
-announcement is tracked in ADR 0001 / issue #99.
+CNCF end users this year, and every Phase 1 content pillar is exactly what that
+audience looks for. The weekly backwards plan lives in `LAUNCH.md` (PR #108).
+The ownership decision that must land before the announcement is tracked in ADR
+0001 / issue #99.
 
 ## Guiding principles
 
@@ -35,21 +36,33 @@ Goal: a reliable, trustworthy site skeleton.
 
 - [x] Restore a green deploy pipeline (#52)
 - [x] Add a LICENSE (#40, issue #32)
-- [ ] Pin GitHub Actions by SHA and verify downloaded installers (issues #38, #39; PRs #42, #43, #112 open)
-- [x] Shared validation utilities and test coverage for data pipelines (#37, #65)
+- [x] Pin GitHub Actions by SHA and verify downloaded installers (issues #38,
+      #39; PRs #42, #43, #112) — all `uses:` references across
+      `.github/workflows/` are SHA-pinned; the Prince-installer workflow was
+      removed
+- [x] Shared validation utilities and test coverage for data pipelines (#37,
+      #65)
 - [x] This roadmap (#50), plus MILESTONES.md (#53)
-- [ ] Create GitHub milestones matching these phases (issue #78)
+- [x] Create GitHub milestones matching these phases (issue #78)
 
 ## Phase 1 — Content completeness
 
 Goal: every pillar section is accurate, current, and self-maintaining.
 
-- [ ] Architectures: automated import from cncf/architecture stays in sync (scheduled workflow exists; add freshness indicator on the page — issue #80)
-- [ ] Metrics: scheduled refresh of data/metrics.json with validation gating the build (issue #74)
-- [x] Awards: complete historical winner list, each entry verified against its cncf.io announcement (issue #77)
-- [ ] Community: current TAB membership, End User Groups, and engagement pathways (issue #79)
+- [ ] Architectures: automated import from cncf/architecture stays in sync
+      (scheduled workflow exists; add freshness indicator on the page — issue
+      #80)
+- [ ] Metrics: scheduled refresh of data/metrics.json with validation gating the
+      build (issue #74)
+- [x] Awards: complete historical winner list, each entry verified against its
+      cncf.io announcement (issue #77)
+- [ ] Community: current TAB membership, End User Groups, and engagement
+      pathways (issue #79)
 - [ ] Events: upcoming end-user events at KubeCon + CloudNativeCon (issue #75)
-- [x] Blog: establish a publishing cadence beyond the welcome post — monthly "Month in Metrics" post sourced from `data/metrics.json` diffs (issue #76; cadence documented in [docs/skills/blog-management.md](docs/skills/blog-management.md#publishing-cadence))
+- [x] Blog: establish a publishing cadence beyond the welcome post — monthly
+      "Month in Metrics" post sourced from `data/metrics.json` diffs (issue #76;
+      cadence documented in
+      [docs/skills/blog-management.md](docs/skills/blog-management.md#publishing-cadence))
 
 ## Launch (tracking: #90)
 
@@ -61,18 +74,24 @@ shipped silently. Content completeness alone is not a launch plan.
 - [ ] **Announcement channels**: a cncf.io blog post, a mention at an End User
       TAB meeting, and a KubeCon + CloudNativeCon mention or session are the
       minimum bar; amplify further via the End User community Slack.
-- [ ] **Baseline metrics snapshot**: capture stars, watchers, forks, and unique
-      human contributors immediately before announcing, so launch impact is
-      measurable rather than assumed. As of 2026-08-08 the baseline is 0 stars,
-      0 watchers, 1 fork.
+- [ ] **Launch success metrics** (issue #100): `data/launch-metrics.json`
+      defines the falsifiable signals — GitHub stars, watchers, forks, new
+      unique human contributors since baseline, and good-first-issues claimed —
+      each with a live-collected baseline and a 90-day post-launch target.
+      Refresh with `npm run collect:launch-metrics`, validate with
+      `npm run validate:launch-metrics`. The committed file is a rehearsal
+      capture; re-run it at (or after) the W-6 pre-launch checkpoint
+      (2026-09-28, see `LAUNCH.md`) so the baseline reflects that checkpoint
+      rather than an earlier snapshot that Phase 1 work has since made stale.
 - [ ] **DNS cutover dependency**: cutover to `endusers.cncf.io` is gated on the
       Phase 2 ownership decision (issue #46, ADR 0001). If undecided by launch,
       the announcement links the current GitHub Pages URL instead of slipping
       the date.
-- [ ] **30-day check-in**: compare stars/watchers/forks/contributors against the
-      baseline snapshot and record whether the launch moved the needle.
+- [ ] **90-day check-in**: re-run `npm run collect:launch-metrics` 90 days after
+      launch and compare each signal against its `data/launch-metrics.json`
+      baseline to record whether the launch moved the needle.
 
-Related: #90 (this finding), #46 (ownership), #75 (events pillar), #77 (blog
+Related: #90 (this finding), #46 (ownership), #75 (events pillar), #76 (blog
 cadence).
 
 ## Phase 2 — Community and governance
@@ -80,11 +99,13 @@ cadence).
 Goal: the project can outlive any single maintainer.
 
 - [x] MAINTAINERS.md with an explicit process for adding maintainers (#55)
-- [x] Governance note describing review/merge expectations, including agent-automation policy (GOVERNANCE.md, #60)
+- [x] Governance note describing review/merge expectations, including
+      agent-automation policy (GOVERNANCE.md, #60)
 - [ ] Good-first-issue curation to recruit human contributors
-- [ ] Decide the long-term home of the site (issue #46, ADR 0001): transfer to a CNCF org,
-      remain a personal staging site, or merge into an existing CNCF property. Decision deadline: 2026-08-17
-      (see `adr/0001-site-ownership-and-cutover-path.md` for the documented options and path)
+- [x] Decide the long-term home of the site (issue #46, ADR 0001): ADR 0001 is
+      Accepted — the repository has been transferred to the `cncf` GitHub org.
+      The remaining DNS cutover to `endusers.cncf.io` is tracked separately in
+      Phase 3 (see `adr/0001-site-ownership-and-cutover-path.md`)
 
 ## Phase 3 — Ecosystem integration
 
