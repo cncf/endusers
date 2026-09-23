@@ -58,6 +58,16 @@ test('rejects an empty caseStudies array', () => {
   assert.match(result.stderr, /non-empty array/);
 });
 
+test('rejects a truthy non-array caseStudies without crashing', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, caseStudies: { 1: validEntry } }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /non-empty array/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
 test('rejects duplicate ids', () => {
   const result = runScriptWithFixtures(
     SCRIPT,

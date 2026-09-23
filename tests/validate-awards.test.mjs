@@ -38,6 +38,16 @@ test('rejects an empty awards array', () => {
   assert.match(result.stderr, /non-empty array/);
 });
 
+test('rejects a truthy non-array awards without crashing', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture({ 1: validEntry }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /non-empty array/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
 test('rejects a missing verifiedAt', () => {
   const result = runScriptWithFixtures(
     SCRIPT,

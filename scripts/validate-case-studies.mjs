@@ -28,7 +28,7 @@ if (!Array.isArray(data.caseStudies) || !data.caseStudies.length)
 
 const ids = new Set();
 const urls = new Set();
-for (const entry of data.caseStudies || []) {
+for (const entry of Array.isArray(data.caseStudies) ? data.caseStudies : []) {
   const id = entry.id ?? entry.slug ?? 'unknown';
   if (!entry.id || ids.has(entry.id))
     errors.push({
