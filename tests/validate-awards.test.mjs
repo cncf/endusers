@@ -55,7 +55,7 @@ test('rejects a non-https verifiedAgainst', () => {
     }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /verifiedAgainst must be an https URL/);
+  assert.match(result.stderr, /verifiedAgainst must be an absolute https URL/);
 });
 
 test('rejects years before 2015', () => {
@@ -100,7 +100,66 @@ test('rejects non-https URLs', () => {
     ]),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /must be https/);
+  assert.match(result.stderr, /announcementUrl must use https, got http:/);
+});
+
+// The four link fields below are rendered as <a href>, so a value whose
+// visible prefix and real authority disagree is the vector these cases pin:
+// "https://cncf.io@evil.example" begins with "https://" but resolves to
+// evil.example, and a string prefix test cannot tell the difference.
+test('rejects a link field carrying a userinfo component', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([
+      {
+        ...validEntry,
+        announcementUrl: 'https://www.cncf.io@evil.example/phish',
+      },
+    ]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /announcementUrl must not carry a userinfo/);
+  assert.match(result.stderr, /evil\.example/);
+});
+
+test('rejects a verifiedAgainst carrying a userinfo component', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([validEntry], {
+      verifiedAgainst: 'https://contribute.cncf.io@evil.example/awards/',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /verifiedAgainst must not carry a userinfo/);
+});
+
+test('rejects an unparseable value that still begins with https://', () => {
+  for (const announcementUrl of ['https://', 'https:// evil.example']) {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      awardsFixture([{ ...validEntry, announcementUrl }]),
+    );
+    assert.equal(
+      result.status,
+      1,
+      `accepted ${JSON.stringify(announcementUrl)}`,
+    );
+    assert.match(
+      result.stderr,
+      /announcementUrl must be an absolute https URL/,
+    );
+  }
+});
+
+test('rejects a javascript: URL in an optional link field', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([
+      { ...validEntry, caseStudyUrl: 'javascript:alert(document.domain)' },
+    ]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /caseStudyUrl must use https, got javascript:/);
 });
 
 test('rejects entries with neither announcementUrl nor talkUrl', () => {
