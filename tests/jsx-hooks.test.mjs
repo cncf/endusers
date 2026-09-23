@@ -96,3 +96,56 @@ test('an unresolvable @site alias still names the requested path', async () => {
   const { url } = hooks.resolve('@site/src/components/NoSuchThing', {}, next);
   assert.match(url, /\/src\/components\/NoSuchThing$/);
 });
+
+test('an extensionless relative import resolves to the matching source file', async () => {
+  // src/components/CommunityPeople/index.js imports '../hooks/useFocusTrap',
+  // which webpack completes to .../useFocusTrap.js. Node's resolver does not,
+  // so without this completion the component cannot be imported at all.
+  const hooks = await import('./tools/jsx-hooks.mjs');
+  const next = () => {
+    throw new Error('the relative specifier must be resolved by the hooks');
+  };
+  const parentURL = new URL(
+    '../src/components/CommunityPeople/index.js',
+    import.meta.url,
+  ).href;
+  const { url } = hooks.resolve('../hooks/useFocusTrap', { parentURL }, next);
+  assert.match(url, /\/src\/components\/hooks\/useFocusTrap\.js$/);
+});
+
+test('a relative import that already names a file is left to Node', async () => {
+  const hooks = await import('./tools/jsx-hooks.mjs');
+  let delegated = false;
+  const next = () => {
+    delegated = true;
+    return { url: 'file:///delegated' };
+  };
+  hooks.resolve('./helpers-jsx.mjs', { parentURL: import.meta.url }, next);
+  assert.equal(delegated, true, 'an existing file must reach the next hook');
+});
+
+test('an unresolvable relative import is left to Node to report', async () => {
+  const hooks = await import('./tools/jsx-hooks.mjs');
+  let delegated = false;
+  const next = () => {
+    delegated = true;
+    return { url: 'file:///delegated' };
+  };
+  hooks.resolve('./no-such-module', { parentURL: import.meta.url }, next);
+  assert.equal(delegated, true, 'a miss must not be short-circuited');
+});
+
+test('a relative import from node_modules is never intercepted', async () => {
+  const hooks = await import('./tools/jsx-hooks.mjs');
+  let delegated = false;
+  const next = () => {
+    delegated = true;
+    return { url: 'file:///delegated' };
+  };
+  hooks.resolve(
+    './anything',
+    { parentURL: 'file:///repo/node_modules/pkg/index.js' },
+    next,
+  );
+  assert.equal(delegated, true, 'dependency resolution must be untouched');
+});
