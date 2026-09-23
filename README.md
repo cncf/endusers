@@ -57,7 +57,7 @@ The site currently deploys to GitHub Pages at
 [cncf.github.io/endusers](https://cncf.github.io/endusers/). The build process
 is configured with:
 
-- `SITE_URL: 'https://castrojo.github.io'` (temporary override; see below)
+- `SITE_URL: 'https://cncf.github.io'` (temporary override; see below)
 - `BASE_URL: '/endusers/'` (temporary override; see below)
 
 (These are set in `.github/workflows/deploy-gh-pages.yml` and will be updated
