@@ -27,14 +27,14 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
 - `just import` — import reference architectures and run the same validation
   steps as the import workflow (`import:architectures`,
   `validate:architectures`, `validate:architecture-assets`).
-- `just build` — run the same validation steps as CI
-  (`validate:architectures`, `validate:architecture-assets`,
-  `validate:metrics`, `validate:awards`) followed by `build`.
+- `just build` — run the same validation steps as CI (`validate:architectures`,
+  `validate:architecture-assets`, `validate:metrics`, `validate:awards`)
+  followed by `build`.
 
 These recipes are kept in sync with the checks the "Validate repository" and
-"Import reference architectures" workflows run, so a green `just build`/`just
-import` locally should also pass in CI. `just` is optional — the npm scripts
-remain the canonical interface and work without it.
+"Import reference architectures" workflows run, so a green
+`just build`/`just import` locally should also pass in CI. `just` is optional —
+the npm scripts remain the canonical interface and work without it.
 
 ## Content audience
 
@@ -86,17 +86,17 @@ Rules:
   GitHub handle; roster name, company, and role stay authoritative.
 - `data/projects-born.json` has no generator; edit it directly and verify the
   origin story against a reliable source before adding an entry.
-- **Never edit `data/community-groups.json` by hand.** Add or rename a group
-  in the `GROUPS` list in `scripts/check-community-group-links.mjs`, then
-  refresh with `npm run check:community-group-links` (needs `GH_TOKEN`), which
-  records each group's archived/reachable status. Validate with
+- **Never edit `data/community-groups.json` by hand.** Add or rename a group in
+  the `GROUPS` list in `scripts/check-community-group-links.mjs`, then refresh
+  with `npm run check:community-group-links` (needs `GH_TOKEN`), which records
+  each group's archived/reachable status. Validate with
   `npm run validate:community-groups`.
 
 ## Blog contributions
 
 The blog is hand-authored Markdown in `blog/`, not generated from a data file.
-See [`docs/skills/blog-management.md`](docs/skills/blog-management.md) for
-post format, front matter (`blog/authors.yml`/`blog/tags.yml` keys), and the
+See [`docs/skills/blog-management.md`](docs/skills/blog-management.md) for post
+format, front matter (`blog/authors.yml`/`blog/tags.yml` keys), and the
 publishing cadence.
 
 ## Style rules
@@ -104,9 +104,9 @@ publishing cadence.
 - GitHub Flavored Markdown for all content.
 - No emojis in content, code, or commit messages.
 - Maintain the Docusaurus layout and `sidebars.js` configuration. Single-page
-  sections (practitioners, events, metrics) intentionally have no
-  sidebar; multi-page sections (architectures, community which includes
-  awards and members, resources) do.
+  sections (practitioners, events, metrics) intentionally have no sidebar;
+  multi-page sections (architectures, community which includes awards and
+  members, resources) do.
 
 ## Good first issues
 
@@ -121,20 +121,21 @@ below for what to do if the query comes up empty.
   No issue required — a PR is enough for this one.
 
 The label query above is the source of truth: pick any open issue carrying
-`good first issue` and mention in your pull request which one you picked up.
-If the query is empty, the docs/typo sweep above is always available, or
-check the [open issues list](https://github.com/cncf/endusers/issues) for
-something scoped enough for a first contribution.
+`good first issue` and mention in your pull request which one you picked up. If
+the query is empty, the docs/typo sweep above is always available, or check the
+[open issues list](https://github.com/cncf/endusers/issues) for something scoped
+enough for a first contribution.
 
 ## Making changes
 
 1. Fork the repository and create a branch from `main`.
 2. Make your change and run the relevant validation script.
-3. Run `npm run test:unit` — the required "Validate repository" check runs this on every PR.
+3. Run `npm run test:unit` — the required "Validate repository" check runs this
+   on every PR.
 4. Verify with `npm run build` before opening a PR.
 5. Commit with a DCO sign-off: `git commit -s`. CI enforces this and will fail
-   the PR if any commit is missing a `Signed-off-by` trailer. If you forget,
-   fix it before pushing (or after, then force-push) with
+   the PR if any commit is missing a `Signed-off-by` trailer. If you forget, fix
+   it before pushing (or after, then force-push) with
    `git rebase --signoff main`.
 6. Open a pull request against `main` describing what changed and why.
 
