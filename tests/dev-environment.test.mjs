@@ -339,10 +339,10 @@ test('.gitignore ignores node_modules as a file as well as a directory', () => {
     rules.includes('node_modules'),
     '.gitignore must list node_modules without a trailing slash so a symlink is ignored too',
   );
-  const status = execFileSync(
-    'git',
-    ['check-ignore', '-q', 'node_modules'],
-    { cwd: root, encoding: 'utf8', stdio: 'pipe' },
-  );
+  const status = execFileSync('git', ['check-ignore', '-q', 'node_modules'], {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: 'pipe',
+  });
   assert.equal(status, '');
 });
