@@ -15,6 +15,7 @@ function SyncStatus() {
   const commitUrl = `${architectures.repository}/commit/${architectures.revision}`;
   const syncDate = metrics.generatedAt
     ? new Date(metrics.generatedAt).toLocaleDateString('en-US', {
+        timeZone: 'UTC',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
