@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -35,7 +36,7 @@ const repoRoot = resolveRepoRoot(import.meta.url);
 // reported as `null`. This is how write-mode behaviour is asserted, since the
 // sandbox is removed before this function returns.
 export function runScriptWithFixtures(scriptName, fixtures = {}, options = {}) {
-  const { args = [], readBack = [] } = options;
+  const { args = [], readBack = [], symlinks = {} } = options;
   const work = mkdtempSync(join(tmpdir(), 'endusers-test-'));
   try {
     mkdirSync(join(work, 'scripts'), { recursive: true });
@@ -52,6 +53,11 @@ export function runScriptWithFixtures(scriptName, fixtures = {}, options = {}) {
       const target = join(work, relativePath);
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, content);
+    }
+    for (const [relativePath, linkTarget] of Object.entries(symlinks)) {
+      const link = join(work, relativePath);
+      mkdirSync(dirname(link), { recursive: true });
+      symlinkSync(linkTarget, link);
     }
     const result = spawnSync(
       'node',

@@ -182,7 +182,9 @@ test('accepts an entry url on a cncf.io subdomain', () => {
     SCRIPT,
     fixture({
       ...validData,
-      caseStudies: [{ ...validEntry, url: 'https://cncf.io/case-studies/acme/' }],
+      caseStudies: [
+        { ...validEntry, url: 'https://cncf.io/case-studies/acme/' },
+      ],
     }),
   );
   assert.equal(result.status, 0, result.stderr);

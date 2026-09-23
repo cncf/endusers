@@ -60,6 +60,91 @@ test('sees through entity and control-character obfuscation of javascript:', () 
   }
 });
 
+// decodeEntities has two numeric-entity branches. The test above reaches only
+// the decimal one (`&#115;`), which is also the form the module header uses as
+// its example, so the hex callback had no coverage at all -- even though hex is
+// the more usual way to hide a scheme. The last payload is double-encoded and
+// only resolves because decodeEntities is deliberately applied twice.
+test('sees through hex numeric-entity obfuscation of javascript:', () => {
+  for (const payload of [
+    'java&#x73;cript:alert(1)',
+    'java&#X73;cript:alert(1)',
+    'javascript&#x3a;alert(1)',
+    'javascript&amp;#x3a;alert(1)',
+  ]) {
+    const svg = INERT.replace('https://example.com/docs', payload);
+    assert.deepEqual(
+      findActiveContent(svg),
+      ['contains a script URI in href="javascript:..."'],
+      `expected detection for ${JSON.stringify(payload)}`,
+    );
+    assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
+  }
+});
+
+// The hex callback guards `code <= 0x10ffff` before calling String.fromCodePoint
+// and returns the literal match when the codepoint is out of range. Pinning the
+// guard keeps it from being "simplified" into a throw, and confirms the literal
+// entity that survives does not itself read as a scheme.
+test('leaves an out-of-range hex entity literal rather than forming a scheme', () => {
+  const svg = INERT.replace(
+    'https://example.com/docs',
+    'java&#x110000;cript:alert(1)',
+  );
+  assert.deepEqual(findActiveContent(svg), []);
+  assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
+});
+
+// ATTRIBUTE_PATTERN only matches an attribute that carries a value, so a
+// handler written without one slips past the scanner. findActiveContent has an
+// explicit fallback for that case, but every handler in the tests above is
+// valued and therefore caught by the scanner, leaving the fallback unreached.
+test('falls back to on* for a handler the attribute scanner cannot see', () => {
+  for (const svg of [
+    '<svg onload=></svg>',
+    '<svg onload= ></svg>',
+    '<svg onload=`alert(1)`></svg>',
+  ]) {
+    assert.deepEqual(
+      findActiveContent(svg),
+      ['contains event handler attribute(s): on*'],
+      `expected the on* fallback for ${JSON.stringify(svg)}`,
+    );
+  }
+});
+
+// Known defect, tracked in #540: the on* fallback exists only in
+// findActiveContent. stripActiveContent rewrites solely through
+// ATTRIBUTE_PATTERN, which cannot see a value-less handler, so these inputs are
+// reported as active but never cleaned -- and `removed` stays empty, so a
+// caller cannot tell the difference between "nothing to remove" and "could not
+// remove it". Re-detecting on the stripped output is the invariant: stripping
+// must leave an SVG that findActiveContent considers inert. The fix is a
+// removal pass in scripts/lib/svg-active-content.mjs, which is production code.
+test(
+  'stripActiveContent removes a handler the attribute scanner cannot see',
+  { todo: true },
+  () => {
+    for (const svg of [
+      '<svg onload=></svg>',
+      '<svg onload=`alert(1)`></svg>',
+    ]) {
+      const { source, removed } = stripActiveContent(svg);
+      assert.doesNotMatch(
+        source,
+        /onload/i,
+        `onload survived stripping of ${JSON.stringify(svg)}`,
+      );
+      assert.notDeepEqual(
+        removed,
+        [],
+        `stripping ${JSON.stringify(svg)} reported no removal`,
+      );
+      assert.deepEqual(findActiveContent(source), []);
+    }
+  },
+);
+
 test('detects script URIs in animation targets, not just href', () => {
   const svg = INERT.replace(
     '<rect',

@@ -99,28 +99,18 @@ test('the unrecognised-type fallback still percent-encodes the handle', () => {
   );
 });
 
-// Known defect, tracked in #504: PROFILE_BASES is a plain object literal, so
-// a `type` naming an Object.prototype member resolves to that inherited value
-// instead of missing and falling back. `PROFILE_BASES.constructor` is truthy,
-// so `??` does not fire and the function returns a string that is not a URL at
-// all — today `profileUrl('castrojo', 'constructor')` yields
-// "function Object() { [native code] }castrojo", which would be rendered
-// straight into an href. No caller passes an inherited key today, so this is
-// latent rather than exploitable; the fix is a null-prototype map or an
-// explicit allow-list in src/lib/profile-links.mjs, which is production code.
-test(
-  'profileUrl treats an inherited Object.prototype key as unrecognised',
-  { todo: true },
-  () => {
-    for (const inherited of ['constructor', 'toString', 'valueOf']) {
-      assert.equal(
-        profileUrl('castrojo', inherited),
-        'https://twitter.com/castrojo',
-        `type="${inherited}" must not resolve through Object.prototype`,
-      );
-    }
-  },
-);
+// PROFILE_BASES is a null-prototype map precisely so a `type` naming an
+// Object.prototype member (e.g. 'constructor') misses and falls back to the
+// twitter base instead of resolving to an inherited value (#504).
+test('profileUrl treats an inherited Object.prototype key as unrecognised', () => {
+  for (const inherited of ['constructor', 'toString', 'valueOf']) {
+    assert.equal(
+      profileUrl('castrojo', inherited),
+      'https://twitter.com/castrojo',
+      `type="${inherited}" must not resolve through Object.prototype`,
+    );
+  }
+});
 
 // websiteUrl guards `!url.hostname` after parsing. For the two protocols it
 // allows that guard is unreachable: http/https are WHATWG "special" schemes, so

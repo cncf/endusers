@@ -9,8 +9,9 @@ receives fixes, including security fixes.
 
 Please **do not** open a public issue for security vulnerabilities.
 
-- Use [GitHub private vulnerability reporting](../../security/advisories/new) to
-  file a confidential report, or
+- Use
+  [GitHub private vulnerability reporting](https://github.com/cncf/endusers/security/advisories/new)
+  to file a confidential report, or
 - If private reporting is unavailable to you, email
   [projects@cncf.io](mailto:projects@cncf.io) with the subject prefix
   `[SECURITY]` to report vulnerabilities to the CNCF security team.
@@ -23,7 +24,8 @@ maintained by volunteers, so timelines for fixes vary with severity.
 
 This policy covers the site source, build scripts, and GitHub Actions workflows
 in this repository. [Dependabot](.github/dependabot.yml) opens pull requests for
-routine npm and GitHub Actions version updates, but this repository has no
-automated vulnerability scanning (no CodeQL or SAST workflow). Report all
-vulnerabilities in third-party dependencies here, including ones with no fixed
-version available yet.
+routine npm and GitHub Actions version updates, and
+[CodeQL](.github/workflows/codeql.yml) scans the JavaScript/TypeScript source on
+pushes to main, pull requests, and a weekly schedule. Report all vulnerabilities
+in third-party dependencies here, including ones with no fixed version available
+yet.
