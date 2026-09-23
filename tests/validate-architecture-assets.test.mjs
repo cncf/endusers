@@ -281,3 +281,50 @@ test('--fix ignores non-SVG assets', () => {
   assert.equal(result.files[png], 'not really a png');
   assert.match(result.stdout, /Validated 1 architecture asset/);
 });
+
+test('rejects a symlink among published assets', () => {
+  const result = runScriptWithFixtures(SCRIPT, svgFixture(VALID_SVG), {
+    symlinks: {
+      'static/img/architectures/example/link.svg': 'diagram.svg',
+    },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /link\.svg.*symbolic link/);
+});
+
+test('validates mirrored cncf-projects assets with the same gate', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/cncf-projects/helm-helm-icon-color.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 1 architecture asset/);
+});
+
+test('rejects a non-image file in cncf-projects', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/cncf-projects/helm-page.html': '<script>alert(1)</script>',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\.html is not an allowed asset type/);
+});
+
+test('rejects active content in a mirrored cncf-projects SVG', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><script>alert(1)</script></svg>';
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/cncf-projects/evil-icon.svg': svg,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /active content/);
+});
+
+test('does not apply diagram-quality checks to mirrored artwork', () => {
+  // Missing viewBox and embedded raster data are quality gates for
+  // architecture diagrams only; upstream artwork ships both today.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><image href="data:image/png;base64,AAAA"/></svg>';
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/cncf-projects/raster-icon.svg': svg,
+  });
+  assert.equal(result.status, 0, result.stderr);
+});

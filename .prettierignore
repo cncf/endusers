@@ -1,14 +1,10 @@
-# Temporarily excluded from check:format — see issue #305.
-# Occupied by open hold-gated PRs; format these after they merge to avoid conflicts:
+# Imported architecture pages are regenerated verbatim by
+# `npm run import:architectures`; formatting them locally would be overwritten
+# (and re-break the gate) on the next import. See issue #528.
 docs/architectures/cern-scientific-computing.md
 docs/architectures/swisscom-kubernetes-service.md
-scripts/validate-architectures.mjs
 # Workflow file: formatting it requires a credential with the Workflows permission:
 .github/workflows/create-milestones.yml
 # Blog posts contain MDX JSX comments ({/* truncate */}) that prettier's markdown
 # parser mangles into {/_ _/}, breaking Docusaurus truncation and SSG:
 blog/
-# Prettier reflow moves the 'invalid breakdown value' message off the crashing
-# line, which breaks tests/validate-metrics.test.mjs:312 (asserts on the
-# stack-echoed source line). Needs a validator/test fix first:
-scripts/validate-metrics.mjs

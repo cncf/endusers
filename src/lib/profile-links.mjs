@@ -10,11 +10,14 @@
 
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:']);
 
-const PROFILE_BASES = {
+// Null prototype: a lookup keyed by untrusted `type` must miss for anything
+// that is not one of the three known networks, including inherited
+// Object.prototype members such as `constructor` (see #504).
+const PROFILE_BASES = Object.assign(Object.create(null), {
   github: 'https://github.com/',
   linkedin: 'https://www.linkedin.com/in/',
   twitter: 'https://twitter.com/',
-};
+});
 
 /**
  * Builds the profile URL for a social handle.
