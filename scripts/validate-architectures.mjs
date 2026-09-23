@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { reportAndExit } from './lib/validate-utils.mjs';
+import { findActiveContent } from './lib/mdx-active-content.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const staticRoot = resolve(join(root, 'static'));
@@ -49,6 +50,13 @@ for (const record of records) {
       continue;
     }
     if (!existsSync(file)) errors.push({ path: record.id, severity: 'error', message: `missing asset ${asset}` });
+  }
+  if (record.id) {
+    const docPath = join(root, 'docs/architectures', `${record.id}.md`);
+    if (existsSync(docPath)) {
+      for (const { line, reason, snippet } of findActiveContent(readFileSync(docPath, 'utf8')))
+        errors.push({ path: `${record.id}.md:${line}`, severity: 'error', message: `active content in imported page (${reason}): ${snippet}` });
+    }
   }
 }
 reportAndExit(errors, 'architecture catalog');
