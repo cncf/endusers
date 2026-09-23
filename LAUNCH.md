@@ -78,7 +78,6 @@ must be green for **2 consecutive scheduled runs**:
 | ----------------------------------------------------------- | -------- | ------------ |
 | Import reference architectures (`import-architectures.yml`) | daily    | #121         |
 | Refresh community profiles (`refresh-community-people.yml`) | weekly   | #122         |
-| Generate Docs PDF (`pdf.yml`)                               | weekly   | #123         |
 | Metrics refresh (`refresh-metrics.yml`, not yet merged)     | daily    | #74, PR #125 |
 
 If any pipeline is still red at W-1, treat it the same as any other Phase 1
