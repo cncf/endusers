@@ -307,3 +307,24 @@ test('rejects a non-image file in cncf-projects', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /\.html is not an allowed asset type/);
 });
+
+test('rejects active content in a mirrored cncf-projects SVG', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><script>alert(1)</script></svg>';
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/cncf-projects/evil-icon.svg': svg,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /active content/);
+});
+
+test('does not apply diagram-quality checks to mirrored artwork', () => {
+  // Missing viewBox and embedded raster data are quality gates for
+  // architecture diagrams only; upstream artwork ships both today.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><image href="data:image/png;base64,AAAA"/></svg>';
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/cncf-projects/raster-icon.svg': svg,
+  });
+  assert.equal(result.status, 0, result.stderr);
+});

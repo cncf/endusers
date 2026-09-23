@@ -7,11 +7,14 @@ import { findActiveContent } from './lib/svg-active-content.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 // Both directories are populated by scripts/import-architectures.mjs from
-// third-party input (cncf/architecture images and cncf/artwork mirrors) and
-// published verbatim at the site origin, so both get the same gate.
+// third-party input and published verbatim at the site origin, so both get the
+// security gate (extension allow-list, symlink rejection, SVG active content).
+// Diagram-quality checks (viewBox, raster bloat, editor metadata) apply only
+// to architecture diagrams; mirrored cncf/artwork icons are kept byte-faithful
+// to upstream apart from active-content stripping at import time.
 const assetDirs = [
-  join(root, 'static/img/architectures'),
-  join(root, 'static/img/cncf-projects'),
+  { dir: join(root, 'static/img/architectures'), quality: true },
+  { dir: join(root, 'static/img/cncf-projects'), quality: false },
 ];
 const shouldFix = process.argv.includes('--fix');
 
@@ -50,7 +53,7 @@ function record(path, severity, message) {
   collectError(issues, rel, severity, message);
 }
 
-function validateSvg(path) {
+function validateSvg(path, quality) {
   const original = readFileSync(path, 'utf8');
   let source = original;
   const rel = relative(root, path);
@@ -68,6 +71,20 @@ function validateSvg(path) {
     } else {
       record(path, 'error', 'contains a DOCTYPE declaration');
     }
+  }
+
+  // Critical: SVGs are served from the site origin, so a browser that opens one
+  // directly executes any script it carries. Never auto-fixed — active content
+  // in an imported asset is a finding a human needs to see, not silent churn.
+  for (const finding of findActiveContent(source)) {
+    record(path, 'error', `active content: ${finding}`);
+  }
+
+  if (!quality) {
+    if (shouldFix && source !== original) {
+      writeFileSync(path, source, 'utf8');
+    }
+    return;
   }
 
   // Critical: viewBox is required for responsive rendering at all sizes.
@@ -98,13 +115,6 @@ function validateSvg(path) {
         'missing viewBox attribute and resolvable width/height',
       );
     }
-  }
-
-  // Critical: SVGs are served from the site origin, so a browser that opens one
-  // directly executes any script it carries. Never auto-fixed — active content
-  // in an imported asset is a finding a human needs to see, not silent churn.
-  for (const finding of findActiveContent(source)) {
-    record(path, 'error', `active content: ${finding}`);
   }
 
   // Critical: embedded raster data bloats SVGs and defeats the format's purpose.
@@ -140,7 +150,7 @@ function validateSvg(path) {
   }
 }
 
-function validateAsset(path) {
+function validateAsset(path, quality) {
   const rel = relative(root, path);
   const stats = statSync(path);
   const maxSize = 2 * 1024 * 1024; // 2 MB
@@ -163,13 +173,15 @@ function validateAsset(path) {
   }
 
   if (path.endsWith('.svg')) {
-    validateSvg(path);
+    validateSvg(path, quality);
   }
 }
 
-const assets = assetDirs.flatMap((dir) => (exists(dir) ? walk(dir) : []));
-for (const asset of assets) {
-  validateAsset(asset);
+const assets = assetDirs.flatMap(({ dir, quality }) =>
+  exists(dir) ? walk(dir).map((path) => ({ path, quality })) : [],
+);
+for (const { path, quality } of assets) {
+  validateAsset(path, quality);
 }
 
 if (fixed.length) {
