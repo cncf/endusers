@@ -1,5 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   FAKE_COMMIT,
   runImportArchitectures,
@@ -565,5 +568,72 @@ test('keeps the SVG and warns when the renderer is unavailable', () => {
     );
   } finally {
     run.cleanup();
+  }
+});
+
+// Upstream is third-party input. A symbolic link in images/ used to be walked
+// as if it were a regular file: copied into static/ verbatim as a link, then
+// read through and written back through during SVG sanitization, which turns
+// an upstream link into an arbitrary file read and write on the CI runner.
+test('does not mirror or write through a symlinked upstream asset', () => {
+  const outside = mkdtempSync(join(tmpdir(), 'endusers-link-target-'));
+  const secret = join(outside, 'secret.svg');
+  writeFileSync(secret, '<svg>original</svg>', 'utf8');
+
+  const run = runImportArchitectures({
+    upstream: architecture('linked', '---\ntitle: Linked\n---\n\nBody.\n'),
+    upstreamSymlinks: {
+      'content/en/architectures/linked/images/diagram.svg': secret,
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.equal(
+      run.exists('static/img/architectures/linked/diagram.svg'),
+      false,
+      'symlinked asset must not be mirrored into static/',
+    );
+    assert.deepEqual(
+      run.readJson('data/architectures/records/linked.json').assets,
+      [],
+    );
+    assert.equal(
+      readFileSync(secret, 'utf8'),
+      '<svg>original</svg>',
+      'sanitization must not write through the link to its target',
+    );
+    assert.match(run.stderr, /Skipping symbolic link diagram\.svg/);
+  } finally {
+    run.cleanup();
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('does not follow a symlinked images directory', () => {
+  const outside = mkdtempSync(join(tmpdir(), 'endusers-link-dir-'));
+  writeFileSync(join(outside, 'leaked.png'), 'secret-bytes');
+
+  const run = runImportArchitectures({
+    upstream: architecture('linkdir', '---\ntitle: Link Dir\n---\n\nBody.\n'),
+    upstreamSymlinks: {
+      'content/en/architectures/linkdir/images': outside,
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.equal(
+      run.exists('static/img/architectures/linkdir/leaked.png'),
+      false,
+    );
+    assert.deepEqual(
+      run.readJson('data/architectures/records/linkdir.json').assets,
+      [],
+    );
+    assert.match(run.stderr, /Skipping images\/ in linkdir/);
+  } finally {
+    run.cleanup();
+    rmSync(outside, { recursive: true, force: true });
   }
 });

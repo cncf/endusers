@@ -281,3 +281,18 @@ test('--fix ignores non-SVG assets', () => {
   assert.equal(result.files[png], 'not really a png');
   assert.match(result.stdout, /Validated 1 architecture asset/);
 });
+
+// static/ is published verbatim, so a symbolic link committed under it can
+// resolve outside the repository and is never a valid asset. The walk must
+// report it rather than stat and read through it.
+test('rejects a symbolic link under static/img/architectures', () => {
+  const result = runScriptWithFixtures(SCRIPT, svgFixture(VALID_SVG), {
+    symlinks: {
+      'static/img/architectures/example/linked.svg': '/etc/hostname',
+    },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /symbolic link is not an allowed asset/);
+  // The real asset alongside it is still validated.
+  assert.doesNotMatch(result.stderr, /diagram\.svg/);
+});

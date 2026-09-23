@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -34,8 +35,10 @@ const repoRoot = resolveRepoRoot(import.meta.url);
 // run and returned in `files`; a path the script deleted or never wrote is
 // reported as `null`. This is how write-mode behaviour is asserted, since the
 // sandbox is removed before this function returns.
+// options.symlinks — repo-relative path -> link target, created after the
+// fixture files so a link may point at one of them.
 export function runScriptWithFixtures(scriptName, fixtures = {}, options = {}) {
-  const { args = [], readBack = [] } = options;
+  const { args = [], readBack = [], symlinks = {} } = options;
   const work = mkdtempSync(join(tmpdir(), 'endusers-test-'));
   try {
     mkdirSync(join(work, 'scripts'), { recursive: true });
@@ -52,6 +55,13 @@ export function runScriptWithFixtures(scriptName, fixtures = {}, options = {}) {
       const target = join(work, relativePath);
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, content);
+    }
+    // Symbolic links cannot be expressed as fixture content, so they are
+    // declared separately as path -> link target.
+    for (const [relativePath, linkTarget] of Object.entries(symlinks)) {
+      const target = join(work, relativePath);
+      mkdirSync(dirname(target), { recursive: true });
+      symlinkSync(linkTarget, target);
     }
     const result = spawnSync(
       'node',

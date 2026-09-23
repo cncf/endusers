@@ -21,6 +21,7 @@ import {
   projectAsset,
 } from './lib/project-assets.mjs';
 import { stripActiveContent } from './lib/svg-active-content.mjs';
+import { isRealDirectory, walkFilesNoSymlinks } from './lib/safe-walk.mjs';
 import { isCncfProjectHref } from './lib/project-card-links.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -115,7 +116,12 @@ async function importArchitecture(id, commit) {
   };
 
   const imageDir = join(dir, 'images');
-  if (existsSync(imageDir)) {
+  if (existsSync(imageDir) && !isRealDirectory(imageDir)) {
+    console.warn(
+      `Skipping images/ in ${id}: not a regular directory (symbolic links are never followed)`,
+    );
+  }
+  if (isRealDirectory(imageDir)) {
     for (const file of walkFiles(imageDir)) {
       const extension = extname(file).toLowerCase();
       if (!MIRRORABLE_ASSET_EXTENSIONS.has(extension)) {
@@ -264,10 +270,10 @@ function firstParagraph(body) {
   );
 }
 function walkFiles(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? walkFiles(join(dir, entry.name))
-      : [join(dir, entry.name)],
+  return walkFilesNoSymlinks(dir, (path) =>
+    console.warn(
+      `Skipping symbolic link ${relative(dir, path)}: symbolic links are never mirrored into static/`,
+    ),
   );
 }
 

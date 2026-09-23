@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectError, reportAndExit } from './lib/validate-utils.mjs';
 import { findActiveContent } from './lib/svg-active-content.mjs';
+import { isRealDirectory, walkFilesNoSymlinks } from './lib/safe-walk.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const assetsDir = join(root, 'static/img/architectures');
@@ -26,8 +27,12 @@ const issues = [];
 const fixed = [];
 
 function walk(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)],
+  return walkFilesNoSymlinks(dir, (path) =>
+    record(
+      path,
+      'error',
+      'symbolic link is not an allowed asset; static/ is published verbatim and a link can resolve outside the repository',
+    ),
   );
 }
 
@@ -153,7 +158,7 @@ function validateAsset(path) {
   }
 }
 
-const assets = exists(assetsDir) ? walk(assetsDir) : [];
+const assets = isRealDirectory(assetsDir) ? walk(assetsDir) : [];
 for (const asset of assets) {
   validateAsset(asset);
 }
@@ -169,12 +174,4 @@ reportAndExit(issues, 'architecture assets');
 console.log(`Validated ${assets.length} architecture asset(s).`);
 if (shouldFix && issues.length === 0) {
   console.log('No fixes were needed.');
-}
-
-function exists(p) {
-  try {
-    return statSync(p).isDirectory();
-  } catch {
-    return false;
-  }
 }

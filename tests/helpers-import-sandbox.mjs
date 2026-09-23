@@ -87,6 +87,10 @@ export const FAKE_COMMIT = 'a'.repeat(40);
  *   Stubbed responses keyed by absolute URL.
  * @param {Record<string, string>} [options.repoFiles] Extra files placed in the
  *   sandboxed repo root before the script runs.
+ * @param {Record<string, string>} [options.upstreamSymlinks] Symbolic links
+ *   placed in the cloned upstream checkout, keyed by path relative to the
+ *   clone root and valued by link target. Created after `upstream` files so a
+ *   link may point at one of them.
  * @param {'success'|'failure'} [options.rsvgConvert] Behaviour of the stubbed
  *   rsvg-convert binary used for raster-embedded SVGs. `failure` simulates the
  *   converter being unavailable.
@@ -98,6 +102,7 @@ export function runImportArchitectures({
   upstream,
   fetchResponses = {},
   repoFiles = {},
+  upstreamSymlinks = {},
   rsvgConvert = 'success',
 }) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-import-'));
@@ -126,6 +131,11 @@ export function runImportArchitectures({
   const upstreamFixture = join(work, 'upstream-fixture');
   for (const [relativePath, content] of Object.entries(upstream)) {
     writeAt(upstreamFixture, relativePath, content);
+  }
+  for (const [relativePath, linkTarget] of Object.entries(upstreamSymlinks)) {
+    const target = join(upstreamFixture, relativePath);
+    mkdirSync(dirname(target), { recursive: true });
+    symlinkSync(linkTarget, target);
   }
   for (const [relativePath, content] of Object.entries(repoFiles)) {
     writeAt(work, relativePath, content);
