@@ -9,8 +9,6 @@
 // could all regress silently. These assertions cover the rendered output.
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import { importSource } from './helpers-jsx.mjs';
@@ -26,14 +24,17 @@ const { default: RadarReports } = await importSource(
 );
 
 // The component imports the corpus through the `@site` alias at module scope,
-// so the test has to assert against the same checked-in file rather than an
-// injected fixture.
-const data = JSON.parse(
-  readFileSync(
-    fileURLToPath(new URL('../data/radar-reports.json', import.meta.url)),
-    'utf8',
-  ),
-);
+// so the test cannot inject a fixture through props. Importing the same JSON
+// through importSource resolves to the same module URL the component's
+// `@site/data/radar-reports.json` specifier resolves to, so this is the very
+// object the component reads. The three branches the checked-in corpus never
+// takes are reached by patching that object around a single render and
+// restoring it in a `finally` — see `withCorpus` below.
+//
+// tests/helpers-component-data.mjs is deliberately not used here: it imports a
+// rewritten *copy* of the source, so the copy's coverage is attributed to the
+// temp file and these branches would stay red on the real one.
+const { default: data } = await importSource('data/radar-reports.json');
 const reports = data.radarReports || [];
 
 const LONG_DATE = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -49,6 +50,37 @@ function renderSyncStatus(tree) {
   );
   assert.ok(element, 'expected the component to render a <SyncStatus />');
   return element.type(element.props);
+}
+
+/**
+ * Renders with a temporarily patched corpus, then restores it.
+ *
+ * A key whose patch value is `undefined` is deleted for the duration, which is
+ * how the missing-field fallbacks are reached; every key is put back exactly as
+ * it was — present with its old value, or absent — so the order tests run in
+ * cannot matter.
+ *
+ * @param {Record<string, unknown>} patch keys of data/radar-reports.json
+ * @param {() => void} run assertions to make while the patch is applied
+ */
+function withCorpus(patch, run) {
+  const saved = Object.entries(patch).map(([key]) => [
+    key,
+    Object.prototype.hasOwnProperty.call(data, key),
+    data[key],
+  ]);
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) delete data[key];
+    else data[key] = value;
+  }
+  try {
+    run();
+  } finally {
+    for (const [key, present, value] of saved) {
+      if (present) data[key] = value;
+      else delete data[key];
+    }
+  }
 }
 
 test('the report list is a labelled landmark region', () => {
@@ -159,4 +191,58 @@ test('every outbound link opens in a new tab without leaking window.opener', () 
       `${anchor.props.href} can reach back through window.opener`,
     );
   }
+});
+
+// The three fallbacks below are unreachable from the checked-in corpus, which
+// has `generatedAt` set, six reports and no report missing `publishedAt`. They
+// are the arms that run when the upstream mirror is incomplete, which is
+// exactly when /reports must still render rather than throw.
+
+test('no provenance line is rendered when the mirror date is missing', () => {
+  withCorpus({ generatedAt: undefined }, () => {
+    assert.equal(
+      renderSyncStatus(RadarReports()),
+      null,
+      'a corpus with no generatedAt must render no provenance line',
+    );
+  });
+});
+
+test('an empty page is rendered when the corpus holds no report list', () => {
+  withCorpus({ radarReports: undefined }, () => {
+    const tree = RadarReports();
+    assert.equal(
+      findAllByType(tree, 'li').length,
+      0,
+      'a corpus with no radarReports key must render no list items',
+    );
+    const list = findByType(tree, 'ul');
+    assert.ok(list, 'the list element itself must still be rendered');
+  });
+
+  withCorpus({ radarReports: [] }, () => {
+    assert.equal(findAllByType(RadarReports(), 'li').length, 0);
+  });
+});
+
+test('a report with no publication date renders no date row', () => {
+  const undated = {
+    id: 'undated-report',
+    title: 'Undated report',
+    url: 'https://www.cncf.io/reports/undated/',
+    summary: 'A mirrored report whose upstream page carries no date.',
+  };
+  withCorpus({ radarReports: [undated] }, () => {
+    const items = findAllByType(RadarReports(), 'li');
+    assert.equal(items.length, 1);
+    const [item] = items;
+    assert.equal(
+      findByType(item, 'p')?.props.className,
+      'summary',
+      'the only paragraph in an undated item must be its summary',
+    );
+    const text = textOf(item);
+    assert.ok(text.includes(undated.title));
+    assert.ok(text.includes(undated.summary));
+  });
 });
