@@ -8,6 +8,20 @@
  * be resolved to such a path fails closed and is dropped.
  */
 
+// Mirrors ALLOWED_ASSET_EXTENSIONS in scripts/validate-architecture-assets.mjs.
+// Mirrored artwork is published verbatim from static/, so any extension the
+// browser would execute as markup or script must fail closed here: the URL is
+// never mirrored and the card renders its fallback badge instead.
+const MIRRORABLE_ARTWORK_EXTENSIONS = new Set([
+  '.avif',
+  '.gif',
+  '.jpeg',
+  '.jpg',
+  '.png',
+  '.svg',
+  '.webp',
+]);
+
 const ARTWORK_URL_PATTERNS = [
   /^https?:\/\/raw\.githubusercontent\.com\/cncf\/artwork\/[^/]+\/(.+)$/,
   /^https?:\/\/github\.com\/cncf\/artwork\/raw\/[^/]+\/(.+)$/,
@@ -48,7 +62,11 @@ export function artworkMirrorName(path) {
   if (segments.length < 2) return null;
   const name = segments[1];
   const file = segments[segments.length - 1];
-  if (!name || !file || file === name) return file || null;
+  const extension = file.slice(file.lastIndexOf('.')).toLowerCase();
+  if (!file.includes('.') || !MIRRORABLE_ARTWORK_EXTENSIONS.has(extension)) {
+    return null;
+  }
+  if (!name || file === name) return file || null;
   return `${name}-${file}`;
 }
 

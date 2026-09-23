@@ -6,7 +6,13 @@ import { collectError, reportAndExit } from './lib/validate-utils.mjs';
 import { findActiveContent } from './lib/svg-active-content.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const assetsDir = join(root, 'static/img/architectures');
+// Both directories are populated by scripts/import-architectures.mjs from
+// third-party input (cncf/architecture images and cncf/artwork mirrors) and
+// published verbatim at the site origin, so both get the same gate.
+const assetDirs = [
+  join(root, 'static/img/architectures'),
+  join(root, 'static/img/cncf-projects'),
+];
 const shouldFix = process.argv.includes('--fix');
 
 // Mirrors MIRRORABLE_ASSET_EXTENSIONS in scripts/import-architectures.mjs.
@@ -26,9 +32,17 @@ const issues = [];
 const fixed = [];
 
 function walk(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)],
-  );
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    // A symlink in published assets can point anywhere in the repository (or
+    // outside it) and would be followed by readers and --fix writers, so its
+    // presence is itself an error rather than something to validate through.
+    if (entry.isSymbolicLink()) {
+      record(path, 'error', 'is a symbolic link; symlinks are not allowed');
+      return [];
+    }
+    return entry.isDirectory() ? walk(path) : [path];
+  });
 }
 
 function record(path, severity, message) {
@@ -153,7 +167,7 @@ function validateAsset(path) {
   }
 }
 
-const assets = exists(assetsDir) ? walk(assetsDir) : [];
+const assets = assetDirs.flatMap((dir) => (exists(dir) ? walk(dir) : []));
 for (const asset of assets) {
   validateAsset(asset);
 }

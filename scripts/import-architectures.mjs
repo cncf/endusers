@@ -264,11 +264,19 @@ function firstParagraph(body) {
   );
 }
 function walkFiles(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? walkFiles(join(dir, entry.name))
-      : [join(dir, entry.name)],
-  );
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    // Upstream content is third-party input: a symlink would be copied
+    // link-intact by cpSync and later written *through* by the sanitizer,
+    // turning an upstream commit into an arbitrary file write. Never follow
+    // or import anything that is not a regular file or directory.
+    if (entry.isSymbolicLink()) {
+      console.warn(`Skipping symlink ${path}: symlinks are never imported`);
+      return [];
+    }
+    if (entry.isDirectory()) return walkFiles(path);
+    return entry.isFile() ? [path] : [];
+  });
 }
 
 function sanitizeArchitectureAssets(dir) {

@@ -125,3 +125,18 @@ test('artworkUrls collects only cncf/artwork image references', () => {
     'https://raw.githubusercontent.com/cncf/artwork/main/projects/helm/icon/color/helm-icon-color.svg',
   ]);
 });
+
+test('artwork with a non-image extension is never mirrored or mapped', () => {
+  for (const file of ['helm.html', 'helm.js', 'helm.svg.exe', 'helm']) {
+    const path = `projects/helm/icon/color/${file}`;
+    assert.equal(artworkMirrorName(path), null, file);
+    assert.equal(artworkMirrorPath(path), null, file);
+    assert.equal(
+      projectAsset(
+        `https://raw.githubusercontent.com/cncf/artwork/main/${path}`,
+      ),
+      null,
+      file,
+    );
+  }
+});
