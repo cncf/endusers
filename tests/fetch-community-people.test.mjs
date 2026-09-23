@@ -119,7 +119,11 @@ test('matches cncf/people handles case-insensitively', () => {
       }),
     },
     records: [
-      { name: 'Ada Lovelace', bio: 'Computing pioneer', github: 'https://github.com/ada' },
+      {
+        name: 'Ada Lovelace',
+        bio: 'Computing pioneer',
+        github: 'https://github.com/ada',
+      },
     ],
   });
 
@@ -214,7 +218,10 @@ test('fails closed and does not overwrite output when cncf/people cannot be load
     script: 'fetch-community-people.mjs',
     fixtures: {
       [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
-      [OUTPUT]: JSON.stringify({ fetchedAt: '2020-01-01T00:00:00.000Z', people: { tab: [] } }),
+      [OUTPUT]: JSON.stringify({
+        fetchedAt: '2020-01-01T00:00:00.000Z',
+        people: { tab: [] },
+      }),
     },
     routes: [{ match: PEOPLE_MATCH, status: 500 }],
     outputs: [OUTPUT],

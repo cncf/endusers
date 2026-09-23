@@ -46,6 +46,16 @@ test('rejects an empty groups array', () => {
   assert.match(result.stderr, /non-empty array/);
 });
 
+test('rejects a truthy non-array groups without crashing', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, groups: { research: validGroup() } }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /non-empty array/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
 test('rejects a duplicate slug', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
