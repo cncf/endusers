@@ -6,6 +6,7 @@ description:
 metadata:
   context7-sources:
     - /websites/docusaurus_io_3_9_2
+unlisted: true
 ---
 
 # Frontend UI Standards
@@ -70,7 +71,8 @@ claims against authoritative CNCF sources.
 
 - Run `npm run build`; broken links must continue to fail the build.
 - Run the relevant data/asset validation scripts.
-- Run any targeted contrast check for shared button colors.
+- Run `npm run validate:button-contrast` after changing
+  `--cncf-button-background*` tokens in `src/css/custom.css`.
 - Inspect the generated CSS when selector specificity is involved.
 - Verify light and dark themes, keyboard focus, mobile layout, and
   reduced-motion behavior with a browser screenshot when browser tooling is

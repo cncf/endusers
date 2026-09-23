@@ -10,10 +10,7 @@ import ProjectsBorn from '@site/src/components/ProjectsBorn';
 
 # CNCF End Users
 
-<p className="hero-tagline">
-  Proven performance in production
-  <span>by the organizations running cloud native at scale</span>
-</p>
+<p className="hero-tagline">Proven performance in production <span>by the organizations running cloud native at scale</span></p>
 
 Welcome to the home of the **CNCF End User Community** — the practitioners,
 architects, and organizations running cloud native technologies in production.
@@ -21,31 +18,19 @@ architects, and organizations running cloud native technologies in production.
 <div className="pillars">
   <div className="pillar">
     <h3>Work with proven leaders</h3>
-    <p>
-      Maximize what open source can do for your business, alongside the
-      organizations already doing it at scale.
-    </p>
+    <p>Maximize what open source can do for your business, alongside the organizations already doing it at scale.</p>
   </div>
   <div className="pillar">
     <h3>Stay ahead of change</h3>
-    <p>
-      CNCF projects move at <a href="https://insights.linuxfoundation.org/collection/details/cncf">high velocity</a> —
-      end users keep their organizations in the know on modern infrastructure.
-    </p>
+    <p>CNCF projects move at <a href="https://insights.linuxfoundation.org/collection/details/cncf">high velocity</a> — end users keep their organizations in the know on modern infrastructure.</p>
   </div>
   <div className="pillar">
     <h3>Sustain open source</h3>
-    <p>
-      Pool resources with your peers to support the sustainable development of
-      the projects you depend on.
-    </p>
+    <p>Pool resources with your peers to support the sustainable development of the projects you depend on.</p>
   </div>
   <div className="pillar">
     <h3>Elevate your platform teams</h3>
-    <p>
-      A supportive, knowledge-focused community where teamwork and empathy
-      help your teams succeed.
-    </p>
+    <p>A supportive, knowledge-focused community where teamwork and empathy help your teams succeed.</p>
   </div>
 </div>
 
@@ -57,7 +42,7 @@ architects, and organizations running cloud native technologies in production.
     height="597"
   />
   <figcaption>
-    SNCF Groupe accepting the <a href="/awards">2026 Top End User Award</a> at KubeCon +
+    SNCF Groupe accepting the <a href="/community/awards">2026 Top End User Award</a> at KubeCon +
     CloudNativeCon Europe.
   </figcaption>
 </figure>
@@ -68,16 +53,21 @@ architects, and organizations running cloud native technologies in production.
   organizations running cloud native at scale, reviewed by the End User TAB
 - **[Community](/community/)** — the End User Technical Advisory Board, End User
   Groups, and how to get involved
-- **[Awards](/awards/)** — the organizations recognized for advancing cloud
-  native as end users
-- **[Metrics](/metrics/)** — a transparent snapshot of ecosystem and end-user
+- **[Awards](/community/awards/)** — the organizations recognized for advancing
+  cloud native as end users
+- **[Metrics](/metrics/)** — a transparent snapshot of ecosystem and end user
   activity
 - **[Events](/events/)** — where the community gathers at KubeCon +
   CloudNativeCon
 
 ## Member proof and recognition
 
-The End User Community is where production experience gets recognized. Recent [Top End User Award](/awards) winners include [SNCF](/awards), [Michelin](/awards), [ANT Group](/awards), [Adobe](/awards), and [CERN](/awards) — organizations that have shared architectures, case studies, and operational lessons with the wider community.
+The End User Community is where production experience gets recognized. Recent
+[Top End User Award](/community/awards) winners include
+[SNCF](/community/awards), [Michelin](/community/awards),
+[ANT Group](/community/awards), [Adobe](/community/awards), and
+[CERN](/community/awards) — organizations that have shared architectures, case
+studies, and operational lessons with the wider community.
 
 <ProjectsBorn
   title="Lead the way, set the industry standard"
@@ -162,7 +152,7 @@ adds value and helps the next adopter.
     <span className="ladder-number">5</span>
     <div>
       <h3>Help shape direction</h3>
-      <p>Join an End User Group or the End User TAB to advise on priorities, review architectures, and represent end-user needs.</p>
+      <p>Join an End User Group or the End User TAB to advise on priorities, review architectures, and represent end user needs.</p>
     </div>
   </div>
 </div>

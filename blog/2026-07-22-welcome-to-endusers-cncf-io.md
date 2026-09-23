@@ -14,7 +14,7 @@ us end up adopting. This site is for them.
 Community](https://www.cncf.io/enduser/): the practitioners, architects, and
 organizations adopting cloud native technologies to build things that matter.
 
-{/* truncate */}
+{/*truncate*/}
 
 ## What lives here
 
@@ -28,7 +28,7 @@ organizations adopting cloud native technologies to build things that matter.
 - **[Community](/community/)** — the [End User Technical Advisory Board
   (TAB)](https://github.com/cncf/tab), industry-focused End User Groups, meeting
   schedules, and every channel where end users compare notes.
-- **[End User Awards](/awards)** — the organizations CNCF has recognized for running
+- **[End User Awards](/community/awards)** — the organizations CNCF has recognized for running
   cloud native at its best, from Bloomberg in 2018 to SNCF in 2026.
 - **[Metrics](/metrics/)** — a transparent snapshot of ecosystem and end-user activity,
   generated from authoritative public sources. If we can't source a number, we leave it

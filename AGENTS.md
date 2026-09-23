@@ -1,8 +1,8 @@
 # Agent Entry Point: CNCF End User Community Repository
 
-This repository hosts endusers.cncf.io, the Docusaurus site for the CNCF End User
-Community. It serves practitioners, architects, and organizations running cloud
-native technologies in production.
+This repository hosts endusers.cncf.io, the Docusaurus site for the CNCF End
+User Community. It serves practitioners, architects, and organizations running
+cloud native technologies in production.
 
 ## Navigation
 
@@ -14,45 +14,71 @@ native technologies in production.
 
 ## Skills & Capabilities
 
-This repository defines specific skills for AI agents to follow when contributing or managing documentation.
+This repository defines specific skills for AI agents to follow when
+contributing or managing documentation.
 
-- [Skill Manifest](docs/skills/manifest.md) - Index of all available agent skills.
+- [Skill Manifest](docs/skills/manifest.md) - Index of all available agent
+  skills.
 
 ## Hive Configuration
 
 This repository does not contain a `hive.yaml` or any authorized-repository
-allowlist. The Hive orchestrator's `project.repos` configuration is
-maintained outside this codebase. If a Hive-filed issue reports a stale or
-nonexistent repo entry (for example, a 404 on an authorized repo), that
-config lives elsewhere and cannot be corrected with a PR here — flag it to
-the Hive maintainers directly.
+allowlist. The Hive orchestrator's `project.repos` configuration is maintained
+outside this codebase. If a Hive-filed issue reports a stale or nonexistent repo
+entry (for example, a 404 on an authorized repo), that config lives elsewhere
+and cannot be corrected with a PR here — flag it to the Hive maintainers
+directly.
+
+## Workflow
+
+Before opening a PR, read
+[`CONTRIBUTING.md#making-changes`](CONTRIBUTING.md#making-changes) for the full
+fork/branch/PR process. Two CI-enforced requirements to note up front: the
+"Validate repository" check runs `npm run test:unit` on every PR, and every
+commit must carry a DCO `Signed-off-by` trailer (`git commit -s`) or CI will
+fail the PR.
 
 ## Build & Test
 
 - **Install**: `npm install`
 - **Start Dev Server**: `npm run docus:start`
 - **Build**: `npm run build`
+- **Unit Tests**: `npm run test:unit` — required "Validate repository" CI check
+  on every PR.
+- **Data Changes**: Data files under `/data/` have their own validators; see the
+  data contribution model table in
+  [`CONTRIBUTING.md`](CONTRIBUTING.md#data-contribution-model).
 
 ## Guidelines for Agents
 
-- **Audience**: Content is for CNCF end users (adopters), not project contributors.
-  Contributor-facing material belongs on contribute.cncf.io.
+- **Duplicate PR prevention**: Before implementing a fix, search open (and
+  recently closed) PRs and issues touching the same files or problem. See the
+  "Cross-agent duplicate prevention" section of `GOVERNANCE.md` for the full
+  policy.
+- **Audience**: Content is for CNCF end users (adopters), not project
+  contributors. Contributor-facing material belongs on contribute.cncf.io.
 - **Documentation Standards**: Follow GFM (GitHub Flavored Markdown).
 - **No Client Secrets**: Never include proprietary or client-specific framing.
 - **No Emojis**: Do not use emojis in content, code, or commit messages.
-- **Lazy Loading**: Use the `docs/skills/` manifest to discover detailed instructions for specific tasks (e.g., blog posts, documentation updates).
-- **Structure**: Maintain Docusaurus file layout and sidebar configurations (`sidebars.js`).
-  Single-page sections (practitioners, events, metrics, awards) intentionally have no
-  sidebar; multi-page sections (architectures, community) do.
-- **Facts**: Verify CNCF facts (award winners, TAB scope, architecture counts) against
-  authoritative sources: cncf/tab, cncf/architecture, cncf/landscape, and cncf.io
-  announcements. Never assert numbers without a source.
+- **Lazy Loading**: Use the `docs/skills/` manifest to discover detailed
+  instructions for specific tasks (e.g., blog posts, documentation updates).
+- **Structure**: Maintain Docusaurus file layout and sidebar configurations
+  (`sidebars.js`). Single-page sections (practitioners, events, metrics)
+  intentionally have no sidebar; multi-page sections (architectures, community
+  which includes awards and members, resources) do.
+- **Facts**: Verify CNCF facts (award winners, TAB scope, architecture counts)
+  against authoritative sources: cncf/tab, cncf/architecture, cncf/landscape,
+  and cncf.io announcements. Never assert numbers without a source.
 
 ## Metrics
 
-The `/metrics` page is generated from `data/metrics.json`. Refresh it with `npm run collect:metrics`, validate with `npm run validate:metrics`, and build with `npm run build`. Do not edit generated metrics data manually; update `scripts/collect-metrics.mjs` instead.
+The `/metrics` page is generated from `data/metrics.json`. Refresh it with
+`npm run collect:metrics`, validate with `npm run validate:metrics`, and build
+with `npm run build`. Do not edit generated metrics data manually; update
+`scripts/collect-metrics.mjs` instead.
 
 ## Awards
 
-The `/awards` page is generated from `data/awards.json`. Winners are data entries, not
-hand-built pages. Verify each entry against its cncf.io announcement link.
+The `/community/awards` page is generated from `data/awards.json`. Winners are
+data entries, not hand-built pages. Verify each entry against its cncf.io
+announcement link.

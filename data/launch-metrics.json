@@ -1,0 +1,100 @@
+{
+  "generated": true,
+  "generatedAt": "2026-09-21T18:59:10.436Z",
+  "capturedAt": "2026-09-21T18:59:10.436Z",
+  "checkpoint": {
+    "label": "W-6 pre-launch checkpoint (LAUNCH.md)",
+    "targetDate": "2026-09-28",
+    "note": "Re-run npm run collect:launch-metrics on or after targetDate and commit the refreshed file before this baseline is treated as final for the launch retrospective."
+  },
+  "source": "https://api.github.com/repos/cncf/endusers",
+  "signals": [
+    {
+      "id": "github-stars",
+      "label": "GitHub stars",
+      "baseline": 0,
+      "target90Day": 50,
+      "sourceUrl": "https://github.com/cncf/endusers/stargazers",
+      "collectedAt": "2026-09-21T18:59:10.436Z"
+    },
+    {
+      "id": "github-watchers",
+      "label": "GitHub watchers",
+      "baseline": 0,
+      "target90Day": 10,
+      "sourceUrl": "https://github.com/cncf/endusers/watchers",
+      "collectedAt": "2026-09-21T18:59:10.436Z"
+    },
+    {
+      "id": "github-forks",
+      "label": "GitHub forks",
+      "baseline": 2,
+      "target90Day": 5,
+      "sourceUrl": "https://github.com/cncf/endusers/forks",
+      "collectedAt": "2026-09-21T18:59:10.436Z"
+    },
+    {
+      "id": "new-contributors-since-baseline",
+      "label": "New unique human contributors since baseline",
+      "baseline": 0,
+      "target90Day": 5,
+      "sourceUrl": "https://github.com/cncf/endusers/graphs/contributors",
+      "collectedAt": "2026-09-21T18:59:10.436Z",
+      "note": "Baseline is 0 by definition (a delta metric). priorContributorLogins is the snapshot of existing human contributor logins at capture time; the 90-day re-measurement counts human contributor logins present then but absent from this list.",
+      "priorContributorLogins": [
+        "AmyJuneH",
+        "AudMonte01",
+        "CathPag",
+        "Joibel",
+        "Kavish-12345",
+        "MMerzinger",
+        "Mohiit70",
+        "Sriram27102003",
+        "TheFoxAtWork",
+        "aliok",
+        "carolynvs",
+        "castrojo",
+        "charlie0129",
+        "cjyabraham",
+        "denisborisov",
+        "devstein",
+        "esthernnolum",
+        "garethx",
+        "geekygirldawn",
+        "idvoretskyi",
+        "iiamabby",
+        "ivanfetch",
+        "jaytiaki",
+        "jberkus",
+        "jeefy",
+        "justaugustus",
+        "k8tgreenley",
+        "krol3",
+        "krook",
+        "mhall119",
+        "mrbobbytables",
+        "nate-double-u",
+        "ragashreeshekar",
+        "riaankleinhans",
+        "richochetclementine1315",
+        "sandeepkanabar",
+        "sestegra",
+        "sharlalane",
+        "staceypotter",
+        "swinslow",
+        "thedevelopnik",
+        "thetwopct",
+        "thisisobate",
+        "xmulligan"
+      ]
+    },
+    {
+      "id": "good-first-issues-claimed",
+      "label": "Good-first-issues claimed",
+      "baseline": 0,
+      "target90Day": 3,
+      "sourceUrl": "https://github.com/cncf/endusers/issues?q=is%3Aissue+label%3A%22good+first+issue%22",
+      "collectedAt": "2026-09-21T18:59:10.436Z"
+    }
+  ]
+}
