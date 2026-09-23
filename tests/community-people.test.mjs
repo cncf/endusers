@@ -297,16 +297,11 @@ test('the dialog joins role and company with a separator', () => {
   );
 });
 
-test('the dialog glues the placeholder to the company when there is no role', () => {
-  // Current output, not intended output: the `role || 'Community member'`
-  // fallback and the company expression are independent, so both fire and are
-  // concatenated with no separator. Tracked in #485 — flip this assertion to
-  // 'Analytical Engines' as part of that fix.
+test('the dialog shows the company alone when there is no role', () => {
+  // Fixed in #516: role and company join with a separator, and the
+  // 'Community member' placeholder only appears when both are missing.
   const { tree } = renderDialog({ ...FULL_PERSON, role: '' });
-  assert.equal(
-    textOf(findByClass(tree, 'profileRole')),
-    'Community memberAnalytical Engines',
-  );
+  assert.equal(textOf(findByClass(tree, 'profileRole')), 'Analytical Engines');
 });
 
 test('the dialog falls back to a generic role when both are missing', () => {
