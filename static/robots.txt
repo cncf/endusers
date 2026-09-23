@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://endusers.cncf.io/sitemap.xml
+Sitemap: https://cncf.github.io/endusers/sitemap.xml
 
