@@ -88,3 +88,93 @@ test('rejects an entry with a non-array projects field', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /projects must be an array/);
 });
+
+test('rejects a sourceUrl on a host outside cncf.io', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, sourceUrl: 'https://evil.example/case-studies/' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+});
+
+test('rejects a sourceUrl that spoofs cncf.io through a userinfo component', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      sourceUrl: 'https://www.cncf.io@evil.example/case-studies/',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+});
+
+test('rejects an entry url on a host outside cncf.io', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [{ ...validEntry, url: 'https://evil.example/acme/' }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /url must be an https URL/);
+});
+
+test('rejects an entry url that only prefixes an allowed host', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [
+        { ...validEntry, url: 'https://www.cncf.io.evil.example/acme/' },
+      ],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /url must be an https URL/);
+});
+
+test('rejects an entry url that spoofs cncf.io through a userinfo component', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [
+        {
+          ...validEntry,
+          url: 'https://www.cncf.io@evil.example/case-studies/acme/',
+        },
+      ],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /url must be an https URL/);
+});
+
+test('rejects a non-https entry url', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [
+        { ...validEntry, url: 'http://www.cncf.io/case-studies/acme/' },
+      ],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /url must be an https URL/);
+});
+
+test('accepts an entry url on a cncf.io subdomain', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [{ ...validEntry, url: 'https://cncf.io/case-studies/acme/' }],
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 1 case studies/);
+});
