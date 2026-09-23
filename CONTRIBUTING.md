@@ -28,7 +28,9 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
   steps as the import workflow (`import:architectures`,
   `validate:architectures`, `validate:architecture-assets`).
 - `just build` — run the same validation steps as CI (`validate:architectures`,
-  `validate:architecture-assets`, `validate:metrics`, `validate:awards`)
+  `validate:architecture-assets`, `validate:metrics`, `validate:awards`,
+  `validate:community-people`, `validate:community-groups`,
+  `validate:launch-metrics`, `validate:case-studies`, `validate:radar-reports`)
   followed by `build`.
 
 These recipes are kept in sync with the checks the "Validate repository" and
@@ -78,8 +80,8 @@ Rules:
 - Verify CNCF facts (award winners, TAB scope, architecture counts) against
   authoritative sources. Never assert numbers without a source.
 - Radar report `summary` fields in `data/radar-reports.json` are hand-written
-  and preserved across refreshes by `scripts/collect-radar-reports.mjs`; fill
-  in any `PLACEHOLDER` summaries in the automation PR rather than editing the
+  and preserved across refreshes by `scripts/collect-radar-reports.mjs`; fill in
+  any `PLACEHOLDER` summaries in the automation PR rather than editing the
   script's generated fields.
 - **Adding or editing an award winner requires re-running
   `npm run generate:members`** so `/community/members` stays in sync with
