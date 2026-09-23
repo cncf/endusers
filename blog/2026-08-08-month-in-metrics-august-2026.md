@@ -9,7 +9,7 @@ This is the first in a monthly series pulled straight from the numbers behind
 [/metrics](/metrics/) and [/architectures](/architectures/) — no editorializing, just what
 changed and where the data comes from.
 
-{/* truncate */}
+{/*truncate*/}
 
 ## The landscape, by the numbers
 

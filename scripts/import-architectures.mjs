@@ -10,8 +10,9 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { join, relative } from 'node:path';
+import { basename, extname, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { parse as yamlParse } from 'yaml';
 import {
   artworkMirrorPath,
@@ -19,13 +20,29 @@ import {
   artworkUrls,
   projectAsset,
 } from './lib/project-assets.mjs';
+import { stripActiveContent } from './lib/svg-active-content.mjs';
+import { isCncfProjectHref } from './lib/project-card-links.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
 const source = join(upstream, 'content/en/architectures');
 const recordsDir = join(root, 'data/architectures/records');
 const docsDir = join(root, 'docs/architectures');
 const assetsDir = join(root, 'static/img/architectures');
+
+// Only these file types are mirrored into static/, which Docusaurus publishes
+// verbatim at the site origin. Upstream controls these filenames, so anything
+// the browser would execute as markup or script (.html, .xhtml, .js, .svgz)
+// must never be copied: it would run in the site's own origin.
+const MIRRORABLE_ASSET_EXTENSIONS = new Set([
+  '.avif',
+  '.gif',
+  '.jpeg',
+  '.jpg',
+  '.png',
+  '.svg',
+  '.webp',
+]);
 
 try {
   execFileSync(
@@ -100,17 +117,46 @@ async function importArchitecture(id, commit) {
   const imageDir = join(dir, 'images');
   if (existsSync(imageDir)) {
     for (const file of walkFiles(imageDir)) {
+      const extension = extname(file).toLowerCase();
+      if (!MIRRORABLE_ASSET_EXTENSIONS.has(extension)) {
+        console.warn(
+          `Skipping ${relative(imageDir, file)} in ${id}: ${extension || 'no extension'} is not a mirrorable image type`,
+        );
+        continue;
+      }
       const destination = join(assetsDir, id, relative(imageDir, file));
       mkdirSync(join(destination, '..'), { recursive: true });
       cpSync(file, destination);
-      record.assets.push(
-        `/img/architectures/${id}/${relative(imageDir, file).replaceAll('\\', '/')}`,
-      );
     }
   }
-  sanitizeArchitectureAssets(join(assetsDir, id));
+  // Sanitization may convert raster-embedded SVGs to PNG and delete the
+  // originals, so capture SVG names beforehand and rebuild the asset list
+  // from disk afterward rather than trusting the copy-time list.
+  const archAssetsDir = join(assetsDir, id);
+  const svgsBefore = existsSync(archAssetsDir)
+    ? walkFiles(archAssetsDir).filter((file) => file.endsWith('.svg'))
+    : [];
+  sanitizeArchitectureAssets(archAssetsDir);
+  record.assets = existsSync(archAssetsDir)
+    ? walkFiles(archAssetsDir).map(
+        (file) =>
+          `/img/architectures/${id}/${relative(archAssetsDir, file).replaceAll('\\', '/')}`,
+      )
+    : [];
+  const convertedToPng = svgsBefore
+    .filter(
+      (file) =>
+        !existsSync(file) && existsSync(file.replace(/\.svg$/i, '.png')),
+    )
+    .map((file) => basename(file));
   await mirrorProjectAssets(body);
-  const cleanBody = cleanMarkdown(renderProjectCards(body, id), id);
+  let cleanBody = cleanMarkdown(renderProjectCards(body, id), id);
+  for (const svgName of convertedToPng) {
+    cleanBody = cleanBody.replaceAll(
+      `/img/architectures/${id}/${svgName}`,
+      `/img/architectures/${id}/${svgName.replace(/\.svg$/i, '.png')}`,
+    );
+  }
   record.summary = firstParagraph(cleanBody);
   writeFileSync(
     join(recordsDir, `${id}.json`),
@@ -141,7 +187,7 @@ function renderProjectCards(body, id) {
         (match) => match[1],
       );
       const href =
-        links.find((link) => link.includes('cncf.io/projects/')) ||
+        links.find(isCncfProjectHref) ||
         `https://www.cncf.io/projects/${name.toLowerCase().replace(/\s+/g, '-')}/`;
       const logo = (content.match(/!\[[^\]]*\]\((https?:\/\/[^)]+)\)/) ||
         [])[1];
@@ -189,7 +235,20 @@ async function mirrorProjectAssets(body) {
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      writeFileSync(destination, Buffer.from(await response.arrayBuffer()));
+      const body = Buffer.from(await response.arrayBuffer());
+      if (relativeDestination.toLowerCase().endsWith('.svg')) {
+        const { source, removed } = stripActiveContent(body.toString('utf8'));
+        if (removed.length) {
+          console.warn(
+            `Removed active content from mirrored asset ${path}: ${[
+              ...new Set(removed),
+            ].join(', ')}`,
+          );
+        }
+        writeFileSync(destination, source, 'utf8');
+      } else {
+        writeFileSync(destination, body);
+      }
     } catch {
       console.warn(`Could not mirror CNCF project asset: ${path}`);
     }
@@ -218,6 +277,18 @@ function sanitizeArchitectureAssets(dir) {
     if (!file.endsWith('.svg')) continue;
     const original = readFileSync(file, 'utf8');
     let source = original;
+
+    // Upstream SVGs are third-party input and are served from the site origin,
+    // so strip anything that would execute when a browser opens the file.
+    const stripped = stripActiveContent(source);
+    if (stripped.removed.length) {
+      source = stripped.source;
+      console.warn(
+        `Removed active content from ${relative(join(root, 'static'), file)}: ${[
+          ...new Set(stripped.removed),
+        ].join(', ')}`,
+      );
+    }
 
     // Remove DOCTYPE declarations that can break XML consumers.
     source = source.replace(/<!DOCTYPE\s[^>]*>\s*/gi, '');

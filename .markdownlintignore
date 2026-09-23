@@ -1,0 +1,12 @@
+# docs/architectures/*.md is generated content: scripts/import-architectures.mjs
+# deletes and rewrites these files from upstream sources on every daily import
+# run, so hand-applied lint fixes would be overwritten. Linting is enforced on
+# hand-maintained content only; generated pages are covered by
+# scripts/validate-architectures.mjs instead.
+docs/architectures/**
+
+# docs/community/governance.md reproduces cncf/tab's ug-governance.md verbatim
+# (see the attribution note at the top of the file). Rewriting list styles,
+# heading structure, or blank-line spacing to satisfy lint rules would count
+# as unauthorized wording/formatting changes to the copied source text.
+docs/community/governance.md

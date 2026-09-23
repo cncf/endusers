@@ -6,7 +6,9 @@
   margin: 1rem 0;
   padding: 1rem;
   text-decoration: none !important;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .card:hover,

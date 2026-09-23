@@ -24,7 +24,7 @@ const config = {
 
   // Set the production url of your site here.
   // Override with SITE_URL/BASE_URL for non-production deployments such as
-  // GitHub Pages previews (e.g. SITE_URL=https://castrojo.github.io BASE_URL=/endusers/).
+  // GitHub Pages previews (e.g. SITE_URL=https://cncf.github.io BASE_URL=/endusers/).
   url: siteUrl,
   baseUrl,
 
@@ -39,7 +39,7 @@ const config = {
       tagName: 'link',
       attributes: {
         rel: 'manifest',
-        href: '/manifest.json',
+        href: `${baseUrl}manifest.json`,
       },
     },
     {
@@ -47,7 +47,27 @@ const config = {
       attributes: {
         rel: 'apple-touch-icon',
         sizes: '180x180',
-        href: '/favicons/apple-touch-icon.png',
+        href: `${baseUrl}favicons/apple-touch-icon.png`,
+      },
+    },
+    {
+      tagName: 'meta',
+      attributes: {
+        'http-equiv': 'Content-Security-Policy',
+        // Defence in depth for content this site does not author: architecture
+        // MDX and image assets are mirrored from cncf/architecture, and several
+        // data/*.json files supply href and src values rendered by src/components.
+        // These three directives need no allowance for inline or bundled script,
+        // so they hold without constraining Docusaurus hydration or local search.
+        // script-src is deliberately omitted: Docusaurus emits inline bootstrap
+        // scripts, so it could only ship with 'unsafe-inline', which would add no
+        // protection. frame-ancestors is omitted because browsers ignore it when
+        // delivered via <meta http-equiv>; it needs a real response header.
+        content: [
+          "base-uri 'self'",
+          "object-src 'none'",
+          "form-action 'self'",
+        ].join('; '),
       },
     },
     {
@@ -97,7 +117,7 @@ const config = {
         docs: {
           routeBasePath: '/', // Serve the docs at the site's root
           sidebarPath: './sidebars.js',
-          editUrl: 'https://github.com/castrojo/endusers/tree/main',
+          editUrl: 'https://github.com/cncf/endusers/tree/main',
         },
         blog: {
           showReadingTime: true,
@@ -105,7 +125,7 @@ const config = {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          editUrl: 'https://github.com/castrojo/endusers/tree/main/',
+          editUrl: 'https://github.com/cncf/endusers/tree/main/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
@@ -113,6 +133,12 @@ const config = {
         },
         theme: {
           customCss: './src/css/custom.css',
+        },
+        sitemap: {
+          // /search is thin duplicate content; the plugin's own opt-out is
+          // emitted as property="robots", which neither Docusaurus nor a
+          // crawler honours. /skills/* is agent tooling, not site content.
+          ignorePatterns: ['/search', '/skills/**'],
         },
       }),
     ],
@@ -179,22 +205,18 @@ const config = {
             label: 'Community',
           },
           {
-            to: '/community/end-user-community#projects-born-at-end-user-organizations',
+            to: '/community#projects-born-at-end-user-organizations',
             label: 'Projects from end users',
-            position: 'left',
-          },
-          {
-            to: '/members/',
-            label: 'Members',
-            position: 'left',
-          },
-          {
-            to: '/awards/',
-            label: 'Awards',
             position: 'left',
           },
 
           // Right
+          {
+            type: 'docSidebar',
+            sidebarId: 'resourcesSidebar',
+            position: 'right',
+            label: 'Resources',
+          },
           {
             to: '/metrics/',
             label: 'Metrics',
