@@ -230,3 +230,73 @@ test('accepts a target90Day equal to baseline (delta metrics start at zero)', ()
   );
   assert.equal(result.status, 0, result.stderr);
 });
+
+// checkUrl distinguishes two ways a URL field can be wrong: unparseable at all
+// (the `new URL` throw), and parseable but not https. Only the second arm was
+// exercised, so a value like 'api.github.com/repos' -- the shape a hand-edited
+// file is most likely to carry -- went through an untested branch.
+test('rejects a source that is not an absolute URL', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, source: 'api.github.com/repos/cncf/endusers' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /source must be an absolute URL/);
+});
+
+test('rejects a signal sourceUrl that is not an absolute URL', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      signals: [
+        { ...validSignal, sourceUrl: 'github.com/cncf/endusers/stargazers' },
+        validData.signals[1],
+        validData.signals[2],
+      ],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an absolute URL/);
+});
+
+// An empty string is the documented "field not supplied" escape in checkUrl, so
+// it must not be reported as a malformed URL.
+test('accepts an omitted source rather than calling it malformed', () => {
+  const { source, ...rest } = validData;
+  const result = runScriptWithFixtures(SCRIPT, fixture(rest));
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('rejects a signal missing its label', () => {
+  const { label, ...rest } = validSignal;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      signals: [rest, validData.signals[1], validData.signals[2]],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /missing label/);
+});
+
+// collectedAt is what dates every signal on the launch dashboard. A present but
+// unparseable value passes the provenance check -- which only asks whether the
+// field is truthy -- so this is the only guard standing between a typo and a
+// signal rendered with an invalid date.
+test('rejects a signal collectedAt that is not ISO 8601', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      signals: [
+        { ...validSignal, collectedAt: '21-09-2026' },
+        validData.signals[1],
+        validData.signals[2],
+      ],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /collectedAt must be ISO 8601/);
+});
