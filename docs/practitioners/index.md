@@ -38,8 +38,8 @@ architects, and organizations running cloud native technologies in production.
   <img
     src={require('@site/static/img/practitioners-hero.jpg').default}
     alt="SNCF Groupe representatives accepting the 2026 Top End User Award on the KubeCon + CloudNativeCon keynote stage"
-    width="996"
-    height="597"
+    width="2400"
+    height="1601"
   />
   <figcaption>
     SNCF Groupe accepting the <a href="/community/awards">2026 Top End User Award</a> at KubeCon +
