@@ -457,3 +457,51 @@ test('collect-metrics documents the metrics it deliberately omits', () => {
     ['acceptance-rate', 'validation-duration', 'announcement-rate'],
   );
 });
+
+// githubAll sends the Authorization header with every paginated request, so a
+// Link rel="next" naming another origin would hand the token to that host.
+// The sandbox fetch stub throws on any unstubbed URL, so a followed redirect
+// would fail the run outright rather than silently pass.
+test('collect-metrics refuses a cross-origin Link rel=next target', () => {
+  const result = run({
+    routes: [
+      { match: FILES_ROUTE, body: [] },
+      {
+        match: 'issues?state=all',
+        body: [issue({ number: 1 })],
+        headers: {
+          link: '<https://evil.example/exfiltrate>; rel="next"',
+        },
+      },
+      { match: PULLS_ROUTE, body: [] },
+    ],
+  });
+
+  const data = metricsFrom(result);
+  assert.equal(cardValue(data, 'open-submissions'), 1);
+  assert.match(
+    result.stderr,
+    /Ignoring cross-origin Link rel="next" target: https:\/\/evil\.example/,
+  );
+});
+
+test('collect-metrics refuses an unparseable Link rel=next target', () => {
+  const result = run({
+    routes: [
+      { match: FILES_ROUTE, body: [] },
+      {
+        match: 'issues?state=all',
+        body: [issue({ number: 1 })],
+        headers: { link: '<http://[v1.unparseable>; rel="next"' },
+      },
+      { match: PULLS_ROUTE, body: [] },
+    ],
+  });
+
+  const data = metricsFrom(result);
+  assert.equal(cardValue(data, 'open-submissions'), 1);
+  assert.match(
+    result.stderr,
+    /Ignoring unparseable Link rel="next" target: http:\/\/\[v1\.unparseable/,
+  );
+});
