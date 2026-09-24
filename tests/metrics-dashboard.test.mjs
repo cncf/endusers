@@ -479,21 +479,24 @@ const baseData = (overrides = {}) => ({
   ...overrides,
 });
 
-async function renderWith(data) {
+async function renderWith(data, nested) {
   const module = await importWithData(
     'src/components/MetricsDashboard/index.js',
     { [DATA_SPECIFIER]: data },
   );
   try {
-    return module.default();
+    // Render nested components before cleanup: they are lazy elements, and
+    // once the fixture injector restores the real corpus a post-cleanup
+    // render would see live data again.
+    const tree = module.default();
+    return nested ? renderNested(tree, nested) : tree;
   } finally {
     module.cleanup();
   }
 }
 
 test('a metrics file with no lifecycle section still renders the panel', async () => {
-  const tree = await renderWith(baseData());
-  const panel = renderNested(tree, 'LifecycleSection');
+  const panel = await renderWith(baseData(), 'LifecycleSection');
 
   assert.match(textOf(panel), /Reference architecture lifecycle/);
   assert.match(textOf(panel), /What is not yet measurable/);
@@ -513,17 +516,15 @@ test('a metrics file with no lifecycle section still renders the panel', async (
 });
 
 test('a missing lifecycle source link renders no href rather than the string "undefined"', async () => {
-  const panel = renderNested(await renderWith(baseData()), 'LifecycleSection');
+  const panel = await renderWith(baseData(), 'LifecycleSection');
   const link = findByType(panel, 'a');
   assert.equal(textOf(link), 'Source ↗');
   assert.equal(link.props.href, undefined);
 });
 
 test('a lifecycle section present but empty renders the same as a missing one', async () => {
-  const panel = renderNested(
-    await renderWith(
-      baseData({ referenceArchitectureLifecycle: { sourceUrl: '/src' } }),
-    ),
+  const panel = await renderWith(
+    baseData({ referenceArchitectureLifecycle: { sourceUrl: '/src' } }),
     'LifecycleSection',
   );
   assert.equal(findByType(panel, 'a').props.href, '/src');
