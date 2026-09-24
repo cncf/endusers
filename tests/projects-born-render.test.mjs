@@ -74,8 +74,9 @@ test('each project contributes its name and origin to the rendered text', () => 
   }
 });
 
-test('the full form carries the default title, intro and TAB footer note', () => {
+test('the full form carries the kicker, default title, intro and TAB footer note', () => {
   const text = textOf(ProjectsBorn({}));
+  assert.match(text, /Production becomes open source/);
   assert.match(text, new RegExp(escape(DEFAULT_TITLE)));
   assert.match(text, /Some of the most widely adopted CNCF projects/);
   assert.match(text, /Talk to the End User TAB/);
@@ -88,10 +89,11 @@ test('the full form prints every project description', () => {
   }
 });
 
-test('the compact strip drops the intro, descriptions and TAB footer note', () => {
+test('the compact strip drops the kicker, intro, descriptions and TAB footer note', () => {
   // This is the form src/theme/Footer ships on every page: the same project
-  // list, stripped of the three prose blocks that belong on the page itself.
+  // list, stripped of the prose blocks and kicker that belong on the page itself.
   const text = textOf(ProjectsBorn({ compact: true }));
+  assert.doesNotMatch(text, /Production becomes open source/);
   assert.doesNotMatch(text, /Some of the most widely adopted CNCF projects/);
   assert.doesNotMatch(text, /Talk to the End User TAB/);
   for (const project of projects) {

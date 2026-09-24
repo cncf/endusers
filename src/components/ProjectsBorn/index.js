@@ -17,7 +17,9 @@ export default function ProjectsBorn({
       aria-labelledby={titleId}
     >
       <div className={styles.heading}>
-        <p className={styles.kicker}>Production becomes open source</p>
+        {!compact && (
+          <p className={styles.kicker}>Production becomes open source</p>
+        )}
         <h2 id={titleId}>{title}</h2>
         {!compact && <p>{intro}</p>}
       </div>
