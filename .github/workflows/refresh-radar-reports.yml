@@ -1,0 +1,42 @@
+name: Refresh radar reports
+
+on:
+  schedule:
+    - cron: '57 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run collect:radar-reports
+      - run: npm run validate:radar-reports
+      - run: npm run build
+      - uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
+        with:
+          branch: automation/refresh-radar-reports
+          delete-branch: true
+          commit-message: 'chore: refresh radar reports'
+          title: 'chore: refresh radar reports'
+          body: |
+            Automated refresh of `data/radar-reports.json` from
+            https://www.cncf.io/reports?_sft_lf-report-type=radar.
+
+            New reports get a placeholder summary (flagged as a warning by
+            `npm run validate:radar-reports`); replace it with a real
+            one-sentence description before merging.
+          labels: automated
