@@ -300,3 +300,37 @@ test('rejects a signal collectedAt that is not ISO 8601', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /collectedAt must be ISO 8601/);
 });
+
+// checkUrl's third arm: parseable and https, but carrying userinfo, so the
+// visible prefix and the real host disagree ("https://api.github.com@evil.example"
+// resolves to evil.example). Provenance URLs are rendered as hrefs, so this is
+// rejected on its own terms rather than passing on the https scheme alone.
+test('rejects a source carrying a userinfo component', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      source: 'https://api.github.com@evil.example/repos/cncf/endusers',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /source must not carry a userinfo component/);
+  assert.match(result.stderr, /evil\.example/);
+  assert.doesNotMatch(result.stderr, /must use https/);
+});
+
+test('rejects a signal sourceUrl carrying a password-only userinfo component', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      signals: [
+        { ...validSignal, sourceUrl: 'https://:token@evil.example/stargazers' },
+        validData.signals[1],
+        validData.signals[2],
+      ],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must not carry a userinfo component/);
+});

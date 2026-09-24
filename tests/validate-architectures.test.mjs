@@ -157,3 +157,28 @@ test('accepts an imported architecture page with only inert content', () => {
   const result = runScriptWithFixtures(SCRIPT, fixtures);
   assert.equal(result.status, 0, result.stderr);
 });
+
+// A userinfo component makes the visible prefix and the real host disagree:
+// "https://www.cncf.io@evil.example/x" reads as CNCF in a generated diff and
+// resolves to evil.example in a browser. sourceUrl is rendered as an href in
+// the member directory, so the gate must reject it rather than admit it on the
+// strength of the https scheme alone.
+test('rejects a sourceUrl carrying a userinfo component', () => {
+  const record = {
+    ...validRecord,
+    sourceUrl: 'https://www.cncf.io@evil.example/acme-platform.md',
+  };
+  const result = runScriptWithFixtures(SCRIPT, catalogFixture([record]));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+});
+
+test('rejects a sourceUrl carrying a password-only userinfo component', () => {
+  const record = {
+    ...validRecord,
+    sourceUrl: 'https://:token@evil.example/acme-platform.md',
+  };
+  const result = runScriptWithFixtures(SCRIPT, catalogFixture([record]));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+});

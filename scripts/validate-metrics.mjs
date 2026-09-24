@@ -10,6 +10,11 @@ const errors = [];
 // src/components/MetricsDashboard and src/components/ReferenceArchitectures,
 // so an href-bearing scheme other than https reaching the published site is an
 // active-content sink. Absent values are left to the existing presence checks.
+//
+// The protocol test alone is not enough: "https://www.cncf.io@evil.example/"
+// parses with protocol "https:" while resolving to evil.example, so it reads
+// as CNCF to a human reviewing a generated diff and resolves elsewhere in a
+// browser. Mirrors checkHttpsUrl() in validate-awards.mjs.
 function checkUrl(path, field, value) {
   if (value === undefined || value === null || value === '') return;
   let parsed;
@@ -23,11 +28,19 @@ function checkUrl(path, field, value) {
     });
     return;
   }
-  if (parsed.protocol !== 'https:')
+  if (parsed.protocol !== 'https:') {
     errors.push({
       path,
       severity: 'error',
       message: `${field} must use https, got ${parsed.protocol}`,
+    });
+    return;
+  }
+  if (parsed.username || parsed.password)
+    errors.push({
+      path,
+      severity: 'error',
+      message: `${field} must not carry a userinfo component, which only disguises the real host (${parsed.hostname})`,
     });
 }
 
