@@ -13,22 +13,28 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
+// Organisation names are not repository data: import-architectures.mjs copies
+// each one from the `org_name` frontmatter of the cncf/architecture clone, so
+// every map keyed by one below is keyed by untrusted input. Null prototypes
+// keep an unknown name a miss instead of letting it inherit an
+// Object.prototype member such as `toString` or `constructor` (see #504).
+
 // Manual slug overrides for organisation names whose automatic normalisation
 // would produce the wrong result (e.g. "Flipkart Internet Pvt. Ltd." would
 // become "flipkart-internet" without the override).
-const SLUG_OVERRIDES = {
+const SLUG_OVERRIDES = Object.assign(Object.create(null), {
   'Flipkart Internet Pvt. Ltd.': 'flipkart',
   'Swisscom (Switzerland) Ltd': 'swisscom',
-};
+});
 
 // Short brand-name overrides for organisations whose legal name is verbose.
 // Used as the display name in the member card.
-const DISPLAY_NAME_OVERRIDES = {
+const DISPLAY_NAME_OVERRIDES = Object.assign(Object.create(null), {
   'Allianz Direct': 'Allianz',
   'Flipkart Internet Pvt. Ltd.': 'Flipkart',
   'Swisscom (Switzerland) Ltd': 'Swisscom',
   'Mercedes-Benz Tech Innovation': 'Mercedes-Benz',
-};
+});
 
 /** Converts an organisation display name to a URL-safe slug. */
 function orgToSlug(name) {
@@ -58,14 +64,14 @@ const awardsData = JSON.parse(
 );
 
 // Index awards by slug so each organisation accumulates all of its awards.
-const awardsBySlug = {};
+const awardsBySlug = Object.create(null);
 for (const award of awardsData.awards) {
   if (!award.slug) continue;
   (awardsBySlug[award.slug] ||= []).push(award);
 }
 
 // Index catalog entries by derived organisation slug.
-const catalogBySlug = {};
+const catalogBySlug = Object.create(null);
 for (const entry of catalog) {
   const slug = orgToSlug(entry.organization);
   (catalogBySlug[slug] ||= []).push(entry);
