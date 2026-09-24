@@ -7,6 +7,10 @@
  * imported body is rendered into the published site rather than escaped.  This
  * helper reports the constructs that can execute or load remote code so a
  * validator can fail the build before such a body ships.
+ *
+ * Scheme detection normalizes each line before testing it, because CommonMark
+ * decodes character references in a link destination: `java&#115;cript:` is a
+ * live `javascript:` href by the time the page renders.
  */
 
 /** Inert inline elements that carry no script, network or layout capability. */
@@ -36,6 +40,64 @@ const ELEMENT_PATTERN = /<\/?([A-Za-z][A-Za-z0-9._-]*)/g;
 const EVENT_HANDLER_PATTERN = /\bon[a-z]{3,}\s*=/gi;
 const DANGEROUS_URL_PATTERN = /(?:javascript|vbscript):|data:text\/html/gi;
 const ESM_PATTERN = /^\s*(?:import|export)\s/;
+
+/** The character references a scheme can hide a character behind by name. */
+const NAMED_ENTITIES = {
+  colon: ':',
+  tab: '\t',
+  newline: '\n',
+  lf: '\n',
+  sol: '/',
+  amp: '&',
+};
+
+/**
+ * Decode the HTML character references a scheme may hide behind.  MDX is
+ * CommonMark, which decodes references in a link destination, so
+ * `[x](java&#115;cript:alert(1))` is a live `javascript:` href by the time it
+ * renders and a raw substring test never sees it.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function decodeEntities(value) {
+  return value
+    .replace(/&#x([0-9a-f]+);?/gi, (match, hex) => {
+      const code = Number.parseInt(hex, 16);
+      return Number.isFinite(code) && code <= 0x10ffff
+        ? String.fromCodePoint(code)
+        : match;
+    })
+    .replace(/&#(\d+);?/g, (match, dec) => {
+      const code = Number.parseInt(dec, 10);
+      return Number.isFinite(code) && code <= 0x10ffff
+        ? String.fromCodePoint(code)
+        : match;
+    })
+    .replace(
+      /&([a-z]+);?/gi,
+      (match, name) => NAMED_ENTITIES[name.toLowerCase()] ?? match,
+    );
+}
+
+/**
+ * Collapse a line to the form a browser's URL parser sees.  Control characters
+ * (tab included) go because a URL parser ignores them; the space character is
+ * deliberately kept, since a browser does not read `java script:` as a scheme
+ * and removing it would flag ordinary prose.
+ *
+ * @param {string} line
+ * @returns {string}
+ */
+function normalizeSchemes(line) {
+  // Decode twice: some generators emit double-encoded references (&amp;#58;).
+  // eslint-disable-next-line no-control-regex
+  return decodeEntities(decodeEntities(line)).replace(
+    // eslint-disable-next-line no-control-regex
+    /[\u0000-\u001f\u007f]+/g,
+    '',
+  );
+}
 
 /**
  * Replaces fenced code blocks and inline code spans with blank padding.  MDX
@@ -89,13 +151,17 @@ export function findActiveContent(markdown) {
       });
     EVENT_HANDLER_PATTERN.lastIndex = 0;
 
-    if (DANGEROUS_URL_PATTERN.test(line))
+    const dangerous = [line, normalizeSchemes(line)].some((candidate) => {
+      DANGEROUS_URL_PATTERN.lastIndex = 0;
+      return DANGEROUS_URL_PATTERN.test(candidate);
+    });
+    DANGEROUS_URL_PATTERN.lastIndex = 0;
+    if (dangerous)
       findings.push({
         line: number,
         reason: 'script-capable URL scheme',
         snippet,
       });
-    DANGEROUS_URL_PATTERN.lastIndex = 0;
 
     if (ESM_PATTERN.test(line) && line.trim() !== ALLOWED_IMPORT)
       findings.push({

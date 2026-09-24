@@ -38,6 +38,47 @@ test('flags script elements, event handlers and script-capable URLs', () => {
   ]);
 });
 
+test('flags script-capable schemes hidden behind character references', () => {
+  // CommonMark decodes character references in a link destination, so each of
+  // these renders as a live scheme: a raw substring test never sees them.
+  assert.deepEqual(reasons('[click](java&#115;cript:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('[click](&#106;avascript:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('[click](java&#x73;cript:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('[click](javascript&colon;alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('[d](&#100;ata:text/html;base64,PHN2Zz4=)'), [
+    'script-capable URL scheme',
+  ]);
+  // Double-encoded, as some generators emit.
+  assert.deepEqual(reasons('[click](java&amp;#115;cript:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+  // A control character a URL parser would ignore.
+  assert.deepEqual(reasons('[click](java\tscript:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+});
+
+test('reports one finding per line when raw and decoded forms both match', () => {
+  assert.deepEqual(
+    reasons('[a](javascript:alert(1)) [b](java&#115;cript:alert(1))'),
+    ['script-capable URL scheme'],
+  );
+});
+
+test('does not read a space-separated word pair as a scheme', () => {
+  // A browser does not treat `java script:` as a scheme, so neither does this.
+  assert.deepEqual(reasons('Java Script: a short history of the name.'), []);
+  assert.deepEqual(reasons('Deploys to production&#58; see the runbook.'), []);
+});
+
 test('flags ESM statements other than the generated CNCFProjectCard import', () => {
   assert.deepEqual(reasons("import evil from 'https://evil.test/x.js';"), [
     'unexpected ESM statement',
