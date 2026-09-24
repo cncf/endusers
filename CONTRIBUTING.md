@@ -141,11 +141,20 @@ enough for a first contribution.
 3. Run `npm run test:unit` — the required "Validate repository" check runs this
    on every PR.
 4. Verify with `npm run build` before opening a PR.
-5. Commit with a DCO sign-off: `git commit -s`. CI enforces this and will fail
+5. Run `npm run check` — the required "Lint repository" check runs this on every
+   PR. It covers `check:format` (prettier), `check:spelling` (cspell), and
+   `check:markdown` (markdownlint), and you can also run any of the three
+   individually. If a check fails:
+   - `check:format` — run `npm run fix:format` to auto-format.
+   - `check:spelling` — add the flagged term to `.cspell.yml` if it's a
+     legitimate project word, or fix the typo.
+   - `check:markdown` — fix the reported issue, or add an inline disable comment
+     per the rules in `.markdownlint.yaml` if the rule doesn't apply.
+6. Commit with a DCO sign-off: `git commit -s`. CI enforces this and will fail
    the PR if any commit is missing a `Signed-off-by` trailer. If you forget, fix
    it before pushing (or after, then force-push) with
    `git rebase --signoff main`.
-6. Open a pull request against `main` describing what changed and why.
+7. Open a pull request against `main` describing what changed and why.
 
 ## Agent contributors
 
