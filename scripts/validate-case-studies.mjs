@@ -96,6 +96,18 @@ for (const entry of Array.isArray(data.caseStudies) ? data.caseStudies : []) {
       severity: 'error',
       message: 'industries must be an array',
     });
+  if (!entry.summary)
+    errors.push({
+      path: String(id),
+      severity: 'error',
+      message: 'missing summary',
+    });
+  if (entry.summary === 'Summary needed — see the case study for details.')
+    errors.push({
+      path: String(id),
+      severity: 'warn',
+      message: 'summary is still the auto-generated placeholder',
+    });
 }
 
 reportAndExit(errors, 'case studies');

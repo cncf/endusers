@@ -121,6 +121,10 @@
   white-space: nowrap;
 }
 
+.description {
+  max-width: 32ch;
+}
+
 .emptyState {
   color: var(--ifm-color-emphasis-700);
   padding: 1.5rem 0;
