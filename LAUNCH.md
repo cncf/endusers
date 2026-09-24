@@ -74,11 +74,15 @@ shipping stale content on day one — the exact failure this automation exists t
 prevent. Before the W-0 launch date, all scheduled content-refresh workflows
 must be green for **2 consecutive scheduled runs**:
 
-| Pipeline                                                    | Schedule | Tracking     |
-| ----------------------------------------------------------- | -------- | ------------ |
-| Import reference architectures (`import-architectures.yml`) | daily    | #121         |
-| Refresh community profiles (`refresh-community-people.yml`) | weekly   | #122         |
-| Metrics refresh (`refresh-metrics.yml`, not yet merged)     | daily    | #74, PR #125 |
+| Pipeline                                                                                     | Schedule | Tracking |
+| -------------------------------------------------------------------------------------------- | -------- | -------- |
+| Import reference architectures (`import-architectures.yml`)                                  | daily    | #121     |
+| Refresh community profiles (`refresh-community-people.yml`)                                  | weekly   | #122     |
+| Metrics refresh (`collect:metrics` + `validate:metrics` steps of `import-architectures.yml`) | daily    | #121     |
+
+A dedicated `refresh-metrics.yml` workflow was proposed in PR #125 and declined
+(#74); metrics refresh instead runs as steps inside `import-architectures.yml`,
+so it shares that workflow's tracking issue and readiness signal.
 
 If any pipeline is still red at W-1, treat it the same as any other Phase 1
 blocker under "Full content freeze rehearsal" (W-4): either land the fix or
