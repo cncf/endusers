@@ -102,10 +102,6 @@
   font-size: 1.1rem;
 }
 
-.compact .kicker {
-  color: #93eaff;
-}
-
 .compact .projects {
   display: flex;
   flex-wrap: wrap;
