@@ -39,9 +39,12 @@ test('rejects a non-parseable generatedAt', () => {
 });
 
 // `sourceUrl` is the provenance link rendered by `SyncStatus` in
-// src/components/RadarReports/index.js. An absent value renders `href=
-// "undefined"` and an http:// value downgrades an outbound link to plaintext,
-// so both halves of the guard are asserted rather than just its presence.
+// src/components/RadarReports/index.js, under the hard-coded anchor text
+// "cncf.io/reports" — its real destination is never shown to the reader. An
+// absent value renders `href="undefined"`, an http:// value downgrades an
+// outbound link to plaintext, and an off-host or userinfo-disguised value
+// publishes an attacker-controlled link under CNCF branding, so every term of
+// the guard is asserted rather than just its presence.
 test('rejects a missing sourceUrl', () => {
   const { sourceUrl, ...withoutSourceUrl } = validData;
   const result = runScriptWithFixtures(SCRIPT, fixture(withoutSourceUrl));
@@ -59,6 +62,55 @@ test('rejects a non-https sourceUrl', () => {
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /sourceUrl must be an https URL/);
+});
+
+test('rejects an off-host sourceUrl', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, sourceUrl: 'https://evil.example/reports' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+});
+
+// A suffix match on the bare string would accept this; the guard compares the
+// parsed hostname against the allow-list instead.
+test('rejects a sourceUrl whose host merely ends in the allowed name', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, sourceUrl: 'https://www.cncf.io.evil.example/x' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+});
+
+test('rejects a sourceUrl whose userinfo disguises the real host', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, sourceUrl: 'https://www.cncf.io@evil.example/x' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+});
+
+test('rejects an unparseable sourceUrl without crashing', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, sourceUrl: 'https://' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
+test('rejects a non-string sourceUrl without crashing', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, sourceUrl: ['https://www.cncf.io/reports'] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
 });
 
 test('rejects an empty radarReports array', () => {
@@ -138,9 +190,11 @@ test('rejects an entry missing a title', () => {
   assert.match(result.stderr, /missing title/);
 });
 
-// Each entry url becomes a `target="_blank"` card link on /reports. A missing
-// value renders `href="undefined"`; an http:// value ships a plaintext
-// outbound link. The guard covers both, so both are asserted.
+// Each entry url becomes a `target="_blank"` card link on /reports, published
+// under a CNCF-vetted heading. A missing value renders `href="undefined"`, an
+// http:// value ships a plaintext outbound link, and an off-host or
+// userinfo-disguised value sends the visitor to an attacker. The guard covers
+// all of them, so all of them are asserted.
 test('rejects an entry missing a url', () => {
   const { url, ...withoutUrl } = validEntry;
   const result = runScriptWithFixtures(
@@ -148,7 +202,7 @@ test('rejects an entry missing a url', () => {
     fixture({ ...validData, radarReports: [withoutUrl] }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /missing url/);
+  assert.match(result.stderr, /url must be an https URL/);
 });
 
 test('rejects an entry whose url is not https', () => {
@@ -162,7 +216,73 @@ test('rejects an entry whose url is not https', () => {
     }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /missing url/);
+  assert.match(result.stderr, /url must be an https URL/);
+});
+
+test('rejects an entry url on an unrelated host', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      radarReports: [{ ...validEntry, url: 'https://evil.example/report/' }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /url must be an https URL/);
+});
+
+test('rejects an entry url whose userinfo disguises the real host', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      radarReports: [
+        { ...validEntry, url: 'https://www.cncf.io@evil.example/report.pdf' },
+      ],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /url must be an https URL/);
+});
+
+// The rejection message quotes the offending value so a maintainer reading CI
+// output can see the real destination rather than just the field name.
+test('names the rejected entry url in the error message', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      radarReports: [{ ...validEntry, url: 'https://evil.example/report/' }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /"https:\/\/evil\.example\/report\/"/);
+});
+
+test('rejects a non-string entry url without crashing', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      radarReports: [{ ...validEntry, url: { href: 'https://www.cncf.io/' } }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /url must be an https URL/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
+// The allow-list is a suffix match on the parsed hostname, so a legitimate
+// bare-apex or subdomain report link must still pass.
+test('accepts a report url on a cncf.io subdomain', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      radarReports: [{ ...validEntry, url: 'https://cncf.io/reports/x/' }],
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test('rejects an entry missing a summary', () => {
