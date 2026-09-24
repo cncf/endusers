@@ -116,3 +116,66 @@ test('tolerates empty and nullish input', () => {
   assert.deepEqual(findActiveContent(''), []);
   assert.deepEqual(findActiveContent(undefined), []);
 });
+
+test('leaves an out-of-range hex entity literal rather than forming a scheme', () => {
+  // String.fromCodePoint throws RangeError above U+10FFFF, so the `code <=
+  // 0x10ffff` guard is what keeps a hostile body from crashing the validator
+  // that is supposed to reject it. The entity stays literal, and the literal
+  // is not itself read as a scheme.
+  assert.deepEqual(reasons('[click](java&#x110000;cript:alert(1))'), []);
+  assert.deepEqual(reasons('Budget rose by &#x110000; percent.'), []);
+
+  // The true arm must still decode, so the guard cannot be "satisfied" by
+  // rejecting hex entities wholesale: &#x3a; is a colon, and decoding it is
+  // what turns the payload below into a scheme the scanner reports.
+  assert.deepEqual(reasons('[click](javascript&#x3a;alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+});
+
+test('leaves an out-of-range decimal entity literal rather than forming a scheme', () => {
+  assert.deepEqual(reasons('[click](java&#1114112;cript:alert(1))'), []);
+
+  // As above: the decimal true arm must keep decoding in-range references.
+  assert.deepEqual(reasons('[click](javascript&#58;alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+});
+
+test('leaves a non-finite entity literal rather than forming a scheme', () => {
+  // A digit run long enough to overflow to Infinity takes the
+  // Number.isFinite arm of the guard rather than the range comparison, so
+  // both halves of `Number.isFinite(code) && code <= 0x10ffff` are load
+  // bearing. Number.parseInt returns Infinity here, and String.fromCodePoint
+  // would throw on it.
+  const hugeHex = 'f'.repeat(400);
+  const hugeDecimal = '9'.repeat(400);
+  assert.deepEqual(reasons(`[click](java&#x${hugeHex};cript:alert(1))`), []);
+  assert.deepEqual(reasons(`[click](java&#${hugeDecimal};cript:alert(1))`), []);
+});
+
+test('an undecodable entity does not mask a scheme elsewhere on the line', () => {
+  // The fallback returns the unmatched text rather than consuming it, so a
+  // rejected reference cannot be used as a shield in front of a live scheme.
+  assert.deepEqual(reasons('[click](&#x110000;javascript:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('[click](&#1114112;javascript:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+});
+
+test('leaves an unrecognized named entity literal rather than dropping it', () => {
+  // The named-entity table is an allowlist, and its fallback returns the
+  // unmatched text. Dropping an unrecognized reference instead would splice
+  // the characters on either side together, so `java&nbsp;script:` would be
+  // reported as a live `javascript:` scheme that no browser would parse.
+  assert.deepEqual(reasons('[click](java&nbsp;script:alert(1))'), []);
+  assert.deepEqual(reasons('Costs rose 5&nbsp;percent this quarter.'), []);
+
+  // The allowlisted arm must still substitute, or a genuinely hidden colon
+  // would stop being reported.
+  assert.deepEqual(reasons('[click](javascript&colon;alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+});
