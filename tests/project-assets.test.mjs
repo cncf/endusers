@@ -140,3 +140,73 @@ test('artwork with a non-image extension is never mirrored or mapped', () => {
     );
   }
 });
+
+// The guards below are what makes this module fail closed. Merged raw V8
+// coverage across every suite (including the subprocess-sandboxed import
+// pipeline tests) showed none of them executing, so a refactor could have
+// removed or inverted any of them without a single test objecting.
+
+test('artworkPath refuses non-string input rather than throwing', () => {
+  // projectAsset type-checks before delegating, but artworkPath is exported
+  // and called directly (scripts/import-architectures.mjs), so the guard is
+  // load-bearing there.
+  for (const value of [null, undefined, 42, 0, {}, ['x'], true]) {
+    assert.equal(artworkPath(value), null, String(value));
+  }
+});
+
+test('artworkMirrorName refuses a path with no name segment to mirror under', () => {
+  // The mirrored name is <name>-<file>; a single-segment path has no <name>,
+  // so it is dropped instead of being mirrored under a guessed one.
+  for (const path of ['helm-icon.svg', 'projects', '']) {
+    assert.equal(artworkMirrorName(path), null, JSON.stringify(path));
+    assert.equal(artworkMirrorPath(path), null, JSON.stringify(path));
+  }
+});
+
+test('a single-segment artwork URL fails closed rather than mirroring', () => {
+  assert.equal(
+    projectAsset(
+      'https://raw.githubusercontent.com/cncf/artwork/main/helm.svg',
+    ),
+    null,
+  );
+});
+
+test('artworkMirrorName does not double the filename when name equals file', () => {
+  // projects/helm-icon.svg would otherwise mirror as
+  // helm-icon.svg-helm-icon.svg.
+  assert.equal(artworkMirrorName('projects/helm-icon.svg'), 'helm-icon.svg');
+  assert.equal(
+    artworkMirrorPath('projects/helm-icon.svg'),
+    'static/img/cncf-projects/helm-icon.svg',
+  );
+  assert.equal(
+    projectAsset(
+      'https://raw.githubusercontent.com/cncf/artwork/main/projects/helm-icon.svg',
+    ),
+    '/img/cncf-projects/helm-icon.svg',
+  );
+});
+
+test('artworkMirrorName falls back to the bare filename when the name segment is empty', () => {
+  assert.equal(artworkMirrorName('other//x/logo.png'), 'logo.png');
+  assert.equal(artworkMirrorName('projects/logo.png/logo.png'), 'logo.png');
+});
+
+test('an empty name segment in a URL is still rejected before mirroring', () => {
+  // artworkMirrorName tolerates the shape, but artworkPath rejects the empty
+  // segment first, so no such URL ever reaches the mirror.
+  assert.equal(
+    artworkPath(
+      'https://raw.githubusercontent.com/cncf/artwork/main/projects//helm-icon.svg',
+    ),
+    null,
+  );
+  assert.equal(
+    projectAsset(
+      'https://raw.githubusercontent.com/cncf/artwork/main/projects//helm-icon.svg',
+    ),
+    null,
+  );
+});
