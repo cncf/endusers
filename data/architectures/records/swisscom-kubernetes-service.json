@@ -22,8 +22,8 @@
     "Helm",
     "CloudNativePG"
   ],
-  "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-kubernetes-service",
-  "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
+  "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-kubernetes-service",
+  "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
   "assets": [
     "/img/architectures/swisscom-kubernetes-service/kubernetes-service-central-infra.png",
     "/img/architectures/swisscom-kubernetes-service/kubernetes-service-ingredients.png",

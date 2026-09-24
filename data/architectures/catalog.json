@@ -14,8 +14,8 @@
       "developer-experience"
     ],
     "projects": ["Kubernetes", "Helm", "Argo", "Backstage"],
-    "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/adobe",
-    "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
+    "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/adobe",
+    "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
     "assets": [
       "/img/architectures/adobe/Adobe_Wordmark_RGB_Red.svg",
       "/img/architectures/adobe/CellBasedArchitecture.webp",
@@ -30,11 +30,11 @@
     "title": "Enabling Allianz Direct's scaling through Platform Engineering",
     "organization": "Allianz Direct",
     "summary": "The PE team is internally organised in DDOs - Distributed DevOps, where each ddo owns a Domain. This setup follows the reverse Conway manoeuver where the reference architecture structure dictates the teams setup. The PE team consist of 13 m",
-    "industries": [],
+    "industries": ["Financial", "Insurance"],
     "tags": ["finance", "insurance", "europe", "public_cloud", "aws"],
     "projects": ["Kubernetes", "Helm", "Argo"],
-    "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/allianz",
-    "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
+    "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/allianz",
+    "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
     "assets": [
       "/img/architectures/allianz/PEArchitecture.jpg",
       "/img/architectures/allianz/PEJourney.jpg",
@@ -61,13 +61,30 @@
       "Prometheus",
       "stargz-snapshotter"
     ],
-    "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/cern-scientific-computing",
-    "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
+    "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/cern-scientific-computing",
+    "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
     "assets": [
       "/img/architectures/cern-scientific-computing/hwlayout.png",
       "/img/architectures/cern-scientific-computing/logo.svg",
       "/img/architectures/cern-scientific-computing/ngt-refarch.png",
       "/img/architectures/cern-scientific-computing/use-cases.png"
+    ]
+  },
+  {
+    "id": "colopl",
+    "title": "Colopl's FESTIBATTLE Infrastructure Architecture: Dedicated Game Servers with Agones on Kubernetes",
+    "organization": "Colopl Inc.",
+    "summary": "At COLOPL, our API servers run on Google Kubernetes Engine (GKE) with Cloud Spanner as the backend database. While that combination is somewhat distinctive, the overall structure is not far from a typical web service.",
+    "industries": ["gaming"],
+    "tags": ["agones", "gaming", "kubernetes"],
+    "projects": ["Kubernetes", "Agones"],
+    "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/colopl",
+    "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+    "assets": [
+      "/img/architectures/colopl/agones.png",
+      "/img/architectures/colopl/agones.svg",
+      "/img/architectures/colopl/festibattle-architecture.png",
+      "/img/architectures/colopl/logo.png"
     ]
   },
   {
@@ -93,8 +110,8 @@
       "Helm",
       "containerd"
     ],
-    "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/flipkart-chaos-engineering",
-    "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
+    "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/flipkart-chaos-engineering",
+    "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
     "assets": [
       "/img/architectures/flipkart-chaos-engineering/layers.png",
       "/img/architectures/flipkart-chaos-engineering/logo.png",
@@ -130,8 +147,8 @@
       "NetBox Operator",
       "NetBox"
     ],
-    "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-cloud-native-telco",
-    "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
+    "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-cloud-native-telco",
+    "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
     "assets": [
       "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-architecture-overview.png",
       "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-layers.svg",
@@ -162,8 +179,8 @@
       "Helm",
       "CloudNativePG"
     ],
-    "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-kubernetes-service",
-    "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
+    "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-kubernetes-service",
+    "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
     "assets": [
       "/img/architectures/swisscom-kubernetes-service/kubernetes-service-central-infra.png",
       "/img/architectures/swisscom-kubernetes-service/kubernetes-service-ingredients.png",
@@ -177,11 +194,17 @@
     "title": "ZEISS Vision Care - Order Fulfillment",
     "organization": "ZEISS",
     "summary": "Our Business Enablement & IT team develops, designs, and operates the order fulfillment platform that underpins this process.",
-    "industries": [],
-    "tags": [],
+    "industries": ["optics", "optical-manufacturing"],
+    "tags": [
+      "public-cloud",
+      "mass-manufacturing",
+      "industry",
+      "microservices",
+      "platform engineering"
+    ],
     "projects": ["Kubernetes", "Dapr", "KEDA", "OpenTelemetry", "Helm"],
-    "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/zeiss",
-    "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
+    "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/zeiss",
+    "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
     "assets": [
       "/img/architectures/zeiss/solutionArchitecture.png",
       "/img/architectures/zeiss/zeiss-logo-rgb.svg"

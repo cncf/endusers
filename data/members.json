@@ -24,8 +24,8 @@
         {
           "id": "adobe",
           "title": "Scaling Adobe’s Service Delivery Foundation with a Cell-based Architecture",
-          "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/adobe",
-          "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d"
+          "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/adobe",
+          "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb"
         }
       ],
       "awards": [
@@ -41,7 +41,7 @@
         }
       ],
       "sourceAttribution": [
-        "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/adobe",
+        "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/adobe",
         "https://www.cncf.io/announcements/2024/11/14/cncf-presents-top-end-user-award-to-adobe/",
         "https://www.cncf.io/case-studies/adobe/"
       ]
@@ -51,19 +51,19 @@
       "name": "Allianz",
       "slug": "allianz",
       "logo": "/img/architectures/allianz/allianz.svg",
-      "industries": [],
+      "industries": ["Financial", "Insurance"],
       "projects": ["Argo", "Helm", "Kubernetes"],
       "architectures": [
         {
           "id": "allianz",
           "title": "Enabling Allianz Direct's scaling through Platform Engineering",
-          "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/allianz",
-          "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d"
+          "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/allianz",
+          "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb"
         }
       ],
       "awards": [],
       "sourceAttribution": [
-        "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/allianz"
+        "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/allianz"
       ]
     },
     {
@@ -161,8 +161,8 @@
         {
           "id": "cern-scientific-computing",
           "title": "A Cloud Native Scientific Computing Platform for CERN NextGen AI",
-          "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/cern-scientific-computing",
-          "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d"
+          "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/cern-scientific-computing",
+          "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb"
         }
       ],
       "awards": [
@@ -178,9 +178,29 @@
         }
       ],
       "sourceAttribution": [
-        "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/cern-scientific-computing",
+        "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/cern-scientific-computing",
         "https://www.cncf.io/announcements/2024/03/21/cloud-native-computing-foundation-announces-cern-as-the-top-end-user-award-winner/",
         "https://www.cncf.io/case-studies/cern/"
+      ]
+    },
+    {
+      "id": "colopl",
+      "name": "Colopl Inc.",
+      "slug": "colopl",
+      "logo": "/img/architectures/colopl/logo.png",
+      "industries": ["gaming"],
+      "projects": ["Agones", "Kubernetes"],
+      "architectures": [
+        {
+          "id": "colopl",
+          "title": "Colopl's FESTIBATTLE Infrastructure Architecture: Dedicated Game Servers with Agones on Kubernetes",
+          "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/colopl",
+          "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb"
+        }
+      ],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/colopl"
       ]
     },
     {
@@ -225,13 +245,13 @@
         {
           "id": "flipkart-chaos-engineering",
           "title": "From Afterthought to Practice: Flipkart’s Multi-Tenant Chaos Engineering Platform on LitmusChaos",
-          "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/flipkart-chaos-engineering",
-          "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d"
+          "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/flipkart-chaos-engineering",
+          "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb"
         }
       ],
       "awards": [],
       "sourceAttribution": [
-        "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/flipkart-chaos-engineering"
+        "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/flipkart-chaos-engineering"
       ]
     },
     {
@@ -439,20 +459,20 @@
         {
           "id": "swisscom-cloud-native-telco",
           "title": "End-to-End Cloud Native Telco Platform Automation at Swisscom",
-          "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-cloud-native-telco",
-          "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d"
+          "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-cloud-native-telco",
+          "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb"
         },
         {
           "id": "swisscom-kubernetes-service",
           "title": "A modern and sovereign Private Cloud «Kubernetes Service» for Swiss-based enterprises.",
-          "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-kubernetes-service",
-          "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d"
+          "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-kubernetes-service",
+          "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb"
         }
       ],
       "awards": [],
       "sourceAttribution": [
-        "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-cloud-native-telco",
-        "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-kubernetes-service"
+        "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-cloud-native-telco",
+        "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-kubernetes-service"
       ]
     },
     {
@@ -485,19 +505,19 @@
       "name": "ZEISS",
       "slug": "zeiss",
       "logo": "/img/architectures/zeiss/zeiss-logo-rgb.svg",
-      "industries": [],
+      "industries": ["optical-manufacturing", "optics"],
       "projects": ["Dapr", "Helm", "KEDA", "Kubernetes", "OpenTelemetry"],
       "architectures": [
         {
           "id": "zeiss",
           "title": "ZEISS Vision Care - Order Fulfillment",
-          "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/zeiss",
-          "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d"
+          "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/zeiss",
+          "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb"
         }
       ],
       "awards": [],
       "sourceAttribution": [
-        "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/zeiss"
+        "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/zeiss"
       ]
     }
   ]

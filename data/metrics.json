@@ -1,15 +1,15 @@
 {
   "generated": true,
-  "generatedAt": "2026-07-27T03:29:35.945Z",
+  "generatedAt": "2026-09-24T02:38:41.405Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
-      "revision": "27dea3318e00f4c8ce176c8e73b136d89e4a98e1",
+      "revision": "0448002c82defabcb100ba959475fbed3b91f3ab",
       "sourceUrl": "https://github.com/cncf/landscape/blob/main/landscape.yml"
     },
     "architectures": {
       "repository": "https://github.com/cncf/architecture",
-      "revision": "551ef61f618a353dbea55efc0241616cbb286b4d",
+      "revision": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
       "sourceUrl": "https://github.com/cncf/architecture/tree/main/content/en/architectures"
     }
   },
@@ -17,19 +17,19 @@
     {
       "id": "cncf-projects",
       "label": "CNCF projects",
-      "value": 254,
+      "value": 255,
       "source": "landscape",
       "sourceUrl": "https://landscape.cncf.io/",
-      "collectedAt": "2026-07-27T03:29:35.945Z",
+      "collectedAt": "2026-09-24T02:38:41.405Z",
       "note": "Projects explicitly marked with a CNCF maturity level in landscape.yml."
     },
     {
       "id": "reference-architectures",
       "label": "Reference architectures",
-      "value": 7,
+      "value": 8,
       "source": "architectures",
       "sourceUrl": "https://github.com/cncf/architecture/tree/main/content/en/architectures",
-      "collectedAt": "2026-07-27T03:29:35.945Z",
+      "collectedAt": "2026-09-24T02:38:41.405Z",
       "note": "Published architecture directories under content/en/architectures."
     }
   ],
@@ -41,7 +41,7 @@
       "values": [
         {
           "name": "Provisioning",
-          "value": 64
+          "value": 65
         },
         {
           "name": "Orchestration & Management",
@@ -87,11 +87,11 @@
           "value": 150
         },
         {
-          "name": "incubating",
-          "value": 38
+          "name": "graduated",
+          "value": 39
         },
         {
-          "name": "graduated",
+          "name": "incubating",
           "value": 38
         },
         {
@@ -108,8 +108,8 @@
       "sourceUrl": "https://landscape.cncf.io/",
       "values": [
         {
-          "date": "2026-07-27",
-          "value": 646
+          "date": "2026-09-24",
+          "value": 649
         }
       ]
     },
@@ -141,6 +141,10 @@
         {
           "date": "2026-06",
           "value": 27
+        },
+        {
+          "date": "2026-07",
+          "value": 28
         }
       ]
     }
@@ -149,12 +153,12 @@
     "generated": true,
     "source": "cncf/tab and cncf/architecture GitHub APIs",
     "sourceUrl": "https://github.com/cncf/tab/issues?q=is%3Aissue+label%3Aarea%2Freference-architecture",
-    "observedAt": "2026-07-27T03:29:35.944Z",
+    "observedAt": "2026-09-24T02:38:41.405Z",
     "cards": [
       {
         "id": "open-submissions",
         "label": "Open submissions",
-        "value": 13,
+        "value": 0,
         "note": "Open TAB issues labeled as reference-architecture submissions."
       },
       {
@@ -166,14 +170,14 @@
       {
         "id": "median-submission-age",
         "label": "Median submission age",
-        "value": 103.7,
+        "value": 0,
         "suffix": "days",
         "note": "Time since open submission issue creation; not end-to-end review time."
       },
       {
         "id": "median-pr-cycle",
         "label": "Median public PR cycle",
-        "value": 1.2,
+        "value": 1.1,
         "suffix": "days",
         "note": "Creation to merge for merged architecture PRs; a public GitHub proxy."
       }
@@ -181,40 +185,7 @@
     "trends": {
       "submissions": {
         "label": "Open submissions by month",
-        "values": [
-          {
-            "date": "2024-12",
-            "value": 1
-          },
-          {
-            "date": "2025-01",
-            "value": 2
-          },
-          {
-            "date": "2025-07",
-            "value": 1
-          },
-          {
-            "date": "2025-11",
-            "value": 1
-          },
-          {
-            "date": "2026-03",
-            "value": 1
-          },
-          {
-            "date": "2026-04",
-            "value": 3
-          },
-          {
-            "date": "2026-05",
-            "value": 3
-          },
-          {
-            "date": "2026-06",
-            "value": 1
-          }
-        ]
+        "values": []
       },
       "publications": {
         "label": "Architecture PRs merged by month",
@@ -234,6 +205,10 @@
           {
             "date": "2026-06",
             "value": 2
+          },
+          {
+            "date": "2026-07",
+            "value": 1
           }
         ]
       }
