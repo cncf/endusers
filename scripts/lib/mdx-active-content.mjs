@@ -99,20 +99,122 @@ function normalizeSchemes(line) {
   );
 }
 
+const FENCE_OPEN_PATTERN = /^[ \t]*(`{3,}|~{3,})([^\n]*)$/;
+const FENCE_CLOSE_PATTERN = /^[ \t]*(`{3,}|~{3,})[ \t]*$/;
+
+/**
+ * Replaces a line's content with spaces, preserving its length so findings keep
+ * reporting accurate columns and the line count never shifts.
+ *
+ * @param {string} line
+ * @returns {string}
+ */
+function blankLine(line) {
+  return ' '.repeat(line.length);
+}
+
+/**
+ * Blanks the inline code spans on a single line.
+ *
+ * CommonMark closes a code span only with a backtick run of exactly the same
+ * length as the one that opened it, so `` ``x` `` is literal text — live JSX by
+ * the time MDX renders it.  A pattern that accepts any closing run (`` `+ `` …
+ * `` `+ ``) blanks that payload and hands the scanner an empty line, which is a
+ * bypass rather than a false positive.  Backticks that open nothing are emitted
+ * literally so the rest of the line stays scannable.
+ *
+ * The search is deliberately line-bounded.  A real code span may wrap a
+ * newline; refusing to blank across one leaves such content scannable, which
+ * errs toward reporting.
+ *
+ * @param {string} line
+ * @returns {string}
+ */
+function blankInlineCode(line) {
+  let result = '';
+  let index = 0;
+
+  while (index < line.length) {
+    if (line[index] !== '`') {
+      result += line[index];
+      index += 1;
+      continue;
+    }
+
+    const openStart = index;
+    while (line[index] === '`') index += 1;
+    const runLength = index - openStart;
+
+    let cursor = index;
+    let closeEnd = -1;
+    while (cursor < line.length) {
+      if (line[cursor] !== '`') {
+        cursor += 1;
+        continue;
+      }
+      const runStart = cursor;
+      while (line[cursor] === '`') cursor += 1;
+      if (cursor - runStart === runLength) {
+        closeEnd = cursor;
+        break;
+      }
+    }
+
+    if (closeEnd === -1) {
+      result += line.slice(openStart, index);
+      continue;
+    }
+
+    result += ' '.repeat(closeEnd - openStart);
+    index = closeEnd;
+  }
+
+  return result;
+}
+
 /**
  * Replaces fenced code blocks and inline code spans with blank padding.  MDX
  * does not evaluate either, and keeping the line count stable lets findings
  * report accurate line numbers.
  *
+ * Fences are tracked line by line rather than matched by one expression: a lazy
+ * `[\s\S]*?` closed by an alternation containing `$` under the `m` flag ends at
+ * the first end-of-line it reaches, which blanks one line of a block instead of
+ * all of it and reports the rest of an inert block as findings.
+ *
  * @param {string} markdown
  * @returns {string}
  */
 function blankCodeSpans(markdown) {
-  const blanked = markdown.replace(
-    /^([ \t]*)(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:^[ \t]*\2[^\n]*$|$)/gm,
-    (block) => block.replace(/[^\n]/g, ' '),
-  );
-  return blanked.replace(/`+[^`\n]*`+/g, (span) => ' '.repeat(span.length));
+  let openMarker = null;
+
+  return String(markdown)
+    .split('\n')
+    .map((line) => {
+      if (openMarker) {
+        const close = FENCE_CLOSE_PATTERN.exec(line);
+        if (
+          close &&
+          close[1][0] === openMarker[0] &&
+          close[1].length >= openMarker.length
+        )
+          openMarker = null;
+        return blankLine(line);
+      }
+
+      const open = FENCE_OPEN_PATTERN.exec(line);
+      // A backtick fence's info string may not contain a backtick, so
+      // ```` ```<script>x</script>` ```` opens no block: it is a paragraph, and
+      // the element in it is live. Treating it as a fence would blank the rest
+      // of the document.
+      if (open && !(open[1][0] === '`' && open[2].includes('`'))) {
+        openMarker = open[1];
+        return blankLine(line);
+      }
+
+      return blankInlineCode(line);
+    })
+    .join('\n');
 }
 
 /**

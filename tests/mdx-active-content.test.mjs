@@ -101,6 +101,82 @@ test('ignores fenced code blocks and inline code spans, which MDX does not evalu
   assert.deepEqual(findActiveContent(body), []);
 });
 
+test('scans past the first line of a fenced block without reporting it', () => {
+  // The blanking must run to the closing fence. A lazy match closed by `$`
+  // under the `m` flag ends at the first end-of-line instead, which blanks one
+  // line and reports the rest of an inert block -- and leaves the single
+  // content line above as the only shape the old rule handled.
+  const body = [
+    '```js',
+    'const a = 1;',
+    'const b = 2;',
+    '<script>alert(1)</script>',
+    '<img src=x onerror=alert(1)>',
+    '```',
+  ].join('\n');
+  assert.deepEqual(findActiveContent(body), []);
+  assert.deepEqual(
+    findActiveContent(
+      ['~~~', '<script>alert(1)</script>', '', '~~~'].join('\n'),
+    ),
+    [],
+  );
+  // An unclosed fence runs to the end of the document, as CommonMark reads it.
+  assert.deepEqual(
+    findActiveContent(['```', '<script>alert(1)</script>'].join('\n')),
+    [],
+  );
+});
+
+test('flags active content hidden behind mismatched backtick runs', () => {
+  // CommonMark closes a code span only with a run of exactly the opening
+  // length, so none of these is a code span: each renders as live JSX. A
+  // pattern that accepts any closing run blanks them and reports nothing,
+  // which is a bypass of the gate rather than a false positive.
+  assert.deepEqual(reasons('``<script>alert(1)</script>`'), [
+    'disallowed element <script>',
+  ]);
+  assert.deepEqual(reasons('`<iframe src="https://evil.test"></iframe>``'), [
+    'disallowed element <iframe>',
+  ]);
+  // The same trick would otherwise hide a handler on an allowlisted element,
+  // where the element rule is no help.
+  assert.deepEqual(reasons('``<b onclick="alert(1)">hi</b>`'), [
+    'event handler attribute',
+  ]);
+  // A backtick fence's info string may not contain a backtick, so this opens
+  // no block and the element in it is live.
+  assert.deepEqual(reasons('```<script>alert(1)</script>`'), [
+    'disallowed element <script>',
+  ]);
+  // Backticks that close nothing must not blank the rest of the line.
+  assert.deepEqual(reasons('`` <script>alert(1)</script>'), [
+    'disallowed element <script>',
+  ]);
+});
+
+test('still treats an equal-length backtick run as an inert code span', () => {
+  // The fix must not degrade into flagging every backtick: these are genuine
+  // code spans and MDX evaluates none of them.
+  assert.deepEqual(findActiveContent('`<script>alert(1)</script>`'), []);
+  assert.deepEqual(findActiveContent('``<script>alert(1)</script>``'), []);
+  assert.deepEqual(
+    findActiveContent('Use `<iframe>` and `<script>` sparingly.'),
+    [],
+  );
+  // Blanking preserves line length, so a later finding keeps its line number.
+  assert.deepEqual(
+    findActiveContent(['`<iframe>`', '<script>a</script>'].join('\n')),
+    [
+      {
+        line: 2,
+        reason: 'disallowed element <script>',
+        snippet: '<script>a</script>',
+      },
+    ],
+  );
+});
+
 test('reports the line number of each finding and deduplicates per line and reason', () => {
   const body = ['# T', '', '<script>alert(1)</script>'].join('\n');
   assert.deepEqual(findActiveContent(body), [
