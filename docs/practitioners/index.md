@@ -7,6 +7,7 @@ hide_table_of_contents: true
 ---
 
 import ProjectsBorn from '@site/src/components/ProjectsBorn';
+import Link from '@docusaurus/Link';
 
 # CNCF End Users
 
@@ -42,7 +43,7 @@ architects, and organizations running cloud native technologies in production.
     height="1601"
   />
   <figcaption>
-    SNCF Groupe accepting the <a href="/community/awards">2026 Top End User Award</a> at KubeCon +
+    SNCF Groupe accepting the <Link to="/community/awards">2026 Top End User Award</Link> at KubeCon +
     CloudNativeCon Europe.
   </figcaption>
 </figure>
@@ -79,7 +80,7 @@ studies, and operational lessons with the wider community.
 <div className="audience-cards">
   <div className="audience-card">
     <h3>For practitioners and engineers</h3>
-    <p>Compare how peers solve the same problems in <a href="/architectures/">reference architectures</a>, join an <a href="/community/">End User Group</a> in your industry, and ask questions in <code>#enduser</code> on <a href="https://slack.cncf.io/">CNCF Slack</a>.</p>
+    <p>Compare how peers solve the same problems in <Link to="/architectures/">reference architectures</Link>, join an <Link to="/community/">End User Group</Link> in your industry, and ask questions in <code>#enduser</code> on <a href="https://slack.cncf.io/">CNCF Slack</a>.</p>
     <a href="https://slack.cncf.io/" className="audience-cta">Join the Slack conversation</a>
   </div>
   <div className="audience-card">
@@ -131,7 +132,7 @@ adds value and helps the next adopter.
     <span className="ladder-number">2</span>
     <div>
       <h3>Show up</h3>
-      <p>Attend the public <a href="https://zoom.us/j/96509520391">TAB meeting</a> or an <a href="/community/">End User Group</a> call to learn how peers work.</p>
+      <p>Attend the public <a href="https://zoom.us/j/96509520391">TAB meeting</a> or an <Link to="/community/">End User Group</Link> call to learn how peers work.</p>
     </div>
   </div>
   <div className="ladder-step">

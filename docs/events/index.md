@@ -4,6 +4,8 @@ sidebar_position: 6
 description: Upcoming and past end user events at KubeCon + CloudNativeCon.
 ---
 
+import Link from '@docusaurus/Link';
+
 The CNCF End User Community gathers at KubeCon + CloudNativeCon for focused
 events, conversations, and networking.
 
@@ -53,7 +55,7 @@ User Community during KubeCon + CloudNativeCon.
     height="525"
   />
   <figcaption>
-    Michelin receiving the <a href="/community/awards">2025 Top End User Award</a> at KubeCon +
+    Michelin receiving the <Link to="/community/awards">2025 Top End User Award</Link> at KubeCon +
     CloudNativeCon North America, Atlanta.
   </figcaption>
 </figure>
