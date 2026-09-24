@@ -142,3 +142,39 @@ test('leaves absent optional URLs to the existing presence checks', () => {
   const result = runScriptWithFixtures(SCRIPT, fixture(data));
   assert.equal(result.status, 0, result.stderr);
 });
+
+// The protocol test alone admits "https://www.cncf.io@evil.example/", whose
+// visible prefix and real host disagree. These URLs are rendered as hrefs by
+// MetricsDashboard, so userinfo is rejected as its own arm -- and it must be
+// reported as userinfo, not mislabelled as a scheme problem.
+test('rejects a metric sourceUrl carrying a userinfo component', () => {
+  const data = clone(validData);
+  data.metrics[0].sourceUrl = 'https://www.cncf.io@evil.example/metrics';
+  const result = runScriptWithFixtures(SCRIPT, fixture(data));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must not carry a userinfo component/);
+  assert.match(result.stderr, /evil\.example/);
+  assert.doesNotMatch(result.stderr, /must use https/);
+});
+
+test('rejects a sources entry sourceUrl carrying a userinfo component', () => {
+  const data = clone(validData);
+  data.sources.landscape.sourceUrl = 'https://github.com@evil.example/l.yml';
+  const result = runScriptWithFixtures(SCRIPT, fixture(data));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /sources\.landscape: sourceUrl must not carry a userinfo component/,
+  );
+});
+
+test('rejects a series sourceUrl carrying a password-only userinfo component', () => {
+  const data = clone(validData);
+  data.series.endUserMembers.sourceUrl = 'https://:token@evil.example/s';
+  const result = runScriptWithFixtures(SCRIPT, fixture(data));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /series\.endUserMembers: sourceUrl must not carry a userinfo component/,
+  );
+});

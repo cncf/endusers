@@ -6,6 +6,11 @@ const data = JSON.parse(
 );
 const errors = [];
 
+// Launch signal provenance URLs are rendered as <a href>, so they are resolved
+// through the URL parser rather than a prefix test. The protocol check alone
+// is not enough: "https://www.cncf.io@evil.example/" parses with protocol
+// "https:" while resolving to evil.example. Mirrors checkHttpsUrl() in
+// validate-awards.mjs.
 function checkUrl(path, field, value) {
   if (value === undefined || value === null || value === '') return;
   let parsed;
@@ -19,11 +24,19 @@ function checkUrl(path, field, value) {
     });
     return;
   }
-  if (parsed.protocol !== 'https:')
+  if (parsed.protocol !== 'https:') {
     errors.push({
       path,
       severity: 'error',
       message: `${field} must use https, got ${parsed.protocol}`,
+    });
+    return;
+  }
+  if (parsed.username || parsed.password)
+    errors.push({
+      path,
+      severity: 'error',
+      message: `${field} must not carry a userinfo component, which only disguises the real host (${parsed.hostname})`,
     });
 }
 

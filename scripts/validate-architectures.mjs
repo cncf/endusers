@@ -19,10 +19,14 @@ if (!existsSync(catalogPath))
 
 // The catalog is regenerated from the third-party cncf/architecture repository,
 // so every field that reaches an href or an <img src> is treated as untrusted.
+// Userinfo is rejected along with a non-https scheme:
+// "https://www.cncf.io@evil.example/x" parses with protocol "https:" while
+// resolving to evil.example, so its visible prefix and its real host disagree.
 function isHttpsUrl(value) {
   if (typeof value !== 'string') return false;
   try {
-    return new URL(value).protocol === 'https:';
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password;
   } catch {
     return false;
   }

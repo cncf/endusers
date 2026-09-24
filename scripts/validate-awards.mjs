@@ -16,8 +16,9 @@ const errors = [];
 // directory, so they are resolved through the URL parser rather than a string
 // prefix test: `/^https:\/\//` accepts "https://cncf.io@evil.example", whose
 // visible prefix and real host disagree, and accepts unparseable values such
-// as "https://". Mirrors checkUrl() in validate-launch-metrics.mjs and
-// websiteUrl() in src/lib/profile-links.mjs.
+// as "https://". Mirrors checkUrl() in validate-launch-metrics.mjs,
+// checkUrl() in validate-metrics.mjs, isHttpsUrl() in
+// validate-architectures.mjs and websiteUrl() in src/lib/profile-links.mjs.
 function checkHttpsUrl(path, field, value) {
   let parsed;
   try {
