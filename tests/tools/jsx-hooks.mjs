@@ -31,6 +31,8 @@ import { transformSync } from '@swc/core';
 const CSS_SPECIFIER = /\.(css|scss|sass|less)$/;
 const SCRIPT_URL = /\.(js|jsx|mjs)$/;
 const SITE_ALIAS = '@site/';
+const DATA_ALIAS = '@site/data/';
+const JSON_SPECIFIER = /\.json$/;
 const RELATIVE_SPECIFIER = /^\.\.?\//;
 const DOCUSAURUS_ALIAS = '@docusaurus/';
 
@@ -77,13 +79,54 @@ function completeTarget(target) {
   return target.href;
 }
 
+// A `@site/data/**.json` import resolves to this generated stub rather than to
+// the JSON module itself. The stub re-exports a mutable binding and publishes
+// its setter on a well-known global, so tests/helpers-component-data.mjs can
+// swap fixture data into an already-imported component instead of importing a
+// rewritten copy of it — which is what keeps the component's coverage attached
+// to its real URL.
+//
+// It is emitted as a `data:` URL, and reaches the registry through a global
+// rather than by importing tests/tools/component-data-store.mjs, so that
+// neither the checked-in JSON file nor the store picks up a coverage record in
+// every process that merely renders a component. The key is shared by literal
+// with ../tools/component-data-store.mjs.
+const BINDINGS_KEY = 'endusers:component-data-bindings';
+
+function fixtureBindingStub(specifier, dataURL) {
+  const source = [
+    `import baseline from ${JSON.stringify(dataURL)};`,
+    `const bindings = (globalThis[Symbol.for(${JSON.stringify(BINDINGS_KEY)})] ??= new Map());`,
+    'let value = baseline;',
+    `bindings.set(${JSON.stringify(specifier)}, {`,
+    '  baseline,',
+    '  setValue: (next) => {',
+    '    value = next;',
+    '  },',
+    '});',
+    'export { value as default };',
+  ].join('\n');
+  return `data:text/javascript,${encodeURIComponent(source)}`;
+}
+
 export function resolve(specifier, context, nextResolve) {
   if (CSS_SPECIFIER.test(specifier)) {
     return { url: CSS_STUB, format: 'module', shortCircuit: true };
   }
   if (specifier.startsWith(SITE_ALIAS)) {
     const target = new URL(specifier.slice(SITE_ALIAS.length), REPO_ROOT);
-    return { url: completeTarget(target), shortCircuit: true };
+    const url = completeTarget(target);
+    // Data imports go through a live-binding stub so that a test can swap the
+    // module's data without importing the component from a rewritten copy;
+    // see ./component-data-store.mjs.
+    if (specifier.startsWith(DATA_ALIAS) && JSON_SPECIFIER.test(url)) {
+      return {
+        url: fixtureBindingStub(specifier, url),
+        format: 'module',
+        shortCircuit: true,
+      };
+    }
+    return { url, shortCircuit: true };
   }
   if (specifier.startsWith(DOCUSAURUS_ALIAS)) {
     const name = specifier.slice(DOCUSAURUS_ALIAS.length);
