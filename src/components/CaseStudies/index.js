@@ -20,6 +20,12 @@ function useCaseStudyFilterOptions(caseStudies) {
   }, [caseStudies]);
 }
 
+function sortByPublishedAtDesc(caseStudies) {
+  return [...caseStudies].sort((a, b) =>
+    (b.publishedAt || '').localeCompare(a.publishedAt || ''),
+  );
+}
+
 function filterCaseStudies(caseStudies, { query, project, industry, country }) {
   const normalizedQuery = query.trim().toLowerCase();
   return caseStudies.filter((study) => {
@@ -64,7 +70,7 @@ export default function CaseStudies() {
 
   const filters = { query, project, industry, country };
   const filtered = useMemo(
-    () => filterCaseStudies(caseStudies, filters),
+    () => filterCaseStudies(sortByPublishedAtDesc(caseStudies), filters),
     [caseStudies, query, project, industry, country],
   );
   const activeCount = [query.trim(), project, industry, country].filter(
@@ -177,8 +183,8 @@ export default function CaseStudies() {
         <table className={styles.table}>
           <thead>
             <tr>
+              <th scope="col">Title</th>
               <th scope="col">Organization</th>
-              <th scope="col">Description</th>
               <th scope="col">Date</th>
               <th scope="col">Projects</th>
               <th scope="col">Industry</th>
@@ -188,12 +194,12 @@ export default function CaseStudies() {
           <tbody>
             {filtered.map((study) => (
               <tr key={study.id}>
-                <th scope="row">
+                <th scope="row" className={styles.title}>
                   <a href={study.url} target="_blank" rel="noreferrer">
-                    {study.organization}
+                    {study.title}
                   </a>
                 </th>
-                <td className={styles.description}>{study.summary}</td>
+                <td>{study.organization}</td>
                 <td>
                   {study.publishedAt &&
                     new Date(study.publishedAt).toLocaleDateString('en-US', {

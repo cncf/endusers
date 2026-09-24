@@ -3,8 +3,6 @@ import test from 'node:test';
 import { runScriptInSandbox } from './helpers-script-sandbox.mjs';
 
 const OUTPUT = 'data/case-studies.json';
-const PLACEHOLDER_SUMMARY =
-  'Summary needed \u2014 see the case study for details.';
 
 // The case-study query string embeds `lf-project`, `lf-industry` and
 // `lf-country` in `_fields`, so its route must be declared before the taxonomy
@@ -50,10 +48,6 @@ function collect(routes, { outputs = [OUTPUT], fixtures = {} } = {}) {
   });
 }
 
-function existingCatalog(caseStudies) {
-  return JSON.stringify({ caseStudies }, null, 2) + '\n';
-}
-
 function readCatalog(result) {
   assert.equal(result.status, 0, result.stderr);
   return JSON.parse(result.outputs[OUTPUT]);
@@ -68,6 +62,10 @@ test('writes a case-study catalog with resolved taxonomy names', () => {
           id: 7,
           slug: 'zeta',
           title: { rendered: 'Zeta' },
+          meta: {
+            lf_case_study_long_title:
+              'Zeta Cuts Deploy Times in Half with Argo',
+          },
           'lf-project': [11, 10],
           'lf-industry': [20],
           'lf-country': [30],
@@ -91,11 +89,11 @@ test('writes a case-study catalog with resolved taxonomy names', () => {
   assert.deepEqual(catalog.caseStudies, [
     {
       id: 7,
+      title: 'Zeta Cuts Deploy Times in Half with Argo',
       organization: 'Zeta',
       slug: 'zeta',
       url: 'https://www.cncf.io/case-studies/acme/',
       publishedAt: '2024-03-04',
-      summary: PLACEHOLDER_SUMMARY,
       // Term names are sorted by name, not by the order of the incoming ids.
       projects: ['Argo', 'Kubernetes'],
       industries: ['Finance'],
@@ -105,38 +103,50 @@ test('writes a case-study catalog with resolved taxonomy names', () => {
   assert.match(result.stdout, /Collected 1 case studies at /);
 });
 
-test('preserves hand-written summaries across a refresh, by case study id', () => {
-  const result = collect(
-    [
-      {
-        match: CASE_STUDY_ROUTE,
-        body: [
-          post({ id: 1, slug: 'kept', title: { rendered: 'Ant Kept' } }),
-          post({ id: 2, slug: 'fresh', title: { rendered: 'Bee Fresh' } }),
-        ],
-      },
-      ...taxonomyRoutes(),
-    ],
+test('falls back to the organization name when the long title meta is missing or blank', () => {
+  const result = collect([
     {
-      fixtures: {
-        [OUTPUT]: existingCatalog([
-          { id: 1, summary: 'Hand-written summary worth keeping.' },
-          // A blank summary must not shadow the placeholder.
-          { id: 2, summary: '' },
-          // An id that no longer exists upstream is simply dropped.
-          { id: 99, summary: 'Stale entry.' },
-        ]),
-      },
+      match: CASE_STUDY_ROUTE,
+      body: [
+        post({ id: 1, slug: 'no-meta', title: { rendered: 'No Meta' } }),
+        post({
+          id: 2,
+          slug: 'blank-meta',
+          title: { rendered: 'Blank Meta' },
+          meta: { lf_case_study_long_title: '   ' },
+        }),
+      ],
     },
-  );
+    ...taxonomyRoutes(),
+  ]);
 
-  const catalog = readCatalog(result);
   assert.deepEqual(
-    catalog.caseStudies.map((study) => [study.id, study.summary]),
-    [
-      [1, 'Hand-written summary worth keeping.'],
-      [2, PLACEHOLDER_SUMMARY],
-    ],
+    readCatalog(result).caseStudies.map((entry) => entry.title),
+    ['Blank Meta', 'No Meta'],
+  );
+});
+
+test('decodes HTML entities in the long title meta', () => {
+  const result = collect([
+    {
+      match: CASE_STUDY_ROUTE,
+      body: [
+        post({
+          id: 1,
+          slug: 'entities',
+          title: { rendered: 'Cilium Co' },
+          meta: {
+            lf_case_study_long_title: 'Cilium&#8217;s Networking &amp; Scale',
+          },
+        }),
+      ],
+    },
+    ...taxonomyRoutes(),
+  ]);
+
+  assert.deepEqual(
+    readCatalog(result).caseStudies.map((entry) => entry.title),
+    ['Cilium\u2019s Networking & Scale'],
   );
 });
 
