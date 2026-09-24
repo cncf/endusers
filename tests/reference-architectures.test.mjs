@@ -18,6 +18,7 @@ import test from 'node:test';
 
 import React from 'react';
 
+import { importWithData } from './helpers-component-data.mjs';
 import { importSource } from './helpers-jsx.mjs';
 import {
   findAllByType,
@@ -465,4 +466,106 @@ test('the logo wrapper is hidden from assistive technology', () => {
     },
   });
   assert.equal(findByType(card, 'div').props['aria-hidden'], 'true');
+});
+
+// SyncStatus degrades in two ways that data/metrics.json never exercises: it
+// renders nothing at all when the mirror records no architectures revision,
+// and it drops the trailing date when there is no generatedAt. Every
+// provenance test above skips itself unless the live file happens to carry a
+// revision, so both arms were unreached — a refresh that stopped emitting
+// `sources.architectures` would take the whole /docs/architectures page down
+// with a TypeError before any test noticed.
+//
+// The component reads metrics at module scope and takes no props, so the
+// fixtures are driven through a rewritten copy, the same way
+// tests/people-freshness.test.mjs reaches its unparseable-timestamp branch.
+
+const METRICS_SPECIFIER = '@site/data/metrics.json';
+
+const SYNCED = {
+  generatedAt: '2026-07-27T03:29:35.945Z',
+  sources: {
+    architectures: {
+      repository: 'https://github.com/cncf/architecture',
+      revision: '551ef61f618a353dbea55efc0241616cbb286b4d',
+    },
+  },
+};
+
+/**
+ * Renders the provenance line against a fixture metrics file.
+ *
+ * @param {unknown} metricsFixture stands in for data/metrics.json
+ * @returns {Promise<any>} what SyncStatus returned, which may be null
+ */
+async function syncStatusWith(metricsFixture) {
+  const module = await importWithData(
+    'src/components/ReferenceArchitectures/index.js',
+    { [METRICS_SPECIFIER]: metricsFixture },
+  );
+  try {
+    const { tree } = render(module.default);
+    return renderNested(tree, 'SyncStatus');
+  } finally {
+    module.cleanup();
+  }
+}
+
+test('the fixture harness reproduces the provenance line it replaces', async () => {
+  const status = await syncStatusWith(SYNCED);
+  const links = findAllByType(status, 'a');
+  assert.equal(links.length, 2, 'the fixture must reach the rendered arm');
+  assert.equal(
+    links[1].props.href,
+    `${SYNCED.sources.architectures.repository}/commit/${SYNCED.sources.architectures.revision}`,
+  );
+  assert.equal(textOf(links[1]), '551ef61');
+});
+
+test('a metrics file recording no architectures source renders no provenance line', async () => {
+  assert.equal(
+    await syncStatusWith({ generatedAt: SYNCED.generatedAt, sources: {} }),
+    null,
+  );
+});
+
+test('a metrics file with no sources object at all renders no provenance line', async () => {
+  assert.equal(await syncStatusWith({ generatedAt: SYNCED.generatedAt }), null);
+});
+
+test('an architectures source with no revision renders no provenance line', async () => {
+  assert.equal(
+    await syncStatusWith({
+      generatedAt: SYNCED.generatedAt,
+      sources: {
+        architectures: { repository: 'https://github.com/cncf/architecture' },
+      },
+    }),
+    null,
+  );
+});
+
+test('the page still renders its catalog when the provenance line is empty', async () => {
+  const module = await importWithData(
+    'src/components/ReferenceArchitectures/index.js',
+    { [METRICS_SPECIFIER]: { sources: {} } },
+  );
+  try {
+    const { tree } = render(module.default);
+    assert.equal(tree.type, 'section');
+    assert.match(textOf(tree), /real-world architecture reports/);
+  } finally {
+    module.cleanup();
+  }
+});
+
+test('a missing generatedAt drops the date rather than rendering "Invalid Date"', async () => {
+  const text = textOf(await syncStatusWith({ sources: SYNCED.sources }));
+  assert.match(text, /^Last synced from /);
+  assert.ok(
+    text.endsWith('551ef61.'),
+    `expected the line to stop after the revision, got: ${text}`,
+  );
+  assert.doesNotMatch(text, / on /);
+  assert.doesNotMatch(text, /Invalid Date/);
 });

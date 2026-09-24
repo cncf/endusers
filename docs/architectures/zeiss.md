@@ -6,8 +6,8 @@ sidebar_label: 'ZEISS'
 import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
 > Imported from the
-> [CNCF Cloud Native Reference Architecture project](https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/zeiss).
-> Source revision: `551ef61f618a353dbea55efc0241616cbb286b4d`. Documentation is
+> [CNCF Cloud Native Reference Architecture project](https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/zeiss).
+> Source revision: `3ddf917facd0aea9694cc9c12c52e583fd2f86cb`. Documentation is
 > distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 ## Relevant CNCF projects

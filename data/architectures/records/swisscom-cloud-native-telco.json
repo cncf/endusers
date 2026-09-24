@@ -27,8 +27,8 @@
     "NetBox Operator",
     "NetBox"
   ],
-  "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/swisscom-cloud-native-telco",
-  "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
+  "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-cloud-native-telco",
+  "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
   "assets": [
     "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-architecture-overview.png",
     "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-layers.svg",

@@ -95,6 +95,33 @@ test('leaves an out-of-range hex entity literal rather than forming a scheme', (
   assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
 });
 
+// The decimal callback carries the same `code <= 0x10ffff` guard as the hex one
+// above, but no payload in this file had ever pushed a decimal entity past the
+// limit, so that guard's false arm never ran. It is not cosmetic: without it
+// String.fromCodePoint(1114112) throws a RangeError, and decodeEntities runs on
+// every attribute value of every imported third-party SVG -- so an asset
+// carrying `&#1114112;` would crash the validator rather than be reported on.
+// 1114112 is the first codepoint over the 0x10ffff limit.
+test('leaves an out-of-range decimal entity literal rather than forming a scheme', () => {
+  const svg = INERT.replace(
+    'https://example.com/docs',
+    'java&#1114112;cript:alert(1)',
+  );
+  assert.deepEqual(findActiveContent(svg), []);
+  assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
+
+  // The true arm must still decode, so the guard cannot be "satisfied" by
+  // rejecting decimal entities wholesale: &#58; is a colon, and decoding it is
+  // what turns the payload below into a scheme the scanner reports.
+  const inRange = INERT.replace(
+    'https://example.com/docs',
+    'javascript&#58;alert(1)',
+  );
+  assert.deepEqual(findActiveContent(inRange), [
+    'contains a script URI in href="javascript:..."',
+  ]);
+});
+
 // ATTRIBUTE_PATTERN only matches an attribute that carries a value, so a
 // handler written without one slips past the scanner. findActiveContent has an
 // explicit fallback for that case, but every handler in the tests above is

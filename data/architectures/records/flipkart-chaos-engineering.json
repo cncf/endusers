@@ -21,8 +21,8 @@
     "Helm",
     "containerd"
   ],
-  "sourceUrl": "https://github.com/cncf/architecture/tree/551ef61f618a353dbea55efc0241616cbb286b4d/content/en/architectures/flipkart-chaos-engineering",
-  "sourceCommit": "551ef61f618a353dbea55efc0241616cbb286b4d",
+  "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/flipkart-chaos-engineering",
+  "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
   "assets": [
     "/img/architectures/flipkart-chaos-engineering/layers.png",
     "/img/architectures/flipkart-chaos-engineering/logo.png",
