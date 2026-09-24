@@ -71,6 +71,12 @@ for (const entry of Array.isArray(data.caseStudies) ? data.caseStudies : []) {
       severity: 'error',
       message: 'missing organization',
     });
+  if (!entry.title)
+    errors.push({
+      path: String(id),
+      severity: 'error',
+      message: 'missing title',
+    });
   if (!entry.url || urls.has(entry.url))
     errors.push({
       path: String(id),
@@ -95,18 +101,6 @@ for (const entry of Array.isArray(data.caseStudies) ? data.caseStudies : []) {
       path: String(id),
       severity: 'error',
       message: 'industries must be an array',
-    });
-  if (!entry.summary)
-    errors.push({
-      path: String(id),
-      severity: 'error',
-      message: 'missing summary',
-    });
-  if (entry.summary === 'Summary needed — see the case study for details.')
-    errors.push({
-      path: String(id),
-      severity: 'warn',
-      message: 'summary is still the auto-generated placeholder',
     });
 }
 

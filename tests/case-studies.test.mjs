@@ -26,6 +26,13 @@ const data = (await importSource('data/case-studies.json')).default;
 
 const STUDIES = data.caseStudies ?? [];
 
+// The component's default sort is newest-first by publishedAt; every
+// render-order assertion below must compare against this order, not the
+// organization-sorted order the data file happens to be stored in.
+const SORTED_STUDIES = [...STUDIES].sort((a, b) =>
+  (b.publishedAt || '').localeCompare(a.publishedAt || ''),
+);
+
 // React routes useState/useMemo through a per-render "dispatcher" slot.
 // Swapping that slot lets a plain Node test render a function component with
 // no renderer and no DOM; the slot is restored as soon as the render returns,
@@ -107,10 +114,18 @@ function optionValues(select) {
     .filter(Boolean);
 }
 
+/** The title cell (row header) of every rendered body row, in document order. */
+function renderedTitles(view) {
+  const body = findByType(view.tree, 'tbody');
+  return findAllByType(body, 'tr').map((row) => textOf(findByType(row, 'th')));
+}
+
 /** The organization cell of every rendered body row, in document order. */
 function renderedOrganizations(view) {
   const body = findByType(view.tree, 'tbody');
-  return findAllByType(body, 'tr').map((row) => textOf(findByType(row, 'th')));
+  return findAllByType(body, 'tr').map((row) =>
+    textOf(findAllByType(row, 'td')[0]),
+  );
 }
 
 function resultsText(view) {
@@ -134,32 +149,36 @@ test('the mirrored data set is non-empty, so these assertions are meaningful', (
   assert.ok(STUDIES.length > 0, 'data/case-studies.json has no caseStudies');
 });
 
-test('renders one table row per case study before any filter is applied', () => {
+test('renders one table row per case study, newest first by default', () => {
   const view = render(CaseStudies);
-  assert.equal(renderedOrganizations(view).length, STUDIES.length);
+  assert.deepEqual(
+    renderedTitles(view),
+    SORTED_STUDIES.map((study) => study.title),
+  );
   assert.equal(
     resultsText(view),
     `Showing ${STUDIES.length} of ${STUDIES.length} case studies`,
   );
 });
 
-test('each row links to the case study URL and cannot reach back via opener', () => {
+test('each row links to the case study URL via its title and cannot reach back via opener', () => {
   const view = render(CaseStudies);
   const body = findByType(view.tree, 'tbody');
   const rows = findAllByType(body, 'tr');
-  assert.equal(rows.length, STUDIES.length);
+  assert.equal(rows.length, SORTED_STUDIES.length);
 
   rows.forEach((row, index) => {
-    const study = STUDIES[index];
+    const study = SORTED_STUDIES[index];
     const link = findByType(row, 'a');
     assert.equal(link.props.href, study.url);
-    assert.equal(textOf(link), study.organization);
+    assert.equal(textOf(link), study.title);
     assert.equal(link.props.target, '_blank');
     assert.equal(link.props.rel, 'noreferrer');
+    assert.equal(findByType(row, 'th').props.scope, 'row');
 
     const cells = findAllByType(row, 'td');
     assert.deepEqual(cells.map(textOf), [
-      study.summary,
+      study.organization,
       study.publishedAt
         ? new Date(study.publishedAt).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -174,7 +193,24 @@ test('each row links to the case study URL and cannot reach back via opener', ()
   });
 });
 
-test('row headers are scoped so screen readers announce the organization', () => {
+test('case studies default to descending order by published date', () => {
+  // Read the actual rendered order (not the test's own sort helper) and
+  // check it against the source publishedAt values, guarding against the
+  // sort direction silently flipping to ascending.
+  const dateByTitle = new Map(
+    STUDIES.map((study) => [study.title, study.publishedAt || '']),
+  );
+  const view = render(CaseStudies);
+  const dates = renderedTitles(view).map((title) => dateByTitle.get(title));
+  for (let i = 1; i < dates.length; i += 1) {
+    assert.ok(
+      dates[i - 1] >= dates[i],
+      `expected ${dates[i - 1]} to sort before ${dates[i]}`,
+    );
+  }
+});
+
+test('row headers are scoped so screen readers announce the case study title', () => {
   const view = render(CaseStudies);
   const body = findByType(view.tree, 'tbody');
   for (const row of findAllByType(body, 'tr')) {
@@ -182,8 +218,8 @@ test('row headers are scoped so screen readers announce the organization', () =>
   }
   const head = findByType(view.tree, 'thead');
   assert.deepEqual(findAllByType(head, 'th').map(textOf), [
+    'Title',
     'Organization',
-    'Description',
     'Date',
     'Projects',
     'Industry',
@@ -230,7 +266,7 @@ test('the search box filters on organization, case-insensitively', () => {
   const target = STUDIES[0].organization;
   change(elementById(view.tree, 'case-study-search'), target.toUpperCase());
 
-  const expected = STUDIES.filter((study) =>
+  const expected = SORTED_STUDIES.filter((study) =>
     study.organization.toLowerCase().includes(target.toLowerCase()),
   ).map((study) => study.organization);
   assert.deepEqual(renderedOrganizations(view), expected);
@@ -268,9 +304,9 @@ test('each select narrows the table to studies carrying that value', () => {
     const value = optionValues(elementById(view.tree, id))[0];
     change(elementById(view.tree, id), value);
 
-    const expected = STUDIES.filter((study) => study[key].includes(value)).map(
-      (study) => study.organization,
-    );
+    const expected = SORTED_STUDIES.filter((study) =>
+      study[key].includes(value),
+    ).map((study) => study.organization);
     assert.ok(expected.length > 0, `no study carries ${key}=${value}`);
     assert.deepEqual(renderedOrganizations(view), expected);
   }
@@ -290,7 +326,7 @@ test('filters intersect rather than union', () => {
   change(elementById(view.tree, 'case-study-industry'), study.industries[0]);
   change(elementById(view.tree, 'case-study-country'), study.countries[0]);
 
-  const expected = STUDIES.filter(
+  const expected = SORTED_STUDIES.filter(
     (entry) =>
       entry.projects.includes(study.projects[0]) &&
       entry.industries.includes(study.industries[0]) &&

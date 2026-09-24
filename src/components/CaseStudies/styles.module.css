@@ -121,8 +121,9 @@
   white-space: nowrap;
 }
 
-.description {
+.title {
   max-width: 32ch;
+  white-space: normal;
 }
 
 .emptyState {
