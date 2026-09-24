@@ -178,6 +178,8 @@ export default function CaseStudies() {
           <thead>
             <tr>
               <th scope="col">Organization</th>
+              <th scope="col">Description</th>
+              <th scope="col">Date</th>
               <th scope="col">Projects</th>
               <th scope="col">Industry</th>
               <th scope="col">Country</th>
@@ -191,6 +193,15 @@ export default function CaseStudies() {
                     {study.organization}
                   </a>
                 </th>
+                <td className={styles.description}>{study.summary}</td>
+                <td>
+                  {study.publishedAt &&
+                    new Date(study.publishedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                </td>
                 <td>{study.projects.join(', ')}</td>
                 <td>{study.industries.join(', ')}</td>
                 <td>{study.countries.join(', ')}</td>

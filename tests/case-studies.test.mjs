@@ -159,6 +159,14 @@ test('each row links to the case study URL and cannot reach back via opener', ()
 
     const cells = findAllByType(row, 'td');
     assert.deepEqual(cells.map(textOf), [
+      study.summary,
+      study.publishedAt
+        ? new Date(study.publishedAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
+        : '',
       study.projects.join(', '),
       study.industries.join(', '),
       study.countries.join(', '),
@@ -175,6 +183,8 @@ test('row headers are scoped so screen readers announce the organization', () =>
   const head = findByType(view.tree, 'thead');
   assert.deepEqual(findAllByType(head, 'th').map(textOf), [
     'Organization',
+    'Description',
+    'Date',
     'Projects',
     'Industry',
     'Country',

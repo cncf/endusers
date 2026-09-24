@@ -3,6 +3,8 @@ import test from 'node:test';
 import { runScriptInSandbox } from './helpers-script-sandbox.mjs';
 
 const OUTPUT = 'data/case-studies.json';
+const PLACEHOLDER_SUMMARY =
+  'Summary needed \u2014 see the case study for details.';
 
 // The case-study query string embeds `lf-project`, `lf-industry` and
 // `lf-country` in `_fields`, so its route must be declared before the taxonomy
@@ -39,12 +41,17 @@ function taxonomyRoutes({
   ];
 }
 
-function collect(routes, { outputs = [OUTPUT] } = {}) {
+function collect(routes, { outputs = [OUTPUT], fixtures = {} } = {}) {
   return runScriptInSandbox({
     script: 'collect-case-studies.mjs',
     routes,
+    fixtures,
     outputs,
   });
+}
+
+function existingCatalog(caseStudies) {
+  return JSON.stringify({ caseStudies }, null, 2) + '\n';
 }
 
 function readCatalog(result) {
@@ -88,6 +95,7 @@ test('writes a case-study catalog with resolved taxonomy names', () => {
       slug: 'zeta',
       url: 'https://www.cncf.io/case-studies/acme/',
       publishedAt: '2024-03-04',
+      summary: PLACEHOLDER_SUMMARY,
       // Term names are sorted by name, not by the order of the incoming ids.
       projects: ['Argo', 'Kubernetes'],
       industries: ['Finance'],
@@ -95,6 +103,41 @@ test('writes a case-study catalog with resolved taxonomy names', () => {
     },
   ]);
   assert.match(result.stdout, /Collected 1 case studies at /);
+});
+
+test('preserves hand-written summaries across a refresh, by case study id', () => {
+  const result = collect(
+    [
+      {
+        match: CASE_STUDY_ROUTE,
+        body: [
+          post({ id: 1, slug: 'kept', title: { rendered: 'Ant Kept' } }),
+          post({ id: 2, slug: 'fresh', title: { rendered: 'Bee Fresh' } }),
+        ],
+      },
+      ...taxonomyRoutes(),
+    ],
+    {
+      fixtures: {
+        [OUTPUT]: existingCatalog([
+          { id: 1, summary: 'Hand-written summary worth keeping.' },
+          // A blank summary must not shadow the placeholder.
+          { id: 2, summary: '' },
+          // An id that no longer exists upstream is simply dropped.
+          { id: 99, summary: 'Stale entry.' },
+        ]),
+      },
+    },
+  );
+
+  const catalog = readCatalog(result);
+  assert.deepEqual(
+    catalog.caseStudies.map((study) => [study.id, study.summary]),
+    [
+      [1, 'Hand-written summary worth keeping.'],
+      [2, PLACEHOLDER_SUMMARY],
+    ],
+  );
 });
 
 test('sorts case studies by organization name', () => {

@@ -10,6 +10,7 @@ const validEntry = {
   slug: 'example-org',
   url: 'https://www.cncf.io/case-studies/example-org/',
   publishedAt: '2024-01-01',
+  summary: 'Example Org runs Kubernetes in production for its core platform.',
   projects: ['Kubernetes'],
   industries: ['Fintech'],
   countries: ['United States'],
@@ -97,6 +98,37 @@ test('rejects an entry with a non-array projects field', () => {
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /projects must be an array/);
+});
+
+test('rejects an entry missing summary', () => {
+  const { summary, ...withoutSummary } = validEntry;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, caseStudies: [withoutSummary] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /missing summary/);
+});
+
+test('warns, without failing, on a placeholder summary', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [
+        {
+          ...validEntry,
+          summary: 'Summary needed — see the case study for details.',
+        },
+      ],
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 1 case studies/);
+  assert.match(
+    result.stderr,
+    /summary is still the auto-generated placeholder/,
+  );
 });
 
 test('rejects a sourceUrl on a host outside cncf.io', () => {
