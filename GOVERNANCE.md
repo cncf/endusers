@@ -113,8 +113,11 @@ judgment — but it makes stale PRs visible without waiting for manual sweeps.
 Mergeability is checked per-PR via the single-PR API endpoint to avoid stale
 cached list values, and PRs labeled `hold`, `on-hold`, or `do-not-merge` are
 skipped per agent-automation policy. The scheduled GitHub Actions workflow file
-(`.github/workflows/pr-queue-hygiene.yml`) is tracked in issue #318 awaiting
-maintainer commit per the Hive App workflow-permission gap.
+(`.github/workflows/pr-queue-hygiene.yml`) is committed on the default branch
+and runs on a schedule (see PR #544); issue #318, which tracked getting it
+committed, is closed. See the `Hive App workflow-permission gap` section above
+for the current status of that separate, ongoing constraint on agent-pushed
+workflow changes.
 
 ### Cross-agent duplicate prevention
 
