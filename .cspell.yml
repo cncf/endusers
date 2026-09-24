@@ -16,6 +16,9 @@ ignorePaths:
   - '**/*.json'
 words:
   - ACMM
+  - Agones
+  - FESTIBATTLE
+  - Findy
   - cutover
   - linuxfoundation
   - reprioritizations

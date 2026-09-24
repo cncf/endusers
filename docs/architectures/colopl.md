@@ -62,8 +62,8 @@ or as autoscaling thresholds.
 Going forward, we will explore using this feature to migrate from our in-house
 Allocator Service to the standard Agones one.
 
-_NOTE: This article is an English translation adpation of [our original article]
-published in Japanese on Findy Tools._
+_NOTE: This article is an English translation adaptation of [our original
+article] published in Japanese on Findy Tools._
 
 [Agones]: https://agones.dev/site/
 [FESTIBATTLE]: https://festibattle.jp/
