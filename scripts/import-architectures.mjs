@@ -2,6 +2,7 @@
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -115,7 +116,13 @@ async function importArchitecture(id, commit) {
   };
 
   const imageDir = join(dir, 'images');
-  if (existsSync(imageDir)) {
+  if (!isRealDirectory(imageDir)) {
+    if (lstatSync(imageDir, { throwIfNoEntry: false })) {
+      console.warn(
+        `Skipping images/ in ${id}: not a real directory (symlinked roots are never imported)`,
+      );
+    }
+  } else {
     for (const file of walkFiles(imageDir)) {
       const extension = extname(file).toLowerCase();
       if (!MIRRORABLE_ASSET_EXTENSIONS.has(extension)) {
@@ -133,11 +140,11 @@ async function importArchitecture(id, commit) {
   // originals, so capture SVG names beforehand and rebuild the asset list
   // from disk afterward rather than trusting the copy-time list.
   const archAssetsDir = join(assetsDir, id);
-  const svgsBefore = existsSync(archAssetsDir)
+  const svgsBefore = isRealDirectory(archAssetsDir)
     ? walkFiles(archAssetsDir).filter((file) => file.endsWith('.svg'))
     : [];
   sanitizeArchitectureAssets(archAssetsDir);
-  record.assets = existsSync(archAssetsDir)
+  record.assets = isRealDirectory(archAssetsDir)
     ? walkFiles(archAssetsDir).map(
         (file) =>
           `/img/architectures/${id}/${relative(archAssetsDir, file).replaceAll('\\', '/')}`,
@@ -263,6 +270,16 @@ function firstParagraph(body) {
     paragraph?.replace(/[*_`]/g, '').replace(/\s+/g, ' ').slice(0, 240) ?? ''
   );
 }
+// True only for a path that is itself a directory, never a symlink pointing at
+// one. walkFiles() rejects symlinked *entries*, but a walk rooted at a
+// symlinked directory descends into the link target, and every entry found
+// there reports isSymbolicLink() === false — so it is mirrored as if it were
+// local. The root therefore has to be checked with lstat, not existsSync,
+// which follows links (see #548).
+function isRealDirectory(dir) {
+  return lstatSync(dir, { throwIfNoEntry: false })?.isDirectory() ?? false;
+}
+
 function walkFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -280,7 +297,7 @@ function walkFiles(dir) {
 }
 
 function sanitizeArchitectureAssets(dir) {
-  if (!existsSync(dir)) return;
+  if (!isRealDirectory(dir)) return;
   for (const file of walkFiles(dir)) {
     if (!file.endsWith('.svg')) continue;
     const original = readFileSync(file, 'utf8');

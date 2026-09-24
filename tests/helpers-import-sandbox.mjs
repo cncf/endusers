@@ -83,6 +83,11 @@ export const FAKE_COMMIT = 'a'.repeat(40);
  * @param {Record<string, string>} options.upstream Files placed under the
  *   cloned upstream checkout, keyed by path relative to the clone root
  *   (for example `content/en/architectures/acme/index.md`).
+ * @param {Record<string, string>} [options.upstreamSymlinks] Symlinks placed
+ *   under the cloned upstream checkout, keyed by path relative to the clone
+ *   root and valued by link target. The `git clone` stub copies the fixture
+ *   with `cp -R`, which preserves symlinks, so these reach the importer the
+ *   same way a symlink committed upstream would.
  * @param {Record<string, {status?: number, body?: string, networkError?: boolean}>} [options.fetchResponses]
  *   Stubbed responses keyed by absolute URL.
  * @param {Record<string, string>} [options.repoFiles] Extra files placed in the
@@ -96,6 +101,7 @@ export const FAKE_COMMIT = 'a'.repeat(40);
  */
 export function runImportArchitectures({
   upstream,
+  upstreamSymlinks = {},
   fetchResponses = {},
   repoFiles = {},
   rsvgConvert = 'success',
@@ -126,6 +132,11 @@ export function runImportArchitectures({
   const upstreamFixture = join(work, 'upstream-fixture');
   for (const [relativePath, content] of Object.entries(upstream)) {
     writeAt(upstreamFixture, relativePath, content);
+  }
+  for (const [relativePath, linkTarget] of Object.entries(upstreamSymlinks)) {
+    const link = join(upstreamFixture, relativePath);
+    mkdirSync(dirname(link), { recursive: true });
+    symlinkSync(linkTarget, link);
   }
   for (const [relativePath, content] of Object.entries(repoFiles)) {
     writeAt(work, relativePath, content);
