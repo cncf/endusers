@@ -453,3 +453,49 @@ test('generates members from the current repository data', () => {
     assert.ok(member.architectures.length > 0 || member.awards.length > 0);
   }
 });
+
+// scripts/import-architectures.mjs copies `organization` from the `org_name`
+// frontmatter of the cncf/architecture clone, so the override maps and slug
+// indexes are keyed by upstream-controlled strings. Before #564 an
+// organisation named after an Object.prototype member inherited that member as
+// its slug and lost its name entirely (a function-valued property that
+// JSON.stringify drops), publishing a nameless member card.
+for (const hostileName of [
+  'toString',
+  'constructor',
+  '__proto__',
+  'valueOf',
+  'hasOwnProperty',
+  'isPrototypeOf',
+]) {
+  test(`slugs an organisation named "${hostileName}" without inheriting from Object.prototype`, () => {
+    const result = run({
+      catalog: [
+        catalogEntry({ id: 'hostile-arch', organization: hostileName }),
+      ],
+    });
+
+    assert.equal(result.output.members.length, 1);
+    const [member] = result.output.members;
+    assert.equal(typeof member.slug, 'string');
+    assert.equal(member.id, member.slug);
+    assert.match(member.slug, /^[a-z0-9_]+(?:-[a-z0-9_]+)*$/);
+    assert.equal(member.slug, hostileName.toLowerCase());
+    assert.equal(member.name, hostileName);
+    assert.equal(member.architectures.length, 1);
+    assert.equal(member.architectures[0].id, 'hostile-arch');
+  });
+}
+
+test('keeps an award slugged after an Object.prototype member out of the prototype chain', () => {
+  const result = run({
+    awards: [awardEntry({ slug: 'constructor', organization: 'Constructor' })],
+  });
+
+  assert.equal(result.output.members.length, 1);
+  const [member] = result.output.members;
+  assert.equal(member.id, 'constructor');
+  assert.equal(member.name, 'Constructor');
+  assert.equal(member.awards.length, 1);
+  assert.equal(member.awards[0].year, 2024);
+});
