@@ -24,19 +24,22 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
 `Justfile` provides shortcuts that wrap the npm scripts above:
 
 - `just serve` — start the dev server bound to all interfaces.
-- `just import` — import reference architectures and run the same validation
-  steps as the import workflow (`import:architectures`,
-  `validate:architectures`, `validate:architecture-assets`).
-- `just build` — run the same validation steps as CI (`validate:architectures`,
+- `just import` — import reference architectures and run `import:architectures`,
+  `validate:architectures`, and `validate:architecture-assets`.
+- `just build` — run the data validators (`validate:architectures`,
   `validate:architecture-assets`, `validate:metrics`, `validate:awards`,
   `validate:community-people`, `validate:community-groups`,
   `validate:launch-metrics`, `validate:case-studies`, `validate:radar-reports`)
   followed by `build`.
 
-These recipes are kept in sync with the checks the "Validate repository" and
-"Import reference architectures" workflows run, so a green
-`just build`/`just import` locally should also pass in CI. `just` is optional —
-the npm scripts remain the canonical interface and work without it.
+These recipes are a superset of the validation steps the "Deploy to GitHub
+Pages" and "Import reference architectures" workflows run, but they are **not**
+the same checks the "Validate repository" and "Lint repository" PR gates run,
+and a green `just build`/`just import` locally does **not** imply a green PR
+check. Before opening a PR, also run `npm run test:unit` and `npm run check` (or
+the individual `check:format`, `check:spelling`, and `check:markdown` scripts)
+to match what "Validate repository" and "Lint repository" check. `just` is
+optional — the npm scripts remain the canonical interface and work without it.
 
 ## Content audience
 
