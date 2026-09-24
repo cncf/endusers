@@ -567,3 +567,38 @@ test('keeps the SVG and warns when the renderer is unavailable', () => {
     run.cleanup();
   }
 });
+
+// #548: walkFiles() rejects symlinked *entries*, but the images/ root itself
+// was reached through existsSync(), which follows links. A symlinked root let
+// the walk descend into the link target, where the entries it found reported
+// isSymbolicLink() === false and were mirrored as if they were local.
+test('does not mirror assets through a symlinked images/ directory root', () => {
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'linked-root',
+        '---\ntitle: Linked Root\norg_name: Linked Root Co\n---\n\nIntro paragraph.\n',
+      ),
+      'outside/leaked.png': 'leaked-bytes',
+    },
+    upstreamSymlinks: {
+      'content/en/architectures/linked-root/images': '../../../../outside',
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.equal(
+      run.exists('static/img/architectures/linked-root/leaked.png'),
+      false,
+    );
+    const record = run.readJson('data/architectures/records/linked-root.json');
+    assert.deepEqual(record.assets, []);
+    assert.match(
+      run.stderr,
+      /Skipping images\/ in linked-root: not a real directory/,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
