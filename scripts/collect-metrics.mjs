@@ -332,11 +332,6 @@ function sameOriginNext(candidate, origin) {
   }
   return parsed.toString();
 }
-async function github(url, headers) {
-  const response = await fetch(url, { headers });
-  if (!response.ok) throw new Error(`GitHub API ${response.status}: ${url}`);
-  return response.json();
-}
 function median(values) {
   if (!values.length) return 0;
   const sorted = [...values].sort((a, b) => a - b);
