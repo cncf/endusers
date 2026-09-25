@@ -84,7 +84,7 @@ A dedicated `refresh-metrics.yml` workflow was proposed in PR #125 and declined
 (#74); metrics refresh instead runs as steps inside `import-architectures.yml`,
 so it shares that workflow's tracking issue and readiness signal.
 
-#121 and its predecessor for the refresh-community-people GITHUB_TOKEN
+Issue #121 and its predecessor for the refresh-community-people GITHUB_TOKEN
 permission error (#122, duplicate of #519) are closed, but closing a tracking
 issue does not by itself mean the pipeline is green: the "Status as of" column
 above must be checked against the workflow's actual run history
