@@ -61,7 +61,8 @@
     "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
     "test:unit": "TZ=UTC node --test",
     "test:unit:coverage": "TZ=UTC node tests/tools/coverage-report.mjs",
-    "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 97"
+    "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 97",
+    "test:e2e": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -84,6 +85,7 @@
     "@docusaurus/module-type-aliases": "3.10.2",
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
+    "@playwright/test": "^1.63.0",
     "@swc/core": "1.16.2",
     "cspell": "^10.3.3",
     "markdown-link-check": "3.15.0",
