@@ -160,6 +160,34 @@ export function resolve(specifier, context, nextResolve) {
   return nextResolve(specifier, context);
 }
 
+// Transpiles JSX source with @swc/core and returns the generated code plus
+// its source map as a JSON string. Exported so tests/tools/coverage-report.mjs
+// can reproduce the exact same transform outside the loader and remap V8
+// offsets recorded against the generated text back onto the file on disk
+// (#628); the loader below embeds the map inline instead, since Node reads it
+// from the module text rather than from a side channel.
+export function transpileJsx(source, filename) {
+  return transformSync(source, {
+    filename,
+    sourceMaps: true,
+    jsc: {
+      parser: { syntax: 'ecmascript', jsx: true },
+      target: 'esnext',
+      transform: { react: { runtime: 'automatic' } },
+    },
+    module: { type: 'es6' },
+  });
+}
+
+// Reconstructs the exact inline-source-map text a `sourceMaps: 'inline'`
+// transform would have produced, from the split { code, map } transpileJsx()
+// returns. Byte-identical to swc's own inline output, which is what
+// coverage-report.mjs needs: V8 offsets are recorded against the text Node
+// actually evaluated, and that text includes the trailing comment.
+export function inlineSourceMapCode(code, map) {
+  return `${code}\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(map).toString('base64')}`;
+}
+
 export function load(url, context, nextLoad) {
   if (!url.startsWith('file:') || url.includes('/node_modules/')) {
     return nextLoad(url, context);
@@ -190,16 +218,11 @@ export function load(url, context, nextLoad) {
     return nextLoad(url, context);
   }
 
-  const { code } = transformSync(source, {
-    filename,
-    sourceMaps: 'inline',
-    jsc: {
-      parser: { syntax: 'ecmascript', jsx: true },
-      target: 'esnext',
-      transform: { react: { runtime: 'automatic' } },
-    },
-    module: { type: 'es6' },
-  });
+  const { code, map } = transpileJsx(source, filename);
 
-  return { format: 'module', source: code, shortCircuit: true };
+  return {
+    format: 'module',
+    source: inlineSourceMapCode(code, map),
+    shortCircuit: true,
+  };
 }

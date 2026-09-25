@@ -23,6 +23,7 @@ import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 import { collect, recordedSourceLength } from './tools/coverage-report.mjs';
+import { inlineSourceMapCode, transpileJsx } from './tools/jsx-hooks.mjs';
 
 function scriptCoverage(...triples) {
   return {
@@ -132,6 +133,68 @@ test('a JSON module wrapped by the loader is withheld rather than padding the to
 
   assert.equal(merged.size, 0);
   assert.deepEqual([...unmapped], ['data/x.json']);
+});
+
+test('a JSX record is remapped onto the source file it was transpiled from (#628)', () => {
+  const relPath = 'src/components/Widget/index.js';
+  const source =
+    'export default function Widget() {\n  return <div>{value}</div>;\n}\n';
+  const { merged, unmapped } = collectWith({ [relPath]: source }, (root) => {
+    // Reproduces exactly what tests/tools/jsx-hooks.mjs's loader would have
+    // handed V8 for this file, so the record's offsets line up with the
+    // remap collect() attempts.
+    const { code, map } = transpileJsx(source, join(root, relPath));
+    const generated = inlineSourceMapCode(code, map);
+    return [
+      {
+        url: urlFor(root, relPath),
+        ...scriptCoverage([0, generated.length, 1]),
+      },
+    ];
+  });
+
+  assert.deepEqual([...unmapped], []);
+  assert.deepEqual([...merged.keys()], [relPath]);
+  const { source: mergedSource, counts } = merged.get(relPath);
+  assert.equal(mergedSource, source);
+  // Every generated line ran, so every executable original line must score
+  // covered rather than being silently dropped as it was before #628.
+  assert.equal(counts[0], 1);
+  assert.equal(counts[source.indexOf('<div>')], 1);
+});
+
+test('a JSX record credits an unreached line as uncovered rather than withholding the file', () => {
+  const relPath = 'src/components/Widget/index.js';
+  const source =
+    'export default function Widget() {\n' +
+    '  if (false) {\n' +
+    '    return <p>never</p>;\n' +
+    '  }\n' +
+    '  return <div>{value}</div>;\n' +
+    '}\n';
+  const { merged } = collectWith({ [relPath]: source }, (root) => {
+    const { code, map } = transpileJsx(source, join(root, relPath));
+    const generated = inlineSourceMapCode(code, map);
+    // The whole never-executed `return <p>never</p>;` statement spans three
+    // generated lines (the _jsx("p", { call, its "never" child, and the
+    // closing "});"); a real V8 record marks a statement's whole range with
+    // one count, so all three must be zeroed together rather than just the
+    // "never" line in isolation.
+    const blockAt = generated.indexOf('_jsx("p"');
+    const lineStart = generated.lastIndexOf('\n', blockAt) + 1;
+    const blockEnd = generated.indexOf('});', blockAt) + '});'.length;
+    return [
+      {
+        url: urlFor(root, relPath),
+        ...scriptCoverage([0, generated.length, 1], [lineStart, blockEnd, 0]),
+      },
+    ];
+  });
+
+  const { counts } = merged.get(relPath);
+  assert.equal(counts[source.indexOf('never')], 0);
+  assert.equal(counts[source.indexOf('if (false)')], 1);
+  assert.equal(counts[source.indexOf('<div>')], 1);
 });
 
 test('a file with one usable record is scored despite a mismatched sibling record', () => {
