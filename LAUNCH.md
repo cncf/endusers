@@ -17,8 +17,10 @@ week-by-week status — it uses explicit dates and does not go stale.
 2. Convert launch attention into durable contribution: good-first-issues
    labeled, CONTRIBUTING path verified by a non-author, maintainer bus
    factor > 1.
-3. Have the ownership question (ADR 0001, issue #46) decided before launch so
-   the announcement points at the site's permanent home.
+3. The ownership question (ADR 0001, issue #46) is decided — the repository has
+   been transferred to the `cncf` GitHub org — so the announcement can point at
+   the site's permanent home; DNS cutover itself remains the Phase 3 follow-up
+   (see Non-goals).
 
 ## Non-goals
 
@@ -79,6 +81,7 @@ must be green for **2 consecutive scheduled runs**:
 | Import reference architectures (`import-architectures.yml`)                                  | daily    | green (2026-09-24 run)                                                               | #121 (closed; reopen a new issue if this regresses) |
 | Refresh community profiles (`refresh-community-people.yml`)                                  | weekly   | red (last scheduled run 2026-09-21 failed at the build step on HTML minifier errors) | #568                                                |
 | Metrics refresh (`collect:metrics` + `validate:metrics` steps of `import-architectures.yml`) | daily    | green (2026-09-24 run)                                                               | #121 (closed; reopen a new issue if this regresses) |
+| Refresh radar reports (`refresh-radar-reports.yml`)                                          | daily    | green (2026-09-24, 2026-09-25 runs)                                                  | #605 (closed; reopen a new issue if this regresses) |
 
 A dedicated `refresh-metrics.yml` workflow was proposed in PR #125 and declined
 (#74); metrics refresh instead runs as steps inside `import-architectures.yml`,
@@ -101,15 +104,15 @@ presenting it as current.
 
 ## Dependencies and risks
 
-- **Ownership decision (ADR 0001)** is the critical path: without it the
-  announcement can't say where the site lives permanently. If undecided by W-9,
-  launch announces the current URL with an explicit "permanent home pending"
-  note rather than slipping the date.
+- **Ownership decision (ADR 0001)** is resolved — Accepted, and the repository
+  has been transferred to the `cncf` GitHub org. What remains on the critical
+  path is executing the DNS cutover to `endusers.cncf.io` itself (Phase 3, issue
+  #46), not the decision.
 - **Merge throughput** (#58): the plan assumes the human merge gate keeps its
   current burst cadence; the W-13 and W-12 items are all merge-gated, not
   work-gated.
-- **Content freshness workflows** (#74, #75, #79, #80) must be landed by W-9 or
-  the launch-day "every pillar current" goal fails silently.
+- **Content freshness workflows** (#74, #75, #79, #80) have landed — remaining
+  risk is regression before launch, not initial rollout.
 
 ## How to use this file
 

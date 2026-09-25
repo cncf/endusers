@@ -30,7 +30,7 @@ The ownership decision that must land before the announcement is tracked in ADR
 - **Green pipeline**: the site must always deploy; a broken deploy blocks
   everything.
 
-## Phase 0 — Foundation (current)
+## Phase 0 — Foundation
 
 Goal: a reliable, trustworthy site skeleton.
 
@@ -49,22 +49,26 @@ Goal: a reliable, trustworthy site skeleton.
 
 Goal: every pillar section is accurate, current, and self-maintaining.
 
-- [ ] Architectures: automated import from cncf/architecture stays in sync
-      (scheduled workflow exists; add freshness indicator on the page — issue
-      #80)
-- [ ] Metrics: scheduled refresh of data/metrics.json with validation gating the
-      build (issue #74)
+- [x] Architectures: automated import from cncf/architecture stays in sync
+      (scheduled workflow exists; freshness indicator on the page — issue #80,
+      shipped in `src/components/ReferenceArchitectures/index.js`)
+- [x] Metrics: refresh of data/metrics.json with validation gating the build —
+      issue #74 closed not-planned in favor of the mechanism actually shipped: a
+      daily cron step in `import-architectures.yml` runs
+      `collect:metrics`/`validate:metrics` (documented in `LAUNCH.md`)
 - [x] Awards: complete historical winner list, each entry verified against its
       cncf.io announcement (issue #77)
-- [ ] Community: current TAB membership, End User Groups, and engagement
-      pathways (issue #79)
-- [ ] Events: upcoming end-user events at KubeCon + CloudNativeCon (issue #75)
+- [x] Community: current TAB membership, End User Groups, and engagement
+      pathways — issue #79, shipped via `src/components/PeopleFreshness/` and
+      `src/components/GroupLinkStatus/` rendering freshness notes from
+      `data/community-people.json`'s `fetchedAt`
+- [x] Events: upcoming end-user events at KubeCon + CloudNativeCon (issue #75)
 - [x] Blog: establish a publishing cadence beyond the welcome post — monthly
       "Month in Metrics" post sourced from `data/metrics.json` diffs (issue #76;
       cadence documented in
       [docs/skills/blog-management.md](docs/skills/blog-management.md#publishing-cadence))
 
-## Launch (tracking: #90)
+## Launch (tracking: #90) (current)
 
 Goal: the moment Phase 1 goes green, the site is announced deliberately — not
 shipped silently. Content completeness alone is not a launch plan.
@@ -83,10 +87,10 @@ shipped silently. Content completeness alone is not a launch plan.
       capture; re-run it at (or after) the W-6 pre-launch checkpoint
       (2026-09-28, see `LAUNCH.md`) so the baseline reflects that checkpoint
       rather than an earlier snapshot that Phase 1 work has since made stale.
-- [ ] **DNS cutover dependency**: cutover to `endusers.cncf.io` is gated on the
-      Phase 2 ownership decision (issue #46, ADR 0001). If undecided by launch,
-      the announcement links the current GitHub Pages URL instead of slipping
-      the date.
+- [ ] **DNS cutover dependency**: the Phase 2 ownership decision (issue #46,
+      ADR 0001) is resolved — the repository has been transferred to the `cncf`
+      GitHub org — so cutover to `endusers.cncf.io` itself (Phase 3) is what
+      remains gating this item.
 - [ ] **90-day check-in**: re-run `npm run collect:launch-metrics` 90 days after
       launch and compare each signal against its `data/launch-metrics.json`
       baseline to record whether the launch moved the needle.
