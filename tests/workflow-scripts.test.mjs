@@ -128,6 +128,54 @@ test('every scripts/*.mjs entry point is reachable from a package.json script', 
   );
 });
 
+// `test:unit` is not the only way to run the unit suite: `test:unit:coverage`
+// runs the same `node --test` over the same files and additionally reports
+// coverage, and `test` runs `check` plus `test:unit`. A guard that recognises
+// only the literal `test:unit` reads a workflow running the coverage variant
+// as skipping the suite entirely, so it would fail a workflow that is in fact
+// stricter than the one it was written for.
+function runsUnitSuite(target) {
+  return (
+    target === 'test' ||
+    target === 'test:unit' ||
+    target.startsWith('test:unit:')
+  );
+}
+
+test('every script this suite accepts as the unit suite really runs node --test', () => {
+  // Pins the allowance above to evidence rather than to a name: a future
+  // `test:unit:smoke` that quietly stops running the suite must not satisfy
+  // the validator guard just because of how it is spelled.
+  const accepted = Object.keys(scripts).filter(runsUnitSuite);
+  assert.ok(
+    accepted.includes('test:unit') && accepted.includes('test:unit:coverage'),
+    `expected both unit-suite scripts to be recognised, got ${accepted.join(', ')}`,
+  );
+  const notRunningTests = [];
+  for (const name of accepted) {
+    // Follow one level of `npm run` indirection, then look for the runner.
+    const bodies = [
+      scripts[name],
+      ...npmRunTargets(scripts[name]).map((t) => scripts[t] ?? ''),
+    ];
+    const invokesRunner = bodies.some((body) => {
+      if (/\bnode\s+--test\b/.test(body)) return true;
+      // `node tests/tools/coverage-report.mjs` spawns `node --test` itself.
+      const tool = body.match(/\bnode\s+(tests\/[\w./-]+)/)?.[1];
+      if (!tool || !existsSync(join(repoRoot, tool))) return false;
+      return /'--test'|"--test"/.test(
+        readFileSync(join(repoRoot, tool), 'utf8'),
+      );
+    });
+    if (!invokesRunner) notRunningTests.push(name);
+  }
+  assert.deepEqual(
+    notRunningTests,
+    [],
+    'scripts accepted as the unit suite that never reach node --test',
+  );
+});
+
 test('the unit suite runs in every workflow that runs a validator', () => {
   // A workflow that validates data but skips the unit suite can publish a
   // regression the suite would have caught.
@@ -135,11 +183,11 @@ test('the unit suite runs in every workflow that runs a validator', () => {
   for (const file of workflowFiles) {
     const targets = runCommands(file).flatMap(npmRunTargets);
     const runsValidator = targets.some((t) => t.startsWith('validate:'));
-    if (runsValidator && !targets.includes('test:unit')) offenders.push(file);
+    if (runsValidator && !targets.some(runsUnitSuite)) offenders.push(file);
   }
   assert.deepEqual(
     offenders,
     [],
-    'workflows validating data without test:unit',
+    'workflows validating data without the unit suite',
   );
 });
