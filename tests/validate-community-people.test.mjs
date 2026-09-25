@@ -243,3 +243,81 @@ test('warns, without failing, when fetchedAt exceeds the staleness threshold', (
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stderr, /exceeding the 45-day staleness threshold/);
 });
+
+// The generated file is written by fetch-community-people.mjs, which can fail
+// partway and leave a structurally incomplete file behind. Each assertion
+// below pins one defensive fallback in the validator: every one of them keeps
+// a malformed file on the reporting path instead of crashing the gate with a
+// TypeError, which would hide the real problem behind a stack trace.
+
+test('reports a missing fetchedAt instead of crashing on an absent field', () => {
+  const { fetchedAt: _omitted, ...withoutFetchedAt } = freshData;
+  const result = runScriptWithFixtures(SCRIPT, fixture(withoutFetchedAt));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /strict ISO 8601/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
+test('treats a roster with no sections as having nothing to cross-check', () => {
+  const result = runScriptWithFixtures(SCRIPT, fixture(freshData, {}));
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 2 community profiles/);
+});
+
+test('treats a section absent from the generated file as empty', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...freshData, people: { tab: [validPerson()] } }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /missing roster member Grace Hopper/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
+test('names an unnamed person "person" when rejecting a disallowed image', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...freshData,
+      people: {
+        tab: [validPerson({ name: '', image: 'http://example.com/ada.png' })],
+        staff: [staffPerson()],
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /person image must be an https URL on an allowed host/,
+  );
+});
+
+test('names an unnamed person "person" when rejecting a profile with no links', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...freshData,
+      people: {
+        tab: [
+          validPerson({
+            name: '',
+            github: '',
+            linkedin: null,
+            twitter: null,
+            blog: '',
+          }),
+        ],
+        staff: [staffPerson()],
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /person has no public profile link/);
+});
+
+test('counts zero profiles when the generated file carries no people at all', () => {
+  const { people: _omitted, ...withoutPeople } = freshData;
+  const result = runScriptWithFixtures(SCRIPT, fixture(withoutPeople, {}));
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 0 community profiles/);
+});
