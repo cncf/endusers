@@ -98,6 +98,23 @@ export function countsForScript(scriptCoverage, length) {
   return counts;
 }
 
+// The length of the source text a coverage record's offsets belong to.
+//
+// V8 always emits one outermost range spanning the whole script, so the
+// largest endOffset in a record is the length of the text the module loader
+// handed to V8 -- which is not always the text on disk. tests/tools/jsx-hooks.mjs
+// transpiles JSX in memory and wraps imported JSON in an `export default`,
+// so those offsets index a generated file longer than its source file.
+export function recordedSourceLength(scriptCoverage) {
+  let length = 0;
+  for (const fn of scriptCoverage.functions ?? []) {
+    for (const range of fn.ranges ?? []) {
+      if (range.endOffset > length) length = range.endOffset;
+    }
+  }
+  return length;
+}
+
 // A line counts as executable when it carries non-whitespace source inside a
 // recorded range; it counts as covered when any such character ran.
 export function summarizeLines(source, counts) {
@@ -156,9 +173,15 @@ function percent(covered, total) {
   return total === 0 ? 100 : (covered / total) * 100;
 }
 
-function collect(coverageDir) {
+// Merges every recorded run into one per-file coverage map, discarding any
+// record whose offsets were taken against text other than the file on disk.
+// Returns the merged map plus the files that were discarded outright.
+export function collect(coverageDir, root = repoRoot) {
   // Highest observed count per offset across every process and sandbox run.
   const merged = new Map();
+  // Files whose every record was recorded against text other than the file on
+  // disk, so no offset in them can be attributed to a source line.
+  const unmapped = new Set();
   for (const entry of readdirSync(coverageDir)) {
     if (!entry.endsWith('.json')) continue;
     let payload;
@@ -168,15 +191,22 @@ function collect(coverageDir) {
       continue;
     }
     for (const scriptCoverage of payload.result ?? []) {
-      const relPath = toRepoRelativePath(scriptCoverage.url);
+      const relPath = toRepoRelativePath(scriptCoverage.url, root);
       if (!relPath) continue;
       let source = merged.get(relPath)?.source;
       if (source === undefined) {
         try {
-          source = readFileSync(join(repoRoot, relPath), 'utf8');
+          source = readFileSync(join(root, relPath), 'utf8');
         } catch {
           continue;
         }
+      }
+      // Offsets recorded against a different text cannot be projected onto
+      // this file. Reporting them anyway paints the whole file as executed,
+      // because the outermost range alone then covers every byte on disk.
+      if (recordedSourceLength(scriptCoverage) !== source.length) {
+        unmapped.add(relPath);
+        continue;
       }
       const counts = countsForScript(scriptCoverage, source.length);
       const existing = merged.get(relPath);
@@ -189,7 +219,8 @@ function collect(coverageDir) {
       }
     }
   }
-  return merged;
+  for (const relPath of merged.keys()) unmapped.delete(relPath);
+  return { merged, unmapped };
 }
 
 function report(merged) {
@@ -236,13 +267,22 @@ function main() {
         env: { ...process.env, NODE_V8_COVERAGE: coverageDir },
       },
     );
-    const merged = collect(coverageDir);
+    const { merged, unmapped } = collect(coverageDir);
     if (merged.size === 0) {
       console.error('No coverage data was recorded.');
       process.exit(1);
     }
     console.log('');
     const totalPct = report(merged);
+    if (unmapped.size > 0) {
+      console.log(
+        `\nNot reported (${unmapped.size}): every coverage record for these\n` +
+          'files was made against text the loader generated (transpiled JSX,\n' +
+          'or a JSON module wrapper), so their offsets do not address the\n' +
+          'source on disk.',
+      );
+      for (const file of [...unmapped].sort()) console.log(`  ${file}`);
+    }
 
     if (result.status !== 0) {
       console.error('\nTests failed; coverage above is reported for context.');
