@@ -22,6 +22,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   countsForScript,
   summarizeLines,
+  summarizeRegions,
   toRepoRelativePath,
 } from './tools/coverage-report.mjs';
 
@@ -203,6 +204,53 @@ test('summarizeLines reports 0 executable lines for an empty source', () => {
   });
 });
 
+test('summarizeRegions counts each maximal same-count run once, not once per line', () => {
+  // `a || b` on one line: the whole expression ran, but the `|| b` fallback
+  // never did. Line coverage cannot see this because the line itself ran;
+  // regions must, because they follow the V8 range boundaries instead.
+  const source = 'x(a || b);';
+  const counts = countsForScript(
+    ranges([0, source.length, 1], [5, 8, 0]),
+    source.length,
+  );
+  const summary = summarizeRegions(source, counts);
+  assert.equal(summary.regions, 3);
+  assert.equal(summary.covered, 2);
+  assert.deepEqual(summary.uncovered, [1]);
+});
+
+test('summarizeRegions reports the line a multi-line uncovered region starts on', () => {
+  const source = 'a(\n  b,\n);';
+  const counts = countsForScript(
+    ranges([0, source.length, 1], [3, 7, 0]),
+    source.length,
+  );
+  const summary = summarizeRegions(source, counts);
+  assert.deepEqual(summary.uncovered, [2]);
+});
+
+test('summarizeRegions ignores a same-count run with no non-whitespace source', () => {
+  const source = 'a   b';
+  const counts = countsForScript(ranges([0, source.length, 1]), source.length);
+  const summary = summarizeRegions(source, counts);
+  assert.equal(summary.regions, 1);
+  assert.equal(summary.covered, 1);
+});
+
+test('summarizeRegions treats source outside any recorded range as non-executable', () => {
+  const source = 'a\nb';
+  const summary = summarizeRegions(source, countsForScript({}, source.length));
+  assert.deepEqual(summary, { regions: 0, covered: 0, uncovered: [] });
+});
+
+test('summarizeRegions reports 0 regions for an empty source', () => {
+  assert.deepEqual(summarizeRegions('', countsForScript({}, 0)), {
+    regions: 0,
+    covered: 0,
+    uncovered: [],
+  });
+});
+
 function runReporter(args) {
   // The reporter spawns its own `node --test`, which refuses to run when it
   // inherits this file's test-runner context, and it manages its own
@@ -224,7 +272,7 @@ const NARROW = ['--', 'tests/validate-utils.test.mjs'];
 test('the reporter exits 0 and prints a total when coverage clears --check', () => {
   const result = runReporter(['--check', '100', ...NARROW]);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /^all files\s+\|\s+100\.00 \|$/m);
+  assert.match(result.stdout, /^all files\s+\|\s+100\.00 \|\s+100\.00 \|$/m);
   assert.match(result.stdout, /scripts\/lib\/validate-utils\.mjs/);
 });
 
@@ -247,6 +295,44 @@ test('--check rejects a missing threshold', () => {
   const result = runReporter(['--check']);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /--check requires a numeric percentage/);
+});
+
+test('the reporter exits 0 and prints a total when region coverage clears --check-regions', () => {
+  const result = runReporter(['--check-regions', '100', ...NARROW]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^all files\s+\|\s+100\.00 \|\s+100\.00 \|$/m);
+});
+
+test('the reporter fails the run when region coverage is below --check-regions', () => {
+  const result = runReporter(['--check-regions', '100.5', ...NARROW]);
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /Region coverage 100\.00% is below the required 100\.5%/,
+  );
+});
+
+test('--check-regions rejects a non-numeric threshold instead of silently disabling the gate', () => {
+  const result = runReporter(['--check-regions', 'ninety', ...NARROW]);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /--check-regions requires a numeric percentage/);
+});
+
+test('--check-regions rejects a missing threshold', () => {
+  const result = runReporter(['--check-regions']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /--check-regions requires a numeric percentage/);
+});
+
+test('--check and --check-regions can both gate the same run', () => {
+  const result = runReporter([
+    '--check',
+    '100',
+    '--check-regions',
+    '100',
+    ...NARROW,
+  ]);
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test('the reporter fails loudly rather than reporting 100% on no data', () => {
