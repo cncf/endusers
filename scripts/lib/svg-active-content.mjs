@@ -11,18 +11,50 @@
  * slip past a naive substring match.
  */
 
-/** Elements that exist solely to execute or bind script. */
-const ACTIVE_ELEMENTS = ['script', 'handler', 'listener'];
+/**
+ * Elements that execute or bind script, or that embed a separate document.
+ *
+ * `iframe`, `embed` and `object` are only reachable inside `<foreignObject>`,
+ * where they load an attacker-chosen document into the origin serving the SVG.
+ * `foreignObject` itself stays allowed: editors such as draw.io emit it for
+ * ordinary text, and imported diagrams already rely on it.
+ */
+const ACTIVE_ELEMENTS = [
+  'script',
+  'handler',
+  'listener',
+  'iframe',
+  'embed',
+  'object',
+];
 
 /** URI schemes that execute script when navigated to or rendered. */
 const ACTIVE_SCHEMES = ['javascript', 'vbscript', 'livescript', 'mocha'];
 
+/**
+ * An optional XML namespace prefix.
+ *
+ * Standalone SVG is served as image/svg+xml and parsed as XML, where the
+ * prefix is arbitrary and only the namespace URI it binds matters:
+ * `<x:script xmlns:x="http://www.w3.org/2000/svg">` is a script element and
+ * executes. Every active-element pattern therefore has to tolerate a prefix,
+ * or a one-character edit walks past the whole gate.
+ */
+const NS_PREFIX = '(?:[a-z_][-a-z0-9_.]*:)?';
+
 const ACTIVE_ELEMENT_PATTERN = new RegExp(
-  `<\\s*(${ACTIVE_ELEMENTS.join('|')})\\b`,
+  `<\\s*${NS_PREFIX}(${ACTIVE_ELEMENTS.join('|')})\\b`,
   'i',
 );
 
 const EVENT_HANDLER_ATTRIBUTE = /\son[a-z]+\s*=/i;
+
+/**
+ * Attributes that carry a whole document as their value. `srcdoc` markup is
+ * entity-encoded, so no scheme scan of the value would ever flag it; the
+ * attribute name is the finding.
+ */
+const DOCUMENT_ATTRIBUTES = new Set(['srcdoc']);
 
 /**
  * `<animate>`/`<set>` can assign a value to `href` at runtime, so an element
@@ -31,8 +63,10 @@ const EVENT_HANDLER_ATTRIBUTE = /\son[a-z]+\s*=/i;
  * payloads are ordinary attribute values that no scheme scan would flag on an
  * element that is not itself a link.
  */
-const ANIMATED_URI_ELEMENT =
-  /<\s*(animate|set)\b[^>]*\battributeName\s*=\s*(?:"\s*(?:xlink:)?href\s*"|'\s*(?:xlink:)?href\s*'|(?:xlink:)?href\b)[^>]*>/gi;
+const ANIMATED_URI_ELEMENT = new RegExp(
+  `<\\s*${NS_PREFIX}(animate|set)\\b[^>]*\\battributeName\\s*=\\s*(?:"\\s*(?:xlink:)?href\\s*"|'\\s*(?:xlink:)?href\\s*'|(?:xlink:)?href\\b)[^>]*>`,
+  'gi',
+);
 
 const ATTRIBUTE_PATTERN =
   /\s([a-z_:][-a-z0-9_:.]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>`]+))/gi;
@@ -89,6 +123,16 @@ function normalizeUri(value) {
 }
 
 /**
+ * Strip any XML namespace prefix from a qualified name.
+ * @param {string} name
+ * @returns {string}
+ */
+function localName(name) {
+  const colon = name.lastIndexOf(':');
+  return colon === -1 ? name : name.slice(colon + 1);
+}
+
+/**
  * Report whether a normalized attribute value carries a script-executing URI.
  * @param {string} value - Raw attribute value.
  * @returns {string|null} The offending scheme, or null.
@@ -125,12 +169,18 @@ export function findActiveContent(source) {
 
   const handlers = new Set();
   const schemes = new Set();
+  const documents = new Set();
   for (const match of source.matchAll(ATTRIBUTE_PATTERN)) {
     const name = match[1].toLowerCase();
     const value = match[2] ?? match[3] ?? match[4] ?? '';
 
     if (/^on[a-z]+$/.test(name)) {
       handlers.add(name);
+      continue;
+    }
+
+    if (DOCUMENT_ATTRIBUTES.has(localName(name))) {
+      documents.add(name);
       continue;
     }
 
@@ -152,6 +202,11 @@ export function findActiveContent(source) {
   }
   for (const scheme of [...schemes].sort()) {
     findings.push(`contains a script URI in ${scheme}`);
+  }
+  for (const attribute of [...documents].sort()) {
+    findings.push(
+      `contains an embedded document attribute: ${attribute} (carries markup that executes in this origin)`,
+    );
   }
 
   const animated = new Set(
@@ -182,10 +237,13 @@ export function stripActiveContent(source) {
 
   for (const element of ACTIVE_ELEMENTS) {
     const paired = new RegExp(
-      `<\\s*${element}\\b[^>]*>[\\s\\S]*?<\\s*/\\s*${element}\\s*>`,
+      `<\\s*${NS_PREFIX}${element}\\b[^>]*>[\\s\\S]*?<\\s*/\\s*${NS_PREFIX}${element}\\s*>`,
       'gi',
     );
-    const standalone = new RegExp(`<\\s*/?\\s*${element}\\b[^>]*>`, 'gi');
+    const standalone = new RegExp(
+      `<\\s*/?\\s*${NS_PREFIX}${element}\\b[^>]*>`,
+      'gi',
+    );
     for (const pattern of [paired, standalone]) {
       output = output.replace(pattern, () => {
         removed.push(`<${element}> element`);
@@ -201,7 +259,10 @@ export function stripActiveContent(source) {
 
   // Drop closing tags left orphaned by removing a paired animation element.
   if (removed.some((entry) => entry.endsWith('animating href'))) {
-    output = output.replace(/<\s*\/\s*(?:animate|set)\s*>/gi, '');
+    output = output.replace(
+      new RegExp(`<\\s*/\\s*${NS_PREFIX}(?:animate|set)\\s*>`, 'gi'),
+      '',
+    );
   }
 
   output = output.replace(ATTRIBUTE_PATTERN, (match, name, dq, sq, uq) => {
@@ -210,6 +271,11 @@ export function stripActiveContent(source) {
 
     if (/^on[a-z]+$/.test(attribute)) {
       removed.push(`${attribute} attribute`);
+      return '';
+    }
+
+    if (DOCUMENT_ATTRIBUTES.has(localName(attribute))) {
+      removed.push(`${attribute} attribute (embedded document)`);
       return '';
     }
 

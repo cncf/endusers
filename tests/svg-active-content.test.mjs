@@ -262,3 +262,92 @@ test('leaves an ordinary animation of a presentation attribute alone', () => {
   assert.deepEqual(findActiveContent(svg), []);
   assert.equal(stripActiveContent(svg).source, svg);
 });
+
+// Standalone SVG under static/ is served as image/svg+xml and parsed as XML,
+// where a namespace prefix is arbitrary and only the URI it binds matters:
+// <x:script xmlns:x="http://www.w3.org/2000/svg"> is a script element and runs.
+// Anchoring the element patterns on the bare local name let a one-character
+// edit walk an imported asset past both the CI gate and the import sanitizer.
+test('detects and removes namespace-prefixed active elements', () => {
+  for (const [prefix, element, finding] of [
+    ['svg', 'script', 'contains a <script> element'],
+    ['x', 'script', 'contains a <script> element'],
+    ['svg', 'handler', 'contains a <handler> element'],
+    ['ev', 'listener', 'contains a <listener> element'],
+  ]) {
+    const svg = INERT.replace(
+      '<rect',
+      `<${prefix}:${element}>alert(1)</${prefix}:${element}><rect`,
+    );
+    assert.deepEqual(
+      findActiveContent(svg),
+      [finding],
+      `expected detection for <${prefix}:${element}>`,
+    );
+
+    const { source, removed } = stripActiveContent(svg);
+    assert.doesNotMatch(source, /alert\(1\)/);
+    assert.doesNotMatch(source, new RegExp(`${prefix}:${element}`, 'i'));
+    assert.ok(removed.includes(`<${element}> element`));
+    assert.deepEqual(findActiveContent(source), []);
+  }
+});
+
+test('detects a namespace-prefixed element that animates href', () => {
+  const svg = INERT.replace(
+    '<rect',
+    '<svg:set attributeName="xlink:href" to="https://example.com/x"/><rect',
+  );
+  assert.deepEqual(findActiveContent(svg), [
+    'contains a <set> element that animates href (can install a script URI at runtime)',
+  ]);
+  assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
+});
+
+// <foreignObject> hosts XHTML, so an embedding element reached through it
+// loads an attacker-chosen document into the origin serving the SVG. A srcdoc
+// payload is entity-encoded, so no scan of the attribute *value* would flag it.
+test('detects and removes document-embedding elements in foreignObject', () => {
+  for (const element of ['iframe', 'embed', 'object']) {
+    const svg = INERT.replace(
+      '<rect',
+      `<foreignObject><${element} src="https://evil.example/x"></${element}></foreignObject><rect`,
+    );
+    assert.deepEqual(
+      findActiveContent(svg),
+      [`contains a <${element}> element`],
+      `expected detection for <${element}>`,
+    );
+
+    const { source, removed } = stripActiveContent(svg);
+    assert.doesNotMatch(source, new RegExp(`<${element}`, 'i'));
+    assert.ok(removed.includes(`<${element}> element`));
+    assert.deepEqual(findActiveContent(source), []);
+  }
+});
+
+test('detects and removes srcdoc regardless of its value', () => {
+  const svg = INERT.replace(
+    '<rect',
+    '<foreignObject><div srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"></div></foreignObject><rect',
+  );
+  assert.deepEqual(findActiveContent(svg), [
+    'contains an embedded document attribute: srcdoc (carries markup that executes in this origin)',
+  ]);
+
+  const { source, removed } = stripActiveContent(svg);
+  assert.doesNotMatch(source, /srcdoc/i);
+  assert.ok(removed.includes('srcdoc attribute (embedded document)'));
+  assert.deepEqual(findActiveContent(source), []);
+});
+
+// draw.io and Excalidraw emit <foreignObject> for ordinary text, and imported
+// diagrams already contain it, so widening the element list must not catch it.
+test('leaves foreignObject itself untouched', () => {
+  const svg = INERT.replace(
+    '<rect',
+    '<foreignObject width="10" height="10"><div>label</div></foreignObject><rect',
+  );
+  assert.deepEqual(findActiveContent(svg), []);
+  assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
+});
