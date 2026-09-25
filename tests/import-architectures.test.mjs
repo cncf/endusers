@@ -188,18 +188,24 @@ Container orchestration for the fleet.
     assert.deepEqual(record.projects, ['Kubernetes']);
 
     const page = run.read('docs/architectures/cards.md');
-    assert.match(page, /<CNCFProjectCard name="Kubernetes"/);
+    // Expression attributes, not quoted ones: a quoted JSX attribute cannot
+    // safely carry upstream text, because JSX does not honour the backslash
+    // escape JSON.stringify emits for an embedded quote.
+    assert.match(page, /<CNCFProjectCard name=\{"Kubernetes"\}/);
     assert.match(
       page,
-      /href="https:\/\/www\.cncf\.io\/projects\/kubernetes\/"/,
+      /href=\{"https:\/\/www\.cncf\.io\/projects\/kubernetes\/"\}/,
     );
     assert.match(
       page,
-      /logo="\/img\/cncf-projects\/kubernetes-kubernetes-icon-color\.svg"/,
+      /logo=\{"\/img\/cncf-projects\/kubernetes-kubernetes-icon-color\.svg"\}/,
     );
-    assert.match(page, /since="2019"/);
-    assert.match(page, /version="1\.30"/);
-    assert.match(page, /description="Container orchestration for the fleet\."/);
+    assert.match(page, /since=\{"2019"\}/);
+    assert.match(page, /version=\{"1\.30"\}/);
+    assert.match(
+      page,
+      /description=\{"Container orchestration for the fleet\."\}/,
+    );
 
     assert.equal(
       run.read('static/img/cncf-projects/kubernetes-kubernetes-icon-color.svg'),
@@ -233,10 +239,53 @@ A build tool.
     const page = run.read('docs/architectures/fallback.md');
     assert.match(
       page,
-      /href="https:\/\/www\.cncf\.io\/projects\/cloud-native-buildpacks\/"/,
+      /href=\{"https:\/\/www\.cncf\.io\/projects\/cloud-native-buildpacks\/"\}/,
     );
     assert.doesNotMatch(page, /logo=/);
     assert.doesNotMatch(page, /since=/);
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('a quote in upstream card text cannot inject a JSX attribute', () => {
+  // `since` is copied verbatim out of third-party Markdown. Emitted into a
+  // *quoted* JSX attribute, the `"` below would end the attribute — JSX does
+  // not honour the `\"` escape JSON.stringify produces — and the rest would be
+  // parsed as real props on the card, giving upstream content a live
+  // dangerouslySetInnerHTML expression on the published site.
+  const run = runImportArchitectures({
+    upstream: architecture(
+      'injection',
+      `---
+title: Injection
+org_name: Injection Co
+---
+
+Intro paragraph.
+
+{{< card header="Kubernetes" >}}
+**Using since:** 2019" dangerouslySetInnerHTML={{__html: globalThis.PWNED = 1}} />
+**Current version:** 1.30
+{{< /card >}}
+`,
+    ),
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const page = run.read('docs/architectures/injection.md');
+
+    // The payload survives only as inert prop *text* inside a string literal.
+    const since = page.match(/ since=\{("(?:[^"\\]|\\.)*")\}/);
+    assert.ok(since, `no well-formed since expression in:\n${page}`);
+    assert.equal(
+      JSON.parse(since[1]),
+      '2019" dangerouslySetInnerHTML={{__html: globalThis.PWNED = 1}} />',
+    );
+    // The later props are intact, so the tag was never closed early.
+    assert.match(page, /version=\{"1\.30"\}/);
+    assert.equal(page.match(/<CNCFProjectCard/g).length, 1);
   } finally {
     run.cleanup();
   }
@@ -276,7 +325,7 @@ Intro paragraph.
     // The card still points at the mirrored path so a later asset sync can fix it.
     assert.match(
       run.read('docs/architectures/offline.md'),
-      /logo="\/img\/cncf-projects\/envoy-envoy-icon-color\.svg"/,
+      /logo=\{"\/img\/cncf-projects\/envoy-envoy-icon-color\.svg"\}/,
     );
   } finally {
     run.cleanup();
