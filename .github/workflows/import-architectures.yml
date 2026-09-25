@@ -47,3 +47,4 @@ jobs:
 
             The production build and architecture validation passed.
           labels: automated
+          signoff: true
