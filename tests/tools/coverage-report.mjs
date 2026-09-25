@@ -23,11 +23,14 @@ import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { transpileJsx, inlineSourceMapCode } from './jsx-hooks.mjs';
+
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
 // A sandboxed run mirrors the repo layout, so the portion of the path from
 // the mirrored top-level directory onward matches the real source tree.
 const MIRRORED_DIRS = ['scripts', 'src', 'tests'];
+const SCRIPT_URL = /\.(js|jsx|mjs)$/;
 
 function parseArgs(argv) {
   const options = { check: null, checkRegions: null, testArgs: [] };
@@ -120,6 +123,154 @@ export function recordedSourceLength(scriptCoverage) {
     }
   }
   return length;
+}
+
+// A file is worth attempting to remap when tests/tools/jsx-hooks.mjs would
+// have transpiled it: only that loader's own gate -- a .js/.jsx/.mjs file
+// whose source contains a `<` -- ever produces the generated-text mismatch
+// this exists to undo.
+export function isJsxSource(relPath, source) {
+  return SCRIPT_URL.test(relPath) && source.includes('<');
+}
+
+const BASE64_VLQ_CHARS =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const BASE64_VLQ_VALUES = new Map(
+  [...BASE64_VLQ_CHARS].map((char, value) => [char, value]),
+);
+const VLQ_CONTINUATION_BIT = 0b100000;
+const VLQ_DATA_MASK = 0b011111;
+
+// Decodes one base64-VLQ number starting at `pos` in `segment`, per the
+// source map v3 spec: 5 data bits per char, continuation in the 6th bit, and
+// the least-significant decoded bit is the sign.
+function decodeVlqValue(segment, pos) {
+  let result = 0;
+  let shift = 0;
+  let value;
+  do {
+    value = BASE64_VLQ_VALUES.get(segment[pos]);
+    pos += 1;
+    result += (value & VLQ_DATA_MASK) << shift;
+    shift += 5;
+  } while (value & VLQ_CONTINUATION_BIT);
+  return { value: result & 1 ? -(result >> 1) : result >> 1, pos };
+}
+
+// Decodes a source map's `mappings` field into one array of segments per
+// generated line. Each segment is { genColumn, sourceLine, sourceColumn },
+// 0-based; the name-index field, present only on some segments, is skipped
+// since nothing here needs it.
+export function decodeMappings(mappings) {
+  let sourceLine = 0;
+  let sourceColumn = 0;
+  return mappings.split(';').map((lineMappings) => {
+    let genColumn = 0;
+    const segments = [];
+    if (!lineMappings) return segments;
+    for (const field of lineMappings.split(',')) {
+      if (!field) continue;
+      let pos = 0;
+      let decoded = decodeVlqValue(field, pos);
+      genColumn += decoded.value;
+      pos = decoded.pos;
+      if (pos >= field.length) continue; // a generated-only segment carries no source position
+      decoded = decodeVlqValue(field, pos); // source file index; always 0 here
+      pos = decoded.pos;
+      decoded = decodeVlqValue(field, pos);
+      sourceLine += decoded.value;
+      pos = decoded.pos;
+      decoded = decodeVlqValue(field, pos);
+      sourceColumn += decoded.value;
+      segments.push({ genColumn, sourceLine, sourceColumn });
+    }
+    return segments;
+  });
+}
+
+// The character offset each line of `text` starts at, indexed by 0-based
+// line number.
+function lineStartOffsets(text) {
+  const starts = [0];
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === '\n') starts.push(i + 1);
+  }
+  return starts;
+}
+
+// Remaps line coverage recorded against swc-generated text back onto the
+// original source. Node's ESM coverage indexes generated text by character
+// offset, and this reporter otherwise has no way to attribute it to the file
+// on disk; going only to line granularity keeps the remap simple and robust
+// against a JSX transform that changes column positions and inserted tokens
+// on every line, while still restoring exactly what was lost (#628): a real
+// per-file line percentage, and an unreachable line showing as uncovered.
+//
+// A generated line is credited to the source line of the first mapping
+// segment on it; a source line is executable if any contributing generated
+// line was, and covered if any contributing generated line was.
+//
+// `code` must be the bare transform output the map's line numbers describe --
+// tests/tools/jsx-hooks.mjs's inlineSourceMapCode() appends a trailing
+// `//# sourceMappingURL=` comment that the map itself has no entry for, so
+// passing that instead would shift every line index by one. `generatedCounts`
+// may safely be sized to the longer, comment-inclusive text: only offsets
+// below code.length are ever read.
+export function remapJsxLineCoverage(code, generatedCounts, map) {
+  const genLineStarts = lineStartOffsets(code);
+  const genLines = decodeMappings(map.mappings);
+  const originalLineCount = Math.max(
+    1,
+    ...genLines.flatMap((segments) =>
+      segments.map((segment) => segment.sourceLine + 1),
+    ),
+  );
+  const executable = new Array(originalLineCount).fill(false);
+  const covered = new Array(originalLineCount).fill(false);
+
+  for (let genLine = 0; genLine < genLineStarts.length; genLine += 1) {
+    const segments = genLines[genLine];
+    if (!segments || segments.length === 0) continue;
+    const start = genLineStarts[genLine];
+    const end = genLineStarts[genLine + 1] ?? code.length;
+    let lineExecutable = false;
+    let lineCovered = false;
+    for (let offset = start; offset < end; offset += 1) {
+      const char = code[offset];
+      if (char === '\r' || char === ' ' || char === '\t' || char === '\n') {
+        continue;
+      }
+      const count = generatedCounts[offset];
+      if (count < 0) continue;
+      lineExecutable = true;
+      if (count > 0) lineCovered = true;
+    }
+    if (!lineExecutable) continue;
+    const { sourceLine } = segments[0];
+    executable[sourceLine] = true;
+    if (lineCovered) covered[sourceLine] = true;
+  }
+
+  return { executable, covered };
+}
+
+// Builds a counts array over the original source, indexed like
+// countsForScript()'s output, from the per-original-line executable/covered
+// verdict remapJsxLineCoverage() computed. Every character on a line is given
+// the same synthetic count so summarizeLines() and summarizeRegions() need no
+// changes to read it; the tradeoff is that a remapped file scores regions at
+// line granularity rather than true sub-line granularity.
+export function countsFromLineVerdict(source, { executable, covered }) {
+  const counts = new Int32Array(source.length).fill(-1);
+  const lineStarts = lineStartOffsets(source);
+  for (let line = 0; line < lineStarts.length; line += 1) {
+    if (!executable[line]) continue;
+    const start = lineStarts[line];
+    const end = lineStarts[line + 1] ?? source.length;
+    const value = covered[line] ? 1 : 0;
+    for (let offset = start; offset < end; offset += 1) counts[offset] = value;
+  }
+  return counts;
 }
 
 // A line counts as executable when it carries non-whitespace source inside a
@@ -216,9 +367,34 @@ function percent(covered, total) {
   return total === 0 ? 100 : (covered / total) * 100;
 }
 
+// Reproduces the exact transform tests/tools/jsx-hooks.mjs applied when it
+// loaded this file, so the generated text V8 recorded coverage against can be
+// rebuilt outside the test run. Returns null when the file was not JSX, or
+// when the reproduced text does not match what was recorded (a different
+// swc version, or a loader change) -- callers must fall back to leaving the
+// record unmapped rather than attributing counts to the wrong offsets.
+function tryRemapJsx(scriptCoverage, relPath, source, root) {
+  if (!isJsxSource(relPath, source)) return null;
+  let transformed;
+  try {
+    transformed = transpileJsx(source, join(root, relPath));
+  } catch {
+    return null;
+  }
+  const generatedCode = inlineSourceMapCode(transformed.code, transformed.map);
+  if (generatedCode.length !== recordedSourceLength(scriptCoverage)) {
+    return null;
+  }
+  const generatedCounts = countsForScript(scriptCoverage, generatedCode.length);
+  const map = JSON.parse(transformed.map);
+  const verdict = remapJsxLineCoverage(transformed.code, generatedCounts, map);
+  return countsFromLineVerdict(source, verdict);
+}
+
 // Merges every recorded run into one per-file coverage map, discarding any
-// record whose offsets were taken against text other than the file on disk.
-// Returns the merged map plus the files that were discarded outright.
+// record whose offsets were taken against text other than the file on disk
+// and could not be remapped either. Returns the merged map plus the files
+// that were discarded outright.
 export function collect(coverageDir, root = repoRoot) {
   // Highest observed count per offset across every process and sandbox run.
   const merged = new Map();
@@ -245,13 +421,20 @@ export function collect(coverageDir, root = repoRoot) {
         }
       }
       // Offsets recorded against a different text cannot be projected onto
-      // this file. Reporting them anyway paints the whole file as executed,
-      // because the outermost range alone then covers every byte on disk.
+      // this file directly. A JSX component transpiles to exactly the text
+      // tests/tools/jsx-hooks.mjs recorded coverage against, so try to
+      // reconstruct that text and remap its offsets back onto the source
+      // before giving up on the record (#628).
+      let counts;
       if (recordedSourceLength(scriptCoverage) !== source.length) {
-        unmapped.add(relPath);
-        continue;
+        counts = tryRemapJsx(scriptCoverage, relPath, source, root);
+        if (!counts) {
+          unmapped.add(relPath);
+          continue;
+        }
+      } else {
+        counts = countsForScript(scriptCoverage, source.length);
       }
-      const counts = countsForScript(scriptCoverage, source.length);
       const existing = merged.get(relPath);
       if (!existing) {
         merged.set(relPath, { source, counts });
