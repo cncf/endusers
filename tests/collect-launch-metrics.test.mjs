@@ -314,3 +314,56 @@ test('a failed paginated request aborts before anything is written', () => {
   assert.match(result.stderr, /GitHub API 403/);
   assert.equal(result.outputs[OUTPUT], null);
 });
+
+// githubAll attaches the token to every paginated request, so a Link
+// rel="next" pointing at another origin would leak it. The sandbox fetch stub
+// throws on any unstubbed URL, so following the target would abort the run.
+test('a cross-origin Link rel="next" target is refused', () => {
+  const result = collect(
+    routes({
+      extra: [
+        {
+          match: CONTRIBUTORS_ROUTE,
+          body: [contributor('alice')],
+          headers: { link: '<https://evil.example/exfiltrate>; rel="next"' },
+        },
+      ],
+    }),
+  );
+  const baseline = readBaseline(result);
+
+  assert.deepEqual(
+    signalById(baseline, 'new-contributors-since-baseline')
+      .priorContributorLogins,
+    ['alice'],
+  );
+  assert.match(
+    result.stderr,
+    /Ignoring cross-origin Link rel="next" target: https:\/\/evil\.example/,
+  );
+});
+
+test('an unparseable Link rel="next" target is refused', () => {
+  const result = collect(
+    routes({
+      extra: [
+        {
+          match: CONTRIBUTORS_ROUTE,
+          body: [contributor('alice')],
+          headers: { link: '<http://[v1.unparseable>; rel="next"' },
+        },
+      ],
+    }),
+  );
+  const baseline = readBaseline(result);
+
+  assert.deepEqual(
+    signalById(baseline, 'new-contributors-since-baseline')
+      .priorContributorLogins,
+    ['alice'],
+  );
+  assert.match(
+    result.stderr,
+    /Ignoring unparseable Link rel="next" target: http:\/\/\[v1\.unparseable/,
+  );
+});
