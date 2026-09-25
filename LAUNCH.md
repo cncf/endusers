@@ -74,11 +74,11 @@ shipping stale content on day one — the exact failure this automation exists t
 prevent. Before the W-0 launch date, all scheduled content-refresh workflows
 must be green for **2 consecutive scheduled runs**:
 
-| Pipeline                                                                                     | Schedule | Status as of 2026-09-24 | Tracking |
-| -------------------------------------------------------------------------------------------- | -------- | ------------------------ | -------- |
-| Import reference architectures (`import-architectures.yml`)                                  | daily    | green (2026-09-24 run)   | #121 (closed; reopen a new issue if this regresses) |
-| Refresh community profiles (`refresh-community-people.yml`)                                  | weekly   | red (last scheduled run 2026-09-21 failed at the build step on HTML minifier errors) | #568 |
-| Metrics refresh (`collect:metrics` + `validate:metrics` steps of `import-architectures.yml`) | daily    | green (2026-09-24 run)   | #121 (closed; reopen a new issue if this regresses) |
+| Pipeline                                                                                     | Schedule | Status as of 2026-09-24                                                              | Tracking                                            |
+| -------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| Import reference architectures (`import-architectures.yml`)                                  | daily    | green (2026-09-24 run)                                                               | #121 (closed; reopen a new issue if this regresses) |
+| Refresh community profiles (`refresh-community-people.yml`)                                  | weekly   | red (last scheduled run 2026-09-21 failed at the build step on HTML minifier errors) | #568                                                |
+| Metrics refresh (`collect:metrics` + `validate:metrics` steps of `import-architectures.yml`) | daily    | green (2026-09-24 run)                                                               | #121 (closed; reopen a new issue if this regresses) |
 
 A dedicated `refresh-metrics.yml` workflow was proposed in PR #125 and declined
 (#74); metrics refresh instead runs as steps inside `import-architectures.yml`,
@@ -90,9 +90,9 @@ issue does not by itself mean the pipeline is green: the "Status as of" column
 above must be checked against the workflow's actual run history
 (`gh run list --workflow <name>`) before treating a row as resolved. The
 refresh-community-people pipeline's current live blocker is #568 (the
-`create-pull-request` step omits `signoff: true`, so its automated PRs fail
-the DCO check); once #568 is fixed, re-verify against the run history in case
-the build-step HTML minifier failure persists as a separate issue.
+`create-pull-request` step omits `signoff: true`, so its automated PRs fail the
+DCO check); once #568 is fixed, re-verify against the run history in case the
+build-step HTML minifier failure persists as a separate issue.
 
 If any pipeline is still red at W-1, treat it the same as any other Phase 1
 blocker under "Full content freeze rehearsal" (W-4): either land the fix or
