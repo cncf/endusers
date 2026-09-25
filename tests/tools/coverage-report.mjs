@@ -15,7 +15,7 @@
 // coverage against the real source files.
 //
 // Usage:
-//   node tests/tools/coverage-report.mjs [--check <minLinePercent>] [-- <node --test args>]
+//   node tests/tools/coverage-report.mjs [--check <minLinePercent>] [--check-regions <minRegionPercent>] [-- <node --test args>]
 
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -30,7 +30,7 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const MIRRORED_DIRS = ['scripts', 'src', 'tests'];
 
 function parseArgs(argv) {
-  const options = { check: null, testArgs: [] };
+  const options = { check: null, checkRegions: null, testArgs: [] };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--check') {
@@ -39,6 +39,13 @@ function parseArgs(argv) {
         throw new Error('--check requires a numeric percentage');
       }
       options.check = value;
+      i += 1;
+    } else if (arg === '--check-regions') {
+      const value = Number(argv[i + 1]);
+      if (!Number.isFinite(value)) {
+        throw new Error('--check-regions requires a numeric percentage');
+      }
+      options.checkRegions = value;
       i += 1;
     } else if (arg === '--') {
       options.testArgs.push(...argv.slice(i + 1));
@@ -150,6 +157,42 @@ export function summarizeLines(source, counts) {
   return total;
 }
 
+// A region is a maximal run of offsets sharing the same recorded count (a
+// single V8 range, or several adjacent ranges that happen to agree after the
+// merge in collect()). Line coverage marks a line covered when any character
+// on it ran, so a `||` default, a `??` fallback, or a ternary arm that never
+// executed is invisible there whenever the rest of its line did run; scoring
+// at region granularity instead surfaces exactly those sub-line gaps (#640).
+// A region counts as executable only when it contains non-whitespace source,
+// so padding between two same-count ranges is not scored as its own gap.
+export function summarizeRegions(source, counts) {
+  const total = { regions: 0, covered: 0, uncovered: [] };
+  const length = counts.length;
+  let i = 0;
+  let line = 1;
+  while (i < length) {
+    const count = counts[i];
+    const startLine = line;
+    let hasNonBlank = false;
+    let j = i;
+    while (j < length && counts[j] === count) {
+      const char = source[j];
+      if (char === '\n') line += 1;
+      else if (char !== '\r' && char !== ' ' && char !== '\t') {
+        hasNonBlank = true;
+      }
+      j += 1;
+    }
+    if (count >= 0 && hasNonBlank) {
+      total.regions += 1;
+      if (count > 0) total.covered += 1;
+      else total.uncovered.push(startLine);
+    }
+    i = j;
+  }
+  return total;
+}
+
 function formatRanges(lines) {
   const out = [];
   let start = null;
@@ -227,31 +270,42 @@ function report(merged) {
   const rows = [...merged.entries()]
     .map(([file, { source, counts }]) => ({
       file,
-      ...summarizeLines(source, counts),
+      lines: summarizeLines(source, counts),
+      regions: summarizeRegions(source, counts),
     }))
     .sort((a, b) => a.file.localeCompare(b.file));
 
   const width = Math.max(4, ...rows.map((row) => row.file.length));
-  const header = `${'file'.padEnd(width)} | line % | uncovered lines`;
+  const header = `${'file'.padEnd(width)} | line % | region % | uncovered lines`;
   console.log(header);
   console.log('-'.repeat(header.length));
 
   let executable = 0;
   let covered = 0;
+  let regions = 0;
+  let regionsCovered = 0;
   for (const row of rows) {
-    executable += row.executable;
-    covered += row.covered;
-    const pct = percent(row.covered, row.executable).toFixed(2).padStart(6);
+    executable += row.lines.executable;
+    covered += row.lines.covered;
+    regions += row.regions.regions;
+    regionsCovered += row.regions.covered;
+    const linePct = percent(row.lines.covered, row.lines.executable)
+      .toFixed(2)
+      .padStart(6);
+    const regionPct = percent(row.regions.covered, row.regions.regions)
+      .toFixed(2)
+      .padStart(8);
     console.log(
-      `${row.file.padEnd(width)} | ${pct} | ${formatRanges(row.uncovered)}`,
+      `${row.file.padEnd(width)} | ${linePct} | ${regionPct} | ${formatRanges(row.lines.uncovered)}`,
     );
   }
   console.log('-'.repeat(header.length));
-  const totalPct = percent(covered, executable);
+  const totalLinePct = percent(covered, executable);
+  const totalRegionPct = percent(regionsCovered, regions);
   console.log(
-    `${'all files'.padEnd(width)} | ${totalPct.toFixed(2).padStart(6)} |`,
+    `${'all files'.padEnd(width)} | ${totalLinePct.toFixed(2).padStart(6)} | ${totalRegionPct.toFixed(2).padStart(8)} |`,
   );
-  return totalPct;
+  return { totalLinePct, totalRegionPct };
 }
 
 function main() {
@@ -273,7 +327,7 @@ function main() {
       process.exit(1);
     }
     console.log('');
-    const totalPct = report(merged);
+    const { totalLinePct, totalRegionPct } = report(merged);
     if (unmapped.size > 0) {
       console.log(
         `\nNot reported (${unmapped.size}): every coverage record for these\n` +
@@ -288,9 +342,18 @@ function main() {
       console.error('\nTests failed; coverage above is reported for context.');
       process.exit(result.status ?? 1);
     }
-    if (options.check !== null && totalPct + 1e-9 < options.check) {
+    if (options.check !== null && totalLinePct + 1e-9 < options.check) {
       console.error(
-        `\nLine coverage ${totalPct.toFixed(2)}% is below the required ${options.check}%.`,
+        `\nLine coverage ${totalLinePct.toFixed(2)}% is below the required ${options.check}%.`,
+      );
+      process.exit(1);
+    }
+    if (
+      options.checkRegions !== null &&
+      totalRegionPct + 1e-9 < options.checkRegions
+    ) {
+      console.error(
+        `\nRegion coverage ${totalRegionPct.toFixed(2)}% is below the required ${options.checkRegions}%.`,
       );
       process.exit(1);
     }
