@@ -651,3 +651,112 @@ test('does not mirror assets through a symlinked images/ directory root', () => 
     run.cleanup();
   }
 });
+
+// #533: walkFiles() refuses symlinked entries because cpSync copies a link
+// link-intact, and the SVG sanitizer later writes *through* it — turning an
+// upstream commit into an arbitrary write outside static/img/architectures.
+// The symlinked-root test above covers the images/ root; this covers entries
+// found inside a root that is itself a real directory.
+test('skips symlinked entries found inside a real images/ directory', () => {
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'linked-entry',
+        '---\ntitle: Linked Entry\norg_name: Linked Entry Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/linked-entry/images/diagram.png': 'png-bytes',
+      'outside/secret.png': 'secret-bytes',
+      'outside/nested/deeper.png': 'deeper-bytes',
+    },
+    upstreamSymlinks: {
+      'content/en/architectures/linked-entry/images/leaked.png':
+        '../../../../../outside/secret.png',
+      'content/en/architectures/linked-entry/images/leaked-dir':
+        '../../../../../outside/nested',
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+
+    // The real sibling is still mirrored: the guard rejects the symlinks, it
+    // does not abandon the whole directory.
+    assert.equal(
+      run.read('static/img/architectures/linked-entry/diagram.png'),
+      'png-bytes',
+    );
+    assert.equal(
+      run.exists('static/img/architectures/linked-entry/leaked.png'),
+      false,
+    );
+    assert.equal(
+      run.exists('static/img/architectures/linked-entry/leaked-dir'),
+      false,
+    );
+
+    const record = run.readJson('data/architectures/records/linked-entry.json');
+    assert.deepEqual(record.assets, [
+      '/img/architectures/linked-entry/diagram.png',
+    ]);
+
+    assert.match(
+      run.stderr,
+      /Skipping symlink .*leaked\.png: symlinks are never imported/,
+    );
+    assert.match(
+      run.stderr,
+      /Skipping symlink .*leaked-dir: symlinks are never imported/,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('skips upstream image files that are not a mirrorable image type', () => {
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'skipped-types',
+        '---\ntitle: Skipped Types\norg_name: Skipped Types Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/skipped-types/images/diagram.png': 'png-bytes',
+      'content/en/architectures/skipped-types/images/notes.txt': 'not-an-image',
+      'content/en/architectures/skipped-types/images/LICENSE': 'no-extension',
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+
+    assert.equal(
+      run.read('static/img/architectures/skipped-types/diagram.png'),
+      'png-bytes',
+    );
+    assert.equal(
+      run.exists('static/img/architectures/skipped-types/notes.txt'),
+      false,
+    );
+    assert.equal(
+      run.exists('static/img/architectures/skipped-types/LICENSE'),
+      false,
+    );
+
+    const record = run.readJson(
+      'data/architectures/records/skipped-types.json',
+    );
+    assert.deepEqual(record.assets, [
+      '/img/architectures/skipped-types/diagram.png',
+    ]);
+
+    assert.match(
+      run.stderr,
+      /Skipping notes\.txt in skipped-types: \.txt is not a mirrorable image type/,
+    );
+    assert.match(
+      run.stderr,
+      /Skipping LICENSE in skipped-types: no extension is not a mirrorable image type/,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
