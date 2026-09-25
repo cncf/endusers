@@ -61,7 +61,7 @@
     "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
     "test:unit": "TZ=UTC node --test",
     "test:unit:coverage": "TZ=UTC node tests/tools/coverage-report.mjs",
-    "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 97 --check-source 99",
+    "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 97 --check-source 99 --check-regions 93 --check-source-regions 97",
     "test:e2e": "playwright test"
   },
   "repository": {
