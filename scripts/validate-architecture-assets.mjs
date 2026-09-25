@@ -1,5 +1,11 @@
 #!/usr/bin/env node
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import {
+  lstatSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { extname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectError, reportAndExit } from './lib/validate-utils.mjs';
@@ -177,9 +183,21 @@ function validateAsset(path, quality) {
   }
 }
 
-const assets = assetDirs.flatMap(({ dir, quality }) =>
-  exists(dir) ? walk(dir).map((path) => ({ path, quality })) : [],
-);
+const assets = assetDirs.flatMap(({ dir, quality }) => {
+  const kind = assetRootKind(dir);
+  // Fail loudly rather than skipping: a silently unvalidated asset root ships
+  // unchecked SVGs from the site origin.
+  if (kind === 'symlink') {
+    record(
+      dir,
+      'error',
+      'asset directory is a symbolic link; symlinks are not allowed',
+    );
+    return [];
+  }
+  if (kind !== 'directory') return [];
+  return walk(dir).map((path) => ({ path, quality }));
+});
 for (const { path, quality } of assets) {
   validateAsset(path, quality);
 }
@@ -197,10 +215,14 @@ if (shouldFix && issues.length === 0) {
   console.log('No fixes were needed.');
 }
 
-function exists(p) {
-  try {
-    return statSync(p).isDirectory();
-  } catch {
-    return false;
-  }
+// True only for a path that is itself a directory, never a symlink pointing at
+// one. walk() rejects symlinked *entries*, but a walk rooted at a symlinked
+// directory descends into the link target, so every file found there is
+// validated as if it were a published asset and is written back through by
+// --fix. Mirrors isRealDirectory() in scripts/import-architectures.mjs.
+function assetRootKind(dir) {
+  const stats = lstatSync(dir, { throwIfNoEntry: false });
+  if (!stats) return 'missing';
+  if (stats.isSymbolicLink()) return 'symlink';
+  return stats.isDirectory() ? 'directory' : 'other';
 }
