@@ -162,3 +162,64 @@ test('every Node setup step pins the same Node major version', () => {
     `workflows must build on one Node major version, found: ${[...versions].sort().join(', ')}`,
   );
 });
+
+// Checkout leaves GITHUB_TOKEN in .git/config unless credential persistence is
+// disabled, so every later step in the job -- including `npm ci` and any build
+// that executes third-party dependency code -- can read a token scoped to this
+// repository. Seven of the eight workflows already opt out; this pins that in
+// place so the eighth is the last one.
+//
+// KNOWN_PERSISTING_CHECKOUTS is a retiring baseline, not an allowance. The
+// companion test below fails once an entry becomes compliant, so fixing a
+// workflow forces the exception to be removed in the same change.
+const KNOWN_PERSISTING_CHECKOUTS = new Set([
+  // See #598: an agent restricted to issues and pull requests cannot push a
+  // diff touching .github/workflows/, so the workflow half of that fix needs a
+  // human or a merge-capable agent to land.
+  'refresh-radar-reports.yml',
+]);
+
+function checkoutSteps(doc) {
+  return steps(doc).filter(({ step }) =>
+    step?.uses?.startsWith('actions/checkout@'),
+  );
+}
+
+function persistsCredentials(step) {
+  return step?.with?.['persist-credentials'] !== false;
+}
+
+test('every checkout step disables credential persistence', () => {
+  const offenders = [];
+  for (const { name, doc } of workflows) {
+    if (KNOWN_PERSISTING_CHECKOUTS.has(name)) continue;
+    for (const { jobName, index, step } of checkoutSteps(doc)) {
+      if (persistsCredentials(step)) {
+        offenders.push(`${name} (${jobName}, step ${index})`);
+      }
+    }
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    `actions/checkout must set 'persist-credentials: false' so GITHUB_TOKEN is not left in .git/config:\n${offenders.join('\n')}`,
+  );
+});
+
+test('the persist-credentials baseline retires itself', () => {
+  for (const name of KNOWN_PERSISTING_CHECKOUTS) {
+    const entry = workflows.find((workflow) => workflow.name === name);
+    assert.ok(
+      entry,
+      `${name} is listed as a known persist-credentials gap but no such workflow exists; remove the entry`,
+    );
+    const offending = checkoutSteps(entry.doc).filter(({ step }) =>
+      persistsCredentials(step),
+    );
+    assert.notEqual(
+      offending.length,
+      0,
+      `${name} now sets persist-credentials: false on every checkout; remove it from KNOWN_PERSISTING_CHECKOUTS so the gap cannot reopen`,
+    );
+  }
+});
