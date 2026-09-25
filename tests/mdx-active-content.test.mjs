@@ -133,6 +133,28 @@ test('reports a live element hidden by a mismatched backtick run, not a code spa
   assert.deepEqual(reasons('`<script>alert(1)</script>`'), []);
 });
 
+test('does not treat a backtick fence with a backtick in its info string as a fence', () => {
+  // CommonMark: a backtick fence's info string may not itself contain a
+  // backtick. A line like "```<script>x</script>`" therefore opens no fence
+  // at all -- it is a live paragraph, not code. Reading it as a fence opener
+  // would blank it (and everything after it, since no real closer follows),
+  // hiding the payload the same way the mismatched-run bypass above did.
+  assert.deepEqual(reasons('```<script>alert(1)</script>`'), [
+    'disallowed element <script>',
+  ]);
+  // A genuine fenced block still blanks normally.
+  assert.deepEqual(
+    reasons(['```js', '<script>alert(1)</script>', '```'].join('\n')),
+    [],
+  );
+  // A tilde fence has no such restriction, so a backtick in its info string
+  // does not disqualify it.
+  assert.deepEqual(
+    reasons(['~~~js `x`', '<script>alert(1)</script>', '~~~'].join('\n')),
+    [],
+  );
+});
+
 test('reports the line number of each finding and deduplicates per line and reason', () => {
   const body = ['# T', '', '<script>alert(1)</script>'].join('\n');
   assert.deepEqual(findActiveContent(body), [
