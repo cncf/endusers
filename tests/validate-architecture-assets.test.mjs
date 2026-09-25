@@ -328,3 +328,31 @@ test('does not apply diagram-quality checks to mirrored artwork', () => {
   });
   assert.equal(result.status, 0, result.stderr);
 });
+
+test('--fix writes a repaired mirrored asset back to disk', () => {
+  // Mirrored artwork returns early before the diagram-quality checks, so it
+  // has its own write-back. Without it a security/structure repair made above
+  // that branch would be reported as fixed but never persisted.
+  const icon = 'static/img/cncf-projects/helm-helm-icon-color.svg';
+  const svg = `<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "svg11.dtd">\n${VALID_SVG}`;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    { [icon]: svg },
+    { args: ['--fix'], readBack: [icon] },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.files[icon], VALID_SVG);
+  assert.doesNotMatch(result.files[icon], /DOCTYPE/);
+  assert.match(result.stdout, /removed DOCTYPE/);
+});
+
+test('warns on an asset larger than 2 MB but still passes', () => {
+  // The size gate is advisory: oversized diagrams slow the site down but are
+  // not a correctness failure, so the run must warn and still exit 0.
+  const padding = ' '.repeat(2 * 1024 * 1024);
+  const svg = VALID_SVG.replace('<svg ', `<svg data-pad="${padding}" `);
+  const result = runScriptWithFixtures(SCRIPT, svgFixture(svg, 'large.svg'));
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /large\.svg: asset is \d+\.\d\d MB/);
+  assert.match(result.stdout, /Validated 1 architecture asset/);
+});
