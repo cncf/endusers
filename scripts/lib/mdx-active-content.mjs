@@ -8,6 +8,12 @@
  * helper reports the constructs that can execute or load remote code so a
  * validator can fail the build before such a body ships.
  *
+ * MDX evaluates a braced expression as JavaScript, so `{fetch(...)}` in an
+ * imported body is live code and not prose; every `{` is therefore a finding
+ * unless it is one of the inert string-literal attributes the importer emits
+ * itself.  The check is deliberately fail-closed: literal braces in upstream
+ * prose are reported rather than assumed harmless.
+ *
  * Scheme detection normalizes each line before testing it, because CommonMark
  * decodes character references in a link destination: `java&#115;cript:` is a
  * live `javascript:` href by the time the page renders.
@@ -35,6 +41,24 @@ const ALLOWED_COMPONENT = 'CNCFProjectCard';
 
 const ALLOWED_IMPORT =
   "import CNCFProjectCard from '@site/src/components/CNCFProjectCard';";
+
+/**
+ * The one expression form the importer itself emits: an attribute whose value
+ * is a single JSON string literal, as produced by `jsxAttribute`
+ * (`scripts/lib/jsx-attributes.mjs`).  The pattern requires the closing brace
+ * to follow the closing quote immediately, so the braces can enclose nothing
+ * but the literal -- `{"a" + fetch(x)}` does not match.  An expression whose
+ * entire body is a string literal evaluates to that string and has no call,
+ * member access or identifier reference available to it, so it is inert
+ * wherever it appears.
+ */
+const ALLOWED_ATTRIBUTE_EXPRESSION =
+  /(?<=\s)[A-Za-z_$][A-Za-z0-9_$-]*=\{"(?:[^"\\]|\\.)*"\}/g;
+
+/**
+ * Any remaining `{` opens an MDX expression, which is evaluated JavaScript.
+ */
+const EXPRESSION_PATTERN = /\{/;
 
 const ELEMENT_PATTERN = /<\/?([A-Za-z][A-Za-z0-9._-]*)/g;
 const EVENT_HANDLER_PATTERN = /\bon[a-z]{3,}\s*=/gi;
@@ -228,6 +252,22 @@ function blankInlineSpans(text) {
 }
 
 /**
+ * Neutralize the braces of the importer's own attribute expressions so the
+ * expression scan does not flag generated markup.  Only the `{` and `}`
+ * characters are replaced, by a space each: the quoted value between them is
+ * left in place so the scheme, handler and element scans still read it, and
+ * the line keeps its length so findings keep accurate line numbers.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+function blankAllowedExpressions(text) {
+  return text.replace(ALLOWED_ATTRIBUTE_EXPRESSION, (match) =>
+    match.replace(/[{}]/g, ' '),
+  );
+}
+
+/**
  * Scans a Markdown/MDX body for content that executes or loads remote code.
  *
  * @param {string} markdown - Document body to scan.
@@ -236,7 +276,9 @@ function blankInlineSpans(text) {
  */
 export function findActiveContent(markdown) {
   const findings = [];
-  const scannable = blankCodeSpans(String(markdown ?? ''));
+  const scannable = blankAllowedExpressions(
+    blankCodeSpans(String(markdown ?? '')),
+  );
   const lines = scannable.split('\n');
 
   lines.forEach((line, index) => {
@@ -279,6 +321,13 @@ export function findActiveContent(markdown) {
       findings.push({
         line: number,
         reason: 'unexpected ESM statement',
+        snippet,
+      });
+
+    if (EXPRESSION_PATTERN.test(line))
+      findings.push({
+        line: number,
+        reason: 'MDX expression',
         snippet,
       });
   });
