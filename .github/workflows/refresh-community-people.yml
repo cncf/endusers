@@ -35,3 +35,4 @@ jobs:
           body: |
             Automated refresh of the public GitHub profile data used by the End User Community lightboxes.
           labels: automated
+          signoff: true
