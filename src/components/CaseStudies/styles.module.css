@@ -121,9 +121,14 @@
 }
 
 .title {
-  max-width: 32ch;
+  max-width: 44ch;
   overflow-wrap: break-word;
   white-space: normal;
+}
+
+.projects {
+  max-width: 18ch;
+  overflow-wrap: break-word;
 }
 
 .emptyState {

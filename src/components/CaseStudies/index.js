@@ -208,7 +208,7 @@ export default function CaseStudies() {
                       day: 'numeric',
                     })}
                 </td>
-                <td>{study.projects.join(', ')}</td>
+                <td className={styles.projects}>{study.projects.join(', ')}</td>
                 <td>{study.industries.join(', ')}</td>
                 <td>{study.countries.join(', ')}</td>
               </tr>
