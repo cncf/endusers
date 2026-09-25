@@ -57,6 +57,18 @@ test('rejects a missing verifiedAt', () => {
   assert.match(result.stderr, /verifiedAt must be a parseable date/);
 });
 
+test('rejects a missing verifiedAgainst', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([validEntry], { verifiedAgainst: undefined }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /verifiedAgainst must be an https URL/);
+  // The absent-value arm must report the field as missing rather than fall
+  // through to checkHttpsUrl, which would blame the URL shape instead.
+  assert.doesNotMatch(result.stderr, /absolute https URL/);
+});
+
 test('rejects a non-https verifiedAgainst', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
