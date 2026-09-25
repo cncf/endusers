@@ -12,15 +12,20 @@ import { collectError, reportAndExit } from './lib/validate-utils.mjs';
 import { findActiveContent } from './lib/svg-active-content.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-// Both directories are populated by scripts/import-architectures.mjs from
-// third-party input and published verbatim at the site origin, so both get the
-// security gate (extension allow-list, symlink rejection, SVG active content).
+// Every directory here is published verbatim at the site origin, so every one
+// gets the security gate (extension allow-list, symlink rejection, SVG active
+// content). The gate is scoped by where the bytes are *served from*, not by
+// where they came from: an award logo hand-committed in a pull request lands at
+// the same origin as an imported diagram, and a browser that opens it directly
+// executes any script it carries just the same.
+//
 // Diagram-quality checks (viewBox, raster bloat, editor metadata) apply only
-// to architecture diagrams; mirrored cncf/artwork icons are kept byte-faithful
-// to upstream apart from active-content stripping at import time.
+// to architecture diagrams; mirrored cncf/artwork icons and award logos are
+// kept byte-faithful apart from the security gate.
 const assetDirs = [
   { dir: join(root, 'static/img/architectures'), quality: true },
   { dir: join(root, 'static/img/cncf-projects'), quality: false },
+  { dir: join(root, 'static/img/awards'), quality: false },
 ];
 const shouldFix = process.argv.includes('--fix');
 
