@@ -21,6 +21,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   countsForScript,
+  isSourceFile,
   summarizeLines,
   summarizeRegions,
   toRepoRelativePath,
@@ -342,6 +343,118 @@ test('the reporter fails loudly rather than reporting 100% on no data', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /No coverage data was recorded\./);
   assert.doesNotMatch(result.stdout, /all files/);
+});
+
+test('isSourceFile separates the shipped sources from the test suite', () => {
+  assert.equal(isSourceFile('scripts/collect-metrics.mjs'), true);
+  assert.equal(isSourceFile('src/components/Footer/index.js'), true);
+  assert.equal(isSourceFile('tests/helpers.mjs'), false);
+  assert.equal(isSourceFile('tests/tools/coverage-report.mjs'), false);
+  // Only a leading tests/ excludes a path, not any path that mentions it.
+  assert.equal(isSourceFile('scripts/lib/tests/util.mjs'), true);
+});
+
+// Test files are near-fully covered by construction and outweigh the code
+// they exercise, so an all-files percentage is mostly the suite measuring
+// itself: deleting a whole test file removes its lines from both sides of
+// that fraction and barely moves it. The src subtotal is the number
+// --check-source actually gates, and it has to be visible in the report
+// rather than left to be inferred from the per-file rows.
+test('the reporter prints a src-files subtotal separate from the all-files total', () => {
+  const result = runReporter(['--check', '100', ...NARROW]);
+  assert.equal(result.status, 0, result.stderr);
+  const src = result.stdout.match(
+    /^src files\s+\|\s+\S+ \|\s+\S+ \|\s+(\d+)\/(\d+) lines$/m,
+  );
+  assert.ok(src, `no src subtotal in:\n${result.stdout}`);
+  // The run always records the test file it executed, so the src subtotal is
+  // a strict subset of the total rather than the same number relabelled.
+  const all = result.stdout.match(
+    /^all files\s+\|\s+100\.00 \|\s+100\.00 \|$/m,
+  );
+  assert.ok(all, `no all-files total in:\n${result.stdout}`);
+  assert.ok(Number(src[2]) > 0);
+});
+
+test('the reporter exits 0 and prints a total when source coverage clears --check-source', () => {
+  const result = runReporter(['--check-source', '100', ...NARROW]);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('the reporter fails the run when source coverage is below --check-source', () => {
+  const result = runReporter(['--check-source', '100.5', ...NARROW]);
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /Source line coverage 100\.00% is below the required 100\.5%/,
+  );
+});
+
+test('--check-source rejects a non-numeric threshold instead of silently disabling the gate', () => {
+  const result = runReporter(['--check-source', 'ninety', ...NARROW]);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /--check-source requires a numeric percentage/);
+});
+
+test('--check-source rejects a missing threshold', () => {
+  const result = runReporter(['--check-source']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /--check-source requires a numeric percentage/);
+});
+
+test('the reporter exits 0 and prints a total when source region coverage clears --check-source-regions', () => {
+  const result = runReporter(['--check-source-regions', '100', ...NARROW]);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('the reporter fails the run when source region coverage is below --check-source-regions', () => {
+  const result = runReporter(['--check-source-regions', '100.5', ...NARROW]);
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /Source region coverage 100\.00% is below the required 100\.5%/,
+  );
+});
+
+test('--check-source-regions rejects a non-numeric threshold instead of silently disabling the gate', () => {
+  const result = runReporter(['--check-source-regions', 'ninety', ...NARROW]);
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /--check-source-regions requires a numeric percentage/,
+  );
+});
+
+// A narrow run that only executes a test file which imports nothing from
+// scripts/ or src/ (only node builtins and a dependency) records zero source
+// lines. percent()'s 0/0 == 100% fallback would otherwise let --check-source
+// pass having verified nothing at all.
+test('--check-source fails rather than passing vacuously when no source lines were recorded', () => {
+  const result = runReporter([
+    '--check-source',
+    '99',
+    '--',
+    'tests/workflow-scripts.test.mjs',
+  ]);
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /--check-source was requested, but no source lines outside tests\/ were recorded\./,
+  );
+});
+
+test('--check-source-regions fails rather than passing vacuously when no source regions were recorded', () => {
+  const result = runReporter([
+    '--check-source-regions',
+    '99',
+    '--',
+    'tests/workflow-scripts.test.mjs',
+  ]);
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /--check-source-regions was requested, but no source regions outside tests\/ were recorded\./,
+  );
 });
 
 test('without --check the reporter reports coverage and exits 0', () => {
