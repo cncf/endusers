@@ -288,5 +288,15 @@ export function stripActiveContent(source) {
     return match;
   });
 
+  // Catch unquoted/malformed handler attributes ATTRIBUTE_PATTERN cannot
+  // represent (a value-less `onload=` or a backtick-delimited value), the
+  // same gap findActiveContent's on* fallback exists to cover. Replacing with
+  // a single space rather than deleting keeps a neighboring attribute from
+  // fusing with the tag name or a preceding attribute.
+  output = output.replace(/\son[a-z]+\s*=\s*(?:`[^`]*`)?/gi, (match) => {
+    removed.push(`${match.trim()} attribute (unquoted/malformed handler)`);
+    return ' ';
+  });
+
   return { source: output, removed };
 }
