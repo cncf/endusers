@@ -88,6 +88,12 @@ export const FAKE_COMMIT = 'a'.repeat(40);
  *   root and valued by link target. The `git clone` stub copies the fixture
  *   with `cp -R`, which preserves symlinks, so these reach the importer the
  *   same way a symlink committed upstream would.
+ * @param {string[]} [options.upstreamFifos] Named pipes created under the
+ *   cloned upstream checkout, keyed by path relative to the clone root. A FIFO
+ *   is neither a regular file nor a directory nor a symlink, which is the only
+ *   way to reach walkFiles()' final rejection arm. `cp -R` recreates a FIFO as
+ *   a FIFO, so these reach the importer the way a special file in the upstream
+ *   checkout would.
  * @param {Record<string, {status?: number, body?: string, networkError?: boolean}>} [options.fetchResponses]
  *   Stubbed responses keyed by absolute URL.
  * @param {Record<string, string>} [options.repoFiles] Extra files placed in the
@@ -102,6 +108,7 @@ export const FAKE_COMMIT = 'a'.repeat(40);
 export function runImportArchitectures({
   upstream,
   upstreamSymlinks = {},
+  upstreamFifos = [],
   fetchResponses = {},
   repoFiles = {},
   rsvgConvert = 'success',
@@ -137,6 +144,16 @@ export function runImportArchitectures({
     const link = join(upstreamFixture, relativePath);
     mkdirSync(dirname(link), { recursive: true });
     symlinkSync(linkTarget, link);
+  }
+  for (const relativePath of upstreamFifos) {
+    const fifo = join(upstreamFixture, relativePath);
+    mkdirSync(dirname(fifo), { recursive: true });
+    // Node has no mkfifo binding, so shell out. Every platform the suite runs
+    // on ships mkfifo; a failure here is a broken fixture, not a skip.
+    const made = spawnSync('mkfifo', [fifo], { encoding: 'utf8' });
+    if (made.status !== 0) {
+      throw new Error(`could not create FIFO ${relativePath}: ${made.stderr}`);
+    }
   }
   for (const [relativePath, content] of Object.entries(repoFiles)) {
     writeAt(work, relativePath, content);
