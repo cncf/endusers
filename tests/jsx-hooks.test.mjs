@@ -149,3 +149,50 @@ test('a relative import from node_modules is never intercepted', async () => {
   );
   assert.equal(delegated, true, 'dependency resolution must be untouched');
 });
+
+test('a @site alias naming a directory with no index file names the directory', async () => {
+  // completeTarget() tries `<dir>/index.<ext>` for every resolvable extension
+  // and, when none exists, hands back the bare target so Node reports the miss
+  // against the path the source asked for rather than an invented index file.
+  const hooks = await import('./tools/jsx-hooks.mjs');
+  const next = () => {
+    throw new Error('the @site alias must be resolved by the hooks');
+  };
+  const { url } = hooks.resolve('@site/tests/tools/docusaurus-stubs', {}, next);
+  assert.match(url, /\/tests\/tools\/docusaurus-stubs$/);
+});
+
+test('a JSON import that carries an import attribute is left to Node', async () => {
+  // Only the attribute-less Docusaurus form needs synthesising. A source that
+  // already writes `with { type: 'json' }` must reach Node's own JSON loader,
+  // not a second `export default` wrapper around the same bytes.
+  const hooks = await import('./tools/jsx-hooks.mjs');
+  let delegated = false;
+  const next = () => {
+    delegated = true;
+    return { format: 'json', source: '{}', shortCircuit: true };
+  };
+  const url = new URL('../data/projects-born.json', import.meta.url).href;
+  hooks.load(url, { importAttributes: { type: 'json' } }, next);
+  assert.equal(delegated, true, 'an explicit json attribute must delegate');
+
+  delegated = false;
+  const synthesised = hooks.load(url, {}, next);
+  assert.equal(delegated, false, 'the attribute-less form must be synthesised');
+  assert.equal(synthesised.format, 'module');
+  assert.match(synthesised.source, /^export default /);
+});
+
+test('a non-script file URL is never fed to the JSX transform', async () => {
+  // SCRIPT_URL gates the transform. Without it the hooks would read and
+  // transpile arbitrary files — a .md or .svg would reach @swc/core.
+  const hooks = await import('./tools/jsx-hooks.mjs');
+  let delegated = false;
+  const next = () => {
+    delegated = true;
+    return { format: 'module', source: '', shortCircuit: true };
+  };
+  const url = new URL('../README.md', import.meta.url).href;
+  hooks.load(url, {}, next);
+  assert.equal(delegated, true, 'a non-script URL must be delegated');
+});
