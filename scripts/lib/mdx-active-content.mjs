@@ -145,8 +145,13 @@ function blankFences(markdown) {
       continue;
     }
 
-    const opener = line.match(/^[ \t]*(`{3,}|~{3,})/);
-    if (opener) {
+    const opener = line.match(/^[ \t]*(`{3,}|~{3,})([^\n]*)$/);
+    // A backtick fence's info string may not contain a backtick (CommonMark);
+    // a line like "```<script>x</script>`" therefore opens no fence at all --
+    // it is a paragraph, and the element in it is live. Treating it as a
+    // fence would blank it (and everything after it) unscanned, which is a
+    // bypass, not a false positive. A tilde fence has no such restriction.
+    if (opener && !(opener[1][0] === '`' && opener[2].includes('`'))) {
       fenceChar = opener[1][0];
       fenceLength = opener[1].length;
       output.push(' '.repeat(line.length));
