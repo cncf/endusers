@@ -760,3 +760,165 @@ test('skips upstream image files that are not a mirrorable image type', () => {
     run.cleanup();
   }
 });
+
+// The two sanitizer call sites below are what keeps third-party SVG from being
+// published, executable, at the site's own origin: sanitizeArchitectureAssets()
+// covers files committed to the upstream architecture repo, mirrorProjectAssets()
+// covers artwork fetched over the network at import time. Both strip the markup
+// and both report what they dropped, so a maintainer reading the import log can
+// see that upstream shipped active content.
+const ACTIVE_CONTENT_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+  '<script>alert(1)</script>' +
+  '<rect onload="alert(2)" />' +
+  '<a href="javascript:alert(3)">x</a>' +
+  '</svg>';
+
+test('strips active content from an imported SVG asset and reports it', () => {
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'active',
+        '---\ntitle: Active\norg_name: Active Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/active/images/diagram.svg': ACTIVE_CONTENT_SVG,
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+
+    const sanitized = run.read('static/img/architectures/active/diagram.svg');
+    assert.doesNotMatch(sanitized, /<script/i);
+    assert.doesNotMatch(sanitized, /onload/i);
+    assert.doesNotMatch(sanitized, /javascript:/i);
+    // The inert markup around the active content survives the strip.
+    assert.match(sanitized, /<rect \/>/);
+
+    // The warning names the file and every distinct thing removed from it, so
+    // the import log is enough to triage what upstream shipped.
+    assert.match(
+      run.stderr,
+      /Removed active content from img\/architectures\/active\/diagram\.svg: /,
+    );
+    for (const finding of [
+      '<script> element',
+      'onload attribute',
+      'href attribute (javascript:)',
+    ]) {
+      assert.ok(
+        run.stderr.includes(finding),
+        `expected the warning to name ${finding}, got: ${run.stderr}`,
+      );
+    }
+
+    // A sanitized asset is still an asset: it stays listed on the record.
+    const record = run.readJson('data/architectures/records/active.json');
+    assert.deepEqual(record.assets, ['/img/architectures/active/diagram.svg']);
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('strips active content from a mirrored project SVG and reports it', () => {
+  const logoUrl =
+    'https://raw.githubusercontent.com/cncf/artwork/main/projects/argo/icon/color/argo-icon-color.svg';
+  const run = runImportArchitectures({
+    upstream: architecture(
+      'mirror-active',
+      `---
+title: Mirror Active
+org_name: Mirror Co
+---
+
+Intro paragraph.
+
+{{< card header="Argo" >}}
+![Argo](${logoUrl})
+{{< /card >}}
+`,
+    ),
+    fetchResponses: {
+      [logoUrl]: { status: 200, body: ACTIVE_CONTENT_SVG },
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+
+    // Mirrored under static/, so this file is served from the site origin and
+    // must not carry anything a browser would execute when it opens it.
+    const mirrored = run.read(
+      'static/img/cncf-projects/argo-argo-icon-color.svg',
+    );
+    assert.doesNotMatch(mirrored, /<script/i);
+    assert.doesNotMatch(mirrored, /onload/i);
+    assert.doesNotMatch(mirrored, /javascript:/i);
+    assert.match(mirrored, /<rect \/>/);
+
+    assert.match(
+      run.stderr,
+      /Removed active content from mirrored asset projects\/argo\/icon\/color\/argo-icon-color\.svg: /,
+    );
+    assert.ok(
+      run.stderr.includes('<script> element'),
+      `expected the warning to name the script element, got: ${run.stderr}`,
+    );
+
+    // Mirroring still succeeded, so the card keeps its local logo path rather
+    // than falling back to a badge.
+    assert.match(
+      run.read('docs/architectures/mirror-active.md'),
+      /logo=\{"\/img\/cncf-projects\/argo-argo-icon-color\.svg"\}/,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('mirrors a non-SVG project asset verbatim', () => {
+  const logoUrl =
+    'https://raw.githubusercontent.com/cncf/artwork/main/projects/flux/icon/color/flux-icon-color.png';
+  // Bytes that are not valid UTF-8 text: a raster asset must be written from
+  // the response buffer, never round-tripped through a string.
+  const pngBody = '\u0089PNG\r\n\u001a\n<script>alert(1)</script>';
+  const run = runImportArchitectures({
+    upstream: architecture(
+      'mirror-raster',
+      `---
+title: Mirror Raster
+org_name: Raster Co
+---
+
+Intro paragraph.
+
+{{< card header="Flux" >}}
+![Flux](${logoUrl})
+{{< /card >}}
+`,
+    ),
+    fetchResponses: {
+      [logoUrl]: { status: 200, body: pngBody },
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+
+    // The SVG sanitizer must not run on a non-SVG asset: it would corrupt the
+    // binary. The bytes land exactly as they were served.
+    assert.equal(
+      run.read('static/img/cncf-projects/flux-flux-icon-color.png'),
+      pngBody,
+    );
+    assert.doesNotMatch(run.stderr, /Removed active content/);
+    assert.doesNotMatch(run.stderr, /Could not mirror CNCF project asset/);
+
+    assert.match(
+      run.read('docs/architectures/mirror-raster.md'),
+      /logo=\{"\/img\/cncf-projects\/flux-flux-icon-color\.png"\}/,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
