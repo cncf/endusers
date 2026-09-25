@@ -1,10 +1,10 @@
 {
   "generated": true,
-  "generatedAt": "2026-09-24T02:38:41.405Z",
+  "generatedAt": "2026-09-25T02:37:10.636Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
-      "revision": "0448002c82defabcb100ba959475fbed3b91f3ab",
+      "revision": "97b2e16fdf4147166df9427299998a83991b0958",
       "sourceUrl": "https://github.com/cncf/landscape/blob/main/landscape.yml"
     },
     "architectures": {
@@ -20,7 +20,7 @@
       "value": 255,
       "source": "landscape",
       "sourceUrl": "https://landscape.cncf.io/",
-      "collectedAt": "2026-09-24T02:38:41.405Z",
+      "collectedAt": "2026-09-25T02:37:10.636Z",
       "note": "Projects explicitly marked with a CNCF maturity level in landscape.yml."
     },
     {
@@ -29,7 +29,7 @@
       "value": 8,
       "source": "architectures",
       "sourceUrl": "https://github.com/cncf/architecture/tree/main/content/en/architectures",
-      "collectedAt": "2026-09-24T02:38:41.405Z",
+      "collectedAt": "2026-09-25T02:37:10.636Z",
       "note": "Published architecture directories under content/en/architectures."
     }
   ],
@@ -108,7 +108,7 @@
       "sourceUrl": "https://landscape.cncf.io/",
       "values": [
         {
-          "date": "2026-09-24",
+          "date": "2026-09-25",
           "value": 649
         }
       ]
@@ -153,7 +153,7 @@
     "generated": true,
     "source": "cncf/tab and cncf/architecture GitHub APIs",
     "sourceUrl": "https://github.com/cncf/tab/issues?q=is%3Aissue+label%3Aarea%2Freference-architecture",
-    "observedAt": "2026-09-24T02:38:41.405Z",
+    "observedAt": "2026-09-25T02:37:10.636Z",
     "cards": [
       {
         "id": "open-submissions",
