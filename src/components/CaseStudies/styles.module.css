@@ -118,11 +118,11 @@
 
 .table tbody th[scope='row'] {
   font-weight: 600;
-  white-space: nowrap;
 }
 
 .title {
   max-width: 32ch;
+  overflow-wrap: break-word;
   white-space: normal;
 }
 
