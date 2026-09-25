@@ -253,6 +253,64 @@ test('treats a 400 past the last page as the end of the catalog', () => {
   );
 });
 
+test('leaves the catalog untouched when nothing changed (#648)', () => {
+  const routes = [
+    { match: POSTS_ROUTE, body: [post({ id: 1, slug: 'stable' })] },
+    { match: TYPES_ROUTE, body: [radarTypeTerm()] },
+  ];
+
+  const first = collect({ routes });
+  assert.equal(first.status, 0, first.stderr);
+  const firstCatalog = JSON.parse(first.outputs[OUTPUT]);
+
+  // Re-run against the exact catalog the first run produced, as the daily
+  // workflow would the next day with unchanged upstream content.
+  const second = collect({
+    routes,
+    fixtures: { [OUTPUT]: first.outputs[OUTPUT] },
+  });
+
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /No radar report changes detected/);
+  // The file on disk — including generatedAt — must be byte-for-byte the
+  // same; a second run must not open a no-op refresh PR.
+  assert.equal(second.outputs[OUTPUT], first.outputs[OUTPUT]);
+  assert.equal(
+    JSON.parse(second.outputs[OUTPUT]).generatedAt,
+    firstCatalog.generatedAt,
+  );
+});
+
+test('rewrites the catalog and bumps generatedAt when a report actually changes', () => {
+  const routes = [
+    { match: POSTS_ROUTE, body: [post({ id: 1, slug: 'stable' })] },
+    { match: TYPES_ROUTE, body: [radarTypeTerm()] },
+  ];
+  const first = collect({ routes });
+  assert.equal(first.status, 0, first.stderr);
+
+  const second = collect({
+    routes: [
+      {
+        match: POSTS_ROUTE,
+        body: [
+          post({ id: 1, slug: 'stable' }),
+          post({ id: 2, slug: 'new-report', date: '2025-01-01T00:00:00' }),
+        ],
+      },
+      { match: TYPES_ROUTE, body: [radarTypeTerm()] },
+    ],
+    fixtures: { [OUTPUT]: first.outputs[OUTPUT] },
+  });
+
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /Collected 2 radar reports at /);
+  assert.deepEqual(
+    JSON.parse(second.outputs[OUTPUT]).radarReports.map((r) => r.slug),
+    ['new-report', 'stable'],
+  );
+});
+
 test('fails the run when the first page errors', () => {
   const serverError = collect({
     routes: [

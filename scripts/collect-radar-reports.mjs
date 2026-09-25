@@ -46,9 +46,11 @@ if (!radarType)
 
 const existingPath = join(root, 'data/radar-reports.json');
 const existingSummaries = new Map();
+let existingRadarReports = [];
 if (existsSync(existingPath)) {
   const existing = JSON.parse(readFileSync(existingPath, 'utf8'));
-  for (const report of existing.radarReports || []) {
+  existingRadarReports = existing.radarReports || [];
+  for (const report of existingRadarReports) {
     if (report.summary) existingSummaries.set(report.id, report.summary);
   }
 }
@@ -76,6 +78,18 @@ const radarReports = posts
     summary: existingSummaries.get(post.id) || PLACEHOLDER_SUMMARY,
   }))
   .sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''));
+
+// Only bump generatedAt and rewrite the catalog when the reports themselves
+// changed. cncf.io content is checked daily but rarely changes day to day, so
+// touching generatedAt on every run would open a no-op refresh PR each time
+// (see #648).
+if (
+  existsSync(existingPath) &&
+  JSON.stringify(radarReports) === JSON.stringify(existingRadarReports)
+) {
+  console.log('No radar report changes detected; leaving catalog untouched.');
+  process.exit(0);
+}
 
 const generatedAt = new Date().toISOString();
 const data = {
