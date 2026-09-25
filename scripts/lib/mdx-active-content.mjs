@@ -101,18 +101,125 @@ function normalizeSchemes(line) {
 
 /**
  * Replaces fenced code blocks and inline code spans with blank padding.  MDX
- * does not evaluate either, and keeping the line count stable lets findings
- * report accurate line numbers.
+ * does not evaluate either, and keeping the line count and line lengths
+ * stable lets findings report accurate line numbers.
+ *
+ * Both passes are written to agree with the CommonMark/MDX parser Docusaurus
+ * actually compiles the body with, rather than approximating it with a
+ * single regular expression -- see #611 for the exploit a mismatch allowed.
  *
  * @param {string} markdown
  * @returns {string}
  */
 function blankCodeSpans(markdown) {
-  const blanked = markdown.replace(
-    /^([ \t]*)(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:^[ \t]*\2[^\n]*$|$)/gm,
-    (block) => block.replace(/[^\n]/g, ' '),
-  );
-  return blanked.replace(/`+[^`\n]*`+/g, (span) => ' '.repeat(span.length));
+  return blankInlineSpans(blankFences(markdown));
+}
+
+/**
+ * Blank fenced code blocks by walking lines and tracking fence state, rather
+ * than matching the whole block with one lazy regex. A closing fence must use
+ * the same character as the opener, be at least as long, and carry nothing
+ * but trailing whitespace after it; a fence that is never closed runs to EOF.
+ *
+ * @param {string} markdown
+ * @returns {string}
+ */
+function blankFences(markdown) {
+  const lines = markdown.split('\n');
+  const output = [];
+  let fenceChar = null;
+  let fenceLength = 0;
+
+  for (const line of lines) {
+    if (fenceChar) {
+      output.push(' '.repeat(line.length));
+      const closer = line.match(/^[ \t]*(`{3,}|~{3,})[ \t]*$/);
+      if (
+        closer &&
+        closer[1][0] === fenceChar &&
+        closer[1].length >= fenceLength
+      ) {
+        fenceChar = null;
+        fenceLength = 0;
+      }
+      continue;
+    }
+
+    const opener = line.match(/^[ \t]*(`{3,}|~{3,})/);
+    if (opener) {
+      fenceChar = opener[1][0];
+      fenceLength = opener[1].length;
+      output.push(' '.repeat(line.length));
+      continue;
+    }
+
+    output.push(line);
+  }
+
+  return output.join('\n');
+}
+
+/**
+ * Blank inline code spans by scanning for a backtick run and searching the
+ * rest of its line for a closing run of *exactly* the same length -- the
+ * CommonMark rule a single `` `+...`+ `` regex cannot express, because it
+ * accepts mismatched run lengths and forms a span that does not exist. The
+ * search is deliberately bounded to the current line: a code span that wraps
+ * a newline is left scannable, which errs toward reporting rather than
+ * hiding content.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+function blankInlineSpans(text) {
+  let result = '';
+  let i = 0;
+
+  while (i < text.length) {
+    const ch = text[i];
+
+    if (ch !== '`') {
+      result += ch;
+      i += 1;
+      continue;
+    }
+
+    let openEnd = i;
+    while (text[openEnd] === '`') openEnd += 1;
+    const openLength = openEnd - i;
+
+    let k = openEnd;
+    let closeStart = -1;
+    let closeEnd = -1;
+    while (k < text.length && text[k] !== '\n') {
+      if (text[k] === '`') {
+        let runEnd = k;
+        while (text[runEnd] === '`') runEnd += 1;
+        if (runEnd - k === openLength) {
+          closeStart = k;
+          closeEnd = runEnd;
+          break;
+        }
+        k = runEnd;
+        continue;
+      }
+      k += 1;
+    }
+
+    if (closeStart === -1) {
+      // No closing run of matching length on this line: not a code span, so
+      // emit the opening backticks as literal text and keep scanning from
+      // just past them.
+      result += text.slice(i, openEnd);
+      i = openEnd;
+      continue;
+    }
+
+    result += ' '.repeat(closeEnd - i);
+    i = closeEnd;
+  }
+
+  return result;
 }
 
 /**

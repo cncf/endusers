@@ -101,6 +101,38 @@ test('ignores fenced code blocks and inline code spans, which MDX does not evalu
   assert.deepEqual(findActiveContent(body), []);
 });
 
+test('ignores a fenced block spanning several content lines, not just one', () => {
+  // Regression for #611 defect 2: a lazy regex ended the fence match at the
+  // first content line instead of the closing fence, so a legitimate
+  // multi-line block reported findings from its third line onward.
+  const body = [
+    '```js',
+    'const a = 1;',
+    'const b = 2;',
+    '<script>alert(1)</script>',
+    '```',
+  ].join('\n');
+  assert.deepEqual(findActiveContent(body), []);
+});
+
+test('reports a live element hidden by a mismatched backtick run, not a code span', () => {
+  // Regression for #611 defect 1: CommonMark forms a code span only when the
+  // closing backtick run has exactly the same length as the opening run, so
+  // `` `` `` + payload + ` `` is live text, not a span -- but the old regex
+  // (`` `+...`+ ``) blanked it as one anyway and hid the payload from every
+  // downstream check.
+  assert.deepEqual(reasons('``<script>alert(1)</script>`'), [
+    'disallowed element <script>',
+  ]);
+  // The same trick also hides an event handler on an otherwise-allowlisted
+  // element -- the finding here is the handler, not the element itself.
+  assert.deepEqual(reasons('``<b onClick={alert}>hi</b>`'), [
+    'event handler attribute',
+  ]);
+  // The equal-run control case must still be inert.
+  assert.deepEqual(reasons('`<script>alert(1)</script>`'), []);
+});
+
 test('reports the line number of each finding and deduplicates per line and reason', () => {
   const body = ['# T', '', '<script>alert(1)</script>'].join('\n');
   assert.deepEqual(findActiveContent(body), [

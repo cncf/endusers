@@ -140,37 +140,27 @@ test('falls back to on* for a handler the attribute scanner cannot see', () => {
   }
 });
 
-// Known defect, tracked in #540: the on* fallback exists only in
-// findActiveContent. stripActiveContent rewrites solely through
-// ATTRIBUTE_PATTERN, which cannot see a value-less handler, so these inputs are
-// reported as active but never cleaned -- and `removed` stays empty, so a
-// caller cannot tell the difference between "nothing to remove" and "could not
-// remove it". Re-detecting on the stripped output is the invariant: stripping
-// must leave an SVG that findActiveContent considers inert. The fix is a
-// removal pass in scripts/lib/svg-active-content.mjs, which is production code.
-test(
-  'stripActiveContent removes a handler the attribute scanner cannot see',
-  { todo: true },
-  () => {
-    for (const svg of [
-      '<svg onload=></svg>',
-      '<svg onload=`alert(1)`></svg>',
-    ]) {
-      const { source, removed } = stripActiveContent(svg);
-      assert.doesNotMatch(
-        source,
-        /onload/i,
-        `onload survived stripping of ${JSON.stringify(svg)}`,
-      );
-      assert.notDeepEqual(
-        removed,
-        [],
-        `stripping ${JSON.stringify(svg)} reported no removal`,
-      );
-      assert.deepEqual(findActiveContent(source), []);
-    }
-  },
-);
+// Fixed in #540: the on* fallback existed only in findActiveContent.
+// stripActiveContent now runs an equivalent fallback pass after
+// ATTRIBUTE_PATTERN, so a value-less or backtick-delimited handler is both
+// removed and recorded. Re-detecting on the stripped output is the invariant:
+// stripping must leave an SVG that findActiveContent considers inert.
+test('stripActiveContent removes a handler the attribute scanner cannot see', () => {
+  for (const svg of ['<svg onload=></svg>', '<svg onload=`alert(1)`></svg>']) {
+    const { source, removed } = stripActiveContent(svg);
+    assert.doesNotMatch(
+      source,
+      /onload/i,
+      `onload survived stripping of ${JSON.stringify(svg)}`,
+    );
+    assert.notDeepEqual(
+      removed,
+      [],
+      `stripping ${JSON.stringify(svg)} reported no removal`,
+    );
+    assert.deepEqual(findActiveContent(source), []);
+  }
+});
 
 test('detects script URIs in animation targets, not just href', () => {
   const svg = INERT.replace(
