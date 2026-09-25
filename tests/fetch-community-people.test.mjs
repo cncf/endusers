@@ -384,3 +384,63 @@ test('drops a cached image on a host outside the allowlist', () => {
     'https://github.com/ada.png',
   );
 });
+
+test('drops an unparseable upstream linkedin or twitter URL instead of throwing', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+    },
+    records: [
+      {
+        name: 'Ada Lovelace',
+        github: 'https://github.com/ada',
+        // cncf/people is upstream data the site does not control. A value that
+        // is not an absolute URL makes `new URL()` throw; the handle must come
+        // out null and the rest of the profile must still be written.
+        linkedin: 'www.linkedin.com/in/ada-lovelace',
+        twitter: '@ada',
+      },
+    ],
+  });
+
+  const person = parseOutput(result).people.tab[0];
+  assert.equal(person.linkedin, null);
+  assert.equal(person.twitter, null);
+  assert.equal(person.name, 'Ada Lovelace');
+  assert.equal(person.github, 'ada');
+});
+
+test('falls back to the cached handle when the upstream URL is unparseable', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+      [OUTPUT]: JSON.stringify({
+        fetchedAt: '2020-01-01T00:00:00.000Z',
+        people: {
+          tab: [
+            {
+              name: 'Ada Lovelace',
+              github: 'ada',
+              linkedin: 'ada-lovelace',
+              twitter: 'ada',
+            },
+          ],
+        },
+      }),
+    },
+    records: [
+      {
+        name: 'Ada Lovelace',
+        github: 'https://github.com/ada',
+        linkedin: 'not a url',
+        twitter: 'not a url either',
+      },
+    ],
+  });
+
+  // A malformed upstream value must degrade to the last good cached handle
+  // rather than blanking a link that previously worked.
+  const person = parseOutput(result).people.tab[0];
+  assert.equal(person.linkedin, 'ada-lovelace');
+  assert.equal(person.twitter, 'ada');
+});
