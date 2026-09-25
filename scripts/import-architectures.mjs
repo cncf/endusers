@@ -23,6 +23,7 @@ import {
 } from './lib/project-assets.mjs';
 import { stripActiveContent } from './lib/svg-active-content.mjs';
 import { isCncfProjectHref } from './lib/project-card-links.mjs';
+import { jsxElement } from './lib/jsx-attributes.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
@@ -210,8 +211,17 @@ function renderProjectCards(body, id) {
         .replace(/\s+/g, ' ')
         .trim();
       const localLogo = logo ? projectAsset(logo) : null;
-      const logoProp = localLogo ? ` logo=${JSON.stringify(localLogo)}` : '';
-      return `<CNCFProjectCard name=${JSON.stringify(name)} href=${JSON.stringify(href)}${logoProp}${since ? ` since=${JSON.stringify(since)}` : ''}${version ? ` version=${JSON.stringify(version)}` : ''}${description ? ` description=${JSON.stringify(description)}` : ''} />`;
+      // Expression attributes, never quoted ones: `since`, `version` and
+      // `description` are upstream text, and a quoted JSX attribute gives a
+      // value containing `"` a way out of the attribute and into the tag.
+      return jsxElement('CNCFProjectCard', {
+        name,
+        href,
+        logo: localLogo,
+        since,
+        version,
+        description,
+      });
     },
   );
 }
