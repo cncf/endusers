@@ -166,18 +166,12 @@ test('every Node setup step pins the same Node major version', () => {
 // Checkout leaves GITHUB_TOKEN in .git/config unless credential persistence is
 // disabled, so every later step in the job -- including `npm ci` and any build
 // that executes third-party dependency code -- can read a token scoped to this
-// repository. Seven of the eight workflows already opt out; this pins that in
-// place so the eighth is the last one.
+// repository. All workflows now opt out (see #598, fixed in #657).
 //
 // KNOWN_PERSISTING_CHECKOUTS is a retiring baseline, not an allowance. The
 // companion test below fails once an entry becomes compliant, so fixing a
 // workflow forces the exception to be removed in the same change.
-const KNOWN_PERSISTING_CHECKOUTS = new Set([
-  // See #598: an agent restricted to issues and pull requests cannot push a
-  // diff touching .github/workflows/, so the workflow half of that fix needs a
-  // human or a merge-capable agent to land.
-  'refresh-radar-reports.yml',
-]);
+const KNOWN_PERSISTING_CHECKOUTS = new Set([]);
 
 function checkoutSteps(doc) {
   return steps(doc).filter(({ step }) =>
