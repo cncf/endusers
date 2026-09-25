@@ -201,3 +201,61 @@ test('accepts an entry url on a cncf.io subdomain', () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Validated 1 case studies/);
 });
+
+test('rejects a sourceUrl that is not a parseable URL', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, sourceUrl: 'www.cncf.io/case-studies/' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceUrl must be an https URL/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
+test('rejects an entry url that is not a parseable URL', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [{ ...validEntry, url: '/case-studies/acme/' }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /url must be an https URL/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
+test('rejects an entry url that is not a string', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [{ ...validEntry, url: { href: 'https://www.cncf.io/' } }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /url must be an https URL/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
+test('rejects an entry with a non-array industries field', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [{ ...validEntry, industries: 'Fintech' }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /industries must be an array/);
+});
+
+test('rejects an entry missing industries entirely', () => {
+  const { industries, ...withoutIndustries } = validEntry;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, caseStudies: [withoutIndustries] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /industries must be an array/);
+});
