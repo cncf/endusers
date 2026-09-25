@@ -15,7 +15,18 @@
 // coverage against the real source files.
 //
 // Usage:
-//   node tests/tools/coverage-report.mjs [--check <minLinePercent>] [--check-regions <minRegionPercent>] [-- <node --test args>]
+//   node tests/tools/coverage-report.mjs [--check <minLinePercent>]
+//     [--check-regions <minRegionPercent>] [--check-source <minLinePercent>]
+//     [--check-source-regions <minRegionPercent>] [-- <node --test args>]
+//
+// The test files are themselves part of the recorded coverage, and they
+// outweigh the code they exercise several times over. An all-files threshold
+// is therefore mostly a measurement of the suite covering itself: deleting a
+// whole test file removes its lines from the numerator and the denominator
+// together, so the all-files percentage barely moves. --check-source and
+// --check-source-regions apply a threshold to the shipped sources alone
+// (everything outside tests/), which is the number that actually falls when
+// a test file is dropped or a source path stops being exercised.
 
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -32,23 +43,32 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const MIRRORED_DIRS = ['scripts', 'src', 'tests'];
 const SCRIPT_URL = /\.(js|jsx|mjs)$/;
 
+// A flag takes one numeric percentage argument; the option key it sets on
+// the parsed options object.
+const PERCENT_FLAGS = {
+  '--check': 'check',
+  '--check-regions': 'checkRegions',
+  '--check-source': 'checkSource',
+  '--check-source-regions': 'checkSourceRegions',
+};
+
 function parseArgs(argv) {
-  const options = { check: null, checkRegions: null, testArgs: [] };
+  const options = {
+    check: null,
+    checkRegions: null,
+    checkSource: null,
+    checkSourceRegions: null,
+    testArgs: [],
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--check') {
+    const key = PERCENT_FLAGS[arg];
+    if (key) {
       const value = Number(argv[i + 1]);
       if (!Number.isFinite(value)) {
-        throw new Error('--check requires a numeric percentage');
+        throw new Error(`${arg} requires a numeric percentage`);
       }
-      options.check = value;
-      i += 1;
-    } else if (arg === '--check-regions') {
-      const value = Number(argv[i + 1]);
-      if (!Number.isFinite(value)) {
-        throw new Error('--check-regions requires a numeric percentage');
-      }
-      options.checkRegions = value;
+      options[key] = value;
       i += 1;
     } else if (arg === '--') {
       options.testArgs.push(...argv.slice(i + 1));
@@ -367,6 +387,13 @@ function percent(covered, total) {
   return total === 0 ? 100 : (covered / total) * 100;
 }
 
+// Coverage records exist for the test files too. They are not the code this
+// repository ships, so they are summarised separately rather than folded
+// into totals the suite's own near-complete self-coverage would dominate.
+export function isSourceFile(file) {
+  return !file.startsWith('tests/');
+}
+
 // Reproduces the exact transform tests/tools/jsx-hooks.mjs applied when it
 // loaded this file, so the generated text V8 recorded coverage against can be
 // rebuilt outside the test run. Returns null when the file was not JSX, or
@@ -467,11 +494,21 @@ function report(merged) {
   let covered = 0;
   let regions = 0;
   let regionsCovered = 0;
+  let sourceExecutable = 0;
+  let sourceCovered = 0;
+  let sourceRegions = 0;
+  let sourceRegionsCovered = 0;
   for (const row of rows) {
     executable += row.lines.executable;
     covered += row.lines.covered;
     regions += row.regions.regions;
     regionsCovered += row.regions.covered;
+    if (isSourceFile(row.file)) {
+      sourceExecutable += row.lines.executable;
+      sourceCovered += row.lines.covered;
+      sourceRegions += row.regions.regions;
+      sourceRegionsCovered += row.regions.covered;
+    }
     const linePct = percent(row.lines.covered, row.lines.executable)
       .toFixed(2)
       .padStart(6);
@@ -483,12 +520,24 @@ function report(merged) {
     );
   }
   console.log('-'.repeat(header.length));
+  const sourceLinePct = percent(sourceCovered, sourceExecutable);
+  const sourceRegionPct = percent(sourceRegionsCovered, sourceRegions);
+  console.log(
+    `${'src files'.padEnd(width)} | ${sourceLinePct.toFixed(2).padStart(6)} | ${sourceRegionPct.toFixed(2).padStart(8)} | ${sourceCovered}/${sourceExecutable} lines`,
+  );
   const totalLinePct = percent(covered, executable);
   const totalRegionPct = percent(regionsCovered, regions);
   console.log(
     `${'all files'.padEnd(width)} | ${totalLinePct.toFixed(2).padStart(6)} | ${totalRegionPct.toFixed(2).padStart(8)} |`,
   );
-  return { totalLinePct, totalRegionPct };
+  return {
+    totalLinePct,
+    totalRegionPct,
+    sourceLinePct,
+    sourceRegionPct,
+    sourceExecutable,
+    sourceRegions,
+  };
 }
 
 function main() {
@@ -510,7 +559,14 @@ function main() {
       process.exit(1);
     }
     console.log('');
-    const { totalLinePct, totalRegionPct } = report(merged);
+    const {
+      totalLinePct,
+      totalRegionPct,
+      sourceLinePct,
+      sourceRegionPct,
+      sourceExecutable,
+      sourceRegions,
+    } = report(merged);
     if (unmapped.size > 0) {
       console.log(
         `\nNot reported (${unmapped.size}): every coverage record for these\n` +
@@ -537,6 +593,39 @@ function main() {
     ) {
       console.error(
         `\nRegion coverage ${totalRegionPct.toFixed(2)}% is below the required ${options.checkRegions}%.`,
+      );
+      process.exit(1);
+    }
+    // A zero-line source measurement means the gate below would otherwise
+    // pass vacuously (percent() reports 100% for a 0/0 fraction) without
+    // having actually verified any shipped source code.
+    if (options.checkSource !== null && sourceExecutable === 0) {
+      console.error(
+        '\n--check-source was requested, but no source lines outside tests/ were recorded.',
+      );
+      process.exit(1);
+    }
+    if (
+      options.checkSource !== null &&
+      sourceLinePct + 1e-9 < options.checkSource
+    ) {
+      console.error(
+        `\nSource line coverage ${sourceLinePct.toFixed(2)}% is below the required ${options.checkSource}%.`,
+      );
+      process.exit(1);
+    }
+    if (options.checkSourceRegions !== null && sourceRegions === 0) {
+      console.error(
+        '\n--check-source-regions was requested, but no source regions outside tests/ were recorded.',
+      );
+      process.exit(1);
+    }
+    if (
+      options.checkSourceRegions !== null &&
+      sourceRegionPct + 1e-9 < options.checkSourceRegions
+    ) {
+      console.error(
+        `\nSource region coverage ${sourceRegionPct.toFixed(2)}% is below the required ${options.checkSourceRegions}%.`,
       );
       process.exit(1);
     }
