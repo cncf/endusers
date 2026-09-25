@@ -221,3 +221,9 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/node,docusaurus
 
+### Playwright ###
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
