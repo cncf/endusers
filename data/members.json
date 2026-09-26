@@ -1,6 +1,9 @@
 {
   "description": "CNCF End User Community member organisations derived from reference architectures and Top End User Award winners.",
-  "generatedFrom": ["data/architectures/catalog.json", "data/awards.json"],
+  "generatedFrom": [
+    "data/architectures/catalog.json",
+    "data/awards.json"
+  ],
   "schema": {
     "id": "kebab-case identifier",
     "name": "display name",
@@ -18,8 +21,17 @@
       "name": "Adobe",
       "slug": "adobe",
       "logo": "/img/architectures/adobe/Adobe_Wordmark_RGB_Red.svg",
-      "industries": ["Digital Experience", "Digital Media", "Software"],
-      "projects": ["Argo", "Backstage", "Helm", "Kubernetes"],
+      "industries": [
+        "Digital Experience",
+        "Digital Media",
+        "Software"
+      ],
+      "projects": [
+        "Argo",
+        "Backstage",
+        "Helm",
+        "Kubernetes"
+      ],
       "architectures": [
         {
           "id": "adobe",
@@ -51,8 +63,15 @@
       "name": "Allianz",
       "slug": "allianz",
       "logo": "/img/architectures/allianz/allianz.svg",
-      "industries": ["Financial", "Insurance"],
-      "projects": ["Argo", "Helm", "Kubernetes"],
+      "industries": [
+        "Financial",
+        "Insurance"
+      ],
+      "projects": [
+        "Argo",
+        "Helm",
+        "Kubernetes"
+      ],
       "architectures": [
         {
           "id": "allianz",
@@ -143,7 +162,10 @@
       "name": "CERN",
       "slug": "cern",
       "logo": "/img/architectures/cern-scientific-computing/logo.svg",
-      "industries": ["Public Sector", "Research"],
+      "industries": [
+        "Public Sector",
+        "Research"
+      ],
       "projects": [
         "Argo",
         "Bootc",
@@ -188,8 +210,13 @@
       "name": "Colopl Inc.",
       "slug": "colopl",
       "logo": "/img/architectures/colopl/logo.png",
-      "industries": ["gaming"],
-      "projects": ["Agones", "Kubernetes"],
+      "industries": [
+        "gaming"
+      ],
+      "projects": [
+        "Agones",
+        "Kubernetes"
+      ],
       "architectures": [
         {
           "id": "colopl",
@@ -232,7 +259,11 @@
       "name": "Flipkart",
       "slug": "flipkart",
       "logo": "/img/architectures/flipkart-chaos-engineering/logo.png",
-      "industries": ["Digital Commerce", "E-commerce", "Retail"],
+      "industries": [
+        "Digital Commerce",
+        "E-commerce",
+        "Retail"
+      ],
       "projects": [
         "Argo Workflows",
         "Helm",
@@ -433,7 +464,12 @@
       "name": "Swisscom",
       "slug": "swisscom",
       "logo": "/img/architectures/swisscom-cloud-native-telco/swisscom.png",
-      "industries": ["Cloud", "Communication", "Software", "Telecommunication"],
+      "industries": [
+        "Cloud",
+        "Communication",
+        "Software",
+        "Telecommunication"
+      ],
       "projects": [
         "ArgoCD",
         "CloudNativePG",
@@ -505,8 +541,17 @@
       "name": "ZEISS",
       "slug": "zeiss",
       "logo": "/img/architectures/zeiss/zeiss-logo-rgb.svg",
-      "industries": ["optical-manufacturing", "optics"],
-      "projects": ["Dapr", "Helm", "KEDA", "Kubernetes", "OpenTelemetry"],
+      "industries": [
+        "optical-manufacturing",
+        "optics"
+      ],
+      "projects": [
+        "Dapr",
+        "Helm",
+        "KEDA",
+        "Kubernetes",
+        "OpenTelemetry"
+      ],
       "architectures": [
         {
           "id": "zeiss",
