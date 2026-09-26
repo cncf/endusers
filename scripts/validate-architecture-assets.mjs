@@ -70,12 +70,21 @@ const assetDirs = [
 ];
 const shouldFix = process.argv.includes('--fix');
 
+// Paths that are asset roots in their own right. The shallow static/img walk
+// must not report on them whatever they turn out to be on disk: each one is
+// already handled by its own entry above, which decides for itself whether a
+// symlink is an error and whether a non-directory is skipped. Without this the
+// shallow walk would duplicate the symlink error and would additionally reject
+// a regular file sitting where a root is expected.
+const assetRootPaths = new Set(assetDirs.map(({ dir }) => dir));
+
 const issues = [];
 const fixed = [];
 
 function walk(dir, recurse = true) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
+    if (assetRootPaths.has(path)) return [];
     // A symlink in published assets can point anywhere in the repository (or
     // outside it) and would be followed by readers and --fix writers, so its
     // presence is itself an error rather than something to validate through.
