@@ -341,3 +341,62 @@ test('leaves foreignObject itself untouched', () => {
   assert.deepEqual(findActiveContent(svg), []);
   assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
 });
+
+// ATTRIBUTE_PATTERN accepts three value forms -- double-quoted, single-quoted
+// and unquoted -- and findActiveContent/stripActiveContent read them through
+// `match[2] ?? match[3] ?? match[4]` and `dq ?? sq ?? uq`. Every case above
+// writes double-quoted markup, so only the first alternative of either
+// fallback chain was ever exercised: a regression that dropped the
+// single-quoted or unquoted alternative from the pattern, or read the wrong
+// capture group, would have left the suite green while every
+// `onclick='alert(1)'` and `href=javascript:alert(1)` an SVG editor emits
+// passed the gate unseen. Browsers accept all three forms identically.
+const QUOTING_VARIANTS = [
+  { article: 'a', label: 'single-quoted', quote: "'" },
+  { article: 'an', label: 'unquoted', quote: '' },
+];
+
+for (const { article, label, quote } of QUOTING_VARIANTS) {
+  test(`detects and removes ${article} ${label} event handler attribute`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><rect onclick=${quote}alert(1)${quote}></rect></svg>`;
+    assert.deepEqual(findActiveContent(svg), [
+      'contains event handler attribute(s): onclick',
+    ]);
+
+    const { source, removed } = stripActiveContent(svg);
+    assert.doesNotMatch(source, /onclick/i);
+    assert.doesNotMatch(source, /alert\(1\)/);
+    assert.ok(removed.includes('onclick attribute'));
+    assert.deepEqual(findActiveContent(source), []);
+  });
+
+  test(`detects and removes ${article} ${label} script URI`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><a href=${quote}javascript:alert(1)${quote}><rect/></a></svg>`;
+    assert.deepEqual(findActiveContent(svg), [
+      'contains a script URI in href="javascript:..."',
+    ]);
+
+    const { source, removed } = stripActiveContent(svg);
+    assert.doesNotMatch(source, /javascript:/i);
+    assert.ok(removed.includes('href attribute (javascript:)'));
+    assert.deepEqual(findActiveContent(source), []);
+  });
+
+  test(`detects and removes ${article} ${label} embedded document attribute`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><rect srcdoc=${quote}payload${quote}></rect></svg>`;
+    assert.deepEqual(findActiveContent(svg), [
+      'contains an embedded document attribute: srcdoc (carries markup that executes in this origin)',
+    ]);
+
+    const { source, removed } = stripActiveContent(svg);
+    assert.doesNotMatch(source, /srcdoc/i);
+    assert.ok(removed.includes('srcdoc attribute (embedded document)'));
+    assert.deepEqual(findActiveContent(source), []);
+  });
+
+  test(`reads ${article} ${label} value without disturbing inert markup`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><rect fill=${quote}#fff${quote} width=${quote}10${quote}></rect></svg>`;
+    assert.deepEqual(findActiveContent(svg), []);
+    assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
+  });
+}
