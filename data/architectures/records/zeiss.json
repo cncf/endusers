@@ -3,7 +3,10 @@
   "title": "ZEISS Vision Care - Order Fulfillment",
   "organization": "ZEISS",
   "summary": "Our Business Enablement & IT team develops, designs, and operates the order fulfillment platform that underpins this process.",
-  "industries": ["optics", "optical-manufacturing"],
+  "industries": [
+    "optics",
+    "optical-manufacturing"
+  ],
   "tags": [
     "public-cloud",
     "mass-manufacturing",
@@ -11,7 +14,13 @@
     "microservices",
     "platform engineering"
   ],
-  "projects": ["Kubernetes", "Dapr", "KEDA", "OpenTelemetry", "Helm"],
+  "projects": [
+    "Kubernetes",
+    "Dapr",
+    "KEDA",
+    "OpenTelemetry",
+    "Helm"
+  ],
   "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/zeiss",
   "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
   "assets": [
