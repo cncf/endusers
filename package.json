@@ -58,6 +58,7 @@
     "validate:radar-reports": "node scripts/validate-radar-reports.mjs",
     "validate:community-people": "node scripts/validate-community-people.mjs",
     "validate:community-groups": "node scripts/validate-community-groups.mjs",
+    "validate:projects-born": "node scripts/validate-projects-born.mjs",
     "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
     "test:unit": "TZ=UTC node --test",
     "test:unit:coverage": "TZ=UTC node tests/tools/coverage-report.mjs",
