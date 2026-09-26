@@ -444,3 +444,81 @@ test('falls back to the cached handle when the upstream URL is unparseable', () 
   assert.equal(person.linkedin, 'ada-lovelace');
   assert.equal(person.twitter, 'ada');
 });
+
+test('drops a link URL whose path has no segment instead of emitting an empty handle', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+    },
+    records: [
+      {
+        name: 'Ada Lovelace',
+        github: 'https://github.com/ada',
+        // A bare profile host carries no handle: the path strips to nothing,
+        // so the link must come out null rather than an empty-string handle
+        // the site would render as a link to the provider's front page.
+        linkedin: 'https://www.linkedin.com/',
+        twitter: 'https://twitter.com///',
+      },
+    ],
+  });
+
+  const person = parseOutput(result).people.tab[0];
+  assert.equal(person.linkedin, null);
+  assert.equal(person.twitter, null);
+});
+
+test('falls back to the cached name when the roster entry has none', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ company: 'Roster Co', github: 'ada' }] }),
+      [OUTPUT]: JSON.stringify({
+        fetchedAt: '2020-01-01T00:00:00.000Z',
+        people: { tab: [{ name: 'Ada Lovelace', github: 'ada' }] },
+      }),
+    },
+    records: [],
+  });
+
+  const person = parseOutput(result).people.tab[0];
+  assert.equal(person.name, 'Ada Lovelace');
+  assert.equal(person.company, 'Roster Co');
+});
+
+test('emits an empty name when neither the roster nor the cache has one', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ company: 'Roster Co', github: 'ada' }] }),
+    },
+    records: [
+      {
+        name: 'Upstream Name',
+        github: 'https://github.com/ada',
+      },
+    ],
+  });
+
+  // cncf/people names are never authoritative, so an absent roster name and an
+  // absent cache must leave the field an empty string rather than adopting the
+  // upstream value.
+  const person = parseOutput(result).people.tab[0];
+  assert.equal(person.name, '');
+  assert.equal(person.company, 'Roster Co');
+});
+
+test('pluralises the fallback count when more than one handle is unmatched', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({
+        tab: [
+          { name: 'Ada Lovelace', github: 'ada' },
+          { name: 'Grace Hopper', github: 'grace' },
+        ],
+      }),
+    },
+    records: [],
+  });
+
+  parseOutput(result);
+  assert.match(result.stdout, /\(2 fallbacks\)/);
+});
