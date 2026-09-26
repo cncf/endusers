@@ -258,10 +258,92 @@ test('reports a missing fetchedAt instead of crashing on an absent field', () =>
   assert.doesNotMatch(result.stderr, /TypeError/);
 });
 
-test('treats a roster with no sections as having nothing to cross-check', () => {
+test('rejects a generated section the roster does not declare', () => {
   const result = runScriptWithFixtures(SCRIPT, fixture(freshData, {}));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /people\.tab.*section is not declared in community-roster\.json/,
+  );
+  assert.match(
+    result.stderr,
+    /people\.staff.*section is not declared in community-roster\.json/,
+  );
+});
+
+// The hole this guards: a section present only in the generated file used to
+// skip the loop body entirely, so its members reached <img src> with no host
+// check at all.
+test('gates images in a generated section the roster does not declare', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...freshData,
+      people: {
+        ...freshData.people,
+        ambassadors: [
+          validPerson({
+            name: 'Probe',
+            github: 'probe',
+            image: 'https://evil.example/beacon.png',
+          }),
+        ],
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /people\.ambassadors.*section is not declared in community-roster\.json/,
+  );
+  assert.match(
+    result.stderr,
+    /Probe image must be an https URL on an allowed host/,
+  );
+});
+
+// A section the roster does not declare is reported once, as a section error,
+// rather than once per member as "is not on the roster".
+test('does not repeat the roster-membership error for an undeclared section', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...freshData,
+      people: { ...freshData.people, ambassadors: [validPerson()] },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.doesNotMatch(
+    result.stderr,
+    /people\.ambassadors.*is not on the roster/,
+  );
+});
+
+test('still cross-checks roster membership within a declared section', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...freshData,
+      people: {
+        tab: [validPerson(), validPerson({ name: 'Mallory', github: 'mal' })],
+        staff: [staffPerson()],
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Mallory is not on the roster/);
+});
+
+test('treats a declared roster section with no entries as empty', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture(
+      { ...freshData, people: { ...freshData.people, alumni: [] } },
+      { sections: { ...roster.sections, alumni: null } },
+    ),
+  );
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Validated 2 community profiles/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
 });
 
 test('treats a section absent from the generated file as empty', () => {

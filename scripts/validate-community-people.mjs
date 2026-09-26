@@ -37,23 +37,52 @@ if (!ISO_8601.test(data.fetchedAt ?? '')) {
 // back to name for the one member without one), so a stale or
 // partially-generated file with the right shape but a missing/extra person
 // fails loudly instead of only checking that the arrays are non-empty.
-for (const [section, rosterEntries] of Object.entries(roster.sections || {})) {
-  const generated = data.people?.[section] || [];
-  const key = (person) => person.github || person.name;
-  const rosterKeys = new Set(rosterEntries.map(key));
-  const generatedKeys = new Set(generated.map(key));
-  for (const entry of rosterEntries) {
-    if (!generatedKeys.has(key(entry))) {
-      collectError(
-        errors,
-        `people.${section}`,
-        'error',
-        `missing roster member ${entry.name}`,
-      );
+//
+// The loop runs over the union of both files' section keys, not the roster's
+// alone. Every section in the generated file is rendered by
+// <CommunityPeople section="..." />, so driving the loop from the roster let a
+// section present only in community-people.json skip every check below --
+// including the profileImageUrl() host gate, which is the last thing standing
+// between an unattended upstream refresh and an arbitrary third-party host in
+// an <img src> served to every visitor.
+const rosterSections = roster.sections || {};
+const generatedSections = data.people || {};
+const key = (person) => person.github || person.name;
+
+for (const section of new Set([
+  ...Object.keys(rosterSections),
+  ...Object.keys(generatedSections),
+])) {
+  const onRoster = Object.hasOwn(rosterSections, section);
+  const rosterEntries = onRoster ? rosterSections[section] || [] : [];
+  const generated = generatedSections[section] || [];
+
+  if (!onRoster) {
+    collectError(
+      errors,
+      `people.${section}`,
+      'error',
+      'section is not declared in community-roster.json; every section the site renders must be on the roster',
+    );
+  } else {
+    const generatedKeys = new Set(generated.map(key));
+    for (const entry of rosterEntries) {
+      if (!generatedKeys.has(key(entry))) {
+        collectError(
+          errors,
+          `people.${section}`,
+          'error',
+          `missing roster member ${entry.name}`,
+        );
+      }
     }
   }
+
+  const rosterKeys = new Set(rosterEntries.map(key));
   for (const person of generated) {
-    if (!rosterKeys.has(key(person))) {
+    // Skipped when the whole section is unknown: the section error above
+    // already says so, once, instead of once per member.
+    if (onRoster && !rosterKeys.has(key(person))) {
       collectError(
         errors,
         `people.${section}`,
