@@ -177,6 +177,55 @@ test('every npm script invoked by devcontainer lifecycle commands exists', () =>
   );
 });
 
+// CI installs with `npm ci`, the only npm command that treats
+// package-lock.json as an instruction: exact versions, integrity hashes
+// verified, lockfile left alone. A bare `npm install` re-resolves the caret
+// ranges in package.json against the registry, runs the lifecycle scripts of
+// whatever it picked, and rewrites the lockfile in the contributor's tree — so
+// a doc that prescribes it hands every contributor an unreviewed dependency
+// graph and lets an upgrade ride into an unrelated PR. `npm install <pkg>` is
+// still the right way to add a dependency, so only the bare form is rejected.
+const BARE_NPM_INSTALL = /\bnpm install\s*(?=$|[\n`'"&|;])/;
+
+test('no developer doc or devcontainer command prescribes a bare npm install', () => {
+  const offenders = [];
+
+  for (const doc of ['README.md', 'CONTRIBUTING.md', 'AGENTS.md']) {
+    const lines = readFileSync(join(root, doc), 'utf8').split('\n');
+    for (const [index, line] of lines.entries()) {
+      if (BARE_NPM_INSTALL.test(line)) offenders.push(`${doc}:${index + 1}`);
+    }
+  }
+
+  const devcontainer = JSON.parse(stripJsonComments(devcontainerRaw));
+  for (const key of [
+    'initializeCommand',
+    'onCreateCommand',
+    'updateContentCommand',
+    'postCreateCommand',
+    'postStartCommand',
+    'postAttachCommand',
+  ]) {
+    const value = devcontainer[key];
+    const commands =
+      typeof value === 'string'
+        ? [value]
+        : Array.isArray(value)
+          ? [value.join(' ')]
+          : value && typeof value === 'object'
+            ? Object.values(value).map((entry) => String(entry))
+            : [];
+    if (commands.some((command) => BARE_NPM_INSTALL.test(command)))
+      offenders.push(`devcontainer.${key}`);
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `these prescribe a bare \`npm install\`, which ignores package-lock.json; use \`npm ci\`: ${offenders.join(', ')}`,
+  );
+});
+
 // The dev port the devcontainer forwards has to be the one `just serve`
 // actually opens, or the recipe starts a server nobody outside the container
 // can reach.
