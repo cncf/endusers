@@ -182,3 +182,25 @@ test('rejects a sourceUrl carrying a password-only userinfo component', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /sourceUrl must be an https URL/);
 });
+
+// record.id doubles as the error label, so a record that is missing it falls
+// back to '<unknown>'. Line coverage cannot see that fallback: the rest of
+// each `path: record.id || '<unknown>'` line runs on every malformed record.
+// Both fallback sites fire for one id-less record, and the reported label is
+// what a maintainer reads to find the offending entry.
+test('labels an id-less record <unknown> in every error it raises', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([{ title: 'Acme Platform', organization: 'Acme Corp' }]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /\[error\] <unknown>: missing id, title, or organization/,
+  );
+  assert.match(
+    result.stderr,
+    /\[error\] <unknown>: sourceUrl must be an https URL/,
+  );
+  assert.doesNotMatch(result.stderr, /\[error\] undefined:/);
+});

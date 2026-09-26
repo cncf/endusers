@@ -398,3 +398,16 @@ test('accepts a valid breakdown', () => {
   );
   assert.equal(result.status, 0, result.stderr);
 });
+
+// `data.metrics || []` lets the per-metric loop skip a file whose collector
+// never wrote a metrics array, so the failure reported is the one that caused
+// it rather than an iteration TypeError. The `|| []` arm sits mid-line, so
+// line coverage reports it as run on every valid file.
+test('reports a metrics-less file by its real failure, not an iteration crash', () => {
+  const truncated = { ...validData, generated: false };
+  delete truncated.metrics;
+  const result = runScriptWithFixtures(SCRIPT, metricsFixture(truncated));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /generated must be true/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
