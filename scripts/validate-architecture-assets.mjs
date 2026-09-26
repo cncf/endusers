@@ -12,22 +12,6 @@ import { collectError, reportAndExit } from './lib/validate-utils.mjs';
 import { findActiveContent } from './lib/svg-active-content.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-// Every directory here is published verbatim at the site origin, so every one
-// gets the security gate (extension allow-list, symlink rejection, SVG active
-// content). The gate is scoped by where the bytes are *served from*, not by
-// where they came from: an award logo hand-committed in a pull request lands at
-// the same origin as an imported diagram, and a browser that opens it directly
-// executes any script it carries just the same.
-//
-// Diagram-quality checks (viewBox, raster bloat, editor metadata) apply only
-// to architecture diagrams; mirrored cncf/artwork icons and award logos are
-// kept byte-faithful apart from the security gate.
-const assetDirs = [
-  { dir: join(root, 'static/img/architectures'), quality: true },
-  { dir: join(root, 'static/img/cncf-projects'), quality: false },
-  { dir: join(root, 'static/img/awards'), quality: false },
-];
-const shouldFix = process.argv.includes('--fix');
 
 // Mirrors MIRRORABLE_ASSET_EXTENSIONS in scripts/import-architectures.mjs.
 // static/ is published verbatim at the site origin, so a file the browser
@@ -42,20 +26,67 @@ const ALLOWED_ASSET_EXTENSIONS = new Set([
   '.webp',
 ]);
 
+// static/img additionally serves the legacy favicon.ico. ICO is a raster
+// container that no browser parses as markup or script, so it is safe at the
+// origin. It stays out of ALLOWED_ASSET_EXTENSIONS because that set mirrors
+// what the importer will mirror, and the importer never writes an .ico.
+const SITE_CHROME_EXTENSIONS = new Set([...ALLOWED_ASSET_EXTENSIONS, '.ico']);
+
+// Every directory here is published verbatim at the site origin, so every one
+// gets the security gate (extension allow-list, symlink rejection, SVG active
+// content). The gate is scoped by where the bytes are *served from*, not by
+// where they came from: an award logo hand-committed in a pull request lands at
+// the same origin as an imported diagram, and a browser that opens it directly
+// executes any script it carries just the same.
+//
+// Diagram-quality checks (viewBox, raster bloat, editor metadata) apply only
+// to architecture diagrams; mirrored cncf/artwork icons and award logos are
+// kept byte-faithful apart from the security gate.
+//
+// static/img and static/favicons hold site chrome - the footer logo, the
+// favicons - rather than imported assets, but they are served from the same
+// origin as everything else, so they carry the same security gate. static/img
+// is walked shallowly because its image subdirectories are listed above, each
+// with its own quality setting.
+//
+// static/fonts and the static/ root (robots.txt, manifest.json, .nojekyll) are
+// deliberately outside the gate: they hold no SVG, and their extensions are
+// legitimately outside the image allow-list.
+const assetDirs = [
+  { dir: join(root, 'static/img/architectures'), quality: true },
+  { dir: join(root, 'static/img/cncf-projects'), quality: false },
+  { dir: join(root, 'static/img/awards'), quality: false },
+  {
+    dir: join(root, 'static/img'),
+    quality: false,
+    recurse: false,
+    extensions: SITE_CHROME_EXTENSIONS,
+  },
+  {
+    dir: join(root, 'static/favicons'),
+    quality: false,
+    extensions: SITE_CHROME_EXTENSIONS,
+  },
+];
+const shouldFix = process.argv.includes('--fix');
+
 const issues = [];
 const fixed = [];
 
-function walk(dir) {
+function walk(dir, recurse = true) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
     // A symlink in published assets can point anywhere in the repository (or
     // outside it) and would be followed by readers and --fix writers, so its
     // presence is itself an error rather than something to validate through.
+    // Checked before the directory branch, so a symlinked directory is still
+    // reported in a shallow walk.
     if (entry.isSymbolicLink()) {
       record(path, 'error', 'is a symbolic link; symlinks are not allowed');
       return [];
     }
-    return entry.isDirectory() ? walk(path) : [path];
+    if (entry.isDirectory()) return recurse ? walk(path) : [];
+    return [path];
   });
 }
 
@@ -161,7 +192,7 @@ function validateSvg(path, quality) {
   }
 }
 
-function validateAsset(path, quality) {
+function validateAsset(path, quality, extensions) {
   const rel = relative(root, path);
   const stats = statSync(path);
   const maxSize = 2 * 1024 * 1024; // 2 MB
@@ -174,7 +205,7 @@ function validateAsset(path, quality) {
   }
 
   const extension = extname(path).toLowerCase();
-  if (!ALLOWED_ASSET_EXTENSIONS.has(extension)) {
+  if (!extensions.has(extension)) {
     record(
       path,
       'error',
@@ -188,23 +219,25 @@ function validateAsset(path, quality) {
   }
 }
 
-const assets = assetDirs.flatMap(({ dir, quality }) => {
-  const kind = assetRootKind(dir);
-  // Fail loudly rather than skipping: a silently unvalidated asset root ships
-  // unchecked SVGs from the site origin.
-  if (kind === 'symlink') {
-    record(
-      dir,
-      'error',
-      'asset directory is a symbolic link; symlinks are not allowed',
-    );
-    return [];
-  }
-  if (kind !== 'directory') return [];
-  return walk(dir).map((path) => ({ path, quality }));
-});
-for (const { path, quality } of assets) {
-  validateAsset(path, quality);
+const assets = assetDirs.flatMap(
+  ({ dir, quality, recurse = true, extensions = ALLOWED_ASSET_EXTENSIONS }) => {
+    const kind = assetRootKind(dir);
+    // Fail loudly rather than skipping: a silently unvalidated asset root ships
+    // unchecked SVGs from the site origin.
+    if (kind === 'symlink') {
+      record(
+        dir,
+        'error',
+        'asset directory is a symbolic link; symlinks are not allowed',
+      );
+      return [];
+    }
+    if (kind !== 'directory') return [];
+    return walk(dir, recurse).map((path) => ({ path, quality, extensions }));
+  },
+);
+for (const { path, quality, extensions } of assets) {
+  validateAsset(path, quality, extensions);
 }
 
 if (fixed.length) {
