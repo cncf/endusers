@@ -7,6 +7,27 @@ const data = JSON.parse(
 );
 const errors = [];
 
+// The repository value is the upstream link for an End User Group and is one
+// component change away from an <a href>. A bare `new URL()` parse accepts
+// "javascript:alert(1)", "data:text/html,...", cleartext http, and a
+// userinfo-spoofed authority such as "https://github.com@evil.example/x",
+// whose visible prefix and real host disagree. Mirrors publishableUrl() in
+// validate-case-studies.mjs and isCncfProjectHref() in
+// lib/project-card-links.mjs. github.com is the only host
+// check-community-group-links.mjs ever writes.
+function publishableRepositoryUrl(value) {
+  if (typeof value !== 'string' || !value.trim()) return false;
+  let url;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:') return false;
+  if (url.username || url.password) return false;
+  return url.hostname.toLowerCase() === 'github.com';
+}
+
 if (Number.isNaN(Date.parse(data.checkedAt))) {
   collectError(
     errors,
@@ -48,10 +69,13 @@ for (const group of Array.isArray(data.groups) ? data.groups : []) {
       collectError(errors, label, 'error', 'duplicate slug');
     slugs.add(group.slug);
   }
-  try {
-    if (group.repository) new URL(group.repository);
-  } catch {
-    collectError(errors, label, 'error', 'repository must be an absolute URL');
+  if (group.repository && !publishableRepositoryUrl(group.repository)) {
+    collectError(
+      errors,
+      label,
+      'error',
+      `repository must be an https github.com URL, with no userinfo: ${JSON.stringify(group.repository)}`,
+    );
   }
   // A group whose upstream repo is archived or unreachable still renders on
   // the docs page today; surface it loudly but do not fail the build over an
