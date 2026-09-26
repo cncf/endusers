@@ -19,10 +19,18 @@ const repoRoot = new URL('..', import.meta.url).pathname;
 // before the script under test is evaluated, so network-dependent scripts run
 // offline and deterministically. Routes match by substring against the URL and
 // are consulted in declaration order, so more specific routes come first.
+// Every call is appended to ENDUSERS_FETCH_LOG as one JSON object per line so
+// the caller can assert on what the script actually sent, not only on what it
+// did with the reply.
 const FETCH_STUB = `
+import { appendFileSync } from 'node:fs';
 const routes = JSON.parse(process.env.ENDUSERS_FETCH_ROUTES ?? '[]');
-globalThis.fetch = async (input) => {
+globalThis.fetch = async (input, init) => {
   const url = typeof input === 'string' ? input : input.url;
+  appendFileSync(
+    process.env.ENDUSERS_FETCH_LOG,
+    JSON.stringify({ url, headers: init?.headers ?? {} }) + '\\n',
+  );
   const route = routes.find((candidate) => url.includes(candidate.match));
   if (!route) throw new Error('unstubbed request: ' + url);
   if (route.networkError) throw new Error(route.networkError);
@@ -111,7 +119,8 @@ exit 0
  * @param {string[]} [options.outputs] repo-relative paths to read back afterwards
  * @param {Record<string, string>} [options.env] extra environment variables
  * @returns {{status: number, stdout: string, stderr: string,
- *   outputs: Record<string, string | null>}}
+ *   outputs: Record<string, string | null>,
+ *   requests: Array<{url: string, headers: Record<string, string>}>}}
  */
 export function runScriptInSandbox({
   script,
@@ -154,6 +163,9 @@ export function runScriptInSandbox({
     const stubPath = join(work, 'fetch-stub.mjs');
     writeFileSync(stubPath, FETCH_STUB);
 
+    const fetchLog = join(work, 'fetch-log.jsonl');
+    writeFileSync(fetchLog, '');
+
     const result = spawnSync(
       'node',
       ['--import', stubPath, join(work, 'scripts', script)],
@@ -167,6 +179,7 @@ export function runScriptInSandbox({
           // whether or not the developer or CI job exports a token.
           GH_TOKEN: '',
           ENDUSERS_FETCH_ROUTES: JSON.stringify(routes),
+          ENDUSERS_FETCH_LOG: fetchLog,
           ENDUSERS_GIT_FIXTURES: fixtureRepos,
           ENDUSERS_REAL_GIT: realGitPath(),
           ...repoDates,
@@ -188,6 +201,10 @@ export function runScriptInSandbox({
       stdout: result.stdout ?? '',
       stderr: result.stderr ?? '',
       outputs: collected,
+      requests: readFileSync(fetchLog, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line)),
     };
   } finally {
     rmSync(work, { recursive: true, force: true });

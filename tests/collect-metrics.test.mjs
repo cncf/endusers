@@ -505,3 +505,56 @@ test('collect-metrics refuses an unparseable Link rel=next target', () => {
     /Ignoring unparseable Link rel="next" target: http:\/\/\[v1\.unparseable/,
   );
 });
+
+test('collect-metrics tolerates a landscape.yml with no landscape key', () => {
+  const data = metricsFrom(run({ landscape: 'other: {}\n' }));
+
+  const byId = Object.fromEntries(
+    data.metrics.map((entry) => [entry.id, entry]),
+  );
+  assert.equal(byId['cncf-projects'].value, 0);
+  assert.deepEqual(data.breakdowns.projectCategories.values, []);
+  assert.deepEqual(data.breakdowns.projectMaturity.values, []);
+});
+
+test('collect-metrics skips a subcategory that declares no items', () => {
+  const data = metricsFrom(
+    run({
+      landscape: `landscape:
+  - name: Orchestration
+    subcategories:
+      - name: Empty subcategory
+      - name: Scheduling
+        items:
+          - name: Kubernetes
+            project: graduated
+`,
+    }),
+  );
+
+  const byId = Object.fromEntries(
+    data.metrics.map((entry) => [entry.id, entry]),
+  );
+  assert.equal(byId['cncf-projects'].value, 1);
+  assert.deepEqual(data.breakdowns.projectCategories.values, [
+    { name: 'Orchestration', value: 1 },
+  ]);
+});
+
+test('collect-metrics files projects from an unnamed category under "Other"', () => {
+  const data = metricsFrom(
+    run({
+      landscape: `landscape:
+  - subcategories:
+      - name: Scheduling
+        items:
+          - name: Kubernetes
+            project: graduated
+`,
+    }),
+  );
+
+  assert.deepEqual(data.breakdowns.projectCategories.values, [
+    { name: 'Other', value: 1 },
+  ]);
+});
