@@ -57,6 +57,8 @@ jobs:
         run: npm run validate:case-studies
       - name: Validate radar reports data
         run: npm run validate:radar-reports
+      - name: Validate projects-born data
+        run: npm run validate:projects-born
       - name: Validate button contrast
         run: npm run validate:button-contrast
       - name: Build production site
