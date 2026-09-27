@@ -60,3 +60,62 @@ test.describe('reference architectures', () => {
     expect(Number(totalCount)).toBeGreaterThan(0);
   });
 });
+
+test.describe('case studies', () => {
+  test('lists case study rows', async ({ page }) => {
+    await page.goto('/resources/case-studies');
+    const section = page.getByRole('region', { name: 'CNCF case studies' });
+    await expect(section).toBeVisible();
+
+    const resultsText = section.getByText(/Showing \d+ of \d+ case studies/);
+    await expect(resultsText).toBeVisible();
+
+    const shown = await resultsText.locator('strong').first().textContent();
+    expect(Number(shown)).toBeGreaterThan(0);
+
+    expect(await section.locator('tbody tr').count()).toBeGreaterThan(0);
+  });
+});
+
+test.describe('radar reports', () => {
+  test('lists published reports with links', async ({ page }) => {
+    await page.goto('/resources/radar-reports');
+    const section = page.getByRole('region', {
+      name: 'CNCF Technology Radar reports',
+    });
+    await expect(section).toBeVisible();
+
+    const reports = section.locator('li');
+    expect(await reports.count()).toBeGreaterThan(0);
+
+    const firstLink = reports.first().getByRole('link').first();
+    await expect(firstLink).toHaveAttribute('href', /^https?:\/\//);
+  });
+});
+
+test.describe('projects born at end users', () => {
+  test('renders project cards on the community page', async ({ page }) => {
+    await page.goto('/community');
+    // The footer renders a second, compact ProjectsBorn under the same
+    // accessible name, so the in-page section is addressed by its heading id.
+    const section = page.locator(
+      'section[aria-labelledby="projects-born-title-section"]',
+    );
+    await expect(section).toBeVisible();
+
+    const projects = section.getByRole('link', { name: /Born at / });
+    expect(await projects.count()).toBeGreaterThan(0);
+    await expect(projects.first()).toHaveAttribute('href', /\S/);
+  });
+});
+
+test.describe('community group link status', () => {
+  test('reports when upstream group links were last verified', async ({
+    page,
+  }) => {
+    await page.goto('/community');
+    await expect(
+      page.getByText(/Upstream group links last verified on .+\./),
+    ).toBeVisible();
+  });
+});
