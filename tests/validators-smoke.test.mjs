@@ -21,6 +21,7 @@ const READ_ONLY_VALIDATORS = [
   'validate-radar-reports.mjs',
   'validate-community-people.mjs',
   'validate-community-groups.mjs',
+  'validate-projects-born.mjs',
 ];
 
 for (const script of READ_ONLY_VALIDATORS) {

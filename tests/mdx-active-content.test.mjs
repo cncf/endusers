@@ -125,9 +125,11 @@ test('reports a live element hidden by a mismatched backtick run, not a code spa
     'disallowed element <script>',
   ]);
   // The same trick also hides an event handler on an otherwise-allowlisted
-  // element -- the finding here is the handler, not the element itself.
+  // element -- the findings here are the handler and the expression it is
+  // bound through, not the element itself.
   assert.deepEqual(reasons('``<b onClick={alert}>hi</b>`'), [
     'event handler attribute',
+    'MDX expression',
   ]);
   // The equal-run control case must still be inert.
   assert.deepEqual(reasons('`<script>alert(1)</script>`'), []);
@@ -232,4 +234,64 @@ test('leaves an unrecognized named entity literal rather than dropping it', () =
   assert.deepEqual(reasons('[click](javascript&colon;alert(1))'), [
     'script-capable URL scheme',
   ]);
+});
+
+test('flags an MDX expression, which Docusaurus compiles to executable JavaScript', () => {
+  assert.deepEqual(
+    reasons('{(() => { document.location = "https://evil.example"; })()}'),
+    ['MDX expression'],
+  );
+  assert.deepEqual(
+    reasons('Body {globalThis.fetch("https://evil.example")}.'),
+    ['MDX expression'],
+  );
+  assert.deepEqual(reasons('{[].constructor.constructor("return 1")()}'), [
+    'MDX expression',
+  ]);
+});
+
+test('flags the opening line of an expression that spans several lines', () => {
+  const body = ['{(() => {', '  fetch("https://evil.example");', '})()}'].join(
+    '\n',
+  );
+  assert.deepEqual(findActiveContent(body), [
+    {
+      line: 1,
+      reason: 'MDX expression',
+      snippet: '{(() => {',
+    },
+  ]);
+});
+
+test('accepts the string-literal attribute expressions the importer emits', () => {
+  const card =
+    '  <CNCFProjectCard name={"Kubernetes"} href={"https://www.cncf.io/projects/kubernetes/"} description={"Runs \\"most\\" of our workloads"} />';
+  assert.deepEqual(findActiveContent(card), []);
+});
+
+test('flags an attribute expression that is more than a string literal', () => {
+  assert.deepEqual(
+    reasons('<CNCFProjectCard name={"a" + fetch("https://evil.example")} />'),
+    ['MDX expression'],
+  );
+  assert.deepEqual(reasons('<CNCFProjectCard name={globalThis.evil} />'), [
+    'MDX expression',
+  ]);
+});
+
+test('still scans the value inside an allowed attribute expression', () => {
+  // Only the braces are neutralized, so a script URI smuggled into a prop
+  // value is still reported rather than hidden by the allowance.
+  assert.deepEqual(
+    reasons('<CNCFProjectCard href={"javascript:alert(1)"} />'),
+    ['script-capable URL scheme'],
+  );
+});
+
+test('does not flag braces inside code, which MDX does not evaluate', () => {
+  assert.deepEqual(reasons('Run `kubectl get pods -o {.items}` to list.'), []);
+  assert.deepEqual(
+    reasons(['```json', '{ "replicas": 3 }', '```'].join('\n')),
+    [],
+  );
 });

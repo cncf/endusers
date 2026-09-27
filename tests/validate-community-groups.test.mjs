@@ -125,7 +125,7 @@ test('labels a group with neither slug nor name as "unknown group"', () => {
 });
 
 // A group missing `repository` must not also be reported as a bad URL: the
-// `if (group.repository)` guard inside the try is what keeps the two errors
+// `group.repository &&` guard on the URL check is what keeps the two errors
 // from stacking on one record.
 test('reports a repository-less group once, not also as a bad URL', () => {
   const group = validGroup();
@@ -136,7 +136,7 @@ test('reports a repository-less group once, not also as a bad URL', () => {
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /group requires slug, name, and repository/);
-  assert.doesNotMatch(result.stderr, /absolute URL/);
+  assert.doesNotMatch(result.stderr, /no userinfo/);
 });
 
 test('rejects a truthy non-array groups without crashing', () => {
@@ -167,7 +167,67 @@ test('rejects a non-URL repository', () => {
     }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /absolute URL/);
+  assert.match(result.stderr, /https github\.com URL/);
+});
+
+// A bare `new URL()` parse accepts every value below. The repository link is
+// published data one component change away from an <a href>, so the gate has
+// to decide the destination by parsing rather than by parseability alone.
+for (const [description, repository] of [
+  ['a javascript: scheme', 'javascript:alert(1)'],
+  ['a data: URL', 'data:text/html,<script>alert(1)</script>'],
+  ['a cleartext http URL', 'http://github.com/cncf/research-user-group'],
+  [
+    'a userinfo-spoofed authority',
+    'https://github.com@evil.example/cncf/research-user-group',
+  ],
+  ['a host that merely ends in the allowed name', 'https://notgithub.com/x'],
+  ['a subdomain of the allowed host', 'https://raw.github.com/cncf/x'],
+  ['a whitespace-only repository', '   '],
+]) {
+  test(`rejects ${description}`, () => {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      fixture({ ...validData, groups: [validGroup({ repository })] }),
+    );
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /https github\.com URL/);
+  });
+}
+
+// Trailing whitespace is a copy-paste artefact, not a different destination:
+// the gate trims before parsing so a valid link is not rejected over it.
+test('accepts a repository with surrounding whitespace', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      groups: [
+        validGroup({
+          repository: '  https://github.com/cncf/research-user-group  ',
+        }),
+      ],
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
+});
+
+// `hostname` is already lowercased by the URL parser, but the explicit
+// toLowerCase() in the gate is what keeps that true if the comparison ever
+// moves to a raw host string.
+test('accepts an uppercase host', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      groups: [
+        validGroup({
+          repository: 'https://GitHub.com/cncf/research-user-group',
+        }),
+      ],
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test('warns, without failing, on an archived upstream repo', () => {

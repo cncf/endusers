@@ -356,3 +356,72 @@ test('warns on an asset larger than 2 MB but still passes', () => {
   assert.match(result.stderr, /large\.svg: asset is \d+\.\d\d MB/);
   assert.match(result.stdout, /Validated 1 architecture asset/);
 });
+
+// static/img and static/favicons hold site chrome — the footer logo, the
+// favicon set — rather than imported assets. They are served from the same
+// origin as the diagrams, so a browser that opens one of their SVGs directly
+// executes any script it carries; they were outside the gate until #690.
+
+test('rejects active content in a site-chrome SVG under static/img', () => {
+  const logo = 'static/img/cncf_logo_white.svg';
+  const svg = VALID_SVG.replace('<rect', '<script>alert(1)</script><rect');
+  const result = runScriptWithFixtures(SCRIPT, { [logo]: svg });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /cncf_logo_white\.svg: active content/);
+});
+
+test('rejects active content in a favicon SVG under static/favicons', () => {
+  const icon = 'static/favicons/favicon.svg';
+  const svg = VALID_SVG.replace(
+    '<rect',
+    '<a xlink:href="javascript:alert(1)"/><rect',
+  );
+  const result = runScriptWithFixtures(SCRIPT, { [icon]: svg });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /favicon\.svg: active content/);
+});
+
+test('rejects a non-image file in static/img', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/page.html': '<html>x</html>',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\.html is not an allowed asset type/);
+});
+
+test('accepts the legacy favicon.ico that static/img serves', () => {
+  // ICO is a raster container no browser parses as markup, so it is safe at
+  // the origin even though the importer never mirrors one.
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/favicon.ico': 'not-really-an-icon',
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 1 architecture asset/);
+});
+
+test('walks static/img shallowly so diagram-quality checks stay scoped', () => {
+  // static/img is walked without recursion because its image subdirectories
+  // are gated as their own roots. A viewBox-less logo sitting directly in
+  // static/img must therefore pass, while the same file under
+  // static/img/architectures fails the diagram-quality gate.
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>';
+  const chrome = runScriptWithFixtures(SCRIPT, { 'static/img/logo.svg': svg });
+  assert.equal(chrome.status, 0, chrome.stderr);
+
+  const diagram = runScriptWithFixtures(SCRIPT, svgFixture(svg));
+  assert.equal(diagram.status, 1);
+  assert.match(diagram.stderr, /missing viewBox/);
+});
+
+test('reports a symlinked directory sitting directly in static/img', () => {
+  // The shallow walk must still reject symlinks: the symlink check runs
+  // before the directory branch, so a link that would otherwise be skipped
+  // for not being recursed into is still a finding.
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    { 'static/img/architectures/example/diagram.svg': VALID_SVG },
+    { symlinks: { 'static/img/elsewhere': 'architectures/example' } },
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /elsewhere: is a symbolic link/);
+});

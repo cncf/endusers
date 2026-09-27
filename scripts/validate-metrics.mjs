@@ -15,6 +15,17 @@ const errors = [];
 // parses with protocol "https:" while resolving to evil.example, so it reads
 // as CNCF to a human reviewing a generated diff and resolves elsewhere in a
 // browser. Mirrors checkHttpsUrl() in validate-awards.mjs.
+//
+// The scheme and userinfo tests are still not a gate on their own: every one of
+// these URLs is rendered under hard-coded anchor text ("cncf/architecture",
+// "Source ↗"), so a plain https URL on a host that is not CNCF's publishes as a
+// CNCF-labelled link to an unrelated origin. Hold the host to an allow-list,
+// the same standard ALLOWED_HOST_SUFFIXES applies in
+// scripts/validate-case-studies.mjs and scripts/validate-radar-reports.mjs.
+// github.com is allowed because sources.*.repository, sources.*.sourceUrl and
+// several metric sourceUrl values legitimately point at github.com/cncf/...
+const ALLOWED_HOST_SUFFIXES = ['cncf.io', 'github.com'];
+
 function checkUrl(path, field, value) {
   if (value === undefined || value === null || value === '') return;
   let parsed;
@@ -36,11 +47,23 @@ function checkUrl(path, field, value) {
     });
     return;
   }
-  if (parsed.username || parsed.password)
+  if (parsed.username || parsed.password) {
     errors.push({
       path,
       severity: 'error',
       message: `${field} must not carry a userinfo component, which only disguises the real host (${parsed.hostname})`,
+    });
+    return;
+  }
+  const host = parsed.hostname.toLowerCase();
+  const allowed = ALLOWED_HOST_SUFFIXES.some(
+    (domain) => host === domain || host.endsWith(`.${domain}`),
+  );
+  if (!allowed)
+    errors.push({
+      path,
+      severity: 'error',
+      message: `${field} must be on ${ALLOWED_HOST_SUFFIXES.join(' or ')}, got ${parsed.hostname}`,
     });
 }
 
