@@ -191,3 +191,105 @@ test('the unit suite runs in every workflow that runs a validator', () => {
     'workflows validating data without the unit suite',
   );
 });
+
+// The `validate:*` and `check:*` scripts are the repository's gates: one set
+// rejects data that would ship to the site, the other rejects the repository
+// itself. Defining a gate is only half the wiring. Unless a workflow runs it,
+// the gate is inert — it keeps passing when a contributor runs it by hand, the
+// unit suite stays green, and the breakage it was written to catch reaches main
+// anyway. None of the guards above notice, because each one only asks whether
+// the names resolve, never whether anything invokes them.
+//
+// Leaving a gate out of CI is allowed, but it has to be a decision on the
+// record. Every omission is listed here with its reason, so a gate that fell
+// out of a workflow is distinguishable from one that was never meant to be in
+// one.
+const GATES_NOT_RUN_BY_CI = new Map([
+  [
+    'check:links',
+    'markdown-link-check resolves every outbound URL against the live ' +
+      'internet, so a third-party outage would fail unrelated pull requests.',
+  ],
+  [
+    'check:community-group-links',
+    'calls the GitHub API and requires GH_TOKEN; it also rewrites ' +
+      'data/community-groups.json, which is a refresh job rather than a check ' +
+      'a pull request can pass or fail.',
+  ],
+]);
+
+function gateScripts() {
+  return Object.keys(scripts)
+    .filter((name) => /^(?:validate|check):/.test(name))
+    .sort();
+}
+
+function workflowRunTargets() {
+  const targets = new Set();
+  for (const file of workflowFiles) {
+    for (const command of runCommands(file)) {
+      for (const target of npmRunTargets(command)) targets.add(target);
+    }
+  }
+  return targets;
+}
+
+test('every validate:*/check:* gate is run by a workflow or recorded as exempt', () => {
+  const targets = workflowRunTargets();
+  const ungated = gateScripts().filter(
+    (name) => !targets.has(name) && !GATES_NOT_RUN_BY_CI.has(name),
+  );
+  assert.deepEqual(
+    ungated,
+    [],
+    'gates defined in package.json that no workflow runs; either add a step ' +
+      'for them or record the omission in GATES_NOT_RUN_BY_CI with a reason',
+  );
+});
+
+test('every gate this suite recognises is a real package.json script', () => {
+  // Pins the guard above to evidence rather than to spelling: if the filter
+  // stopped matching anything, the assertion would pass vacuously.
+  const gates = gateScripts();
+  assert.ok(
+    gates.includes('validate:metrics') && gates.includes('check:format'),
+    `expected the known gates to be recognised, got ${gates.join(', ')}`,
+  );
+});
+
+test('every recorded CI exemption still names a defined script', () => {
+  const stale = [...GATES_NOT_RUN_BY_CI.keys()].filter(
+    (name) => !(name in scripts),
+  );
+  assert.deepEqual(
+    stale,
+    [],
+    'GATES_NOT_RUN_BY_CI names scripts package.json no longer defines',
+  );
+});
+
+test('every recorded CI exemption carries a reason', () => {
+  const unexplained = [...GATES_NOT_RUN_BY_CI.entries()]
+    .filter(([, reason]) => typeof reason !== 'string' || reason.trim() === '')
+    .map(([name]) => name);
+  assert.deepEqual(
+    unexplained,
+    [],
+    'exemptions recorded without saying why the gate is not run in CI',
+  );
+});
+
+test('no recorded CI exemption names a gate a workflow already runs', () => {
+  // An exemption that is no longer true reads as a standing decision not to
+  // gate something CI does in fact gate, and would silently absorb a later
+  // removal of that step.
+  const targets = workflowRunTargets();
+  const contradicted = [...GATES_NOT_RUN_BY_CI.keys()].filter((name) =>
+    targets.has(name),
+  );
+  assert.deepEqual(
+    contradicted,
+    [],
+    'exemptions for gates a workflow runs; delete these entries',
+  );
+});

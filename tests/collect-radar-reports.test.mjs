@@ -337,3 +337,20 @@ test('fails the run when the first page errors', () => {
   );
   assert.equal(badRequest.outputs[OUTPUT], null);
 });
+
+test('an existing catalog without a radarReports key is treated as empty', () => {
+  const result = collect({
+    routes: [
+      { match: POSTS_ROUTE, body: [post()] },
+      { match: TYPES_ROUTE, body: [radarTypeTerm()] },
+    ],
+    fixtures: {
+      [OUTPUT]: JSON.stringify({ source: 'cncf.io reports' }, null, 2) + '\n',
+    },
+  });
+
+  const catalog = readCatalog(result);
+  assert.equal(catalog.radarReports.length, 1);
+  assert.equal(catalog.radarReports[0].slug, 'radar-one');
+  assert.equal(catalog.radarReports[0].summary, PLACEHOLDER_SUMMARY);
+});
