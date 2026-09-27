@@ -8,9 +8,13 @@ This document covers the development workflow and the data contribution model.
 Prerequisites: Node.js 22+ (LTS recommended) and npm.
 
 ```bash
-npm install
+npm ci
 npm run docus:start
 ```
+
+`npm ci` installs the exact, integrity-checked versions in `package-lock.json`,
+matching CI. Reach for `npm install <package>` only to add or upgrade a
+dependency, and commit the resulting lockfile change deliberately.
 
 The dev server runs at `http://localhost:3000`. In the devcontainer:
 

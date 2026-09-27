@@ -40,7 +40,9 @@ fail the PR.
 
 ## Build & Test
 
-- **Install**: `npm install`
+- **Install**: `npm ci` — installs the exact versions in `package-lock.json`, as
+  CI does. Use `npm install <package>` only to add or upgrade a dependency on
+  purpose; it re-resolves the semver ranges and rewrites the lockfile.
 - **Start Dev Server**: `npm run docus:start`
 - **Build**: `npm run build`
 - **Unit Tests**: `npm run test:unit` — required "Validate repository" CI check

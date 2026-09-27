@@ -34,8 +34,14 @@ Ensure you have the following installed:
 ### Install dependencies
 
 ```bash
-npm install
+npm ci
 ```
+
+`npm ci` installs exactly the versions recorded in `package-lock.json` and
+verifies their integrity hashes, which is what CI runs. Use
+`npm install <package>` only when you intend to add or upgrade a dependency;
+that re-resolves the ranges in `package.json` and rewrites the lockfile, so the
+change belongs in its own reviewed commit.
 
 ### Run the site
 
