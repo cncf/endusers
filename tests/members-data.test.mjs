@@ -26,6 +26,33 @@ const REQUIRED_ARRAY_FIELDS = [
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+// members.json is generated, but nothing reconciles its URLs against the
+// validated sources it came from: the awards cross-check below compares only
+// the slug/year/award key. This is the only gate on the hrefs the member
+// directory renders, so it parses rather than prefix-matches. A `/^https:\/\//`
+// test accepts "https://www.cncf.io@evil.example/", whose real host is
+// evil.example, and accepts the bare string "https://", which is not a URL at
+// all. Mirrors isHttpsUrl() in scripts/validate-architectures.mjs.
+function httpsUrlProblem(value) {
+  if (typeof value !== 'string') return 'must be a string';
+  if (value !== value.trim()) return 'must not have surrounding whitespace';
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return 'must be a parseable URL';
+  }
+  if (url.protocol !== 'https:') return `must use https, got ${url.protocol}`;
+  if (url.username || url.password)
+    return `must not carry userinfo; its real host is ${url.host}`;
+  return null;
+}
+
+function assertHttpsUrl(value, label) {
+  const problem = httpsUrlProblem(value);
+  assert.equal(problem, null, `${label} ${problem} (${String(value)})`);
+}
+
 test('members.json exposes the generated envelope', () => {
   assert.equal(typeof membersData.description, 'string');
   assert.ok(membersData.description.length > 0);
@@ -127,10 +154,9 @@ test('member architecture entries carry their provenance', () => {
           `${member.id} architecture is missing ${field}`,
         );
       }
-      assert.match(
+      assertHttpsUrl(
         architecture.sourceUrl,
-        /^https:\/\//,
-        `${member.id} architecture sourceUrl must be https`,
+        `${member.id} architecture sourceUrl`,
       );
       assert.match(
         architecture.sourceCommit,
@@ -159,11 +185,7 @@ test('member award entries carry the fields the profile renders', () => {
       );
       for (const field of ['announcementUrl', 'caseStudyUrl', 'talkUrl']) {
         if (!award[field]) continue;
-        assert.match(
-          award[field],
-          /^https:\/\//,
-          `${member.id} award ${field} must be https`,
-        );
+        assertHttpsUrl(award[field], `${member.id} award ${field}`);
       }
     }
   }
@@ -172,11 +194,7 @@ test('member award entries carry the fields the profile renders', () => {
 test('sourceAttribution entries are https URLs', () => {
   for (const member of members) {
     for (const url of member.sourceAttribution) {
-      assert.match(
-        url,
-        /^https:\/\//,
-        `${member.id} sourceAttribution entry must be an https URL`,
-      );
+      assertHttpsUrl(url, `${member.id} sourceAttribution entry`);
     }
   }
 });
@@ -220,5 +238,35 @@ test('members with no public detail still carry attribution', () => {
       member.sourceAttribution.length > 0,
       `${member.id} has no detail to render, so it needs sourceAttribution`,
     );
+  }
+});
+
+test('the URL gate rejects what a bare https prefix test would accept', () => {
+  for (const value of [
+    'https://www.cncf.io@evil.example/phish',
+    'https://cncf.io@127.0.0.1/',
+    'https://user:pass@evil.example/',
+    'https://',
+    'http://cncf.io/',
+    'javascript:alert(1)',
+    ' https://cncf.io/',
+    42,
+    null,
+  ]) {
+    assert.notEqual(
+      httpsUrlProblem(value),
+      null,
+      `${String(value)} must be rejected`,
+    );
+  }
+});
+
+test('the URL gate accepts ordinary https source links', () => {
+  for (const value of [
+    'https://cncf.io/',
+    'https://github.com/cncf/endusers',
+    'https://www.cncf.io/case-studies/example/?utm=1#section',
+  ]) {
+    assert.equal(httpsUrlProblem(value), null, `${value} must be accepted`);
   }
 });
