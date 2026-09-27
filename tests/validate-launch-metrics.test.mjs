@@ -334,3 +334,34 @@ test('rejects a signal sourceUrl carrying a password-only userinfo component', (
   assert.equal(result.status, 1);
   assert.match(result.stderr, /sourceUrl must not carry a userinfo component/);
 });
+
+// `data.signals || []` keeps a file with no signals key from throwing on
+// .length, so the count check reports it as a data problem instead of the
+// script dying with a TypeError. The `|| []` arm is invisible to line
+// coverage because the assignment line runs for every file.
+test('reports a missing signals key as a count failure, not a crash', () => {
+  const withoutSignals = { ...validData };
+  delete withoutSignals.signals;
+  const result = runScriptWithFixtures(SCRIPT, fixture(withoutSignals));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /signals must define 3-5 signals, got 0/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
+// A signal with no id has no natural label, so every error it raises is
+// filed under '(missing id)' rather than the empty string `signal.id` would
+// otherwise contribute.
+test('labels an id-less signal "(missing id)" in every error it raises', () => {
+  const anonymous = { ...validSignal };
+  delete anonymous.id;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, signals: [...validData.signals, anonymous] }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /\[error\] \(missing id\): duplicate or missing signal id/,
+  );
+  assert.doesNotMatch(result.stderr, /\[error\] undefined:/);
+});

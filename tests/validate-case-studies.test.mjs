@@ -259,3 +259,33 @@ test('rejects an entry missing industries entirely', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /industries must be an array/);
 });
+
+// The error label is `entry.id ?? entry.slug ?? 'unknown'`. Both fallback arms
+// sit mid-line, so line coverage reports them as run whenever a malformed
+// entry is validated at all; only an entry that actually omits `id` reaches
+// the slug arm, and only one omitting `slug` too reaches the literal.
+test('falls back to the slug when an entry has no id', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [{ ...validEntry, id: undefined }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\[error\] example-org: duplicate or missing id/);
+  assert.doesNotMatch(result.stderr, /\[error\] unknown:/);
+});
+
+test('falls back to "unknown" when an entry has neither id nor slug', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({
+      ...validData,
+      caseStudies: [{ ...validEntry, id: undefined, slug: undefined }],
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\[error\] unknown: duplicate or missing id/);
+  assert.doesNotMatch(result.stderr, /\[error\] undefined:/);
+});

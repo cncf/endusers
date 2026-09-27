@@ -43,7 +43,7 @@ function routes({
   ];
 }
 
-function collect(routeList) {
+function collect(routeList, env = {}) {
   return runScriptInSandbox({
     script: 'collect-launch-metrics.mjs',
     // The script writes straight into data/, which only exists in the sandbox
@@ -51,6 +51,7 @@ function collect(routeList) {
     fixtures: { 'data/.keep': '' },
     routes: routeList,
     outputs: [OUTPUT],
+    env,
   });
 }
 
@@ -366,4 +367,37 @@ test('an unparseable Link rel="next" target is refused', () => {
     result.stderr,
     /Ignoring unparseable Link rel="next" target: http:\/\/\[v1\.unparseable/,
   );
+});
+
+test('paginated collection requests carry the token when GH_TOKEN is set', () => {
+  const result = collect(routes(), { GH_TOKEN: 'fixture-token' });
+
+  readBaseline(result);
+  const paginated = result.requests.filter(
+    (request) =>
+      request.url.includes(CONTRIBUTORS_ROUTE) ||
+      request.url.includes(ISSUES_ROUTE),
+  );
+  assert.ok(paginated.length > 0, 'expected paginated collection requests');
+  for (const request of paginated) {
+    assert.ok(
+      String(request.headers.Authorization).includes('fixture-token'),
+      `missing credential on ${request.url}`,
+    );
+  }
+});
+
+test('paginated collection requests are unauthenticated without GH_TOKEN', () => {
+  const result = collect(routes());
+
+  readBaseline(result);
+  const paginated = result.requests.filter(
+    (request) =>
+      request.url.includes(CONTRIBUTORS_ROUTE) ||
+      request.url.includes(ISSUES_ROUTE),
+  );
+  assert.ok(paginated.length > 0, 'expected paginated collection requests');
+  for (const request of paginated) {
+    assert.equal('Authorization' in request.headers, false, request.url);
+  }
 });

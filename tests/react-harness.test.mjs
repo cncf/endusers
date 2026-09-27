@@ -51,3 +51,128 @@ test('textOf returns an empty string for a non-renderable child', () => {
     'ac',
   );
 });
+
+test('the hook driver resolves a lazy useState initialiser once', () => {
+  // A component that passes an expensive initialiser as a function must get
+  // its return value, not the function itself, and must not re-run it on a
+  // later render the way a hand-rolled dispatcher easily would.
+  let initialiserCalls = 0;
+  const api = renderHook(() => {
+    const [value] = React.useState(() => {
+      initialiserCalls += 1;
+      return 'lazy';
+    });
+    return value;
+  });
+
+  assert.equal(api.result, 'lazy');
+  assert.equal(initialiserCalls, 1);
+
+  api.rerender();
+  assert.equal(api.result, 'lazy');
+  assert.equal(initialiserCalls, 1, 'the initialiser must not run again');
+});
+
+test('a functional state update is applied to the current value', () => {
+  // setCount((n) => n + 1) is the form every counter uses. If the driver
+  // stored the updater instead of calling it, the suite under test would
+  // assert against a function and silently pass on a truthiness check.
+  let setCount;
+  const api = renderHook(() => {
+    const [count, set] = React.useState(1);
+    setCount = set;
+    return count;
+  });
+
+  setCount((current) => current + 1);
+  assert.equal(api.result, 2);
+
+  setCount((current) => current + 1);
+  assert.equal(api.result, 3);
+});
+
+test('setting state to the value it already holds does not re-render', () => {
+  // React bails out of an update that changes nothing. Without the same bail
+  // out here, a hook that sets state from an effect would re-render forever
+  // and the suite would hang rather than fail.
+  let setValue;
+  let renders = 0;
+  const api = renderHook(() => {
+    const [value, set] = React.useState('same');
+    setValue = set;
+    renders += 1;
+    return value;
+  });
+
+  assert.equal(renders, 1);
+
+  setValue('same');
+  assert.equal(renders, 1, 'an equal value must not re-run the hook body');
+  assert.equal(api.result, 'same');
+
+  setValue('changed');
+  assert.equal(renders, 2);
+  assert.equal(api.result, 'changed');
+});
+
+test('an effect with unchanged dependencies is not run again', () => {
+  // The whole point of a dependency array is that a rerender with the same
+  // deps leaves the effect alone, cleanup included. A driver that re-ran it
+  // would make a subscribe/unsubscribe hook look like it leaked listeners.
+  const log = [];
+  const api = renderHook(() => {
+    React.useEffect(() => {
+      log.push('setup');
+      return () => log.push('cleanup');
+    }, ['stable']);
+  });
+
+  assert.deepEqual(log, ['setup']);
+
+  api.rerender();
+  assert.deepEqual(log, ['setup'], 'identical deps must not re-run the effect');
+
+  api.unmount();
+  assert.deepEqual(log, ['setup', 'cleanup']);
+});
+
+test('an omitted dependency array re-runs the memo and the effect', () => {
+  // useMemo(factory) and useEffect(create) with no deps must run on every
+  // render. sameDeps treats an undefined array as "never equal", so this
+  // pins the difference between "no deps" and "empty deps".
+  let memoCalls = 0;
+  const effectLog = [];
+  const api = renderHook(() => {
+    const memo = React.useMemo(() => {
+      memoCalls += 1;
+      return memoCalls;
+    });
+    React.useEffect(() => {
+      effectLog.push('setup');
+      return () => effectLog.push('cleanup');
+    });
+    return memo;
+  });
+
+  assert.equal(api.result, 1);
+  assert.deepEqual(effectLog, ['setup']);
+
+  api.rerender();
+  assert.equal(api.result, 2, 'a memo without deps must be recomputed');
+  assert.deepEqual(effectLog, ['setup', 'cleanup', 'setup']);
+});
+
+test('unmounting twice runs each cleanup only once', () => {
+  // Suites unmount in a test body and again in an after hook. A second pass
+  // over the effect list would call a cleanup on an already-torn-down
+  // subscription, turning tidy teardown into a spurious failure.
+  const log = [];
+  const api = renderHook(() => {
+    React.useEffect(() => () => log.push('cleanup'), []);
+  });
+
+  api.unmount();
+  api.unmount();
+
+  assert.deepEqual(log, ['cleanup']);
+});

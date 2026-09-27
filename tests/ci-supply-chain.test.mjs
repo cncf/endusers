@@ -217,3 +217,118 @@ test('the persist-credentials baseline retires itself', () => {
     );
   }
 });
+
+// A job without `timeout-minutes` inherits GitHub's 6-hour default. The commands
+// these workflows run are network-bound -- markdown-link-check walks every link
+// in every root Markdown file, and the scheduled jobs call the GitHub API -- so
+// an unreachable host makes a step hang rather than fail, and the job then holds
+// a runner for six hours. Only deploy-gh-pages declares a concurrency group, so
+// the next run does not supersede a stuck one either.
+//
+// KNOWN_UNBOUNDED_JOBS is a retiring baseline, not an allowance: it records the
+// jobs unbounded as of #743. The companion test below fails once an entry
+// gains a timeout, so bounding a job forces its exception to be removed in the
+// same change.
+const KNOWN_UNBOUNDED_JOBS = new Set([
+  'ci.yml: validate',
+  'ci.yml: lint',
+  'codeql.yml: analyze',
+  'create-milestones.yml: create-milestones',
+  'deploy-gh-pages.yml: build',
+  'deploy-gh-pages.yml: deploy',
+  'import-architectures.yml: import',
+  'pr-queue-hygiene.yml: hygiene',
+  'refresh-community-people.yml: refresh',
+  'refresh-radar-reports.yml: refresh',
+]);
+
+// `timeout-minutes` is not accepted on a job that delegates to a reusable
+// workflow, so those jobs are outside this contract.
+function boundableJobs(doc) {
+  return jobs(doc).filter(([, job]) => !job?.uses);
+}
+
+function timeoutOf(job) {
+  return job?.['timeout-minutes'];
+}
+
+test('every workflow job bounds its runtime with timeout-minutes', () => {
+  const unbounded = [];
+  for (const { name, doc } of workflows) {
+    for (const [jobName, job] of boundableJobs(doc)) {
+      const label = `${name}: ${jobName}`;
+      if (KNOWN_UNBOUNDED_JOBS.has(label)) continue;
+      if (timeoutOf(job) === undefined) unbounded.push(label);
+    }
+  }
+  assert.deepEqual(
+    unbounded,
+    [],
+    `declare 'timeout-minutes:' on each job so a hung step cannot hold a runner for the 6-hour default:\n${unbounded.join('\n')}`,
+  );
+});
+
+// Describes why a declared timeout-minutes value is unusable, or null when the
+// value is fine. A quoted YAML scalar parses as a string and a fractional value
+// is silently floored by the runner, so neither is accepted; a value at or above
+// 360 restates the 6-hour default this contract exists to replace.
+function timeoutProblem(declared) {
+  if (typeof declared !== 'number') {
+    return `timeout-minutes must be a number, got ${JSON.stringify(declared)}`;
+  }
+  if (!Number.isInteger(declared) || declared <= 0) {
+    return `timeout-minutes must be a positive whole number of minutes, got ${declared}`;
+  }
+  if (declared >= 360) {
+    return `timeout-minutes of ${declared} is at or above the 6-hour default it exists to replace`;
+  }
+  return null;
+}
+
+test('timeoutProblem accepts usable values and names the fault in the rest', () => {
+  for (const usable of [1, 15, 30, 359]) {
+    assert.equal(timeoutProblem(usable), null, `${usable} should be usable`);
+  }
+  assert.match(timeoutProblem('30'), /must be a number/);
+  assert.match(timeoutProblem(null), /must be a number/);
+  assert.match(timeoutProblem(true), /must be a number/);
+  assert.match(timeoutProblem(2.5), /positive whole number/);
+  assert.match(timeoutProblem(0), /positive whole number/);
+  assert.match(timeoutProblem(-5), /positive whole number/);
+  assert.match(timeoutProblem(360), /6-hour default/);
+  assert.match(timeoutProblem(600), /6-hour default/);
+});
+
+test('every declared timeout-minutes is a positive number below the 6-hour default', () => {
+  const faults = [];
+  for (const { name, doc } of workflows) {
+    for (const [jobName, job] of boundableJobs(doc)) {
+      const declared = timeoutOf(job);
+      if (declared === undefined) continue;
+      const problem = timeoutProblem(declared);
+      if (problem) faults.push(`${name} (${jobName}): ${problem}`);
+    }
+  }
+  assert.deepEqual(faults, [], faults.join('\n'));
+});
+
+test('the timeout-minutes baseline retires itself', () => {
+  for (const label of KNOWN_UNBOUNDED_JOBS) {
+    const [name, jobName] = label.split(': ');
+    const entry = workflows.find((workflow) => workflow.name === name);
+    assert.ok(
+      entry,
+      `${label} is listed as a known timeout gap but ${name} does not exist; remove the entry`,
+    );
+    const job = boundableJobs(entry.doc).find(([id]) => id === jobName);
+    assert.ok(
+      job,
+      `${label} is listed as a known timeout gap but ${name} declares no boundable job '${jobName}'; remove the entry`,
+    );
+    assert.equal(
+      timeoutOf(job[1]),
+      undefined,
+      `${label} now declares timeout-minutes; remove it from KNOWN_UNBOUNDED_JOBS so the gap cannot reopen`,
+    );
+  }
+});
