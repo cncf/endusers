@@ -3,7 +3,10 @@
   "title": "End-to-End Cloud Native Telco Platform Automation at Swisscom",
   "organization": "Swisscom (Switzerland) Ltd",
   "summary": "Swisscom has built a cloud native telco platform for the end-to-end automation of its 5G standalone core network and cross-domain resource orchestration. The architecture replaces traditional imperative network management (Jenkins pipelines",
-  "industries": ["Communication", "Telecommunication"],
+  "industries": [
+    "Communication",
+    "Telecommunication"
+  ],
   "tags": [
     "cloud_native",
     "telco",
