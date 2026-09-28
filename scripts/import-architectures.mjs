@@ -14,20 +14,20 @@ import { execFileSync } from 'node:child_process';
 import { basename, extname, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { parse as yamlParse } from 'yaml';
-import {
-  artworkMirrorPath,
-  artworkPath,
-  artworkUrls,
-  projectAsset,
-} from './lib/project-assets.mjs';
 import { stripActiveContent } from './lib/svg-active-content.mjs';
-import { isCncfProjectHref } from './lib/project-card-links.mjs';
-import { jsxElement } from './lib/jsx-attributes.mjs';
 import {
   REPO_AUTHORED_PAGES,
   listArchitecturePages,
 } from './lib/architecture-pages.mjs';
+import {
+  cleanMarkdown,
+  firstParagraph,
+  listValue,
+  mirrorArtworkUrls,
+  renderProjectCards,
+  splitFrontmatter,
+} from './lib/architecture-content.mjs';
+import { artworkUrls } from './lib/project-assets.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
@@ -166,7 +166,7 @@ async function importArchitecture(id, commit) {
         !existsSync(file) && existsSync(file.replace(/\.svg$/i, '.png')),
     )
     .map((file) => basename(file));
-  await mirrorProjectAssets(body);
+  await mirrorArtworkUrls(root, artworkUrls(body));
   let cleanBody = cleanMarkdown(renderProjectCards(body, id), id);
   for (const svgName of convertedToPng) {
     cleanBody = cleanBody.replaceAll(
@@ -186,109 +186,6 @@ async function importArchitecture(id, commit) {
   return record;
 }
 
-function splitFrontmatter(text) {
-  if (!text.startsWith('---')) return { frontmatter: {}, body: text };
-  const end = text.indexOf('\n---', 3);
-  const frontmatter = yamlParse(text.slice(4, end)) ?? {};
-  return { frontmatter, body: text.slice(end + 4).trim() };
-}
-
-function listValue(value) {
-  return Array.isArray(value) ? value : value ? [value] : [];
-}
-function renderProjectCards(body, id) {
-  return body.replace(
-    /{{< card header="([^"]+)" >}}([\s\S]*?){{< \/card >}}/g,
-    (_, name, content) => {
-      const links = [...content.matchAll(/\]\((https?:\/\/[^)]+)\)/g)].map(
-        (match) => match[1],
-      );
-      const href =
-        links.find(isCncfProjectHref) ||
-        `https://www.cncf.io/projects/${name.toLowerCase().replace(/\s+/g, '-')}/`;
-      const logo = (content.match(/!\[[^\]]*\]\((https?:\/\/[^)]+)\)/) ||
-        [])[1];
-      const since = (content.match(/\*\*Using since:\*\*\s*([^\n]+)/) ||
-        [])[1]?.trim();
-      const version = (content.match(/\*\*Current version:\*\*\s*([^\n]+)/) ||
-        [])[1]?.trim();
-      const description = content
-        .replace(/!\[[^\]]*\]\([^)]*\)/, '')
-        .replace(/\[[^\]]*\]\([^)]*\)/g, '')
-        .replace(/\*\*[^*]+:\*\*[^\n]*/g, '')
-        .replace(/^\s*[-*]\s*/gm, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      const localLogo = logo ? projectAsset(logo) : null;
-      // Expression attributes, never quoted ones: `since`, `version` and
-      // `description` are upstream text, and a quoted JSX attribute gives a
-      // value containing `"` a way out of the attribute and into the tag.
-      return jsxElement('CNCFProjectCard', {
-        name,
-        href,
-        logo: localLogo,
-        since,
-        version,
-        description,
-      });
-    },
-  );
-}
-function cleanMarkdown(body, id) {
-  return body
-    .replace(/{{<[\s\S]*?>}}/g, '')
-    .replace(/{{<\/?[^>]+>}}/g, '')
-    .replace(/!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g, (_, alt, url) => {
-      const asset = projectAsset(url);
-      return asset ? `![${alt}](${asset})` : `[${alt}](${url})`;
-    })
-    .replace(/\[\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\]/g, '[$1]($2)')
-    .replace(
-      /!\[([^\]]*)\]\((?!(?:https?:)?\/\/)(?:\.\/)?(?:images\/)?([^/][^\)]*)\)/g,
-      `![$1](/img/architectures/${id}/$2)`,
-    )
-    .replace(/<>/g, '&lt;&gt;')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-async function mirrorProjectAssets(body) {
-  for (const url of artworkUrls(body)) {
-    const path = artworkPath(url);
-    const relativeDestination = artworkMirrorPath(path);
-    if (!relativeDestination) continue;
-    const destination = join(root, relativeDestination);
-    mkdirSync(join(destination, '..'), { recursive: true });
-    try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const body = Buffer.from(await response.arrayBuffer());
-      if (relativeDestination.toLowerCase().endsWith('.svg')) {
-        const { source, removed } = stripActiveContent(body.toString('utf8'));
-        if (removed.length) {
-          console.warn(
-            `Removed active content from mirrored asset ${path}: ${[
-              ...new Set(removed),
-            ].join(', ')}`,
-          );
-        }
-        writeFileSync(destination, source, 'utf8');
-      } else {
-        writeFileSync(destination, body);
-      }
-    } catch {
-      console.warn(`Could not mirror CNCF project asset: ${path}`);
-    }
-  }
-}
-function firstParagraph(body) {
-  const paragraph = body.split(/\n\s*\n/).find((part) => {
-    const text = part.trim();
-    return text && !/^[#!\-[<|>]/.test(text);
-  });
-  return (
-    paragraph?.replace(/[*_`]/g, '').replace(/\s+/g, ' ').slice(0, 240) ?? ''
-  );
-}
 // True only for a path that is itself a directory, never a symlink pointing at
 // one. walkFiles() rejects symlinked *entries*, but a walk rooted at a
 // symlinked directory descends into the link target, and every entry found

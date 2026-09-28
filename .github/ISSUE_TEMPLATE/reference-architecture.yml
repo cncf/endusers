@@ -1,0 +1,189 @@
+name: Reference Architecture Submission
+description:
+  Submit a reference architecture for the CNCF End User Community site
+title: '[Reference Architecture]: '
+labels: ['architecture-submission']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing your reference architecture with the CNCF End User
+        Community! Fill out the form below, and once a maintainer applies the
+        `architecture-ready` label, a workflow will automatically open a pull
+        request from your answers for review.
+
+        This form follows the [CNCF reference architecture
+        template](https://github.com/cncf/architecture/blob/main/archetypes/refarch.md).
+        See the [existing reference
+        architectures](https://github.com/cncf/endusers/tree/main/docs/architectures)
+        for examples of the level of detail we're looking for.
+
+  - type: input
+    id: org_name
+    attributes:
+      label: Organization or Team Name
+      description:
+        The company, organization, or team this architecture belongs to
+      placeholder: e.g., Acme Corp
+    validations:
+      required: true
+
+  - type: input
+    id: org_url
+    attributes:
+      label: Organization Website
+      placeholder: https://example.com
+    validations:
+      required: true
+
+  - type: input
+    id: contact
+    attributes:
+      label: Contact
+      description: Your name, or the name of the team who can answer questions
+      placeholder: e.g., Jane Doe, Platform Engineering team
+    validations:
+      required: true
+
+  - type: input
+    id: email
+    attributes:
+      label: Contact Email
+      description: Optional — only if you're okay with it being listed publicly
+    validations:
+      required: false
+
+  - type: input
+    id: org_size
+    attributes:
+      label: Organization Size
+      description: Size of the entire organization
+    validations:
+      required: false
+
+  - type: input
+    id: user_size
+    attributes:
+      label: Target User Base Size
+      description:
+        Size of the userbase this architecture serves — could be an internal
+        team, a product's customers, etc.
+    validations:
+      required: false
+
+  - type: input
+    id: industries
+    attributes:
+      label: Industries
+      description:
+        Comma-separated list of industries this organization is part of
+      placeholder: e.g., Retail, Logistics
+    validations:
+      required: true
+
+  - type: input
+    id: tags
+    attributes:
+      label: Tags
+      description: Optional, comma-separated list of relevant tags
+      placeholder: e.g., kubernetes, observability, multi-cloud
+    validations:
+      required: false
+
+  - type: textarea
+    id: projects
+    attributes:
+      label: Relevant CNCF Projects
+      description: |
+        List every CNCF project essential to your architecture, one per line, in the form:
+        `Name | Logo URL | Using since | Current version | Description`
+
+        The logo URL must point at a CNCF project icon hosted in
+        https://github.com/cncf/artwork (for example a `raw.githubusercontent.com/cncf/artwork/...`
+        link) so it can be mirrored onto the site; leave it blank to omit the
+        logo. "Using since" and "Current version" are optional.
+      placeholder: |
+        Kubernetes | https://raw.githubusercontent.com/cncf/artwork/main/projects/kubernetes/icon/color/kubernetes-icon-color.svg | 2019 | 1.30 | Core compute platform for our containerized services.
+        Dapr | https://raw.githubusercontent.com/cncf/artwork/main/projects/dapr/icon/color/dapr-icon-color.svg | 2021 | 1.13 | Sidecar building blocks for service invocation and pub/sub.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: org_description
+    attributes:
+      label: Describe your organisation
+      description: A brief description of your organization
+      placeholder:
+        e.g., a paragraph from an "about" page on your company's website
+    validations:
+      required: true
+
+  - type: textarea
+    id: team_description
+    attributes:
+      label: Describe your entity and/or team
+      description:
+        Do you work for a central IT organization? For a specific department's
+        platform team? Optional.
+    validations:
+      required: false
+
+  - type: textarea
+    id: overview
+    attributes:
+      label:
+        Brief overview of your architecture and any potential goals you are
+        trying to achieve with it?
+    validations:
+      required: true
+
+  - type: textarea
+    id: why_projects
+    attributes:
+      label: Can you expand on why you are using those projects/services?
+    validations:
+      required: false
+
+  - type: textarea
+    id: worked_well
+    attributes:
+      label: What has worked well?
+    validations:
+      required: false
+
+  - type: textarea
+    id: not_worked_well
+    attributes:
+      label: What has not worked well?
+    validations:
+      required: false
+
+  - type: textarea
+    id: glue
+    attributes:
+      label:
+        What sort of "glue" have you had to develop to enable usage of your
+        architecture?
+      description:
+        e.g., helper scripts, custom controllers, anything you built to get
+        everything to work well together
+    validations:
+      required: false
+
+  - type: textarea
+    id: evolution
+    attributes:
+      label:
+        Has your architecture evolved? What lessons did you learn from previous
+        iterations?
+    validations:
+      required: false
+
+  - type: textarea
+    id: whats_next
+    attributes:
+      label:
+        "What's next for your architecture? What are you looking to do next?"
+    validations:
+      required: false
