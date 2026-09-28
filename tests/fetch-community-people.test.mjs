@@ -74,6 +74,34 @@ test('writes a fetchedAt envelope with sections keyed under people', () => {
   assert.equal(output.people.ambassadors[0].name, 'Grace Hopper');
 });
 
+test('leaves the file untouched when nothing changed (matches #648)', () => {
+  const fixtures = {
+    [ROSTER]: roster({
+      tab: [{ name: 'Ada Lovelace', company: 'Analytical Co' }],
+    }),
+  };
+
+  const first = run({ fixtures });
+  const firstOutput = parseOutput(first);
+
+  // Re-run against the exact file the first run produced, as the scheduled
+  // workflow would the next time it fires with an unchanged roster and
+  // unchanged cncf/people data.
+  const second = run({
+    fixtures: { ...fixtures, [OUTPUT]: first.outputs[OUTPUT] },
+  });
+
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /No community profile changes detected/);
+  // The file on disk -- including fetchedAt -- must be byte-for-byte the
+  // same; a second run must not open a no-op refresh PR.
+  assert.equal(second.outputs[OUTPUT], first.outputs[OUTPUT]);
+  assert.equal(
+    JSON.parse(second.outputs[OUTPUT]).fetchedAt,
+    firstOutput.fetchedAt,
+  );
+});
+
 test('fills in bio, location, image and links from a matching cncf/people record', () => {
   const result = run({
     fixtures: {

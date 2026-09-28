@@ -304,3 +304,34 @@ test('stops paginating when a page returns an empty batch', () => {
     ['solo'],
   );
 });
+
+test('leaves the catalog untouched when nothing changed (matches #648)', () => {
+  const routes = [
+    {
+      match: CASE_STUDY_ROUTE,
+      body: [post({ id: 1, slug: 'stable', title: { rendered: 'Stable' } })],
+    },
+    ...taxonomyRoutes(),
+  ];
+
+  const first = collect(routes);
+  assert.equal(first.status, 0, first.stderr);
+  const firstCatalog = JSON.parse(first.outputs[OUTPUT]);
+
+  // Re-run against the exact catalog the first run produced, as a maintainer
+  // would the next time they run `npm run collect:case-studies` against
+  // unchanged upstream content.
+  const second = collect(routes, {
+    fixtures: { [OUTPUT]: first.outputs[OUTPUT] },
+  });
+
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /No case study changes detected/);
+  // The file on disk -- including generatedAt -- must be byte-for-byte the
+  // same; a second run must not open a no-op refresh PR.
+  assert.equal(second.outputs[OUTPUT], first.outputs[OUTPUT]);
+  assert.equal(
+    JSON.parse(second.outputs[OUTPUT]).generatedAt,
+    firstCatalog.generatedAt,
+  );
+});

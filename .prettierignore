@@ -1,6 +1,6 @@
 # Imported architecture pages are regenerated verbatim by
 # `npm run import:architectures` and embed JSX component props (e.g.
-# CNCFProjectCard description={"..."}) inline in prose. Prettier's markdown
+# CNCFProjectCard `description={"..."}`) inline in prose. Prettier's markdown
 # formatter rewraps that prose across lines, which breaks the JS string
 # literal and fails the MDX build with "Could not parse expression with acorn"
 # (see #681, #795); any local reformatting would also be overwritten by the
