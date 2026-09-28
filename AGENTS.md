@@ -3,7 +3,7 @@
 This repository hosts the source for the CNCF End User Community site, currently
 deployed to <https://cncf.github.io/endusers/> (endusers.cncf.io is a pending
 DNS cutover; see [ADR 0001](./adr/0001-site-ownership-and-cutover-path.md) and
-#46). It serves practitioners, architects, and organizations running cloud
+issue #46). It serves practitioners, architects, and organizations running cloud
 native technologies in production.
 
 ## Navigation
