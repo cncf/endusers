@@ -40,10 +40,11 @@ These recipes are a superset of the validation steps the "Deploy to GitHub
 Pages" and "Import reference architectures" workflows run, but they are **not**
 the same checks the "Validate repository" and "Lint repository" PR gates run,
 and a green `just build`/`just import` locally does **not** imply a green PR
-check. Before opening a PR, also run `npm run test:unit` and `npm run check` (or
-the individual `check:format`, `check:spelling`, and `check:markdown` scripts)
-to match what "Validate repository" and "Lint repository" check. `just` is
-optional — the npm scripts remain the canonical interface and work without it.
+check. Before opening a PR, also run `npm run test:unit:coverage:check` and
+`npm run check` (or the individual `check:format`, `check:spelling`, and
+`check:markdown` scripts) to match what "Validate repository" and "Lint
+repository" check. `just` is optional — the npm scripts remain the canonical
+interface and work without it.
 
 ## Content audience
 
@@ -146,8 +147,11 @@ enough for a first contribution.
 
 1. Fork the repository and create a branch from `main`.
 2. Make your change and run the relevant validation script.
-3. Run `npm run test:unit` — the required "Validate repository" check runs this
-   on every PR.
+3. Run `npm run test:unit:coverage:check` — the required "Validate repository"
+   check runs this on every PR, and it fails the build if unit-test coverage
+   drops below its thresholds (97% lines / 99% source / 93% regions / 97% source
+   regions). `npm run test:unit` alone skips the coverage gate, so a green
+   `test:unit` locally does not guarantee a green PR check.
 4. Verify with `npm run build` before opening a PR.
 5. Run `npm run check` — the required "Lint repository" check runs this on every
    PR. It covers `check:format` (prettier), `check:spelling` (cspell), and
