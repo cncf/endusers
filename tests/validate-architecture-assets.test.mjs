@@ -439,3 +439,46 @@ test('reports a symlinked directory sitting directly in static/img', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /elsewhere: is a symbolic link/);
 });
+
+// Dynamic static/ directory discovery — a new top-level static/ subdirectory
+// must be either gated (assetDirs) or explicitly exempted, so it cannot reach
+// the site origin with no CI signal.
+
+test('rejects a new static/ subdirectory that is neither gated nor exempted', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/uploads/whatever.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/uploads: is a static\/ subdirectory not covered by the asset security gate/,
+  );
+});
+
+test('accepts the exempted static/fonts directory without gating its contents', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/fonts/some-font.woff2': 'not really a font',
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 1 architecture asset/);
+});
+
+test('rejects a symlink standing in for a top-level static/ directory', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    { 'static/img/architectures/example/diagram.svg': VALID_SVG },
+    { symlinks: { 'static/uploads': 'img' } },
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /static\/uploads: is a symbolic link/);
+});
+
+test('does not flag static/ subdirectories the gate already walks', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'static/favicons/favicon.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 2 architecture asset/);
+});

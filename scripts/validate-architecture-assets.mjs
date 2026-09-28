@@ -52,9 +52,11 @@ const SITE_CHROME_EXTENSIONS = new Set([...ALLOWED_ASSET_EXTENSIONS, '.ico']);
 // is walked shallowly because its image subdirectories are listed above, each
 // with its own quality setting.
 //
-// static/fonts and the static/ root (robots.txt, manifest.json, .nojekyll) are
-// deliberately outside the gate: they hold no SVG, and their extensions are
-// legitimately outside the image allow-list.
+// static/fonts is deliberately outside the gate (it holds no SVG, and its
+// extensions are legitimately outside the image allow-list) via the
+// exemptTopLevelDirs exemption below. Files sitting directly in the static/
+// root (robots.txt, manifest.json, .nojekyll) are outside both mechanisms:
+// checkForUngatedStaticDirs only inspects directories.
 const assetDirs = [
   { dir: join(root, 'static/img/architectures'), quality: true },
   { dir: join(root, 'static/img/cncf-projects'), quality: false },
@@ -81,8 +83,52 @@ const shouldFix = process.argv.includes('--fix');
 // a regular file sitting where a root is expected.
 const assetRootPaths = new Set(assetDirs.map(({ dir }) => dir));
 
+// Top-level static/ subdirectory names the gate above already walks, derived
+// from assetDirs rather than hand-duplicated so the two can't drift.
+const gatedTopLevelDirs = new Set(
+  assetDirs.map(({ dir }) => relative(join(root, 'static'), dir).split('/')[0]),
+);
+
+// Top-level static/ subdirectories that are deliberately outside the gate,
+// with the reason a reviewer needs to approve a new exemption. A directory
+// reaching the site origin under neither this map nor assetDirs above is a
+// silent gap: it ships whatever it contains — including a script-bearing SVG
+// — with no CI signal.
+const exemptTopLevelDirs = new Map([
+  ['fonts', 'holds only font files (.woff/.woff2); never SVG or markup'],
+]);
+
 const issues = [];
 const fixed = [];
+
+// Fails loudly on a static/ subdirectory that is neither gated by assetDirs
+// nor explicitly exempted above, so a newly published directory cannot reach
+// the site origin unchecked. Mirrors assetRootKind(): a missing static/ is
+// not an error (nothing is published), but a symlink standing in for a
+// top-level directory is, for the same reason symlinked asset roots are.
+function checkForUngatedStaticDirs() {
+  const staticDir = join(root, 'static');
+  const stats = lstatSync(staticDir, { throwIfNoEntry: false });
+  if (!stats || !stats.isDirectory()) return;
+
+  for (const entry of readdirSync(staticDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
+    const path = join(staticDir, entry.name);
+    if (entry.isSymbolicLink()) {
+      record(path, 'error', 'is a symbolic link; symlinks are not allowed');
+      continue;
+    }
+    if (gatedTopLevelDirs.has(entry.name)) continue;
+    if (exemptTopLevelDirs.has(entry.name)) continue;
+    record(
+      path,
+      'error',
+      'is a static/ subdirectory not covered by the asset security gate; ' +
+        'add it to assetDirs or exemptTopLevelDirs in ' +
+        'scripts/validate-architecture-assets.mjs',
+    );
+  }
+}
 
 function walk(dir, recurse = true) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -239,6 +285,8 @@ function validateAsset(path, quality, extensions) {
     validateSvg(path, quality);
   }
 }
+
+checkForUngatedStaticDirs();
 
 const assets = assetDirs.flatMap(
   ({ dir, quality, recurse = true, extensions = ALLOWED_ASSET_EXTENSIONS }) => {
