@@ -1,8 +1,9 @@
 name: Import reference architectures
 
 on:
-  schedule:
-    - cron: '17 2 * * *'
+  # On-demand only: a maintainer or contributor triggers this from the
+  # Actions tab (or `gh workflow run`) when cncf/architecture has new
+  # content to pull in, rather than importing on a recurring schedule.
   workflow_dispatch:
 
 permissions:
