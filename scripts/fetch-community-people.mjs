@@ -117,6 +117,18 @@ for (const [section, entries] of Object.entries(people)) {
   }
 }
 
+// Only bump fetchedAt and rewrite the file when the profiles themselves
+// changed. cncf/people is checked on a schedule but rarely changes day to
+// day, so touching fetchedAt on every run would open a no-op refresh PR each
+// time (matches the same fix in scripts/collect-radar-reports.mjs, #648).
+if (
+  existsSync(output) &&
+  JSON.stringify(result) === JSON.stringify(existingPeople)
+) {
+  console.log('No community profile changes detected; leaving file untouched.');
+  process.exit(0);
+}
+
 mkdirSync(join(root, 'data'), { recursive: true });
 writeFileSync(
   output,
