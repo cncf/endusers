@@ -1,0 +1,109 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import {
+  REPO_AUTHORED_PAGES,
+  listArchitecturePages,
+  pageCatalogId,
+} from '../scripts/lib/architecture-pages.mjs';
+
+function withDocsDir(build, assertions) {
+  const work = mkdtempSync(join(tmpdir(), 'endusers-arch-pages-'));
+  const docsDir = join(work, 'docs/architectures');
+  mkdirSync(docsDir, { recursive: true });
+  try {
+    build(docsDir);
+    assertions(listArchitecturePages(docsDir), docsDir);
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+}
+
+test('lists top-level markdown pages in sorted order', () => {
+  withDocsDir(
+    (docsDir) => {
+      writeFileSync(join(docsDir, 'zeiss.md'), '# Zeiss\n');
+      writeFileSync(join(docsDir, 'adobe.md'), '# Adobe\n');
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, ['adobe.md', 'zeiss.md']);
+      assert.deepEqual(irregular, []);
+    },
+  );
+});
+
+test('walks nested directories and reports paths relative to docs/architectures', () => {
+  withDocsDir(
+    (docsDir) => {
+      mkdirSync(join(docsDir, 'reports'), { recursive: true });
+      writeFileSync(join(docsDir, 'reports/leftover.md'), '# Leftover\n');
+    },
+    ({ pages }) => {
+      assert.deepEqual(pages, ['reports/leftover.md']);
+    },
+  );
+});
+
+test('ignores non-markdown files', () => {
+  withDocsDir(
+    (docsDir) => {
+      writeFileSync(join(docsDir, 'diagram.svg'), '<svg/>');
+      writeFileSync(join(docsDir, 'adobe.md'), '# Adobe\n');
+    },
+    ({ pages }) => {
+      assert.deepEqual(pages, ['adobe.md']);
+    },
+  );
+});
+
+// Dirent.isFile() is false for a symlink. Returning it separately is what
+// lets the caller reject it: skipping it would publish a page nothing reads.
+test('reports a symlinked page as irregular rather than as a page', () => {
+  withDocsDir(
+    (docsDir) => {
+      symlinkSync('/etc/hostname', join(docsDir, 'linked.md'));
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, []);
+      assert.deepEqual(irregular, ['linked.md']);
+    },
+  );
+});
+
+test('returns empty lists when the docs directory does not exist', () => {
+  const work = mkdtempSync(join(tmpdir(), 'endusers-arch-pages-'));
+  try {
+    const { pages, irregular } = listArchitecturePages(
+      join(work, 'docs/architectures'),
+    );
+    assert.deepEqual(pages, []);
+    assert.deepEqual(irregular, []);
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+});
+
+test('maps a top-level page to its catalog id', () => {
+  assert.equal(pageCatalogId('adobe.md'), 'adobe');
+});
+
+test('reports no catalog id for a nested page', () => {
+  assert.equal(pageCatalogId('reports/leftover.md'), null);
+});
+
+test('reports no catalog id for a non-markdown path', () => {
+  assert.equal(pageCatalogId('adobe.txt'), null);
+});
+
+test('exempts only the hand-authored index page', () => {
+  assert.ok(REPO_AUTHORED_PAGES.has('index.md'));
+  assert.equal(REPO_AUTHORED_PAGES.has('adobe.md'), false);
+});
