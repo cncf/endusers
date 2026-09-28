@@ -26,16 +26,16 @@ jobs:
           cache: npm
       - run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
       - run: npm ci
-      - run: npm run test:unit
       - run: npm run collect:metrics
         env:
           GH_TOKEN: ${{ github.token }}
-      - run: npm run validate:metrics
       - run: npm run import:architectures
       - run: npm run fix:format
+      - run: npm run validate:metrics
       - run: npm run validate:architectures
       - run: npm run validate:architecture-assets
       - run: npm run validate:awards
+      - run: npm run test:unit
       - run: npm run build
       - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:

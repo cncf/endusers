@@ -42,37 +42,7 @@ const workflowFiles = readdirSync(workflowDir)
 // Every violation the repository is currently carrying, keyed
 // `<workflow>:<rule>`. Delete an entry when its workflow is fixed; the
 // staleness guard below fails if one is left behind.
-const KNOWN_ORDERING_VIOLATIONS = new Map([
-  [
-    'import-architectures.yml:unit-suite-after-generators',
-    'Runs `test:unit` before `collect:metrics` and `import:architectures`, so ' +
-      'the suite only ever sees the previous run\u2019s data. Tracked by #755.',
-  ],
-  [
-    'refresh-radar-reports.yml:unit-suite-after-generators',
-    'Runs `test:unit` before `collect:radar-reports`, so the suite only ever ' +
-      'sees the previous run\u2019s data. Tracked by #755.',
-  ],
-  [
-    'refresh-community-people.yml:format-generated-output',
-    'Never runs `check:format` on the refreshed profile data. Tracked by #755.',
-  ],
-  [
-    'refresh-radar-reports.yml:format-generated-output',
-    'Never runs `check:format` on the refreshed radar data. Tracked by #755.',
-  ],
-  [
-    'refresh-community-people.yml:validate-generated-dataset',
-    'Commits third-party profile data without running ' +
-      '`validate:community-people`. Tracked by #755.',
-  ],
-  [
-    'deploy-gh-pages.yml:publish-runs-every-gate',
-    'Publishes after running 4 of the 11 `validate:*` gates. Because ' +
-      'automation pull requests never trigger ci.yml, this job is the only ' +
-      'gate their data passes. Tracked by #755.',
-  ],
-]);
+const KNOWN_ORDERING_VIOLATIONS = new Map([]);
 
 // A script that writes data into the repository, as opposed to one that reads
 // it. Matched on the package.json namespaces the repository already uses for
