@@ -3,13 +3,42 @@ name: CodeQL
 on:
   push:
     branches: [main]
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.mjs'
+      - '**/*.cjs'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - package.json
+      - package-lock.json
+      - .github/workflows/codeql.yml
   pull_request:
     branches: [main]
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.mjs'
+      - '**/*.cjs'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - package.json
+      - package-lock.json
+      - .github/workflows/codeql.yml
   schedule:
     - cron: '31 7 * * 1'
 
 permissions:
   contents: read
+
+# Not a required status check, so it is safe to skip entirely (rather than
+# just cancel) when a PR touches no JavaScript/TypeScript source: an
+# unmatched path means the workflow never starts, and nothing here gates the
+# merge queue on it. The weekly schedule run still scans the full tree
+# regardless of what changed most recently.
+concurrency:
+  group: codeql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:

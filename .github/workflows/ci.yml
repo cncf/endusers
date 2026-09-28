@@ -8,6 +8,15 @@ on:
 permissions:
   contents: read
 
+# Superseding pushes to the same PR cancel the stale run instead of letting it
+# race to completion; merge_group runs never get a duplicate ref, so they
+# always finish undisturbed.
+concurrency:
+  group:
+    ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref
+    }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     name: Validate repository
