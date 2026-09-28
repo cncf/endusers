@@ -381,6 +381,20 @@ test('rejects active content in a favicon SVG under static/favicons', () => {
   assert.match(result.stderr, /favicon\.svg: active content/);
 });
 
+test('rejects a remote resource reference in a site-chrome SVG', () => {
+  // Executes nothing, so the active-content gate does not see it, but the
+  // browser still fetches it from the third-party host on every page view.
+  const logo = 'static/img/cncf_logo_white.svg';
+  const svg = VALID_SVG.replace(
+    '<rect',
+    '<image href="https://evil.example/beacon.png"/><rect',
+  );
+  const result = runScriptWithFixtures(SCRIPT, { [logo]: svg });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /cncf_logo_white\.svg: remote reference/);
+  assert.match(result.stderr, /evil\.example/);
+});
+
 test('rejects a non-image file in static/img', () => {
   const result = runScriptWithFixtures(SCRIPT, {
     'static/img/page.html': '<html>x</html>',

@@ -71,6 +71,133 @@ const ANIMATED_URI_ELEMENT = new RegExp(
 const ATTRIBUTE_PATTERN =
   /\s([a-z_:][-a-z0-9_:.]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>`]+))/gi;
 
+/**
+ * Elements whose `href`/`xlink:href` makes the browser fetch and render a
+ * separate resource from the host in the value.
+ *
+ * `a` is deliberately absent. A hyperlink is navigation the visitor chooses,
+ * not a load the page performs, and draw.io exports legitimately carry one
+ * (every imported diagram exported with text problems links to
+ * drawio.com/doc/faq/...), so flagging it would fail the existing corpus.
+ */
+const RESOURCE_ELEMENTS = new Set([
+  'image',
+  'use',
+  'feimage',
+  'script',
+  'filter',
+]);
+
+/**
+ * A start tag with its attribute section. Quoted runs are matched as units so
+ * a raw `>` inside an attribute value -- legal in XML, where only `<` and `&`
+ * must be escaped -- cannot end the tag early and hide the attributes after it.
+ */
+const TAG_PATTERN =
+  /<\s*([A-Za-z_][-A-Za-z0-9_.:]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
+
+const STYLE_BLOCK_PATTERN = new RegExp(
+  `<\\s*${NS_PREFIX}style\\b(?:"[^"]*"|'[^']*'|[^>"'])*>([\\s\\S]*?)<\\s*/\\s*${NS_PREFIX}style\\s*>`,
+  'gi',
+);
+
+/** A CSS `url(...)` target, quoted or bare. Covers `@font-face` `src` too. */
+const CSS_URL_PATTERN = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s"']*))\s*\)/gi;
+
+/**
+ * Report whether a value points at a resource on another host.
+ *
+ * Only absolute http(s) and protocol-relative values qualify. A fragment, a
+ * relative path and a `data:` URI all resolve without a network request --
+ * draw.io embeds raster artwork as `data:` routinely -- and `data:` markup is
+ * already the scheme scanner's business, not this one's.
+ *
+ * @param {string} value - Raw attribute or CSS value.
+ * @returns {string|null} The normalized remote target, or null.
+ */
+function remoteTarget(value) {
+  const normalized = normalizeUri(value);
+  if (/^https?:\/\//.test(normalized) || normalized.startsWith('//')) {
+    return normalized;
+  }
+  return null;
+}
+
+/** Trim a target for display so one long data-bearing URL cannot flood output. */
+function describeTarget(target) {
+  return target.length > 120 ? `${target.slice(0, 117)}...` : target;
+}
+
+/**
+ * Describe every remote resource reference in an SVG source string.
+ *
+ * Distinct from {@link findActiveContent}: these references execute nothing,
+ * but a browser fetches each one from a host the diagram's author chose, which
+ * discloses the visitor's IP address, User-Agent and Referer to that host.
+ * Imported artwork is mirrored locally for exactly this reason (see
+ * `scripts/lib/project-assets.mjs`); the diagrams themselves are held to the
+ * same standard here.
+ *
+ * @param {string} source - SVG file contents.
+ * @returns {string[]} Human-readable descriptions, empty when nothing is remote.
+ */
+export function findRemoteReferences(source) {
+  const findings = new Set();
+
+  for (const tag of String(source).matchAll(TAG_PATTERN)) {
+    const element = localName(tag[1]).toLowerCase();
+    const attributes = tag[2] || '';
+
+    for (const match of attributes.matchAll(ATTRIBUTE_PATTERN)) {
+      const name = localName(match[1].toLowerCase());
+      const value = match[2] ?? match[3] ?? match[4] ?? '';
+
+      if (name === 'href' && RESOURCE_ELEMENTS.has(element)) {
+        const target = remoteTarget(value);
+        if (target) {
+          findings.add(
+            `references a remote resource in <${element}> ${match[1].toLowerCase()}: ${describeTarget(target)}`,
+          );
+        }
+        continue;
+      }
+
+      if (name === 'style') {
+        for (const target of cssTargets(value)) {
+          findings.add(
+            `references a remote resource in a style attribute: ${describeTarget(target)}`,
+          );
+        }
+      }
+    }
+  }
+
+  for (const block of String(source).matchAll(STYLE_BLOCK_PATTERN)) {
+    for (const target of cssTargets(block[1] || '')) {
+      findings.add(
+        `references a remote resource in a <style> block: ${describeTarget(target)}`,
+      );
+    }
+  }
+
+  return [...findings].sort();
+}
+
+/**
+ * Collect the remote `url(...)` targets in a fragment of CSS.
+ * @param {string} css
+ * @returns {string[]}
+ */
+function cssTargets(css) {
+  const targets = [];
+  for (const match of String(css).matchAll(CSS_URL_PATTERN)) {
+    const value = match[1] ?? match[2] ?? match[3] ?? '';
+    const target = remoteTarget(value);
+    if (target) targets.push(target);
+  }
+  return targets;
+}
+
 const NAMED_ENTITIES = {
   colon: ':',
   tab: '\t',
