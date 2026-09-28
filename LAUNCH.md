@@ -76,12 +76,19 @@ shipping stale content on day one — the exact failure this automation exists t
 prevent. Before the W-0 launch date, all scheduled content-refresh workflows
 must be green for **2 consecutive scheduled runs**:
 
-| Pipeline                                                                                     | Schedule | Status as of 2026-09-24                                                              | Tracking                                            |
-| -------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| Import reference architectures (`import-architectures.yml`)                                  | daily    | green (2026-09-24 run)                                                               | #121 (closed; reopen a new issue if this regresses) |
-| Refresh community profiles (`refresh-community-people.yml`)                                  | weekly   | red (last scheduled run 2026-09-21 failed at the build step on HTML minifier errors) | #568                                                |
-| Metrics refresh (`collect:metrics` + `validate:metrics` steps of `import-architectures.yml`) | daily    | green (2026-09-24 run)                                                               | #121 (closed; reopen a new issue if this regresses) |
-| Refresh radar reports (`refresh-radar-reports.yml`)                                          | daily    | green (2026-09-24, 2026-09-25 runs)                                                  | #605 (closed; reopen a new issue if this regresses) |
+| Pipeline                                                                                     | Schedule                        | Status as of 2026-09-24                                                              | Tracking                                            |
+| -------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| Import reference architectures (`import-architectures.yml`)                                  | on-demand (`workflow_dispatch`) | green (2026-09-24 run)                                                               | #121 (closed; reopen a new issue if this regresses) |
+| Refresh community profiles (`refresh-community-people.yml`)                                  | weekly                          | red (last scheduled run 2026-09-21 failed at the build step on HTML minifier errors) | #568                                                |
+| Metrics refresh (`collect:metrics` + `validate:metrics` steps of `import-architectures.yml`) | on-demand (`workflow_dispatch`) | green (2026-09-24 run)                                                               | #121 (closed; reopen a new issue if this regresses) |
+| Refresh radar reports (`refresh-radar-reports.yml`)                                          | daily                           | green (2026-09-24, 2026-09-25 runs)                                                  | #605 (closed; reopen a new issue if this regresses) |
+
+`import-architectures.yml` moved from a daily cron to on-demand only
+(`workflow_dispatch`); a maintainer or contributor now triggers an import run
+manually instead of it recurring unattended. Its "2 consecutive scheduled runs"
+gate history above predates that change and is retained for context; the
+pipeline is no longer subject to the scheduled-run gate this section otherwise
+requires, since it has no schedule to run on.
 
 A dedicated `refresh-metrics.yml` workflow was proposed in PR #125 and declined
 (#74); metrics refresh instead runs as steps inside `import-architectures.yml`,

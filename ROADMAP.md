@@ -50,11 +50,11 @@ Goal: a reliable, trustworthy site skeleton.
 Goal: every pillar section is accurate, current, and self-maintaining.
 
 - [x] Architectures: automated import from cncf/architecture stays in sync
-      (scheduled workflow exists; freshness indicator on the page — issue #80,
-      shipped in `src/components/ReferenceArchitectures/index.js`)
+      (on-demand `workflow_dispatch` workflow; freshness indicator on the page —
+      issue #80, shipped in `src/components/ReferenceArchitectures/index.js`)
 - [x] Metrics: refresh of data/metrics.json with validation gating the build —
-      issue #74 closed not-planned in favor of the mechanism actually shipped: a
-      daily cron step in `import-architectures.yml` runs
+      issue #74 closed not-planned in favor of the mechanism actually shipped:
+      an on-demand step in `import-architectures.yml` runs
       `collect:metrics`/`validate:metrics` (documented in `LAUNCH.md`)
 - [x] Awards: complete historical winner list, each entry verified against its
       cncf.io announcement (issue #77)
