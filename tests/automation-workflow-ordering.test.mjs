@@ -54,11 +54,6 @@ const KNOWN_ORDERING_VIOLATIONS = new Map([
       'sees the previous run\u2019s data. Tracked by #755.',
   ],
   [
-    'import-architectures.yml:format-generated-output',
-    'Never runs `check:format`, so every import pull request carries ' +
-      'unformatted generated files. Tracked by #755.',
-  ],
-  [
     'refresh-community-people.yml:format-generated-output',
     'Never runs `check:format` on the refreshed profile data. Tracked by #755.',
   ],
@@ -215,15 +210,15 @@ function currentViolations() {
       if (commitsGeneratedOutput(file)) {
         const format = firstIndexWhere(
           targets,
-          (target) => target === 'check:format',
+          (target) => target === 'check:format' || target === 'fix:format',
         );
         if (format === -1 || format < lastGenerator) {
           record(
             file,
             'format-generated-output',
             format === -1
-              ? 'commits generated files without running check:format'
-              : `runs check:format before ${targets[lastGenerator]}`,
+              ? 'commits generated files without running check:format or fix:format'
+              : `runs check:format/fix:format before ${targets[lastGenerator]}`,
           );
         }
       }
@@ -285,7 +280,7 @@ test('generated output is formatted before it is committed', () => {
     unrecorded('format-generated-output'),
     [],
     'workflows opening a pull request out of generated files without ' +
-      'running check:format after generating them',
+      'running check:format or fix:format after generating them',
   );
 });
 
