@@ -3,12 +3,7 @@
   "title": "A modern and sovereign Private Cloud «Kubernetes Service» for Swiss-based enterprises.",
   "organization": "Swisscom (Switzerland) Ltd",
   "summary": "Our next generation Private Cloud Container as a Service offering «Kubernetes Service» for the B2B market addresses customer’s need for scalable and highly available Kubernetes workload as a flexible and secure IT foundation. It is part of ",
-  "industries": [
-    "Communication",
-    "Telecommunication",
-    "Software",
-    "Cloud"
-  ],
+  "industries": ["Communication", "Telecommunication", "Software", "Cloud"],
   "tags": [
     "service-delivery",
     "cloud_native",
