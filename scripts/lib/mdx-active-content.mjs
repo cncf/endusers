@@ -145,6 +145,14 @@ function blankCodeSpans(markdown) {
  * the same character as the opener, be at least as long, and carry nothing
  * but trailing whitespace after it; a fence that is never closed runs to EOF.
  *
+ * Both the opener and closer must be indented no more than three spaces
+ * (CommonMark). A line indented four or more spaces, or by a tab (which
+ * advances to the next four-column stop), forms no fence at all -- it is an
+ * indented code block instead, a single-line construct that does not absorb
+ * the lines after it. Matching it as a fence opener would blank every
+ * subsequent line up to the next fence-shaped line unscanned, hiding live
+ * content the real MDX compiler renders (see #689).
+ *
  * @param {string} markdown
  * @returns {string}
  */
@@ -157,7 +165,7 @@ function blankFences(markdown) {
   for (const line of lines) {
     if (fenceChar) {
       output.push(' '.repeat(line.length));
-      const closer = line.match(/^[ \t]*(`{3,}|~{3,})[ \t]*$/);
+      const closer = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
       if (
         closer &&
         closer[1][0] === fenceChar &&
@@ -169,7 +177,7 @@ function blankFences(markdown) {
       continue;
     }
 
-    const opener = line.match(/^[ \t]*(`{3,}|~{3,})([^\n]*)$/);
+    const opener = line.match(/^ {0,3}(`{3,}|~{3,})([^\n]*)$/);
     // A backtick fence's info string may not contain a backtick (CommonMark);
     // a line like "```<script>x</script>`" therefore opens no fence at all --
     // it is a paragraph, and the element in it is live. Treating it as a

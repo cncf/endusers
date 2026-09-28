@@ -157,6 +157,36 @@ test('does not treat a backtick fence with a backtick in its info string as a fe
   );
 });
 
+test('does not treat a four-space or tab indented fence opener as a fence', () => {
+  // Regression for #689: CommonMark allows a fence opener to be preceded by
+  // up to three spaces of indentation. A line indented four or more spaces,
+  // or by a tab, forms no fence at all -- it is an indented code block, a
+  // single-line construct. Reading it as a fence opener anyway would blank
+  // every line after it up to the next fence-shaped line, hiding the live
+  // script the real MDX compiler renders past it.
+  assert.deepEqual(
+    reasons(['    ```js', '<script>alert(1)</script>', '```'].join('\n')),
+    ['disallowed element <script>'],
+  );
+  assert.deepEqual(
+    reasons(['\t```js', '<script>alert(1)</script>', '```'].join('\n')),
+    ['disallowed element <script>'],
+  );
+  // Up to three spaces of indentation is still a genuine fence.
+  assert.deepEqual(
+    reasons(['   ```js', '<script>alert(1)</script>', '```'].join('\n')),
+    [],
+  );
+  // A closing fence indented four or more spaces does not close the block
+  // either -- the real closer is the line after it.
+  assert.deepEqual(
+    reasons(
+      ['```js', '<script>alert(1)</script>', '    ```', '```'].join('\n'),
+    ),
+    [],
+  );
+});
+
 test('reports the line number of each finding and deduplicates per line and reason', () => {
   const body = ['# T', '', '<script>alert(1)</script>'].join('\n');
   assert.deepEqual(findActiveContent(body), [
