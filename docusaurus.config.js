@@ -9,6 +9,27 @@ import { themes as prismThemes } from 'prism-react-renderer';
 const siteUrl = process.env.SITE_URL || 'https://endusers.cncf.io';
 const baseUrl = process.env.BASE_URL || '/';
 
+// Remote hosts the browser may load an image from. This mirrors
+// isAllowedImageHost() in scripts/lib/profile-image.mjs, which gates the
+// profile images copied unattended out of cncf/people into
+// data/community-people.json; tests/site-config.test.mjs fails if the two ever
+// disagree, in either direction.
+//
+// The gate decides what gets committed; this decides what the browser will
+// actually fetch, and it is what holds when an image reference reaches a page
+// without passing a gate — a component added without one, a data file added
+// without a validator, or a regression in an existing check. Without img-src,
+// any such value is a live third-party beacon that receives every visitor's
+// IP, User-Agent and Referer on page load.
+const IMAGE_HOST_SOURCES = [
+  'https://raw.githubusercontent.com',
+  'https://avatars.githubusercontent.com',
+  'https://github.com',
+  'https://www.github.com',
+  'https://cncf.io',
+  'https://*.cncf.io',
+];
+
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 /** @type {import('@docusaurus/types').Config} */
@@ -57,16 +78,22 @@ const config = {
         // Defence in depth for content this site does not author: architecture
         // MDX and image assets are mirrored from cncf/architecture, and several
         // data/*.json files supply href and src values rendered by src/components.
-        // These three directives need no allowance for inline or bundled script,
-        // so they hold without constraining Docusaurus hydration or local search.
+        // These directives need no allowance for inline or bundled script, so
+        // they hold without constraining Docusaurus hydration or local search.
         // script-src is deliberately omitted: Docusaurus emits inline bootstrap
         // scripts, so it could only ship with 'unsafe-inline', which would add no
         // protection. frame-ancestors is omitted because browsers ignore it when
         // delivered via <meta http-equiv>; it needs a real response header.
+        // img-src, by contrast, is honoured in a meta policy, and it is the
+        // directive that actually backs this project's remote-image host gates
+        // (scripts/lib/profile-image.mjs, scripts/lib/project-assets.mjs, the
+        // SVG remote-reference check in scripts/lib/svg-active-content.mjs).
+        // `data:` is required: Infima inlines small SVG icons as data URIs.
         content: [
           "base-uri 'self'",
           "object-src 'none'",
           "form-action 'self'",
+          `img-src 'self' data: ${IMAGE_HOST_SOURCES.join(' ')}`,
         ].join('; '),
       },
     },

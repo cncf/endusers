@@ -19,8 +19,8 @@ const work = mkdtempSync(join(tmpdir(), 'cncf-metrics-'));
 const landscapeDir = join(work, 'landscape');
 const architectureDir = join(work, 'architecture');
 try {
-  clone('https://github.com/cncf/landscape.git', landscapeDir, true);
-  clone('https://github.com/cncf/architecture.git', architectureDir, true);
+  clone('https://github.com/cncf/landscape.git', landscapeDir);
+  clone('https://github.com/cncf/architecture.git', architectureDir);
   const landscapeCommit = git(landscapeDir, 'rev-parse', 'HEAD');
   const architectureCommit = git(architectureDir, 'rev-parse', 'HEAD');
   const architectureHistory = architectureDir;
@@ -153,12 +153,10 @@ try {
 } finally {
   rmSync(work, { recursive: true, force: true });
 }
-function clone(url, destination, shallow = false) {
-  execFileSync(
-    'git',
-    ['clone', ...(shallow ? ['--depth', '1'] : []), url, destination],
-    { stdio: 'inherit' },
-  );
+function clone(url, destination) {
+  execFileSync('git', ['clone', '--depth', '1', url, destination], {
+    stdio: 'inherit',
+  });
 }
 function git(dir, ...args) {
   return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8' }).trim();

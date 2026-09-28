@@ -66,7 +66,7 @@ export function artworkMirrorName(path) {
   if (!file.includes('.') || !MIRRORABLE_ARTWORK_EXTENSIONS.has(extension)) {
     return null;
   }
-  if (!name || file === name) return file || null;
+  if (!name || file === name) return file;
   return `${name}-${file}`;
 }
 

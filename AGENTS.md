@@ -1,8 +1,10 @@
 # Agent Entry Point: CNCF End User Community Repository
 
-This repository hosts endusers.cncf.io, the Docusaurus site for the CNCF End
-User Community. It serves practitioners, architects, and organizations running
-cloud native technologies in production.
+This repository hosts the source for the CNCF End User Community site, currently
+deployed to <https://cncf.github.io/endusers/> (endusers.cncf.io is a pending
+DNS cutover; see [ADR 0001](./adr/0001-site-ownership-and-cutover-path.md) and
+issue #46). It serves practitioners, architects, and organizations running cloud
+native technologies in production.
 
 ## Navigation
 
@@ -34,9 +36,10 @@ directly.
 Before opening a PR, read
 [`CONTRIBUTING.md#making-changes`](CONTRIBUTING.md#making-changes) for the full
 fork/branch/PR process. Two CI-enforced requirements to note up front: the
-"Validate repository" check runs `npm run test:unit` on every PR, and every
-commit must carry a DCO `Signed-off-by` trailer (`git commit -s`) or CI will
-fail the PR.
+"Validate repository" check runs `npm run test:unit:coverage:check` (coverage
+thresholds 97% lines / 99% source / 93% regions / 97% source regions) on every
+PR, and every commit must carry a DCO `Signed-off-by` trailer (`git commit -s`)
+or CI will fail the PR.
 
 ## Build & Test
 
@@ -45,8 +48,15 @@ fail the PR.
   purpose; it re-resolves the semver ranges and rewrites the lockfile.
 - **Start Dev Server**: `npm run docus:start`
 - **Build**: `npm run build`
-- **Unit Tests**: `npm run test:unit` — required "Validate repository" CI check
-  on every PR.
+- **Unit Tests**: `npm run test:unit:coverage:check` — required "Validate
+  repository" CI check on every PR; enforces coverage thresholds (97% lines /
+  99% source / 93% regions / 97% source regions). `npm run test:unit` alone
+  skips the coverage gate.
+- **End-to-end Tests**: required "End-to-end tests" CI check on every PR. Needs
+  a production build first, then a one-time browser install:
+  `npm run build:production && npx playwright install chromium && npm run test:e2e`.
+  Specs live in `tests/e2e/`; the suite serves `build/` on `localhost:3000`
+  (override with `E2E_PORT`) and does not rebuild it for you.
 - **Data Changes**: Data files under `/data/` have their own validators; see the
   data contribution model table in
   [`CONTRIBUTING.md`](CONTRIBUTING.md#data-contribution-model).

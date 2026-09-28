@@ -63,7 +63,6 @@ export function websiteUrl(value) {
   if (!ALLOWED_PROTOCOLS.has(url.protocol)) return null;
   // A userinfo component is only ever used here to disguise the real host.
   if (url.username || url.password) return null;
-  if (!url.hostname) return null;
 
   return url.href;
 }
