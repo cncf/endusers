@@ -52,6 +52,11 @@ or CI will fail the PR.
   repository" CI check on every PR; enforces coverage thresholds (97% lines /
   99% source / 93% regions / 97% source regions). `npm run test:unit` alone
   skips the coverage gate.
+- **End-to-end Tests**: required "End-to-end tests" CI check on every PR. Needs
+  a production build first, then a one-time browser install:
+  `npm run build:production && npx playwright install chromium && npm run test:e2e`.
+  Specs live in `tests/e2e/`; the suite serves `build/` on `localhost:3000`
+  (override with `E2E_PORT`) and does not rebuild it for you.
 - **Data Changes**: Data files under `/data/` have their own validators; see the
   data contribution model table in
   [`CONTRIBUTING.md`](CONTRIBUTING.md#data-contribution-model).
