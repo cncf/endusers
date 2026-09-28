@@ -72,6 +72,19 @@ test('runs the suite fully parallel and retains traces on failure', async () => 
   assert.equal(config.use.trace, 'retain-on-failure');
 });
 
+// A single `docusaurus serve` process backs the whole suite, so the local
+// worker count is capped to keep page and image requests from starving; CI
+// keeps Playwright's own default.
+test('caps local workers so one static server can serve them', async () => {
+  const config = await loadConfig(cleanEnv);
+  assert.equal(config.workers, 4);
+});
+
+test('leaves the worker count to Playwright in CI', async () => {
+  const config = await loadConfig({ ...cleanEnv, CI: '1' });
+  assert.equal(config.workers, undefined);
+});
+
 test('declares a single Desktop Chrome project', async () => {
   const config = await loadConfig(cleanEnv);
   assert.deepEqual(
