@@ -9,12 +9,19 @@
 // Infrastructure by Eliminating Networking Bottlenecks with Cilium") is
 // published by cncf.io as post meta (`lf_case_study_long_title`), separate
 // from the post title, which is just the organization name.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
 const API = 'https://www.cncf.io/wp-json/wp/v2';
 const SOURCE_URL = 'https://www.cncf.io/case-studies/';
+
+const existingPath = join(root, 'data/case-studies.json');
+let existingCaseStudies = [];
+if (existsSync(existingPath)) {
+  const existing = JSON.parse(readFileSync(existingPath, 'utf8'));
+  existingCaseStudies = existing.caseStudies || [];
+}
 
 async function fetchAllPages(path) {
   const results = [];
@@ -85,6 +92,19 @@ const caseStudies = caseStudyPosts
     };
   })
   .sort((a, b) => a.organization.localeCompare(b.organization));
+
+// Only bump generatedAt and rewrite the catalog when the case studies
+// themselves changed. cncf.io content rarely changes between manual runs, so
+// touching generatedAt on every run would open a no-op refresh PR each time
+// once this gains a scheduled workflow (matches the same fix in
+// scripts/collect-radar-reports.mjs, #648).
+if (
+  existsSync(existingPath) &&
+  JSON.stringify(caseStudies) === JSON.stringify(existingCaseStudies)
+) {
+  console.log('No case study changes detected; leaving catalog untouched.');
+  process.exit(0);
+}
 
 const generatedAt = new Date().toISOString();
 const data = {
