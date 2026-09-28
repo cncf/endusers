@@ -192,6 +192,16 @@ test('the unit suite runs in every workflow that runs a validator', () => {
   );
 });
 
+test('the Playwright end-to-end suite runs in some workflow', () => {
+  // Regression for #672: tests/e2e/ existed, wired as `npm run test:e2e`,
+  // and no workflow ever ran it, so it contributed no CI signal and could
+  // break, bit-rot, or start asserting stale behaviour silently.
+  const runsIt = workflowFiles.some((file) =>
+    runCommands(file).flatMap(npmRunTargets).includes('test:e2e'),
+  );
+  assert.ok(runsIt, 'no workflow runs `npm run test:e2e`');
+});
+
 // The `validate:*` and `check:*` scripts are the repository's gates: one set
 // rejects data that would ship to the site, the other rejects the repository
 // itself. Defining a gate is only half the wiring. Unless a workflow runs it,
