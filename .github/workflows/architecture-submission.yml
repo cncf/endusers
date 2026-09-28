@@ -20,7 +20,10 @@ env:
 
 jobs:
   import:
-    if: github.event.label.name == env.SUBMISSION_LABEL
+    # The env context isn't available in a job-level `if:` (only within its
+    # steps), so this can't reference env.SUBMISSION_LABEL and has to repeat
+    # the literal; keep it in sync with the env value above by hand.
+    if: github.event.label.name == 'architecture-ready'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
