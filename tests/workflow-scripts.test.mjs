@@ -56,6 +56,29 @@ test('every workflow parses as YAML and declares at least one job', () => {
   }
 });
 
+// GitHub silently drops a job-level `if:` that references a context it
+// doesn't expose there rather than failing loudly: `env` (populated only once
+// a job's steps start running) isn't among them, so `jobs.<id>.if` referencing
+// it never evaluates truthy and the job never runs, on any trigger. This bit
+// #813: an `architecture-ready` label never started the submission job.
+// https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
+test('no job-level `if:` references the env context', () => {
+  const offenders = [];
+  for (const file of workflowFiles) {
+    const parsed = parse(readFileSync(join(workflowDir, file), 'utf8'));
+    for (const [jobName, job] of Object.entries(parsed?.jobs ?? {})) {
+      if (typeof job?.if === 'string' && /\benv\./.test(job.if)) {
+        offenders.push(`${file}:${jobName}`);
+      }
+    }
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    'job-level `if:` cannot see the env context; inline the literal instead',
+  );
+});
+
 test('every `npm run` in a workflow names a defined package.json script', () => {
   const missing = [];
   for (const file of workflowFiles) {
