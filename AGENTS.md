@@ -47,6 +47,11 @@ fail the PR.
 - **Build**: `npm run build`
 - **Unit Tests**: `npm run test:unit` — required "Validate repository" CI check
   on every PR.
+- **End-to-end Tests**: required "End-to-end tests" CI check on every PR. Needs
+  a production build first, then a one-time browser install:
+  `npm run build:production && npx playwright install chromium && npm run test:e2e`.
+  Specs live in `tests/e2e/`; the suite serves `build/` on `localhost:3000`
+  (override with `E2E_PORT`) and does not rebuild it for you.
 - **Data Changes**: Data files under `/data/` have their own validators; see the
   data contribution model table in
   [`CONTRIBUTING.md`](CONTRIBUTING.md#data-contribution-model).

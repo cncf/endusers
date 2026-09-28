@@ -147,7 +147,9 @@ enough for a first contribution.
 2. Make your change and run the relevant validation script.
 3. Run `npm run test:unit` — the required "Validate repository" check runs this
    on every PR.
-4. Verify with `npm run build` before opening a PR.
+4. Verify with `npm run build` before opening a PR. If your change touches
+   pages, components, or navigation, also run the end-to-end suite — see
+   [End-to-end tests](#end-to-end-tests) below.
 5. Run `npm run check` — the required "Lint repository" check runs this on every
    PR. It covers `check:format` (prettier), `check:spelling` (cspell), and
    `check:markdown` (markdownlint), and you can also run any of the three
@@ -162,6 +164,24 @@ enough for a first contribution.
    it before pushing (or after, then force-push) with
    `git rebase --signoff main`.
 7. Open a pull request against `main` describing what changed and why.
+
+## End-to-end tests
+
+The Playwright suite in `tests/e2e/` exercises the built site in a browser and
+is a required "End-to-end tests" CI check on every PR. It has two prerequisites
+that `npm run test:e2e` does not handle for you:
+
+```bash
+npm run build:production      # required first: the suite serves build/, it
+                               # does not build it
+npx playwright install chromium   # once per machine: downloads the browser
+npm run test:e2e
+```
+
+The suite starts its own server on `localhost:3000` (override with `E2E_PORT`)
+and serves the static output already built in `build/` via `docusaurus serve` —
+it does not rebuild your changes, so re-run `npm run build:production` after
+each edit before re-running the suite.
 
 ## Agent contributors
 
