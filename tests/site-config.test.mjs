@@ -245,10 +245,25 @@ test('a trailing slash on SITE_URL does not double up in the JSON-LD logo', asyn
   );
 });
 
+function findSearchPlugin() {
+  return config.plugins.find((plugin) => {
+    const resolved = Array.isArray(plugin) ? plugin[0] : plugin;
+    return String(resolved).includes('docusaurus-plugin-search-local');
+  });
+}
+
 test('local search is registered as a plugin', () => {
-  assert.ok(
-    config.plugins.some((plugin) =>
-      String(plugin).includes('docusaurus-plugin-search-local'),
-    ),
+  assert.ok(findSearchPlugin());
+});
+
+test('local search indexes docs at the route docs are actually served on', () => {
+  // Regression for #769: the plugin defaults docsRouteBasePath to ["docs"],
+  // which matches no route once docs.routeBasePath is "/" -- every docs page
+  // went unindexed and search silently returned blog posts only.
+  const plugin = findSearchPlugin();
+  const [, options] = Array.isArray(plugin) ? plugin : [plugin, {}];
+  assert.equal(
+    options?.docsRouteBasePath,
+    config.presets[0][1].docs.routeBasePath,
   );
 });
