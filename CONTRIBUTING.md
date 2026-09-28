@@ -40,10 +40,13 @@ These recipes are a superset of the validation steps the "Deploy to GitHub
 Pages" and "Import reference architectures" workflows run, but they are **not**
 the same checks the "Validate repository" and "Lint repository" PR gates run,
 and a green `just build`/`just import` locally does **not** imply a green PR
-check. Before opening a PR, also run `npm run test:unit:coverage:check` and
-`npm run check` (or the individual `check:format`, `check:spelling`, and
-`check:markdown` scripts) to match what "Validate repository" and "Lint
-repository" check. `just` is optional — the npm scripts remain the canonical
+check. Before opening a PR, also run `npm run test:unit:coverage:check` and the
+local check scripts that match "Lint repository": `npm run check:format`,
+`npm run check:spelling`, and `npm run check:markdown`. `npm run check` also
+runs these three, but it additionally runs `check:links` (network-dependent) and
+`check:community-group-links` (needs `GH_TOKEN` and rewrites
+`data/community-groups.json`) — see step 5 below before running the full
+`npm run check`. `just` is optional — the npm scripts remain the canonical
 interface and work without it.
 
 ## Content audience
@@ -155,15 +158,27 @@ enough for a first contribution.
 4. Verify with `npm run build` before opening a PR. If your change touches
    pages, components, or navigation, also run the end-to-end suite — see
    [End-to-end tests](#end-to-end-tests) below.
-5. Run `npm run check` — the required "Lint repository" check runs this on every
-   PR. It covers `check:format` (prettier), `check:spelling` (cspell), and
-   `check:markdown` (markdownlint), and you can also run any of the three
-   individually. If a check fails:
+5. Run `npm run check:format`, `npm run check:spelling`, and
+   `npm run check:markdown` — the required "Lint repository" check runs these
+   three on every PR. If a check fails:
    - `check:format` — run `npm run fix:format` to auto-format.
    - `check:spelling` — add the flagged term to `.cspell.yml` if it's a
      legitimate project word, or fix the typo.
    - `check:markdown` — fix the reported issue, or add an inline disable comment
      per the rules in `.markdownlint.yaml` if the rule doesn't apply.
+
+   `npm run check` runs these three plus two more scripts that "Lint repository"
+   does **not** enforce, so treat it as a superset rather than a drop-in for the
+   CI check:
+   - `check:links` — runs `markdown-link-check` over every root-level `*.md`
+     file; it needs network access and can fail for reasons unrelated to your
+     change (a linked site being temporarily down, for example).
+   - `check:community-group-links` — needs `GH_TOKEN` set to avoid the
+     unauthenticated GitHub rate limit, and unconditionally rewrites
+     `data/community-groups.json` with a fresh `checkedAt` timestamp. Only
+     commit that file's diff when you intentionally meant to refresh group
+     status; otherwise revert it before opening your PR.
+
 6. Commit with a DCO sign-off: `git commit -s`. CI enforces this and will fail
    the PR if any commit is missing a `Signed-off-by` trailer. If you forget, fix
    it before pushing (or after, then force-push) with
