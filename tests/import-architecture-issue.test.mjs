@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { runImportArchitectureIssue } from './helpers-import-issue-sandbox.mjs';
 
 // Every label the issue template renders, in template order. Mirrors
@@ -240,7 +241,6 @@ test('accepts a webhook-shaped payload wrapped in an `issue` field', () => {
     run.cleanup();
   }
 });
-
 // A submitter controls every free-text answer, and the generated page is
 // compiled as MDX, where `{...}` is a JavaScript expression, a JSX element
 // carries live React props, and a block-initial `import`/`export` is a
@@ -349,6 +349,192 @@ test('keeps the catalog summary free of the escaping character references', () =
     assert.equal(run.status, 0, run.stderr);
     const record = run.readJson('data/architectures/records/acme-corp.json');
     assert.equal(record.summary, 'Acme runs {many} clusters, <10 regions.');
+  } finally {
+    run.cleanup();
+  }
+});
+
+// How .github/workflows/architecture-submission.yml actually invokes the
+// script: it sets no --issue-json, and the runner supplies GITHUB_EVENT_PATH.
+test('falls back to GITHUB_EVENT_PATH when --issue-json is absent', () => {
+  const run = runImportArchitectureIssue({
+    issue: { issue: fixtureIssue(), action: 'labeled' },
+    passIssueJson: false,
+    env: { GITHUB_EVENT_PATH: '{issuePath}' },
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.ok(run.exists('docs/architectures/acme-corp.md'));
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('fails when neither --issue-json nor GITHUB_EVENT_PATH is set', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue(),
+    passIssueJson: false,
+  });
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /No issue JSON to read/);
+  } finally {
+    run.cleanup();
+  }
+});
+
+// The workflow names the generated pull request from this value, so an
+// unwritten or misspelled key silently degrades the PR title.
+test('publishes the generated id to GITHUB_OUTPUT for the workflow', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue(),
+    env: { GITHUB_OUTPUT: '{issuePath}.output' },
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.equal(
+      readFileSync(`${run.issuePath}.output`, 'utf8'),
+      'id=acme-corp\n',
+    );
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('names the unanswered required body section in the error', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({}, { 'Describe your organisation': undefined }),
+  });
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(
+      run.stderr,
+      /Issue body is missing a response for "Describe your organisation"/,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
+
+// An unanswered field still renders a `### <label>` heading, so a *missing*
+// heading means the body was not produced by the current issue template —
+// a hand-written issue, or one opened before a template rename.
+test('fails when a template field heading is absent from the body entirely', () => {
+  const body = issueBody(REQUIRED_ANSWERS)
+    .split('### Industries')
+    .join('### Industries (renamed)');
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({ body }),
+  });
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /Issue body is missing the "Industries" field/);
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('derives sourceUrl from the issue number when html_url is absent', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({ html_url: undefined }),
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const record = run.readJson('data/architectures/records/acme-corp.json');
+    assert.equal(
+      record.sourceUrl,
+      'https://github.com/cncf/endusers/issues/900',
+    );
+  } finally {
+    run.cleanup();
+  }
+});
+
+// An organization name of punctuation alone slugifies to the empty string.
+// The id still has to be a usable route segment and filename, so it falls
+// back to the issue number rather than producing `.md` with no stem.
+test('falls back to an issue-number id when the org name has no slug characters', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({}, { 'Organization or Team Name': '!!!' }),
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.ok(run.exists('docs/architectures/issue-900.md'));
+    const catalog = run.readJson('data/architectures/catalog.json');
+    assert.equal(catalog[0].id, 'issue-900');
+    assert.equal(catalog[0].organization, '!!!');
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('falls back to an issue-number id even when a catalog already exists', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({}, { 'Organization or Team Name': '!!!' }),
+    catalog: [],
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.ok(run.exists('docs/architectures/issue-900.md'));
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('omits the projects section when no CNCF projects are listed', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({}, { 'Relevant CNCF Projects': undefined }),
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const page = run.read('docs/architectures/acme-corp.md');
+    assert.doesNotMatch(page, /## Relevant CNCF projects/);
+    assert.doesNotMatch(page, /CNCFProjectCard name=/);
+    const catalog = run.readJson('data/architectures/catalog.json');
+    assert.deepEqual(catalog[0].projects, []);
+    // The summary must still come from the first prose section.
+    assert.equal(catalog[0].summary, 'Acme Corp builds widgets.');
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('skips blank and commented lines in the projects field', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue(
+      {},
+      {
+        'Relevant CNCF Projects':
+          '# Name | Logo URL | Using since | Current version | Description\n' +
+          '\n' +
+          'Kubernetes | | 2019 | 1.30 | Core platform.\n' +
+          '   \n' +
+          '| | | |\n' +
+          'Prometheus',
+      },
+    ),
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const catalog = run.readJson('data/architectures/catalog.json');
+    assert.deepEqual(catalog[0].projects, ['Kubernetes', 'Prometheus']);
+    const page = run.read('docs/architectures/acme-corp.md');
+    assert.doesNotMatch(page, /Logo URL/);
+  } finally {
+    run.cleanup();
+  }
+});
+
+// GitHub always emits `### <label>\n`, but a hand-edited body can end on a
+// bare heading with no trailing newline; that block has no value to record.
+test('ignores a trailing heading that has no response line', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({ body: issueBody(REQUIRED_ANSWERS) + '### Dangling' }),
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const page = run.read('docs/architectures/acme-corp.md');
+    assert.doesNotMatch(page, /Dangling/);
   } finally {
     run.cleanup();
   }
