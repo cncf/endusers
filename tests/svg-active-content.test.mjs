@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   findActiveContent,
+  findRemoteReferences,
   stripActiveContent,
 } from '../scripts/lib/svg-active-content.mjs';
 
@@ -400,3 +401,116 @@ for (const { article, label, quote } of QUOTING_VARIANTS) {
     assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
   });
 }
+
+// findRemoteReferences is a separate gate from findActiveContent: a remote
+// reference executes nothing, so it is not "active content", but the browser
+// still fetches it from a host the upstream diagram author chose and thereby
+// discloses the visitor's IP address, User-Agent and Referer to that host.
+// Imported project artwork is mirrored locally to prevent exactly this
+// (scripts/lib/project-assets.mjs); these tests hold the diagrams themselves
+// to the same standard.
+test('reports nothing remote for an inert SVG', () => {
+  assert.deepEqual(findRemoteReferences(INERT), []);
+});
+
+test('a plain <a> hyperlink is not a remote reference', () => {
+  // draw.io stamps this exact link into exports with text-rendering problems,
+  // and it is present in the imported corpus today. A hyperlink is navigation
+  // the visitor chooses, not a load the page performs, so flagging it would
+  // fail every such diagram on import.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><a href="https://www.drawio.com/doc/faq/svg-export-text-problems"><text>x</text></a></svg>';
+  assert.deepEqual(findRemoteReferences(svg), []);
+});
+
+for (const [label, element] of [
+  ['image', 'image'],
+  ['use', 'use'],
+  ['feImage', 'feImage'],
+]) {
+  test(`detects a remote href on <${label}>`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><${element} href="https://evil.example/beacon.png"/></svg>`;
+    assert.deepEqual(findRemoteReferences(svg), [
+      `references a remote resource in <${element.toLowerCase()}> href: https://evil.example/beacon.png`,
+    ]);
+  });
+}
+
+test('detects a remote xlink:href, the legacy spelling', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><image xlink:href="http://evil.example/b.png"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <image> xlink:href: http://evil.example/b.png',
+  ]);
+});
+
+test('detects a protocol-relative reference, which inherits https at the origin', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><image href="//evil.example/b.png"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <image> href: //evil.example/b.png',
+  ]);
+});
+
+test('detects a remote url() in a <style> block, including @font-face src', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>@font-face{font-family:x;src:url(https://evil.example/f.woff)}</style><text style="font-family:x">a</text></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/f.woff',
+  ]);
+});
+
+test('detects a remote url() in a style attribute', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><rect style="fill:url(\'https://evil.example/p.png\')"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a style attribute: https://evil.example/p.png',
+  ]);
+});
+
+test('a raw > inside an earlier attribute value does not hide the remote href', () => {
+  // `>` is legal unescaped inside an XML attribute value, so a tag scanner
+  // that stops at the first `>` would never see the href after it.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><image alt=">" href="https://evil.example/b.png"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <image> href: https://evil.example/b.png',
+  ]);
+});
+
+test('entity-obfuscated schemes are normalized before the remote test', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><image href="https&#58;//evil.example/b.png"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <image> href: https://evil.example/b.png',
+  ]);
+});
+
+for (const [label, value] of [
+  [
+    'a data: URI, which resolves without a network request',
+    'data:image/png;base64,iVBORw0KGgo=',
+  ],
+  ['a fragment reference into the same document', '#local'],
+  ['a relative path', './local.png'],
+]) {
+  test(`does not flag ${label}`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><image href="${value}"/></svg>`;
+    assert.deepEqual(findRemoteReferences(svg), []);
+  });
+}
+
+test('does not flag a local url() reference such as a gradient', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>rect{fill:url(#grad)}</style><rect/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), []);
+});
+
+test('reports each distinct remote target once, sorted', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://b.example/2.png"/><image href="https://a.example/1.png"/><image href="https://b.example/2.png"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <image> href: https://a.example/1.png',
+    'references a remote resource in <image> href: https://b.example/2.png',
+  ]);
+});

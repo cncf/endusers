@@ -3,7 +3,10 @@ import test from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { findActiveContent } from '../scripts/lib/svg-active-content.mjs';
+import {
+  findActiveContent,
+  findRemoteReferences,
+} from '../scripts/lib/svg-active-content.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const staticRoot = join(repoRoot, 'static');
@@ -52,5 +55,27 @@ test('static/ actually contains SVGs, so the walk cannot pass vacuously', () => 
   assert.ok(
     svgFiles(staticRoot).length > 0,
     'found no SVGs under static/; the walk is no longer checking anything',
+  );
+});
+
+// Same walk, second gate. A remote reference executes nothing, so
+// findActiveContent does not report it, but every visitor who loads a page
+// embedding the diagram still fetches it from the third-party host named in
+// the file -- disclosing their IP address, User-Agent and Referer. Project
+// artwork is mirrored to a local path for exactly this reason
+// (scripts/lib/project-assets.mjs); the diagrams are held to it here.
+test('no SVG published from static/ references a remote resource', () => {
+  const offenders = [];
+  for (const file of svgFiles(staticRoot)) {
+    const findings = findRemoteReferences(readFileSync(file, 'utf8'));
+    if (findings.length) {
+      offenders.push(`${relative(repoRoot, file)}: ${findings.join('; ')}`);
+    }
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `an SVG under static/ must not hot-link a third-party host; mirror the asset locally instead:\n${offenders.join('\n')}`,
   );
 });

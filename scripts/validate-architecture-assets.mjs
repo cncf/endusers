@@ -9,7 +9,10 @@ import {
 import { extname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectError, reportAndExit } from './lib/validate-utils.mjs';
-import { findActiveContent } from './lib/svg-active-content.mjs';
+import {
+  findActiveContent,
+  findRemoteReferences,
+} from './lib/svg-active-content.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -129,6 +132,15 @@ function validateSvg(path, quality) {
   // in an imported asset is a finding a human needs to see, not silent churn.
   for (const finding of findActiveContent(source)) {
     record(path, 'error', `active content: ${finding}`);
+  }
+
+  // Critical: a remote reference executes nothing, but the browser fetches it
+  // from a host the upstream diagram author chose, disclosing the visitor's IP,
+  // User-Agent and Referer. Project artwork is mirrored locally to prevent
+  // exactly this; diagrams are held to the same standard. Never auto-fixed,
+  // for the same reason as active content.
+  for (const finding of findRemoteReferences(source)) {
+    record(path, 'error', `remote reference: ${finding}`);
   }
 
   if (!quality) {
