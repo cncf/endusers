@@ -34,6 +34,7 @@
     "docus:write-heading-ids": "docusaurus write-heading-ids",
     "docus:write-translations": "docusaurus write-translations",
     "import:architectures": "node scripts/import-architectures.mjs && npm run generate:members",
+    "import:architecture-issue": "node scripts/import-architecture-issue.mjs",
     "fetch:community-people": "node scripts/fetch-community-people.mjs",
     "check:community-group-links": "node scripts/check-community-group-links.mjs",
     "generate:members": "node scripts/generate-members.mjs",

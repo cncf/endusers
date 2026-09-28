@@ -358,6 +358,7 @@ test('the workflows this contract applies to are actually detected', () => {
     'deploy-gh-pages.yml',
   ]);
   assert.deepEqual(workflowFiles.filter(commitsGeneratedOutput), [
+    'architecture-submission.yml',
     'import-architectures.yml',
     'refresh-community-people.yml',
     'refresh-radar-reports.yml',

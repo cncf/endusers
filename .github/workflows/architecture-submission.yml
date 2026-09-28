@@ -1,0 +1,72 @@
+name: Reference architecture submission
+
+# A maintainer applying the `architecture-ready` label to an issue opened with
+# .github/ISSUE_TEMPLATE/reference-architecture.yml signals that the
+# submission is in good shape. This turns that label into a pull request built
+# from the issue's answers, the same way import-architectures.yml turns an
+# upstream cncf/architecture checkout into a pull request.
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  NODE_VERSION: '22'
+  SUBMISSION_LABEL: architecture-ready
+
+jobs:
+  import:
+    if: github.event.label.name == env.SUBMISSION_LABEL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Import reference architecture from issue
+        id: import
+        run: npm run import:architecture-issue
+      - run: npm run test:unit
+      - run: npm run fix:format
+      - run: npm run validate:architectures
+      - run: npm run validate:architecture-assets
+      - run: npm run build
+      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          branch: automation/architecture-issue-${{ github.event.issue.number }}
+          delete-branch: true
+          commit-message:
+            'docs: add reference architecture from issue #${{
+            github.event.issue.number }}'
+          title:
+            'docs: add reference architecture "${{ steps.import.outputs.id }}"'
+          body: |
+            Automated import from #${{ github.event.issue.number }}, opened
+            after the `${{ env.SUBMISSION_LABEL }}` label was applied.
+
+            Closes #${{ github.event.issue.number }}.
+
+            The production build and architecture validation passed. Please
+            still review the generated page for accuracy before merging.
+          labels: automated
+          signoff: true
+      - name: Comment on failure
+        if: failure()
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "The automated import from this issue failed. See the [workflow run]($RUN_URL) for details, fix the issue body, then re-apply the \`$SUBMISSION_LABEL\` label to try again."
+          gh issue edit "$ISSUE_NUMBER" --remove-label "$SUBMISSION_LABEL"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RUN_URL:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{
+            github.run_id }}
