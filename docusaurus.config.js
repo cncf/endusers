@@ -239,7 +239,19 @@ const config = {
         darkTheme: prismThemes.dracula,
       },
     }),
-  plugins: [require.resolve('docusaurus-plugin-search-local')],
+  plugins: [
+    [
+      require.resolve('docusaurus-plugin-search-local'),
+      /** @type {import('docusaurus-plugin-search-local').PluginOptions} */
+      ({
+        // Docs are served at the site root (see docs.routeBasePath above),
+        // but the plugin defaults docsRouteBasePath to ["docs"], which
+        // matches no route on this site -- every docs page silently went
+        // unindexed and search returned blog posts only (#769).
+        docsRouteBasePath: '/',
+      }),
+    ],
+  ],
 };
 
 export default config;
