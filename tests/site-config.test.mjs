@@ -4,6 +4,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { join, relative } from 'node:path';
+import { isAllowedImageHost } from '../scripts/lib/profile-image.mjs';
 
 // docusaurus.config.js is ESM but calls require.resolve() for its plugin list,
 // which Docusaurus supplies through its own loader. Provide the same shim so
@@ -266,4 +267,127 @@ test('local search indexes docs at the route docs are actually served on', () =>
     options?.docsRouteBasePath,
     config.presets[0][1].docs.routeBasePath,
   );
+});
+
+// The meta Content-Security-Policy is the browser-side backstop for content
+// this site does not author. Nothing asserted it until now, so it could be
+// weakened or deleted without a single test failing.
+function cspDirectives(from = config) {
+  const meta = from.headTags.find(
+    (tag) =>
+      tag.tagName === 'meta' &&
+      tag.attributes?.['http-equiv'] === 'Content-Security-Policy',
+  );
+  assert.ok(meta, 'no Content-Security-Policy head tag');
+  return new Map(
+    meta.attributes.content
+      .split(';')
+      .map((directive) => directive.trim())
+      .filter(Boolean)
+      .map((directive) => {
+        const [name, ...values] = directive.split(/\s+/);
+        return [name, values];
+      }),
+  );
+}
+
+// Expands a CSP host source into a hostname isAllowedImageHost() can judge.
+function cspSourceHostname(source) {
+  const host = source.replace(/^https:\/\//, '');
+  return host.startsWith('*.') ? `subdomain.${host.slice(2)}` : host;
+}
+
+function cspAdmitsHost(sources, host) {
+  return sources.some((source) => {
+    const pattern = source.replace(/^https:\/\//, '');
+    if (pattern.startsWith('*.')) return host.endsWith(pattern.slice(1));
+    return pattern === host;
+  });
+}
+
+test('the meta CSP keeps its non-script hardening directives', () => {
+  const directives = cspDirectives();
+  assert.deepEqual(directives.get('base-uri'), ["'self'"]);
+  assert.deepEqual(directives.get('object-src'), ["'none'"]);
+  assert.deepEqual(directives.get('form-action'), ["'self'"]);
+});
+
+test('the meta CSP confines images to the hosts the image gate allows', () => {
+  const sources = cspDirectives().get('img-src');
+  assert.ok(
+    sources,
+    'img-src is missing: an <img src> that slipped a gate would beacon the visitor to any host',
+  );
+  assert.ok(sources.includes("'self'"), "img-src must admit 'self'");
+  assert.ok(
+    sources.includes('data:'),
+    'img-src must admit data:, which Infima uses for inlined SVG icons',
+  );
+
+  const hosts = sources.filter((source) => source.startsWith('https://'));
+  assert.ok(hosts.length, 'img-src lists no remote hosts');
+  assert.ok(
+    sources.every(
+      (source) =>
+        source === "'self'" || source === 'data:' || hosts.includes(source),
+    ),
+    `img-src carries a source that is neither 'self', data: nor an https host: ${sources.join(' ')}`,
+  );
+
+  // Neither list may be wider than the other: a CSP wider than the gate
+  // publishes a beacon the gate meant to stop, and a CSP narrower than the
+  // gate blocks an image the gate approved.
+  for (const source of hosts) {
+    assert.equal(
+      isAllowedImageHost(cspSourceHostname(source)),
+      true,
+      `img-src admits ${source}, which scripts/lib/profile-image.mjs rejects`,
+    );
+  }
+  for (const host of [
+    'raw.githubusercontent.com',
+    'avatars.githubusercontent.com',
+    'github.com',
+    'www.github.com',
+    'cncf.io',
+    'www.cncf.io',
+  ]) {
+    assert.equal(isAllowedImageHost(host), true);
+    assert.ok(
+      cspAdmitsHost(hosts, host),
+      `scripts/lib/profile-image.mjs allows ${host} but the CSP img-src does not`,
+    );
+  }
+
+  assert.equal(isAllowedImageHost('evil.example'), false);
+  assert.equal(cspAdmitsHost(hosts, 'evil.example'), false);
+  // A suffix match must not be satisfied by a lookalike registrable domain.
+  assert.equal(cspAdmitsHost(hosts, 'notcncf.io'), false);
+});
+
+test('every profile image the site ships is admitted by the CSP', () => {
+  const sources = cspDirectives().get('img-src');
+  const hosts = sources.filter((source) => source.startsWith('https://'));
+  const { people } = JSON.parse(
+    readFileSync(join(repoRoot, 'data/community-people.json'), 'utf8'),
+  );
+  const entries = Object.values(people).flat();
+  assert.ok(entries.length, 'no community people to check');
+  const blocked = entries
+    .map((person) => person.image)
+    .filter(
+      (image) => typeof image === 'string' && image.startsWith('https://'),
+    )
+    .filter((image) => !cspAdmitsHost(hosts, new URL(image).hostname));
+  assert.deepEqual(blocked, []);
+});
+
+test('the CSP holds under a preview deployment origin', async () => {
+  const preview = await loadConfig({
+    SITE_URL: 'https://cncf.github.io',
+    BASE_URL: '/endusers/',
+  });
+  const directives = cspDirectives(preview);
+  assert.deepEqual(directives.get('object-src'), ["'none'"]);
+  assert.ok(directives.get('img-src')?.includes("'self'"));
 });
