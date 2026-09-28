@@ -1,8 +1,13 @@
 # Imported architecture pages are regenerated verbatim by
-# `npm run import:architectures`; formatting them locally would be overwritten
-# (and re-break the gate) on the next import. See issue #528.
-docs/architectures/cern-scientific-computing.md
-docs/architectures/swisscom-kubernetes-service.md
+# `npm run import:architectures` and embed JSX component props (e.g.
+# CNCFProjectCard description={"..."}) inline in prose. Prettier's markdown
+# formatter rewraps that prose across lines, which breaks the JS string
+# literal and fails the MDX build with "Could not parse expression with acorn"
+# (see #681, #795); any local reformatting would also be overwritten by the
+# next import anyway. Excludes every generated org page but keeps the
+# hand-authored index.
+docs/architectures/*.md
+!docs/architectures/index.md
 # Workflow file: formatting it requires a credential with the Workflows permission:
 .github/workflows/create-milestones.yml
 # Blog posts contain MDX JSX comments ({/* truncate */}) that prettier's markdown
