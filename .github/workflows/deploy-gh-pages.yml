@@ -51,6 +51,31 @@ jobs:
       - name: Validate awards data
         run: npm run validate:awards
 
+      # Automation pull requests are authored by github.token, which does not
+      # start ci.yml (see #755), so this job is the only gate their data ever
+      # passes before it publishes. It has to run the full validator set, not
+      # a subset.
+      - name: Validate button contrast
+        run: npm run validate:button-contrast
+
+      - name: Validate launch metrics data
+        run: npm run validate:launch-metrics
+
+      - name: Validate case studies data
+        run: npm run validate:case-studies
+
+      - name: Validate radar reports data
+        run: npm run validate:radar-reports
+
+      - name: Validate community people data
+        run: npm run validate:community-people
+
+      - name: Validate community group links
+        run: npm run validate:community-groups
+
+      - name: Validate projects-born data
+        run: npm run validate:projects-born
+
       # Build for the GitHub Pages project URL. When the custom domain in
       # static/CNAME is verified and active, update these values to
       # SITE_URL=https://endusers.cncf.io and BASE_URL=/ so canonical and
