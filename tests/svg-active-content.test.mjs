@@ -514,3 +514,65 @@ test('reports each distinct remote target once, sorted', () => {
     'references a remote resource in <image> href: https://b.example/2.png',
   ]);
 });
+
+test('a single-quoted href is read as a value, not skipped', () => {
+  // ATTRIBUTE_PATTERN has three value alternatives -- double-quoted,
+  // single-quoted and bare -- and findRemoteReferences reads whichever one
+  // matched. Only the double-quoted alternative is exercised above, so a
+  // regression that dropped the other two would still pass every test here.
+  const svg =
+    "<svg xmlns='http://www.w3.org/2000/svg'><image href='https://evil.example/sq.png'/></svg>";
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <image> href: https://evil.example/sq.png',
+  ]);
+});
+
+test('an unquoted href is read as a value, not skipped', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><image href=https://evil.example/uq.png /></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <image> href: https://evil.example/uq.png',
+  ]);
+});
+
+test('an empty <style> block does not break the block scan that follows it', () => {
+  // STYLE_BLOCK_PATTERN captures its body lazily, so an empty block yields an
+  // empty capture. Nothing may be reported for the block itself, and the rest
+  // of the document still has to be scanned.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style></style><image href="https://evil.example/after.png"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <image> href: https://evil.example/after.png',
+  ]);
+});
+
+test('a long remote target is truncated so one URL cannot flood the output', () => {
+  // A data-bearing URL can be arbitrarily long, and these findings are printed
+  // one per line by the import and validation gates.
+  const target = `https://evil.example/${'a'.repeat(200)}.png`;
+  const [finding] = findRemoteReferences(
+    `<svg xmlns="http://www.w3.org/2000/svg"><image href="${target}"/></svg>`,
+  );
+  const reported = finding.slice(finding.indexOf('href: ') + 'href: '.length);
+  assert.equal(reported.length, 120);
+  assert.ok(reported.endsWith('...'));
+  assert.ok(target.startsWith(reported.slice(0, -3)));
+});
+
+test('an unrecognized named entity is left intact rather than dropped', () => {
+  // decodeEntities only resolves the named entities that can hide a scheme.
+  // Anything else has to survive decoding unchanged: silently deleting it
+  // would splice the surrounding characters together and could manufacture a
+  // scheme that the source never contained.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><a href="java&nbsp;script:alert(1)">x</a></svg>';
+  assert.deepEqual(findActiveContent(svg), []);
+});
+
+test('an unrecognized named entity does not hide a scheme that follows it', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><a href="&unknown;javascript:alert(1)">x</a></svg>';
+  assert.deepEqual(findActiveContent(svg), [
+    'contains a script URI in href="javascript:..."',
+  ]);
+});
