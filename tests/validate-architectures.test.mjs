@@ -204,3 +204,93 @@ test('labels an id-less record <unknown> in every error it raises', () => {
   );
   assert.doesNotMatch(result.stderr, /\[error\] undefined:/);
 });
+
+// Docusaurus routes docs/ by filesystem, so a page the catalog does not name
+// is published anyway. Scanning per catalog record left exactly those pages
+// unguarded; the scan is driven by the directory instead.
+test('rejects a published page that has no catalog record', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/architectures/acme-platform.md': '# Acme\n',
+      'docs/architectures/orphan.md': '# Orphan\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /\[error\] orphan\.md: page has no catalog record/,
+  );
+});
+
+test('scans a catalog-less page for active content instead of skipping it', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/architectures/orphan.md':
+        '# Orphan\n\n<iframe src="https://evil.example"></iframe>\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /orphan\.md:3: active content in imported page \(disallowed element <iframe>\)/,
+  );
+});
+
+// An MDX expression is evaluated JavaScript, so an unscanned page runs code in
+// the build job that holds the Pages deploy credential.
+test('scans a catalog-less page for MDX expressions', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/architectures/orphan.md': '# Orphan\n\nvalue: {String(1)}\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /orphan\.md:3: active content in imported page \(MDX expression\)/,
+  );
+});
+
+// index.md is hand-authored, not imported: it renders layout elements and
+// imports a component, all of which the imported-content gate is right to
+// reject in an imported body. Scanning it would turn CI red on repo content.
+test('exempts the hand-authored index page from the imported-content gate', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/architectures/index.md':
+        '# Catalog\n\n<div className="pillars"><h3>Why</h3></div>\n\nimport X from \'@site/src/components/X\';\n\n<X />\n',
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 1 architecture records/);
+});
+
+// A nested page is published at its own route and can never match a catalog
+// id, so it is reported rather than silently walked past.
+test('rejects a nested page under docs/architectures', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/architectures/reports/leftover.md': '# Leftover\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /\[error\] reports\/leftover\.md: page has no catalog record/,
+  );
+});
+
+// Dirent.isFile() is false for a symlink, so a symlinked page would be walked
+// past and published unread if it were merely skipped.
+test('rejects a symlinked page rather than skipping it', () => {
+  const result = runScriptWithFixtures(SCRIPT, catalogFixture([validRecord]), {
+    symlinks: { 'docs/architectures/linked.md': '/etc/hostname' },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /linked\.md: page must be a regular file/);
+});

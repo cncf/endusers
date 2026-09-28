@@ -4,6 +4,11 @@ import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { reportAndExit } from './lib/validate-utils.mjs';
 import { findActiveContent } from './lib/mdx-active-content.mjs';
+import {
+  REPO_AUTHORED_PAGES,
+  listArchitecturePages,
+  pageCatalogId,
+} from './lib/architecture-pages.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const staticRoot = resolve(join(root, 'static'));
@@ -90,19 +95,47 @@ for (const record of records) {
         message: `missing asset ${asset}`,
       });
   }
-  if (record.id) {
-    const docPath = join(root, 'docs/architectures', `${record.id}.md`);
-    if (existsSync(docPath)) {
-      for (const { line, reason, snippet } of findActiveContent(
-        readFileSync(docPath, 'utf8'),
-      ))
-        errors.push({
-          path: `${record.id}.md:${line}`,
-          severity: 'error',
-          message: `active content in imported page (${reason}): ${snippet}`,
-        });
-    }
-  }
+}
+
+// The active-content scan is driven by the files on disk, not by the catalog.
+// Docusaurus publishes every .md under docs/architectures/ regardless of
+// whether a record names it, so scanning per-record left any page the catalog
+// did not mention published and completely unguarded. That is reachable
+// unattended: the importer only pruned pages whose directory still existed
+// upstream, so an architecture removed from cncf/architecture dropped out of
+// the catalog while its page stayed behind forever.
+const docsDir = join(root, 'docs/architectures');
+const { pages, irregular } = listArchitecturePages(docsDir);
+const catalogIds = new Set(records.map((record) => record.id).filter(Boolean));
+
+for (const page of irregular)
+  errors.push({
+    path: page,
+    severity: 'error',
+    message:
+      'page must be a regular file; a symlinked page is published but cannot be gated',
+  });
+
+for (const page of pages) {
+  if (REPO_AUTHORED_PAGES.has(page)) continue;
+
+  const catalogId = pageCatalogId(page);
+  if (!catalogId || !catalogIds.has(catalogId))
+    errors.push({
+      path: page,
+      severity: 'error',
+      message:
+        'page has no catalog record; it is published but nothing regenerates it — delete it or re-run npm run import:architectures',
+    });
+
+  for (const { line, reason, snippet } of findActiveContent(
+    readFileSync(join(docsDir, page), 'utf8'),
+  ))
+    errors.push({
+      path: `${page}:${line}`,
+      severity: 'error',
+      message: `active content in imported page (${reason}): ${snippet}`,
+    });
 }
 reportAndExit(errors, 'architecture catalog');
 console.log(`Validated ${records.length} architecture records`);

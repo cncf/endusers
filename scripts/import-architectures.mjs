@@ -24,6 +24,10 @@ import {
 import { stripActiveContent } from './lib/svg-active-content.mjs';
 import { isCncfProjectHref } from './lib/project-card-links.mjs';
 import { jsxElement } from './lib/jsx-attributes.mjs';
+import {
+  REPO_AUTHORED_PAGES,
+  listArchitecturePages,
+} from './lib/architecture-pages.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
@@ -66,9 +70,14 @@ try {
     recursive: true,
     force: true,
   });
-  for (const entry of readdirSync(source, { withFileTypes: true })) {
-    if (entry.isDirectory())
-      rmSync(join(docsDir, `${entry.name}.md`), { force: true });
+  // Prune every imported page, not just the ones whose directory still
+  // exists upstream. Deleting per upstream directory left an architecture
+  // removed from cncf/architecture with its page still on disk: it dropped
+  // out of catalog.json but stayed published, and nothing regenerated or
+  // re-gated it again. Repo-authored pages are kept.
+  for (const page of listArchitecturePages(docsDir).pages) {
+    if (REPO_AUTHORED_PAGES.has(page)) continue;
+    rmSync(join(docsDir, page), { force: true });
   }
   rmSync(assetsDir, { recursive: true, force: true });
   mkdirSync(recordsDir, { recursive: true });
