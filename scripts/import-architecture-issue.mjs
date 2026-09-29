@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { isCncfProjectHref } from './lib/project-card-links.mjs';
 import { jsxElement } from './lib/jsx-attributes.mjs';
 import { artworkPath, projectAsset } from './lib/project-assets.mjs';
+import { escapeMdx, unescapeMdx } from './lib/mdx-escape.mjs';
 import {
   cleanMarkdown,
   firstParagraph,
@@ -125,7 +126,10 @@ async function main() {
     id,
     title,
     organization: orgName,
-    summary: firstParagraph(cleanBody),
+    // The summary is stored as JSON and rendered as a plain text node, where
+    // the character references renderSection() added would show through
+    // literally, so it is taken from the author's own characters.
+    summary: firstParagraph(unescapeMdx(cleanBody)),
     industries,
     tags,
     projects: projects.map((project) => project.name),
@@ -265,9 +269,19 @@ function renderProjectsSection(projects) {
   return `## Relevant CNCF projects\n\n${cards}`;
 }
 
+/**
+ * Renders one answer as a `## <heading>` section.
+ *
+ * The heading comes from the hardcoded BODY_SECTIONS list, but the value is
+ * whatever a submitter typed into the issue form, and the generated page is
+ * compiled as MDX. It is escaped here rather than in cleanMarkdown(): the
+ * sections are joined with the generated `<CNCFProjectCard />` markup from
+ * renderProjectsSection() before that shared helper runs, and escaping the
+ * joined text would destroy the cards.
+ */
 function renderSection(heading, value) {
   if (!value) return '';
-  return `## ${heading}\n\n${value}`;
+  return `## ${heading}\n\n${escapeMdx(value)}`;
 }
 
 main().catch((error) => {
