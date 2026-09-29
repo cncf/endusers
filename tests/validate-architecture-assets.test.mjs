@@ -128,6 +128,19 @@ test('rejects SVG containing a script element', () => {
   assert.match(result.stderr, /active content: contains a <script> element/);
 });
 
+test('rejects SVG containing a script element under an uppercase .SVG extension', () => {
+  // The extension allow-list lowercases before matching, so `.SVG` is accepted
+  // as an SVG asset. The scan dispatch has to agree, or the file is published
+  // to the site origin with no active-content scan at all.
+  const svg = VALID_SVG.replace(
+    '<rect width="100" height="100"/>',
+    '<script>alert(1)</script>',
+  );
+  const result = runScriptWithFixtures(SCRIPT, svgFixture(svg, 'diagram.SVG'));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /active content: contains a <script> element/);
+});
+
 test('rejects SVG containing an event handler attribute', () => {
   const svg = VALID_SVG.replace('<rect ', '<rect onload="alert(1)" ');
   const result = runScriptWithFixtures(SCRIPT, svgFixture(svg));
