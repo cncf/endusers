@@ -11,6 +11,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   REPO_AUTHORED_PAGES,
+  RESERVED_PAGE_IDS,
+  isReservedPageId,
   listArchitecturePages,
   pageCatalogId,
 } from '../scripts/lib/architecture-pages.mjs';
@@ -106,4 +108,34 @@ test('reports no catalog id for a non-markdown path', () => {
 test('exempts only the hand-authored index page', () => {
   assert.ok(REPO_AUTHORED_PAGES.has('index.md'));
   assert.equal(REPO_AUTHORED_PAGES.has('adobe.md'), false);
+});
+
+// The exemption above is a hole in the imported-content gate unless the id
+// that would land on an exempt page is unavailable to an importer, so the
+// reserved set has to be derived from the exempt set rather than listed
+// separately: a page added to one must not be forgotten in the other.
+test('reserves the catalog id of every repo-authored page', () => {
+  assert.deepEqual(
+    [...RESERVED_PAGE_IDS].sort(),
+    [...REPO_AUTHORED_PAGES].map((page) => page.replace(/\.md$/, '')).sort(),
+  );
+  assert.ok(RESERVED_PAGE_IDS.has('index'));
+});
+
+test('identifies a reserved catalog id', () => {
+  assert.equal(isReservedPageId('index'), true);
+  assert.equal(isReservedPageId('adobe'), false);
+});
+
+// Ids are lowercase slugs by contract, but a record that failed that check
+// must not be able to fail this one too and reach the exempt page anyway.
+test('identifies a reserved catalog id regardless of case', () => {
+  assert.equal(isReservedPageId('Index'), true);
+  assert.equal(isReservedPageId('INDEX'), true);
+});
+
+test('treats a non-string id as unreserved rather than throwing', () => {
+  assert.equal(isReservedPageId(undefined), false);
+  assert.equal(isReservedPageId(null), false);
+  assert.equal(isReservedPageId(42), false);
 });

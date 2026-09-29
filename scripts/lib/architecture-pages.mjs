@@ -23,6 +23,40 @@ import { join } from 'node:path';
 export const REPO_AUTHORED_PAGES = new Set(['index.md']);
 
 /**
+ * Catalog ids an imported record may not claim.
+ *
+ * Both importers write their page to `docs/architectures/<id>.md`, and the id
+ * is derived from submitter- or upstream-controlled text (the "Organization or
+ * Team Name" answer on a submission issue, or an upstream directory name). An
+ * id that slugifies to a repo-authored page name therefore overwrites that
+ * hand-authored page with imported content — and because the active-content
+ * gate in scripts/validate-architectures.mjs deliberately skips
+ * REPO_AUTHORED_PAGES, the overwritten page ships without ever being scanned
+ * for the MDX expressions, event handlers and script-capable URL schemes that
+ * gate exists to reject.
+ *
+ * The exemption is only safe while nothing imported can land on an exempt
+ * path, so the ids are reserved here and rejected by the validator.
+ */
+export const RESERVED_PAGE_IDS = new Set(
+  [...REPO_AUTHORED_PAGES].map((page) => page.replace(/\.md$/, '')),
+);
+
+/**
+ * Whether a catalog id would resolve to a repo-authored page.
+ *
+ * Ids are lowercase slugs by contract (validate-architectures.mjs enforces
+ * `/^[a-z0-9][a-z0-9-]*$/`), but this lowercases before comparing so a record
+ * that failed that check cannot also slip past this one.
+ *
+ * @param {unknown} id
+ * @returns {boolean}
+ */
+export function isReservedPageId(id) {
+  return typeof id === 'string' && RESERVED_PAGE_IDS.has(id.toLowerCase());
+}
+
+/**
  * Lists every Markdown page under docs/architectures/, as paths relative to
  * that directory, sorted for stable output.
  *
