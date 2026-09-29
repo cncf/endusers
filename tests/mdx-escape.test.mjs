@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { escapeMdx, unescapeMdx } from '../scripts/lib/mdx-escape.mjs';
 
 // Pages under docs/ compile as MDX (@docusaurus/core 3 defaults
@@ -138,4 +139,69 @@ test('unescapeMdx round-trips every character reference escapeMdx adds', () => {
 test('unescapeMdx leaves unrelated text alone', () => {
   assert.equal(unescapeMdx('plain &amp; simple'), 'plain &amp; simple');
   assert.equal(unescapeMdx(undefined), '');
+});
+
+// unescapeMdx() reverses the escaping by scanning for a fixed alternation of
+// character references and looking each one up in the ESCAPES table. The two
+// lists are written out separately, so they can drift: an alternative added to
+// the regex without a matching table entry makes unescapeMdx() fall through and
+// emit the raw reference, which then shows through literally wherever the
+// unescaped text is rendered as a plain text node. Nothing in the behavioural
+// tests above can see that drift, because a reference with no table entry is
+// one escapeMdx() never produces. Pin the two lists against each other
+// directly, against the source rather than the exports, since neither list is
+// reachable from outside the module.
+const mdxEscapeSource = readFileSync(
+  new URL('../scripts/lib/mdx-escape.mjs', import.meta.url),
+  'utf8',
+);
+
+function escapeTableKeys() {
+  const table = mdxEscapeSource.match(
+    /const ESCAPES = new Map\(\[(?<body>[\s\S]*?)\]\);/u,
+  );
+  assert.ok(table, 'expected an ESCAPES Map literal in mdx-escape.mjs');
+  return [...table.groups.body.matchAll(/\[\s*'(?<entity>[^']+)'\s*,/gu)].map(
+    (entry) => entry.groups.entity,
+  );
+}
+
+function unescapeRegexAlternatives() {
+  const call = mdxEscapeSource.match(
+    /return text\.replace\(\s*\/(?<pattern>[^/\n]+)\/g,/u,
+  );
+  assert.ok(
+    call,
+    'expected a text.replace() with a literal regex in unescapeMdx',
+  );
+  return call.groups.pattern.split('|');
+}
+
+test('every character reference unescapeMdx matches has an ESCAPES entry', () => {
+  const keys = escapeTableKeys();
+  assert.ok(keys.length > 0, 'expected a non-empty ESCAPES table');
+  assert.deepEqual(
+    unescapeRegexAlternatives().filter((alt) => !keys.includes(alt)),
+    [],
+    'unescapeMdx matches a character reference that ESCAPES cannot decode',
+  );
+});
+
+test('every ESCAPES entry is reachable from the unescapeMdx regex', () => {
+  const alternatives = unescapeRegexAlternatives();
+  assert.deepEqual(
+    escapeTableKeys().filter((key) => !alternatives.includes(key)),
+    [],
+    'ESCAPES decodes a character reference unescapeMdx never matches',
+  );
+});
+
+test('unescapeMdx decodes every entry in the ESCAPES table', () => {
+  for (const entity of escapeTableKeys()) {
+    assert.notEqual(
+      unescapeMdx(`before ${entity} after`),
+      `before ${entity} after`,
+      `unescapeMdx left ${entity} undecoded`,
+    );
+  }
 });
