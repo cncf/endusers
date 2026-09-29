@@ -539,3 +539,57 @@ test('ignores a trailing heading that has no response line', () => {
     run.cleanup();
   }
 });
+
+// A webhook payload carries `title`, but the script reads it through
+// `String(issue.title ?? '')` so a payload without one cannot throw on a
+// property access before the required-field check reports it. An untitled
+// issue is a submission with nothing to name the page after, so it must be
+// rejected by that check rather than importing as a page titled "".
+test('rejects an issue payload that carries no title at all', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({ title: undefined }),
+  });
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /Missing required issue title/);
+    assert.ok(!run.exists('data/architectures/catalog.json'));
+  } finally {
+    run.cleanup();
+  }
+});
+
+// The disambiguation suffix must only be applied to an id a catalog entry
+// already claims. A populated catalog that does not claim the slug has to
+// leave it alone, or every submission after the first would import as
+// `<slug>-<issue number>`.
+test('keeps the slugified id when a populated catalog does not claim it', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue(),
+    catalog: [
+      {
+        id: 'globex-inc',
+        title: 'Globex - Existing Architecture',
+        organization: 'Globex Inc',
+        summary: '',
+        industries: [],
+        tags: [],
+        projects: [],
+        sourceUrl: 'https://github.com/cncf/architecture/tree/abc/globex',
+        sourceCommit: 'b'.repeat(40),
+        assets: [],
+      },
+    ],
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const catalog = run.readJson('data/architectures/catalog.json');
+    assert.deepEqual(catalog.map((entry) => entry.id).sort(), [
+      'acme-corp',
+      'globex-inc',
+    ]);
+    assert.ok(run.exists('docs/architectures/acme-corp.md'));
+    assert.ok(!run.exists('docs/architectures/acme-corp-900.md'));
+  } finally {
+    run.cleanup();
+  }
+});
