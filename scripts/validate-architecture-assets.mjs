@@ -50,7 +50,9 @@ const SITE_CHROME_EXTENSIONS = new Set([...ALLOWED_ASSET_EXTENSIONS, '.ico']);
 // favicons - rather than imported assets, but they are served from the same
 // origin as everything else, so they carry the same security gate. static/img
 // is walked shallowly because its image subdirectories are listed above, each
-// with its own quality setting.
+// with its own quality setting; walk() rejects any *other* subdirectory it
+// finds there, since a shallow walk would otherwise publish its contents with
+// no gate at all.
 //
 // static/fonts is deliberately outside the gate (it holds no SVG, and its
 // extensions are legitimately outside the image allow-list) via the
@@ -165,7 +167,23 @@ function walk(dir, recurse = true) {
       record(path, 'error', 'is a symbolic link; symlinks are not allowed');
       return [];
     }
-    if (entry.isDirectory()) return recurse ? walk(path) : [];
+    if (entry.isDirectory()) {
+      if (recurse) return walk(path);
+      // A shallow walk covers only the files sitting directly in the
+      // directory, so every subdirectory below it must be an asset root with
+      // its own assetDirs entry (returned above via assetRootPaths). One that
+      // is not is published at the site origin with no gate at all -- the same
+      // silent gap checkForUngatedStaticEntries() closes at the static/ root,
+      // one level down.
+      record(
+        path,
+        'error',
+        'is a subdirectory of a shallowly walked asset directory and is not ' +
+          'covered by the asset security gate; add it to assetDirs in ' +
+          'scripts/validate-architecture-assets.mjs',
+      );
+      return [];
+    }
     return [path];
   });
 }

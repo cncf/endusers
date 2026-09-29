@@ -524,16 +524,44 @@ test('accepts an allowed image sitting directly in static/', () => {
   assert.equal(result.status, 0, result.stderr);
 });
 
-test('does not descend into subdirectories of the shallow static/img walk', () => {
+test('rejects a subdirectory of the shallow static/img walk', () => {
   // static/img is walked with recurse: false because it holds site chrome
-  // sitting directly in the directory. Its subdirectories are either asset
-  // roots with their own entry or -- as here -- out of the gate's reach, so
-  // an asset nested inside one is neither validated nor counted.
+  // sitting directly in the directory. A shallow walk covers only those
+  // files, so every subdirectory below it must be an asset root with its own
+  // assetDirs entry; one that is not would otherwise ship to the site origin
+  // with no gate at all.
   const result = runScriptWithFixtures(SCRIPT, {
     'static/img/architectures/example/diagram.svg': VALID_SVG,
     'static/img/illustrations/nested.svg': '<svg><rect/></svg>',
   });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/img\/illustrations: is a subdirectory of a shallowly walked asset directory and is not covered by the asset security gate/,
+  );
+});
+
+test('rejects markup in a subdirectory of the shallow static/img walk', () => {
+  // The extension allow-list is the only thing that keeps a .html off the
+  // site origin, and it never ran below static/img: the file was published
+  // verbatim with the validator, the unit suite and the build all green.
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'static/img/blog/pwn.html': '<html><script>alert(1)</script></html>',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /static\/img\/blog: is a subdirectory/);
+});
+
+test('does not flag the static/img subdirectories that are asset roots', () => {
+  // The three real subdirectories each have their own assetDirs entry, so
+  // they are returned by assetRootPaths before the new subdirectory check.
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'static/img/cncf-projects/helm-helm-icon-color.svg': VALID_SVG,
+    'static/img/awards/example.svg': VALID_SVG,
+    'static/img/cncf_logo_white.svg': VALID_SVG,
+  });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Validated 1 architecture asset/);
-  assert.doesNotMatch(result.stderr, /illustrations/);
+  assert.match(result.stdout, /Validated 4 architecture asset/);
 });
