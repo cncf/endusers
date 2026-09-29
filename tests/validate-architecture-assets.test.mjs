@@ -523,3 +523,17 @@ test('accepts an allowed image sitting directly in static/', () => {
   });
   assert.equal(result.status, 0, result.stderr);
 });
+
+test('does not descend into subdirectories of the shallow static/img walk', () => {
+  // static/img is walked with recurse: false because it holds site chrome
+  // sitting directly in the directory. Its subdirectories are either asset
+  // roots with their own entry or -- as here -- out of the gate's reach, so
+  // an asset nested inside one is neither validated nor counted.
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'static/img/illustrations/nested.svg': '<svg><rect/></svg>',
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 1 architecture asset/);
+  assert.doesNotMatch(result.stderr, /illustrations/);
+});

@@ -922,3 +922,41 @@ Intro paragraph.
     run.cleanup();
   }
 });
+
+test('keeps repo-authored architecture pages when pruning imported ones', () => {
+  const indexPage = `---
+title: Reference architectures
+---
+
+Hand-written landing page for the architecture catalog.
+`;
+
+  const run = runImportArchitectures({
+    upstream: architecture(
+      'acme',
+      `---
+title: Acme
+org_name: Acme Corp
+---
+
+Acme runs Kubernetes.
+`,
+    ),
+    // docs/architectures/index.md is authored in this repo, not imported, and
+    // a stale page from a previous import sits beside it. The prune must
+    // delete only the imported one.
+    repoFiles: {
+      'docs/architectures/index.md': indexPage,
+      'docs/architectures/removed-upstream.md': '# gone from upstream\n',
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.equal(run.read('docs/architectures/index.md'), indexPage);
+    assert.equal(run.exists('docs/architectures/removed-upstream.md'), false);
+    assert.equal(run.exists('docs/architectures/acme.md'), true);
+  } finally {
+    run.cleanup();
+  }
+});

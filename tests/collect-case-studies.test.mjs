@@ -335,3 +335,19 @@ test('leaves the catalog untouched when nothing changed (matches #648)', () => {
     firstCatalog.generatedAt,
   );
 });
+
+test('treats an existing catalog without a caseStudies key as empty', () => {
+  // A hand-edited or partially written data/case-studies.json can lack the
+  // key entirely. Reading it must yield an empty list rather than undefined,
+  // so the "nothing changed" comparison against an empty upstream still holds
+  // and the run leaves the file alone instead of rewriting generatedAt.
+  const existing = JSON.stringify({ generatedAt: '2024-01-01T00:00:00.000Z' });
+  const result = collect(
+    [{ match: CASE_STUDY_ROUTE, body: [] }, ...taxonomyRoutes()],
+    { fixtures: { [OUTPUT]: existing } },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /No case study changes detected/);
+  assert.equal(result.outputs[OUTPUT], existing);
+});
