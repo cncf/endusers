@@ -482,3 +482,44 @@ test('does not flag static/ subdirectories the gate already walks', () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Validated 2 architecture asset/);
 });
+
+// Dynamic static/ file discovery — a file sitting directly in static/ has no
+// enclosing directory for assetDirs to gate, but it is served from the site
+// origin exactly like one inside a gated subdirectory.
+
+test('rejects a markup file sitting directly in static/', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/pwn.html': '<html><script>alert(1)</script></html>',
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/pwn\.html: \.html is not an allowed asset type/,
+  );
+});
+
+test('scans an SVG sitting directly in static/ for active content', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/pwn.svg':
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><script>alert(1)</script></svg>',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /static\/pwn\.svg: active content/);
+});
+
+test('accepts the exempted non-asset files in the static/ root', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/.nojekyll': '',
+    'static/manifest.json': '{"name":"site"}',
+    'static/robots.txt': 'User-agent: *',
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('accepts an allowed image sitting directly in static/', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/logo.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 0, result.stderr);
+});
