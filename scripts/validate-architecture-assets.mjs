@@ -321,7 +321,11 @@ function validateAsset(path, quality, extensions) {
     return;
   }
 
-  if (path.endsWith('.svg')) {
+  // Reuses the lowercased `extension` above rather than testing the raw path:
+  // the allow-list already accepts `diagram.SVG` as an SVG, so a case-sensitive
+  // test here would let that file skip validateSvg() entirely and reach the
+  // site origin with no active-content or remote-reference scan at all.
+  if (extension === '.svg') {
     validateSvg(path, quality);
   }
 }

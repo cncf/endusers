@@ -151,7 +151,9 @@ async function importArchitecture(id, commit) {
   // from disk afterward rather than trusting the copy-time list.
   const archAssetsDir = join(assetsDir, id);
   const svgsBefore = isRealDirectory(archAssetsDir)
-    ? walkFiles(archAssetsDir).filter((file) => file.endsWith('.svg'))
+    ? walkFiles(archAssetsDir).filter((file) =>
+        file.toLowerCase().endsWith('.svg'),
+      )
     : [];
   sanitizeArchitectureAssets(archAssetsDir);
   record.assets = isRealDirectory(archAssetsDir)
@@ -215,7 +217,11 @@ function walkFiles(dir) {
 function sanitizeArchitectureAssets(dir) {
   if (!isRealDirectory(dir)) return;
   for (const file of walkFiles(dir)) {
-    if (!file.endsWith('.svg')) continue;
+    // Case-insensitive, matching the lowercased MIRRORABLE_ASSET_EXTENSIONS
+    // test that copied the file in: an upstream `diagram.SVG` is mirrored, so
+    // a case-sensitive test here would mirror it without ever stripping its
+    // active content.
+    if (!file.toLowerCase().endsWith('.svg')) continue;
     const original = readFileSync(file, 'utf8');
     let source = original;
 

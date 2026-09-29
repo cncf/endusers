@@ -820,6 +820,42 @@ test('strips active content from an imported SVG asset and reports it', () => {
   }
 });
 
+test('strips active content from an imported SVG asset under an uppercase .SVG extension', () => {
+  // MIRRORABLE_ASSET_EXTENSIONS is matched against a lowercased extension, so
+  // an upstream `diagram.SVG` is copied in as an SVG. The sanitizer has to
+  // agree on case, or the file is mirrored to the site origin with its active
+  // content intact.
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'active-upper',
+        '---\ntitle: Active Upper\norg_name: Active Upper Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/active-upper/images/diagram.SVG':
+        ACTIVE_CONTENT_SVG,
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+
+    const sanitized = run.read(
+      'static/img/architectures/active-upper/diagram.SVG',
+    );
+    assert.doesNotMatch(sanitized, /<script/i);
+    assert.doesNotMatch(sanitized, /onload/i);
+    assert.doesNotMatch(sanitized, /javascript:/i);
+    assert.match(sanitized, /<rect \/>/);
+
+    assert.match(
+      run.stderr,
+      /Removed active content from img\/architectures\/active-upper\/diagram\.SVG: /,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
+
 test('strips active content from a mirrored project SVG and reports it', () => {
   const logoUrl =
     'https://raw.githubusercontent.com/cncf/artwork/main/projects/argo/icon/color/argo-icon-color.svg';
