@@ -55,8 +55,10 @@ const SITE_CHROME_EXTENSIONS = new Set([...ALLOWED_ASSET_EXTENSIONS, '.ico']);
 // static/fonts is deliberately outside the gate (it holds no SVG, and its
 // extensions are legitimately outside the image allow-list) via the
 // exemptTopLevelDirs exemption below. Files sitting directly in the static/
-// root (robots.txt, manifest.json, .nojekyll) are outside both mechanisms:
-// checkForUngatedStaticDirs only inspects directories.
+// root have no enclosing directory for this list to gate, so
+// checkForUngatedStaticEntries gates each one individually: the known non-asset
+// files (robots.txt, manifest.json, .nojekyll) are named in exemptTopLevelFiles
+// and every other one is held to the site-chrome extension allow-list.
 const assetDirs = [
   { dir: join(root, 'static/img/architectures'), quality: true },
   { dir: join(root, 'static/img/cncf-projects'), quality: false },
@@ -98,35 +100,55 @@ const exemptTopLevelDirs = new Map([
   ['fonts', 'holds only font files (.woff/.woff2); never SVG or markup'],
 ]);
 
+// Top-level static/ *files*, which have no enclosing directory for assetDirs to
+// gate. static/foo.html is served from the site origin exactly like a file in a
+// gated subdirectory, so it is held to the same extension allow-list; anything
+// that is not an asset at all is named here with the reason a reviewer needs to
+// approve a new exemption.
+const exemptTopLevelFiles = new Map([
+  ['.nojekyll', 'empty marker read by GitHub Pages; carries no content'],
+  ['manifest.json', 'web app manifest; JSON data, never parsed as markup'],
+  ['robots.txt', 'crawler directives; plain text, never parsed as markup'],
+]);
+
 const issues = [];
 const fixed = [];
 
-// Fails loudly on a static/ subdirectory that is neither gated by assetDirs
-// nor explicitly exempted above, so a newly published directory cannot reach
-// the site origin unchecked. Mirrors assetRootKind(): a missing static/ is
-// not an error (nothing is published), but a symlink standing in for a
-// top-level directory is, for the same reason symlinked asset roots are.
-function checkForUngatedStaticDirs() {
+// Fails loudly on a static/ entry that is neither gated by assetDirs nor
+// explicitly exempted above, so nothing newly published can reach the site
+// origin unchecked. Mirrors assetRootKind(): a missing static/ is not an error
+// (nothing is published), but a symlink standing in for a top-level entry is,
+// for the same reason symlinked asset roots are.
+function checkForUngatedStaticEntries() {
   const staticDir = join(root, 'static');
   const stats = lstatSync(staticDir, { throwIfNoEntry: false });
   if (!stats || !stats.isDirectory()) return;
 
   for (const entry of readdirSync(staticDir, { withFileTypes: true })) {
-    if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
     const path = join(staticDir, entry.name);
     if (entry.isSymbolicLink()) {
       record(path, 'error', 'is a symbolic link; symlinks are not allowed');
       continue;
     }
-    if (gatedTopLevelDirs.has(entry.name)) continue;
-    if (exemptTopLevelDirs.has(entry.name)) continue;
-    record(
-      path,
-      'error',
-      'is a static/ subdirectory not covered by the asset security gate; ' +
-        'add it to assetDirs or exemptTopLevelDirs in ' +
-        'scripts/validate-architecture-assets.mjs',
-    );
+    if (entry.isDirectory()) {
+      if (gatedTopLevelDirs.has(entry.name)) continue;
+      if (exemptTopLevelDirs.has(entry.name)) continue;
+      record(
+        path,
+        'error',
+        'is a static/ subdirectory not covered by the asset security gate; ' +
+          'add it to assetDirs or exemptTopLevelDirs in ' +
+          'scripts/validate-architecture-assets.mjs',
+      );
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    if (exemptTopLevelFiles.has(entry.name)) continue;
+    // Site chrome is what a top-level file can legitimately be; the extension
+    // allow-list inside validateAsset rejects anything the browser would run
+    // as markup or script, and an SVG is additionally scanned for active
+    // content.
+    validateAsset(path, false, SITE_CHROME_EXTENSIONS);
   }
 }
 
@@ -286,7 +308,7 @@ function validateAsset(path, quality, extensions) {
   }
 }
 
-checkForUngatedStaticDirs();
+checkForUngatedStaticEntries();
 
 const assets = assetDirs.flatMap(
   ({ dir, quality, recurse = true, extensions = ALLOWED_ASSET_EXTENSIONS }) => {
