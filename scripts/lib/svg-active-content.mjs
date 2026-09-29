@@ -75,6 +75,10 @@ const ATTRIBUTE_PATTERN =
  * Elements whose `href`/`xlink:href` makes the browser fetch and render a
  * separate resource from the host in the value.
  *
+ * `link` is here for the same reason the HTML-only elements below are: it is
+ * reachable inside `<foreignObject>`, where `<link rel="stylesheet" href>`
+ * fetches a third-party stylesheet on load.
+ *
  * `a` is deliberately absent. A hyperlink is navigation the visitor chooses,
  * not a load the page performs, and draw.io exports legitimately carry one
  * (every imported diagram exported with text problems links to
@@ -86,6 +90,7 @@ const RESOURCE_ELEMENTS = new Set([
   'feimage',
   'script',
   'filter',
+  'link',
 ]);
 
 /**
@@ -103,6 +108,17 @@ const STYLE_BLOCK_PATTERN = new RegExp(
 
 /** A CSS `url(...)` target, quoted or bare. Covers `@font-face` `src` too. */
 const CSS_URL_PATTERN = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s"']*))\s*\)/gi;
+
+/**
+ * An `@import` whose target is a bare string rather than a `url(...)`.
+ *
+ * `@import "https://evil.example/x.css";` is valid CSS and fetches the
+ * stylesheet exactly as the `url()` form does, but carries no `url(` token for
+ * CSS_URL_PATTERN to find. The `url()` form stays CSS_URL_PATTERN's business;
+ * a target matched by both is reported once, because findRemoteReferences
+ * collects descriptions in a Set.
+ */
+const CSS_IMPORT_PATTERN = /@import\s+(?:"([^"]*)"|'([^']*)')/gi;
 
 /**
  * Report whether a value points at a resource on another host.
@@ -152,7 +168,10 @@ export function findRemoteReferences(source) {
       const name = localName(match[1].toLowerCase());
       const value = match[2] ?? match[3] ?? match[4] ?? '';
 
-      if (name === 'href' && RESOURCE_ELEMENTS.has(element)) {
+      if (
+        (name === 'href' && RESOURCE_ELEMENTS.has(element)) ||
+        name === 'src'
+      ) {
         const target = remoteTarget(value);
         if (target) {
           findings.add(
@@ -184,16 +203,19 @@ export function findRemoteReferences(source) {
 }
 
 /**
- * Collect the remote `url(...)` targets in a fragment of CSS.
+ * Collect the remote targets in a fragment of CSS, from both `url(...)` and
+ * the bare-string `@import` form.
  * @param {string} css
  * @returns {string[]}
  */
 function cssTargets(css) {
   const targets = [];
-  for (const match of String(css).matchAll(CSS_URL_PATTERN)) {
-    const value = match[1] ?? match[2] ?? match[3] ?? '';
-    const target = remoteTarget(value);
-    if (target) targets.push(target);
+  for (const pattern of [CSS_URL_PATTERN, CSS_IMPORT_PATTERN]) {
+    for (const match of String(css).matchAll(pattern)) {
+      const value = match[1] ?? match[2] ?? match[3] ?? '';
+      const target = remoteTarget(value);
+      if (target) targets.push(target);
+    }
   }
   return targets;
 }
