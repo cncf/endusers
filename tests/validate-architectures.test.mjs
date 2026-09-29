@@ -269,6 +269,23 @@ test('exempts the hand-authored index page from the imported-content gate', () =
   assert.match(result.stdout, /Validated 1 architecture records/);
 });
 
+// A record whose id is `index` overwrites the hand-authored page above, and
+// the exemption then publishes that imported body without scanning it. Both
+// importers derive the id from text they do not control (a submission issue's
+// "Organization or Team Name" answer, an upstream directory name), so the
+// record has to be rejected for the exemption to stay safe.
+test('rejects a catalog record that claims a repo-authored page id', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([{ ...validRecord, id: 'index', assets: [] }], {
+      'docs/architectures/index.md':
+        '# Index\n\n<iframe src="https://evil.example/beacon"></iframe>\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\[error\] index: id is reserved/);
+});
+
 // A nested page is published at its own route and can never match a catalog
 // id, so it is reported rather than silently walked past.
 test('rejects a nested page under docs/architectures', () => {
