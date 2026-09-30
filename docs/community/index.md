@@ -28,7 +28,9 @@ can have candid peer discussions while still building in the open.
   [joining the CNCF End User Community](https://www.cncf.io/enduser/).
 - **Find a peer group:** Browse the [User Groups](/community/user-groups) and
   [Technical Community Groups](/community/technical-community-groups).
-- **Share an architecture:** Follow the
+- **Share an architecture:** Submit using the
+  [in-repo submission template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml)
+  or follow the
   [Reference Architecture Submission Process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
 - **Explore adoption data:** Visit the
   [CNCF Technology Radar](https://radar.cncf.io/) and the
@@ -68,9 +70,11 @@ The TAB-led
 describes how to submit a real-world architecture for peer and TAB review.
 Browse the [architecture catalog](/architectures/).
 
-Submissions can begin with a
-[GitHub issue using the reference architecture template](https://github.com/cncf/tab/issues/new?template=reference-architecture.yml),
-or with the
+Submissions can begin with the
+[in-repo reference architecture template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml),
+or through the
+[CNCF TAB issue template](https://github.com/cncf/tab/issues/new?template=reference-architecture.yml)
+and
 [pull request template](https://github.com/cncf/tab/blob/main/operations/templates/template-reference-architecture.md)
 when the material is ready.
 
@@ -90,7 +94,9 @@ Start small and move up as your time and interest allow.
    experience.
 4. **Contribute a reference architecture** — Document a real-world design
    through the
-   [reference architecture submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
+   [in-repo submission template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml)
+   or the
+   [TAB submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
 5. **Help shape direction** — Join a User Group, a Technical Community Group, or
    the TAB to advise on priorities and represent end user needs.
 

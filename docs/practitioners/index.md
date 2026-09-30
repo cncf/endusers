@@ -147,7 +147,7 @@ adds value and helps the next adopter.
     <span className="ladder-number">4</span>
     <div>
       <h3>Contribute a reference architecture</h3>
-      <p>Document a real-world design through the <a href="https://github.com/cncf/tab/blob/main/process/reference-architectures.md">reference architecture submission process</a>.</p>
+      <p>Document a real-world design through the <a href="https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml">reference architecture submission issue</a> or the <a href="https://github.com/cncf/tab/blob/main/process/reference-architectures.md">TAB submission process</a>.</p>
     </div>
   </div>
   <div className="ladder-step">
@@ -166,4 +166,6 @@ adds value and helps the next adopter.
 - Bring your organization into the
   [CNCF End User Community](https://www.cncf.io/enduser/)
 - Share your architecture through the
-  [reference architecture submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md)
+  [in-repo submission template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml)
+  or the
+  [TAB submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md)
