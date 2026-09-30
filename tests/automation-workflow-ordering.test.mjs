@@ -316,9 +316,9 @@ test('the generator and validator detection is not vacuous', () => {
     validatorFor('fetch:community-people'),
     'validate:community-people',
   );
-  // `generate:members` has no `validate:members`; the derivation must report
-  // that rather than inventing a gate and failing every workflow that runs it.
-  assert.equal(validatorFor('generate:members'), undefined);
+  // `generate:members` regenerates data/members.json, and `validate:members`
+  // is the gate that gets run after it.
+  assert.equal(validatorFor('generate:members'), 'validate:members');
 });
 
 test('the workflows this contract applies to are actually detected', () => {
