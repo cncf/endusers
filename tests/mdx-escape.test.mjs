@@ -205,3 +205,58 @@ test('unescapeMdx decodes every entry in the ESCAPES table', () => {
     );
   }
 });
+
+// A fence opener that CommonMark rejects, or that only a particular block
+// context makes real, used to be decided by a line scan in this module. Every
+// place that scan disagreed with the compiler was a hole: text handed back
+// unescaped as "code" still reached the MDX compiler as live prose. These
+// pin the disagreements that were exploitable.
+
+test('escapes prose after a backtick fence whose info string holds a backtick', () => {
+  // CommonMark forbids a backtick in the info string of a backtick fence, so
+  // this opens no code block and everything after it stays live prose.
+  const escaped = escapeMdx('```info`string\n<div onClick={alert(1)}>x</div>');
+  assert.match(escaped, /&lt;div onClick=&#123;alert\(1\)&#125;>x&lt;\/div>/);
+  assert.doesNotMatch(escaped, /<div/);
+});
+
+test('escapes prose after a tab-indented fence inside a list item', () => {
+  const escaped = escapeMdx('- ~\n\t````\n<b onClick={alert(1)}>x</b>');
+  assert.doesNotMatch(escaped, /<b onClick=\{/);
+});
+
+test('escapes prose following an indented fence that a later fence closes', () => {
+  const escaped = escapeMdx('    ````\n````\n<b onClick={alert(1)}>x</b>');
+  assert.doesNotMatch(escaped, /<b onClick=\{/);
+});
+
+test('falls back to escaping everything when code detection would leave live MDX', () => {
+  // The fallback escapes the whole text, code spans included, rather than
+  // trusting a code range that still lets an expression through.
+  const escaped = escapeMdx('```x`y\n{alert(1)}');
+  assert.equal(escaped, '```x`y\n&#123;alert(1)&#125;');
+});
+
+test('leaves a fenced block with a normal info string verbatim', () => {
+  const source = 'a\n\n```js title="x"\nconst a = { b: 1 };\n```\n\nb';
+  assert.equal(escapeMdx(source), source);
+});
+
+test('escapes an indented block, which MDX does not treat as code', () => {
+  // MDX turns CommonMark's indented code blocks off, so an indented line is
+  // prose and its braces are a live expression.
+  assert.equal(
+    escapeMdx('intro\n\n    const a = { b: 1 };\n\noutro'),
+    'intro\n\n    const a = &#123; b: 1 &#125;;\n\noutro',
+  );
+});
+
+test('escapes text MDX cannot parse, falling back to CommonMark code ranges', () => {
+  // An unclosed expression makes MDX's own grammar throw, so code ranges come
+  // from CommonMark instead and the result is still fully escaped.
+  assert.equal(escapeMdx('a { b'), 'a &#123; b');
+});
+
+test('keeps a code span verbatim in text MDX cannot parse', () => {
+  assert.equal(escapeMdx('`{a}` and { b'), '`{a}` and &#123; b');
+});

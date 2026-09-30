@@ -9,16 +9,24 @@
  * top-level ESM statement. All three run during the production build and in
  * the visitor's browser.
  *
- * MDX does not evaluate anything inside a fenced code block or an inline code
- * span, so those are passed through untouched: an architecture description
- * that shows a YAML or JSON snippet must keep its braces verbatim.
+ * MDX does not evaluate anything inside a code block or an inline code span,
+ * so those are passed through untouched: an architecture description that
+ * shows a YAML or JSON snippet must keep its braces verbatim.
+ *
+ * Which spans of the text are code is decided by parsing it with MDX's own
+ * grammar, not by scanning lines here. A hand-rolled scanner has to
+ * re-derive fence rules, tab stops and lazy continuation, and every place it
+ * disagrees with the real parser is a hole: text this module hands back
+ * unescaped as "code" is still compiled as live MDX whenever the compiler
+ * disagreed that a code block was open.
  *
  * Everything escaped here is replaced by a character reference that renders
  * as the original character, so escaped prose displays exactly as written.
  */
 
-/** A fence opener/closer: up to three spaces, then three or more ` or ~. */
-const FENCE = /^[ \t]{0,3}(`{3,}|~{3,})/;
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { mdxjs } from 'micromark-extension-mdxjs';
+import { mdxFromMarkdown } from 'mdast-util-mdx';
 
 /**
  * An autolink — `<https://example.com>` or `<user@example.com>`. These are
@@ -36,98 +44,87 @@ const ESCAPES = new Map([
   ['&#101;', 'e'],
 ]);
 
-/**
- * Splits text into fenced-code and non-code segments.
- *
- * An unterminated fence runs to the end of the text, which is both what
- * CommonMark does and the safe reading: the remainder is code, so it is
- * inert and left alone.
- */
-function splitFences(text) {
-  const segments = [];
-  let buffer = [];
-  let fence = null;
-  const flush = (code) => {
-    if (buffer.length) segments.push({ code, text: buffer.join('\n') });
-    buffer = [];
-  };
-  for (const line of text.split('\n')) {
-    if (fence) {
-      buffer.push(line);
-      const closer = line.match(/^[ \t]{0,3}(`{3,}|~{3,})[ \t]*$/);
-      if (
-        closer &&
-        closer[1][0] === fence[0] &&
-        closer[1].length >= fence.length
-      ) {
-        flush(true);
-        fence = null;
-      }
-      continue;
-    }
-    const opener = line.match(FENCE);
-    if (opener) {
-      flush(false);
-      fence = opener[1];
-      buffer.push(line);
-      continue;
-    }
-    buffer.push(line);
-  }
-  flush(fence !== null);
-  return segments;
+/** The node types MDX compiles to live JavaScript rather than to text. */
+const MDX_ACTIVE_TYPES = new Set([
+  'mdxjsEsm',
+  'mdxFlowExpression',
+  'mdxTextExpression',
+  'mdxJsxFlowElement',
+  'mdxJsxTextElement',
+]);
+
+/** Parses with the extensions MDX itself enables, so the tree is MDX's view. */
+function parseMdx(text) {
+  return fromMarkdown(text, {
+    extensions: [mdxjs()],
+    mdastExtensions: [mdxFromMarkdown()],
+  });
+}
+
+function eachNode(node, visitor) {
+  visitor(node);
+  for (const child of node.children ?? []) eachNode(child, visitor);
 }
 
 /**
- * Splits a non-fenced segment into inline code spans and plain text. A
- * backtick run with no matching closer of the same length is not a code span
- * and stays plain.
+ * Offset ranges of every code node in `text`, merged and in document order.
+ *
+ * Covers fenced code blocks, indented code blocks and inline code spans —
+ * exactly the constructs MDX leaves uninterpreted. The ranges come from a
+ * parser rather than from a line scan, so an unterminated fence, a
+ * tab-indented fence, a fence whose info string disqualifies it and a fence
+ * nested in a list item are classified the way a parser classifies them
+ * rather than the way a re-derived fence rule guesses.
+ *
+ * MDX's own grammar is tried first because it is the grammar that decides
+ * what the site compiles; it rejects malformed JSX outright, so plain
+ * CommonMark is the fallback. Either way the result is only a proposal —
+ * escapeMdx() verifies it before trusting it.
  */
-function splitCodeSpans(text) {
-  const parts = [];
-  let plain = '';
-  let index = 0;
-  const flushPlain = () => {
-    if (plain) parts.push({ code: false, text: plain });
-    plain = '';
-  };
-  const runLength = (at) => {
-    let length = 0;
-    while (text[at + length] === '`') length += 1;
-    return length;
-  };
-  while (index < text.length) {
-    if (text[index] !== '`') {
-      plain += text[index];
-      index += 1;
-      continue;
-    }
-    const opener = runLength(index);
-    let cursor = index + opener;
-    let close = -1;
-    while (cursor < text.length) {
-      if (text[cursor] !== '`') {
-        cursor += 1;
-        continue;
-      }
-      const run = runLength(cursor);
-      if (run === opener) {
-        close = cursor;
-        break;
-      }
-      cursor += run;
-    }
-    if (close === -1) {
-      plain += text.slice(index, index + opener);
-      index += opener;
-      continue;
-    }
-    flushPlain();
-    parts.push({ code: true, text: text.slice(index, close + opener) });
-    index = close + opener;
+function codeRanges(text) {
+  let tree;
+  try {
+    tree = parseMdx(text);
+  } catch {
+    tree = fromMarkdown(text);
   }
-  flushPlain();
-  return parts;
+  const ranges = [];
+  eachNode(tree, (node) => {
+    if (
+      (node.type === 'code' || node.type === 'inlineCode') &&
+      node.position?.start?.offset !== undefined
+    ) {
+      ranges.push([node.position.start.offset, node.position.end.offset]);
+    }
+  });
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  for (const range of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1]);
+    else merged.push([...range]);
+  }
+  return merged;
+}
+
+/**
+ * Whether `text` still carries anything MDX would execute.
+ *
+ * Text that cannot be parsed as MDX counts as live: the grammar rejected it,
+ * so nothing here can claim to know what it compiles to.
+ */
+function hasActiveMdx(text) {
+  let tree;
+  try {
+    tree = parseMdx(text);
+  } catch {
+    return true;
+  }
+  let active = false;
+  eachNode(tree, (node) => {
+    if (MDX_ACTIVE_TYPES.has(node.type)) active = true;
+  });
+  return active;
 }
 
 /**
@@ -151,23 +148,32 @@ function escapePlain(text) {
 }
 
 /**
- * Escapes MDX-active syntax in third-party prose, leaving fenced code blocks
- * and inline code spans verbatim.
+ * Escapes MDX-active syntax in third-party prose, leaving code blocks and
+ * inline code spans verbatim.
+ *
+ * Preserving code verbatim depends on correctly telling code from prose, and
+ * a wrong answer in the direction of "this is code" hands live JSX straight
+ * through. So the result is verified rather than assumed: if anything MDX
+ * would execute survives, the text is re-escaped in full. Escaping
+ * everything removes every `<` and `{`, so no JSX element, expression or ESM
+ * statement can form, at the cost of showing character references inside a
+ * code block — the safe trade for input that reached that branch at all.
  *
  * @param {string} text Untrusted Markdown prose.
  * @returns {string} Prose that the MDX compiler renders as text.
  */
 export function escapeMdx(text) {
   if (typeof text !== 'string' || !text) return '';
-  return splitFences(text)
-    .map((segment) =>
-      segment.code
-        ? segment.text
-        : splitCodeSpans(segment.text)
-            .map((part) => (part.code ? part.text : escapePlain(part.text)))
-            .join(''),
-    )
-    .join('\n');
+  const out = [];
+  let cursor = 0;
+  for (const [start, end] of codeRanges(text)) {
+    if (start > cursor) out.push(escapePlain(text.slice(cursor, start)));
+    out.push(text.slice(start, end));
+    cursor = end;
+  }
+  out.push(escapePlain(text.slice(cursor)));
+  const escaped = out.join('');
+  return hasActiveMdx(escaped) ? escapePlain(text) : escaped;
 }
 
 /**
