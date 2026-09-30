@@ -280,7 +280,6 @@ function renderProjectsSection(projects) {
  * joined text would destroy the cards.
  */
 function renderSection(heading, value) {
-  if (!value) return '';
   return `## ${heading}\n\n${escapeMdx(value)}`;
 }
 
