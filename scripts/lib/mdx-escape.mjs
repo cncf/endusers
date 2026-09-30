@@ -181,8 +181,7 @@ export function escapeMdx(text) {
  */
 export function unescapeMdx(text) {
   if (typeof text !== 'string' || !text) return '';
-  return text.replace(
-    /&#123;|&#125;|&lt;|&#105;|&#101;/g,
-    (entity) => ESCAPES.get(entity) ?? entity,
+  return text.replace(/&#123;|&#125;|&lt;|&#105;|&#101;/g, (entity) =>
+    ESCAPES.get(entity),
   );
 }
