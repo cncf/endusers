@@ -1,0 +1,105 @@
+// Guards the thresholds passed to tests/tools/coverage-report.mjs by the
+// `test:unit:coverage:check` script, which is the gate ci.yml runs.
+//
+// tests/coverage-report.test.mjs proves the reporter honours whatever
+// `--check`, `--check-source`, `--check-regions` and `--check-source-regions`
+// it is handed; nothing proves the repository actually hands it a threshold
+// worth clearing. A gate set below the coverage the suite already achieves
+// spends CI time without protecting anything: coverage can fall by the whole
+// slack before a single run turns red, and the edit that lowers it is a
+// one-token change to a string in package.json that no test reads.
+//
+// The floors below are therefore minimums, not targets. Raising a threshold in
+// package.json keeps this test green; lowering one past its floor fails it and
+// forces the loosening to be argued for rather than slipped in. When coverage
+// climbs and the package.json thresholds are ratcheted up with it, raise these
+// floors in the same change.
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import test from 'node:test';
+
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+const manifest = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+);
+
+const GATE_SCRIPT = 'test:unit:coverage:check';
+
+// Measured on the suite this commit ships, floored to a whole percent so a
+// rounding difference between runs cannot fail the build:
+//   all files   99.26% lines / 94.45% regions
+//   src files  100.00% lines / 99.72% regions  (6645/6645 lines)
+const FLOORS = {
+  '--check': 99,
+  '--check-source': 100,
+  '--check-regions': 94,
+  '--check-source-regions': 99,
+};
+
+function parseGate(command) {
+  const tokens = command.split(/\s+/);
+  const flags = new Map();
+  for (let i = 0; i < tokens.length; i += 1) {
+    if (tokens[i].startsWith('--check')) flags.set(tokens[i], tokens[i + 1]);
+  }
+  return flags;
+}
+
+const gateCommand = manifest.scripts?.[GATE_SCRIPT];
+
+test(`package.json defines the ${GATE_SCRIPT} gate`, () => {
+  assert.equal(
+    typeof gateCommand,
+    'string',
+    `package.json must keep a ${GATE_SCRIPT} script; ci.yml runs it as the coverage gate`,
+  );
+  assert.match(gateCommand, /tests\/tools\/coverage-report\.mjs/);
+});
+
+test('the gate is the command ci.yml runs for coverage', () => {
+  const workflow = readFileSync(`${repoRoot}.github/workflows/ci.yml`, 'utf8');
+  assert.match(
+    workflow,
+    new RegExp(`npm run ${GATE_SCRIPT}\\b`),
+    `ci.yml must run "npm run ${GATE_SCRIPT}"; a gate no workflow invokes protects nothing`,
+  );
+});
+
+for (const [flag, floor] of Object.entries(FLOORS)) {
+  test(`${GATE_SCRIPT} passes ${flag} at or above ${floor}`, () => {
+    const flags = parseGate(gateCommand);
+    assert.ok(
+      flags.has(flag),
+      `${GATE_SCRIPT} must pass ${flag}; without it that dimension of coverage has no gate`,
+    );
+    const value = Number(flags.get(flag));
+    assert.ok(
+      Number.isFinite(value),
+      `${flag} must be given a numeric percentage, got ${flags.get(flag)}`,
+    );
+    assert.ok(
+      value >= floor,
+      `${flag} is ${value}, below the ${floor} the suite already achieves; ` +
+        'lowering the gate lets coverage regress silently',
+    );
+  });
+}
+
+test('every threshold the reporter supports is actually gated', () => {
+  const reporter = readFileSync(
+    `${repoRoot}tests/tools/coverage-report.mjs`,
+    'utf8',
+  );
+  const supported = new Set(
+    [...reporter.matchAll(/'(--check[a-z-]*)':/g)].map((match) => match[1]),
+  );
+  const gated = new Set(parseGate(gateCommand).keys());
+  for (const flag of supported) {
+    assert.ok(
+      gated.has(flag),
+      `the reporter supports ${flag} but ${GATE_SCRIPT} never passes it, ` +
+        'so that dimension of coverage is measured and then discarded',
+    );
+  }
+});
