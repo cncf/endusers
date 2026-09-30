@@ -35,8 +35,13 @@ const repoRoot = resolveRepoRoot(import.meta.url);
 // run and returned in `files`; a path the script deleted or never wrote is
 // reported as `null`. This is how write-mode behaviour is asserted, since the
 // sandbox is removed before this function returns.
+// options.symlinks — repo-relative link paths mapped to their link targets,
+// created after the fixture files so a link may point at one of them.
+// options.setup — called with the sandbox root once fixtures and symlinks are
+// in place, for filesystem entries `fixtures` cannot express (a FIFO, a
+// socket, a mode change). Runs before the script is spawned.
 export function runScriptWithFixtures(scriptName, fixtures = {}, options = {}) {
-  const { args = [], readBack = [], symlinks = {} } = options;
+  const { args = [], readBack = [], symlinks = {}, setup = null } = options;
   const work = mkdtempSync(join(tmpdir(), 'endusers-test-'));
   try {
     mkdirSync(join(work, 'scripts'), { recursive: true });
@@ -59,6 +64,7 @@ export function runScriptWithFixtures(scriptName, fixtures = {}, options = {}) {
       mkdirSync(dirname(link), { recursive: true });
       symlinkSync(linkTarget, link);
     }
+    if (setup) setup(work);
     const result = spawnSync(
       'node',
       [join(work, 'scripts', scriptName), ...args],
