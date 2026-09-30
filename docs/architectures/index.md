@@ -55,10 +55,10 @@ User Contributor program free of charge.
   </div>
 </div>
 
-Ready to share yours? Follow the
-[reference architecture submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md)
-or start with the
-[submission issue template](https://github.com/cncf/tab/issues/new?template=reference-architecture.yml).
+Ready to share yours? Submit directly using the
+[in-repo submission issue template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml),
+or follow the CNCF TAB
+[reference architecture submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
 
 ## The catalog
 
