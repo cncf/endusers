@@ -1,0 +1,190 @@
+// Automated WCAG scanning of the built site.
+//
+// The repository already asserts accessibility *details* by hand — footer
+// landmarks in tests/footer.test.mjs, aria-label wiring in
+// tests/architecture-filters-ui.test.mjs and tests/metrics-dashboard.test.mjs,
+// role-based locators throughout tests/e2e/ — and it gates one rendered
+// property, text/background contrast on buttons, through
+// `npm run validate:button-contrast`. Every one of those is a specific
+// assertion someone wrote after noticing a specific problem.
+//
+// What none of them provide is a rule engine. No test in the suite runs a
+// conformance checker over a rendered page, so an entire class of regression
+// is invisible: a heading level skipped by an MDX edit, a colour token change
+// that drops contrast on body text or links (validate:button-contrast reads
+// CSS and only covers buttons), a duplicate landmark, an <html> that loses its
+// lang, a form control that loses its label, a list element that gains a
+// non-<li> child. All of those ship green today.
+//
+// This spec runs axe-core against the built pages for the WCAG 2.1 A and AA
+// rule sets. Routes are chosen to cover one instance of each distinct page
+// template rather than every URL: the scan is the expensive part, and two
+// architecture detail pages exercise identical markup.
+//
+// Pre-existing violations are recorded in KNOWN_VIOLATIONS below rather than
+// suppressed globally, and the baseline retires itself: if a recorded entry
+// stops being reported, this file fails and asks for the entry to be deleted.
+// That is the same shape as the persist-credentials and timeout-minutes
+// baselines in tests/ci-supply-chain.test.mjs, and it is what stops a
+// temporary allowance from quietly becoming permanent.
+import AxeBuilder from '@axe-core/playwright';
+import { test, expect } from '@playwright/test';
+
+// One route per page template.
+const ROUTES = [
+  { path: '/', label: 'practitioners home' },
+  { path: '/community', label: 'community landing' },
+  { path: '/community/members', label: 'member directory' },
+  { path: '/community/technical-advisory-board', label: 'TAB roster' },
+  { path: '/architectures', label: 'architecture catalog' },
+  { path: '/awards', label: 'awards timeline' },
+  { path: '/metrics', label: 'metrics dashboard' },
+  { path: '/events', label: 'events' },
+  { path: '/resources', label: 'resources landing' },
+  { path: '/resources/case-studies', label: 'case studies' },
+  { path: '/resources/radar-reports', label: 'radar reports' },
+  { path: '/blog', label: 'blog index' },
+];
+
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+
+// Rules that cannot be evaluated meaningfully here, each with the reason it is
+// off. Keep this list empty unless a rule is genuinely inapplicable — a rule
+// that merely fails belongs in KNOWN_VIOLATIONS, which retires itself.
+const DISABLED_RULES = Object.create(null);
+
+// Violations that exist on the site today, keyed by route path. Each entry is
+// an axe rule id. Deleting a fixed entry is required, not optional: the
+// "records no violation that has been fixed" test below fails while a stale
+// entry remains, so the baseline cannot outlive the bug it describes.
+//
+// Both recorded rules are `serious` and both are CSS-level, so neither is
+// fixed by a test change:
+//
+//   * color-contrast — the muted grey used for freshness/sync notes
+//     (`.freshnessNote`, `.syncStatus`, `.noTrend`), figure captions and
+//     inline <code> inside links falls below the 4.5:1 WCAG AA ratio for body
+//     text. `npm run validate:button-contrast` does not see any of it: that
+//     gate reads CSS and only covers buttons. The heaviest instance is the
+//     case-studies table, where every external title link is affected.
+//   * link-in-text-block — links inside running prose are distinguished from
+//     the surrounding text by colour alone, with no underline and less than
+//     the 3:1 ratio against that text, so they are invisible to a reader who
+//     cannot discriminate the two hues.
+//
+// /awards and /blog are deliberately absent: they scan clean, so any
+// violation introduced there fails immediately.
+const KNOWN_VIOLATIONS = {
+  '/': ['color-contrast', 'link-in-text-block'],
+  '/community': ['color-contrast', 'link-in-text-block'],
+  '/community/members': ['color-contrast', 'link-in-text-block'],
+  '/community/technical-advisory-board': ['color-contrast'],
+  '/architectures': ['color-contrast', 'link-in-text-block'],
+  '/metrics': ['color-contrast'],
+  '/events': ['color-contrast', 'link-in-text-block'],
+  '/resources': ['color-contrast'],
+  '/resources/case-studies': ['color-contrast', 'link-in-text-block'],
+  '/resources/radar-reports': ['color-contrast', 'link-in-text-block'],
+};
+
+function scanner(page) {
+  const builder = new AxeBuilder({ page }).withTags(WCAG_TAGS);
+  const disabled = Object.keys(DISABLED_RULES);
+  return disabled.length > 0 ? builder.disableRules(disabled) : builder;
+}
+
+// axe reports one violation object per rule, each carrying the nodes it
+// matched; this flattens that into "rule id + where" so a failure message
+// names the element instead of just the rule.
+function describe(violation) {
+  const where = violation.nodes
+    .slice(0, 5)
+    .map((node) => node.target.join(' '))
+    .join(', ');
+  return `${violation.id} (${violation.impact ?? 'unknown impact'}) at ${where}`;
+}
+
+async function scan(page, path) {
+  const response = await page.goto(path);
+  expect(response?.status(), `${path} should not 404`).toBeLessThan(400);
+  await expect(
+    page.getByRole('heading', { name: 'Page Not Found' }),
+  ).toHaveCount(0);
+
+  // Docusaurus hydrates client-side; scanning the server-rendered shell would
+  // miss every interactive component on the page.
+  await page.locator('main').first().waitFor();
+
+  return scanner(page).analyze();
+}
+
+for (const route of ROUTES) {
+  test(`${route.label} (${route.path}) has no unrecorded WCAG A/AA violations`, async ({
+    page,
+  }) => {
+    const results = await scan(page, route.path);
+    const allowed = new Set(KNOWN_VIOLATIONS[route.path] ?? []);
+    const unrecorded = results.violations.filter((v) => !allowed.has(v.id));
+
+    expect(
+      unrecorded.map(describe),
+      `${route.path} reported WCAG violations that are not in KNOWN_VIOLATIONS`,
+    ).toEqual([]);
+  });
+}
+
+test('the baseline records no violation that has been fixed', async ({
+  page,
+}) => {
+  // One navigation and one full-page scan per recorded route, run serially in
+  // a single test; the per-test default is not enough for that.
+  test.setTimeout(240_000);
+
+  const stale = [];
+
+  for (const [path, ruleIds] of Object.entries(KNOWN_VIOLATIONS)) {
+    const results = await scan(page, path);
+    const reported = new Set(results.violations.map((v) => v.id));
+    for (const ruleId of ruleIds) {
+      if (!reported.has(ruleId)) stale.push(`${path}: ${ruleId}`);
+    }
+  }
+
+  expect(
+    stale,
+    'these rules no longer fail — delete them from KNOWN_VIOLATIONS',
+  ).toEqual([]);
+});
+
+test('every baselined route is a route this spec scans', () => {
+  // A KNOWN_VIOLATIONS key that matches no entry in ROUTES would silence
+  // nothing and go unnoticed, because the retirement test above would keep
+  // scanning it and keep passing.
+  const scanned = new Set(ROUTES.map((route) => route.path));
+  const unknown = Object.keys(KNOWN_VIOLATIONS).filter(
+    (path) => !scanned.has(path),
+  );
+
+  expect(unknown, 'KNOWN_VIOLATIONS names routes ROUTES does not scan').toEqual(
+    [],
+  );
+});
+
+test('the scan is not vacuous', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('main').first().waitFor();
+
+  // A misconfigured tag list, a disabled-rule list that grew to cover
+  // everything, or an AxeBuilder that silently stopped injecting would all
+  // produce an empty violation list on every route and make this file assert
+  // nothing. Injecting a control violation proves the engine is live and the
+  // configured tags still select rules.
+  await page.evaluate(() => {
+    const img = document.createElement('img');
+    img.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw=');
+    document.body.appendChild(img);
+  });
+
+  const results = await scanner(page).analyze();
+  expect(results.violations.map((v) => v.id)).toContain('image-alt');
+});
