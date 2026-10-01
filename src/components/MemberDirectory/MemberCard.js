@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import { MemberProfile } from './MemberProfile';
-import { initials, formatCount } from './utils';
+import { initials, formatCount, membershipLabel } from './utils';
 import styles from './styles.module.css';
 
 export function MemberCard({ member }) {
@@ -27,6 +27,11 @@ export function MemberCard({ member }) {
         </div>
         <div className={styles.cardContent}>
           <h3 className={styles.orgName}>{member.name}</h3>
+          {member.membershipStatus && (
+            <p className={styles.roleLabel}>
+              {membershipLabel(member.membershipStatus)}
+            </p>
+          )}
           <p className={styles.cardMeta}>
             {member.architectures.length > 0 && (
               <span>
@@ -43,7 +48,9 @@ export function MemberCard({ member }) {
               </span>
             )}
             {member.architectures.length === 0 &&
-              member.awards.length === 0 && <span>Community member</span>}
+              member.awards.length === 0 && (
+                <span>{membershipLabel(member.membershipStatus)}</span>
+              )}
           </p>
           {member.industries.length > 0 && (
             <p className={styles.eyebrow}>

@@ -26,6 +26,9 @@ import { reportAndExit } from './lib/validate-utils.mjs';
 // whose visible prefix and real host disagree.
 
 const staticRoot = fileURLToPath(new URL('../static/', import.meta.url));
+const landscapePath = fileURLToPath(
+  new URL('../data/enduser-landscape.json', import.meta.url),
+);
 
 const REQUIRED_TEXT_FIELDS = ['id', 'name', 'slug'];
 const REQUIRED_ARRAY_FIELDS = [
@@ -36,6 +39,12 @@ const REQUIRED_ARRAY_FIELDS = [
   'sourceAttribution',
 ];
 const AWARD_URL_FIELDS = ['announcementUrl', 'caseStudyUrl', 'talkUrl'];
+const MEMBERSHIP_STATUSES = new Set([
+  'member',
+  'contributor',
+  'member-and-contributor',
+  'unknown',
+]);
 
 /**
  * Require an https URL that resolves to the host it appears to name.
@@ -150,6 +159,12 @@ const data = JSON.parse(
   readFileSync(new URL('../data/members.json', import.meta.url)),
 );
 const errors = [];
+const landscape = existsSync(landscapePath)
+  ? JSON.parse(readFileSync(landscapePath, 'utf8'))
+  : null;
+const landscapeBySourceId = new Map(
+  (landscape?.records || []).map((record) => [record.sourceId, record]),
+);
 
 const members = Array.isArray(data?.members) ? data.members : [];
 if (!members.length) {
@@ -211,6 +226,202 @@ for (const member of members) {
     ? member.sourceAttribution
     : []) {
     checkHttpsUrl(errors, path, 'sourceAttribution[]', url);
+  }
+
+  const hasMembershipFields =
+    'membershipStatus' in (member || {}) ||
+    'membershipSources' in (member || {});
+  if (
+    landscape &&
+    (!('membershipStatus' in (member || {})) ||
+      !('membershipSources' in (member || {})))
+  ) {
+    errors.push({
+      path,
+      severity: 'error',
+      message:
+        'landscape-backed output requires membershipStatus and membershipSources',
+    });
+  }
+  if (hasMembershipFields) {
+    const status = member?.membershipStatus;
+    if (!MEMBERSHIP_STATUSES.has(status)) {
+      errors.push({
+        path,
+        severity: 'error',
+        message: `membershipStatus must be one of ${[
+          ...MEMBERSHIP_STATUSES,
+        ].join(', ')}`,
+      });
+    }
+    if (!Array.isArray(member?.membershipSources)) {
+      errors.push({
+        path,
+        severity: 'error',
+        message: 'membershipSources must be an array',
+      });
+    }
+    const sources = Array.isArray(member?.membershipSources)
+      ? member.membershipSources
+      : [];
+    const roles = new Set();
+    for (const [index, source] of sources.entries()) {
+      const sourcePath = `${path}.membershipSources[${index}]`;
+      for (const field of [
+        'sourceId',
+        'role',
+        'sourceName',
+        'category',
+        'subcategory',
+        'sourceUrl',
+      ]) {
+        if (typeof source?.[field] !== 'string' || !source[field].trim()) {
+          errors.push({
+            path: sourcePath,
+            severity: 'error',
+            message: `${field} must be a non-empty string`,
+          });
+        }
+      }
+      if (!['member', 'contributor'].includes(source?.role)) {
+        errors.push({
+          path: sourcePath,
+          severity: 'error',
+          message: 'role must be member or contributor',
+        });
+      } else {
+        roles.add(source.role);
+      }
+      checkHttpsUrl(errors, sourcePath, 'sourceUrl', source?.sourceUrl);
+      if (source?.localLogo !== null && source?.localLogo !== undefined) {
+        checkLogo(errors, sourcePath, source.localLogo);
+      }
+      if (landscape) {
+        const sourceRecord = landscapeBySourceId.get(source?.sourceId);
+        if (!sourceRecord) {
+          errors.push({
+            path: sourcePath,
+            severity: 'error',
+            message: 'membership source is absent from enduser-landscape.json',
+          });
+        } else {
+          for (const field of [
+            ['role', 'sourceRole'],
+            ['sourceName', 'sourceName'],
+            ['category', 'category'],
+            ['subcategory', 'subcategory'],
+          ]) {
+            if (
+              field[1] in sourceRecord &&
+              source?.[field[0]] !== sourceRecord[field[1]]
+            ) {
+              errors.push({
+                path: sourcePath,
+                severity: 'error',
+                message: `${field[0]} does not match the pinned landscape record`,
+              });
+            }
+          }
+          for (const field of ['homepageUrl', 'joined', 'localLogo']) {
+            if (
+              field in sourceRecord &&
+              (source?.[field] ?? null) !== (sourceRecord[field] ?? null)
+            ) {
+              errors.push({
+                path: sourcePath,
+                severity: 'error',
+                message: `${field} does not match the pinned landscape record`,
+              });
+            }
+          }
+          if (source?.sourceUrl !== landscape.source?.sourceUrl) {
+            errors.push({
+              path: sourcePath,
+              severity: 'error',
+              message: 'sourceUrl does not match landscape provenance',
+            });
+          }
+        }
+      }
+    }
+    if (status === 'unknown' && sources.length > 0) {
+      errors.push({
+        path,
+        severity: 'error',
+        message: 'unknown membership must not carry membershipSources',
+      });
+    }
+    if (
+      status === 'member' &&
+      (!roles.has('member') || roles.has('contributor'))
+    ) {
+      errors.push({
+        path,
+        severity: 'error',
+        message: 'member status must carry only member sources',
+      });
+    }
+    if (
+      status === 'contributor' &&
+      (!roles.has('contributor') || roles.has('member'))
+    ) {
+      errors.push({
+        path,
+        severity: 'error',
+        message: 'contributor status must carry only contributor sources',
+      });
+    }
+    if (
+      status === 'member-and-contributor' &&
+      (!roles.has('member') || !roles.has('contributor'))
+    ) {
+      errors.push({
+        path,
+        severity: 'error',
+        message: 'member-and-contributor status must carry both source roles',
+      });
+    }
+  }
+}
+
+if (landscape) {
+  const expected = new Set(
+    (landscape.records || [])
+      .filter((record) => record.included)
+      .map((record) => record.sourceId),
+  );
+  const represented = [];
+  for (const member of members) {
+    for (const source of member.membershipSources || []) {
+      represented.push(source.sourceId);
+    }
+  }
+  const representedSet = new Set(represented);
+  if (represented.length !== representedSet.size) {
+    errors.push({
+      path: 'members.json',
+      severity: 'error',
+      message: 'membership source IDs must be unique',
+    });
+  }
+  const missing = [...expected].filter((id) => !representedSet.has(id));
+  const unexpected = [...representedSet].filter((id) => !expected.has(id));
+  if (missing.length || unexpected.length) {
+    errors.push({
+      path: 'members.json',
+      severity: 'error',
+      message: `membership source ID set mismatch (missing: ${missing.join(', ') || 'none'}; unexpected: ${unexpected.join(', ') || 'none'})`,
+    });
+  }
+  if (
+    data.sources?.landscape?.revision !== landscape.source?.revision ||
+    data.sources?.landscape?.sourceUrl !== landscape.source?.sourceUrl
+  ) {
+    errors.push({
+      path: 'members.json.sources.landscape',
+      severity: 'error',
+      message: 'landscape provenance must match enduser-landscape.json',
+    });
   }
 }
 

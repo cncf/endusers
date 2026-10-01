@@ -65,6 +65,7 @@ const assetDirs = [
   { dir: join(root, 'static/img/architectures'), quality: true },
   { dir: join(root, 'static/img/cncf-projects'), quality: false },
   { dir: join(root, 'static/img/awards'), quality: false },
+  { dir: join(root, 'static/img/end-user-members'), quality: false },
   {
     dir: join(root, 'static/img'),
     quality: false,

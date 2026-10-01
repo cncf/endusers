@@ -41,12 +41,12 @@ test.describe('member directory filtering', () => {
   }) => {
     await page.goto('/community/members');
     const section = page.getByRole('region', {
-      name: 'End User Community member directory',
+      name: 'End User Community organization directory',
     });
-    const search = section.getByLabel('Search members by name');
+    const search = section.getByLabel('Search organizations by name');
     await waitForHydration(search);
 
-    const results = section.getByText(/Showing \d+ of \d+ members/);
+    const results = section.getByText(/Showing \d+ of \d+ organizations/);
     const before = await results.textContent();
     const total = totalCount(before);
     expect(total).toBeGreaterThan(1);
@@ -76,29 +76,99 @@ test.describe('member directory filtering', () => {
   }) => {
     await page.goto('/community/members');
     const section = page.getByRole('region', {
-      name: 'End User Community member directory',
+      name: 'End User Community organization directory',
     });
-    const search = section.getByLabel('Search members by name');
+    const search = section.getByLabel('Search organizations by name');
     await waitForHydration(search);
 
     await search.fill('zzz-no-such-member-zzz');
 
     await expect(
-      section.getByRole('heading', { name: 'No members match' }),
+      section.getByRole('heading', { name: 'No organizations match' }),
     ).toBeVisible();
     await expect(section.locator('article')).toHaveCount(0);
 
     // The empty state carries its own escape hatch, distinct from the
     // toolbar's clear button.
     await section
-      .getByRole('heading', { name: 'No members match' })
+      .getByRole('heading', { name: 'No organizations match' })
       .locator('..')
       .getByRole('button', { name: 'Clear filters' })
       .click();
 
     await expect(section.locator('article').first()).toBeVisible();
   });
+
+  test('membership filtering keeps explicit roles separate from unknown profiles', async ({
+    page,
+  }) => {
+    await page.goto('/community/members');
+    const section = page.getByRole('region', {
+      name: 'End User Community organization directory',
+    });
+    const search = section.getByLabel('Search organizations by name');
+    await waitForHydration(search);
+
+    const results = section.getByText(/Showing \d+ of \d+ organizations/);
+    const total = totalCount(await results.textContent());
+    const membership = section.getByLabel('Filter by membership status');
+    await membership.selectOption('member');
+
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBeGreaterThan(0);
+    expect(shownCount(await results.textContent())).toBeLessThan(total);
+
+    await membership.selectOption('unknown');
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBeGreaterThan(0);
+  });
+
+  test('the directory remains usable without horizontal overflow on mobile', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 414, height: 896 });
+    await page.goto('/community/members');
+    const section = page.getByRole('region', {
+      name: 'End User Community organization directory',
+    });
+    const search = section.getByLabel('Search organizations by name');
+    await waitForHydration(search);
+    await expect(
+      section.getByLabel('Filter by membership status'),
+    ).toBeVisible();
+    await expect(
+      section.getByRole('button', { name: /Open .+ profile/ }).first(),
+    ).toBeVisible();
+  });
 });
+
+for (const colorScheme of ['light', 'dark']) {
+  test(`corporate logo plates stay readable in ${colorScheme}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/community/members');
+    const trigger = page.getByRole('button', {
+      name: 'Open BlackRock profile',
+    });
+    const card = trigger.locator('..');
+    await expect(card).toBeVisible();
+    await expect(card.locator('div[class*="logoWrapper"]')).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+
+    await waitForHydration(trigger);
+    await trigger.click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.locator('div[class*="logoStage"]')).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+  });
+}
 
 test.describe('member profile dialog', () => {
   test('opens focused on close, traps Tab, and restores focus on Escape', async ({
@@ -106,7 +176,7 @@ test.describe('member profile dialog', () => {
   }) => {
     await page.goto('/community/members');
     const section = page.getByRole('region', {
-      name: 'End User Community member directory',
+      name: 'End User Community organization directory',
     });
     const trigger = section
       .getByRole('button', { name: /^Open .+ profile$/ })
@@ -147,7 +217,7 @@ test.describe('member profile dialog', () => {
   test('clicking the backdrop closes the dialog', async ({ page }) => {
     await page.goto('/community/members');
     const section = page.getByRole('region', {
-      name: 'End User Community member directory',
+      name: 'End User Community organization directory',
     });
     const trigger = section
       .getByRole('button', { name: /^Open .+ profile$/ })

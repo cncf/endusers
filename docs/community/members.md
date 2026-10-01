@@ -1,25 +1,25 @@
 ---
-title: Members
+title: End User Directory
 description:
-  Discover CNCF End User Community member organizations and their public cloud
-  native stories.
+  Discover CNCF End User Community organizations and their public cloud native
+  stories.
 sidebar_position: 7
 slug: /community/members
 hide_table_of_contents: true
 hide_title: true
 ---
 
-# Member Directory
+# End User Directory
 
-Discover the organizations that make up the CNCF End User Community. Every entry
-is derived from public CNCF sources — reference architectures contributed to the
-[CNCF Cloud Native Reference Architecture project](https://github.com/cncf/architecture)
-and [Top End User Award](https://www.cncf.io/announcements/) winners announced
-on cncf.io.
+Discover the organizations that make up the CNCF End User Community. The
+directory includes current End User Members and Contributors from the
+[CNCF Landscape](https://github.com/cncf/landscape), alongside organizations
+represented by public reference architectures or Top End User Award
+announcements.
 
-Use the filters to explore by industry, CNCF project, architecture contribution,
-or award recognition. Select a member card to view its public profile and source
-links.
+Use the filters to explore by membership status, industry, CNCF project,
+architecture contribution, or award recognition. Select an organization card to
+view its public profile and source links.
 
 import MemberDirectory from '@site/src/components/MemberDirectory';
 

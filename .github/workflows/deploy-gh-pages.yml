@@ -76,6 +76,9 @@ jobs:
       - name: Validate projects-born data
         run: npm run validate:projects-born
 
+      - name: Validate End User landscape data
+        run: npm run validate:enduser-members
+
       - name: Validate members data
         run: npm run validate:members
 

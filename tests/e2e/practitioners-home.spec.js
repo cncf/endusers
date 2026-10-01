@@ -49,8 +49,8 @@ const PILLARS = [
 const AUDIENCE_CARDS = [
   {
     heading: 'For practitioners and engineers',
-    cta: 'Join the Slack conversation',
-    href: 'https://slack.cncf.io/',
+    cta: 'Apply to the End User Contributor Program',
+    href: 'https://www.cncf.io/end-user-contributor-application/',
   },
   {
     heading: 'For architects',

@@ -189,7 +189,7 @@
 
 .logoWrapper {
   align-items: center;
-  background: var(--ifm-color-emphasis-100);
+  background: #fff;
   display: flex;
   height: 110px;
   justify-content: center;
@@ -236,6 +236,13 @@
   gap: 0.65rem;
   font-size: 0.85rem;
   margin: 0.35rem 0 0.65rem;
+}
+
+.roleLabel {
+  color: var(--ifm-color-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
 }
 
 .eyebrow {
@@ -480,13 +487,6 @@
   font-size: 0.9rem;
   font-weight: 600;
   gap: 0.35rem;
-}
-
-.bioMuted {
-  color: var(--ifm-color-emphasis-700);
-  font-size: 1rem;
-  line-height: 1.55;
-  margin: 0 0 1.5rem;
 }
 
 @media (max-width: 560px) {
