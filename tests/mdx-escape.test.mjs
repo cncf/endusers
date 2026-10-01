@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { compile } from '@mdx-js/mdx';
+import { mdxFromMarkdown } from 'mdast-util-mdx';
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { mdxjs } from 'micromark-extension-mdxjs';
 import { escapeMdx, unescapeMdx } from '../scripts/lib/mdx-escape.mjs';
 
 // Pages under docs/ compile as MDX (@docusaurus/core 3 defaults
@@ -8,6 +12,42 @@ import { escapeMdx, unescapeMdx } from '../scripts/lib/mdx-escape.mjs';
 // prose taken from a submission form reaches a JavaScript compiler. These
 // tests pin which constructs escapeMdx() must neutralize and, just as
 // importantly, which ones it must leave alone.
+
+const ACTIVE_MDX_TYPES = new Set([
+  'mdxjsEsm',
+  'mdxFlowExpression',
+  'mdxTextExpression',
+  'mdxJsxFlowElement',
+  'mdxJsxTextElement',
+]);
+
+function walk(node, visitor) {
+  visitor(node);
+  for (const child of node.children ?? []) walk(child, visitor);
+}
+
+async function assertCompilesAsText(escaped, ...expectedText) {
+  const tree = fromMarkdown(escaped, {
+    extensions: [mdxjs()],
+    mdastExtensions: [mdxFromMarkdown()],
+  });
+  const active = [];
+  const text = [];
+  walk(tree, (node) => {
+    if (ACTIVE_MDX_TYPES.has(node.type)) active.push(node.type);
+    if (node.type === 'text') text.push(node.value);
+  });
+  assert.deepEqual(active, [], 'escaped prose still contains active MDX');
+  for (const fragment of expectedText)
+    assert.ok(
+      text.join('').includes(fragment),
+      `expected text node content to include ${fragment}`,
+    );
+  await assert.doesNotReject(
+    () => compile(escaped, { development: false }),
+    'escaped prose must compile as MDX',
+  );
+}
 
 test('neutralizes a brace expression', () => {
   assert.equal(escapeMdx('Prose. {2 + 2}'), 'Prose. &#123;2 + 2&#125;');
@@ -99,15 +139,23 @@ test('escapes an unmatched backtick run as ordinary text', () => {
   assert.equal(escapeMdx('`unclosed {a}'), '`unclosed &#123;a&#125;');
 });
 
-test('preserves an http autolink', () => {
-  assert.equal(
-    escapeMdx('See <https://example.com/a?b=1> for more'),
-    'See <https://example.com/a?b=1> for more',
-  );
+test('escapes an http autolink that MDX would reject as JSX', async () => {
+  const source = 'See <https://example.com/a?b=1> for more';
+  const escaped = escapeMdx(source);
+  assert.equal(escaped, 'See &lt;https://example.com/a?b=1> for more');
+  await assertCompilesAsText(escaped, source);
 });
 
-test('preserves an email autolink', () => {
-  assert.equal(escapeMdx('<team@example.com>'), '<team@example.com>');
+test('escapes an email autolink that MDX would reject as JSX', async () => {
+  const escaped = escapeMdx('<team@example.com>');
+  assert.equal(escaped, '&lt;team@example.com>');
+  await assertCompilesAsText(escaped, '<team@example.com>');
+});
+
+test('escapes a namespaced tag that MDX would compile as a live element', async () => {
+  const escaped = escapeMdx('<hive:probe/>');
+  assert.equal(escaped, '&lt;hive:probe/>');
+  await assertCompilesAsText(escaped, '<hive:probe/>');
 });
 
 test('escapes a less-than that is not an autolink', () => {
@@ -116,6 +164,36 @@ test('escapes a less-than that is not an autolink', () => {
 
 test('escapes the empty JSX fragment', () => {
   assert.equal(escapeMdx('<></>'), '&lt;>&lt;/>');
+});
+
+test('escapes prose while preserving MDX code blocks and inline code', async () => {
+  const source = [
+    'See <https://example.com> and `<hive:probe/>`.',
+    '',
+    '```html',
+    '<hive:probe/>',
+    '```',
+    '',
+    'Email: <team@example.com>.',
+  ].join('\n');
+  const escaped = escapeMdx(source);
+  assert.equal(
+    escaped,
+    [
+      'See &lt;https://example.com> and `<hive:probe/>`.',
+      '',
+      '```html',
+      '<hive:probe/>',
+      '```',
+      '',
+      'Email: &lt;team@example.com>.',
+    ].join('\n'),
+  );
+  await assertCompilesAsText(
+    escaped,
+    'See <https://example.com> and ',
+    'Email: <team@example.com>.',
+  );
 });
 
 test('leaves ordinary Markdown untouched', () => {
@@ -132,7 +210,8 @@ test('returns an empty string for non-string or empty input', () => {
 });
 
 test('unescapeMdx round-trips every character reference escapeMdx adds', () => {
-  const source = 'a {b} <c> export import latency < 5';
+  const source =
+    'a {b} <c> <https://example.com> <team@example.com> <hive:probe/> export import latency < 5';
   assert.equal(unescapeMdx(escapeMdx(source)), source);
 });
 
@@ -235,6 +314,12 @@ test('falls back to escaping everything when code detection would leave live MDX
   // trusting a code range that still lets an expression through.
   const escaped = escapeMdx('```x`y\n{alert(1)}');
   assert.equal(escaped, '```x`y\n&#123;alert(1)&#125;');
+});
+
+test('fallback also escapes namespaced tags', async () => {
+  const escaped = escapeMdx('```x`y\n<hive:probe/>');
+  assert.equal(escaped, '```x`y\n&lt;hive:probe/>');
+  await assertCompilesAsText(escaped, '<hive:probe/>');
 });
 
 test('leaves a fenced block with a normal info string verbatim', () => {
