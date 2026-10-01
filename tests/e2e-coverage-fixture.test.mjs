@@ -222,17 +222,25 @@ test('CoverageManager aggregates manual-context cleanup errors', async () => {
   try {
     await initCoverageRun(runDir, 'context-errors');
     const manager = new CoverageManager(info(), runDir, 'context-errors');
+    let closed = false;
     const context = {
       async newPage() {
         return fakePage({ stopError: new Error('context stop failed') });
       },
-      async close() {},
+      async close() {
+        closed = true;
+      },
     };
     const proxy = await manager.registerContext(context);
     await proxy.newPage();
     await assert.rejects(
       () => proxy.close(),
       /failed to flush e2e coverage context/,
+    );
+    assert.equal(closed, true);
+    await assert.rejects(
+      () => manager.cleanup(),
+      /failed to flush e2e coverage/,
     );
 
     const cleanupManager = new CoverageManager(

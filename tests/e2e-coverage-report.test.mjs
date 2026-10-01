@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -16,6 +23,7 @@ import {
   sealCoverageRun,
   writeCoverageArtifact,
 } from './tools/e2e-coverage-run.mjs';
+import { transpileJsx } from './tools/jsx-hooks.mjs';
 
 const VLQ_CHARS =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -85,6 +93,37 @@ test('collectE2ECoverage rejects an unsealed run instead of mixing stale data', 
   }
 });
 
+test('main labels failed runs as failed and exits nonzero', async () => {
+  const fixture = await fixtureRun();
+  try {
+    await sealCoverageRun(fixture.runDir, 'failed');
+    const jsonPath = join(fixture.root, 'failed-report.json');
+    const textPath = join(fixture.root, 'failed-report.txt');
+    await assert.rejects(
+      () =>
+        main([
+          '--input',
+          fixture.runDir,
+          '--root',
+          fixture.root,
+          '--build',
+          fixture.buildDir,
+          '--json',
+          jsonPath,
+          '--text',
+          textPath,
+        ]),
+      /sealed as failed/,
+    );
+    const report = JSON.parse(await readFile(jsonPath, 'utf8'));
+    assert.equal(report.status, 'failed');
+    assert.equal(report.runStatus, 'failed');
+    assert.match(await readFile(textPath, 'utf8'), /status failed/);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('a sealed JavaScript-disabled run is valid individually but fails aggregate attribution', async () => {
   const fixture = await fixtureRun();
   try {
@@ -103,6 +142,41 @@ test('a sealed JavaScript-disabled run is valid individually but fails aggregate
         }),
       /No src\/\*\* coverage was attributable/,
     );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('main surfaces recorded capture-error artifacts instead of treating them as unknown JSON', async () => {
+  const fixture = await fixtureRun();
+  try {
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0-error', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage-error',
+      runId: 'run-1',
+      testId: 'metrics-dashboard',
+      pageIndex: 0,
+      error: { name: 'Error', message: 'stop failed', stack: 'trace' },
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+    const jsonPath = join(fixture.root, 'capture-error.json');
+    await assert.rejects(
+      () =>
+        main([
+          '--input',
+          fixture.runDir,
+          '--root',
+          fixture.root,
+          '--build',
+          fixture.buildDir,
+          '--json',
+          jsonPath,
+        ]),
+      /metrics-dashboard page 0: stop failed/,
+    );
+    const report = JSON.parse(await readFile(jsonPath, 'utf8'));
+    assert.equal(report.status, 'tooling-error');
+    assert.match(report.diagnostics.errors[0], /stop failed/);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
@@ -172,12 +246,9 @@ test('collectE2ECoverage maps V8 ranges through an external source map to src li
       {
         file: 'src/components/Example/index.js',
         executableLines: 2,
-        coveredLines: 2,
-        linePercent: 100,
-        branchTotal: 2,
-        branchCovered: 1,
-        branchPercent: 50,
-        uncoveredLines: [],
+        coveredLines: 1,
+        linePercent: 50,
+        uncoveredLines: [2],
       },
     ]);
   } finally {
@@ -588,6 +659,191 @@ test('collectE2ECoverage rejects an eligible script without a map', async () => 
   }
 });
 
+test('collectE2ECoverage rejects a source map that escapes buildDir', async () => {
+  const fixture = await fixtureRun();
+  try {
+    await mkdir(join(fixture.buildDir, 'assets/js'), { recursive: true });
+    await writeFile(
+      join(fixture.root, 'outside.map'),
+      JSON.stringify({ version: 3, sources: [], names: [], mappings: '' }),
+    );
+    const script = join(fixture.buildDir, 'assets/js/escape.js');
+    const scriptText =
+      'const value = 1;\n//# sourceMappingURL=../../../outside.map\n';
+    await writeFile(script, scriptText);
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/escape.js',
+          scriptId: 'escape',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                { startOffset: 0, endOffset: scriptText.length, count: 1 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /source map escapes build directory/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage rejects symlinked maps, bundles, and sources', async () => {
+  const mapFixture = await fixtureRun();
+  try {
+    const outsideMap = join(mapFixture.root, 'outside.map');
+    await writeFile(
+      outsideMap,
+      JSON.stringify({ version: 3, sources: [], names: [], mappings: '' }),
+    );
+    await symlink(outsideMap, join(mapFixture.buildDir, 'assets/js/link.map'));
+    const script = 'const value = 1;\n//# sourceMappingURL=link.map\n';
+    await writeFile(join(mapFixture.buildDir, 'assets/js/link.js'), script);
+    await writeCoverageArtifact(mapFixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/link.js',
+          scriptId: 'link-map',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [{ startOffset: 0, endOffset: script.length, count: 1 }],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(mapFixture.runDir, 'passed');
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(mapFixture.runDir, {
+          root: mapFixture.root,
+          buildDir: mapFixture.buildDir,
+        }),
+      /source map escapes build directory/,
+    );
+  } finally {
+    await rm(mapFixture.root, { recursive: true, force: true });
+  }
+
+  const scriptFixture = await fixtureRun();
+  try {
+    const outsideScript = join(scriptFixture.root, 'outside.js');
+    await writeFile(outsideScript, 'const outside = 1;\n');
+    await symlink(
+      outsideScript,
+      join(scriptFixture.buildDir, 'assets/js/link.js'),
+    );
+    await writeCoverageArtifact(scriptFixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/link.js',
+          scriptId: 'link-script',
+          functions: [],
+        },
+      ],
+    });
+    await sealCoverageRun(scriptFixture.runDir, 'passed');
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(scriptFixture.runDir, {
+          root: scriptFixture.root,
+          buildDir: scriptFixture.buildDir,
+        }),
+      /coverage script escapes build directory/,
+    );
+  } finally {
+    await rm(scriptFixture.root, { recursive: true, force: true });
+  }
+
+  const sourceFixture = await fixtureRun();
+  const outsideSourceRoot = await mkdtemp(
+    join(tmpdir(), 'endusers-outside-source-'),
+  );
+  try {
+    const outsideSource = join(outsideSourceRoot, 'outside.js');
+    await writeFile(outsideSource, 'const outside = 1;\n');
+    await mkdir(join(sourceFixture.root, 'src/components/Link'), {
+      recursive: true,
+    });
+    await symlink(
+      outsideSource,
+      join(sourceFixture.root, 'src/components/Link/index.js'),
+    );
+    const script =
+      'const value = 1;\n//# sourceMappingURL=link-source.js.map\n';
+    await writeFile(
+      join(sourceFixture.buildDir, 'assets/js/link-source.js'),
+      script,
+    );
+    await writeFile(
+      join(sourceFixture.buildDir, 'assets/js/link-source.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'link-source.js',
+        sources: ['../../../src/components/Link/index.js'],
+        sourcesContent: ['const outside = 1;\n'],
+        names: [],
+        mappings: 'AAAA',
+      }),
+    );
+    await writeCoverageArtifact(sourceFixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/link-source.js',
+          scriptId: 'link-source',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [{ startOffset: 0, endOffset: script.length, count: 1 }],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(sourceFixture.runDir, 'passed');
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(sourceFixture.runDir, {
+          root: sourceFixture.root,
+          buildDir: sourceFixture.buildDir,
+        }),
+      /source map source escapes repository/,
+    );
+  } finally {
+    await rm(sourceFixture.root, { recursive: true, force: true });
+    await rm(outsideSourceRoot, { recursive: true, force: true });
+  }
+});
+
 test('collectE2ECoverage flattens an indexed multi-source map', async () => {
   const fixture = await fixtureRun();
   try {
@@ -679,12 +935,208 @@ test('collectE2ECoverage flattens an indexed multi-source map', async () => {
       buildDir: fixture.buildDir,
     });
     assert.deepEqual(
-      report.sources.map(({ file, branchPercent }) => [file, branchPercent]),
+      report.sources.map(({ file, linePercent }) => [file, linePercent]),
       [
         ['src/components/First/index.js', 100],
         ['src/components/Second/index.js', 0],
       ],
     );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage keeps a mapped but unexecuted source explicit', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const sourceA = 'const first = 1;\n';
+    const sourceB = 'const second = 2;\n';
+    const generated = `${sourceA}${sourceB}`;
+    const scriptText = `${generated}\n//# sourceMappingURL=mixed.js.map\n`;
+    const pathA = join(fixture.root, 'src/components/MixedA/index.js');
+    const pathB = join(fixture.root, 'src/components/MixedB/index.js');
+    await mkdir(join(fixture.root, 'src/components/MixedA'), {
+      recursive: true,
+    });
+    await mkdir(join(fixture.root, 'src/components/MixedB'), {
+      recursive: true,
+    });
+    await writeFile(pathA, sourceA);
+    await writeFile(pathB, sourceB);
+    await writeFile(join(fixture.buildDir, 'assets/js/mixed.js'), scriptText);
+    await writeFile(
+      join(fixture.buildDir, 'assets/js/mixed.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'mixed.js',
+        sources: [
+          '../../../src/components/MixedA/index.js',
+          '../../../src/components/MixedB/index.js',
+        ],
+        sourcesContent: [sourceA, sourceB],
+        names: [],
+        mappings: `${mapSingleLine(0, 0, sourceA.length - 1)};${mapSingleLine(1, 0, sourceB.length - 1)}`,
+      }),
+    );
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/mixed.js',
+          scriptId: 'mixed',
+          functions: [
+            {
+              functionName: 'first',
+              isBlockCoverage: true,
+              ranges: [
+                { startOffset: 0, endOffset: sourceA.length - 1, count: 1 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.deepEqual(
+      report.sources.map((row) => row.file),
+      ['src/components/MixedA/index.js'],
+    );
+    assert.deepEqual(report.unmappedSources, [
+      'src/components/MixedB/index.js',
+    ]);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage attributes a real JSX source map to original lines', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const source =
+      'export default function Widget() {\n' +
+      '  return <div>Cloud Native</div>;\n' +
+      '}\n';
+    const original = join(fixture.root, 'src/components/Widget/index.js');
+    const script = join(fixture.buildDir, 'assets/js/widget.js');
+    const mapPath = join(fixture.buildDir, 'assets/js/widget.js.map');
+    await mkdir(join(fixture.root, 'src/components/Widget'), {
+      recursive: true,
+    });
+    await writeFile(original, source);
+    const transformed = transpileJsx(source, original);
+    const scriptText = `${transformed.code}\n//# sourceMappingURL=widget.js.map\n`;
+    await writeFile(script, scriptText);
+    await writeFile(mapPath, transformed.map);
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/widget.js',
+          scriptId: 'jsx',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                { startOffset: 0, endOffset: scriptText.length, count: 1 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.deepEqual(report.sources, [
+      {
+        file: 'src/components/Widget/index.js',
+        executableLines: 3,
+        coveredLines: 3,
+        linePercent: 100,
+        uncoveredLines: [],
+      },
+    ]);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage attributes a real mjs source map to exact lines', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const source = 'export const first = 1;\nexport const second = 2;\n';
+    const original = join(fixture.root, 'src/lib/example.mjs');
+    const script = join(fixture.buildDir, 'assets/js/example.js');
+    const map = join(fixture.buildDir, 'assets/js/example.js.map');
+    await mkdir(join(fixture.root, 'src/lib'), { recursive: true });
+    await writeFile(original, source);
+    await writeFile(script, `${source}\n//# sourceMappingURL=example.js.map\n`);
+    await writeFile(
+      map,
+      JSON.stringify({
+        version: 3,
+        file: 'example.js',
+        sources: ['../../../src/lib/example.mjs'],
+        sourcesContent: [source],
+        names: [],
+        mappings: mapLines([
+          [0, 0],
+          [0, 1],
+        ]),
+      }),
+    );
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/example.js',
+          scriptId: 'mjs',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                {
+                  startOffset: 0,
+                  endOffset: source.length + 1,
+                  count: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.deepEqual(report.sources, [
+      {
+        file: 'src/lib/example.mjs',
+        executableLines: 2,
+        coveredLines: 2,
+        linePercent: 100,
+        uncoveredLines: [],
+      },
+    ]);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
@@ -702,9 +1154,6 @@ test('renderE2ECoverageReport exposes original src paths and no bundle paths', (
         executableLines: 2,
         coveredLines: 1,
         linePercent: 50,
-        branchTotal: 2,
-        branchCovered: 1,
-        branchPercent: 50,
         uncoveredLines: [2],
       },
     ],
@@ -712,9 +1161,6 @@ test('renderE2ECoverageReport exposes original src paths and no bundle paths', (
       executableLines: 2,
       coveredLines: 1,
       linePercent: 50,
-      branchTotal: 2,
-      branchCovered: 1,
-      branchPercent: 50,
     },
     diagnostics: { warnings: [], errors: [] },
     unmappedSources: [],
@@ -735,9 +1181,6 @@ test('renderE2ECoverageReport names unmapped sources and diagnostics', () => {
       executableLines: 0,
       coveredLines: 0,
       linePercent: 0,
-      branchTotal: 0,
-      branchCovered: 0,
-      branchPercent: 0,
     },
     unmappedSources: ['src/components/NotLoaded/index.js'],
     diagnostics: { warnings: [], errors: ['invalid map'] },

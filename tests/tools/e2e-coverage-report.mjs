@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto';
-import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { readFile, readdir, realpath, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -20,6 +20,15 @@ const ERROR_KIND = 'endusers.e2e.coverage-report-error';
 const SOURCE_MAPPING_URL = /(?:\/\/[#@]\s*sourceMappingURL=)(\S+)/u;
 const ELIGIBLE_SCRIPT = /(?:\.m?js$|\/assets\/js\/)/u;
 const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
+
+class CoverageReportError extends Error {
+  constructor(message, { runId = null, runStatus = null } = {}) {
+    super(message);
+    this.name = 'CoverageReportError';
+    this.runId = runId;
+    this.runStatus = runStatus;
+  }
+}
 
 function sha256(text) {
   return createHash('sha256').update(text).digest('hex');
@@ -118,7 +127,7 @@ function decodeDataUrl(value) {
   return JSON.parse(raw);
 }
 
-async function loadSourceMap(generatedSource, scriptPath) {
+async function loadSourceMap(generatedSource, scriptPath, buildDir) {
   const match = SOURCE_MAPPING_URL.exec(generatedSource);
   if (!match) {
     throw new Error(`generated script has no sourceMappingURL: ${scriptPath}`);
@@ -128,8 +137,13 @@ async function loadSourceMap(generatedSource, scriptPath) {
   if (inline) return { map: inline, mapPath: scriptPath };
 
   const mapPath = resolve(dirname(scriptPath), reference);
-  const raw = await readFile(mapPath, 'utf8');
-  return { map: JSON.parse(raw), mapPath };
+  const buildRoot = await realpath(buildDir);
+  const resolvedMapPath = await realpath(mapPath);
+  if (!isInside(buildRoot, resolvedMapPath)) {
+    throw new Error(`source map escapes build directory: ${reference}`);
+  }
+  const raw = await readFile(resolvedMapPath, 'utf8');
+  return { map: JSON.parse(raw), mapPath: resolvedMapPath };
 }
 
 function stripSourceMapComment(source) {
@@ -146,6 +160,7 @@ async function normalizeSourceMap(rawMap, mapPath, root) {
   const sourcesContent = [];
   const normalizedSources = [];
   const sourceFiles = [];
+  const rootPath = await realpath(root);
 
   for (let index = 0; index < references.length; index += 1) {
     const reference = references[index];
@@ -162,15 +177,25 @@ async function normalizeSourceMap(rawMap, mapPath, root) {
       continue;
     }
 
-    const diskContent = await readFile(sourceFile.absolute, 'utf8');
+    const resolvedSource = await realpath(sourceFile.absolute);
+    if (!isInside(rootPath, resolvedSource)) {
+      throw new Error(
+        `source map source escapes repository: ${sourceFile.relative}`,
+      );
+    }
+
+    const diskContent = await readFile(resolvedSource, 'utf8');
     if (suppliedContent !== null && suppliedContent !== diskContent) {
       throw new Error(
         `source map content does not match ${sourceFile.relative}`,
       );
     }
-    normalizedSources.push(sourceFile.absolute);
+    normalizedSources.push(resolvedSource);
     sourcesContent.push(suppliedContent ?? diskContent);
-    sourceFiles.push(sourceFile);
+    sourceFiles.push({
+      absolute: resolvedSource,
+      relative: repoRelative(rootPath, resolvedSource),
+    });
   }
 
   return {
@@ -231,40 +256,29 @@ function normalizeRanges(scriptCoverage, length) {
       ];
 }
 
-function addBranchLines(target, coverageData) {
-  const branchMap = coverageData.branchMap ?? {};
-  const branchCounts = coverageData.b ?? {};
-  for (const [branchId, branch] of Object.entries(branchMap)) {
-    const start = branch.loc?.start?.line;
-    const end = branch.loc?.end?.line ?? start;
-    if (!Number.isInteger(start) || !Number.isInteger(end)) continue;
-    const covered = (branchCounts[branchId]?.[0] ?? 0) > 0;
-    const branchKey = [
-      start,
-      branch.loc?.start?.column ?? 0,
-      end,
-      branch.loc?.end?.column ?? 0,
-    ].join(':');
-    const previousBranch = target.branches.get(branchKey);
-    target.branches.set(branchKey, Boolean(previousBranch || covered));
-    for (let line = start; line <= end; line += 1) {
-      target.executable.add(line);
-      if (covered) target.covered.add(line);
-    }
+function getLineCoverage(coverageData) {
+  const lines = new Map();
+  for (const [statementId, count] of Object.entries(coverageData.s ?? {})) {
+    const line = coverageData.statementMap?.[statementId]?.start?.line;
+    if (!Number.isInteger(line)) continue;
+    lines.set(line, Math.max(lines.get(line) ?? 0, count));
   }
+  return lines;
 }
 
 async function convertScript(scriptCoverage, root, buildDir) {
   const parsed = new URL(scriptCoverage.url);
   const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, '');
   const scriptPath = resolve(buildDir, pathname);
-  if (!isInside(buildDir, scriptPath)) {
+  const buildRoot = await realpath(buildDir);
+  const resolvedScriptPath = await realpath(scriptPath);
+  if (!isInside(buildRoot, resolvedScriptPath)) {
     throw new Error(
       `coverage script escapes build directory: ${scriptCoverage.url}`,
     );
   }
   const generatedSource =
-    scriptCoverage.source ?? (await readFile(scriptPath, 'utf8'));
+    scriptCoverage.source ?? (await readFile(resolvedScriptPath, 'utf8'));
   if (
     scriptCoverage.sourceLength !== undefined &&
     scriptCoverage.sourceLength !== generatedSource.length
@@ -283,10 +297,11 @@ async function convertScript(scriptCoverage, root, buildDir) {
   const mappedSource = stripSourceMapComment(generatedSource);
   const { map: rawMap, mapPath } = await loadSourceMap(
     generatedSource,
-    scriptPath,
+    resolvedScriptPath,
+    buildRoot,
   );
   const { map, sourceFiles } = await normalizeSourceMap(rawMap, mapPath, root);
-  const converter = v8ToIstanbul(scriptPath, 0, {
+  const converter = v8ToIstanbul(resolvedScriptPath, 0, {
     source: mappedSource,
     sourceMap: { sourcemap: map },
   });
@@ -311,7 +326,20 @@ async function convertScript(scriptCoverage, root, buildDir) {
   }
   converter.applyCoverage(usableFunctions);
   const coverage = converter.toIstanbul();
-  return { sourceFiles, coverage, attributed: true };
+  const attributedPaths = new Set([
+    ...Object.entries(converter.branches ?? {})
+      .filter(([, ranges]) => ranges.length > 0)
+      .map(([path]) => path),
+    ...Object.entries(converter.functions ?? {})
+      .filter(([, ranges]) => ranges.length > 0)
+      .map(([path]) => path),
+  ]);
+  return {
+    sourceFiles,
+    coverage,
+    attributed: true,
+    attributedPaths,
+  };
 }
 
 function isEligibleScript(url) {
@@ -335,14 +363,7 @@ function emptyReport(run, status = 'ok') {
     runStatus: run.status,
     scripts: { captured: 0, converted: 0, ignored: 0 },
     sources: [],
-    summary: {
-      executableLines: 0,
-      coveredLines: 0,
-      linePercent: 100,
-      branchTotal: 0,
-      branchCovered: 0,
-      branchPercent: 100,
-    },
+    summary: { executableLines: 0, coveredLines: 0, linePercent: 100 },
     unmappedSources: [],
     diagnostics: { warnings: [], errors: [] },
   };
@@ -354,7 +375,16 @@ export async function collectE2ECoverage(
 ) {
   const run = await readCoverageRun(runDir);
   if (run.status === 'started') {
-    throw new Error(`coverage run is not sealed: ${runDir}`);
+    throw new CoverageReportError(`coverage run is not sealed: ${runDir}`, {
+      runId: run.runId,
+      runStatus: run.status,
+    });
+  }
+  if (run.status !== 'passed') {
+    throw new CoverageReportError(
+      `coverage run ${run.runId} is sealed as ${run.status}`,
+      { runId: run.runId, runStatus: run.status },
+    );
   }
   const entries = await readdir(runDir);
   if (entries.some((entry) => entry.endsWith('.tmp'))) {
@@ -367,6 +397,12 @@ export async function collectE2ECoverage(
   for (const entry of entries) {
     if (!entry.endsWith('.json') || entry === 'manifest.json') continue;
     const payload = JSON.parse(await readFile(join(runDir, entry), 'utf8'));
+    if (payload.kind === 'endusers.playwright.v8-coverage-error') {
+      throw new CoverageReportError(
+        `coverage capture failed for ${payload.testId ?? '<unknown test>'} page ${payload.pageIndex ?? '<unknown>'}: ${payload.error?.message ?? 'unknown error'}`,
+        { runId: run.runId, runStatus: run.status },
+      );
+    }
     if (payload.kind !== COVERAGE_ARTIFACT_KIND) {
       throw new Error(`unexpected coverage artifact kind in ${entry}`);
     }
@@ -382,6 +418,7 @@ export async function collectE2ECoverage(
       }
       const converted = await convertScript(scriptCoverage, root, buildDir);
       report.scripts.converted += 1;
+      if (!converted.attributed) continue;
       for (const sourceFile of converted.sourceFiles) {
         unmapped.add(sourceFile.relative);
       }
@@ -390,12 +427,20 @@ export async function collectE2ECoverage(
       )) {
         const relativePath = repoRelative(root, path);
         if (!relativePath?.startsWith('src/')) continue;
+        if (
+          converted.sourceFiles.length > 1 &&
+          !converted.attributedPaths.has(path)
+        ) {
+          continue;
+        }
+        const lineCoverage = getLineCoverage(coverageData);
+        if (lineCoverage.size === 0) continue;
         const target = sources.get(relativePath) ?? {
-          executable: new Set(),
-          covered: new Set(),
-          branches: new Map(),
+          lines: new Map(),
         };
-        addBranchLines(target, coverageData);
+        for (const [line, count] of lineCoverage) {
+          target.lines.set(line, Math.max(target.lines.get(line) ?? 0, count));
+        }
         sources.set(relativePath, target);
         unmapped.delete(relativePath);
       }
@@ -404,23 +449,19 @@ export async function collectE2ECoverage(
 
   report.sources = [...sources.entries()]
     .map(([file, coverage]) => {
-      const uncoveredLines = [...coverage.executable]
-        .filter((line) => !coverage.covered.has(line))
+      const uncoveredLines = [...coverage.lines]
+        .filter(([, count]) => count <= 0)
+        .map(([line]) => line)
         .sort((a, b) => a - b);
+      const executableLines = coverage.lines.size;
+      const coveredLines = [...coverage.lines.values()].filter(
+        (count) => count > 0,
+      ).length;
       return {
         file,
-        executableLines: coverage.executable.size,
-        coveredLines: coverage.covered.size,
-        linePercent: linePercent(
-          coverage.covered.size,
-          coverage.executable.size,
-        ),
-        branchTotal: coverage.branches.size,
-        branchCovered: [...coverage.branches.values()].filter(Boolean).length,
-        branchPercent: linePercent(
-          [...coverage.branches.values()].filter(Boolean).length,
-          coverage.branches.size,
-        ),
+        executableLines,
+        coveredLines,
+        linePercent: linePercent(coveredLines, executableLines),
         uncoveredLines,
       };
     })
@@ -431,26 +472,17 @@ export async function collectE2ECoverage(
     (summary, row) => ({
       executableLines: summary.executableLines + row.executableLines,
       coveredLines: summary.coveredLines + row.coveredLines,
-      branchTotal: summary.branchTotal + row.branchTotal,
-      branchCovered: summary.branchCovered + row.branchCovered,
       linePercent: 0,
     }),
     {
       executableLines: 0,
       coveredLines: 0,
       linePercent: 0,
-      branchTotal: 0,
-      branchCovered: 0,
-      branchPercent: 0,
     },
   );
   report.summary.linePercent = linePercent(
     report.summary.coveredLines,
     report.summary.executableLines,
-  );
-  report.summary.branchPercent = linePercent(
-    report.summary.branchCovered,
-    report.summary.branchTotal,
   );
   if (report.summary.executableLines === 0) {
     throw new Error('No src/** coverage was attributable');
@@ -460,18 +492,18 @@ export async function collectE2ECoverage(
 
 export function renderE2ECoverageReport(report) {
   const lines = [
-    `E2E coverage: ${report.status} (run ${report.runId})`,
+    `E2E coverage: ${report.status} (run ${report.runId}; status ${report.runStatus ?? 'unknown'})`,
     '',
-    'file | line % | branch % | uncovered lines',
-    '--- | ---: | ---: | ---',
+    'file | line % | uncovered lines',
+    '--- | ---: | ---',
   ];
   for (const row of report.sources) {
     lines.push(
-      `${row.file} | ${row.linePercent.toFixed(2)} | ${row.branchPercent.toFixed(2)} | ${row.uncoveredLines.join(' ')}`,
+      `${row.file} | ${row.linePercent.toFixed(2)} | ${row.uncoveredLines.join(' ')}`,
     );
   }
   lines.push(
-    `src files | ${report.summary.linePercent.toFixed(2)} | ${report.summary.branchPercent.toFixed(2)} | ${report.summary.coveredLines}/${report.summary.executableLines} lines`,
+    `src files | ${report.summary.linePercent.toFixed(2)} | ${report.summary.coveredLines}/${report.summary.executableLines} lines`,
   );
   if (report.unmappedSources.length > 0) {
     lines.push(
@@ -515,18 +547,18 @@ export async function main(argv = process.argv.slice(2)) {
     const failure = {
       schemaVersion: 1,
       kind: ERROR_KIND,
-      status: 'tooling-error',
-      runId: null,
-      runStatus: null,
+      status:
+        error.runStatus === 'failed' || error.runStatus === 'cancelled'
+          ? error.runStatus
+          : 'tooling-error',
+      runId: error.runId ?? null,
+      runStatus: error.runStatus ?? null,
       scripts: { captured: 0, converted: 0, ignored: 0 },
       sources: [],
       summary: {
         executableLines: 0,
         coveredLines: 0,
         linePercent: 0,
-        branchTotal: 0,
-        branchCovered: 0,
-        branchPercent: 0,
       },
       unmappedSources: [],
       diagnostics: { warnings: [], errors: [error.message ?? String(error)] },

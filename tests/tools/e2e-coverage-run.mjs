@@ -122,6 +122,11 @@ export async function writeCoverageArtifact(runDir, stem, payload) {
     throw new Error(`invalid coverage artifact name: ${stem}`);
   }
   const manifest = await readCoverageRun(runDir);
+  if (manifest.status !== 'started') {
+    throw new Error(
+      `coverage run ${manifest.runId} is already sealed as ${manifest.status}`,
+    );
+  }
   if (payload?.runId !== manifest.runId) {
     throw new Error(
       `coverage artifact runId ${payload?.runId ?? '<missing>'} does not match ${manifest.runId}`,

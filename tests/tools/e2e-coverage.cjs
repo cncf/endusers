@@ -110,7 +110,6 @@ class CoverageManager {
   async stopPage(page) {
     const record = this.pages.get(page);
     if (!record) return;
-    this.pages.delete(page);
     try {
       const result = record.empty ? [] : await page.coverage.stopJSCoverage();
       const normalized = result.map(({ source, ...script }) => ({
@@ -139,8 +138,13 @@ class CoverageManager {
           result: normalized,
         },
       );
+      this.pages.delete(page);
     } catch (error) {
-      await this.writeError(record.info, error);
+      record.lastError = error;
+      if (!record.errorArtifactWritten) {
+        await this.writeError(record.info, error);
+        record.errorArtifactWritten = true;
+      }
       throw error;
     }
   }
@@ -166,8 +170,7 @@ class CoverageManager {
         }
         if (property === 'close') {
           return async (...args) => {
-            await manager.stopContext(record);
-            return target.close(...args);
+            return manager.stopContext(record, args);
           };
         }
         const value = Reflect.get(target, property, target);
@@ -176,10 +179,8 @@ class CoverageManager {
     });
   }
 
-  async stopContext(record) {
+  async stopContext(record, closeArgs = []) {
     if (record.closed) return;
-    record.closed = true;
-    this.contexts.delete(record.context);
     const errors = [];
     for (const page of record.pages) {
       try {
@@ -188,6 +189,13 @@ class CoverageManager {
         errors.push(error);
       }
     }
+    try {
+      await record.context.close(...closeArgs);
+    } catch (error) {
+      errors.push(error);
+    }
+    record.closed = true;
+    this.contexts.delete(record.context);
     if (errors.length > 0) {
       throw new AggregateError(errors, 'failed to flush e2e coverage context');
     }
@@ -205,7 +213,6 @@ class CoverageManager {
     for (const record of [...this.contexts.values()]) {
       try {
         await this.stopContext(record);
-        await record.context.close();
       } catch (error) {
         errors.push(error);
       }

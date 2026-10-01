@@ -186,6 +186,14 @@ test('seals a run and writes collision-safe coverage artifacts', async () => {
     const sealed = await sealCoverageRun(runDir, 'passed');
     assert.equal(sealed.status, 'passed');
     assert.equal((await readCoverageRun(runDir)).status, 'passed');
+    await assert.rejects(
+      () =>
+        writeCoverageArtifact(runDir, 'late-write', {
+          runId: 'run-1',
+          result: [],
+        }),
+      /already sealed as passed/,
+    );
     assert.ok((await readdir(runDir)).includes('manifest.json'));
   } finally {
     await rm(runDir, { recursive: true, force: true });
