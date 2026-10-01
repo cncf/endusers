@@ -111,13 +111,10 @@ function treeCodeRanges(tree) {
     }
   });
   ranges.sort((a, b) => a[0] - b[0]);
-  const merged = [];
-  for (const range of ranges) {
-    const last = merged[merged.length - 1];
-    if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1]);
-    else merged.push([...range]);
-  }
-  return merged;
+  // `code`/`inlineCode` nodes are mdast leaves and cannot nest or abut, so
+  // the ranges collected here are already disjoint and in order; no merge
+  // step is reachable (see #944).
+  return ranges.map((range) => [...range]);
 }
 
 /** The overlap of two ordered, merged range lists. */
