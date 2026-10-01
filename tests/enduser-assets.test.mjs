@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import {
+  currentLandscapeAssetReferences,
   ensureOwnedAssetManifest,
   pruneOwnedLandscapeAssets,
   readOwnedAssetManifest,
@@ -144,4 +145,20 @@ test('rejects invalid or unsafe ownership manifests', () => {
     assert.throws(() => readOwnedAssetManifest(manifestPath), /unsafe path/);
     assert.equal(existsSync(assetRoot), true);
   });
+});
+
+test('treats absent snapshots, members, and membership sources as no references', () => {
+  assert.deepEqual(
+    [...currentLandscapeAssetReferences(undefined, undefined)],
+    [],
+  );
+  assert.deepEqual([...currentLandscapeAssetReferences({}, [{}])], []);
+});
+
+test('collects references from both the snapshot and member membership sources', () => {
+  const references = currentLandscapeAssetReferences(snapshot(OLD), [
+    { membershipSources: [{ localLogo: NEW }, { localLogo: null }] },
+    {},
+  ]);
+  assert.deepEqual([...references].sort(), [NEW, OLD].sort());
 });

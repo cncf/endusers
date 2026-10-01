@@ -297,6 +297,14 @@ test('reports unsafe snapshot classifications before publication', () => {
     () =>
       assertLandscapeSnapshotReady({
         ...base,
+        records: 'not-an-array',
+      }),
+    /no current Member\/Contributor records/,
+  );
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
         records: [{ ...base.records[0], sourceRole: 'supporter' }],
       }),
     /invalid current role/,
