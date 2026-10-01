@@ -339,4 +339,14 @@ test('rejects malformed owned-asset manifests', () => {
   });
   assert.equal(unsafePath.status, 1);
   assert.match(unsafePath.stderr, /owned asset must be under/);
+
+  const duplicateAsset = runScriptWithFixtures(SCRIPT, {
+    ...fixture(),
+    'data/enduser-landscape-assets.json': JSON.stringify({
+      generated: true,
+      assets: [LOGO, LOGO],
+    }),
+  });
+  assert.equal(duplicateAsset.status, 1);
+  assert.match(duplicateAsset.stderr, /duplicate owned asset/);
 });
