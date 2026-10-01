@@ -9,15 +9,17 @@
   background: var(--ifm-background-surface-color);
   border: 1px solid var(--ifm-color-emphasis-200);
   overflow: hidden;
+  position: relative;
+  top: 0;
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease,
-    transform 160ms ease;
+    top 160ms ease;
 }
 
 .personCard:hover {
   border-color: var(--ifm-color-primary);
-  transform: translateY(-2px);
+  top: -2px;
   box-shadow: 0 8px 24px rgb(0 0 0 / 9%);
 }
 

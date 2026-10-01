@@ -122,14 +122,6 @@ test.describe('TAB roster', () => {
   });
 });
 
-// Opening a card necessarily leaves the pointer over it, and `.personCard:hover`
-// applies a transform. A transformed element becomes the containing block for
-// its `position: fixed` descendants, so the backdrop is laid out and clipped
-// inside the card rather than over the viewport. Until that is fixed, the
-// dialog's box is not where a user sees a modal, so these cases assert the
-// dialog's content and keyboard contract — which are independent of where the
-// box lands — and leave pointer dismissal and on-screen visibility to the
-// follow-up that corrects the containing block (#930).
 test.describe('TAB roster profile dialog', () => {
   test('opens a labelled modal focused on its close button', async ({
     page,
@@ -144,6 +136,7 @@ test.describe('TAB roster profile dialog', () => {
     // name was rendered.
     const heading = dialog.locator('#profile-name');
     await expect(heading).toHaveCount(1);
+    await expect(heading).toBeVisible();
     expect((await heading.textContent())?.trim()).not.toBe('');
 
     // useFocusTrap moves focus to the close button on mount.
@@ -174,18 +167,25 @@ test.describe('TAB roster profile dialog', () => {
     ).toHaveCount(1);
   });
 
-  test('activating the close button closes it and restores focus', async ({
+  test('clicking the close button closes it and restores focus', async ({
     page,
   }) => {
     const { dialog, triggerName } = await openProfile(page);
 
-    // Driven from the keyboard rather than with a click: focus is already on
-    // the close button, and a pointer click cannot reach it while the backdrop
-    // is clipped inside the hovered card.
-    await page.keyboard.press('Enter');
+    await dialog.getByRole('button', { name: /^Close .+ profile$/ }).click();
 
     await expect(dialog).toHaveCount(0);
     await expect(page.getByRole('button', { name: triggerName })).toBeFocused();
+  });
+
+  test('clicking the backdrop closes the dialog', async ({ page }) => {
+    const { dialog } = await openProfile(page);
+
+    // The backdrop only closes on a mousedown whose target is the backdrop
+    // itself, so click its top-left corner, well clear of the dialog box.
+    await page.mouse.click(5, 5);
+
+    await expect(dialog).toHaveCount(0);
   });
 
   test('Escape closes the dialog and restores focus to the card', async ({
