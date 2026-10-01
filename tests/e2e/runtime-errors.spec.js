@@ -27,7 +27,7 @@
 // the site asks crawlers and readers to visit.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // Playwright transpiles these .js specs to CommonJS (the package is not
 // "type": "module"), so import.meta is not available here. Playwright resolves
@@ -37,7 +37,7 @@ const SITEMAP = resolve('build/sitemap.xml');
 
 // React hydrates after load, and a mismatch surfaces only once it has. Nothing
 // signals completion, so the wait is a fixed grace period; 2s was enough to
-// surface the /metrics/ mismatch on every observed run.
+// surface prior hydration mismatches on every observed run.
 const HYDRATION_GRACE_MS = 2_000;
 
 function sitemapPaths() {
@@ -56,12 +56,9 @@ const paths = sitemapPaths();
 // unexpectedly, Playwright reports that as a failure and this entry has to be
 // deleted.
 const KNOWN_FAILURES = new Map([
-  [
-    '/metrics/',
-    'cncf/endusers#891 — the production HTML minifier empties the SVG title ' +
-      'elements MetricsDashboard renders inside each data-point circle, so the ' +
-      'client render disagrees with the server HTML (React #418).',
-  ],
+  // cncf/endusers#891 (the /metrics/ SVG-title hydration mismatch) was fixed
+  // and closed; no entries remain. Add new ones here only alongside a filed,
+  // open defect — see the contract above.
 ]);
 
 // A guard on the fixture itself: if the sitemap ever fails to parse, the
