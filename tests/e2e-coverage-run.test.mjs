@@ -94,82 +94,6 @@ test('seals a run and writes collision-safe coverage artifacts', async () => {
       result: [],
     });
 
-    test('the run CLI awaits init and seal operations', async () => {
-      const runDir = await tempRunDir();
-      try {
-        await main(['init', '--dir', runDir, '--run-id', 'run-cli']);
-        await main(['seal', '--dir', runDir, '--status', 'passed']);
-        assert.equal((await readCoverageRun(runDir)).status, 'passed');
-        await assert.rejects(
-          () => sealCoverageRun(runDir, 'not-a-status'),
-          /invalid coverage seal status/,
-        );
-        await assert.rejects(
-          () => sealCoverageRun(runDir, 'passed'),
-          /already sealed/,
-        );
-      } finally {
-        await rm(runDir, { recursive: true, force: true });
-      }
-    });
-
-    test('rejects invalid artifact names and mismatched run IDs', async () => {
-      const runDir = await tempRunDir();
-      try {
-        await initCoverageRun(runDir, 'run-invalid');
-        await assert.rejects(
-          () =>
-            writeCoverageArtifact(runDir, 'bad/name', {
-              runId: 'run-invalid',
-            }),
-          /invalid coverage artifact name/,
-        );
-        await assert.rejects(
-          () =>
-            writeCoverageArtifact(runDir, 'mismatch', {
-              runId: 'other-run',
-            }),
-          /does not match run-invalid/,
-        );
-        await assert.rejects(
-          () => writeCoverageArtifact(runDir, 'missing-run-id', {}),
-          /does not match run-invalid/,
-        );
-      } finally {
-        await rm(runDir, { recursive: true, force: true });
-      }
-    });
-
-    test('run CLI rejects missing options and unknown commands', async () => {
-      const runDir = await tempRunDir();
-      try {
-        await assert.rejects(
-          () => main(['init', '--dir', runDir]),
-          /--run-id is required/,
-        );
-        await assert.rejects(
-          () => main(['unknown', '--dir', runDir]),
-          /unknown coverage run command/,
-        );
-      } finally {
-        await rm(runDir, { recursive: true, force: true });
-      }
-    });
-
-    test('run CLI entrypoint executes when launched as a Node process', async () => {
-      const runDir = await tempRunDir();
-      try {
-        const result = spawnSync(
-          process.execPath,
-          [RUN_TOOL, 'init', '--dir', runDir, '--run-id', 'subprocess-1'],
-          { encoding: 'utf8' },
-        );
-        assert.equal(result.status, 0, result.stderr);
-        assert.equal((await readCoverageRun(runDir)).runId, 'subprocess-1');
-      } finally {
-        await rm(runDir, { recursive: true, force: true });
-      }
-    });
     assert.match(artifact, /worker-0-page-0\.json$/);
     assert.deepEqual(JSON.parse(await readFile(artifact, 'utf8')).result, []);
     await assert.rejects(
@@ -195,6 +119,83 @@ test('seals a run and writes collision-safe coverage artifacts', async () => {
       /already sealed as passed/,
     );
     assert.ok((await readdir(runDir)).includes('manifest.json'));
+  } finally {
+    await rm(runDir, { recursive: true, force: true });
+  }
+});
+
+test('the run CLI awaits init and seal operations', async () => {
+  const runDir = await tempRunDir();
+  try {
+    await main(['init', '--dir', runDir, '--run-id', 'run-cli']);
+    await main(['seal', '--dir', runDir, '--status', 'passed']);
+    assert.equal((await readCoverageRun(runDir)).status, 'passed');
+    await assert.rejects(
+      () => sealCoverageRun(runDir, 'not-a-status'),
+      /invalid coverage seal status/,
+    );
+    await assert.rejects(
+      () => sealCoverageRun(runDir, 'passed'),
+      /already sealed/,
+    );
+  } finally {
+    await rm(runDir, { recursive: true, force: true });
+  }
+});
+
+test('rejects invalid artifact names and mismatched run IDs', async () => {
+  const runDir = await tempRunDir();
+  try {
+    await initCoverageRun(runDir, 'run-invalid');
+    await assert.rejects(
+      () =>
+        writeCoverageArtifact(runDir, 'bad/name', {
+          runId: 'run-invalid',
+        }),
+      /invalid coverage artifact name/,
+    );
+    await assert.rejects(
+      () =>
+        writeCoverageArtifact(runDir, 'mismatch', {
+          runId: 'other-run',
+        }),
+      /does not match run-invalid/,
+    );
+    await assert.rejects(
+      () => writeCoverageArtifact(runDir, 'missing-run-id', {}),
+      /does not match run-invalid/,
+    );
+  } finally {
+    await rm(runDir, { recursive: true, force: true });
+  }
+});
+
+test('run CLI rejects missing options and unknown commands', async () => {
+  const runDir = await tempRunDir();
+  try {
+    await assert.rejects(
+      () => main(['init', '--dir', runDir]),
+      /--run-id is required/,
+    );
+    await assert.rejects(
+      () => main(['unknown', '--dir', runDir]),
+      /unknown coverage run command/,
+    );
+  } finally {
+    await rm(runDir, { recursive: true, force: true });
+  }
+});
+
+test('run CLI entrypoint executes when launched as a Node process', async () => {
+  const runDir = await tempRunDir();
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [RUN_TOOL, 'init', '--dir', runDir, '--run-id', 'subprocess-1'],
+      { encoding: 'utf8' },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal((await readCoverageRun(runDir)).runId, 'subprocess-1');
   } finally {
     await rm(runDir, { recursive: true, force: true });
   }

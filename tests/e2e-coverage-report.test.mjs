@@ -391,75 +391,6 @@ test('main writes an honest tooling-error artifact before surfacing failure', as
       result: [],
     });
 
-    test('report parsing rejects missing and unknown CLI options', async () => {
-      await assert.rejects(() => main([]), /--input is required/);
-      await assert.rejects(
-        () => main(['--input', 'coverage', '--unknown']),
-        /unknown e2e coverage report option/,
-      );
-    });
-
-    test('collectE2ECoverage rejects source-content mismatch and bad offsets', async () => {
-      const fixture = await fixtureRun();
-      try {
-        const source = 'const value = 1;\n';
-        const scriptText = `${source}\n//# sourceMappingURL=bad.js.map\n`;
-        const script = join(fixture.buildDir, 'assets/js/bad.js');
-        const map = join(fixture.buildDir, 'assets/js/bad.js.map');
-        const original = join(fixture.root, 'src/components/Bad/index.js');
-        await mkdir(join(fixture.root, 'src/components/Bad'), {
-          recursive: true,
-        });
-        await writeFile(original, source);
-        await writeFile(script, scriptText);
-        await writeFile(
-          map,
-          JSON.stringify({
-            version: 3,
-            file: 'bad.js',
-            sources: ['../../../src/components/Bad/index.js'],
-            sourcesContent: ['different'],
-            names: [],
-            mappings: mapLines([[0, 0]]),
-          }),
-        );
-        await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
-          schemaVersion: 1,
-          kind: 'endusers.playwright.v8-coverage',
-          runId: 'run-1',
-          result: [
-            {
-              url: 'http://localhost:3000/assets/js/bad.js',
-              scriptId: 'bad-map',
-              functions: [
-                {
-                  functionName: '',
-                  isBlockCoverage: true,
-                  ranges: [
-                    {
-                      startOffset: 0,
-                      endOffset: scriptText.length + 1,
-                      count: 1,
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        });
-        await sealCoverageRun(fixture.runDir, 'passed');
-        await assert.rejects(
-          () =>
-            collectE2ECoverage(fixture.runDir, {
-              root: fixture.root,
-              buildDir: fixture.buildDir,
-            }),
-          /source map content does not match/,
-        );
-      } finally {
-        await rm(fixture.root, { recursive: true, force: true });
-      }
-    });
     await sealCoverageRun(fixture.runDir, 'passed');
     const jsonPath = join(fixture.root, 'error-report.json');
     const textPath = join(fixture.root, 'error-report.txt');
@@ -485,6 +416,76 @@ test('main writes an honest tooling-error artifact before surfacing failure', as
       'tooling-error',
     );
     assert.match(await readFile(textPath, 'utf8'), /tooling-error/);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('report parsing rejects missing and unknown CLI options', async () => {
+  await assert.rejects(() => main([]), /--input is required/);
+  await assert.rejects(
+    () => main(['--input', 'coverage', '--unknown']),
+    /unknown e2e coverage report option/,
+  );
+});
+
+test('collectE2ECoverage rejects source-content mismatch and bad offsets', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const source = 'const value = 1;\n';
+    const scriptText = `${source}\n//# sourceMappingURL=bad.js.map\n`;
+    const script = join(fixture.buildDir, 'assets/js/bad.js');
+    const map = join(fixture.buildDir, 'assets/js/bad.js.map');
+    const original = join(fixture.root, 'src/components/Bad/index.js');
+    await mkdir(join(fixture.root, 'src/components/Bad'), {
+      recursive: true,
+    });
+    await writeFile(original, source);
+    await writeFile(script, scriptText);
+    await writeFile(
+      map,
+      JSON.stringify({
+        version: 3,
+        file: 'bad.js',
+        sources: ['../../../src/components/Bad/index.js'],
+        sourcesContent: ['different'],
+        names: [],
+        mappings: mapLines([[0, 0]]),
+      }),
+    );
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/bad.js',
+          scriptId: 'bad-map',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                {
+                  startOffset: 0,
+                  endOffset: scriptText.length + 1,
+                  count: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /source map content does not match/,
+    );
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
