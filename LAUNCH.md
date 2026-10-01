@@ -74,14 +74,17 @@ The site's differentiator over static CNCF documentation is _living,
 self-refreshing_ community data. Launching with red scheduled pipelines means
 shipping stale content on day one — the exact failure this automation exists to
 prevent. Before the W-0 launch date, all scheduled content-refresh workflows
-must be green for **2 consecutive scheduled runs**:
+must be green for **2 consecutive scheduled runs**. The default-branch
+deployment is listed as a separate operational prerequisite. Statuses below were
+verified against `main` workflow runs on **2026-10-01 UTC**:
 
-| Pipeline                                                                                     | Schedule                        | Status as of 2026-09-24                                             | Tracking                                            |
-| -------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------- |
-| Import reference architectures (`import-architectures.yml`)                                  | on-demand (`workflow_dispatch`) | green (2026-09-24 run)                                              | #121 (closed; reopen a new issue if this regresses) |
-| Refresh community profiles (`refresh-community-people.yml`)                                  | weekly                          | green (1 of 2 consecutive scheduled runs; 2026-09-28 run succeeded) | #568 (closed; reopen a new issue if this regresses) |
-| Metrics refresh (`collect:metrics` + `validate:metrics` steps of `import-architectures.yml`) | on-demand (`workflow_dispatch`) | green (2026-09-24 run)                                              | #121 (closed; reopen a new issue if this regresses) |
-| Refresh radar reports (`refresh-radar-reports.yml`)                                          | daily                           | green (2026-09-24, 2026-09-25 runs)                                 | #605 (closed; reopen a new issue if this regresses) |
+| Pipeline                                                                                                                                                                                                                  | Schedule                        | Status verified 2026-10-01 UTC                                                                                                                                                                                                                                                | Tracking                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Default-branch deployment ([`deploy-gh-pages.yml`](https://github.com/cncf/endusers/blob/5c81e81cce24cbd0b6b38762129f699c861b716a/.github/workflows/deploy-gh-pages.yml))                                                 | Every push to `main`            | Green: [2026-09-30 00:58:40 UTC](https://github.com/cncf/endusers/actions/runs/36652882418) and [2026-10-01 02:45:00 UTC](https://github.com/cncf/endusers/actions/runs/36807285977); both build and deploy jobs succeeded                                                    | Operational prerequisite                            |
+| Import reference architectures ([`import-architectures.yml`](https://github.com/cncf/endusers/blob/5c81e81cce24cbd0b6b38762129f699c861b716a/.github/workflows/import-architectures.yml))                                  | On-demand (`workflow_dispatch`) | Last successful run: [2026-09-28 02:46:46 UTC](https://github.com/cncf/endusers/actions/runs/36371126622); no post-migration `workflow_dispatch` run is recorded                                                                                                              | #121 (closed; reopen a new issue if this regresses) |
+| Refresh community profiles ([`refresh-community-people.yml`](https://github.com/cncf/endusers/blob/5c81e81cce24cbd0b6b38762129f699c861b716a/.github/workflows/refresh-community-people.yml))                              | Weekly                          | Green (1 of 2 consecutive scheduled runs: [2026-09-28 02:55:29 UTC](https://github.com/cncf/endusers/actions/runs/36371675678); the next scheduled run has not yet occurred)                                                                                                  | #568 (closed; reopen a new issue if this regresses) |
+| Metrics refresh (`collect:metrics` + `validate:metrics` steps of [`import-architectures.yml`](https://github.com/cncf/endusers/blob/5c81e81cce24cbd0b6b38762129f699c861b716a/.github/workflows/import-architectures.yml)) | On-demand (`workflow_dispatch`) | `collect:metrics`, `validate:metrics`, and import steps succeeded in the [2026-09-28 02:46:46 UTC run](https://github.com/cncf/endusers/actions/runs/36371126622); no post-migration `workflow_dispatch` run is recorded                                                      | #121 (closed; reopen a new issue if this regresses) |
+| Refresh radar reports ([`refresh-radar-reports.yml`](https://github.com/cncf/endusers/blob/5c81e81cce24cbd0b6b38762129f699c861b716a/.github/workflows/refresh-radar-reports.yml))                                         | Daily                           | Green on [2026-09-28 03:04:01 UTC](https://github.com/cncf/endusers/actions/runs/36372220678), [2026-09-29 03:00:48 UTC](https://github.com/cncf/endusers/actions/runs/36515236309), and [2026-09-30 03:01:56 UTC](https://github.com/cncf/endusers/actions/runs/36662555166) | #605 (closed; reopen a new issue if this regresses) |
 
 `import-architectures.yml` moved from a daily cron to on-demand only
 (`workflow_dispatch`); a maintainer or contributor now triggers an import run
@@ -94,14 +97,18 @@ A dedicated `refresh-metrics.yml` workflow was proposed in PR #125 and declined
 (#74); metrics refresh instead runs as steps inside `import-architectures.yml`,
 so it shares that workflow's tracking issue and readiness signal.
 
-Issue #121 and its predecessor for the refresh-community-people GITHUB_TOKEN
+Issue #121 and its predecessor for the refresh-community-people `GITHUB_TOKEN`
 permission error (#122, duplicate of #519) are closed, but closing a tracking
-issue does not by itself mean the pipeline is green: the "Status as of" column
-above must be checked against the workflow's actual run history
-(`gh run list --workflow <name>`) before treating a row as resolved. Issue #568
-(missing `signoff: true` on `create-pull-request` steps) was closed and the
-subsequent scheduled run on 2026-09-28 succeeded; one more consecutive green
-scheduled run is required to satisfy the gate before W-0.
+issue does not by itself mean the pipeline is green: the status column above
+must be checked against the workflow's actual run history
+(`gh run list --workflow <name>`) before treating a row as resolved. The
+2026-09-28 community-profile run and the architecture/metrics run both report
+`contents: write` and `pull-requests: write` in their effective `GITHUB_TOKEN`
+permissions and complete their `create-pull-request` steps. Issue #568 (missing
+`signoff: true` on `create-pull-request` steps) was closed and the
+[2026-09-28 scheduled run](https://github.com/cncf/endusers/actions/runs/36371675678)
+succeeded; one more consecutive green scheduled run is required to satisfy the
+gate before W-0.
 
 If any pipeline is still red at W-1, treat it the same as any other Phase 1
 blocker under "Full content freeze rehearsal" (W-4): either land the fix or
