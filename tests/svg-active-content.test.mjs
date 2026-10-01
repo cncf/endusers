@@ -576,3 +576,56 @@ test('an unrecognized named entity does not hide a scheme that follows it', () =
     'contains a script URI in href="javascript:..."',
   ]);
 });
+
+// Removing an element splices the characters on either side of it together.
+// `script` is stripped before `embed`/`object`, so a single removal pass
+// returned a `<script>` the input never contained and the detector never saw.
+test('does not manufacture a script element by splicing around a removed embed', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg">' +
+    '<scr<embed src="x"></embed>ipt>alert(1)</scr<embed src="y"></embed>ipt>' +
+    '</svg>';
+  // The input carries no script element -- only the <embed> halves the
+  // detector reports -- so a <script> in the output is one the sanitizer built.
+  assert.deepEqual(findActiveContent(svg), ['contains a <embed> element']);
+
+  const { source } = stripActiveContent(svg);
+  assert.doesNotMatch(source, /<script/i);
+  assert.doesNotMatch(source, /alert\(1\)/);
+  assert.deepEqual(findActiveContent(source), []);
+});
+
+test('does not manufacture a script element by splicing around a removed object', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg">' +
+    '<scr<object></object>ipt>alert(1)</scr<object></object>ipt>' +
+    '</svg>';
+  assert.deepEqual(findActiveContent(svg), ['contains a <object> element']);
+
+  const { source } = stripActiveContent(svg);
+  assert.doesNotMatch(source, /<script/i);
+  assert.deepEqual(findActiveContent(source), []);
+});
+
+test('does not manufacture a script element by splicing around a self-closing embed', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg">' +
+    '<scr<embed/>ipt>alert(1)</scr<embed/>ipt>' +
+    '</svg>';
+  assert.deepEqual(findActiveContent(svg), ['contains a <embed> element']);
+
+  const { source } = stripActiveContent(svg);
+  assert.doesNotMatch(source, /<script/i);
+  assert.deepEqual(findActiveContent(source), []);
+});
+
+test('throws rather than returning a source the detector still flags', () => {
+  // An unterminated active element has no `>` for the removal patterns to
+  // match, so no number of passes can remove it. Returning it as sanitized
+  // would publish it at the site origin, so the function fails closed.
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg"><script';
+  assert.ok(findActiveContent(svg).length > 0);
+  assert.throws(() => stripActiveContent(svg), {
+    message: /Could not strip active content from SVG: contains a <script>/,
+  });
+});

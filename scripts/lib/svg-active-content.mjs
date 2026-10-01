@@ -385,11 +385,50 @@ export function findActiveContent(source) {
  *
  * Removes script-bearing elements outright and drops offending attributes
  * while leaving inert markup untouched.
+ *
+ * The removal runs to a fixed point rather than once. Deleting an element
+ * splices the characters on either side of it together, and those characters
+ * can form an active element that was not in the input: `<scr<embed/>ipt>`
+ * becomes `<script>` once the `<embed>` between the halves of the word is
+ * removed. `script` is stripped before `embed`, so a single pass returns that
+ * reassembled element intact -- active content manufactured out of input the
+ * detector called inert. Every pass strictly shortens the source, so
+ * iterating until it stops changing terminates.
+ *
  * @param {string} source - SVG file contents.
  * @returns {{ source: string, removed: string[] }}
+ * @throws {Error} If active content survives the loop. Callers write this
+ *   output to the site origin verbatim, so a source the detector still flags
+ *   must never be handed back as sanitized.
  */
 export function stripActiveContent(source) {
   const removed = [];
+  let output = String(source);
+  let previous;
+  do {
+    previous = output;
+    output = stripOnce(output, removed);
+  } while (output !== previous);
+
+  const residual = findActiveContent(output);
+  if (residual.length) {
+    throw new Error(
+      `Could not strip active content from SVG: ${residual.join('; ')}`,
+    );
+  }
+
+  return { source: output, removed };
+}
+
+/**
+ * One removal pass: every active element, event handler attribute, script URI
+ * and href-animating element the patterns can see in `source`.
+ *
+ * @param {string} source - SVG source as it stands at the start of the pass.
+ * @param {string[]} removed - Accumulator, appended to in place.
+ * @returns {string} The source with this pass's removals applied.
+ */
+function stripOnce(source, removed) {
   let output = source;
 
   for (const element of ACTIVE_ELEMENTS) {
@@ -455,5 +494,5 @@ export function stripActiveContent(source) {
     return ' ';
   });
 
-  return { source: output, removed };
+  return output;
 }
