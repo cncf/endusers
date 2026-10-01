@@ -28,14 +28,6 @@ import { fromMarkdown } from 'mdast-util-from-markdown';
 import { mdxjs } from 'micromark-extension-mdxjs';
 import { mdxFromMarkdown } from 'mdast-util-mdx';
 
-/**
- * An autolink — `<https://example.com>` or `<user@example.com>`. These are
- * plain CommonMark rather than JSX, and their body cannot contain `<`, `>` or
- * whitespace, so they can be recognized and preserved rather than escaped.
- */
-const AUTOLINK =
-  /<[A-Za-z][A-Za-z0-9+.-]*:[^<>\s]*>|<[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+>/;
-
 const ESCAPES = new Map([
   ['&#123;', '{'],
   ['&#125;', '}'],
@@ -138,9 +130,7 @@ function hasActiveMdx(text) {
 function escapePlain(text) {
   return text
     .replace(/[{}]/g, (brace) => (brace === '{' ? '&#123;' : '&#125;'))
-    .replace(new RegExp(`${AUTOLINK.source}|<`, 'g'), (match) =>
-      match === '<' ? '&lt;' : match,
-    )
+    .replace(/</g, '&lt;')
     .replace(
       /^([ \t]{0,3})(import|export)\b/gm,
       (_, indent, word) => `${indent}&#${word.charCodeAt(0)};${word.slice(1)}`,
