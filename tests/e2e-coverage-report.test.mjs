@@ -1264,3 +1264,181 @@ test('sourcePathFromReference handles empty and webpack source references', () =
     },
   );
 });
+
+/**
+ * A build whose bundle, map and original source all agree, so each test below
+ * can tamper with exactly one field and attribute the rejection to the guard
+ * under test rather than to an unrelated inconsistency.
+ */
+async function tamperFixture(name) {
+  const fixture = await fixtureRun();
+  const source = 'const value = 1;\n';
+  const scriptText = `${source}\n//# sourceMappingURL=${name}.js.map\n`;
+  const script = join(fixture.buildDir, `assets/js/${name}.js`);
+  await mkdir(join(fixture.root, `src/components/${name}`), {
+    recursive: true,
+  });
+  await writeFile(
+    join(fixture.root, `src/components/${name}/index.js`),
+    source,
+  );
+  await writeFile(script, scriptText);
+  await writeFile(
+    join(fixture.buildDir, `assets/js/${name}.js.map`),
+    JSON.stringify({
+      version: 3,
+      file: `${name}.js`,
+      sources: [`../../../src/components/${name}/index.js`],
+      sourcesContent: [source],
+      names: [],
+      mappings: mapLines([[0, 0]]),
+    }),
+  );
+  return { ...fixture, scriptText, source, script };
+}
+
+function coverageEntry(url, scriptText, extra = {}) {
+  return {
+    schemaVersion: 1,
+    kind: 'endusers.playwright.v8-coverage',
+    runId: 'run-1',
+    result: [
+      {
+        url,
+        scriptId: 'tampered',
+        functions: [
+          {
+            functionName: '',
+            isBlockCoverage: true,
+            ranges: [
+              { startOffset: 0, endOffset: scriptText.length, count: 1 },
+            ],
+          },
+        ],
+        ...extra,
+      },
+    ],
+  };
+}
+
+test('collectE2ECoverage rejects a coverage URL that escapes the build directory', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const scriptText = 'const value = 1;\n';
+    await writeFile(join(fixture.root, 'outside.js'), scriptText);
+    await writeCoverageArtifact(
+      fixture.runDir,
+      'worker-0-page-0',
+      // Encoded as one opaque segment so URL parsing cannot normalise the
+      // traversal away before the guard sees it.
+      coverageEntry('http://localhost:3000/%2e%2e%2foutside.js', scriptText),
+    );
+    await sealCoverageRun(fixture.runDir, 'passed');
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /coverage script escapes build directory/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage rejects a recorded source length that disagrees with the bundle', async () => {
+  const fixture = await tamperFixture('LengthMismatch');
+  try {
+    await writeCoverageArtifact(
+      fixture.runDir,
+      'worker-0-page-0',
+      coverageEntry(
+        'http://localhost:3000/assets/js/LengthMismatch.js',
+        fixture.scriptText,
+        { sourceLength: fixture.scriptText.length + 1 },
+      ),
+    );
+    await sealCoverageRun(fixture.runDir, 'passed');
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /generated source length mismatch/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage rejects a recorded source hash that disagrees with the bundle', async () => {
+  const fixture = await tamperFixture('HashMismatch');
+  try {
+    await writeCoverageArtifact(
+      fixture.runDir,
+      'worker-0-page-0',
+      coverageEntry(
+        'http://localhost:3000/assets/js/HashMismatch.js',
+        fixture.scriptText,
+        {
+          sourceLength: fixture.scriptText.length,
+          sourceSha256: createHash('sha256').update('other').digest('hex'),
+        },
+      ),
+    );
+    await sealCoverageRun(fixture.runDir, 'passed');
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /generated source hash mismatch/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage rejects coverage offsets past the end of the bundle', async () => {
+  const fixture = await tamperFixture('OffsetOverflow');
+  try {
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/OffsetOverflow.js',
+          scriptId: 'overflow',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                {
+                  startOffset: 0,
+                  endOffset: fixture.scriptText.length + 1,
+                  count: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /coverage offsets exceed generated source length/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
