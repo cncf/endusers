@@ -392,8 +392,8 @@ if (landscape) {
   );
   const represented = [];
   for (const member of members) {
-    for (const source of member.membershipSources || []) {
-      represented.push(source.sourceId);
+    for (const source of member?.membershipSources || []) {
+      represented.push(source?.sourceId);
     }
   }
   const representedSet = new Set(represented);
