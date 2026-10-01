@@ -120,6 +120,7 @@
   },
   "homepage": "https://endusers.cncf.io/",
   "overrides": {
+    "basic-ftp": "^6.2.1",
     "serialize-javascript": "^7.0.3",
     "picomatch": "^2.3.2",
     "joi": "^17.13.7",
