@@ -32,6 +32,7 @@ export function DirectoryFreshness() {
           on {landscapeDate}.
         </>
       )}
+      {landscapeDate && architecturesDate && ' '}
       {architecturesDate && (
         <>
           Architecture-derived profiles last synced from{' '}
@@ -45,7 +46,8 @@ export function DirectoryFreshness() {
           on {architecturesDate}.
         </>
       )}
-      {awardsDate && <> Award data last verified on {awardsDate}.</>}
+      {(landscapeDate || architecturesDate) && awardsDate && ' '}
+      {awardsDate && <>Award data last verified on {awardsDate}.</>}
     </p>
   );
 }

@@ -144,6 +144,32 @@ test.describe('member directory filtering', () => {
   });
 });
 
+for (const colorScheme of ['light', 'dark']) {
+  test(`corporate logo plates stay readable in ${colorScheme}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/community/members');
+    const trigger = page.getByRole('button', {
+      name: 'Open BlackRock profile',
+    });
+    const card = trigger.locator('..');
+    await expect(card).toBeVisible();
+    await expect(card.locator('div[class*="logoWrapper"]')).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+
+    await waitForHydration(trigger);
+    await trigger.click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.locator('div[class*="logoStage"]')).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+  });
+}
+
 test.describe('member profile dialog', () => {
   test('opens focused on close, traps Tab, and restores focus on Escape', async ({
     page,

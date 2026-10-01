@@ -189,7 +189,7 @@
 
 .logoWrapper {
   align-items: center;
-  background: var(--ifm-color-emphasis-100);
+  background: #fff;
   display: flex;
   height: 110px;
   justify-content: center;

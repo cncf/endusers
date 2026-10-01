@@ -367,6 +367,11 @@ test('the freshness note dates both upstream sources and links the repo', () => 
   assert.match(text, /Architecture-derived profiles last synced from/);
   assert.ok(text.includes(formatDate(metrics.generatedAt)));
   assert.ok(text.includes(formatDate(awardsData.verifiedAt)));
+  assert.ok(
+    text.includes(
+      `${formatDate(membersData.sources.landscape.collectedAt)}. Architecture-derived`,
+    ),
+  );
 
   const links = findAllByType(tree, 'a');
   assert.equal(links[0].props.href, membersData.sources.landscape.sourceUrl);
