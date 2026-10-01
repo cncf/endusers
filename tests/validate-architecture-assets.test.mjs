@@ -470,13 +470,68 @@ test('rejects a new static/ subdirectory that is neither gated nor exempted', ()
   );
 });
 
-test('accepts the exempted static/fonts directory without gating its contents', () => {
+test('accepts a font file in the exempted static/fonts directory', () => {
   const result = runScriptWithFixtures(SCRIPT, {
     'static/fonts/some-font.woff2': 'not really a font',
     'static/img/architectures/example/diagram.svg': VALID_SVG,
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Validated 1 architecture asset/);
+});
+
+// An exemption narrows the gate to the font allow-list; it does not remove it.
+// static/fonts is published at the site origin like every other static/
+// directory, so a file the browser executes as markup must not reach it.
+
+test('rejects a script-bearing SVG hidden in the exempted static/fonts directory', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/fonts/poc.svg':
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/fonts\/poc\.svg: \.svg is not an allowed asset type/,
+  );
+});
+
+test('rejects an HTML file in the exempted static/fonts directory', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/fonts/poc.html': '<html><script>alert(1)</script></html>',
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/fonts\/poc\.html: \.html is not an allowed asset type/,
+  );
+});
+
+test('rejects a symlink inside the exempted static/fonts directory', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    {
+      'static/fonts/some-font.woff2': 'not really a font',
+      'static/img/architectures/example/diagram.svg': VALID_SVG,
+    },
+    { symlinks: { 'static/fonts/link.woff': 'some-font.woff2' } },
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /static\/fonts\/link\.woff: is a symbolic link/);
+});
+
+test('gates a nested subdirectory of the exempted static/fonts directory', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/fonts/nested/poc.svg':
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/fonts\/nested\/poc\.svg: \.svg is not an allowed asset type/,
+  );
 });
 
 test('rejects a symlink standing in for a top-level static/ directory', () => {

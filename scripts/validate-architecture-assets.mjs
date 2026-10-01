@@ -35,6 +35,11 @@ const ALLOWED_ASSET_EXTENSIONS = new Set([
 // what the importer will mirror, and the importer never writes an .ico.
 const SITE_CHROME_EXTENSIONS = new Set([...ALLOWED_ASSET_EXTENSIONS, '.ico']);
 
+// Web font containers. None of them is parsed as markup or script by any
+// browser, so they are safe at the origin, and none of them is an image, so
+// they stay out of the asset allow-lists above.
+const FONT_EXTENSIONS = new Set(['.ttf', '.woff', '.woff2']);
+
 // Every directory here is published verbatim at the site origin, so every one
 // gets the security gate (extension allow-list, symlink rejection, SVG active
 // content). The gate is scoped by where the bytes are *served from*, not by
@@ -54,9 +59,9 @@ const SITE_CHROME_EXTENSIONS = new Set([...ALLOWED_ASSET_EXTENSIONS, '.ico']);
 // finds there, since a shallow walk would otherwise publish its contents with
 // no gate at all.
 //
-// static/fonts is deliberately outside the gate (it holds no SVG, and its
-// extensions are legitimately outside the image allow-list) via the
-// exemptTopLevelDirs exemption below. Files sitting directly in the static/
+// static/fonts holds no image, so it is gated against the font extension
+// allow-list instead of the image one, via the exemptTopLevelDirs entry below.
+// Files sitting directly in the static/
 // root have no enclosing directory for this list to gate, so
 // checkForUngatedStaticEntries gates each one individually: the known non-asset
 // files (robots.txt, manifest.json, .nojekyll) are named in exemptTopLevelFiles
@@ -94,13 +99,20 @@ const gatedTopLevelDirs = new Set(
   assetDirs.map(({ dir }) => relative(join(root, 'static'), dir).split('/')[0]),
 );
 
-// Top-level static/ subdirectories that are deliberately outside the gate,
-// with the reason a reviewer needs to approve a new exemption. A directory
-// reaching the site origin under neither this map nor assetDirs above is a
-// silent gap: it ships whatever it contains — including a script-bearing SVG
-// — with no CI signal.
+// Top-level static/ subdirectories that hold something other than images, with
+// the reason a reviewer needs to approve a new exemption. An exemption narrows
+// the gate to a different extension allow-list; it never removes it. A
+// directory reaching the site origin under neither this map nor assetDirs above
+// is a silent gap: it ships whatever it contains — including a script-bearing
+// SVG — with no CI signal.
 const exemptTopLevelDirs = new Map([
-  ['fonts', 'holds only font files (.woff/.woff2); never SVG or markup'],
+  [
+    'fonts',
+    {
+      reason: 'holds only font files (.ttf/.woff/.woff2); never SVG or markup',
+      extensions: FONT_EXTENSIONS,
+    },
+  ],
 ]);
 
 // Top-level static/ *files*, which have no enclosing directory for assetDirs to
@@ -135,7 +147,18 @@ function checkForUngatedStaticEntries() {
     }
     if (entry.isDirectory()) {
       if (gatedTopLevelDirs.has(entry.name)) continue;
-      if (exemptTopLevelDirs.has(entry.name)) continue;
+      const exemption = exemptTopLevelDirs.get(entry.name);
+      if (exemption) {
+        // An exemption is a narrower allow-list, not an absence of one. Walking
+        // it here keeps the stated invariant ("never SVG or markup") a thing CI
+        // enforces rather than a claim in a comment: walk() rejects symlinks,
+        // and validateAsset() rejects every extension outside the exemption, so
+        // nothing executable can reach the origin through an exempt directory.
+        for (const file of walk(path)) {
+          validateAsset(file, false, exemption.extensions);
+        }
+        continue;
+      }
       record(
         path,
         'error',
