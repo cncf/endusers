@@ -312,6 +312,63 @@ test('the meta CSP keeps its non-script hardening directives', () => {
   assert.deepEqual(directives.get('form-action'), ["'self'"]);
 });
 
+// Without a `default-src`, an unnamed fetch directive is not restricted by the
+// named ones -- it is simply absent, and the browser allows any host. These
+// three were missing while `object-src 'none'` was present, which left the
+// more capable `<iframe>` open in a policy that closed `<object>`.
+test('the meta CSP names the fetch directives that have no default-src fallback', () => {
+  const directives = cspDirectives();
+  assert.equal(
+    directives.has('default-src'),
+    false,
+    'this assertion set assumes no default-src: if one is added, every directive below inherits it and these tests must be revisited',
+  );
+  assert.deepEqual(
+    directives.get('frame-src'),
+    ["'none'"],
+    "frame-src is missing or widened: an <iframe> that slipped the element allowlist in scripts/lib/mdx-active-content.mjs would load any host, framed inside this origin's page",
+  );
+  assert.deepEqual(
+    directives.get('media-src'),
+    ["'none'"],
+    'media-src is missing or widened: a <video>/<audio> src that slipped a gate would beacon the visitor to any host',
+  );
+  assert.deepEqual(
+    directives.get('connect-src'),
+    ["'self'"],
+    'connect-src is missing or widened: it confines fetch/XHR/WebSocket to this origin so injected content cannot exfiltrate to a third party',
+  );
+});
+
+// The three directives above are only safe to set this tightly because the
+// site ships nothing that needs them widened. If that stops being true the
+// policy has to change with it, so assert the premise rather than trusting it.
+test('no shipped source needs a wider frame, media or connect source', () => {
+  const walkAll = (dir) =>
+    readdirSync(dir).flatMap((entry) => {
+      const full = join(dir, entry);
+      return statSync(full).isDirectory() ? walkAll(full) : [full];
+    });
+  const offenders = [];
+  for (const dir of ['src', 'docs', 'blog', 'data']) {
+    const root = join(repoRoot, dir);
+    if (!existsSync(root)) continue;
+    for (const file of walkAll(root)) {
+      if (!/\.(js|jsx|mjs|md|mdx|json)$/.test(file)) continue;
+      const body = readFileSync(file, 'utf8');
+      const match = body.match(
+        /<iframe|<video[\s>]|<audio[\s>]|XMLHttpRequest|new WebSocket|new EventSource/i,
+      );
+      if (match) offenders.push(`${relative(repoRoot, file)}: ${match[0]}`);
+    }
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    'a frame, media element or cross-origin request was added; widen the CSP deliberately rather than leaving it to block at runtime',
+  );
+});
+
 test('the meta CSP confines images to the hosts the image gate allows', () => {
   const sources = cspDirectives().get('img-src');
   assert.ok(
@@ -389,5 +446,10 @@ test('the CSP holds under a preview deployment origin', async () => {
   });
   const directives = cspDirectives(preview);
   assert.deepEqual(directives.get('object-src'), ["'none'"]);
+  assert.deepEqual(directives.get('frame-src'), ["'none'"]);
+  assert.deepEqual(directives.get('media-src'), ["'none'"]);
+  // 'self' is the preview origin under a preview deployment, so local search
+  // still reads its index from the host the page was served from.
+  assert.deepEqual(directives.get('connect-src'), ["'self'"]);
   assert.ok(directives.get('img-src')?.includes("'self'"));
 });

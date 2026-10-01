@@ -89,9 +89,30 @@ const config = {
         // (scripts/lib/profile-image.mjs, scripts/lib/project-assets.mjs, the
         // SVG remote-reference check in scripts/lib/svg-active-content.mjs).
         // `data:` is required: Infima inlines small SVG icons as data URIs.
+        //
+        // There is no `default-src` here, so every fetch directive that is not
+        // named below is unrestricted rather than inheriting a fallback. That
+        // left `<iframe>`, media elements and outbound `fetch()` open to any
+        // host while `<object>`/`<embed>` were closed by `object-src 'none'` —
+        // an asymmetry, since an iframe is the more capable of the two. The
+        // three directives below close it, on the same defence-in-depth
+        // footing as `img-src`: the element allowlist in
+        // scripts/lib/mdx-active-content.mjs already refuses `<iframe>`,
+        // `<video>` and `<audio>` in imported bodies, and these hold if that
+        // gate is bypassed, regressed, or skipped by a page added without one.
+        // Each is set to what the site actually uses: it ships no frame, no
+        // media element and no client-side request to a third-party origin
+        // (the local search plugin reads its index from this origin), so
+        // nothing here constrains Docusaurus hydration or local search.
+        // `style-src`/`font-src` are still omitted: Docusaurus emits inline
+        // styles, so they could only ship with 'unsafe-inline' and would add
+        // no protection, exactly as with script-src.
         content: [
           "base-uri 'self'",
           "object-src 'none'",
+          "frame-src 'none'",
+          "media-src 'none'",
+          "connect-src 'self'",
           "form-action 'self'",
           `img-src 'self' data: ${IMAGE_HOST_SOURCES.join(' ')}`,
         ].join('; '),
