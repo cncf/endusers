@@ -836,11 +836,68 @@ test('collectE2ECoverage rejects symlinked maps, bundles, and sources', async ()
           root: sourceFixture.root,
           buildDir: sourceFixture.buildDir,
         }),
-      /source map source escapes repository/,
+      /source map source escapes src directory/,
     );
   } finally {
     await rm(sourceFixture.root, { recursive: true, force: true });
     await rm(outsideSourceRoot, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage rejects a nominal src symlink to an unrelated repo file', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const privateFixture = join(fixture.root, 'private-fixture.txt');
+    const nominalSource = join(fixture.root, 'src/components/Link/index.js');
+    const source = 'const privateFixture = 1;\n';
+    const script = 'const value = 1;\n//# sourceMappingURL=nominal.js.map\n';
+    await writeFile(privateFixture, source);
+    await mkdir(join(fixture.root, 'src/components/Link'), {
+      recursive: true,
+    });
+    await symlink(privateFixture, nominalSource);
+    await writeFile(join(fixture.buildDir, 'assets/js/nominal.js'), script);
+    await writeFile(
+      join(fixture.buildDir, 'assets/js/nominal.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'nominal.js',
+        sources: ['../../../src/components/Link/index.js'],
+        sourcesContent: [source],
+        names: [],
+        mappings: 'AAAA',
+      }),
+    );
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/nominal.js',
+          scriptId: 'nominal',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [{ startOffset: 0, endOffset: script.length, count: 1 }],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /source map source escapes src directory/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
   }
 });
 

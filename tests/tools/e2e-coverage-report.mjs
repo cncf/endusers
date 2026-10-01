@@ -138,6 +138,9 @@ async function loadSourceMap(generatedSource, scriptPath, buildDir) {
 
   const mapPath = resolve(dirname(scriptPath), reference);
   const buildRoot = await realpath(buildDir);
+  if (!isInside(buildRoot, mapPath)) {
+    throw new Error(`source map escapes build directory: ${reference}`);
+  }
   const resolvedMapPath = await realpath(mapPath);
   if (!isInside(buildRoot, resolvedMapPath)) {
     throw new Error(`source map escapes build directory: ${reference}`);
@@ -161,6 +164,8 @@ async function normalizeSourceMap(rawMap, mapPath, root) {
   const normalizedSources = [];
   const sourceFiles = [];
   const rootPath = await realpath(root);
+  const srcRoot = resolve(root, 'src');
+  const srcRootPath = await realpath(srcRoot);
 
   for (let index = 0; index < references.length; index += 1) {
     const reference = references[index];
@@ -171,13 +176,23 @@ async function normalizeSourceMap(rawMap, mapPath, root) {
       sourcesContent.push(suppliedContent ?? '');
       continue;
     }
+    if (!isInside(srcRoot, sourceFile.absolute)) {
+      throw new Error(
+        `source map source escapes src directory: ${sourceFile.relative}`,
+      );
+    }
+    const resolvedSource = await realpath(sourceFile.absolute);
+    if (!isInside(srcRootPath, resolvedSource)) {
+      throw new Error(
+        `source map source escapes src directory: ${sourceFile.relative}`,
+      );
+    }
     if (!ORIGINAL_SCRIPT.test(sourceFile.relative)) {
       normalizedSources.push(`e2e-external-source-${index}.js`);
       sourcesContent.push('');
       continue;
     }
 
-    const resolvedSource = await realpath(sourceFile.absolute);
     if (!isInside(rootPath, resolvedSource)) {
       throw new Error(
         `source map source escapes repository: ${sourceFile.relative}`,
@@ -270,6 +285,11 @@ async function convertScript(scriptCoverage, root, buildDir) {
   const parsed = new URL(scriptCoverage.url);
   const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, '');
   const scriptPath = resolve(buildDir, pathname);
+  if (!isInside(resolve(buildDir), scriptPath)) {
+    throw new Error(
+      `coverage script escapes build directory: ${scriptCoverage.url}`,
+    );
+  }
   const buildRoot = await realpath(buildDir);
   const resolvedScriptPath = await realpath(scriptPath);
   if (!isInside(buildRoot, resolvedScriptPath)) {
