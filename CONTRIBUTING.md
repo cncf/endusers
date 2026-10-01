@@ -28,14 +28,17 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
 `Justfile` provides shortcuts that wrap the npm scripts above:
 
 - `just serve` — start the dev server bound to all interfaces.
-- `just import` — import reference architectures and run `import:architectures`,
+- `just import` — refresh end-user member data from `cncf/landscape`
+  (`collect:enduser-members`, `validate:enduser-members` — this step clones
+  `cncf/landscape` from GitHub, so it needs network access) and then import
+  reference architectures and run `import:architectures`,
   `validate:architectures`, and `validate:architecture-assets`.
 - `just build` — run the data validators (`validate:architectures`,
   `validate:architecture-assets`, `validate:metrics`, `validate:awards`,
   `validate:community-people`, `validate:community-groups`,
   `validate:launch-metrics`, `validate:case-studies`, `validate:radar-reports`,
-  `validate:projects-born`, `validate:button-contrast`, `validate:members`)
-  followed by `build`.
+  `validate:projects-born`, `validate:button-contrast`,
+  `validate:enduser-members`, `validate:members`) followed by `build`.
 
 These recipes are a superset of the validation steps the "Deploy to GitHub
 Pages" and "Import reference architectures" workflows run, but they are **not**
@@ -157,9 +160,9 @@ enough for a first contribution.
 2. Make your change and run the relevant validation script.
 3. Run `npm run test:unit:coverage:check` — the required "Validate repository"
    check runs this on every PR, and it fails the build if unit-test coverage
-   drops below its thresholds (97% lines / 99% source / 93% regions / 97% source
-   regions). `npm run test:unit` alone skips the coverage gate, so a green
-   `test:unit` locally does not guarantee a green PR check.
+   drops below its thresholds (99% lines / 100% source / 94% regions / 99%
+   source regions). `npm run test:unit` alone skips the coverage gate, so a
+   green `test:unit` locally does not guarantee a green PR check.
 4. Verify with `npm run build` before opening a PR. If your change touches
    pages, components, or navigation, also run the end-to-end suite — see
    [End-to-end tests](#end-to-end-tests) below.
