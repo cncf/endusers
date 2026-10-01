@@ -18,14 +18,8 @@
 //   - a chosen mode not surviving navigation, which is what makes the toggle
 //     feel broken even when it works on the page you clicked it on.
 //
-// The assertions are deliberately about *which mode is engaged*, expressed
-// through the `data-theme` attribute Docusaurus puts on <html> and the tokens
-// Infima itself themes. The site's own `--cncf-*` and `--ifm-color-primary`
-// overrides are NOT asserted here: they do not currently change between modes,
-// because the dark block in src/css/custom.css loses the cascade to the light
-// block on specificity. That is a stylesheet defect tracked separately, and
-// asserting it here would mean landing a red test; this file guards the
-// surrounding behaviour so the defect is the only thing left uncovered.
+// Computed site tokens also guard the cascade: selecting a theme is not enough
+// if the site's dark overrides lose to the light root block.
 import { test, expect } from '@playwright/test';
 
 // docusaurus.config.js sets `colorMode.defaultMode: 'light'`.
@@ -71,6 +65,57 @@ test.describe('colour mode', () => {
 
     await context.close();
   });
+
+  for (const palette of [
+    {
+      mode: 'light',
+      primary: '#005ea8',
+      button: '#005ea8',
+      hover: '#004f91',
+    },
+    {
+      mode: 'dark',
+      primary: '#32d8b4',
+      button: '#007f68',
+      hover: '#006f5b',
+    },
+  ]) {
+    test(`the ${palette.mode} site palette wins the cascade`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: palette.mode });
+      await page.goto('/');
+      await expect(theme(page)).toHaveAttribute('data-theme', palette.mode);
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const style = getComputedStyle(document.documentElement);
+            return {
+              primary: style.getPropertyValue('--ifm-color-primary').trim(),
+              button: style.getPropertyValue('--cncf-button-background').trim(),
+              hover: style
+                .getPropertyValue('--cncf-button-background-hover')
+                .trim(),
+            };
+          }),
+        )
+        .toEqual({
+          primary: palette.primary,
+          button: palette.button,
+          hover: palette.hover,
+        });
+      const decoration = (selector) =>
+        page
+          .locator(selector)
+          .first()
+          .evaluate((node) => getComputedStyle(node).textDecorationLine);
+      expect(await decoration('.pillar p a')).toContain('underline');
+      expect(await decoration('.audience-cta')).toBe('none');
+      expect(await decoration('.navbar__link')).toBe('none');
+      await page.goto('/metrics');
+      expect(await decoration('a[class*="card"]')).toBe('none');
+    });
+  }
 
   test('a dark-preferring visitor gets dark mode on arrival', async ({
     browser,
