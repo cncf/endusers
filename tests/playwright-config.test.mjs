@@ -1,8 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { existsSync, readdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
@@ -111,4 +120,88 @@ test('gives the web server a bounded startup timeout', async () => {
   const config = await loadConfig(cleanEnv);
   assert.equal(typeof config.webServer.timeout, 'number');
   assert.ok(config.webServer.timeout > 0);
+});
+
+// Which files in testDir actually run is decided by Playwright's default
+// `testMatch` (`**/*.@(spec|test).?(c|m)[jt]s?(x)`), because the config sets
+// neither `testMatch` nor `testIgnore`. The assertion above only proves the
+// directory holds *at least one* `.spec.js`, so a spec committed as
+// `navigation.e2e.js` — or an existing spec dropped by a future `testIgnore`
+// — would sit in tests/e2e looking like coverage while never executing, and
+// the end-to-end CI job would stay green. The whole e2e safety net for the
+// site lives in that one directory, so a silently unregistered file removes
+// coverage while appearing to add it.
+//
+// The registered set is resolved by asking Playwright itself rather than by
+// re-implementing its glob, so the check cannot drift from the runner's real
+// behaviour. `--list` neither downloads a browser nor starts the web server.
+const playwrightBin = join(repoRoot, 'node_modules', '.bin', 'playwright');
+
+function listRegisteredSpecs(testDir) {
+  // NODE_V8_COVERAGE reaches Playwright's own worker processes, which load
+  // every spec file to enumerate it. Left pointed at the reporter's directory,
+  // those records make tests/tools/coverage-report.mjs attribute all 19 spec
+  // files to this unit run — they surface as "Not reported" entries and move
+  // the repo-wide percentages the coverage gate checks. The child's coverage
+  // is of no interest, so it is redirected to a directory that is thrown away.
+  const sink = mkdtempSync(join(tmpdir(), 'playwright-list-coverage-'));
+  try {
+    const run = spawnSync(
+      playwrightBin,
+      ['test', '--list', '--reporter=json'],
+      {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        env: { ...process.env, CI: '', NODE_V8_COVERAGE: sink },
+      },
+    );
+
+    assert.equal(run.status, 0, `playwright test --list failed: ${run.stderr}`);
+
+    // `status` 0 guarantees the reporter wrote a complete JSON listing, so
+    // neither the output nor its `suites` array needs a fallback.
+    const listing = JSON.parse(run.stdout);
+    const absoluteTestDir = join(repoRoot, testDir);
+
+    return new Set(
+      listing.suites
+        .map((suite) => resolve(absoluteTestDir, suite.file))
+        .map((file) => relative(absoluteTestDir, file)),
+    );
+  } finally {
+    rmSync(sink, { recursive: true, force: true });
+  }
+}
+
+test('registers every file in testDir as a spec', async () => {
+  const config = await loadConfig(cleanEnv);
+  const testDir = join(repoRoot, config.testDir);
+
+  const onDisk = readdirSync(testDir).filter((entry) =>
+    statSync(join(testDir, entry)).isFile(),
+  );
+  const registered = listRegisteredSpecs(config.testDir);
+
+  const unregistered = onDisk.filter((entry) => !registered.has(entry));
+  assert.deepEqual(
+    unregistered,
+    [],
+    `${config.testDir} holds files Playwright never runs (rename them to *.spec.js): ${unregistered.join(', ')}`,
+  );
+
+  // Guards the comparison itself: an empty registered set would make the
+  // check above vacuous for an empty directory.
+  assert.equal(registered.size, onDisk.length);
+  assert.ok(onDisk.length > 0, `${config.testDir} is empty`);
+});
+
+test('declares no testIgnore that could shrink the suite', async () => {
+  const config = await loadConfig(cleanEnv);
+  assert.equal(config.testIgnore, undefined);
+
+  // `defineConfig` passes unknown keys straight through, so a `testIgnore`
+  // added to the source would surface above. Reading the source as well keeps
+  // the contract legible at the place a reviewer would add one.
+  const source = readFileSync(join(repoRoot, 'playwright.config.js'), 'utf8');
+  assert.doesNotMatch(source, /\btestIgnore\b/);
 });
