@@ -1442,3 +1442,227 @@ test('collectE2ECoverage rejects coverage offsets past the end of the bundle', a
     await rm(fixture.root, { recursive: true, force: true });
   }
 });
+
+test('sourcePathFromReference unwraps a webpack loader chain to the real file', () => {
+  assert.deepEqual(
+    sourcePathFromReference(
+      'webpack://endusers/./node_modules/babel-loader/lib/index.js|/repo/src/components/Example/index.js',
+      '/repo/build/assets/js/app.js.map',
+      '/repo',
+    ),
+    {
+      absolute: '/repo/src/components/Example/index.js',
+      relative: 'src/components/Example/index.js',
+    },
+  );
+});
+
+test('sourcePathFromReference rejects an absolute reference outside the repository', () => {
+  assert.equal(
+    sourcePathFromReference(
+      '/elsewhere/lib/index.js',
+      '/repo/build/assets/js/app.js.map',
+      '/repo',
+    ),
+    null,
+  );
+});
+
+test('collectE2ECoverage ignores a bundled dependency alongside a src source', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const appSource = 'const app = 1;\n';
+    const vendorSource = 'const vendor = 2;\n';
+    const generated = `${appSource}${vendorSource}`;
+    const scriptText = `${generated}\n//# sourceMappingURL=mixed.js.map\n`;
+    const script = join(fixture.buildDir, 'assets/js/mixed.js');
+    await mkdir(join(fixture.root, 'src/components/Mixed'), {
+      recursive: true,
+    });
+    await writeFile(
+      join(fixture.root, 'src/components/Mixed/index.js'),
+      appSource,
+    );
+    await writeFile(script, scriptText);
+    await writeFile(
+      join(fixture.buildDir, 'assets/js/mixed.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'mixed.js',
+        sources: [
+          '../../../src/components/Mixed/index.js',
+          'webpack://endusers/./node_modules/vendor/lib.js',
+        ],
+        sourcesContent: [appSource, vendorSource],
+        names: [],
+        mappings: mapLines([
+          [0, 0],
+          [1, 0],
+        ]),
+      }),
+    );
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/mixed.js',
+          scriptId: '1',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                { startOffset: 0, endOffset: scriptText.length, count: 1 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    assert.deepEqual(
+      report.sources.map(({ file }) => file),
+      ['src/components/Mixed/index.js'],
+    );
+    assert.ok(
+      !JSON.stringify(report).includes('node_modules'),
+      'a bundled dependency must not reach the report',
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage ignores a non-script src source such as a stylesheet', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const appSource = 'const styled = 1;\n';
+    const styleSource = '.styled {\n  color: red;\n}\n';
+    const generated = `${appSource}${styleSource}`;
+    const scriptText = `${generated}\n//# sourceMappingURL=styled.js.map\n`;
+    const script = join(fixture.buildDir, 'assets/js/styled.js');
+    await mkdir(join(fixture.root, 'src/components/Styled'), {
+      recursive: true,
+    });
+    await writeFile(
+      join(fixture.root, 'src/components/Styled/index.js'),
+      appSource,
+    );
+    await writeFile(
+      join(fixture.root, 'src/components/Styled/styles.module.css'),
+      styleSource,
+    );
+    await writeFile(script, scriptText);
+    await writeFile(
+      join(fixture.buildDir, 'assets/js/styled.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'styled.js',
+        sources: [
+          '../../../src/components/Styled/index.js',
+          '../../../src/components/Styled/styles.module.css',
+        ],
+        sourcesContent: [appSource, styleSource],
+        names: [],
+        mappings: mapLines([
+          [0, 0],
+          [1, 0],
+        ]),
+      }),
+    );
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/styled.js',
+          scriptId: '1',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                { startOffset: 0, endOffset: scriptText.length, count: 1 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    assert.deepEqual(
+      report.sources.map(({ file }) => file),
+      ['src/components/Styled/index.js'],
+    );
+    assert.ok(
+      !JSON.stringify(report).includes('styles.module.css'),
+      'a stylesheet must not be reported as covered source',
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage reports a script recorded with no functions as unattributable', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const source = 'const idle = 1;\n';
+    const scriptText = `${source}\n//# sourceMappingURL=idle.js.map\n`;
+    const script = join(fixture.buildDir, 'assets/js/idle.js');
+    await mkdir(join(fixture.root, 'src/components/Idle'), {
+      recursive: true,
+    });
+    await writeFile(join(fixture.root, 'src/components/Idle/index.js'), source);
+    await writeFile(script, scriptText);
+    await writeFile(
+      join(fixture.buildDir, 'assets/js/idle.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'idle.js',
+        sources: ['../../../src/components/Idle/index.js'],
+        sourcesContent: [source],
+        names: [],
+        mappings: mapLines([[0, 0]]),
+      }),
+    );
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/idle.js',
+          scriptId: '1',
+          functions: [],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /No src\/\*\* coverage was attributable/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
