@@ -3,9 +3,9 @@
  *
  * Imported architecture Markdown comes from cncf/architecture and can reference
  * an image on any host. Cards must never hot-link a third party, so every image
- * that reaches the published site is mirrored from cncf/artwork at import time
- * and referenced by a local `/img/cncf-projects/...` path. Anything that cannot
- * be resolved to such a path fails closed and is dropped.
+ * that reaches the published site is mirrored from a cncf/artwork branch at
+ * import time and referenced by a local `/img/cncf-projects/...` path. Anything
+ * that cannot be resolved to such a path fails closed and is dropped.
  */
 
 // Mirrors ALLOWED_ASSET_EXTENSIONS in scripts/validate-architecture-assets.mjs.
@@ -22,9 +22,31 @@ const MIRRORABLE_ARTWORK_EXTENSIONS = new Set([
   '.webp',
 ]);
 
+/**
+ * Refs accepted in an artwork URL.
+ *
+ * The repository in the URL does not by itself establish provenance:
+ * raw.githubusercontent.com serves a commit from anywhere in a repository's
+ * fork network through the *upstream* path, so
+ * `raw.githubusercontent.com/cncf/artwork/<sha>/...` returns content that was
+ * never in cncf/artwork whenever `<sha>` came from a fork or a fork's pull
+ * request. A wildcard ref therefore lets anyone who can push to any fork of
+ * cncf/artwork — that is, anyone — choose the bytes that get mirrored into
+ * static/ and published at the site origin.
+ *
+ * A branch name does not cross that boundary: it is resolved against the
+ * repository named in the path, so a fork's branch is unreachable through the
+ * upstream path. Only the two upstream branch names are accepted, and a
+ * commit SHA is refused outright, because nothing here can tell an upstream
+ * SHA from a fork's without a network round trip.
+ */
+const ARTWORK_REF = '(?:main|master)';
+
 const ARTWORK_URL_PATTERNS = [
-  /^https?:\/\/raw\.githubusercontent\.com\/cncf\/artwork\/[^/]+\/(.+)$/,
-  /^https?:\/\/github\.com\/cncf\/artwork\/raw\/[^/]+\/(.+)$/,
+  new RegExp(
+    `^https?://raw\\.githubusercontent\\.com/cncf/artwork/${ARTWORK_REF}/(.+)$`,
+  ),
+  new RegExp(`^https?://github\\.com/cncf/artwork/raw/${ARTWORK_REF}/(.+)$`),
 ];
 
 const MIRROR_DIR = 'static/img/cncf-projects';
