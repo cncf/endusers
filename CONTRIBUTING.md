@@ -206,6 +206,30 @@ and serves the static output already built in `build/` via `docusaurus serve` â€
 it does not rebuild your changes, so re-run `npm run build:production` after
 each edit before re-running the suite.
 
+Browser source coverage is opt-in and is not part of the required e2e command.
+Use a fresh run directory for each capture so artifacts from an earlier run
+cannot be mixed into the report:
+
+```bash
+RUN_ID="local-$(date +%s)"
+RUN_DIR="coverage/e2e/$RUN_ID"
+node tests/tools/e2e-coverage-run.mjs init --dir "$RUN_DIR" --run-id "$RUN_ID"
+E2E_COVERAGE_DIR="$RUN_DIR" E2E_COVERAGE_RUN_ID="$RUN_ID" \
+  npm run build:e2e:coverage
+E2E_COVERAGE_DIR="$RUN_DIR" E2E_COVERAGE_RUN_ID="$RUN_ID" \
+  npm run test:e2e:coverage
+node tests/tools/e2e-coverage-run.mjs seal \
+  --dir "$RUN_DIR" --status passed
+npm run report:e2e:coverage -- \
+  --input "$RUN_DIR" --build build \
+  --json "coverage/e2e/$RUN_ID-report.json" \
+  --text "coverage/e2e/$RUN_ID-report.txt"
+```
+
+The report is source-mapped back to `src/**`; it is informational initially and
+has no percentage thresholds. Invalid maps, stale manifests, and empty aggregate
+attribution fail visibly and leave their raw artifacts for review.
+
 ## Agent contributors
 
 AI agents should start at [`AGENTS.md`](AGENTS.md) and the skill manifest in

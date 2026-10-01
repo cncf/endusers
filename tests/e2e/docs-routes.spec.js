@@ -16,7 +16,7 @@
 // entry points to the case-study and radar-report tables. A `<Link to>` that
 // stops resolving under the deployed baseUrl breaks both, and nothing else
 // would catch it.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const RESOURCES_PATH = '/resources';
 const GOVERNANCE_PATH = '/community/governance';

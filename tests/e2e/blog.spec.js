@@ -34,7 +34,7 @@
 // published post is covered on arrival instead of needing this file edited.
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 import { parse } from 'yaml';
 
 // Playwright transpiles these .js specs to CommonJS (the package is not
