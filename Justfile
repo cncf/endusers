@@ -18,4 +18,5 @@ build:
     npm run validate:radar-reports
     npm run validate:projects-born
     npm run validate:button-contrast
+    npm run validate:members
     npm run build

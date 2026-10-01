@@ -70,6 +70,8 @@ jobs:
         run: npm run validate:projects-born
       - name: Validate button contrast
         run: npm run validate:button-contrast
+      - name: Validate members data
+        run: npm run validate:members
       - name: Build production site
         run: npm run build:production
         env:

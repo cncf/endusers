@@ -76,6 +76,9 @@ jobs:
       - name: Validate projects-born data
         run: npm run validate:projects-born
 
+      - name: Validate members data
+        run: npm run validate:members
+
       # Build for the GitHub Pages project URL. When the custom domain in
       # static/CNAME is verified and active, update these values to
       # SITE_URL=https://endusers.cncf.io and BASE_URL=/ so canonical and

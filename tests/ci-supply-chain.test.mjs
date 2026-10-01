@@ -345,7 +345,7 @@ test('the timeout-minutes baseline retires itself', () => {
 // the jobs still on a floating label. The companion test below fails once an
 // entry gains a pinned runner, so pinning a job forces its exception to be
 // removed in the same change.
-const KNOWN_FLOATING_RUNNERS = new Set(['refresh-radar-reports.yml: refresh']);
+const KNOWN_FLOATING_RUNNERS = new Set([]);
 
 // Only jobs that request a GitHub-hosted runner directly are in scope: a job
 // delegating to a reusable workflow declares no `runs-on`, and a self-hosted
