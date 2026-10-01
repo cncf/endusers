@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -196,6 +203,41 @@ test('run CLI entrypoint executes when launched as a Node process', async () => 
     );
     assert.equal(result.status, 0, result.stderr);
     assert.equal((await readCoverageRun(runDir)).runId, 'subprocess-1');
+  } finally {
+    await rm(runDir, { recursive: true, force: true });
+  }
+});
+
+test('propagates a non-ENOENT artifact stat failure instead of overwriting', async () => {
+  const runDir = await tempRunDir();
+  try {
+    await initCoverageRun(runDir, 'run-eloop');
+    await symlink('loop.json', join(runDir, 'loop.json'));
+
+    await assert.rejects(
+      () => writeCoverageArtifact(runDir, 'loop', { runId: 'run-eloop' }),
+      (error) => {
+        assert.equal(error.code, 'ELOOP');
+        return true;
+      },
+    );
+  } finally {
+    await rm(runDir, { recursive: true, force: true });
+  }
+});
+
+test('run CLI entrypoint reports a failing command on stderr and exits 1', async () => {
+  const runDir = await tempRunDir();
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [RUN_TOOL, 'bogus-command', '--dir', runDir],
+      { encoding: 'utf8' },
+    );
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /unknown coverage run command: bogus-command/);
+    assert.equal((await readdir(runDir)).length, 0);
   } finally {
     await rm(runDir, { recursive: true, force: true });
   }
