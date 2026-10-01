@@ -165,141 +165,6 @@ test('keeps records with no logo and rejects unsafe logo filenames', () => {
       sourceRoot,
       destinationRoot,
     });
-
-    test('rejects a supporter-only upstream snapshot before publication', () => {
-      withRoots(({ sourceRoot, destinationRoot }) => {
-        assert.throws(
-          () =>
-            buildLandscapeSnapshot({
-              document: {
-                landscape: [
-                  {
-                    name: 'CNCF Members',
-                    subcategories: [
-                      { name: 'Gold', items: [] },
-                      {
-                        name: 'End User Supporter and Contributor',
-                        items: [
-                          {
-                            name: 'Legacy (supporter)',
-                            homepage_url: 'https://example.test/legacy',
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-              revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
-              collectedAt: '2026-10-01T00:00:00.000Z',
-              sourceRoot,
-              destinationRoot,
-            }),
-          /no current Member\/Contributor records/,
-        );
-      });
-    });
-
-    test('rejects symlinked logo files and hosted-logo directories', () => {
-      withRoots(({ root, sourceRoot, destinationRoot }) => {
-        const outside = join(root, 'outside.png');
-        writeFileSync(outside, 'outside');
-        symlinkSync(outside, join(sourceRoot, 'hosted_logos/acme.png'));
-        const fileResult = mirrorLandscapeLogo({
-          record: { ...RECORD, logoFilename: 'acme.png' },
-          sourceRoot,
-          destinationRoot,
-        });
-        assert.equal(fileResult.localLogo, null);
-        assert.match(fileResult.logoWarning, /symlink/);
-        assert.equal(existsSync(join(destinationRoot, 'acme.png')), false);
-
-        const outsideDirectory = join(root, 'outside-directory');
-        mkdirSync(outsideDirectory);
-        rmSync(join(sourceRoot, 'hosted_logos'), {
-          recursive: true,
-          force: true,
-        });
-        symlinkSync(outsideDirectory, join(sourceRoot, 'hosted_logos'), 'dir');
-        const directoryResult = mirrorLandscapeLogo({
-          record: RECORD,
-          sourceRoot,
-          destinationRoot,
-        });
-        assert.equal(directoryResult.localLogo, null);
-        assert.match(directoryResult.logoWarning, /not a real directory/);
-      });
-    });
-
-    test('reports unsafe snapshot classifications before publication', () => {
-      const base = {
-        generated: true,
-        source: {
-          revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
-          sourceUrl:
-            'https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml',
-        },
-        records: [
-          {
-            sourceId: 'source',
-            sourceRole: 'member',
-            included: true,
-            logoFilename: null,
-          },
-        ],
-      };
-      assert.doesNotThrow(() => assertLandscapeSnapshotReady(base));
-      assert.throws(
-        () =>
-          assertLandscapeSnapshotReady({
-            ...base,
-            records: [base.records[0], { ...base.records[0] }],
-          }),
-        /duplicate landscape sourceId/,
-      );
-      assert.throws(
-        () =>
-          assertLandscapeSnapshotReady({
-            ...base,
-            generated: false,
-          }),
-        /not marked generated/,
-      );
-      assert.throws(
-        () =>
-          assertLandscapeSnapshotReady({
-            ...base,
-            source: { revision: 'bad', sourceUrl: 'https://example.test/' },
-          }),
-        /source provenance is incomplete/,
-      );
-      assert.throws(
-        () =>
-          assertLandscapeSnapshotReady({
-            ...base,
-            records: [],
-          }),
-        /no current Member\/Contributor records/,
-      );
-      assert.throws(
-        () =>
-          assertLandscapeSnapshotReady({
-            ...base,
-            records: [{ ...base.records[0], sourceRole: 'supporter' }],
-          }),
-        /invalid current role/,
-      );
-      assert.throws(
-        () =>
-          assertLandscapeSnapshotReady({
-            ...base,
-            records: [
-              { ...base.records[0], logoFilename: 'logo.svg', localLogo: null },
-            ],
-          }),
-        /no logo or logo warning/,
-      );
-    });
     assert.equal(noLogo.localLogo, null);
     assert.equal(noLogo.logoWarning, null);
 
@@ -313,6 +178,140 @@ test('keeps records with no logo and rejects unsafe logo filenames', () => {
   });
 });
 
+test('rejects a supporter-only upstream snapshot before publication', () => {
+  withRoots(({ sourceRoot, destinationRoot }) => {
+    assert.throws(
+      () =>
+        buildLandscapeSnapshot({
+          document: {
+            landscape: [
+              {
+                name: 'CNCF Members',
+                subcategories: [
+                  { name: 'Gold', items: [] },
+                  {
+                    name: 'End User Supporter and Contributor',
+                    items: [
+                      {
+                        name: 'Legacy (supporter)',
+                        homepage_url: 'https://example.test/legacy',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
+          collectedAt: '2026-10-01T00:00:00.000Z',
+          sourceRoot,
+          destinationRoot,
+        }),
+      /no current Member\/Contributor records/,
+    );
+  });
+});
+
+test('rejects symlinked logo files and hosted-logo directories', () => {
+  withRoots(({ root, sourceRoot, destinationRoot }) => {
+    const outside = join(root, 'outside.png');
+    writeFileSync(outside, 'outside');
+    symlinkSync(outside, join(sourceRoot, 'hosted_logos/acme.png'));
+    const fileResult = mirrorLandscapeLogo({
+      record: { ...RECORD, logoFilename: 'acme.png' },
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.equal(fileResult.localLogo, null);
+    assert.match(fileResult.logoWarning, /symlink/);
+    assert.equal(existsSync(join(destinationRoot, 'acme.png')), false);
+
+    const outsideDirectory = join(root, 'outside-directory');
+    mkdirSync(outsideDirectory);
+    rmSync(join(sourceRoot, 'hosted_logos'), {
+      recursive: true,
+      force: true,
+    });
+    symlinkSync(outsideDirectory, join(sourceRoot, 'hosted_logos'), 'dir');
+    const directoryResult = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.equal(directoryResult.localLogo, null);
+    assert.match(directoryResult.logoWarning, /not a real directory/);
+  });
+});
+
+test('reports unsafe snapshot classifications before publication', () => {
+  const base = {
+    generated: true,
+    source: {
+      revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
+      sourceUrl:
+        'https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml',
+    },
+    records: [
+      {
+        sourceId: 'source',
+        sourceRole: 'member',
+        included: true,
+        logoFilename: null,
+      },
+    ],
+  };
+  assert.doesNotThrow(() => assertLandscapeSnapshotReady(base));
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        records: [base.records[0], { ...base.records[0] }],
+      }),
+    /duplicate landscape sourceId/,
+  );
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        generated: false,
+      }),
+    /not marked generated/,
+  );
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        source: { revision: 'bad', sourceUrl: 'https://example.test/' },
+      }),
+    /source provenance is incomplete/,
+  );
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        records: [],
+      }),
+    /no current Member\/Contributor records/,
+  );
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        records: [{ ...base.records[0], sourceRole: 'supporter' }],
+      }),
+    /invalid current role/,
+  );
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        records: [
+          { ...base.records[0], logoFilename: 'logo.svg', localLogo: null },
+        ],
+      }),
+    /no logo or logo warning/,
+  );
+});
 test('mirrors supported raster assets and reports write failures', () => {
   withRoots(({ sourceRoot, destinationRoot }) => {
     writeFileSync(join(sourceRoot, 'hosted_logos/acme.png'), 'png');
