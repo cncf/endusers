@@ -41,7 +41,18 @@ const SITEMAP = resolve('build/sitemap.xml');
 const HYDRATION_GRACE_MS = 2_000;
 
 function sitemapPaths() {
-  const xml = readFileSync(SITEMAP, 'utf8');
+  let xml;
+  try {
+    xml = readFileSync(SITEMAP, 'utf8');
+  } catch (error) {
+    // `playwright test --list` loads every spec file to enumerate its tests,
+    // including from contexts that never ran `npm run build:production`
+    // (e.g. the unit-test job). Returning no routes there is correct: the
+    // sitemap guard below still fails loudly the moment this spec actually
+    // runs against a real build and the file is genuinely missing.
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
 
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(
     ([, loc]) => new URL(loc).pathname,
