@@ -58,34 +58,7 @@ const DISABLED_RULES = Object.create(null);
 // "records no violation that has been fixed" test below fails while a stale
 // entry remains, so the baseline cannot outlive the bug it describes.
 //
-// Both recorded rules are `serious` and both are CSS-level, so neither is
-// fixed by a test change:
-//
-//   * color-contrast — the muted grey used for freshness/sync notes
-//     (`.freshnessNote`, `.syncStatus`, `.noTrend`), figure captions and
-//     inline <code> inside links falls below the 4.5:1 WCAG AA ratio for body
-//     text. `npm run validate:button-contrast` does not see any of it: that
-//     gate reads CSS and only covers buttons. The heaviest instance is the
-//     case-studies table, where every external title link is affected.
-//   * link-in-text-block — links inside running prose are distinguished from
-//     the surrounding text by colour alone, with no underline and less than
-//     the 3:1 ratio against that text, so they are invisible to a reader who
-//     cannot discriminate the two hues.
-//
-// /awards and /blog are deliberately absent: they scan clean, so any
-// violation introduced there fails immediately.
-const KNOWN_VIOLATIONS = {
-  '/': ['color-contrast', 'link-in-text-block'],
-  '/community': ['color-contrast', 'link-in-text-block'],
-  '/community/members': ['color-contrast', 'link-in-text-block'],
-  '/community/technical-advisory-board': ['color-contrast'],
-  '/architectures': ['color-contrast', 'link-in-text-block'],
-  '/metrics': ['color-contrast'],
-  '/events': ['color-contrast', 'link-in-text-block'],
-  '/resources': ['color-contrast'],
-  '/resources/case-studies': ['color-contrast', 'link-in-text-block'],
-  '/resources/radar-reports': ['color-contrast', 'link-in-text-block'],
-};
+const KNOWN_VIOLATIONS = {};
 
 function scanner(page) {
   const builder = new AxeBuilder({ page }).withTags(WCAG_TAGS);
@@ -104,7 +77,7 @@ function describe(violation) {
   return `${violation.id} (${violation.impact ?? 'unknown impact'}) at ${where}`;
 }
 
-async function scan(page, path) {
+async function scan(page, path, mode = 'light') {
   const response = await page.goto(path);
   expect(response?.status(), `${path} should not 404`).toBeLessThan(400);
   await expect(
@@ -114,23 +87,28 @@ async function scan(page, path) {
   // Docusaurus hydrates client-side; scanning the server-rendered shell would
   // miss every interactive component on the page.
   await page.locator('main').first().waitFor();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', mode);
+  await page.evaluate(() => document.fonts.ready);
 
   return scanner(page).analyze();
 }
 
-for (const route of ROUTES) {
-  test(`${route.label} (${route.path}) has no unrecorded WCAG A/AA violations`, async ({
-    page,
-  }) => {
-    const results = await scan(page, route.path);
-    const allowed = new Set(KNOWN_VIOLATIONS[route.path] ?? []);
-    const unrecorded = results.violations.filter((v) => !allowed.has(v.id));
+for (const mode of ['light', 'dark']) {
+  for (const route of ROUTES) {
+    test(`${route.label} (${route.path}) has no unrecorded WCAG A/AA violations in ${mode}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: mode });
+      const results = await scan(page, route.path, mode);
+      const allowed = new Set(KNOWN_VIOLATIONS[route.path] ?? []);
+      const unrecorded = results.violations.filter((v) => !allowed.has(v.id));
 
-    expect(
-      unrecorded.map(describe),
-      `${route.path} reported WCAG violations that are not in KNOWN_VIOLATIONS`,
-    ).toEqual([]);
-  });
+      expect(
+        unrecorded.map(describe),
+        `${route.path} reported WCAG violations that are not in KNOWN_VIOLATIONS`,
+      ).toEqual([]);
+    });
+  }
 }
 
 test('the baseline records no violation that has been fixed', async ({

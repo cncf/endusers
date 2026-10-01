@@ -33,7 +33,8 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
 - `just build` — run the data validators (`validate:architectures`,
   `validate:architecture-assets`, `validate:metrics`, `validate:awards`,
   `validate:community-people`, `validate:community-groups`,
-  `validate:launch-metrics`, `validate:case-studies`, `validate:radar-reports`)
+  `validate:launch-metrics`, `validate:case-studies`, `validate:radar-reports`,
+  `validate:projects-born`, `validate:button-contrast`, `validate:members`)
   followed by `build`.
 
 These recipes are a superset of the validation steps the "Deploy to GitHub
@@ -66,7 +67,7 @@ hand-building pages:
 | `/community/awards`             | `data/awards.json`                                                                          | `npm run validate:awards`           |
 | `/metrics`                      | `data/metrics.json` (generated)                                                             | `npm run validate:metrics`          |
 | `/architectures`                | `data/architectures/records/*.json`                                                         | `npm run validate:architectures`    |
-| `/community/members`            | `data/members.json` (generated from `data/awards.json` + `data/architectures/catalog.json`) | `npm run generate:members`          |
+| `/community/members`            | `data/members.json` (generated from `data/awards.json` + `data/architectures/catalog.json`) | `npm run validate:members`          |
 | Community people lightboxes     | `data/community-roster.json` (curated) → refreshed into `data/community-people.json`        | `npm run validate:community-people` |
 | `docs/community/` user groups   | `data/community-groups.json` (generated)                                                    | `npm run validate:community-groups` |
 | ProjectsBorn (`/practitioners`) | `data/projects-born.json`                                                                   | `npm run validate:projects-born`    |
@@ -96,7 +97,9 @@ Rules:
   script's generated fields.
 - **Adding or editing an award winner requires re-running
   `npm run generate:members`** so `/community/members` stays in sync with
-  `data/awards.json`.
+  `data/awards.json`. The generator validates its output;
+  `npm run validate:members` also runs explicitly before CI and deployment
+  builds, alongside the existing unit smoke validation.
 - **Never edit `data/community-people.json` by hand.** Add or fix a person in
   `data/community-roster.json`, then refresh with
   `npm run fetch:community-people`. This enriches roster entries with bio,

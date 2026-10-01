@@ -42,6 +42,7 @@
     "validate:architecture-assets": "node scripts/validate-architecture-assets.mjs",
     "validate:button-contrast": "node scripts/validate-button-contrast.mjs",
     "validate:awards": "node scripts/validate-awards.mjs",
+    "validate:members": "node scripts/validate-members.mjs",
     "docusaurus": "docusaurus",
     "fix:format": "npm run _check:format -- --write",
     "fix": "npm run seq -- $(npm -s run _list:fix:*)",
@@ -121,6 +122,9 @@
     },
     "sockjs": {
       "uuid": "^11.1.1"
+    },
+    "markdownlint-cli": {
+      "js-yaml": "5.4.2"
     }
   }
 }
