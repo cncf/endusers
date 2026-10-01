@@ -80,6 +80,10 @@ function resolveFrom(parentPath, childName) {
 
 const overrides = pkg.overrides ?? {};
 
+test('markdownlint-cli retains its patched js-yaml override', () => {
+  assert.equal(pkg.overrides['markdownlint-cli']?.['js-yaml'], '5.4.2');
+});
+
 test('package-lock.json belongs to this package', () => {
   assert.ok(
     lock.lockfileVersion >= 3,

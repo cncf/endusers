@@ -308,7 +308,8 @@ test('the generator and validator detection is not vacuous', () => {
   assert.ok(
     generators.includes('collect:metrics') &&
       generators.includes('fetch:community-people') &&
-      generators.includes('import:architectures'),
+      generators.includes('import:architectures') &&
+      generators.includes('collect:enduser-members'),
     `expected the known generators to be recognised, got ${generators.join(', ')}`,
   );
   assert.equal(validatorFor('collect:metrics'), 'validate:metrics');
@@ -316,9 +317,29 @@ test('the generator and validator detection is not vacuous', () => {
     validatorFor('fetch:community-people'),
     'validate:community-people',
   );
-  // `generate:members` has no `validate:members`; the derivation must report
-  // that rather than inventing a gate and failing every workflow that runs it.
-  assert.equal(validatorFor('generate:members'), undefined);
+  assert.equal(
+    validatorFor('collect:enduser-members'),
+    'validate:enduser-members',
+  );
+  assert.equal(validatorFor('generate:members'), 'validate:members');
+});
+
+test('members validation runs before both production builds', () => {
+  for (const [file, jobName] of [
+    ['ci.yml', 'validate'],
+    ['deploy-gh-pages.yml', 'build'],
+  ]) {
+    const targets = orderedTargets(parseWorkflow(file).jobs[jobName]);
+    const members = targets.indexOf('validate:members');
+    const build = targets.findIndex(
+      (target) => target === 'build:production' || target === 'build',
+    );
+    assert.ok(members >= 0, `${file}:${jobName} omits validate:members`);
+    assert.ok(
+      build > members,
+      `${file}:${jobName} must validate members before building`,
+    );
+  }
 });
 
 test('the workflows this contract applies to are actually detected', () => {

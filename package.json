@@ -34,14 +34,17 @@
     "docus:write-heading-ids": "docusaurus write-heading-ids",
     "docus:write-translations": "docusaurus write-translations",
     "import:architectures": "node scripts/import-architectures.mjs && npm run generate:members",
+    "collect:enduser-members": "node scripts/collect-enduser-members.mjs",
     "import:architecture-issue": "node scripts/import-architecture-issue.mjs",
     "fetch:community-people": "node scripts/fetch-community-people.mjs",
     "check:community-group-links": "node scripts/check-community-group-links.mjs",
-    "generate:members": "node scripts/generate-members.mjs",
+    "generate:members": "node scripts/generate-members.mjs && node scripts/validate-members.mjs",
     "validate:architectures": "node scripts/validate-architectures.mjs",
     "validate:architecture-assets": "node scripts/validate-architecture-assets.mjs",
     "validate:button-contrast": "node scripts/validate-button-contrast.mjs",
     "validate:awards": "node scripts/validate-awards.mjs",
+    "validate:enduser-members": "node scripts/validate-enduser-members.mjs",
+    "validate:members": "node scripts/validate-members.mjs",
     "docusaurus": "docusaurus",
     "fix:format": "npm run _check:format -- --write",
     "fix": "npm run seq -- $(npm -s run _list:fix:*)",
@@ -63,8 +66,11 @@
     "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
     "test:unit": "TZ=UTC node --test",
     "test:unit:coverage": "TZ=UTC node tests/tools/coverage-report.mjs",
-    "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 97 --check-source 99 --check-regions 93 --check-source-regions 97",
-    "test:e2e": "playwright test"
+    "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 99 --check-source 100 --check-regions 94 --check-source-regions 99",
+    "test:e2e": "playwright test",
+    "build:e2e:coverage": "E2E_COVERAGE=1 npm run build:production",
+    "test:e2e:coverage": "E2E_COVERAGE=1 playwright test --workers=2",
+    "report:e2e:coverage": "node tests/tools/e2e-coverage-report.mjs"
   },
   "repository": {
     "type": "git",
@@ -78,15 +84,22 @@
     "@mdx-js/react": "^3.1.1",
     "clsx": "^2.1.1",
     "docusaurus-plugin-search-local": "^2.1.2",
+    "mdast-util-from-markdown": "^2.0.2",
+    "mdast-util-gfm": "^3.1.0",
+    "mdast-util-mdx": "^3.0.0",
+    "micromark-extension-gfm": "^3.0.0",
+    "micromark-extension-mdxjs": "^3.0.0",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@docusaurus/faster": "^3.10.2",
     "@docusaurus/module-type-aliases": "3.10.2",
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
+    "@jridgewell/trace-mapping": "^0.3.29",
     "@playwright/test": "^1.63.0",
     "@swc/core": "1.16.2",
     "cspell": "^10.3.4",
@@ -96,6 +109,7 @@
     "npm-check-updates": "^23.1.0",
     "prettier": "^3.9.9",
     "typescript": "~7.0.2",
+    "v8-to-istanbul": "^9.3.0",
     "yaml": "^2.9.1"
   },
   "private": true,
@@ -117,6 +131,9 @@
     },
     "sockjs": {
       "uuid": "^11.1.1"
+    },
+    "markdownlint-cli": {
+      "js-yaml": "5.4.2"
     }
   }
 }

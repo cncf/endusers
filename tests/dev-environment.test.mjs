@@ -268,6 +268,57 @@ test('every npm script documented in the developer docs exists', () => {
   );
 });
 
+// `just build` is the local stand-in for the CI gate: it runs the data
+// validators and then the site build, which is exactly the sequence ci.yml
+// runs before it will merge anything. The two lists are maintained by hand in
+// two files that never reference each other, so a validator added to a
+// workflow and not to the Justfile leaves `just build` green on a tree CI
+// rejects — the failure a contributor only sees after pushing.
+//
+// The direction asserted is one-way on purpose. Every `validate:*` script a
+// workflow runs must also be in the Justfile `build` recipe; the Justfile is
+// free to run more than CI does (a stricter local gate is never the bug).
+function workflowValidateTargets() {
+  const dir = join(root, '.github/workflows');
+  const found = new Map();
+  for (const file of readdirSync(dir)) {
+    if (!/\.ya?ml$/.test(file)) continue;
+    const doc = parseYaml(readFileSync(join(dir, file), 'utf8'));
+    for (const job of Object.values(doc?.jobs ?? {})) {
+      for (const step of job?.steps ?? []) {
+        if (typeof step?.run !== 'string') continue;
+        for (const target of npmRunTargets(step.run.split('\n'))) {
+          if (!target.startsWith('validate:')) continue;
+          if (!found.has(target)) found.set(target, file);
+        }
+      }
+    }
+  }
+  return found;
+}
+
+test('the Justfile build recipe runs every validator a workflow runs', () => {
+  const workflowTargets = workflowValidateTargets();
+  assert.ok(
+    workflowTargets.size > 0,
+    'no workflow runs a validate:* script; update this test',
+  );
+
+  const buildBody = justRecipes.get('build');
+  assert.ok(buildBody, 'Justfile declares no build recipe');
+  const buildTargets = new Set(npmRunTargets(buildBody));
+
+  const missing = [...workflowTargets]
+    .filter(([target]) => !buildTargets.has(target))
+    .map(([target, file]) => `${target} (run by ${file})`);
+
+  assert.deepEqual(
+    missing,
+    [],
+    `CI runs validators the Justfile build recipe does not, so 'just build' is a weaker gate than CI:\n${missing.join('\n')}`,
+  );
+});
+
 // Node majors: the devcontainer feature, and every workflow that sets one,
 // have to agree. A contributor whose container runs a different major than CI
 // reproduces neither its successes nor its failures.

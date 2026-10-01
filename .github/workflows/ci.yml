@@ -70,6 +70,10 @@ jobs:
         run: npm run validate:projects-born
       - name: Validate button contrast
         run: npm run validate:button-contrast
+      - name: Validate End User landscape data
+        run: npm run validate:enduser-members
+      - name: Validate members data
+        run: npm run validate:members
       - name: Build production site
         run: npm run build:production
         env:
@@ -133,4 +137,79 @@ jobs:
         with:
           name: playwright-traces
           path: test-results/
+          retention-days: 7
+
+  e2e-coverage:
+    name: End-to-end coverage (non-gating)
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RUN_DIR: coverage/e2e/${{ github.run_id }}-${{ github.run_attempt }}
+      RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Initialize coverage run
+        run: >-
+          node tests/tools/e2e-coverage-run.mjs init --dir "$RUN_DIR" --run-id
+          "$RUN_ID"
+      - name: Build source-mapped e2e site
+        run: npm run build:e2e:coverage
+      - name: Run e2e tests with coverage
+        id: coverage_tests
+        run: npm run test:e2e:coverage
+        env:
+          E2E_COVERAGE_DIR: ${{ env.RUN_DIR }}
+          E2E_COVERAGE_RUN_ID: ${{ env.RUN_ID }}
+      - name: Seal coverage run
+        if: always()
+        run: |
+          status=failed
+          if [ "${{ steps.coverage_tests.outcome }}" = "success" ]; then
+            status=passed
+          fi
+          node tests/tools/e2e-coverage-run.mjs seal --dir "$RUN_DIR" --status "$status"
+      - name: Render e2e coverage report
+        if: always()
+        run: |
+          mkdir -p coverage/e2e/report
+          npm run report:e2e:coverage -- \
+            --input "$RUN_DIR" \
+            --build build \
+            --json coverage/e2e/report.json \
+            --text coverage/e2e/report.txt
+      - name: Publish e2e coverage summary
+        if: always()
+        run: |
+          if [ -f coverage/e2e/report.txt ]; then
+            {
+              echo '## E2E browser coverage (non-gating)'
+              echo '```'
+              cat coverage/e2e/report.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '::error::E2E coverage report was not produced.'
+            echo '## E2E browser coverage (non-gating)' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Coverage tooling failed before producing a report; inspect the artifact.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload e2e coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-coverage
+          path: coverage/e2e/
+          if-no-files-found: warn
           retention-days: 7

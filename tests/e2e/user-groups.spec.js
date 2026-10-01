@@ -24,7 +24,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // Resolved from the working directory, as tests/e2e/architecture-detail.spec.js
 // and tests/e2e/awards.spec.js already do: Playwright runs the suite from the

@@ -82,7 +82,7 @@ studies, and operational lessons with the wider community.
   <div className="audience-card">
     <h3>For practitioners and engineers</h3>
     <p>Compare how peers solve the same problems in <Link to="/architectures/">reference architectures</Link>, join an <Link to="/community/">End User Group</Link> in your industry, and ask questions in <code>#enduser</code> on <a href="https://slack.cncf.io/">CNCF Slack</a>.</p>
-    <a href="https://slack.cncf.io/" className="audience-cta">Join the Slack conversation</a>
+    <a href="https://www.cncf.io/end-user-contributor-application/" className="audience-cta">Apply to the End User Contributor Program</a>
   </div>
   <div className="audience-card">
     <h3>For architects</h3>
@@ -114,7 +114,9 @@ Connect with peers through the channels and events built for end users:
   research, public sector, telecom, and transportation.
   [Browse groups](/community/).
 - **CNCF Slack** — real-time conversation in `#enduser`, `#tab`, and group
-  channels. [Join Slack](https://slack.cncf.io/).
+  channels. Access to End User-only discussion forums is part of approved End
+  User Community participation.
+  [Learn about the End User Community](https://www.cncf.io/enduser/).
 
 ## Start contributing: a low-friction ladder
 
@@ -126,7 +128,7 @@ adds value and helps the next adopter.
     <span className="ladder-number">1</span>
     <div>
       <h3>Listen and connect</h3>
-      <p>Join <code>#enduser</code> on <a href="https://slack.cncf.io/">CNCF Slack</a> and subscribe to the <a href="https://lists.cncf.io/g/cncf-enduser">End User mailing list</a>.</p>
+      <p>Request <a href="https://lists.cncf.io/g/cncf-enduser/join">mailing-list membership</a> or <a href="https://www.cncf.io/end-user-contributor-application/">apply to the End User Contributor Program</a> for access to End User-only discussion forums, including the private <code>#enduser</code> channel.</p>
     </div>
   </div>
   <div className="ladder-step">
@@ -161,8 +163,9 @@ adds value and helps the next adopter.
 
 ## Get involved
 
-- Join the `#enduser` channel in [CNCF Slack](https://slack.cncf.io/)
-- Subscribe to the [End User mailing list](https://lists.cncf.io/g/cncf-enduser)
+- Request [mailing-list membership](https://lists.cncf.io/g/cncf-enduser/join)
+- Apply to the
+  [End User Contributor Program](https://www.cncf.io/end-user-contributor-application/)
 - Bring your organization into the
   [CNCF End User Community](https://www.cncf.io/enduser/)
 - Share your architecture through the

@@ -332,3 +332,130 @@ test('the timeout-minutes baseline retires itself', () => {
     );
   }
 });
+
+// A `*-latest` runner label is re-pointed by GitHub at a new image on its own
+// schedule, so a workflow that names one is rebuilt on an OS the repository
+// never chose: the toolchain under it (glibc, the Playwright system
+// dependencies installed by `playwright install --with-deps`, the preinstalled
+// package set) changes without a commit, and the resulting break lands on an
+// unrelated PR. Every other job in this repository pins `ubuntu-24.04`, which
+// is what makes a green run reproducible from the same tree.
+//
+// KNOWN_FLOATING_RUNNERS is a retiring baseline, not an allowance: it records
+// the jobs still on a floating label. The companion test below fails once an
+// entry gains a pinned runner, so pinning a job forces its exception to be
+// removed in the same change.
+const KNOWN_FLOATING_RUNNERS = new Set([]);
+
+// Only jobs that request a GitHub-hosted runner directly are in scope: a job
+// delegating to a reusable workflow declares no `runs-on`, and a self-hosted
+// label set is the repository's own choice of image rather than a floating one.
+function runnerLabels(job) {
+  const declared = job?.['runs-on'];
+  if (declared === undefined) return [];
+  if (typeof declared === 'string') return [declared];
+  if (Array.isArray(declared)) return declared;
+  if (Array.isArray(declared?.labels)) return declared.labels;
+  return [declared];
+}
+
+// Names the reason a runner label is unpinned, or null when the label is fine.
+// A non-string label cannot be checked for a version, and `self-hosted` opts the
+// job out of GitHub's image rotation entirely.
+function floatingRunnerProblem(labels) {
+  if (labels.some((label) => label === 'self-hosted')) return null;
+  const faults = labels.filter(
+    (label) => typeof label !== 'string' || /-latest$/.test(label),
+  );
+  if (faults.length === 0) return null;
+  return `pins no runner image version: ${faults.map((label) => JSON.stringify(label)).join(', ')}`;
+}
+
+test('runnerLabels normalises every form runs-on can take', () => {
+  assert.deepEqual(runnerLabels({}), []);
+  assert.deepEqual(runnerLabels(undefined), []);
+  assert.deepEqual(runnerLabels({ 'runs-on': 'ubuntu-24.04' }), [
+    'ubuntu-24.04',
+  ]);
+  assert.deepEqual(runnerLabels({ 'runs-on': ['self-hosted', 'linux'] }), [
+    'self-hosted',
+    'linux',
+  ]);
+  assert.deepEqual(
+    runnerLabels({ 'runs-on': { group: 'ci', labels: ['ubuntu-24.04'] } }),
+    ['ubuntu-24.04'],
+  );
+  // A group without labels names no image, so the raw value is surfaced and the
+  // contract below reports it rather than silently passing an empty list.
+  assert.deepEqual(runnerLabels({ 'runs-on': { group: 'ci' } }), [
+    { group: 'ci' },
+  ]);
+});
+
+test('floatingRunnerProblem accepts pinned runners and names the fault in the rest', () => {
+  assert.equal(floatingRunnerProblem(['ubuntu-24.04']), null);
+  assert.equal(floatingRunnerProblem(['windows-2022']), null);
+  assert.equal(floatingRunnerProblem(['self-hosted', 'linux']), null);
+  assert.equal(floatingRunnerProblem([]), null);
+  assert.match(floatingRunnerProblem(['ubuntu-latest']), /no runner image/);
+  assert.match(floatingRunnerProblem(['macos-latest']), /no runner image/);
+  assert.match(
+    floatingRunnerProblem(['ubuntu-24.04', 'windows-latest']),
+    /"windows-latest"/,
+  );
+  assert.match(floatingRunnerProblem([null]), /no runner image/);
+  assert.match(floatingRunnerProblem([{ group: 'ci' }]), /no runner image/);
+});
+
+test('every job pins a versioned runner image', () => {
+  const floating = [];
+  for (const { name, doc } of workflows) {
+    for (const [jobName, job] of jobs(doc)) {
+      const label = `${name}: ${jobName}`;
+      if (KNOWN_FLOATING_RUNNERS.has(label)) continue;
+      const problem = floatingRunnerProblem(runnerLabels(job));
+      if (problem) floating.push(`${label} ${problem}`);
+    }
+  }
+  assert.deepEqual(
+    floating,
+    [],
+    `name a versioned runner image (for example 'ubuntu-24.04') so a GitHub image rotation cannot change the build without a commit:\n${floating.join('\n')}`,
+  );
+});
+
+test('every non-reusable job declares a runner', () => {
+  const missing = [];
+  for (const { name, doc } of workflows) {
+    for (const [jobName, job] of jobs(doc)) {
+      if (job?.uses) continue;
+      if (runnerLabels(job).length === 0) missing.push(`${name}: ${jobName}`);
+    }
+  }
+  assert.deepEqual(
+    missing,
+    [],
+    `declare 'runs-on:' on each job so the runner-pinning contract cannot be sidestepped by omitting it:\n${missing.join('\n')}`,
+  );
+});
+
+test('the runner pinning baseline retires itself', () => {
+  for (const label of KNOWN_FLOATING_RUNNERS) {
+    const [name, jobName] = label.split(': ');
+    const entry = workflows.find((workflow) => workflow.name === name);
+    assert.ok(
+      entry,
+      `${label} is listed as a known floating-runner gap but ${name} does not exist; remove the entry`,
+    );
+    const job = jobs(entry.doc).find(([id]) => id === jobName);
+    assert.ok(
+      job,
+      `${label} is listed as a known floating-runner gap but ${name} declares no job '${jobName}'; remove the entry`,
+    );
+    assert.notEqual(
+      floatingRunnerProblem(runnerLabels(job[1])),
+      null,
+      `${label} now pins a versioned runner image; remove it from KNOWN_FLOATING_RUNNERS so the gap cannot reopen`,
+    );
+  }
+});

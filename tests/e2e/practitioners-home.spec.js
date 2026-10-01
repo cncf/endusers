@@ -18,7 +18,7 @@
 // broken-link check reaches once they are inside raw JSX; and the landing
 // page's <ProjectsBorn> passes a custom `title`/`intro` that the isolated unit
 // test never supplies. Each of these fails only in a browser against `build/`.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // Rendered by ProjectsBorn only when `compact` is false, which is how
 // docs/practitioners/index.md uses it. The footer's compact strip on the same
@@ -49,8 +49,8 @@ const PILLARS = [
 const AUDIENCE_CARDS = [
   {
     heading: 'For practitioners and engineers',
-    cta: 'Join the Slack conversation',
-    href: 'https://slack.cncf.io/',
+    cta: 'Apply to the End User Contributor Program',
+    href: 'https://www.cncf.io/end-user-contributor-application/',
   },
   {
     heading: 'For architects',

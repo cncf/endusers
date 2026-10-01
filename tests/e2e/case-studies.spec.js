@@ -7,7 +7,7 @@
 // render mismatches, the static table still paints and every existing test
 // stays green while the shipped toolbar does nothing. These tests exercise the
 // controls in a real browser against `build/`.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // React attaches its fiber to the DOM node it hydrates, so the presence of a
 // `__react*` property is the signal that the element's handlers are live.

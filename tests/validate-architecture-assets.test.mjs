@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
 import { runScriptWithFixtures } from './helpers.mjs';
 
 const SCRIPT = 'validate-architecture-assets.mjs';
@@ -536,6 +538,39 @@ test('accepts an allowed image sitting directly in static/', () => {
   });
   assert.equal(result.status, 0, result.stderr);
 });
+
+// A static/ entry that is neither a symlink, a directory, nor a regular file
+// — a FIFO, a socket, a device node — falls past all three guards in
+// checkForUngatedStaticEntries. The gate skips it deliberately: there is no
+// file content to hold to the extension allow-list, and handing the path to
+// validateAsset would block the run forever on a readFileSync of a FIFO with
+// no writer. Nothing pinned that, so a future guard reordering could turn the
+// skip into a hang or a spurious error with the suite still green.
+//
+// mkfifo is the only portable way to make such an entry; the test is skipped
+// where coreutils is absent rather than branching inside the test body, which
+// would leave a permanently uncovered region behind.
+const MKFIFO_MISSING = spawnSync('mkfifo', ['--version']).status !== 0;
+
+test(
+  'skips a static/ entry that is not a regular file',
+  { skip: MKFIFO_MISSING },
+  () => {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      { 'static/img/architectures/example/diagram.svg': VALID_SVG },
+      {
+        setup: (work) => {
+          const fifo = join(work, 'static', 'pipe');
+          assert.equal(spawnSync('mkfifo', [fifo]).status, 0);
+        },
+      },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Validated 1 architecture asset/);
+    assert.doesNotMatch(result.stderr, /pipe/);
+  },
+);
 
 test('rejects a subdirectory of the shallow static/img walk', () => {
   // static/img is walked with recurse: false because it holds site chrome

@@ -18,8 +18,8 @@
   --cncf-button-text: #fff;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
-  --ifm-link-color: #d62293;
-  --ifm-link-hover-color: #d62293;
+  --ifm-link-color: #a71970;
+  --ifm-link-hover-color: #a71970;
   --ifm-font-family-base:
     'Clarity City', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
     Arial, sans-serif, Roboto, Ubuntu, 'Apple Color Emoji', 'Segoe UI Emoji',
@@ -27,7 +27,7 @@
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
-[data-theme='dark'] {
+[data-theme='dark']:not(#\#):not(#\#) {
   --ifm-color-primary: #32d8b4;
   --ifm-color-primary-dark: #29d5b0;
   --ifm-color-primary-darker: #25c2a0;
@@ -38,6 +38,8 @@
   --cncf-button-background: #007f68;
   --cncf-button-background-hover: #006f5b;
   --cncf-button-text: #fff;
+  --ifm-link-color: #ff8bd6;
+  --ifm-link-hover-color: #ff8bd6;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
@@ -427,7 +429,19 @@
   margin-top: 0.75rem;
   text-align: center;
   font-size: 0.85rem;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
+}
+
+/* Match Infima's specificity without changing navigation or card links. */
+.markdown
+  :is(p, li, td, th, figcaption)
+  a:not(.audience-cta):not(.button):not(#\#):not(#\#) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.theme-doc-markdown a code {
+  color: var(--ifm-font-color-base);
 }
 
 /* Audience-specific CTA cards */

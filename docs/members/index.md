@@ -4,4 +4,5 @@ slug: /members
 unlisted: true
 ---
 
-The Member Directory page has moved to [/community/members](/community/members).
+The End User Directory page has moved to
+[/community/members](/community/members).

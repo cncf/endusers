@@ -2,6 +2,8 @@ serve:
     npm run docus:start -- --host 0.0.0.0
 
 import:
+    npm run collect:enduser-members
+    npm run validate:enduser-members
     npm run import:architectures
     npm run validate:architectures
     npm run validate:architecture-assets
@@ -16,5 +18,8 @@ build:
     npm run validate:launch-metrics
     npm run validate:case-studies
     npm run validate:radar-reports
+    npm run validate:projects-born
     npm run validate:button-contrast
+    npm run validate:enduser-members
+    npm run validate:members
     npm run build

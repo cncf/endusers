@@ -13,17 +13,18 @@ resources that help end users learn from one another and shape CNCF priorities.
 
 <div className="action-row">
   <a href="https://www.cncf.io/enduser/" className="secondary">Bring your organization in</a>
-  <a href="https://lists.cncf.io/g/cncf-enduser" className="secondary">Request mailing list access</a>
+  <a href="https://lists.cncf.io/g/cncf-enduser/join" className="secondary">Request mailing list access</a>
 </div>
 
-The [End User mailing list](https://lists.cncf.io/g/cncf-enduser) and the
-`#enduser` channel in [CNCF Slack](https://slack.cncf.io/) are private,
-application-gated spaces for the End User Community, so end user organizations
-can have candid peer discussions while still building in the open.
+The [End User mailing list](https://lists.cncf.io/g/cncf-enduser/join) and the
+`#enduser` channel in CNCF Slack are private, application-gated spaces for the
+End User Community, so end user organizations can have candid peer discussions
+while still building in the open.
 
-- **Request access:** Request to join the
-  [End User mailing list](https://lists.cncf.io/g/cncf-enduser) and the private
-  `#enduser` channel in [CNCF Slack](https://slack.cncf.io/).
+- **Request access:** Request
+  [mailing-list membership](https://lists.cncf.io/g/cncf-enduser/join) or
+  [apply to the End User Contributor Program](https://www.cncf.io/end-user-contributor-application/)
+  for access to End User-only discussion forums.
 - **Bring your organization in:** Learn about
   [joining the CNCF End User Community](https://www.cncf.io/enduser/).
 - **Find a peer group:** Browse the [User Groups](/community/user-groups) and
@@ -45,7 +46,7 @@ held accountable.
 
 ## Community meeting and communication channels
 
-- [CNCF End User mailing list](https://lists.cncf.io/g/cncf-enduser)
+- [CNCF End User mailing list](https://lists.cncf.io/g/cncf-enduser/join)
 - [CNCF Slack](https://slack.cncf.io/), including the `#tab` and `#enduser`
   channels
 - [CNCF community platform](https://community.cncf.io/)
@@ -83,9 +84,11 @@ when the material is ready.
 You do not need to be a maintainer to contribute to the End User Community.
 Start small and move up as your time and interest allow.
 
-1. **Listen and connect** — Join `#enduser` on
-   [CNCF Slack](https://slack.cncf.io/) and subscribe to the
-   [End User mailing list](https://lists.cncf.io/g/cncf-enduser).
+1. **Listen and connect** — Request
+   [mailing-list membership](https://lists.cncf.io/g/cncf-enduser/join) or
+   [apply to the End User Contributor Program](https://www.cncf.io/end-user-contributor-application/)
+   for access to End User-only discussion forums, including the private
+   `#enduser` channel.
 2. **Show up** — Attend the public [TAB meeting](https://zoom.us/j/96509520391)
    or a [User Group](/community/user-groups) or
    [Technical Community Group](/community/technical-community-groups) call.

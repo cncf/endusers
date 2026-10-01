@@ -21,7 +21,7 @@
 // footer is mounted, that its wordmark actually decodes, that its outbound
 // links carry the tabnabbing guard, and that the compact ProjectsBorn strip
 // hydrates from the shipped data.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // Two routes from different plugins: the docs route and the architectures
 // catalog. Asserting on both is what distinguishes "the footer renders" from
