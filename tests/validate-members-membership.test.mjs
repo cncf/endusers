@@ -250,3 +250,13 @@ test('names the empty side of a missing-only ID set mismatch', () => {
     /membership source ID set mismatch \(missing: absent-source; unexpected: none\)/,
   );
 });
+
+test('reports a null member entry instead of crashing when a landscape snapshot is present', () => {
+  const result = run([null], snapshot([]));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /landscape-backed output requires membershipStatus and membershipSources/,
+  );
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
