@@ -166,7 +166,7 @@ export function findRemoteReferences(source) {
 
     for (const match of attributes.matchAll(ATTRIBUTE_PATTERN)) {
       const name = localName(match[1].toLowerCase());
-      const value = match[2] ?? match[3] ?? match[4] ?? '';
+      const value = match[2] ?? match[3] ?? match[4];
 
       if (
         (name === 'href' && RESOURCE_ELEMENTS.has(element)) ||
@@ -220,7 +220,7 @@ function cssTargets(css) {
   const targets = [];
   for (const pattern of [CSS_URL_PATTERN, CSS_IMPORT_PATTERN]) {
     for (const match of String(css).matchAll(pattern)) {
-      const value = match[1] ?? match[2] ?? match[3] ?? '';
+      const value = match[1] ?? match[2] ?? match[3];
       const target = remoteTarget(value);
       if (target) targets.push(target);
     }
@@ -329,7 +329,7 @@ export function findActiveContent(source) {
   const documents = new Set();
   for (const match of source.matchAll(ATTRIBUTE_PATTERN)) {
     const name = match[1].toLowerCase();
-    const value = match[2] ?? match[3] ?? match[4] ?? '';
+    const value = match[2] ?? match[3] ?? match[4];
 
     if (/^on[a-z]+$/.test(name)) {
       handlers.add(name);
@@ -463,7 +463,7 @@ function stripOnce(source, removed) {
 
   output = output.replace(ATTRIBUTE_PATTERN, (match, name, dq, sq, uq) => {
     const attribute = name.toLowerCase();
-    const value = dq ?? sq ?? uq ?? '';
+    const value = dq ?? sq ?? uq;
 
     if (/^on[a-z]+$/.test(attribute)) {
       removed.push(`${attribute} attribute`);
