@@ -2,7 +2,7 @@ import React from 'react';
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import { initials, formatCount } from './utils';
+import { initials, formatCount, membershipLabel } from './utils';
 import styles from './styles.module.css';
 
 export function MemberProfile({ member, onClose, triggerRef }) {
@@ -47,7 +47,9 @@ export function MemberProfile({ member, onClose, triggerRef }) {
             )}
           </div>
           <div className={styles.profileHeading}>
-            <p className={styles.profileKicker}>End User Community member</p>
+            <p className={styles.profileKicker}>
+              {membershipLabel(member.membershipStatus)}
+            </p>
             <h2 id="member-profile-name">{member.name}</h2>
             <p className={styles.profileMeta}>
               {member.architectures.length > 0 && (
@@ -156,8 +158,8 @@ export function MemberProfile({ member, onClose, triggerRef }) {
           )}
           {!hasDetails && (
             <p className={styles.bioMuted}>
-              Public details for {member.name} are limited to award
-              announcements. Visit the source links below to learn more.
+              This directory contains only organization-level information
+              curated from authoritative CNCF sources.
             </p>
           )}
           <div className={styles.profileSection}>

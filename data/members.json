@@ -1,10 +1,26 @@
 {
-  "description": "CNCF End User Community member organisations derived from reference architectures and Top End User Award winners.",
-  "generatedFrom": ["data/architectures/catalog.json", "data/awards.json"],
+  "description": "CNCF End User Community organizations from pinned landscape Member and Contributor records, reference architectures, and Top End User Award winners.",
+  "generatedFrom": [
+    "data/enduser-landscape.json",
+    "data/architectures/catalog.json",
+    "data/awards.json"
+  ],
+  "generatedAt": "2026-10-01T04:32:49.916Z",
+  "sources": {
+    "landscape": {
+      "repository": "https://github.com/cncf/landscape",
+      "revision": "bc9d1b5c87904d9430fc3377938f38192bab3ad0",
+      "file": "landscape.yml",
+      "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+      "collectedAt": "2026-10-01T04:32:49.916Z"
+    }
+  },
   "schema": {
     "id": "kebab-case identifier",
     "name": "display name",
     "slug": "URL-safe identifier",
+    "membershipStatus": "member, contributor, member-and-contributor, or unknown",
+    "membershipSources": "explicit pinned landscape source records; empty for unknown membership",
     "logo": "optional static asset path",
     "industries": "array of industry labels from architecture data",
     "projects": "array of CNCF project names from architecture data",
@@ -43,8 +59,80 @@
       "sourceAttribution": [
         "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/adobe",
         "https://www.cncf.io/announcements/2024/11/14/cncf-presents-top-end-user-award-to-adobe/",
-        "https://www.cncf.io/case-studies/adobe/"
-      ]
+        "https://www.cncf.io/case-studies/adobe/",
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.adobe.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Adobe (member)",
+          "role": "member",
+          "sourceName": "Adobe (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.adobe.com/",
+          "joined": "2022-10-01",
+          "localLogo": "/img/end-user-members/202737320e548b64-adobe.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "adyen",
+      "name": "Adyen",
+      "slug": "adyen",
+      "logo": "/img/end-user-members/dc41c01373b64d51-adyen.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.adyen.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Platinum/Adyen (member)",
+          "role": "member",
+          "sourceName": "Adyen (member)",
+          "category": "CNCF Members",
+          "subcategory": "Platinum",
+          "homepageUrl": "https://www.adyen.com",
+          "joined": "2026-05-01",
+          "localLogo": "/img/end-user-members/dc41c01373b64d51-adyen.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "airbnb",
+      "name": "Airbnb",
+      "slug": "airbnb",
+      "logo": "/img/end-user-members/f265027933046f14-airbnb.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.airbnb.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Airbnb (member)",
+          "role": "member",
+          "sourceName": "Airbnb (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.airbnb.com/",
+          "joined": "2021-02-01",
+          "localLogo": "/img/end-user-members/f265027933046f14-airbnb.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "allianz",
@@ -64,13 +152,43 @@
       "awards": [],
       "sourceAttribution": [
         "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/allianz"
-      ]
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
+      "id": "american-express",
+      "name": "American Express",
+      "slug": "american-express",
+      "logo": "/img/end-user-members/3d54f4cb885becef-american-express.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.americanexpress.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Gold/American Express (member)",
+          "role": "member",
+          "sourceName": "American Express (member)",
+          "category": "CNCF Members",
+          "subcategory": "Gold",
+          "homepageUrl": "https://www.americanexpress.com/",
+          "joined": "2021-06-01",
+          "localLogo": "/img/end-user-members/3d54f4cb885becef-american-express.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "ant-group",
       "name": "ANT Group",
       "slug": "ant-group",
-      "logo": null,
+      "logo": "/img/end-user-members/a49379b98048dc72-ant-financial-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -88,8 +206,24 @@
       ],
       "sourceAttribution": [
         "https://www.cncf.io/announcements/2025/04/03/cloud-native-computing-foundation-announces-ant-group-as-the-top-end-user-award-winner/",
-        "https://www.cncf.io/case-studies/ant-financial/"
-      ]
+        "https://www.cncf.io/case-studies/ant-financial/",
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.antgroup.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Gold/Ant Financial (member)",
+          "role": "member",
+          "sourceName": "Ant Financial (member)",
+          "category": "CNCF Members",
+          "subcategory": "Gold",
+          "homepageUrl": "https://www.antgroup.com",
+          "joined": "2019-05-01",
+          "localLogo": "/img/end-user-members/a49379b98048dc72-ant-financial-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "apple",
@@ -111,7 +245,164 @@
           "talkUrl": "https://www.youtube.com/watch?v=9GIQyQjs36o"
         }
       ],
-      "sourceAttribution": []
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.apple.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Platinum/Apple (member)",
+          "role": "member",
+          "sourceName": "Apple (member)",
+          "category": "CNCF Members",
+          "subcategory": "Platinum",
+          "homepageUrl": "https://www.apple.com/",
+          "joined": "2019-05-01",
+          "localLogo": "/img/end-user-members/793444cbf9b29b27-apple.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "asml",
+      "name": "ASML",
+      "slug": "asml",
+      "logo": "/img/end-user-members/02aa1b1aa091b600-asml.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.asml.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/ASML (member)",
+          "role": "member",
+          "sourceName": "ASML (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.asml.com",
+          "joined": "2024-12-01",
+          "localLogo": "/img/end-user-members/02aa1b1aa091b600-asml.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "banco-de-crdito-bcp",
+      "name": "Banco de Crédito BCP",
+      "slug": "banco-de-crdito-bcp",
+      "logo": "/img/end-user-members/6b4b4bd700fd6d09-banco-de-credito-bcp.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.viabcp.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Banco de Crédito BCP (member)",
+          "role": "member",
+          "sourceName": "Banco de Crédito BCP (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.viabcp.com",
+          "joined": "2024-10-01",
+          "localLogo": "/img/end-user-members/6b4b4bd700fd6d09-banco-de-credito-bcp.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "beneva",
+      "name": "Beneva",
+      "slug": "beneva",
+      "logo": "/img/end-user-members/ddaebbb2d91d26cf-beneva.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.beneva.ca"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Beneva (contributor)",
+          "role": "contributor",
+          "sourceName": "Beneva (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "https://www.beneva.ca",
+          "joined": "2026-07-01",
+          "localLogo": "/img/end-user-members/ddaebbb2d91d26cf-beneva.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
+    },
+    {
+      "id": "blackrock",
+      "name": "BlackRock",
+      "slug": "blackrock",
+      "logo": "/img/end-user-members/97bda56763a7df8a-blackrock.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.blackrock.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/BlackRock (member)",
+          "role": "member",
+          "sourceName": "BlackRock (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.blackrock.com/",
+          "joined": "2023-04-01",
+          "localLogo": "/img/end-user-members/97bda56763a7df8a-blackrock.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "block",
+      "name": "Block",
+      "slug": "block",
+      "logo": "/img/end-user-members/931f7cc923ea39ea-block.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://block.xyz"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Block (member)",
+          "role": "member",
+          "sourceName": "Block (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://block.xyz",
+          "joined": "2025-09-01",
+          "localLogo": "/img/end-user-members/931f7cc923ea39ea-block.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "bloomberg",
@@ -135,8 +426,191 @@
       ],
       "sourceAttribution": [
         "https://www.cncf.io/announcement/2018/05/02/cloud-native-computing-foundation-announces-bloomberg-as-winner-of-top-end-user-award/",
-        "https://www.cncf.io/case-studies/bloomberg/"
-      ]
+        "https://www.cncf.io/case-studies/bloomberg/",
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.bloomberg.com/tosv2.html"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Bloomberg (member)",
+          "role": "member",
+          "sourceName": "Bloomberg (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.bloomberg.com/tosv2.html",
+          "joined": "2017-08-01",
+          "localLogo": "/img/end-user-members/09e8c9fbefcbe39c-bloomberg-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "boeing",
+      "name": "Boeing",
+      "slug": "boeing",
+      "logo": "/img/end-user-members/8c40aac6e00ce972-boeing.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Boeing (contributor)",
+          "role": "contributor",
+          "sourceName": "Boeing (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "http://www.boeing.com/",
+          "joined": "2026-02-01",
+          "localLogo": "/img/end-user-members/8c40aac6e00ce972-boeing.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
+    },
+    {
+      "id": "cambia-health-solutions",
+      "name": "Cambia Health Solutions",
+      "slug": "cambia-health-solutions",
+      "logo": "/img/end-user-members/8b31d4fefe04c6dd-cambia-health-solutions-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.cambiahealth.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Nonprofit/Cambia Health Solutions (member)",
+          "role": "member",
+          "sourceName": "Cambia Health Solutions (member)",
+          "category": "CNCF Members",
+          "subcategory": "Nonprofit",
+          "homepageUrl": "https://www.cambiahealth.com/",
+          "joined": "2019-02-01",
+          "localLogo": "/img/end-user-members/8b31d4fefe04c6dd-cambia-health-solutions-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "capital-one",
+      "name": "Capital One",
+      "slug": "capital-one",
+      "logo": "/img/end-user-members/47c50132953ab637-capital-one.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.capitalone.com/tech/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Gold/Capital One (member)",
+          "role": "member",
+          "sourceName": "Capital One (member)",
+          "category": "CNCF Members",
+          "subcategory": "Gold",
+          "homepageUrl": "https://www.capitalone.com/tech/",
+          "joined": "2017-01-01",
+          "localLogo": "/img/end-user-members/47c50132953ab637-capital-one.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "cathay-financial-holding",
+      "name": "Cathay Financial Holding",
+      "slug": "cathay-financial-holding",
+      "logo": "/img/end-user-members/6cbd123cbbd0569c-cathay.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.cathayholdings.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Cathay Financial Holding (member)",
+          "role": "member",
+          "sourceName": "Cathay Financial Holding (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.cathayholdings.com/",
+          "joined": "2024-07-09",
+          "localLogo": "/img/end-user-members/6cbd123cbbd0569c-cathay.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "celonis",
+      "name": "Celonis",
+      "slug": "celonis",
+      "logo": "/img/end-user-members/7aa89bfb36a3c4f3-celonis.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.celonis.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Celonis (contributor)",
+          "role": "contributor",
+          "sourceName": "Celonis (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "https://www.celonis.com/",
+          "joined": "2021-08-01",
+          "localLogo": "/img/end-user-members/7aa89bfb36a3c4f3-celonis.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
+    },
+    {
+      "id": "centrica-energy",
+      "name": "Centrica Energy",
+      "slug": "centrica-energy",
+      "logo": "/img/end-user-members/1c47e60718b5bf20-centrica.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.centricaenergy.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Centrica Energy (contributor)",
+          "role": "contributor",
+          "sourceName": "Centrica Energy (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "https://www.centricaenergy.com",
+          "joined": "2024-02-01",
+          "localLogo": "/img/end-user-members/1c47e60718b5bf20-centrica.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
     },
     {
       "id": "cern",
@@ -180,8 +654,164 @@
       "sourceAttribution": [
         "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/cern-scientific-computing",
         "https://www.cncf.io/announcements/2024/03/21/cloud-native-computing-foundation-announces-cern-as-the-top-end-user-award-winner/",
-        "https://www.cncf.io/case-studies/cern/"
-      ]
+        "https://www.cncf.io/case-studies/cern/",
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://home.cern"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Nonprofit/CERN (member)",
+          "role": "member",
+          "sourceName": "CERN (member)",
+          "category": "CNCF Members",
+          "subcategory": "Nonprofit",
+          "homepageUrl": "https://home.cern",
+          "joined": "2020-09-01",
+          "localLogo": "/img/end-user-members/667dd804b0830617-cern.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "citi",
+      "name": "Citi",
+      "slug": "citi",
+      "logo": "/img/end-user-members/4b0aaf134b456551-citi.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.citigroup.com/citi/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Citi (member)",
+          "role": "member",
+          "sourceName": "Citi (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.citigroup.com/citi/",
+          "joined": "2021-02-01",
+          "localLogo": "/img/end-user-members/4b0aaf134b456551-citi.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "cloud-community-labs",
+      "name": "Cloud Community Labs",
+      "slug": "cloud-community-labs",
+      "logo": "/img/end-user-members/5e4160609d0caf40-cloud-community-labs.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://cloudcommunitylabs.io"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Cloud Community Labs (member)",
+          "role": "member",
+          "sourceName": "Cloud Community Labs (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://cloudcommunitylabs.io",
+          "joined": "2026-06-01",
+          "localLogo": "/img/end-user-members/5e4160609d0caf40-cloud-community-labs.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "cloud-native-texas",
+      "name": "Cloud Native Texas",
+      "slug": "cloud-native-texas",
+      "logo": "/img/end-user-members/563131b8004f3b17-cloud-native-texas.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://cloudnativetexas.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Cloud Native Texas (member)",
+          "role": "member",
+          "sourceName": "Cloud Native Texas (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://cloudnativetexas.com",
+          "joined": "2026-01-01",
+          "localLogo": "/img/end-user-members/563131b8004f3b17-cloud-native-texas.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "cme",
+      "name": "CME Group",
+      "slug": "cme",
+      "logo": "/img/end-user-members/125374c6418e9a1d-cme-group.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.cmegroup.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/CME Group (member)",
+          "role": "member",
+          "sourceName": "CME Group (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.cmegroup.com",
+          "joined": "2025-11-01",
+          "localLogo": "/img/end-user-members/125374c6418e9a1d-cme-group.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "cobank",
+      "name": "CoBank",
+      "slug": "cobank",
+      "logo": "/img/end-user-members/299befc8f68cb9c1-cobank.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://cobank.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/CoBank (member)",
+          "role": "member",
+          "sourceName": "CoBank (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://cobank.com",
+          "joined": "2025-10-01",
+          "localLogo": "/img/end-user-members/299befc8f68cb9c1-cobank.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "colopl",
@@ -201,7 +831,121 @@
       "awards": [],
       "sourceAttribution": [
         "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/colopl"
-      ]
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
+      "id": "cvs-health",
+      "name": "CVS Health",
+      "slug": "cvs-health",
+      "logo": "/img/end-user-members/0858d7a565a95df2-cvshealth.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.cvshealth.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Platinum/CVS Health (member)",
+          "role": "member",
+          "sourceName": "CVS Health (member)",
+          "category": "CNCF Members",
+          "subcategory": "Platinum",
+          "homepageUrl": "https://www.cvshealth.com",
+          "joined": "2025-10-01",
+          "localLogo": "/img/end-user-members/0858d7a565a95df2-cvshealth.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "cybozu",
+      "name": "Cybozu",
+      "slug": "cybozu",
+      "logo": "/img/end-user-members/83ce6cb121ed1a20-cybozu.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://cybozu-global.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Cybozu (member)",
+          "role": "member",
+          "sourceName": "Cybozu (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://cybozu-global.com/",
+          "joined": "2019-08-01",
+          "localLogo": "/img/end-user-members/83ce6cb121ed1a20-cybozu.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "decathlon",
+      "name": "Decathlon",
+      "slug": "decathlon",
+      "logo": "/img/end-user-members/b635bb11ff73990e-decathlon.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://digital.decathlon.net/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Decathlon (contributor)",
+          "role": "contributor",
+          "sourceName": "Decathlon (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "https://digital.decathlon.net/",
+          "joined": "2022-06-01",
+          "localLogo": "/img/end-user-members/b635bb11ff73990e-decathlon.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
+    },
+    {
+      "id": "deutsche-bundesbank",
+      "name": "Deutsche Bundesbank",
+      "slug": "deutsche-bundesbank",
+      "logo": "/img/end-user-members/3c744426e2c1db92-deutsche-bundesbank.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.bundesbank.de"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Nonprofit/Deutsche Bundesbank (member)",
+          "role": "member",
+          "sourceName": "Deutsche Bundesbank (member)",
+          "category": "CNCF Members",
+          "subcategory": "Nonprofit",
+          "homepageUrl": "https://www.bundesbank.de",
+          "joined": "2026-08-01",
+          "localLogo": "/img/end-user-members/3c744426e2c1db92-deutsche-bundesbank.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "didi",
@@ -225,7 +969,205 @@
       ],
       "sourceAttribution": [
         "https://www.cncf.io/announcement/2019/06/24/cloud-native-computing-foundation-announces-didi-as-winner-of-top-end-user-award/"
-      ]
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
+      "id": "dkb",
+      "name": "DKB",
+      "slug": "dkb",
+      "logo": "/img/end-user-members/1bc85649eb728814-dkb.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.dkb.de"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/DKB (member)",
+          "role": "member",
+          "sourceName": "DKB (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.dkb.de",
+          "joined": "2026-09-01",
+          "localLogo": "/img/end-user-members/1bc85649eb728814-dkb.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "dlocal",
+      "name": "Dlocal",
+      "slug": "dlocal",
+      "logo": "/img/end-user-members/4d288665ea1a9762-dlocal.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.dlocal.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Dlocal (member)",
+          "role": "member",
+          "sourceName": "Dlocal (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.dlocal.com",
+          "joined": "2025-03-01",
+          "localLogo": "/img/end-user-members/4d288665ea1a9762-dlocal.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "docusign",
+      "name": "Docusign",
+      "slug": "docusign",
+      "logo": "/img/end-user-members/47469fe5a44195c9-docusign.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.docusign.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Docusign (member)",
+          "role": "member",
+          "sourceName": "Docusign (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.docusign.com",
+          "joined": "2026-02-01",
+          "localLogo": "/img/end-user-members/47469fe5a44195c9-docusign.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "eon",
+      "name": "E.ON",
+      "slug": "eon",
+      "logo": "/img/end-user-members/e58e005517eff09b-e.on.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.eon.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/E.ON (member)",
+          "role": "member",
+          "sourceName": "E.ON (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.eon.com",
+          "joined": "2024-06-01",
+          "localLogo": "/img/end-user-members/e58e005517eff09b-e.on.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "ebay",
+      "name": "eBay",
+      "slug": "ebay",
+      "logo": "/img/end-user-members/22bae306d8c36bfc-e-bay-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.ebay.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/eBay (member)",
+          "role": "member",
+          "sourceName": "eBay (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.ebay.com",
+          "joined": "2016-01-01",
+          "localLogo": "/img/end-user-members/22bae306d8c36bfc-e-bay-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "enechain",
+      "name": "enechain",
+      "slug": "enechain",
+      "logo": "/img/end-user-members/e3cc853643f6748c-enechain.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://enechain.co.jp/en"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/enechain (contributor)",
+          "role": "contributor",
+          "sourceName": "enechain (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "https://enechain.co.jp/en",
+          "joined": "2026-10-01",
+          "localLogo": "/img/end-user-members/e3cc853643f6748c-enechain.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
+    },
+    {
+      "id": "fidelity-investments",
+      "name": "Fidelity Investments",
+      "slug": "fidelity-investments",
+      "logo": "/img/end-user-members/b5c72ab0c962145e-fidelity-investments.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.fidelity.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Gold/Fidelity Investments (member)",
+          "role": "member",
+          "sourceName": "Fidelity Investments (member)",
+          "category": "CNCF Members",
+          "subcategory": "Gold",
+          "homepageUrl": "https://www.fidelity.com/",
+          "joined": "2019-08-01",
+          "localLogo": "/img/end-user-members/b5c72ab0c962145e-fidelity-investments.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "flipkart",
@@ -252,7 +1194,205 @@
       "awards": [],
       "sourceAttribution": [
         "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/flipkart-chaos-engineering"
-      ]
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
+      "id": "framework",
+      "name": "Framework",
+      "slug": "framework",
+      "logo": "/img/end-user-members/5f7e5d22e8dac5fd-framework.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://frame.work"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Framework (member)",
+          "role": "member",
+          "sourceName": "Framework (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://frame.work",
+          "joined": "2026-02-01",
+          "localLogo": "/img/end-user-members/5f7e5d22e8dac5fd-framework.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "g-research",
+      "name": "G-Research",
+      "slug": "g-research",
+      "logo": "/img/end-user-members/f25e86597fc66615-g-research.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.gresearch.co.uk/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/G-Research (member)",
+          "role": "member",
+          "sourceName": "G-Research (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.gresearch.co.uk/",
+          "joined": "2019-08-01",
+          "localLogo": "/img/end-user-members/f25e86597fc66615-g-research.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "gim-uemoa",
+      "name": "GIM UEMOA",
+      "slug": "gim-uemoa",
+      "logo": "/img/end-user-members/88a051aef323945b-gim-uemoa.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.gim-uemoa.org"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/GIM UEMOA (member)",
+          "role": "member",
+          "sourceName": "GIM UEMOA (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.gim-uemoa.org",
+          "joined": "2024-03-01",
+          "localLogo": "/img/end-user-members/88a051aef323945b-gim-uemoa.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "golden-gate-university",
+      "name": "Golden Gate University",
+      "slug": "golden-gate-university",
+      "logo": "/img/end-user-members/90d786b1cc64b40b-golden-gate-university-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.ggu.edu"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Academic/Golden Gate University (member)",
+          "role": "member",
+          "sourceName": "Golden Gate University (member)",
+          "category": "CNCF Members",
+          "subcategory": "Academic",
+          "homepageUrl": "https://www.ggu.edu",
+          "joined": "2018-07-01",
+          "localLogo": "/img/end-user-members/90d786b1cc64b40b-golden-gate-university-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "goldman-sachs",
+      "name": "Goldman Sachs",
+      "slug": "goldman-sachs",
+      "logo": "/img/end-user-members/6ad5084b221fbc6f-goldman-sachs-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.goldmansachs.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Goldman Sachs (member)",
+          "role": "member",
+          "sourceName": "Goldman Sachs (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.goldmansachs.com",
+          "joined": "2016-01-01",
+          "localLogo": "/img/end-user-members/6ad5084b221fbc6f-goldman-sachs-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "guidewire",
+      "name": "Guidewire",
+      "slug": "guidewire",
+      "logo": "/img/end-user-members/b77013aec0a0f16c-guidewire.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.guidewire.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Guidewire (member)",
+          "role": "member",
+          "sourceName": "Guidewire (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.guidewire.com",
+          "joined": "2025-05-01",
+          "localLogo": "/img/end-user-members/b77013aec0a0f16c-guidewire.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "indeed",
+      "name": "Indeed",
+      "slug": "indeed",
+      "logo": "/img/end-user-members/72fb26179c8015be-indeed-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://hk.indeed.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Indeed (member)",
+          "role": "member",
+          "sourceName": "Indeed (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://hk.indeed.com",
+          "joined": "2018-01-01",
+          "localLogo": "/img/end-user-members/72fb26179c8015be-indeed-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "intuit",
@@ -288,8 +1428,24 @@
         "https://www.cncf.io/announcements/2022/10/26/cloud-native-computing-foundation-recognizes-intuit-as-top-end-user/",
         "https://www.cncf.io/announcement/2019/05/21/cloud-native-computing-foundation-announces-intuit-as-winner-of-top-end-user-award/",
         "https://www.cncf.io/case-studies/intuit/",
-        "https://www.cncf.io/case-studies/intuit/"
-      ]
+        "https://www.cncf.io/case-studies/intuit/",
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.intuit.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Gold/Intuit (member)",
+          "role": "member",
+          "sourceName": "Intuit (member)",
+          "category": "CNCF Members",
+          "subcategory": "Gold",
+          "homepageUrl": "https://www.intuit.com",
+          "joined": "2018-02-01",
+          "localLogo": "/img/end-user-members/caf79a0523ff6b64-intuit-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "jd-com",
@@ -314,7 +1470,233 @@
       "sourceAttribution": [
         "https://www.cncf.io/announcements/2018/11/15/jd-wins-top-end-user-award/",
         "https://www.cncf.io/case-studies/jd-com/"
-      ]
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
+      "id": "jpmorgan-chase",
+      "name": "JPMorgan Chase",
+      "slug": "jpmorgan-chase",
+      "logo": "/img/end-user-members/a7e3f1836afb94ca-jp-morgan-chase-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.jpmorganchase.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/JPMorgan Chase (member)",
+          "role": "member",
+          "sourceName": "JPMorgan Chase (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.jpmorganchase.com",
+          "joined": "2018-08-01",
+          "localLogo": "/img/end-user-members/a7e3f1836afb94ca-jp-morgan-chase-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "legora",
+      "name": "Legora",
+      "slug": "legora",
+      "logo": "/img/end-user-members/741c1c117bb6464a-legora.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://legora.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Legora (member)",
+          "role": "member",
+          "sourceName": "Legora (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://legora.com",
+          "joined": "2026-07-01",
+          "localLogo": "/img/end-user-members/741c1c117bb6464a-legora.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "lockheed-martin",
+      "name": "Lockheed Martin",
+      "slug": "lockheed-martin",
+      "logo": "/img/end-user-members/9ced4299b24f5253-lockheedmartin.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.lockheedmartin.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Lockheed Martin (member)",
+          "role": "member",
+          "sourceName": "Lockheed Martin (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.lockheedmartin.com/",
+          "joined": "2021-11-01",
+          "localLogo": "/img/end-user-members/9ced4299b24f5253-lockheedmartin.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "lovable",
+      "name": "Lovable",
+      "slug": "lovable",
+      "logo": "/img/end-user-members/f3472243f915e1ab-lovable.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://lovable.dev"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Lovable (member)",
+          "role": "member",
+          "sourceName": "Lovable (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://lovable.dev",
+          "joined": "2026-03-01",
+          "localLogo": "/img/end-user-members/f3472243f915e1ab-lovable.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "lseg",
+      "name": "LSEG",
+      "slug": "lseg",
+      "logo": "/img/end-user-members/e5d01c9b7bd495d9-lseg.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.lseg.com/en"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/LSEG (member)",
+          "role": "member",
+          "sourceName": "LSEG (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.lseg.com/en",
+          "joined": "2021-12-01",
+          "localLogo": "/img/end-user-members/e5d01c9b7bd495d9-lseg.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "ly-corporation",
+      "name": "LY Corporation",
+      "slug": "ly-corporation",
+      "logo": "/img/end-user-members/cbb4e9fd49aa3af4-ly-corp.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.lycorp.co.jp/en/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/LY Corporation (member)",
+          "role": "member",
+          "sourceName": "LY Corporation (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.lycorp.co.jp/en/",
+          "joined": "2018-03-01",
+          "localLogo": "/img/end-user-members/cbb4e9fd49aa3af4-ly-corp.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "mathworks",
+      "name": "Mathworks",
+      "slug": "mathworks",
+      "logo": "/img/end-user-members/990186482e5ebc40-mathworks-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.mathworks.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Mathworks (member)",
+          "role": "member",
+          "sourceName": "Mathworks (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.mathworks.com/",
+          "joined": "2019-04-01",
+          "localLogo": "/img/end-user-members/990186482e5ebc40-mathworks-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "mercedes-benz",
+      "name": "Mercedes Benz AG",
+      "slug": "mercedes-benz",
+      "logo": "/img/end-user-members/5700d2bcacfa9c38-mercedes-benz.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://group.mercedes-benz.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Mercedes Benz AG (member)",
+          "role": "member",
+          "sourceName": "Mercedes Benz AG (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://group.mercedes-benz.com/",
+          "joined": "2020-08-01",
+          "localLogo": "/img/end-user-members/5700d2bcacfa9c38-mercedes-benz.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "mercedes-benz-tech-innovation",
@@ -339,7 +1721,9 @@
       "sourceAttribution": [
         "https://www.cncf.io/announcements/2023/04/21/cncf-presents-top-end-user-award-to-mercedes-benz-tech-innovation/",
         "https://www.cncf.io/case-studies/mercedes-benz/"
-      ]
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
     },
     {
       "id": "michelin",
@@ -363,8 +1747,556 @@
       ],
       "sourceAttribution": [
         "https://www.cncf.io/announcements/2025/11/12/cncf-honors-innovators-and-defenders-with-2025-community-awards-at-kubecon-cloudnativecon-north-america/",
-        "https://www.cncf.io/case-studies/michelin/"
-      ]
+        "https://www.cncf.io/case-studies/michelin/",
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.michelin.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Michelin (member)",
+          "role": "member",
+          "sourceName": "Michelin (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.michelin.com",
+          "joined": "2024-03-01",
+          "localLogo": "/img/end-user-members/0c134780dde4922c-michelin.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "morgan-stanley",
+      "name": "Morgan Stanley",
+      "slug": "morgan-stanley",
+      "logo": "/img/end-user-members/4bbd37d54cdf6b72-morgan-stanley-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.morganstanley.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Morgan Stanley (member)",
+          "role": "member",
+          "sourceName": "Morgan Stanley (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.morganstanley.com",
+          "joined": "2017-06-01",
+          "localLogo": "/img/end-user-members/4bbd37d54cdf6b72-morgan-stanley-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "myfitnesspal",
+      "name": "MyFitnessPal",
+      "slug": "myfitnesspal",
+      "logo": "/img/end-user-members/f32795852de0a1cd-myfitnesspal.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.myfitnesspal.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/MyFitnessPal (member)",
+          "role": "member",
+          "sourceName": "MyFitnessPal (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.myfitnesspal.com/",
+          "joined": "2020-11-01",
+          "localLogo": "/img/end-user-members/f32795852de0a1cd-myfitnesspal.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "naic",
+      "name": "NAIC",
+      "slug": "naic",
+      "logo": "/img/end-user-members/4bb34f446b0dfd1c-naic-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://content.naic.org"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Nonprofit/NAIC (member)",
+          "role": "member",
+          "sourceName": "NAIC (member)",
+          "category": "CNCF Members",
+          "subcategory": "Nonprofit",
+          "homepageUrl": "https://content.naic.org",
+          "joined": "2018-03-01",
+          "localLogo": "/img/end-user-members/4bb34f446b0dfd1c-naic-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "natwest",
+      "name": "Natwest",
+      "slug": "natwest",
+      "logo": "/img/end-user-members/e6493dea75eea1bd-natwest.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.natwest.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Natwest (member)",
+          "role": "member",
+          "sourceName": "Natwest (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.natwest.com",
+          "joined": "2024-12-01",
+          "localLogo": "/img/end-user-members/e6493dea75eea1bd-natwest.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "nipr",
+      "name": "NIPR",
+      "slug": "nipr",
+      "logo": "/img/end-user-members/27f512cc822f88fa-nipr-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.nipr.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Nonprofit/NIPR (member)",
+          "role": "member",
+          "sourceName": "NIPR (member)",
+          "category": "CNCF Members",
+          "subcategory": "Nonprofit",
+          "homepageUrl": "https://www.nipr.com/",
+          "joined": "2018-03-01",
+          "localLogo": "/img/end-user-members/27f512cc822f88fa-nipr-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "non-public-organization-camel",
+      "name": "Non-Public Organization Camel",
+      "slug": "non-public-organization-camel",
+      "logo": "/img/end-user-members/e10874ac5de744c0-camel.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.cncf.io/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Non-Public Organization Camel (member)",
+          "role": "member",
+          "sourceName": "Non-Public Organization Camel (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.cncf.io/",
+          "joined": null,
+          "localLogo": "/img/end-user-members/e10874ac5de744c0-camel.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "non-public-organization-moose",
+      "name": "Non-Public Organization Moose",
+      "slug": "non-public-organization-moose",
+      "logo": "/img/end-user-members/0c4fc5d30de8180f-moose.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.cncf.io/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Non-Public Organization Moose (member)",
+          "role": "member",
+          "sourceName": "Non-Public Organization Moose (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.cncf.io/",
+          "joined": null,
+          "localLogo": "/img/end-user-members/0c4fc5d30de8180f-moose.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "non-public-organization-narwhal",
+      "name": "Non-Public Organization Narwhal",
+      "slug": "non-public-organization-narwhal",
+      "logo": "/img/end-user-members/e4e91637e8e84c96-narwhal.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.cncf.io/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Non-Public Organization Narwhal (member)",
+          "role": "member",
+          "sourceName": "Non-Public Organization Narwhal (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.cncf.io/",
+          "joined": null,
+          "localLogo": "/img/end-user-members/e4e91637e8e84c96-narwhal.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "non-public-organization-octopus",
+      "name": "Non-Public Organization Octopus",
+      "slug": "non-public-organization-octopus",
+      "logo": "/img/end-user-members/7d9f92dfcbf08746-octopus.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.cncf.io/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Nonprofit/Non-Public Organization Octopus (member)",
+          "role": "member",
+          "sourceName": "Non-Public Organization Octopus (member)",
+          "category": "CNCF Members",
+          "subcategory": "Nonprofit",
+          "homepageUrl": "https://www.cncf.io/",
+          "joined": null,
+          "localLogo": "/img/end-user-members/7d9f92dfcbf08746-octopus.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "non-public-organization-quail",
+      "name": "Non-Public Organization Quail",
+      "slug": "non-public-organization-quail",
+      "logo": "/img/end-user-members/ffb6b6eae51be51c-quail.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.cncf.io/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Nonprofit/Non-Public Organization Quail (member)",
+          "role": "member",
+          "sourceName": "Non-Public Organization Quail (member)",
+          "category": "CNCF Members",
+          "subcategory": "Nonprofit",
+          "homepageUrl": "https://www.cncf.io/",
+          "joined": null,
+          "localLogo": "/img/end-user-members/ffb6b6eae51be51c-quail.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "novo-nordisk",
+      "name": "Novo Nordisk",
+      "slug": "novo-nordisk",
+      "logo": "/img/end-user-members/ff73ecfaa6941c16-novo-nordisk.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.novonordisk.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Novo Nordisk (member)",
+          "role": "member",
+          "sourceName": "Novo Nordisk (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.novonordisk.com",
+          "joined": "2024-12-01",
+          "localLogo": "/img/end-user-members/ff73ecfaa6941c16-novo-nordisk.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "porch-financial",
+      "name": "Porch Financial",
+      "slug": "porch-financial",
+      "logo": "/img/end-user-members/98924a38190c3a01-porch-financial.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.porchfinancial.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Porch Financial (member)",
+          "role": "member",
+          "sourceName": "Porch Financial (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.porchfinancial.com",
+          "joined": "2025-04-01",
+          "localLogo": "/img/end-user-members/98924a38190c3a01-porch-financial.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "prodigy-education",
+      "name": "Prodigy Education",
+      "slug": "prodigy-education",
+      "logo": "/img/end-user-members/e1c913de9e1416fb-prodigy-education.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.prodigygame.com/main-en/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Prodigy Education (member)",
+          "role": "member",
+          "sourceName": "Prodigy Education (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.prodigygame.com/main-en/",
+          "joined": "2022-04-01",
+          "localLogo": "/img/end-user-members/e1c913de9e1416fb-prodigy-education.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "qube-research-technologies",
+      "name": "Qube Research & Technologies",
+      "slug": "qube-research-technologies",
+      "logo": "/img/end-user-members/7c1dc13e8cd78954-qrt.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.qube-rt.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Qube Research & Technologies (member)",
+          "role": "member",
+          "sourceName": "Qube Research & Technologies (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.qube-rt.com",
+          "joined": "2026-03-01",
+          "localLogo": "/img/end-user-members/7c1dc13e8cd78954-qrt.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "reodev",
+      "name": "reo.dev",
+      "slug": "reodev",
+      "logo": "/img/end-user-members/124234657033cc4b-reo.dev.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.reo.dev"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/reo.dev (member)",
+          "role": "member",
+          "sourceName": "reo.dev (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.reo.dev",
+          "joined": "2025-05-01",
+          "localLogo": "/img/end-user-members/124234657033cc4b-reo.dev.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "royal-bank-of-canada",
+      "name": "Royal Bank of Canada",
+      "slug": "royal-bank-of-canada",
+      "logo": "/img/end-user-members/920f2e7119194a33-royalbankofcanada.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.rbc.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Royal Bank of Canada (member)",
+          "role": "member",
+          "sourceName": "Royal Bank of Canada (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.rbc.com",
+          "joined": "2024-10-01",
+          "localLogo": "/img/end-user-members/920f2e7119194a33-royalbankofcanada.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "rtx",
+      "name": "RTX",
+      "slug": "rtx",
+      "logo": "/img/end-user-members/82f4d2f5bf1cf725-raytheontechnologies.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.rtx.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/RTX (member)",
+          "role": "member",
+          "sourceName": "RTX (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.rtx.com/",
+          "joined": "2021-04-01",
+          "localLogo": "/img/end-user-members/82f4d2f5bf1cf725-raytheontechnologies.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "shopify",
+      "name": "Shopify",
+      "slug": "shopify",
+      "logo": "/img/end-user-members/f2bfd7d6f61fc2ff-shopify-supporter.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.shopify.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Shopify (contributor)",
+          "role": "contributor",
+          "sourceName": "Shopify (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "https://www.shopify.com/",
+          "joined": "2017-12-01",
+          "localLogo": "/img/end-user-members/f2bfd7d6f61fc2ff-shopify-supporter.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
+    },
+    {
+      "id": "sky-betting-gaming",
+      "name": "Sky Betting & Gaming",
+      "slug": "sky-betting-gaming",
+      "logo": "/img/end-user-members/7dd884dfc8671303-sky-bet.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.skybet.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Sky Betting & Gaming (contributor)",
+          "role": "contributor",
+          "sourceName": "Sky Betting & Gaming (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "https://www.skybet.com/",
+          "joined": "2019-10-01",
+          "localLogo": "/img/end-user-members/7dd884dfc8671303-sky-bet.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
     },
     {
       "id": "sncf",
@@ -389,7 +2321,9 @@
       "sourceAttribution": [
         "https://www.cncf.io/announcements/2026/03/25/cncf-celebrates-innovators-advancing-cloud-native-at-kubecon-cloudnativecon-europe/",
         "https://www.cncf.io/case-studies/sncf/"
-      ]
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
     },
     {
       "id": "spotify",
@@ -425,8 +2359,220 @@
         "https://www.cncf.io/announcements/2023/11/08/cloud-native-computing-foundation-presents-the-top-end-user-award-to-spotify/",
         "https://www.cncf.io/announcements/2021/05/05/cloud-native-computing-foundation-grants-spotify-the-top-end-user-award/",
         "https://www.cncf.io/case-studies/spotify/",
-        "https://www.cncf.io/case-studies/spotify/"
-      ]
+        "https://www.cncf.io/case-studies/spotify/",
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://open.spotify.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Spotify (member)",
+          "role": "member",
+          "sourceName": "Spotify (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://open.spotify.com",
+          "joined": "2018-03-01",
+          "localLogo": "/img/end-user-members/79ab77b0c85c22fb-spotify-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "springer-nature",
+      "name": "Springer Nature",
+      "slug": "springer-nature",
+      "logo": "/img/end-user-members/2f034d78796f0f76-springer-nature.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.springernature.com/gp"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Springer Nature (member)",
+          "role": "member",
+          "sourceName": "Springer Nature (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.springernature.com/gp",
+          "joined": "2020-03-01",
+          "localLogo": "/img/end-user-members/2f034d78796f0f76-springer-nature.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "squarespace",
+      "name": "Squarespace",
+      "slug": "squarespace",
+      "logo": "/img/end-user-members/d49ec0feba190c3d-squarespace-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.squarespace.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Squarespace (member)",
+          "role": "member",
+          "sourceName": "Squarespace (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.squarespace.com",
+          "joined": "2018-04-01",
+          "localLogo": "/img/end-user-members/d49ec0feba190c3d-squarespace-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "strategic-education",
+      "name": "Strategic Education",
+      "slug": "strategic-education",
+      "logo": "/img/end-user-members/042d60776b78d54c-strategic-education.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.strategiceducation.com/home/default.aspx"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Academic/Strategic Education (member)",
+          "role": "member",
+          "sourceName": "Strategic Education (member)",
+          "category": "CNCF Members",
+          "subcategory": "Academic",
+          "homepageUrl": "https://www.strategiceducation.com/home/default.aspx",
+          "joined": "2020-08-01",
+          "localLogo": "/img/end-user-members/042d60776b78d54c-strategic-education.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "strava",
+      "name": "Strava",
+      "slug": "strava",
+      "logo": "/img/end-user-members/6c5c9a39e7fc3ffc-strava.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.strava.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Strava (member)",
+          "role": "member",
+          "sourceName": "Strava (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.strava.com/",
+          "joined": "2023-06-01",
+          "localLogo": "/img/end-user-members/6c5c9a39e7fc3ffc-strava.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "subaru-corporation",
+      "name": "Subaru Corporation",
+      "slug": "subaru-corporation",
+      "logo": null,
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.subaru.co.jp/en/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Subaru Corporation (contributor)",
+          "role": "contributor",
+          "sourceName": "Subaru Corporation (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "https://www.subaru.co.jp/en/",
+          "joined": "2026-09-01",
+          "localLogo": null,
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
+    },
+    {
+      "id": "swedish-public-employment-service",
+      "name": "Swedish Public Employment Service",
+      "slug": "swedish-public-employment-service",
+      "logo": "/img/end-user-members/e4952885852ee49a-swedish-public-employment-service.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://arbetsformedlingen.se"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Nonprofit/Swedish Public Employment Service (member)",
+          "role": "member",
+          "sourceName": "Swedish Public Employment Service (member)",
+          "category": "CNCF Members",
+          "subcategory": "Nonprofit",
+          "homepageUrl": "https://arbetsformedlingen.se",
+          "joined": "2026-09-01",
+          "localLogo": "/img/end-user-members/e4952885852ee49a-swedish-public-employment-service.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "swiss-post",
+      "name": "Swiss Post",
+      "slug": "swiss-post",
+      "logo": "/img/end-user-members/6959f8a59950e42c-swisspost.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.swisspost.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Swiss Post (contributor)",
+          "role": "contributor",
+          "sourceName": "Swiss Post (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "https://www.swisspost.com/",
+          "joined": "2023-07-01",
+          "localLogo": "/img/end-user-members/6959f8a59950e42c-swisspost.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
     },
     {
       "id": "swisscom",
@@ -473,7 +2619,317 @@
       "sourceAttribution": [
         "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-cloud-native-telco",
         "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-kubernetes-service"
-      ]
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
+      "id": "teciem",
+      "name": "Teciem",
+      "slug": "teciem",
+      "logo": "/img/end-user-members/faaaaa1742847fca-teciem.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://teciem.com/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Teciem (member)",
+          "role": "member",
+          "sourceName": "Teciem (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://teciem.com/",
+          "joined": "2026-03-01",
+          "localLogo": "/img/end-user-members/faaaaa1742847fca-teciem.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "telenor-norway",
+      "name": "Telenor Norway",
+      "slug": "telenor-norway",
+      "logo": "/img/end-user-members/655351efc9959598-telenor.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.telenor.no/privat"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Telenor Norway (member)",
+          "role": "member",
+          "sourceName": "Telenor Norway (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.telenor.no/privat",
+          "joined": "2025-12-01",
+          "localLogo": "/img/end-user-members/655351efc9959598-telenor.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "thales",
+      "name": "Thales",
+      "slug": "thales",
+      "logo": "/img/end-user-members/3f3fb8156203c217-thales.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.thalesgroup.com/en"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Thales (member)",
+          "role": "member",
+          "sourceName": "Thales (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.thalesgroup.com/en",
+          "joined": "2023-11-01",
+          "localLogo": "/img/end-user-members/3f3fb8156203c217-thales.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "toyota-motor-corporation",
+      "name": "Toyota Motor Corporation",
+      "slug": "toyota-motor-corporation",
+      "logo": "/img/end-user-members/6be8be52a621adb4-toyota.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://global.toyota/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Toyota Motor Corporation (member)",
+          "role": "member",
+          "sourceName": "Toyota Motor Corporation (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://global.toyota/",
+          "joined": "2020-03-01",
+          "localLogo": "/img/end-user-members/6be8be52a621adb4-toyota.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "uber",
+      "name": "Uber",
+      "slug": "uber",
+      "logo": "/img/end-user-members/24fad9cc06f16c07-uber.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.uber.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Uber (member)",
+          "role": "member",
+          "sourceName": "Uber (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.uber.com",
+          "joined": "2026-02-01",
+          "localLogo": "/img/end-user-members/24fad9cc06f16c07-uber.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "ubs",
+      "name": "UBS",
+      "slug": "ubs",
+      "logo": "/img/end-user-members/923437b82997d677-ubs.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.ubs.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/UBS (member)",
+          "role": "member",
+          "sourceName": "UBS (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.ubs.com",
+          "joined": "2025-02-01",
+          "localLogo": "/img/end-user-members/923437b82997d677-ubs.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "upsider",
+      "name": "Upsider",
+      "slug": "upsider",
+      "logo": "/img/end-user-members/3f7674833fc4d5ed-upsider-supporter.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://corp.up-sider.com/en"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Upsider (member)",
+          "role": "member",
+          "sourceName": "Upsider (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://corp.up-sider.com/en",
+          "joined": "2019-05-01",
+          "localLogo": "/img/end-user-members/3f7674833fc4d5ed-upsider-supporter.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "valve-software",
+      "name": "Valve Software",
+      "slug": "valve-software",
+      "logo": "/img/end-user-members/f9f87cc63214fd34-Valve.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.valvesoftware.com/en/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Valve Software (member)",
+          "role": "member",
+          "sourceName": "Valve Software (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.valvesoftware.com/en/",
+          "joined": "2021-04-01",
+          "localLogo": "/img/end-user-members/f9f87cc63214fd34-Valve.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "volvo",
+      "name": "Volvo",
+      "slug": "volvo",
+      "logo": "/img/end-user-members/a8ac41339869501d-volvo.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.volvocars.com/us"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Volvo (contributor)",
+          "role": "contributor",
+          "sourceName": "Volvo (contributor)",
+          "category": "CNCF Members",
+          "subcategory": "End User Supporter and Contributor",
+          "homepageUrl": "https://www.volvocars.com/us",
+          "joined": "2022-03-01",
+          "localLogo": "/img/end-user-members/a8ac41339869501d-volvo.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "contributor"
+    },
+    {
+      "id": "walmart",
+      "name": "Walmart",
+      "slug": "walmart",
+      "logo": "/img/end-user-members/ec1f133cab1aef6b-walmart-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.walmartlabs.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Walmart (member)",
+          "role": "member",
+          "sourceName": "Walmart (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://www.walmartlabs.com",
+          "joined": "2018-09-01",
+          "localLogo": "/img/end-user-members/ec1f133cab1aef6b-walmart-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
+    },
+    {
+      "id": "wikimedia",
+      "name": "Wikimedia",
+      "slug": "wikimedia",
+      "logo": "/img/end-user-members/65e35beafc7abf28-wikimedia-member.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://www.wikimedia.org/"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Nonprofit/Wikimedia (member)",
+          "role": "member",
+          "sourceName": "Wikimedia (member)",
+          "category": "CNCF Members",
+          "subcategory": "Nonprofit",
+          "homepageUrl": "https://www.wikimedia.org/",
+          "joined": "2017-09-01",
+          "localLogo": "/img/end-user-members/65e35beafc7abf28-wikimedia-member.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "zalando",
@@ -498,7 +2954,9 @@
       "sourceAttribution": [
         "https://www.cncf.io/announcement/2020/08/20/cloud-native-computing-foundation-grants-zalando-the-top-end-user-award/",
         "https://www.cncf.io/case-studies/zalando/"
-      ]
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
     },
     {
       "id": "zeiss",
@@ -518,7 +2976,37 @@
       "awards": [],
       "sourceAttribution": [
         "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/zeiss"
-      ]
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
+      "id": "ziax",
+      "name": "Ziax",
+      "slug": "ziax",
+      "logo": "/img/end-user-members/76de749d3a0729cb-ziax.svg",
+      "industries": [],
+      "projects": [],
+      "architectures": [],
+      "awards": [],
+      "sourceAttribution": [
+        "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
+        "https://ziax.com"
+      ],
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Ziax (member)",
+          "role": "member",
+          "sourceName": "Ziax (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://ziax.com",
+          "joined": "2026-02-01",
+          "localLogo": "/img/end-user-members/76de749d3a0729cb-ziax.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     }
   ]
 }

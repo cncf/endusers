@@ -40,9 +40,13 @@ const { DirectoryFreshness } = await importSource(
   `${DIR}/DirectoryFreshness.js`,
 );
 const { useFilterOptions } = await importSource(`${DIR}/hooks.js`);
-const { initials, formatCount, formatDate } = await importSource(
-  `${DIR}/utils.js`,
-);
+const {
+  initials,
+  formatCount,
+  formatDate,
+  membershipLabel,
+  matchesMembership,
+} = await importSource(`${DIR}/utils.js`);
 
 const membersData = (await importSource('data/members.json')).default;
 const metrics = (await importSource('data/metrics.json')).default;
@@ -207,6 +211,8 @@ const BARE_MEMBER = {
   id: 'example-org',
   name: 'Example Org Holdings',
   slug: 'example-org',
+  membershipStatus: 'unknown',
+  membershipSources: [],
   logo: null,
   industries: [],
   projects: [],
@@ -219,6 +225,8 @@ const RICH_MEMBER = {
   id: 'rich-org',
   name: 'Rich Org',
   slug: 'rich-org',
+  membershipStatus: 'member',
+  membershipSources: [],
   logo: '/img/members/rich-org.svg',
   industries: ['Finance', 'Retail'],
   projects: ['Kubernetes', 'Prometheus'],
@@ -279,6 +287,23 @@ test('formatDate renders a long en-US date and rejects a bad timestamp', () => {
   assert.equal(formatDate(null), 'January 1, 1970');
 });
 
+test('membership labels and filters distinguish every status', () => {
+  assert.equal(membershipLabel('member'), 'End User Member');
+  assert.equal(membershipLabel('contributor'), 'End User Contributor');
+  assert.equal(
+    membershipLabel('member-and-contributor'),
+    'End User Member and Contributor',
+  );
+  assert.equal(membershipLabel('unknown'), 'Membership not specified');
+  assert.equal(matchesMembership('member-and-contributor', 'member'), true);
+  assert.equal(
+    matchesMembership('member-and-contributor', 'contributor'),
+    true,
+  );
+  assert.equal(matchesMembership('unknown', 'unknown'), true);
+  assert.equal(matchesMembership(undefined, ''), true);
+});
+
 // --- useFilterOptions -----------------------------------------------------
 
 test('useFilterOptions returns the sorted distinct industries and projects', () => {
@@ -295,6 +320,10 @@ test('useFilterOptions returns the sorted distinct industries and projects', () 
   assert.deepEqual(result.projects, expectedProjects);
   assert.ok(result.industries.length > 0);
   assert.ok(result.projects.length > 0);
+  assert.deepEqual(
+    result.membershipStatuses.map((option) => option.value),
+    ['member', 'contributor', 'unknown'],
+  );
 });
 
 // --- DirectoryFreshness ---------------------------------------------------
@@ -305,16 +334,30 @@ test('useFilterOptions returns the sorted distinct industries and projects', () 
 // instance for each. Patching those objects for the duration of one call is
 // therefore enough to reach the branches the checked-in data never takes —
 // and, unlike importing a rewritten copy, it exercises the real source file.
-function withFreshnessData(metricsPatch, awardsPatch, run) {
+function withFreshnessData(
+  metricsPatch,
+  awardsPatch,
+  membersPatchOrRun,
+  maybeRun,
+) {
+  const membersPatch =
+    typeof membersPatchOrRun === 'function' ? {} : membersPatchOrRun;
+  const run =
+    typeof membersPatchOrRun === 'function' ? membersPatchOrRun : maybeRun;
   const metricsBackup = { ...metrics };
   const awardsBackup = { ...awardsData };
+  const membersSourcesBackup = membersData.sources;
   Object.assign(metrics, metricsPatch);
   Object.assign(awardsData, awardsPatch);
+  if (membersPatch?.sources !== undefined) {
+    membersData.sources = membersPatch.sources;
+  }
   try {
     run();
   } finally {
     Object.assign(metrics, metricsBackup);
     Object.assign(awardsData, awardsBackup);
+    membersData.sources = membersSourcesBackup;
   }
 }
 
@@ -325,17 +368,20 @@ test('the freshness note dates both upstream sources and links the repo', () => 
   assert.ok(text.includes(formatDate(metrics.generatedAt)));
   assert.ok(text.includes(formatDate(awardsData.verifiedAt)));
 
-  const link = findByType(tree, 'a');
-  assert.equal(link.props.href, metrics.sources.architectures.repository);
-  assert.equal(link.props.target, '_blank');
-  assert.match(link.props.rel, /noreferrer/);
-  assert.equal(textOf(link), 'cncf/architecture');
+  const links = findAllByType(tree, 'a');
+  assert.equal(links[0].props.href, membersData.sources.landscape.sourceUrl);
+  assert.equal(links[0].props.target, '_blank');
+  assert.match(links[0].props.rel, /noreferrer/);
+  assert.equal(textOf(links[0]), 'cncf/landscape');
+  assert.equal(links[1].props.href, metrics.sources.architectures.repository);
+  assert.equal(textOf(links[1]), 'cncf/architecture');
 });
 
 test('the freshness note is plain text when no upstream repository is known', () => {
   withFreshnessData(
     { generatedAt: '2026-01-02T00:00:00.000Z', sources: {} },
     { verifiedAt: '2026-03-04' },
+    { sources: {} },
     () => {
       const tree = DirectoryFreshness();
       assert.equal(findByType(tree, 'a'), undefined);
@@ -351,6 +397,7 @@ test('the freshness note renders nothing when neither date is usable', () => {
   withFreshnessData(
     { generatedAt: 'nonsense' },
     { verifiedAt: undefined },
+    { sources: {} },
     () => {
       assert.equal(DirectoryFreshness(), null);
     },
@@ -361,6 +408,7 @@ test('the freshness note keeps the award date when the metrics date is absent', 
   withFreshnessData(
     { generatedAt: undefined },
     { verifiedAt: '2026-03-04' },
+    { sources: {} },
     () => {
       const text = textOf(DirectoryFreshness());
       assert.equal(text.includes('last synced'), false);
@@ -375,7 +423,7 @@ test('the directory labels itself and opens with the freshness note', () => {
   const { view } = renderDirectory();
   assert.equal(
     view.tree.props['aria-label'],
-    'End User Community member directory',
+    'End User Community organization directory',
   );
   assert.equal(childComponents(view.tree)[0].type, DirectoryFreshness);
 });
@@ -387,11 +435,12 @@ test('each filter control carries a label that names it', () => {
   assert.deepEqual(forIds, [
     'member-search',
     'member-industry',
+    'member-membership',
     'member-project',
   ]);
   assert.equal(
     findByType(view.tree, 'input').props.placeholder,
-    'Search members by name',
+    'Search organizations by name',
   );
 });
 
@@ -419,7 +468,7 @@ test('the results bar counts the whole corpus and hides Clear filters', () => {
   assert.equal(directory.shownCount(), MEMBERS.length);
   assert.match(
     textOf(findByClass(directory.view.tree, 'resultsBar')),
-    new RegExp(`Showing ${MEMBERS.length} of ${MEMBERS.length} members`),
+    new RegExp(`Showing ${MEMBERS.length} of ${MEMBERS.length} organizations`),
   );
   assert.equal(directory.clearButtons().length, 0);
 });
@@ -485,6 +534,18 @@ test('the project filter keeps only members using that project', () => {
   assert.equal(directory.shownCount(), expected.length);
 });
 
+test('the membership filter matches explicit roles and combined roles', () => {
+  const directory = renderDirectory();
+  directory.select('member-membership', 'member');
+  const expected = MEMBERS.filter(
+    (member) =>
+      member.membershipStatus === 'member' ||
+      member.membershipStatus === 'member-and-contributor',
+  );
+  assert.ok(expected.length > 0);
+  assert.equal(directory.shownCount(), expected.length);
+});
+
 test('the architecture and award toggles drop members without either', () => {
   const withArchitectures = MEMBERS.filter(
     (member) => member.architectures.length > 0,
@@ -528,7 +589,7 @@ test('a search that matches nothing shows the empty state, not the grid', () => 
   assert.equal(directory.shownCount(), 0);
   assert.equal(findByClass(directory.view.tree, 'grid'), undefined);
   const empty = findByClass(directory.view.tree, 'emptyState');
-  assert.equal(textOf(findByType(empty, 'h3')), 'No members match');
+  assert.equal(textOf(findByType(empty, 'h3')), 'No organizations match');
 
   // Both the results bar and the empty state offer a way out.
   assert.equal(directory.clearButtons().length, 2);
@@ -581,9 +642,12 @@ test('card meta counts architectures and awards, pluralised', () => {
   assert.equal(textOf(findByClass(tree, 'cardMeta')), '2 architectures1 award');
 });
 
-test('card meta falls back to Community member with neither count', () => {
+test('card meta falls back to the explicit unknown membership status', () => {
   const { tree } = render(MemberCard, { member: BARE_MEMBER });
-  assert.equal(textOf(findByClass(tree, 'cardMeta')), 'Community member');
+  assert.equal(
+    textOf(findByClass(tree, 'cardMeta')),
+    'Membership not specified',
+  );
   assert.equal(findByClass(tree, 'eyebrow'), undefined);
   assert.equal(findByClass(tree, 'projectsList'), undefined);
 });
@@ -675,10 +739,7 @@ test('the dialog lists industries, projects, architectures and awards', () => {
     textOf(findByClass(tree, 'profileMeta')),
     '2 architectures1 award',
   );
-  assert.equal(
-    textOf(findByClass(tree, 'profileKicker')),
-    'End User Community member',
-  );
+  assert.equal(textOf(findByClass(tree, 'profileKicker')), 'End User Member');
 });
 
 test('each architecture links to its own detail page', () => {
@@ -741,7 +802,7 @@ test('a member with no details gets the muted fallback instead of sections', () 
   );
   assert.match(
     textOf(findByClass(tree, 'bioMuted')),
-    /^Public details for Example Org Holdings are limited to award announcements\./,
+    /^This directory contains only organization-level information curated from authoritative CNCF sources\./,
   );
   assert.equal(textOf(findByClass(tree, 'profileMeta')), '');
   assert.equal(

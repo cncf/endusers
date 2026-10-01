@@ -6,10 +6,10 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('member directory', () => {
-  test('lists member organizations', async ({ page }) => {
+  test('lists End User organizations', async ({ page }) => {
     await page.goto('/community/members');
     const section = page.getByRole('region', {
-      name: 'End User Community member directory',
+      name: 'End User Community organization directory',
     });
     await expect(section).toBeVisible();
 

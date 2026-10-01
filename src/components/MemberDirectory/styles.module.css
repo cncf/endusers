@@ -238,6 +238,13 @@
   margin: 0.35rem 0 0.65rem;
 }
 
+.roleLabel {
+  color: var(--ifm-color-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+
 .eyebrow {
   color: var(--ifm-color-primary);
   font-size: 0.72rem;

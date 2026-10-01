@@ -308,13 +308,18 @@ test('the generator and validator detection is not vacuous', () => {
   assert.ok(
     generators.includes('collect:metrics') &&
       generators.includes('fetch:community-people') &&
-      generators.includes('import:architectures'),
+      generators.includes('import:architectures') &&
+      generators.includes('collect:enduser-members'),
     `expected the known generators to be recognised, got ${generators.join(', ')}`,
   );
   assert.equal(validatorFor('collect:metrics'), 'validate:metrics');
   assert.equal(
     validatorFor('fetch:community-people'),
     'validate:community-people',
+  );
+  assert.equal(
+    validatorFor('collect:enduser-members'),
+    'validate:enduser-members',
   );
   assert.equal(validatorFor('generate:members'), 'validate:members');
 });

@@ -1,21 +1,37 @@
 import React from 'react';
 import metrics from '@site/data/metrics.json';
 import awardsData from '@site/data/awards.json';
+import membersData from '@site/data/members.json';
 import { formatDate } from './utils';
 import styles from './styles.module.css';
 
-// Member profiles are compiled from reference architecture submissions and
-// award announcements (see scripts/generate-members.mjs); data/members.json
-// itself has no generatedAt of its own, so its freshness note reuses the
-// real sync/verification dates of those two upstream sources instead of
-// inventing a new timestamp.
+// Member profiles are compiled from the pinned landscape snapshot, reference
+// architecture submissions, and award announcements (see
+// scripts/generate-members.mjs). The landscape timestamp comes from the
+// committed snapshot; architecture and award dates retain their existing
+// source-specific freshness signals.
 export function DirectoryFreshness() {
   const architectures = metrics?.sources?.architectures;
+  const landscape = membersData?.sources?.landscape;
   const architecturesDate = formatDate(metrics?.generatedAt);
+  const landscapeDate = formatDate(landscape?.collectedAt);
   const awardsDate = formatDate(awardsData?.verifiedAt);
-  if (!architecturesDate && !awardsDate) return null;
+  if (!landscapeDate && !architecturesDate && !awardsDate) return null;
   return (
     <p className={styles.freshnessNote}>
+      {landscapeDate && (
+        <>
+          Directory membership data last synced from{' '}
+          {landscape?.sourceUrl ? (
+            <a href={landscape.sourceUrl} target="_blank" rel="noreferrer">
+              cncf/landscape
+            </a>
+          ) : (
+            'cncf/landscape'
+          )}{' '}
+          on {landscapeDate}.
+        </>
+      )}
       {architecturesDate && (
         <>
           Architecture-derived profiles last synced from{' '}

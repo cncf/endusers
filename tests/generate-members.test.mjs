@@ -51,10 +51,13 @@ function generateMembers(fixtureFiles) {
   }
 }
 
-function fixtures({ catalog = [], awards = [] } = {}) {
+function fixtures({ catalog = [], awards = [], snapshot } = {}) {
   return {
     'data/architectures/catalog.json': JSON.stringify(catalog),
     'data/awards.json': JSON.stringify({ awards }),
+    ...(snapshot
+      ? { 'data/enduser-landscape.json': JSON.stringify(snapshot) }
+      : {}),
   };
 }
 
@@ -125,6 +128,267 @@ test('emits the documented envelope around the member list', () => {
     'sourceAttribution',
   ]);
   assert.match(result.stdout, /Generated 1 member entries\./);
+});
+
+function landscapeSnapshot(records) {
+  return {
+    generated: true,
+    collectedAt: '2026-10-01T00:00:00.000Z',
+    source: {
+      repository: 'https://github.com/cncf/landscape',
+      revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
+      file: 'landscape.yml',
+      sourceUrl:
+        'https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml',
+    },
+    selection: {
+      member: 'member',
+      contributor: 'contributor',
+      supporter: 'audit-only',
+    },
+    records,
+  };
+}
+
+function landscapeRecord(overrides = {}) {
+  return {
+    sourceId: 'cncf/landscape#CNCF Members/Gold/Acme (member)',
+    sourceRole: 'member',
+    included: true,
+    classificationReason: 'selected-member',
+    sourceName: 'Acme (member)',
+    displayName: 'Acme',
+    category: 'CNCF Members',
+    subcategory: 'Gold',
+    enduser: true,
+    homepageUrl: 'https://example.test/acme',
+    joined: '2026-01-01',
+    logoFilename: null,
+    localLogo: null,
+    logoWarning: null,
+    ...overrides,
+  };
+}
+
+test('merges selected landscape records while retaining historical profiles as unknown', () => {
+  const result = run({
+    catalog: [catalogEntry({ organization: 'Historical Org' })],
+    snapshot: landscapeSnapshot([
+      landscapeRecord({
+        sourceId: 'cncf/landscape#CNCF Members/Gold/Acme (member)',
+      }),
+      landscapeRecord({
+        sourceId:
+          'cncf/landscape#CNCF Members/End User Supporter and Contributor/Contributor Co (contributor)',
+        sourceRole: 'contributor',
+        classificationReason: 'selected-contributor',
+        sourceName: 'Contributor Co (contributor)',
+        displayName: 'Contributor Co',
+        subcategory: 'End User Supporter and Contributor',
+        enduser: false,
+        homepageUrl: 'https://example.test/contributor',
+      }),
+      {
+        ...landscapeRecord({
+          sourceId:
+            'cncf/landscape#CNCF Members/End User Supporter and Contributor/Legacy Co (supporter)',
+          sourceRole: 'supporter',
+          included: false,
+          classificationReason: 'legacy-supporter-audit-only',
+          sourceName: 'Legacy Co (supporter)',
+          displayName: 'Legacy Co',
+          subcategory: 'End User Supporter and Contributor',
+          enduser: false,
+        }),
+      },
+    ]),
+  });
+
+  const historical = memberById(result, 'historical-org');
+  const acme = memberById(result, 'acme');
+  const contributor = memberById(result, 'contributor-co');
+
+  assert.equal(historical.membershipStatus, 'unknown');
+  assert.equal(acme.membershipStatus, 'member');
+  assert.equal(contributor.membershipStatus, 'contributor');
+  assert.deepEqual(
+    [...result.output.members.flatMap((member) => member.membershipSources)]
+      .map((source) => source.sourceId)
+      .sort(),
+    [
+      'cncf/landscape#CNCF Members/End User Supporter and Contributor/Contributor Co (contributor)',
+      'cncf/landscape#CNCF Members/Gold/Acme (member)',
+    ],
+  );
+  assert.equal(
+    result.output.members.some((member) => member.name === 'Legacy Co'),
+    false,
+  );
+  assert.equal(historical.architectures.length, 1);
+});
+
+test('maps the sourced Ant Financial record to the existing ant-group ID', () => {
+  const result = run({
+    awards: [
+      awardEntry({
+        slug: 'ant-group',
+        organization: 'ANT Group',
+      }),
+    ],
+    snapshot: landscapeSnapshot([
+      landscapeRecord({
+        sourceId: 'cncf/landscape#CNCF Members/Gold/Ant Financial (member)',
+        sourceName: 'Ant Financial (member)',
+        displayName: 'Ant Financial',
+        homepageUrl: 'not a url',
+      }),
+    ]),
+  });
+
+  assert.equal(result.output.members.length, 1);
+  assert.equal(result.output.members[0].id, 'ant-group');
+  assert.equal(result.output.members[0].membershipStatus, 'member');
+});
+
+test('fails an ambiguous landscape slug collision instead of merging it', () => {
+  const result = generateMembers(
+    fixtures({
+      catalog: [catalogEntry({ organization: 'Acme' })],
+      snapshot: landscapeSnapshot([
+        landscapeRecord({
+          sourceId: 'cncf/landscape#CNCF Members/Gold/Acme Group (member)',
+          sourceName: 'Acme Group (member)',
+          displayName: 'Acme Group',
+        }),
+      ]),
+    }),
+  );
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /landscape identity collision/);
+});
+
+test('combines sourced roles and rejects unsafe homepage URLs as attribution', () => {
+  const result = run({
+    awards: [
+      awardEntry({
+        slug: 'ant-group',
+        organization: 'ANT Group',
+        logo: null,
+      }),
+    ],
+    snapshot: landscapeSnapshot([
+      landscapeRecord({
+        sourceId: 'cncf/landscape#CNCF Members/Gold/Ant Financial (member)',
+        sourceName: 'Ant Financial (member)',
+        displayName: 'Ant Financial',
+        homepageUrl: 'https://www.antgroup.com',
+        localLogo: '/img/end-user-members/ant.svg',
+      }),
+      landscapeRecord({
+        sourceId:
+          'cncf/landscape#CNCF Members/End User Supporter and Contributor/ANT Group (contributor)',
+        sourceRole: 'contributor',
+        classificationReason: 'selected-contributor',
+        sourceName: 'ANT Group (contributor)',
+        displayName: 'ANT Group',
+        subcategory: 'End User Supporter and Contributor',
+        homepageUrl: null,
+        joined: null,
+      }),
+    ]),
+  });
+
+  const member = memberById(result, 'ant-group');
+  assert.equal(member.membershipStatus, 'member-and-contributor');
+  assert.equal(member.logo, '/img/end-user-members/ant.svg');
+  assert.equal(
+    member.sourceAttribution.includes('http://ant.example.test'),
+    false,
+  );
+});
+
+test('fails malformed landscape snapshots before generation', () => {
+  const cases = [
+    {
+      name: 'not generated',
+      snapshot: { ...landscapeSnapshot([landscapeRecord()]), generated: false },
+      message: /must be generated/,
+    },
+    {
+      name: 'missing source provenance',
+      snapshot: {
+        ...landscapeSnapshot([landscapeRecord()]),
+        source: { revision: '' },
+      },
+      message: /pinned source revision/,
+    },
+    {
+      name: 'empty records',
+      snapshot: { ...landscapeSnapshot([]), records: [] },
+      message: /must contain records/,
+    },
+    {
+      name: 'no selected records',
+      snapshot: {
+        ...landscapeSnapshot([
+          landscapeRecord({
+            included: false,
+            sourceRole: 'supporter',
+            sourceName: 'Legacy (supporter)',
+            displayName: 'Legacy',
+            classificationReason: 'legacy-supporter-audit-only',
+          }),
+        ]),
+      },
+      message: /at least one included record/,
+    },
+  ];
+
+  for (const testCase of cases) {
+    const result = generateMembers(fixtures({ snapshot: testCase.snapshot }));
+    assert.equal(result.status, 1, testCase.name);
+    assert.match(result.stderr, testCase.message, testCase.name);
+  }
+});
+
+test('fails missing aliases, empty IDs, and duplicate landscape sources', () => {
+  const missingAlias = generateMembers(
+    fixtures({
+      snapshot: landscapeSnapshot([
+        landscapeRecord({
+          sourceId: 'cncf/landscape#CNCF Members/Gold/Ant Financial (member)',
+          sourceName: 'Ant Financial (member)',
+          displayName: 'Ant Financial',
+        }),
+      ]),
+    }),
+  );
+  assert.equal(missingAlias.status, 1);
+  assert.match(missingAlias.stderr, /landscape alias target missing/);
+
+  const emptyId = generateMembers(
+    fixtures({
+      snapshot: landscapeSnapshot([
+        landscapeRecord({
+          sourceId: 'cncf/landscape#CNCF Members/Gold/!!! (member)',
+          sourceName: '!!! (member)',
+          displayName: '!!!',
+        }),
+      ]),
+    }),
+  );
+  assert.equal(emptyId.status, 1);
+  assert.match(emptyId.stderr, /no usable output ID/);
+
+  const duplicate = landscapeRecord();
+  const duplicateSources = generateMembers(
+    fixtures({
+      snapshot: landscapeSnapshot([duplicate, duplicate]),
+    }),
+  );
+  assert.equal(duplicateSources.status, 1);
+  assert.match(duplicateSources.stderr, /duplicate landscape source record/);
 });
 
 test('produces an empty member list when both sources are empty', () => {
