@@ -184,6 +184,25 @@ test('requires membership fields for modern landscape-backed output', () => {
   );
 });
 
+// The guard above is a two-arm `||`, so deleting both fields only ever
+// evaluates the first arm. A half-migrated record that kept membershipStatus
+// but lost membershipSources reaches the second arm instead, and is the shape
+// a partial generator change would actually produce.
+test('requires membership fields when only membershipSources is missing', () => {
+  const partialShape = member('partial-shape', 'unknown');
+  delete partialShape.membershipSources;
+  const result = run([partialShape], snapshot([]));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /landscape-backed output requires membershipStatus and membershipSources/,
+  );
+  // membershipStatus survived, so the per-field checks still run and report
+  // the absent array rather than stopping at the shape error.
+  assert.match(result.stderr, /membershipSources must be an array/);
+  assert.doesNotMatch(result.stderr, /membershipStatus must be one of/);
+});
+
 test('compares membership source metadata with the pinned snapshot', () => {
   const memberSource = source('member-source', 'contributor');
   memberSource.sourceUrl = 'https://wrong.example/source';
