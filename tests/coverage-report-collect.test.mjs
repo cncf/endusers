@@ -274,3 +274,38 @@ test('collect returns an empty result for a coverage directory with nothing usab
     assert.equal(unmapped.size, 0);
   });
 });
+
+test('collect skips a coverage payload that carries no result array', () => {
+  withSandbox(({ coverageDir, root }) => {
+    const source = 'const a=1;';
+    const url = writeSource(root, 'scripts/a.mjs', source);
+    // A dump written by a process that produced no script coverage at all:
+    // valid JSON, but with no `result` key to iterate. Reading `.result`
+    // directly would throw on the for..of and lose every other record in the
+    // directory, so the reporter must treat it as an empty record list.
+    writeFileSync(join(coverageDir, 'empty.json'), JSON.stringify({}));
+    writeRecord(coverageDir, 'good.json', [script(url, source.length)]);
+
+    const { merged, unmapped } = collect(coverageDir, root);
+    assert.deepEqual([...merged.keys()], ['scripts/a.mjs']);
+    assert.equal(unmapped.size, 0);
+  });
+});
+
+test('collect reports a JSX file as unmapped when it cannot be transpiled', () => {
+  withSandbox(({ coverageDir, root }) => {
+    // A `.js` file containing `<` is what tests/tools/jsx-hooks.mjs would
+    // have transpiled, so a record whose length does not match the file is
+    // offered to the JSX remap. swc rejects this text outright
+    // (`Expected corresponding JSX closing tag for <div>`), and a throw there
+    // must leave the record unmapped rather than escaping collect() and
+    // aborting the whole report.
+    const source = 'const a = <div></span>;\n';
+    const url = writeSource(root, 'scripts/broken.js', source);
+    writeRecord(coverageDir, 'broken.json', [script(url, source.length + 40)]);
+
+    const { merged, unmapped } = collect(coverageDir, root);
+    assert.equal(merged.has('scripts/broken.js'), false);
+    assert.deepEqual([...unmapped], ['scripts/broken.js']);
+  });
+});
