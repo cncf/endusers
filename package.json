@@ -37,7 +37,7 @@
     "import:architecture-issue": "node scripts/import-architecture-issue.mjs",
     "fetch:community-people": "node scripts/fetch-community-people.mjs",
     "check:community-group-links": "node scripts/check-community-group-links.mjs",
-    "generate:members": "node scripts/generate-members.mjs",
+    "generate:members": "node scripts/generate-members.mjs && node scripts/validate-members.mjs",
     "validate:architectures": "node scripts/validate-architectures.mjs",
     "validate:architecture-assets": "node scripts/validate-architecture-assets.mjs",
     "validate:button-contrast": "node scripts/validate-button-contrast.mjs",
