@@ -16,5 +16,6 @@ build:
     npm run validate:launch-metrics
     npm run validate:case-studies
     npm run validate:radar-reports
+    npm run validate:projects-born
     npm run validate:button-contrast
     npm run build
