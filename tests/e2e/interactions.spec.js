@@ -8,7 +8,7 @@
 // throws, a mismatched server render that bails out) leaves every unit test
 // green while the shipped page renders a dead toolbar. Only a browser against
 // `build/` can catch that.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // React attaches its fiber to the DOM node it hydrates, so the presence of a
 // `__react*` property is the signal that the element's handlers are live.

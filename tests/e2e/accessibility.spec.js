@@ -28,7 +28,7 @@
 // baselines in tests/ci-supply-chain.test.mjs, and it is what stops a
 // temporary allowance from quietly becoming permanent.
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // One route per page template.
 const ROUTES = [

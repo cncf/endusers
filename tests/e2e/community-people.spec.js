@@ -11,7 +11,7 @@
 //
 // The PersonDialog lightbox and src/components/hooks/useFocusTrap.js are
 // deliberately left to tests/e2e/interactions.spec.js.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const TAB_PATH = '/community/technical-advisory-board';
 

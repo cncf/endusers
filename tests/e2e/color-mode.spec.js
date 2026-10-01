@@ -20,7 +20,7 @@
 //
 // Computed site tokens also guard the cascade: selecting a theme is not enough
 // if the site's dark overrides lose to the light root block.
-import { test, expect } from '@playwright/test';
+import { newCoverageContext, test, expect } from '../tools/e2e-coverage.cjs';
 
 // docusaurus.config.js sets `colorMode.defaultMode: 'light'`.
 const DEFAULT_MODE = 'light';
@@ -57,7 +57,9 @@ test.describe('colour mode', () => {
     // `colorScheme: 'no-preference'` is what a client that expresses no
     // preference looks like, so this reads `defaultMode` rather than the
     // prefers-color-scheme branch.
-    const context = await browser.newContext({ colorScheme: 'no-preference' });
+    const context = await newCoverageContext(browser, {
+      colorScheme: 'no-preference',
+    });
     const page = await context.newPage();
 
     await page.goto('/');
@@ -123,7 +125,7 @@ test.describe('colour mode', () => {
     // `respectPrefersColorScheme: true` is the whole contract here: with it
     // set to false this lands in `defaultMode` instead, which builds clean and
     // is invisible to every existing test.
-    const context = await browser.newContext({ colorScheme: 'dark' });
+    const context = await newCoverageContext(browser, { colorScheme: 'dark' });
     const page = await context.newPage();
 
     await page.goto('/');
@@ -135,7 +137,7 @@ test.describe('colour mode', () => {
   test('a light-preferring visitor gets light mode on arrival', async ({
     browser,
   }) => {
-    const context = await browser.newContext({ colorScheme: 'light' });
+    const context = await newCoverageContext(browser, { colorScheme: 'light' });
     const page = await context.newPage();
 
     await page.goto('/');
@@ -149,7 +151,7 @@ test.describe('colour mode', () => {
   }) => {
     // Started from a light-preferring client so the "system" state is
     // distinguishable from an explicit dark choice by the attribute alone.
-    const context = await browser.newContext({ colorScheme: 'light' });
+    const context = await newCoverageContext(browser, { colorScheme: 'light' });
     const page = await context.newPage();
 
     await page.goto('/');
@@ -188,7 +190,7 @@ test.describe('colour mode', () => {
   test('a chosen mode survives navigation to another route', async ({
     browser,
   }) => {
-    const context = await browser.newContext({ colorScheme: 'light' });
+    const context = await newCoverageContext(browser, { colorScheme: 'light' });
     const page = await context.newPage();
 
     await page.goto('/');
@@ -220,13 +222,13 @@ test.describe('colour mode', () => {
     // attribute change: `data-theme` can flip correctly while the dark
     // stylesheet fails to load or fails to win the cascade, and nothing else
     // in the suite looks at a computed value.
-    const light = await browser.newContext({ colorScheme: 'light' });
+    const light = await newCoverageContext(browser, { colorScheme: 'light' });
     const lightPage = await light.newPage();
     await lightPage.goto('/');
     const lightBackground = await backgroundToken(lightPage);
     await light.close();
 
-    const dark = await browser.newContext({ colorScheme: 'dark' });
+    const dark = await newCoverageContext(browser, { colorScheme: 'dark' });
     const darkPage = await dark.newPage();
     await darkPage.goto('/');
     await expect(theme(darkPage)).toHaveAttribute('data-theme', 'dark');

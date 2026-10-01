@@ -22,7 +22,7 @@
 // from public CNCF repositories, so its data can change with no source change
 // at all. These cases therefore assert shape and invariants against
 // data/metrics.json rather than against any particular published number.
-import { test, expect } from '@playwright/test';
+import { newCoverageContext, test, expect } from '../tools/e2e-coverage.cjs';
 import metricsData from '../../data/metrics.json';
 
 const METRICS_PATH = '/metrics';
@@ -31,7 +31,7 @@ test('chart point titles exist before JavaScript runs', async ({
   browser,
   baseURL,
 }) => {
-  const context = await browser.newContext({
+  const context = await newCoverageContext(browser, {
     javaScriptEnabled: false,
     baseURL,
   });
