@@ -115,3 +115,56 @@ test('still reports nothing for an inert SVG', () => {
     [],
   );
 });
+
+test('reports a remote url() in a fill presentation attribute', () => {
+  // `style="fill:url(...)"` was already a finding; the presentation-attribute
+  // spelling of the identical paint reference was not, so moving the value one
+  // attribute over walked past the gate.
+  assert.deepEqual(
+    findRemoteReferences(
+      svg('<rect fill="url(https://evil.example/paint.svg#g)"/>'),
+    ),
+    [
+      'references a remote resource in a fill presentation attribute: https://evil.example/paint.svg#g',
+    ],
+  );
+});
+
+test('reports a remote url() in filter, mask and clip-path attributes', () => {
+  assert.deepEqual(
+    findRemoteReferences(
+      svg(
+        '<rect filter="url(https://evil.example/f.svg#f)" mask="url(\'//evil.example/m.svg#m\')" clip-path="url(https://evil.example/c.svg#c)"/>',
+      ),
+    ),
+    [
+      'references a remote resource in a clip-path presentation attribute: https://evil.example/c.svg#c',
+      'references a remote resource in a filter presentation attribute: https://evil.example/f.svg#f',
+      'references a remote resource in a mask presentation attribute: //evil.example/m.svg#m',
+    ],
+  );
+});
+
+test('leaves a same-document url() reference in a presentation attribute alone', () => {
+  // The overwhelmingly common case: a local paint server or filter defined in
+  // the same file. Flagging it would fail the existing diagram corpus.
+  assert.deepEqual(
+    findRemoteReferences(
+      svg(
+        '<defs><linearGradient id="g"/></defs><rect fill="url(#g)" filter="url(#blur)"/>',
+      ),
+    ),
+    [],
+  );
+});
+
+test('still reports a style attribute with its own wording', () => {
+  assert.deepEqual(
+    findRemoteReferences(
+      svg('<rect style="fill:url(https://evil.example/paint.svg#g)"/>'),
+    ),
+    [
+      'references a remote resource in a style attribute: https://evil.example/paint.svg#g',
+    ],
+  );
+});

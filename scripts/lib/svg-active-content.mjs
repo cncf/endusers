@@ -181,12 +181,20 @@ export function findRemoteReferences(source) {
         continue;
       }
 
-      if (name === 'style') {
-        for (const target of cssTargets(value)) {
-          findings.add(
-            `references a remote resource in a style attribute: ${describeTarget(target)}`,
-          );
-        }
+      // Every attribute value, not just `style`. SVG presentation attributes
+      // (`fill`, `filter`, `mask`, `clip-path`, `marker-*`, ...) take the same
+      // `url(...)` syntax as the CSS property of the same name, so
+      // `fill="url(https://evil.example/x.svg#g)"` is the identical remote
+      // fetch as `style="fill:url(https://evil.example/x.svg#g)"`. Scanning
+      // only `style` let the presentation-attribute spelling walk past the
+      // gate. A value with no `url(`/`@import` token yields nothing, so this
+      // costs the other attributes nothing.
+      for (const target of cssTargets(value)) {
+        findings.add(
+          name === 'style'
+            ? `references a remote resource in a style attribute: ${describeTarget(target)}`
+            : `references a remote resource in a ${match[1].toLowerCase()} presentation attribute: ${describeTarget(target)}`,
+        );
       }
     }
   }
