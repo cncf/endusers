@@ -237,6 +237,11 @@ test('every line chart point carries a hoverable date/value title', () => {
         textOf(title),
         `${values[pointIndex].date}: ${values[pointIndex].value}`,
       );
+      assert.equal(
+        title.props.children,
+        `${values[pointIndex].date}: ${values[pointIndex].value}`,
+        'React SSR requires a single string child for SVG titles',
+      );
     });
   }
 });
