@@ -280,3 +280,23 @@ test('reports only the type error when sourceAttribution is not an array', () =>
   assert.match(result.stderr, /sourceAttribution must be an array/);
   assert.doesNotMatch(result.stderr, /sourceAttribution\[\]/);
 });
+
+// Every per-member read is guarded, so a `null` entry must be reported as a
+// list of missing fields rather than crashing the validator. The membership
+// probes reach for `'membershipStatus' in (member || {})`, and `in` throws on
+// a non-object right-hand side, so the `{}` fallback is what keeps a null
+// entry on the error path.
+test('reports a null member entry as missing fields instead of crashing', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, members: [null] }),
+  );
+  assert.equal(result.status, 1);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+  assert.match(result.stderr, /unknown: id must be a non-empty string/);
+  assert.match(result.stderr, /unknown: industries must be an array/);
+  assert.doesNotMatch(
+    result.stderr,
+    /landscape-backed output requires membershipStatus/,
+  );
+});

@@ -221,3 +221,32 @@ test('handles a snapshot without a records array', () => {
   const result = run([member('unknown-org', 'unknown')], landscape);
   assert.equal(result.status, 0, result.stderr);
 });
+
+// The ID-set mismatch message renders each side independently, so the empty
+// side has to read "none" rather than collapsing to an empty gap in the
+// sentence. The missing-only direction is exercised above; this covers the
+// unexpected-only direction, where a member carries a source the landscape
+// snapshot does not include at all.
+test('names the empty side of an unexpected-only ID set mismatch', () => {
+  const result = run(
+    [member('ghost-org', 'member', [source('ghost', 'member')])],
+    snapshot([]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /membership source ID set mismatch \(missing: none; unexpected: ghost\)/,
+  );
+});
+
+test('names the empty side of a missing-only ID set mismatch', () => {
+  const result = run(
+    [member('member-org', 'member', [source('member-source', 'member')])],
+    snapshot(['member-source', 'absent-source']),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /membership source ID set mismatch \(missing: absent-source; unexpected: none\)/,
+  );
+});
