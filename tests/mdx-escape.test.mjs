@@ -345,3 +345,27 @@ test('escapes text MDX cannot parse, falling back to CommonMark code ranges', ()
 test('keeps a code span verbatim in text MDX cannot parse', () => {
   assert.equal(escapeMdx('`{a}` and { b'), '`{a}` and &#123; b');
 });
+
+// escapeMdx() verifies its own code-preserving result and throws it away when
+// anything MDX would execute survived. Reaching that check requires a text
+// whose code ranges came from CommonMark — MDX's grammar threw, so codeRanges()
+// fell back — and where CommonMark classified as code a span MDX compiles as
+// JSX. CommonMark's indented code block is exactly that disagreement: MDX turns
+// indented code off, so a four-space-indented element is live there and inert
+// here. Without the verification step the preserved span would be handed back
+// unescaped and compiled.
+
+test('re-escapes everything when a CommonMark code range hides a live element', async () => {
+  // The unclosed <Foo> makes MDX's grammar throw, so the code ranges come from
+  // CommonMark, which calls the indented <Bar /> a code block. MDX does not,
+  // so preserving that span verbatim would ship a live element.
+  const escaped = escapeMdx('<Foo>\n\n    <Bar />\n');
+  assert.equal(escaped, '&lt;Foo>\n\n    &lt;Bar />\n');
+  await assertCompilesAsText(escaped, '<Bar />');
+});
+
+test('re-escapes everything when a CommonMark code range hides a live expression', async () => {
+  const escaped = escapeMdx('<Foo>\n\n    {1 + 1}\n');
+  assert.equal(escaped, '&lt;Foo>\n\n    &#123;1 + 1&#125;\n');
+  await assertCompilesAsText(escaped, '{1 + 1}');
+});
