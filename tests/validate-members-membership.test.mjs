@@ -171,3 +171,53 @@ test('rejects duplicate, missing, unexpected, and stale landscape provenance', (
   assert.match(result.stderr, /membership source ID set mismatch/);
   assert.match(result.stderr, /landscape provenance must match/);
 });
+
+test('requires membership fields for modern landscape-backed output', () => {
+  const legacyShape = member('legacy-shape', 'unknown');
+  delete legacyShape.membershipStatus;
+  delete legacyShape.membershipSources;
+  const result = run([legacyShape], snapshot([]));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /landscape-backed output requires membershipStatus and membershipSources/,
+  );
+});
+
+test('compares membership source metadata with the pinned snapshot', () => {
+  const memberSource = source('member-source', 'contributor');
+  memberSource.sourceUrl = 'https://wrong.example/source';
+  const landscapeRecord = {
+    sourceId: 'member-source',
+    included: true,
+    sourceRole: 'member',
+    sourceName: 'Pinned Organization (member)',
+    category: 'CNCF Members',
+    subcategory: 'Gold',
+    homepageUrl: 'https://pinned.example/',
+    joined: '2026-02-01',
+    localLogo: '/img/end-user-members/pinned.svg',
+  };
+  const landscape = {
+    ...snapshot(['member-source']),
+    records: [landscapeRecord],
+  };
+  const result = run(
+    [member('pinned-org', 'member', [memberSource])],
+    landscape,
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /role does not match/);
+  assert.match(result.stderr, /sourceName does not match/);
+  assert.match(result.stderr, /homepageUrl does not match/);
+  assert.match(result.stderr, /joined does not match/);
+  assert.match(result.stderr, /localLogo does not match/);
+  assert.match(result.stderr, /sourceUrl does not match landscape provenance/);
+});
+
+test('handles a snapshot without a records array', () => {
+  const landscape = snapshot([]);
+  delete landscape.records;
+  const result = run([member('unknown-org', 'unknown')], landscape);
+  assert.equal(result.status, 0, result.stderr);
+});

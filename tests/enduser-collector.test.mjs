@@ -1,17 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  assertLandscapeSnapshotReady,
   buildLandscapeSnapshot,
   mirrorLandscapeLogo,
+  publishLandscapeSnapshot,
 } from '../scripts/lib/enduser-collector.mjs';
 
 const RECORD = {
@@ -68,7 +72,7 @@ test('keeps an organization when its optional logo is unavailable', () => {
       destinationRoot,
     });
     assert.equal(result.localLogo, null);
-    assert.match(result.logoWarning, /logo is missing/);
+    assert.match(result.logoWarning, /symlink or is missing/);
     assert.equal(result.sourceId, RECORD.sourceId);
   });
 });
@@ -95,6 +99,141 @@ test('keeps records with no logo and rejects unsafe logo filenames', () => {
       record: { ...RECORD, logoFilename: null },
       sourceRoot,
       destinationRoot,
+    });
+
+    test('rejects a supporter-only upstream snapshot before publication', () => {
+      withRoots(({ sourceRoot, destinationRoot }) => {
+        assert.throws(
+          () =>
+            buildLandscapeSnapshot({
+              document: {
+                landscape: [
+                  {
+                    name: 'CNCF Members',
+                    subcategories: [
+                      { name: 'Gold', items: [] },
+                      {
+                        name: 'End User Supporter and Contributor',
+                        items: [
+                          {
+                            name: 'Legacy (supporter)',
+                            homepage_url: 'https://example.test/legacy',
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
+              collectedAt: '2026-10-01T00:00:00.000Z',
+              sourceRoot,
+              destinationRoot,
+            }),
+          /no current Member\/Contributor records/,
+        );
+      });
+    });
+
+    test('rejects symlinked logo files and hosted-logo directories', () => {
+      withRoots(({ root, sourceRoot, destinationRoot }) => {
+        const outside = join(root, 'outside.png');
+        writeFileSync(outside, 'outside');
+        symlinkSync(outside, join(sourceRoot, 'hosted_logos/acme.png'));
+        const fileResult = mirrorLandscapeLogo({
+          record: { ...RECORD, logoFilename: 'acme.png' },
+          sourceRoot,
+          destinationRoot,
+        });
+        assert.equal(fileResult.localLogo, null);
+        assert.match(fileResult.logoWarning, /symlink/);
+        assert.equal(existsSync(join(destinationRoot, 'acme.png')), false);
+
+        const outsideDirectory = join(root, 'outside-directory');
+        mkdirSync(outsideDirectory);
+        rmSync(join(sourceRoot, 'hosted_logos'), {
+          recursive: true,
+          force: true,
+        });
+        symlinkSync(outsideDirectory, join(sourceRoot, 'hosted_logos'), 'dir');
+        const directoryResult = mirrorLandscapeLogo({
+          record: RECORD,
+          sourceRoot,
+          destinationRoot,
+        });
+        assert.equal(directoryResult.localLogo, null);
+        assert.match(directoryResult.logoWarning, /not a real directory/);
+      });
+    });
+
+    test('reports unsafe snapshot classifications before publication', () => {
+      const base = {
+        generated: true,
+        source: {
+          revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
+          sourceUrl:
+            'https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml',
+        },
+        records: [
+          {
+            sourceId: 'source',
+            sourceRole: 'member',
+            included: true,
+            logoFilename: null,
+          },
+        ],
+      };
+      assert.doesNotThrow(() => assertLandscapeSnapshotReady(base));
+      assert.throws(
+        () =>
+          assertLandscapeSnapshotReady({
+            ...base,
+            records: [base.records[0], { ...base.records[0] }],
+          }),
+        /duplicate landscape sourceId/,
+      );
+      assert.throws(
+        () =>
+          assertLandscapeSnapshotReady({
+            ...base,
+            generated: false,
+          }),
+        /not marked generated/,
+      );
+      assert.throws(
+        () =>
+          assertLandscapeSnapshotReady({
+            ...base,
+            source: { revision: 'bad', sourceUrl: 'https://example.test/' },
+          }),
+        /source provenance is incomplete/,
+      );
+      assert.throws(
+        () =>
+          assertLandscapeSnapshotReady({
+            ...base,
+            records: [],
+          }),
+        /no current Member\/Contributor records/,
+      );
+      assert.throws(
+        () =>
+          assertLandscapeSnapshotReady({
+            ...base,
+            records: [{ ...base.records[0], sourceRole: 'supporter' }],
+          }),
+        /invalid current role/,
+      );
+      assert.throws(
+        () =>
+          assertLandscapeSnapshotReady({
+            ...base,
+            records: [
+              { ...base.records[0], logoFilename: 'logo.svg', localLogo: null },
+            ],
+          }),
+        /no logo or logo warning/,
+      );
     });
     assert.equal(noLogo.localLogo, null);
     assert.equal(noLogo.logoWarning, null);
@@ -132,6 +271,49 @@ test('mirrors supported raster assets and reports write failures', () => {
     });
     assert.equal(failed.localLogo, null);
     assert.match(failed.logoWarning, /could not mirror logo/);
+  });
+});
+
+test('reports missing, non-file, containment, and inspection failures', () => {
+  withRoots(({ root, sourceRoot, destinationRoot }) => {
+    const missingRoot = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot: join(root, 'missing'),
+      destinationRoot,
+    });
+    assert.match(missingRoot.logoWarning, /not a real directory/);
+
+    mkdirSync(join(sourceRoot, 'hosted_logos/acme.svg'));
+    const nonFile = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.match(nonFile.logoWarning, /not a regular file/);
+
+    rmSync(join(sourceRoot, 'hosted_logos/acme.svg'), {
+      recursive: true,
+      force: true,
+    });
+    writeFileSync(join(sourceRoot, 'hosted_logos/acme.svg'), '<svg />');
+    const outside = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+      realpath: (path) =>
+        path === sourceRoot ? path : join(root, '..', 'outside.svg'),
+    });
+    assert.match(outside.logoWarning, /outside the checkout/);
+
+    const inspected = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+      realpath: () => {
+        throw new Error('realpath failed');
+      },
+    });
+    assert.match(inspected.logoWarning, /could not inspect/);
   });
 });
 
@@ -183,5 +365,172 @@ test('builds a pinned snapshot and preserves audit-only records', () => {
     assert.equal(snapshot.records[0].included, true);
     assert.equal(snapshot.records[1].included, false);
     assert.equal(snapshot.source.revision.length, 40);
+  });
+});
+
+test('rolls back the old snapshot and assets when publication rename fails', () => {
+  withRoots(({ root, destinationRoot }) => {
+    const outputPath = join(root, 'data/members.json');
+    const outputTempPath = join(root, 'staged-members.json');
+    const stagedAssets = join(root, 'staged-assets');
+    mkdirSync(join(root, 'data'), { recursive: true });
+    mkdirSync(stagedAssets, { recursive: true });
+    writeFileSync(outputPath, '{"old":true}\n');
+    writeFileSync(join(destinationRoot, 'aaaaaaaaaaaaaaaa-old.svg'), 'old');
+    writeFileSync(join(stagedAssets, 'bbbbbbbbbbbbbbbb-new.svg'), 'new');
+
+    const snapshot = {
+      generated: true,
+      source: {
+        revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
+        sourceUrl:
+          'https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml',
+      },
+      records: [
+        {
+          sourceId: 'source',
+          sourceRole: 'member',
+          included: true,
+          logoFilename: 'new.svg',
+          localLogo: '/img/end-user-members/bbbbbbbbbbbbbbbb-new.svg',
+          logoWarning: null,
+        },
+      ],
+    };
+
+    assert.throws(
+      () =>
+        publishLandscapeSnapshot({
+          snapshot,
+          stagedAssets,
+          outputTempPath,
+          outputPath,
+          assetDestination: destinationRoot,
+        }),
+      /ENOENT/,
+    );
+    assert.equal(readFileSync(outputPath, 'utf8'), '{"old":true}\n');
+    assert.equal(
+      readFileSync(join(destinationRoot, 'aaaaaaaaaaaaaaaa-old.svg'), 'utf8'),
+      'old',
+    );
+    assert.equal(
+      existsSync(join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg')),
+      false,
+    );
+  });
+});
+
+test('publishes successfully and prunes only unreferenced owned assets', () => {
+  withRoots(({ root, destinationRoot }) => {
+    const outputPath = join(root, 'data/members.json');
+    const outputTempPath = join(root, 'staged-members.json');
+    const stagedAssets = join(root, 'staged-assets');
+    mkdirSync(join(root, 'data'), { recursive: true });
+    mkdirSync(stagedAssets, { recursive: true });
+    writeFileSync(outputPath, '{"old":true}\n');
+    writeFileSync(join(destinationRoot, 'aaaaaaaaaaaaaaaa-old.svg'), 'old');
+    writeFileSync(join(stagedAssets, 'bbbbbbbbbbbbbbbb-new.svg'), 'new');
+    writeFileSync(
+      join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'),
+      'existing',
+    );
+    writeFileSync(outputTempPath, '{"new":true}\n');
+    const snapshot = {
+      generated: true,
+      source: {
+        revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
+        sourceUrl:
+          'https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml',
+      },
+      records: [
+        {
+          sourceId: 'source',
+          sourceRole: 'member',
+          included: true,
+          logoFilename: 'new.svg',
+          localLogo: '/img/end-user-members/bbbbbbbbbbbbbbbb-new.svg',
+          logoWarning: null,
+        },
+      ],
+    };
+
+    publishLandscapeSnapshot({
+      snapshot,
+      stagedAssets,
+      outputTempPath,
+      outputPath,
+      assetDestination: destinationRoot,
+    });
+    assert.equal(readFileSync(outputPath, 'utf8'), '{"new":true}\n');
+    assert.equal(
+      readFileSync(join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'), 'utf8'),
+      'existing',
+    );
+    assert.equal(
+      existsSync(join(destinationRoot, 'aaaaaaaaaaaaaaaa-old.svg')),
+      false,
+    );
+  });
+});
+
+test('rejects staged and destination symlink assets during publication', () => {
+  withRoots(({ root, destinationRoot }) => {
+    const outputPath = join(root, 'data/members.json');
+    const outputTempPath = join(root, 'staged-members.json');
+    const stagedAssets = join(root, 'staged-assets');
+    mkdirSync(join(root, 'data'), { recursive: true });
+    mkdirSync(stagedAssets, { recursive: true });
+    writeFileSync(outputPath, '{"old":true}\n');
+    writeFileSync(outputTempPath, '{"new":true}\n');
+    const outside = join(root, 'outside.svg');
+    writeFileSync(outside, 'outside');
+    symlinkSync(outside, join(stagedAssets, 'bbbbbbbbbbbbbbbb-new.svg'));
+    const snapshot = {
+      generated: true,
+      source: {
+        revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
+        sourceUrl:
+          'https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml',
+      },
+      records: [
+        {
+          sourceId: 'source',
+          sourceRole: 'member',
+          included: true,
+          logoFilename: 'new.svg',
+          localLogo: '/img/end-user-members/bbbbbbbbbbbbbbbb-new.svg',
+          logoWarning: null,
+        },
+      ],
+    };
+    assert.throws(
+      () =>
+        publishLandscapeSnapshot({
+          snapshot,
+          stagedAssets,
+          outputTempPath,
+          outputPath,
+          assetDestination: destinationRoot,
+        }),
+      /staged asset is not a regular file/,
+    );
+
+    rmSync(join(stagedAssets, 'bbbbbbbbbbbbbbbb-new.svg'), {
+      force: true,
+    });
+    writeFileSync(join(stagedAssets, 'bbbbbbbbbbbbbbbb-new.svg'), 'new');
+    symlinkSync(outside, join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'));
+    assert.throws(
+      () =>
+        publishLandscapeSnapshot({
+          snapshot,
+          stagedAssets,
+          outputTempPath,
+          outputPath,
+          assetDestination: destinationRoot,
+        }),
+      /owned asset destination is a symlink/,
+    );
   });
 });

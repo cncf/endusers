@@ -200,7 +200,12 @@ function membershipStatus(member) {
 function mergeLandscapeMembers(members, snapshot) {
   assertLandscapeSnapshot(snapshot);
   const byId = new Map(members.map((member) => [member.id, member]));
-  const byName = new Map(members.map((member) => [member.name, member]));
+  const byName = new Map();
+  for (const member of members) {
+    const matches = byName.get(member.name) || [];
+    matches.push(member);
+    byName.set(member.name, matches);
+  }
   const sourceUrl = snapshot.source.sourceUrl;
   const seenSources = new Set();
 
@@ -212,7 +217,13 @@ function mergeLandscapeMembers(members, snapshot) {
     seenSources.add(record.sourceId);
 
     const aliasId = LANDSCAPE_ALIASES[record.sourceId];
-    let member = aliasId ? byId.get(aliasId) : byName.get(record.displayName);
+    const exactMatches = byName.get(record.displayName) || [];
+    if (!aliasId && exactMatches.length > 1) {
+      throw new Error(
+        `ambiguous landscape identity for ${record.sourceId}: ${record.displayName}`,
+      );
+    }
+    let member = aliasId ? byId.get(aliasId) : exactMatches[0];
     if (aliasId && !member) {
       throw new Error(
         `landscape alias target missing: ${record.sourceId} -> ${aliasId}`,
@@ -244,7 +255,7 @@ function mergeLandscapeMembers(members, snapshot) {
       };
       members.push(member);
       byId.set(id, member);
-      byName.set(member.name, member);
+      byName.set(member.name, [member]);
     }
 
     member.membershipSources ||= [];

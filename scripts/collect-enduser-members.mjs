@@ -4,21 +4,23 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
-import { buildLandscapeSnapshot } from './lib/enduser-collector.mjs';
+import {
+  buildLandscapeSnapshot,
+  publishLandscapeSnapshot,
+} from './lib/enduser-collector.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const work = mkdtempSync(join(root, '.enduser-landscape-'));
 const landscapeRoot = join(work, 'landscape');
 const stagedAssets = join(work, 'end-user-members');
 const output = join(root, 'data/enduser-landscape.json');
-const outputTemp = `${output}.tmp`;
+const outputTemp = join(work, 'enduser-landscape.json');
 const assetDestination = join(root, 'static/img/end-user-members');
 
 try {
@@ -61,16 +63,18 @@ try {
 
   mkdirSync(dirname(output), { recursive: true });
   writeFileSync(outputTemp, JSON.stringify(snapshot, null, 2) + '\n');
-  rmSync(assetDestination, { recursive: true, force: true });
-  mkdirSync(dirname(assetDestination), { recursive: true });
-  renameSync(stagedAssets, assetDestination);
-  renameSync(outputTemp, output);
+  publishLandscapeSnapshot({
+    snapshot,
+    stagedAssets,
+    outputTempPath: outputTemp,
+    outputPath: output,
+    assetDestination,
+  });
 
   const included = snapshot.records.filter((record) => record.included).length;
   console.log(
     `Collected ${included} selected End User Member/Contributor records from ${revision}.`,
   );
 } finally {
-  rmSync(outputTemp, { force: true });
   rmSync(work, { recursive: true, force: true });
 }

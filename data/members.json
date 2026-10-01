@@ -5,14 +5,14 @@
     "data/architectures/catalog.json",
     "data/awards.json"
   ],
-  "generatedAt": "2026-10-01T04:32:49.916Z",
+  "generatedAt": "2026-10-01T04:58:15.268Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
       "revision": "bc9d1b5c87904d9430fc3377938f38192bab3ad0",
       "file": "landscape.yml",
       "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
-      "collectedAt": "2026-10-01T04:32:49.916Z"
+      "collectedAt": "2026-10-01T04:58:15.268Z"
     }
   },
   "schema": {

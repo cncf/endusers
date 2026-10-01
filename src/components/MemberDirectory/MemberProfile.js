@@ -9,12 +9,6 @@ export function MemberProfile({ member, onClose, triggerRef }) {
   const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
   const logoUrl = useBaseUrl(member.logo || '');
 
-  const hasDetails =
-    member.industries.length > 0 ||
-    member.projects.length > 0 ||
-    member.architectures.length > 0 ||
-    member.awards.length > 0;
-
   return (
     <div
       className={styles.backdrop}
@@ -155,12 +149,6 @@ export function MemberProfile({ member, onClose, triggerRef }) {
                 ))}
               </ul>
             </div>
-          )}
-          {!hasDetails && (
-            <p className={styles.bioMuted}>
-              This directory contains only organization-level information
-              curated from authoritative CNCF sources.
-            </p>
           )}
           <div className={styles.profileSection}>
             <h3>Sources</h3>

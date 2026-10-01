@@ -2,12 +2,16 @@ import { createHash } from 'node:crypto';
 import {
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
-  statSync,
+  readdirSync,
+  realpathSync,
+  renameSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, join, sep } from 'node:path';
 import {
   findRemoteReferences,
   stripActiveContent,
@@ -44,12 +48,67 @@ function warning(record, message) {
   };
 }
 
+function containedPath(path, root) {
+  return path.startsWith(`${root}${sep}`);
+}
+
+export function assertLandscapeSnapshotReady(snapshot) {
+  if (snapshot?.generated !== true) {
+    throw new Error('landscape snapshot is not marked generated');
+  }
+  if (
+    typeof snapshot?.source?.revision !== 'string' ||
+    !/^[0-9a-f]{40}$/.test(snapshot.source.revision) ||
+    snapshot.source.sourceUrl !==
+      `https://github.com/cncf/landscape/blob/${snapshot.source.revision}/landscape.yml`
+  ) {
+    throw new Error('landscape snapshot source provenance is incomplete');
+  }
+  const records = Array.isArray(snapshot.records) ? snapshot.records : [];
+  const included = records.filter((record) => record.included);
+  if (included.length === 0) {
+    throw new Error(
+      'landscape snapshot contains no current Member/Contributor records',
+    );
+  }
+  const sourceIds = new Set();
+  for (const record of records) {
+    if (sourceIds.has(record.sourceId)) {
+      throw new Error(`duplicate landscape sourceId: ${record.sourceId}`);
+    }
+    sourceIds.add(record.sourceId);
+    if (
+      record.included &&
+      !['member', 'contributor'].includes(record.sourceRole)
+    ) {
+      throw new Error(
+        `included landscape record has an invalid current role: ${record.sourceId}`,
+      );
+    }
+    if (
+      record.included &&
+      record.logoFilename &&
+      !record.localLogo &&
+      !record.logoWarning
+    ) {
+      throw new Error(
+        `included landscape record has no logo or logo warning: ${record.sourceId}`,
+      );
+    }
+  }
+}
+
 /**
  * Mirrors one landscape logo into a staging directory. Logo failure is
  * explicit and organization-preserving: the record remains in the snapshot
  * and the UI uses its initials fallback.
  */
-export function mirrorLandscapeLogo({ record, sourceRoot, destinationRoot }) {
+export function mirrorLandscapeLogo({
+  record,
+  sourceRoot,
+  destinationRoot,
+  realpath = realpathSync,
+}) {
   if (!record.logoFilename) {
     return { ...record, localLogo: null, logoWarning: null };
   }
@@ -64,9 +123,44 @@ export function mirrorLandscapeLogo({ record, sourceRoot, destinationRoot }) {
     return warning(record, `unsupported or unsafe logo filename: ${filename}`);
   }
 
-  const source = join(sourceRoot, 'hosted_logos', filename);
-  if (!existsSync(source) || !statSync(source).isFile()) {
-    return warning(record, `landscape logo is missing: ${filename}`);
+  let source;
+  try {
+    const rootStat = lstatSync(sourceRoot, { throwIfNoEntry: false });
+    if (!rootStat?.isDirectory() || rootStat.isSymbolicLink()) {
+      return warning(record, 'landscape checkout root is not a real directory');
+    }
+    const realRoot = realpath(sourceRoot);
+    const logoRoot = join(sourceRoot, 'hosted_logos');
+    const logoRootStat = lstatSync(logoRoot, { throwIfNoEntry: false });
+    if (!logoRootStat?.isDirectory() || logoRootStat.isSymbolicLink()) {
+      return warning(record, 'landscape hosted_logos is not a real directory');
+    }
+    const candidate = join(logoRoot, filename);
+    const candidateStat = lstatSync(candidate, { throwIfNoEntry: false });
+    if (!candidateStat || candidateStat.isSymbolicLink()) {
+      return warning(
+        record,
+        `landscape logo is a symlink or is missing: ${filename}`,
+      );
+    }
+    if (!candidateStat.isFile()) {
+      return warning(
+        record,
+        `landscape logo is not a regular file: ${filename}`,
+      );
+    }
+    source = realpath(candidate);
+    if (!containedPath(source, realRoot)) {
+      return warning(
+        record,
+        `landscape logo resolves outside the checkout: ${filename}`,
+      );
+    }
+  } catch (error) {
+    return warning(
+      record,
+      `could not inspect landscape logo ${filename}: ${error.message}`,
+    );
   }
 
   const destinationName = logoDestination(record.sourceId, filename);
@@ -121,7 +215,7 @@ export function buildLandscapeSnapshot({
       : { ...record, localLogo: null, logoWarning: null },
   );
   const sourceUrl = `https://github.com/cncf/landscape/blob/${revision}/landscape.yml`;
-  return {
+  const snapshot = {
     generated: true,
     collectedAt,
     source: {
@@ -137,4 +231,80 @@ export function buildLandscapeSnapshot({
     },
     records: processed,
   };
+  assertLandscapeSnapshotReady(snapshot);
+  return snapshot;
+}
+
+const OWNED_ASSET = /^[0-9a-f]{16}-.+\.(?:avif|gif|jpe?g|png|svg|webp)$/i;
+
+/**
+ * Publishes a validated snapshot and staged assets transactionally. Existing
+ * output and owned assets remain intact if any rename fails.
+ */
+export function publishLandscapeSnapshot({
+  snapshot,
+  stagedAssets,
+  outputTempPath,
+  outputPath,
+  assetDestination,
+}) {
+  assertLandscapeSnapshotReady(snapshot);
+  mkdirSync(assetDestination, { recursive: true });
+  const outputBackup = `${outputPath}.backup-${process.pid}-${Date.now()}`;
+  const movedAssets = [];
+  let outputBackedUp = false;
+
+  try {
+    if (existsSync(outputPath)) {
+      renameSync(outputPath, outputBackup);
+      outputBackedUp = true;
+    }
+
+    if (existsSync(stagedAssets)) {
+      for (const entry of readdirSync(stagedAssets, { withFileTypes: true })) {
+        if (!entry.isFile() || entry.isSymbolicLink()) {
+          throw new Error(`staged asset is not a regular file: ${entry.name}`);
+        }
+        const source = join(stagedAssets, entry.name);
+        const destination = join(assetDestination, entry.name);
+        const existing = lstatSync(destination, { throwIfNoEntry: false });
+        if (existing?.isSymbolicLink()) {
+          throw new Error(
+            `owned asset destination is a symlink: ${entry.name}`,
+          );
+        }
+        if (existing) continue;
+        renameSync(source, destination);
+        movedAssets.push(destination);
+      }
+    }
+
+    renameSync(outputTempPath, outputPath);
+  } catch (error) {
+    if (outputBackedUp && existsSync(outputBackup)) {
+      renameSync(outputBackup, outputPath);
+    }
+    for (const path of movedAssets.reverse()) {
+      rmSync(path, { force: true });
+    }
+    throw error;
+  }
+
+  if (outputBackedUp) rmSync(outputBackup, { force: true });
+
+  const referenced = new Set(
+    snapshot.records
+      .filter((record) => record.included && record.localLogo)
+      .map((record) => basename(record.localLogo)),
+  );
+  for (const entry of readdirSync(assetDestination, { withFileTypes: true })) {
+    if (
+      entry.isFile() &&
+      !entry.isSymbolicLink() &&
+      OWNED_ASSET.test(entry.name) &&
+      !referenced.has(entry.name)
+    ) {
+      rmSync(join(assetDestination, entry.name), { force: true });
+    }
+  }
 }

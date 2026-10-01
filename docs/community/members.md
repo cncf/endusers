@@ -12,10 +12,10 @@ hide_title: true
 # End User Directory
 
 Discover the organizations that make up the CNCF End User Community. The
-directory includes current End User Members and Contributors from the pinned
-[CNCF Landscape](https://github.com/cncf/landscape/blob/main/landscape.yml),
-alongside organizations represented by public reference architectures or Top End
-User Award announcements.
+directory includes current End User Members and Contributors from the
+[CNCF Landscape](https://github.com/cncf/landscape), alongside organizations
+represented by public reference architectures or Top End User Award
+announcements.
 
 Use the filters to explore by membership status, industry, CNCF project,
 architecture contribution, or award recognition. Select an organization card to

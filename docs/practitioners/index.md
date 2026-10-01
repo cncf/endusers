@@ -82,7 +82,7 @@ studies, and operational lessons with the wider community.
   <div className="audience-card">
     <h3>For practitioners and engineers</h3>
     <p>Compare how peers solve the same problems in <Link to="/architectures/">reference architectures</Link>, join an <Link to="/community/">End User Group</Link> in your industry, and ask questions in <code>#enduser</code> on <a href="https://slack.cncf.io/">CNCF Slack</a>.</p>
-    <a href="https://slack.cncf.io/" className="audience-cta">Join the Slack conversation</a>
+    <a href="https://www.cncf.io/end-user-contributor-application/" className="audience-cta">Apply to the End User Contributor Program</a>
   </div>
   <div className="audience-card">
     <h3>For architects</h3>

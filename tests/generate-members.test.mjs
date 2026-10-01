@@ -268,6 +268,30 @@ test('fails an ambiguous landscape slug collision instead of merging it', () => 
   assert.match(result.stderr, /landscape identity collision/);
 });
 
+test('fails duplicate legacy display names instead of attaching to the last profile', () => {
+  const result = generateMembers(
+    fixtures({
+      catalog: [catalogEntry({ organization: 'Acme' })],
+      awards: [
+        awardEntry({
+          slug: 'other',
+          organization: 'Acme',
+        }),
+      ],
+      snapshot: landscapeSnapshot([
+        landscapeRecord({
+          sourceId: 'cncf/landscape#CNCF Members/Gold/Acme (member)',
+          sourceName: 'Acme (member)',
+          displayName: 'Acme',
+        }),
+      ]),
+    }),
+  );
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /ambiguous landscape identity/);
+});
+
 test('combines sourced roles and rejects unsafe homepage URLs as attribution', () => {
   const result = run({
     awards: [

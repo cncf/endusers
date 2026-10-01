@@ -794,16 +794,13 @@ test('an award omits the links it has no URL for', () => {
   );
 });
 
-test('a member with no details gets the muted fallback instead of sections', () => {
+test('a member with no details still exposes its source section', () => {
   const { tree } = renderProfile(BARE_MEMBER);
   assert.deepEqual(
     findAllByType(tree, 'h3').map((h) => textOf(h)),
     ['Sources'],
   );
-  assert.match(
-    textOf(findByClass(tree, 'bioMuted')),
-    /^This directory contains only organization-level information curated from authoritative CNCF sources\./,
-  );
+  assert.equal(findByClass(tree, 'bioMuted'), undefined);
   assert.equal(textOf(findByClass(tree, 'profileMeta')), '');
   assert.equal(
     textOf(findByClass(tree, 'initialsLarge')),

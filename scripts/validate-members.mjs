@@ -162,6 +162,9 @@ const errors = [];
 const landscape = existsSync(landscapePath)
   ? JSON.parse(readFileSync(landscapePath, 'utf8'))
   : null;
+const landscapeBySourceId = new Map(
+  (landscape?.records || []).map((record) => [record.sourceId, record]),
+);
 
 const members = Array.isArray(data?.members) ? data.members : [];
 if (!members.length) {
@@ -228,6 +231,18 @@ for (const member of members) {
   const hasMembershipFields =
     'membershipStatus' in (member || {}) ||
     'membershipSources' in (member || {});
+  if (
+    landscape &&
+    (!('membershipStatus' in (member || {})) ||
+      !('membershipSources' in (member || {})))
+  ) {
+    errors.push({
+      path,
+      severity: 'error',
+      message:
+        'landscape-backed output requires membershipStatus and membershipSources',
+    });
+  }
   if (hasMembershipFields) {
     const status = member?.membershipStatus;
     if (!MEMBERSHIP_STATUSES.has(status)) {
@@ -280,6 +295,53 @@ for (const member of members) {
       checkHttpsUrl(errors, sourcePath, 'sourceUrl', source?.sourceUrl);
       if (source?.localLogo !== null && source?.localLogo !== undefined) {
         checkLogo(errors, sourcePath, source.localLogo);
+      }
+      if (landscape) {
+        const sourceRecord = landscapeBySourceId.get(source?.sourceId);
+        if (!sourceRecord) {
+          errors.push({
+            path: sourcePath,
+            severity: 'error',
+            message: 'membership source is absent from enduser-landscape.json',
+          });
+        } else {
+          for (const field of [
+            ['role', 'sourceRole'],
+            ['sourceName', 'sourceName'],
+            ['category', 'category'],
+            ['subcategory', 'subcategory'],
+          ]) {
+            if (
+              field[1] in sourceRecord &&
+              source?.[field[0]] !== sourceRecord[field[1]]
+            ) {
+              errors.push({
+                path: sourcePath,
+                severity: 'error',
+                message: `${field[0]} does not match the pinned landscape record`,
+              });
+            }
+          }
+          for (const field of ['homepageUrl', 'joined', 'localLogo']) {
+            if (
+              field in sourceRecord &&
+              (source?.[field] ?? null) !== (sourceRecord[field] ?? null)
+            ) {
+              errors.push({
+                path: sourcePath,
+                severity: 'error',
+                message: `${field} does not match the pinned landscape record`,
+              });
+            }
+          }
+          if (source?.sourceUrl !== landscape.source?.sourceUrl) {
+            errors.push({
+              path: sourcePath,
+              severity: 'error',
+              message: 'sourceUrl does not match landscape provenance',
+            });
+          }
+        }
       }
     }
     if (status === 'unknown' && sources.length > 0) {

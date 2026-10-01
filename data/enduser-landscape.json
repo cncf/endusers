@@ -1,6 +1,6 @@
 {
   "generated": true,
-  "collectedAt": "2026-10-01T04:32:49.916Z",
+  "collectedAt": "2026-10-01T04:58:15.268Z",
   "source": {
     "repository": "https://github.com/cncf/landscape",
     "revision": "bc9d1b5c87904d9430fc3377938f38192bab3ad0",
@@ -2299,7 +2299,7 @@
       "joined": "2026-09-01",
       "logoFilename": "subaru.svg",
       "localLogo": null,
-      "logoWarning": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Subaru Corporation (contributor): landscape logo is missing: subaru.svg"
+      "logoWarning": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Subaru Corporation (contributor): landscape logo is a symlink or is missing: subaru.svg"
     },
     {
       "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Swiss Post (contributor)",
