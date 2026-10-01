@@ -30,6 +30,19 @@ const IMAGE_HOST_SOURCES = [
   'https://*.cncf.io',
 ];
 
+function endusersE2ESourceMaps() {
+  return {
+    name: 'endusers-e2e-source-maps',
+    configureWebpack(config, isServer) {
+      if (isServer) return {};
+      return { devtool: 'source-map' };
+    },
+  };
+}
+
+const E2E_SOURCE_MAP_PLUGIN =
+  process.env.E2E_COVERAGE === '1' ? endusersE2ESourceMaps : null;
+
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 /** @type {import('@docusaurus/types').Config} */
@@ -288,6 +301,7 @@ const config = {
       },
     }),
   plugins: [
+    E2E_SOURCE_MAP_PLUGIN,
     [
       require.resolve('docusaurus-plugin-search-local'),
       /** @type {import('docusaurus-plugin-search-local').PluginOptions} */
@@ -299,7 +313,7 @@ const config = {
         docsRouteBasePath: '/',
       }),
     ],
-  ],
+  ].filter(Boolean),
 };
 
 export default config;

@@ -269,6 +269,29 @@ test('local search indexes docs at the route docs are actually served on', () =>
   );
 });
 
+test('e2e coverage source maps are opt-in and client-only', async () => {
+  const normal = await loadConfig({ E2E_COVERAGE: undefined });
+  assert.equal(
+    normal.plugins.some(
+      (plugin) =>
+        typeof plugin === 'function' && plugin.name === 'endusersE2ESourceMaps',
+    ),
+    false,
+  );
+
+  const coverage = await loadConfig({ E2E_COVERAGE: '1' });
+  const factory = coverage.plugins.find(
+    (plugin) =>
+      typeof plugin === 'function' && plugin.name === 'endusersE2ESourceMaps',
+  );
+  assert.equal(typeof factory, 'function');
+  const plugin = factory();
+  assert.deepEqual(plugin.configureWebpack({}, false), {
+    devtool: 'source-map',
+  });
+  assert.deepEqual(plugin.configureWebpack({}, true), {});
+});
+
 // The meta Content-Security-Policy is the browser-side backstop for content
 // this site does not author. Nothing asserted it until now, so it could be
 // weakened or deleted without a single test failing.

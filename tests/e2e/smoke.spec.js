@@ -3,7 +3,7 @@
 // serves `build/` via `docusaurus serve`), not the fake DOM used by the unit
 // suite. The goal is only to catch "build succeeds but renders an empty or
 // broken page" — deeper interaction testing stays in the unit suite.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 test.describe('member directory', () => {
   test('lists End User organizations', async ({ page }) => {

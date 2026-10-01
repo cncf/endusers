@@ -11,7 +11,7 @@
 // needs Docusaurus's own require.resolve shim), and an explicit table also
 // makes an unintended navbar change fail loudly instead of silently
 // re-deriving itself.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const LINK_ITEMS = [
   { label: 'Practitioners', to: '/' },

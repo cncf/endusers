@@ -23,7 +23,7 @@
 // arrival instead of needing this spec edited.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const AWARDS_PATH = '/community/awards';
 

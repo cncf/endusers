@@ -67,7 +67,10 @@
     "test:unit": "TZ=UTC node --test",
     "test:unit:coverage": "TZ=UTC node tests/tools/coverage-report.mjs",
     "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 99 --check-source 100 --check-regions 94 --check-source-regions 99",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:e2e:coverage": "E2E_COVERAGE=1 npm run build:production",
+    "test:e2e:coverage": "E2E_COVERAGE=1 playwright test --workers=2",
+    "report:e2e:coverage": "node tests/tools/e2e-coverage-report.mjs"
   },
   "repository": {
     "type": "git",
@@ -94,6 +97,7 @@
     "@docusaurus/module-type-aliases": "3.10.2",
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
+    "@jridgewell/trace-mapping": "^0.3.29",
     "@playwright/test": "^1.63.0",
     "@swc/core": "1.16.2",
     "cspell": "^10.3.4",
@@ -103,6 +107,7 @@
     "npm-check-updates": "^23.1.0",
     "prettier": "^3.9.9",
     "typescript": "~7.0.2",
+    "v8-to-istanbul": "^9.3.0",
     "yaml": "^2.9.1"
   },
   "private": true,

@@ -225,6 +225,39 @@ test('the Playwright end-to-end suite runs in some workflow', () => {
   assert.ok(runsIt, 'no workflow runs `npm run test:e2e`');
 });
 
+test('browser coverage is isolated in a visible non-gating job', () => {
+  const workflow = parse(readFileSync(join(workflowDir, 'ci.yml'), 'utf8'));
+  const required = workflow.jobs?.e2e;
+  const coverage = workflow.jobs?.['e2e-coverage'];
+  assert.ok(required, 'required e2e job is missing');
+  assert.ok(coverage, 'non-gating e2e coverage job is missing');
+  assert.equal(coverage['continue-on-error'], true);
+
+  const coverageCommands = (coverage.steps ?? [])
+    .map((step) => step.run)
+    .filter((run) => typeof run === 'string')
+    .join('\n');
+  assert.match(coverageCommands, /npm run build:e2e:coverage/);
+  assert.match(coverageCommands, /npm run test:e2e:coverage/);
+  assert.match(coverageCommands, /npm run report:e2e:coverage/);
+
+  const requiredCoverageEnv = (required.steps ?? []).some(
+    (step) => step.env?.E2E_COVERAGE !== undefined,
+  );
+  assert.equal(
+    requiredCoverageEnv,
+    false,
+    'required e2e job must keep default coverage disabled',
+  );
+
+  const deploy = readFileSync(join(workflowDir, 'deploy-gh-pages.yml'), 'utf8');
+  assert.doesNotMatch(
+    deploy,
+    /\bE2E_COVERAGE\b/,
+    'deployment must not opt into browser source maps',
+  );
+});
+
 // The `validate:*` and `check:*` scripts are the repository's gates: one set
 // rejects data that would ship to the site, the other rejects the repository
 // itself. Defining a gate is only half the wiring. Unless a workflow runs it,

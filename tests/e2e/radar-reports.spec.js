@@ -24,7 +24,7 @@
 // it can change — or go empty — with no source change at all. These cases
 // therefore assert the page against data/radar-reports.json rather than
 // against any particular published report.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 import radarData from '../../data/radar-reports.json';
 
 const RADAR_PATH = '/resources/radar-reports';
