@@ -64,6 +64,71 @@ test('mirrors and sanitizes a local landscape SVG', () => {
   });
 });
 
+test('refreshes a changed logo for the same source ID and filename', () => {
+  withRoots(({ sourceRoot, destinationRoot }) => {
+    const logo = join(sourceRoot, 'hosted_logos/acme.svg');
+    writeFileSync(
+      logo,
+      '<svg xmlns="http://www.w3.org/2000/svg"><rect id="old" /></svg>',
+    );
+    const first = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    writeFileSync(
+      logo,
+      '<svg xmlns="http://www.w3.org/2000/svg"><rect id="new" /></svg>',
+    );
+    const second = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.notEqual(first.localLogo, second.localLogo);
+    assert.match(
+      readFileSync(
+        join(destinationRoot, second.localLogo.split('/').pop()),
+        'utf8',
+      ),
+      /id="new"/,
+    );
+  });
+});
+
+test('updates an existing content-addressed file and rejects a destination directory', () => {
+  withRoots(({ sourceRoot, destinationRoot }) => {
+    const logo = join(sourceRoot, 'hosted_logos/acme.svg');
+    writeFileSync(
+      logo,
+      '<svg xmlns="http://www.w3.org/2000/svg"><rect id="same" /></svg>',
+    );
+    const first = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    const firstPath = join(destinationRoot, first.localLogo.split('/').pop());
+    writeFileSync(firstPath, 'different');
+    const updated = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.equal(updated.localLogo, first.localLogo);
+    assert.match(readFileSync(firstPath, 'utf8'), /id="same"/);
+
+    rmSync(firstPath, { force: true });
+    mkdirSync(firstPath);
+    const failed = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.match(failed.logoWarning, /destination is not a regular file/);
+  });
+});
+
 test('keeps an organization when its optional logo is unavailable', () => {
   withRoots(({ sourceRoot, destinationRoot }) => {
     const result = mirrorLandscapeLogo({
@@ -421,7 +486,7 @@ test('rolls back the old snapshot and assets when publication rename fails', () 
   });
 });
 
-test('publishes successfully and prunes only unreferenced owned assets', () => {
+test('publishes successfully without pruning before generation', () => {
   withRoots(({ root, destinationRoot }) => {
     const outputPath = join(root, 'data/members.json');
     const outputTempPath = join(root, 'staged-members.json');
@@ -431,10 +496,7 @@ test('publishes successfully and prunes only unreferenced owned assets', () => {
     writeFileSync(outputPath, '{"old":true}\n');
     writeFileSync(join(destinationRoot, 'aaaaaaaaaaaaaaaa-old.svg'), 'old');
     writeFileSync(join(stagedAssets, 'bbbbbbbbbbbbbbbb-new.svg'), 'new');
-    writeFileSync(
-      join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'),
-      'existing',
-    );
+    writeFileSync(join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'), 'new');
     writeFileSync(outputTempPath, '{"new":true}\n');
     const snapshot = {
       generated: true,
@@ -465,11 +527,11 @@ test('publishes successfully and prunes only unreferenced owned assets', () => {
     assert.equal(readFileSync(outputPath, 'utf8'), '{"new":true}\n');
     assert.equal(
       readFileSync(join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'), 'utf8'),
-      'existing',
+      'new',
     );
     assert.equal(
       existsSync(join(destinationRoot, 'aaaaaaaaaaaaaaaa-old.svg')),
-      false,
+      true,
     );
   });
 });
@@ -531,6 +593,70 @@ test('rejects staged and destination symlink assets during publication', () => {
           assetDestination: destinationRoot,
         }),
       /owned asset destination is a symlink/,
+    );
+
+    rmSync(join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'), {
+      force: true,
+    });
+    mkdirSync(join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'));
+    assert.throws(
+      () =>
+        publishLandscapeSnapshot({
+          snapshot,
+          stagedAssets,
+          outputTempPath,
+          outputPath,
+          assetDestination: destinationRoot,
+        }),
+      /owned asset destination is not a regular file/,
+    );
+  });
+});
+
+test('rejects differing bytes at an existing content-addressed destination', () => {
+  withRoots(({ root, destinationRoot }) => {
+    const outputPath = join(root, 'data/members.json');
+    const outputTempPath = join(root, 'staged-members.json');
+    const stagedAssets = join(root, 'staged-assets');
+    mkdirSync(join(root, 'data'), { recursive: true });
+    mkdirSync(stagedAssets, { recursive: true });
+    writeFileSync(outputPath, '{"old":true}\n');
+    writeFileSync(outputTempPath, '{"new":true}\n');
+    writeFileSync(join(stagedAssets, 'bbbbbbbbbbbbbbbb-new.svg'), 'new');
+    writeFileSync(join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'), 'old');
+    const snapshot = {
+      generated: true,
+      source: {
+        revision: 'bc9d1b5c87904d9430fc3377938f38192bab3ad0',
+        sourceUrl:
+          'https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml',
+      },
+      records: [
+        {
+          sourceId: 'source',
+          sourceRole: 'member',
+          included: true,
+          logoFilename: 'new.svg',
+          localLogo: '/img/end-user-members/bbbbbbbbbbbbbbbb-new.svg',
+          logoWarning: null,
+        },
+      ],
+    };
+    assert.throws(
+      () =>
+        publishLandscapeSnapshot({
+          snapshot,
+          stagedAssets,
+          outputTempPath,
+          outputPath,
+          assetDestination: destinationRoot,
+        }),
+      /owned asset destination bytes differ/,
+    );
+    assert.equal(readFileSync(outputPath, 'utf8'), '{"old":true}\n');
+    assert.equal(
+      readFileSync(join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'), 'utf8'),
+      'old',
     );
   });
 });

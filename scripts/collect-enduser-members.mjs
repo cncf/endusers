@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -14,6 +15,7 @@ import {
   buildLandscapeSnapshot,
   publishLandscapeSnapshot,
 } from './lib/enduser-collector.mjs';
+import { ensureOwnedAssetManifest } from './lib/enduser-assets.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const work = mkdtempSync(join(root, '.enduser-landscape-'));
@@ -22,6 +24,10 @@ const stagedAssets = join(work, 'end-user-members');
 const output = join(root, 'data/enduser-landscape.json');
 const outputTemp = join(work, 'enduser-landscape.json');
 const assetDestination = join(root, 'static/img/end-user-members');
+const manifestPath = join(root, 'data/enduser-landscape-assets.json');
+const previousSnapshot = existsSync(output)
+  ? JSON.parse(readFileSync(output, 'utf8'))
+  : null;
 
 try {
   execFileSync(
@@ -70,6 +76,7 @@ try {
     outputPath: output,
     assetDestination,
   });
+  ensureOwnedAssetManifest(manifestPath, previousSnapshot);
 
   const included = snapshot.records.filter((record) => record.included).length;
   console.log(

@@ -32,9 +32,9 @@ const MIRRORABLE_EXTENSIONS = new Set([
 ]);
 const LOCAL_LOGO_PREFIX = '/img/end-user-members/';
 
-function logoDestination(sourceId, filename) {
+function logoDestination(content, filename) {
   const digest = createHash('sha256')
-    .update(sourceId)
+    .update(content)
     .digest('hex')
     .slice(0, 16);
   return `${digest}-${basename(filename)}`;
@@ -124,6 +124,7 @@ export function mirrorLandscapeLogo({
   }
 
   let source;
+  let destinationName;
   try {
     const rootStat = lstatSync(sourceRoot, { throwIfNoEntry: false });
     if (!rootStat?.isDirectory() || rootStat.isSymbolicLink()) {
@@ -163,11 +164,8 @@ export function mirrorLandscapeLogo({
     );
   }
 
-  const destinationName = logoDestination(record.sourceId, filename);
-  const destination = join(destinationRoot, destinationName);
-
   try {
-    mkdirSync(destinationRoot, { recursive: true });
+    let content;
     if (extension === '.svg') {
       const original = readFileSync(source, 'utf8');
       const stripped = stripActiveContent(original);
@@ -183,9 +181,23 @@ export function mirrorLandscapeLogo({
           `landscape logo contains remote resource references: ${filename}`,
         );
       }
-      writeFileSync(destination, cleaned, 'utf8');
+      content = Buffer.from(cleaned, 'utf8');
     } else {
-      copyFileSync(source, destination);
+      content = readFileSync(source);
+    }
+
+    destinationName = logoDestination(content, filename);
+    const destination = join(destinationRoot, destinationName);
+    mkdirSync(destinationRoot, { recursive: true });
+    const existing = lstatSync(destination, { throwIfNoEntry: false });
+    if (existing?.isSymbolicLink() || (existing && !existing.isFile())) {
+      return warning(
+        record,
+        `landscape logo destination is not a regular file: ${destinationName}`,
+      );
+    }
+    if (!existing || !Buffer.from(readFileSync(destination)).equals(content)) {
+      writeFileSync(destination, content);
     }
   } catch (error) {
     return warning(
@@ -235,8 +247,6 @@ export function buildLandscapeSnapshot({
   return snapshot;
 }
 
-const OWNED_ASSET = /^[0-9a-f]{16}-.+\.(?:avif|gif|jpe?g|png|svg|webp)$/i;
-
 /**
  * Publishes a validated snapshot and staged assets transactionally. Existing
  * output and owned assets remain intact if any rename fails.
@@ -256,7 +266,7 @@ export function publishLandscapeSnapshot({
 
   try {
     if (existsSync(outputPath)) {
-      renameSync(outputPath, outputBackup);
+      copyFileSync(outputPath, outputBackup);
       outputBackedUp = true;
     }
 
@@ -273,7 +283,23 @@ export function publishLandscapeSnapshot({
             `owned asset destination is a symlink: ${entry.name}`,
           );
         }
-        if (existing) continue;
+        if (existing) {
+          if (!existing.isFile()) {
+            throw new Error(
+              `owned asset destination is not a regular file: ${entry.name}`,
+            );
+          }
+          if (
+            !Buffer.from(readFileSync(source)).equals(
+              Buffer.from(readFileSync(destination)),
+            )
+          ) {
+            throw new Error(
+              `owned asset destination bytes differ: ${entry.name}`,
+            );
+          }
+          continue;
+        }
         renameSync(source, destination);
         movedAssets.push(destination);
       }
@@ -282,7 +308,8 @@ export function publishLandscapeSnapshot({
     renameSync(outputTempPath, outputPath);
   } catch (error) {
     if (outputBackedUp && existsSync(outputBackup)) {
-      renameSync(outputBackup, outputPath);
+      copyFileSync(outputBackup, outputPath);
+      rmSync(outputBackup, { force: true });
     }
     for (const path of movedAssets.reverse()) {
       rmSync(path, { force: true });
@@ -291,20 +318,4 @@ export function publishLandscapeSnapshot({
   }
 
   if (outputBackedUp) rmSync(outputBackup, { force: true });
-
-  const referenced = new Set(
-    snapshot.records
-      .filter((record) => record.included && record.localLogo)
-      .map((record) => basename(record.localLogo)),
-  );
-  for (const entry of readdirSync(assetDestination, { withFileTypes: true })) {
-    if (
-      entry.isFile() &&
-      !entry.isSymbolicLink() &&
-      OWNED_ASSET.test(entry.name) &&
-      !referenced.has(entry.name)
-    ) {
-      rmSync(join(assetDestination, entry.name), { force: true });
-    }
-  }
 }

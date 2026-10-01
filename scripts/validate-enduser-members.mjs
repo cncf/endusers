@@ -9,6 +9,9 @@ import {
 } from './lib/enduser-landscape.mjs';
 
 const staticRoot = fileURLToPath(new URL('../static/', import.meta.url));
+const assetManifestPath = fileURLToPath(
+  new URL('../data/enduser-landscape-assets.json', import.meta.url),
+);
 const snapshot = JSON.parse(
   readFileSync(new URL('../data/enduser-landscape.json', import.meta.url)),
 );
@@ -233,6 +236,35 @@ for (const [index, record] of records.entries()) {
 
 if (includedCount === 0)
   error('records', 'must include at least one selected record');
+
+if (existsSync(assetManifestPath)) {
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(assetManifestPath, 'utf8'));
+  } catch {
+    error('enduser-landscape-assets.json', 'must contain valid JSON');
+    manifest = null;
+  }
+  if (manifest) {
+    if (manifest.generated !== true || !Array.isArray(manifest.assets)) {
+      error(
+        'enduser-landscape-assets.json',
+        'must be generated and carry an assets array',
+      );
+    } else {
+      const seenAssets = new Set();
+      for (const [index, asset] of manifest.assets.entries()) {
+        const path = `enduser-landscape-assets.json.assets[${index}]`;
+        if (seenAssets.has(asset)) error(path, 'duplicate owned asset');
+        seenAssets.add(asset);
+        if (!asset.startsWith('/img/end-user-members/')) {
+          error(path, 'owned asset must be under /img/end-user-members/');
+        }
+        localAsset(path, asset);
+      }
+    }
+  }
+}
 
 reportAndExit(errors, 'end-user landscape');
 console.log(`Validated ${records.length} landscape records`);

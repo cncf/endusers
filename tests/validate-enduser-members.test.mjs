@@ -308,3 +308,35 @@ test('rejects non-array records and non-string source names', () => {
     /records\[0\]\.sourceName: must be a non-empty string/,
   );
 });
+
+test('rejects malformed owned-asset manifests', () => {
+  const invalidJson = runScriptWithFixtures(SCRIPT, {
+    ...fixture(),
+    'data/enduser-landscape-assets.json': '{',
+  });
+  assert.equal(invalidJson.status, 1);
+  assert.match(invalidJson.stderr, /must contain valid JSON/);
+
+  const invalidShape = runScriptWithFixtures(SCRIPT, {
+    ...fixture(),
+    'data/enduser-landscape-assets.json': JSON.stringify({
+      generated: false,
+      assets: 'not-an-array',
+    }),
+  });
+  assert.equal(invalidShape.status, 1);
+  assert.match(
+    invalidShape.stderr,
+    /must be generated and carry an assets array/,
+  );
+
+  const unsafePath = runScriptWithFixtures(SCRIPT, {
+    ...fixture(),
+    'data/enduser-landscape-assets.json': JSON.stringify({
+      generated: true,
+      assets: ['/img/not-owned.svg'],
+    }),
+  });
+  assert.equal(unsafePath.status, 1);
+  assert.match(unsafePath.stderr, /owned asset must be under/);
+});

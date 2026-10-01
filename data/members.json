@@ -5,14 +5,14 @@
     "data/architectures/catalog.json",
     "data/awards.json"
   ],
-  "generatedAt": "2026-10-01T04:58:15.268Z",
+  "generatedAt": "2026-10-01T05:13:13.673Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
       "revision": "bc9d1b5c87904d9430fc3377938f38192bab3ad0",
       "file": "landscape.yml",
       "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml",
-      "collectedAt": "2026-10-01T04:58:15.268Z"
+      "collectedAt": "2026-10-01T05:13:13.673Z"
     }
   },
   "schema": {
@@ -72,7 +72,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.adobe.com/",
           "joined": "2022-10-01",
-          "localLogo": "/img/end-user-members/202737320e548b64-adobe.svg",
+          "localLogo": "/img/end-user-members/5da7b1d5f20c2bc3-adobe.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -82,7 +82,7 @@
       "id": "adyen",
       "name": "Adyen",
       "slug": "adyen",
-      "logo": "/img/end-user-members/dc41c01373b64d51-adyen.svg",
+      "logo": "/img/end-user-members/d1143f5729bf0680-adyen.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -100,7 +100,7 @@
           "subcategory": "Platinum",
           "homepageUrl": "https://www.adyen.com",
           "joined": "2026-05-01",
-          "localLogo": "/img/end-user-members/dc41c01373b64d51-adyen.svg",
+          "localLogo": "/img/end-user-members/d1143f5729bf0680-adyen.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -110,7 +110,7 @@
       "id": "airbnb",
       "name": "Airbnb",
       "slug": "airbnb",
-      "logo": "/img/end-user-members/f265027933046f14-airbnb.svg",
+      "logo": "/img/end-user-members/80edea97332ff927-airbnb.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -128,7 +128,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.airbnb.com/",
           "joined": "2021-02-01",
-          "localLogo": "/img/end-user-members/f265027933046f14-airbnb.svg",
+          "localLogo": "/img/end-user-members/80edea97332ff927-airbnb.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -160,7 +160,7 @@
       "id": "american-express",
       "name": "American Express",
       "slug": "american-express",
-      "logo": "/img/end-user-members/3d54f4cb885becef-american-express.svg",
+      "logo": "/img/end-user-members/5dee70aaef915ad8-american-express.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -178,7 +178,7 @@
           "subcategory": "Gold",
           "homepageUrl": "https://www.americanexpress.com/",
           "joined": "2021-06-01",
-          "localLogo": "/img/end-user-members/3d54f4cb885becef-american-express.svg",
+          "localLogo": "/img/end-user-members/5dee70aaef915ad8-american-express.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -188,7 +188,7 @@
       "id": "ant-group",
       "name": "ANT Group",
       "slug": "ant-group",
-      "logo": "/img/end-user-members/a49379b98048dc72-ant-financial-member.svg",
+      "logo": "/img/end-user-members/bec5b59d66ae7f0e-ant-financial-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -219,7 +219,7 @@
           "subcategory": "Gold",
           "homepageUrl": "https://www.antgroup.com",
           "joined": "2019-05-01",
-          "localLogo": "/img/end-user-members/a49379b98048dc72-ant-financial-member.svg",
+          "localLogo": "/img/end-user-members/bec5b59d66ae7f0e-ant-financial-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -258,7 +258,7 @@
           "subcategory": "Platinum",
           "homepageUrl": "https://www.apple.com/",
           "joined": "2019-05-01",
-          "localLogo": "/img/end-user-members/793444cbf9b29b27-apple.svg",
+          "localLogo": "/img/end-user-members/19b6e6186d65d394-apple.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -268,7 +268,7 @@
       "id": "asml",
       "name": "ASML",
       "slug": "asml",
-      "logo": "/img/end-user-members/02aa1b1aa091b600-asml.svg",
+      "logo": "/img/end-user-members/df6b01bafc22dd23-asml.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -286,7 +286,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.asml.com",
           "joined": "2024-12-01",
-          "localLogo": "/img/end-user-members/02aa1b1aa091b600-asml.svg",
+          "localLogo": "/img/end-user-members/df6b01bafc22dd23-asml.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -296,7 +296,7 @@
       "id": "banco-de-crdito-bcp",
       "name": "Banco de Crédito BCP",
       "slug": "banco-de-crdito-bcp",
-      "logo": "/img/end-user-members/6b4b4bd700fd6d09-banco-de-credito-bcp.svg",
+      "logo": "/img/end-user-members/61bd1bea36b840c9-banco-de-credito-bcp.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -314,7 +314,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.viabcp.com",
           "joined": "2024-10-01",
-          "localLogo": "/img/end-user-members/6b4b4bd700fd6d09-banco-de-credito-bcp.svg",
+          "localLogo": "/img/end-user-members/61bd1bea36b840c9-banco-de-credito-bcp.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -324,7 +324,7 @@
       "id": "beneva",
       "name": "Beneva",
       "slug": "beneva",
-      "logo": "/img/end-user-members/ddaebbb2d91d26cf-beneva.svg",
+      "logo": "/img/end-user-members/61997f0664bb866a-beneva.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -342,7 +342,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "https://www.beneva.ca",
           "joined": "2026-07-01",
-          "localLogo": "/img/end-user-members/ddaebbb2d91d26cf-beneva.svg",
+          "localLogo": "/img/end-user-members/61997f0664bb866a-beneva.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -352,7 +352,7 @@
       "id": "blackrock",
       "name": "BlackRock",
       "slug": "blackrock",
-      "logo": "/img/end-user-members/97bda56763a7df8a-blackrock.svg",
+      "logo": "/img/end-user-members/615baf9b4cfa20a6-blackrock.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -370,7 +370,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.blackrock.com/",
           "joined": "2023-04-01",
-          "localLogo": "/img/end-user-members/97bda56763a7df8a-blackrock.svg",
+          "localLogo": "/img/end-user-members/615baf9b4cfa20a6-blackrock.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -380,7 +380,7 @@
       "id": "block",
       "name": "Block",
       "slug": "block",
-      "logo": "/img/end-user-members/931f7cc923ea39ea-block.svg",
+      "logo": "/img/end-user-members/d669abd70cfce512-block.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -398,7 +398,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://block.xyz",
           "joined": "2025-09-01",
-          "localLogo": "/img/end-user-members/931f7cc923ea39ea-block.svg",
+          "localLogo": "/img/end-user-members/d669abd70cfce512-block.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -439,7 +439,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.bloomberg.com/tosv2.html",
           "joined": "2017-08-01",
-          "localLogo": "/img/end-user-members/09e8c9fbefcbe39c-bloomberg-member.svg",
+          "localLogo": "/img/end-user-members/f610eb6c9b33481a-bloomberg-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -449,7 +449,7 @@
       "id": "boeing",
       "name": "Boeing",
       "slug": "boeing",
-      "logo": "/img/end-user-members/8c40aac6e00ce972-boeing.svg",
+      "logo": "/img/end-user-members/0ded7fbfced4f7ef-boeing.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -466,7 +466,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "http://www.boeing.com/",
           "joined": "2026-02-01",
-          "localLogo": "/img/end-user-members/8c40aac6e00ce972-boeing.svg",
+          "localLogo": "/img/end-user-members/0ded7fbfced4f7ef-boeing.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -476,7 +476,7 @@
       "id": "cambia-health-solutions",
       "name": "Cambia Health Solutions",
       "slug": "cambia-health-solutions",
-      "logo": "/img/end-user-members/8b31d4fefe04c6dd-cambia-health-solutions-member.svg",
+      "logo": "/img/end-user-members/0136fca72552c59f-cambia-health-solutions-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -494,7 +494,7 @@
           "subcategory": "Nonprofit",
           "homepageUrl": "https://www.cambiahealth.com/",
           "joined": "2019-02-01",
-          "localLogo": "/img/end-user-members/8b31d4fefe04c6dd-cambia-health-solutions-member.svg",
+          "localLogo": "/img/end-user-members/0136fca72552c59f-cambia-health-solutions-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -504,7 +504,7 @@
       "id": "capital-one",
       "name": "Capital One",
       "slug": "capital-one",
-      "logo": "/img/end-user-members/47c50132953ab637-capital-one.svg",
+      "logo": "/img/end-user-members/def58e0d4d79b434-capital-one.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -522,7 +522,7 @@
           "subcategory": "Gold",
           "homepageUrl": "https://www.capitalone.com/tech/",
           "joined": "2017-01-01",
-          "localLogo": "/img/end-user-members/47c50132953ab637-capital-one.svg",
+          "localLogo": "/img/end-user-members/def58e0d4d79b434-capital-one.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -532,7 +532,7 @@
       "id": "cathay-financial-holding",
       "name": "Cathay Financial Holding",
       "slug": "cathay-financial-holding",
-      "logo": "/img/end-user-members/6cbd123cbbd0569c-cathay.svg",
+      "logo": "/img/end-user-members/153367b557e7f8e0-cathay.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -550,7 +550,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.cathayholdings.com/",
           "joined": "2024-07-09",
-          "localLogo": "/img/end-user-members/6cbd123cbbd0569c-cathay.svg",
+          "localLogo": "/img/end-user-members/153367b557e7f8e0-cathay.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -560,7 +560,7 @@
       "id": "celonis",
       "name": "Celonis",
       "slug": "celonis",
-      "logo": "/img/end-user-members/7aa89bfb36a3c4f3-celonis.svg",
+      "logo": "/img/end-user-members/f81cd1276ab31229-celonis.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -578,7 +578,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "https://www.celonis.com/",
           "joined": "2021-08-01",
-          "localLogo": "/img/end-user-members/7aa89bfb36a3c4f3-celonis.svg",
+          "localLogo": "/img/end-user-members/f81cd1276ab31229-celonis.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -588,7 +588,7 @@
       "id": "centrica-energy",
       "name": "Centrica Energy",
       "slug": "centrica-energy",
-      "logo": "/img/end-user-members/1c47e60718b5bf20-centrica.svg",
+      "logo": "/img/end-user-members/7501fd9df5ca145b-centrica.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -606,7 +606,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "https://www.centricaenergy.com",
           "joined": "2024-02-01",
-          "localLogo": "/img/end-user-members/1c47e60718b5bf20-centrica.svg",
+          "localLogo": "/img/end-user-members/7501fd9df5ca145b-centrica.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -667,7 +667,7 @@
           "subcategory": "Nonprofit",
           "homepageUrl": "https://home.cern",
           "joined": "2020-09-01",
-          "localLogo": "/img/end-user-members/667dd804b0830617-cern.svg",
+          "localLogo": "/img/end-user-members/e0defc73adeb39d5-cern.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -677,7 +677,7 @@
       "id": "citi",
       "name": "Citi",
       "slug": "citi",
-      "logo": "/img/end-user-members/4b0aaf134b456551-citi.svg",
+      "logo": "/img/end-user-members/a714522d9a5be393-citi.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -695,7 +695,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.citigroup.com/citi/",
           "joined": "2021-02-01",
-          "localLogo": "/img/end-user-members/4b0aaf134b456551-citi.svg",
+          "localLogo": "/img/end-user-members/a714522d9a5be393-citi.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -705,7 +705,7 @@
       "id": "cloud-community-labs",
       "name": "Cloud Community Labs",
       "slug": "cloud-community-labs",
-      "logo": "/img/end-user-members/5e4160609d0caf40-cloud-community-labs.svg",
+      "logo": "/img/end-user-members/47e7e9049f930c44-cloud-community-labs.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -723,7 +723,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://cloudcommunitylabs.io",
           "joined": "2026-06-01",
-          "localLogo": "/img/end-user-members/5e4160609d0caf40-cloud-community-labs.svg",
+          "localLogo": "/img/end-user-members/47e7e9049f930c44-cloud-community-labs.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -733,7 +733,7 @@
       "id": "cloud-native-texas",
       "name": "Cloud Native Texas",
       "slug": "cloud-native-texas",
-      "logo": "/img/end-user-members/563131b8004f3b17-cloud-native-texas.svg",
+      "logo": "/img/end-user-members/c3b6bed6bfc840c1-cloud-native-texas.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -751,7 +751,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://cloudnativetexas.com",
           "joined": "2026-01-01",
-          "localLogo": "/img/end-user-members/563131b8004f3b17-cloud-native-texas.svg",
+          "localLogo": "/img/end-user-members/c3b6bed6bfc840c1-cloud-native-texas.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -761,7 +761,7 @@
       "id": "cme",
       "name": "CME Group",
       "slug": "cme",
-      "logo": "/img/end-user-members/125374c6418e9a1d-cme-group.svg",
+      "logo": "/img/end-user-members/a4b6fc6439bab1ec-cme-group.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -779,7 +779,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.cmegroup.com",
           "joined": "2025-11-01",
-          "localLogo": "/img/end-user-members/125374c6418e9a1d-cme-group.svg",
+          "localLogo": "/img/end-user-members/a4b6fc6439bab1ec-cme-group.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -789,7 +789,7 @@
       "id": "cobank",
       "name": "CoBank",
       "slug": "cobank",
-      "logo": "/img/end-user-members/299befc8f68cb9c1-cobank.svg",
+      "logo": "/img/end-user-members/720dbaa09d2974dd-cobank.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -807,7 +807,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://cobank.com",
           "joined": "2025-10-01",
-          "localLogo": "/img/end-user-members/299befc8f68cb9c1-cobank.svg",
+          "localLogo": "/img/end-user-members/720dbaa09d2974dd-cobank.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -839,7 +839,7 @@
       "id": "cvs-health",
       "name": "CVS Health",
       "slug": "cvs-health",
-      "logo": "/img/end-user-members/0858d7a565a95df2-cvshealth.svg",
+      "logo": "/img/end-user-members/ce09bcd9b4b1ad98-cvshealth.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -857,7 +857,7 @@
           "subcategory": "Platinum",
           "homepageUrl": "https://www.cvshealth.com",
           "joined": "2025-10-01",
-          "localLogo": "/img/end-user-members/0858d7a565a95df2-cvshealth.svg",
+          "localLogo": "/img/end-user-members/ce09bcd9b4b1ad98-cvshealth.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -867,7 +867,7 @@
       "id": "cybozu",
       "name": "Cybozu",
       "slug": "cybozu",
-      "logo": "/img/end-user-members/83ce6cb121ed1a20-cybozu.svg",
+      "logo": "/img/end-user-members/ccd0adce3116771e-cybozu.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -885,7 +885,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://cybozu-global.com/",
           "joined": "2019-08-01",
-          "localLogo": "/img/end-user-members/83ce6cb121ed1a20-cybozu.svg",
+          "localLogo": "/img/end-user-members/ccd0adce3116771e-cybozu.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -895,7 +895,7 @@
       "id": "decathlon",
       "name": "Decathlon",
       "slug": "decathlon",
-      "logo": "/img/end-user-members/b635bb11ff73990e-decathlon.svg",
+      "logo": "/img/end-user-members/bcca5d1a95559e53-decathlon.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -913,7 +913,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "https://digital.decathlon.net/",
           "joined": "2022-06-01",
-          "localLogo": "/img/end-user-members/b635bb11ff73990e-decathlon.svg",
+          "localLogo": "/img/end-user-members/bcca5d1a95559e53-decathlon.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -923,7 +923,7 @@
       "id": "deutsche-bundesbank",
       "name": "Deutsche Bundesbank",
       "slug": "deutsche-bundesbank",
-      "logo": "/img/end-user-members/3c744426e2c1db92-deutsche-bundesbank.svg",
+      "logo": "/img/end-user-members/60ad4a43f80eb053-deutsche-bundesbank.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -941,7 +941,7 @@
           "subcategory": "Nonprofit",
           "homepageUrl": "https://www.bundesbank.de",
           "joined": "2026-08-01",
-          "localLogo": "/img/end-user-members/3c744426e2c1db92-deutsche-bundesbank.svg",
+          "localLogo": "/img/end-user-members/60ad4a43f80eb053-deutsche-bundesbank.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -977,7 +977,7 @@
       "id": "dkb",
       "name": "DKB",
       "slug": "dkb",
-      "logo": "/img/end-user-members/1bc85649eb728814-dkb.svg",
+      "logo": "/img/end-user-members/7d5fd6d939c4cce6-dkb.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -995,7 +995,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.dkb.de",
           "joined": "2026-09-01",
-          "localLogo": "/img/end-user-members/1bc85649eb728814-dkb.svg",
+          "localLogo": "/img/end-user-members/7d5fd6d939c4cce6-dkb.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1005,7 +1005,7 @@
       "id": "dlocal",
       "name": "Dlocal",
       "slug": "dlocal",
-      "logo": "/img/end-user-members/4d288665ea1a9762-dlocal.svg",
+      "logo": "/img/end-user-members/b52eb77e889a339b-dlocal.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1023,7 +1023,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.dlocal.com",
           "joined": "2025-03-01",
-          "localLogo": "/img/end-user-members/4d288665ea1a9762-dlocal.svg",
+          "localLogo": "/img/end-user-members/b52eb77e889a339b-dlocal.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1033,7 +1033,7 @@
       "id": "docusign",
       "name": "Docusign",
       "slug": "docusign",
-      "logo": "/img/end-user-members/47469fe5a44195c9-docusign.svg",
+      "logo": "/img/end-user-members/bea53d992146408d-docusign.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1051,7 +1051,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.docusign.com",
           "joined": "2026-02-01",
-          "localLogo": "/img/end-user-members/47469fe5a44195c9-docusign.svg",
+          "localLogo": "/img/end-user-members/bea53d992146408d-docusign.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1061,7 +1061,7 @@
       "id": "eon",
       "name": "E.ON",
       "slug": "eon",
-      "logo": "/img/end-user-members/e58e005517eff09b-e.on.svg",
+      "logo": "/img/end-user-members/c6d079bc3efb8450-e.on.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1079,7 +1079,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.eon.com",
           "joined": "2024-06-01",
-          "localLogo": "/img/end-user-members/e58e005517eff09b-e.on.svg",
+          "localLogo": "/img/end-user-members/c6d079bc3efb8450-e.on.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1089,7 +1089,7 @@
       "id": "ebay",
       "name": "eBay",
       "slug": "ebay",
-      "logo": "/img/end-user-members/22bae306d8c36bfc-e-bay-member.svg",
+      "logo": "/img/end-user-members/b5b842c5ada5b66e-e-bay-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1107,7 +1107,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.ebay.com",
           "joined": "2016-01-01",
-          "localLogo": "/img/end-user-members/22bae306d8c36bfc-e-bay-member.svg",
+          "localLogo": "/img/end-user-members/b5b842c5ada5b66e-e-bay-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1117,7 +1117,7 @@
       "id": "enechain",
       "name": "enechain",
       "slug": "enechain",
-      "logo": "/img/end-user-members/e3cc853643f6748c-enechain.svg",
+      "logo": "/img/end-user-members/6c9ef2847ab8398f-enechain.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1135,7 +1135,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "https://enechain.co.jp/en",
           "joined": "2026-10-01",
-          "localLogo": "/img/end-user-members/e3cc853643f6748c-enechain.svg",
+          "localLogo": "/img/end-user-members/6c9ef2847ab8398f-enechain.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1145,7 +1145,7 @@
       "id": "fidelity-investments",
       "name": "Fidelity Investments",
       "slug": "fidelity-investments",
-      "logo": "/img/end-user-members/b5c72ab0c962145e-fidelity-investments.svg",
+      "logo": "/img/end-user-members/5792414a37f8e21b-fidelity-investments.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1163,7 +1163,7 @@
           "subcategory": "Gold",
           "homepageUrl": "https://www.fidelity.com/",
           "joined": "2019-08-01",
-          "localLogo": "/img/end-user-members/b5c72ab0c962145e-fidelity-investments.svg",
+          "localLogo": "/img/end-user-members/5792414a37f8e21b-fidelity-investments.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1202,7 +1202,7 @@
       "id": "framework",
       "name": "Framework",
       "slug": "framework",
-      "logo": "/img/end-user-members/5f7e5d22e8dac5fd-framework.svg",
+      "logo": "/img/end-user-members/42676beb5410e166-framework.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1220,7 +1220,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://frame.work",
           "joined": "2026-02-01",
-          "localLogo": "/img/end-user-members/5f7e5d22e8dac5fd-framework.svg",
+          "localLogo": "/img/end-user-members/42676beb5410e166-framework.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1230,7 +1230,7 @@
       "id": "g-research",
       "name": "G-Research",
       "slug": "g-research",
-      "logo": "/img/end-user-members/f25e86597fc66615-g-research.svg",
+      "logo": "/img/end-user-members/d183a161b7005938-g-research.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1248,7 +1248,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.gresearch.co.uk/",
           "joined": "2019-08-01",
-          "localLogo": "/img/end-user-members/f25e86597fc66615-g-research.svg",
+          "localLogo": "/img/end-user-members/d183a161b7005938-g-research.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1258,7 +1258,7 @@
       "id": "gim-uemoa",
       "name": "GIM UEMOA",
       "slug": "gim-uemoa",
-      "logo": "/img/end-user-members/88a051aef323945b-gim-uemoa.svg",
+      "logo": "/img/end-user-members/d471b39d1bad5dc5-gim-uemoa.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1276,7 +1276,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.gim-uemoa.org",
           "joined": "2024-03-01",
-          "localLogo": "/img/end-user-members/88a051aef323945b-gim-uemoa.svg",
+          "localLogo": "/img/end-user-members/d471b39d1bad5dc5-gim-uemoa.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1286,7 +1286,7 @@
       "id": "golden-gate-university",
       "name": "Golden Gate University",
       "slug": "golden-gate-university",
-      "logo": "/img/end-user-members/90d786b1cc64b40b-golden-gate-university-member.svg",
+      "logo": "/img/end-user-members/c00ccdfdc4b3af1e-golden-gate-university-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1304,7 +1304,7 @@
           "subcategory": "Academic",
           "homepageUrl": "https://www.ggu.edu",
           "joined": "2018-07-01",
-          "localLogo": "/img/end-user-members/90d786b1cc64b40b-golden-gate-university-member.svg",
+          "localLogo": "/img/end-user-members/c00ccdfdc4b3af1e-golden-gate-university-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1314,7 +1314,7 @@
       "id": "goldman-sachs",
       "name": "Goldman Sachs",
       "slug": "goldman-sachs",
-      "logo": "/img/end-user-members/6ad5084b221fbc6f-goldman-sachs-member.svg",
+      "logo": "/img/end-user-members/4effc1dd196bc00a-goldman-sachs-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1332,7 +1332,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.goldmansachs.com",
           "joined": "2016-01-01",
-          "localLogo": "/img/end-user-members/6ad5084b221fbc6f-goldman-sachs-member.svg",
+          "localLogo": "/img/end-user-members/4effc1dd196bc00a-goldman-sachs-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1342,7 +1342,7 @@
       "id": "guidewire",
       "name": "Guidewire",
       "slug": "guidewire",
-      "logo": "/img/end-user-members/b77013aec0a0f16c-guidewire.svg",
+      "logo": "/img/end-user-members/b030acddbee22ea9-guidewire.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1360,7 +1360,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.guidewire.com",
           "joined": "2025-05-01",
-          "localLogo": "/img/end-user-members/b77013aec0a0f16c-guidewire.svg",
+          "localLogo": "/img/end-user-members/b030acddbee22ea9-guidewire.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1370,7 +1370,7 @@
       "id": "indeed",
       "name": "Indeed",
       "slug": "indeed",
-      "logo": "/img/end-user-members/72fb26179c8015be-indeed-member.svg",
+      "logo": "/img/end-user-members/2ee42641baf88a60-indeed-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1388,7 +1388,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://hk.indeed.com",
           "joined": "2018-01-01",
-          "localLogo": "/img/end-user-members/72fb26179c8015be-indeed-member.svg",
+          "localLogo": "/img/end-user-members/2ee42641baf88a60-indeed-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1441,7 +1441,7 @@
           "subcategory": "Gold",
           "homepageUrl": "https://www.intuit.com",
           "joined": "2018-02-01",
-          "localLogo": "/img/end-user-members/caf79a0523ff6b64-intuit-member.svg",
+          "localLogo": "/img/end-user-members/e5fc5c2c683f4842-intuit-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1478,7 +1478,7 @@
       "id": "jpmorgan-chase",
       "name": "JPMorgan Chase",
       "slug": "jpmorgan-chase",
-      "logo": "/img/end-user-members/a7e3f1836afb94ca-jp-morgan-chase-member.svg",
+      "logo": "/img/end-user-members/f252dc089c30660b-jp-morgan-chase-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1496,7 +1496,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.jpmorganchase.com",
           "joined": "2018-08-01",
-          "localLogo": "/img/end-user-members/a7e3f1836afb94ca-jp-morgan-chase-member.svg",
+          "localLogo": "/img/end-user-members/f252dc089c30660b-jp-morgan-chase-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1506,7 +1506,7 @@
       "id": "legora",
       "name": "Legora",
       "slug": "legora",
-      "logo": "/img/end-user-members/741c1c117bb6464a-legora.svg",
+      "logo": "/img/end-user-members/12b84087ffcd651d-legora.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1524,7 +1524,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://legora.com",
           "joined": "2026-07-01",
-          "localLogo": "/img/end-user-members/741c1c117bb6464a-legora.svg",
+          "localLogo": "/img/end-user-members/12b84087ffcd651d-legora.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1534,7 +1534,7 @@
       "id": "lockheed-martin",
       "name": "Lockheed Martin",
       "slug": "lockheed-martin",
-      "logo": "/img/end-user-members/9ced4299b24f5253-lockheedmartin.svg",
+      "logo": "/img/end-user-members/b9e49d0050d2803a-lockheedmartin.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1552,7 +1552,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.lockheedmartin.com/",
           "joined": "2021-11-01",
-          "localLogo": "/img/end-user-members/9ced4299b24f5253-lockheedmartin.svg",
+          "localLogo": "/img/end-user-members/b9e49d0050d2803a-lockheedmartin.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1562,7 +1562,7 @@
       "id": "lovable",
       "name": "Lovable",
       "slug": "lovable",
-      "logo": "/img/end-user-members/f3472243f915e1ab-lovable.svg",
+      "logo": "/img/end-user-members/418379a34c5af882-lovable.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1580,7 +1580,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://lovable.dev",
           "joined": "2026-03-01",
-          "localLogo": "/img/end-user-members/f3472243f915e1ab-lovable.svg",
+          "localLogo": "/img/end-user-members/418379a34c5af882-lovable.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1590,7 +1590,7 @@
       "id": "lseg",
       "name": "LSEG",
       "slug": "lseg",
-      "logo": "/img/end-user-members/e5d01c9b7bd495d9-lseg.svg",
+      "logo": "/img/end-user-members/d0dd6f7d23f1265a-lseg.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1608,7 +1608,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.lseg.com/en",
           "joined": "2021-12-01",
-          "localLogo": "/img/end-user-members/e5d01c9b7bd495d9-lseg.svg",
+          "localLogo": "/img/end-user-members/d0dd6f7d23f1265a-lseg.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1618,7 +1618,7 @@
       "id": "ly-corporation",
       "name": "LY Corporation",
       "slug": "ly-corporation",
-      "logo": "/img/end-user-members/cbb4e9fd49aa3af4-ly-corp.svg",
+      "logo": "/img/end-user-members/13f5c76d26874afc-ly-corp.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1636,7 +1636,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.lycorp.co.jp/en/",
           "joined": "2018-03-01",
-          "localLogo": "/img/end-user-members/cbb4e9fd49aa3af4-ly-corp.svg",
+          "localLogo": "/img/end-user-members/13f5c76d26874afc-ly-corp.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1646,7 +1646,7 @@
       "id": "mathworks",
       "name": "Mathworks",
       "slug": "mathworks",
-      "logo": "/img/end-user-members/990186482e5ebc40-mathworks-member.svg",
+      "logo": "/img/end-user-members/9173bb0272a92da4-mathworks-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1664,7 +1664,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.mathworks.com/",
           "joined": "2019-04-01",
-          "localLogo": "/img/end-user-members/990186482e5ebc40-mathworks-member.svg",
+          "localLogo": "/img/end-user-members/9173bb0272a92da4-mathworks-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1674,7 +1674,7 @@
       "id": "mercedes-benz",
       "name": "Mercedes Benz AG",
       "slug": "mercedes-benz",
-      "logo": "/img/end-user-members/5700d2bcacfa9c38-mercedes-benz.svg",
+      "logo": "/img/end-user-members/2b7ea308940179e8-mercedes-benz.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1692,7 +1692,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://group.mercedes-benz.com/",
           "joined": "2020-08-01",
-          "localLogo": "/img/end-user-members/5700d2bcacfa9c38-mercedes-benz.svg",
+          "localLogo": "/img/end-user-members/2b7ea308940179e8-mercedes-benz.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1760,7 +1760,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.michelin.com",
           "joined": "2024-03-01",
-          "localLogo": "/img/end-user-members/0c134780dde4922c-michelin.svg",
+          "localLogo": "/img/end-user-members/e7d271d8137414e6-michelin.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1770,7 +1770,7 @@
       "id": "morgan-stanley",
       "name": "Morgan Stanley",
       "slug": "morgan-stanley",
-      "logo": "/img/end-user-members/4bbd37d54cdf6b72-morgan-stanley-member.svg",
+      "logo": "/img/end-user-members/cea06688cb399ea9-morgan-stanley-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1788,7 +1788,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.morganstanley.com",
           "joined": "2017-06-01",
-          "localLogo": "/img/end-user-members/4bbd37d54cdf6b72-morgan-stanley-member.svg",
+          "localLogo": "/img/end-user-members/cea06688cb399ea9-morgan-stanley-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1798,7 +1798,7 @@
       "id": "myfitnesspal",
       "name": "MyFitnessPal",
       "slug": "myfitnesspal",
-      "logo": "/img/end-user-members/f32795852de0a1cd-myfitnesspal.svg",
+      "logo": "/img/end-user-members/8c83d0d256bac80f-myfitnesspal.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1816,7 +1816,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.myfitnesspal.com/",
           "joined": "2020-11-01",
-          "localLogo": "/img/end-user-members/f32795852de0a1cd-myfitnesspal.svg",
+          "localLogo": "/img/end-user-members/8c83d0d256bac80f-myfitnesspal.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1826,7 +1826,7 @@
       "id": "naic",
       "name": "NAIC",
       "slug": "naic",
-      "logo": "/img/end-user-members/4bb34f446b0dfd1c-naic-member.svg",
+      "logo": "/img/end-user-members/eb265202bba37788-naic-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1844,7 +1844,7 @@
           "subcategory": "Nonprofit",
           "homepageUrl": "https://content.naic.org",
           "joined": "2018-03-01",
-          "localLogo": "/img/end-user-members/4bb34f446b0dfd1c-naic-member.svg",
+          "localLogo": "/img/end-user-members/eb265202bba37788-naic-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1854,7 +1854,7 @@
       "id": "natwest",
       "name": "Natwest",
       "slug": "natwest",
-      "logo": "/img/end-user-members/e6493dea75eea1bd-natwest.svg",
+      "logo": "/img/end-user-members/2460dbb4b3c90243-natwest.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1872,7 +1872,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.natwest.com",
           "joined": "2024-12-01",
-          "localLogo": "/img/end-user-members/e6493dea75eea1bd-natwest.svg",
+          "localLogo": "/img/end-user-members/2460dbb4b3c90243-natwest.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1882,7 +1882,7 @@
       "id": "nipr",
       "name": "NIPR",
       "slug": "nipr",
-      "logo": "/img/end-user-members/27f512cc822f88fa-nipr-member.svg",
+      "logo": "/img/end-user-members/4e447fad8155eb18-nipr-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1900,7 +1900,7 @@
           "subcategory": "Nonprofit",
           "homepageUrl": "https://www.nipr.com/",
           "joined": "2018-03-01",
-          "localLogo": "/img/end-user-members/27f512cc822f88fa-nipr-member.svg",
+          "localLogo": "/img/end-user-members/4e447fad8155eb18-nipr-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1910,7 +1910,7 @@
       "id": "non-public-organization-camel",
       "name": "Non-Public Organization Camel",
       "slug": "non-public-organization-camel",
-      "logo": "/img/end-user-members/e10874ac5de744c0-camel.svg",
+      "logo": "/img/end-user-members/dda0556be1d4ae75-camel.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1928,7 +1928,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.cncf.io/",
           "joined": null,
-          "localLogo": "/img/end-user-members/e10874ac5de744c0-camel.svg",
+          "localLogo": "/img/end-user-members/dda0556be1d4ae75-camel.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1938,7 +1938,7 @@
       "id": "non-public-organization-moose",
       "name": "Non-Public Organization Moose",
       "slug": "non-public-organization-moose",
-      "logo": "/img/end-user-members/0c4fc5d30de8180f-moose.svg",
+      "logo": "/img/end-user-members/c9d2f849ef751311-moose.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1956,7 +1956,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.cncf.io/",
           "joined": null,
-          "localLogo": "/img/end-user-members/0c4fc5d30de8180f-moose.svg",
+          "localLogo": "/img/end-user-members/c9d2f849ef751311-moose.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1966,7 +1966,7 @@
       "id": "non-public-organization-narwhal",
       "name": "Non-Public Organization Narwhal",
       "slug": "non-public-organization-narwhal",
-      "logo": "/img/end-user-members/e4e91637e8e84c96-narwhal.svg",
+      "logo": "/img/end-user-members/c630509648686bed-narwhal.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -1984,7 +1984,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.cncf.io/",
           "joined": null,
-          "localLogo": "/img/end-user-members/e4e91637e8e84c96-narwhal.svg",
+          "localLogo": "/img/end-user-members/c630509648686bed-narwhal.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -1994,7 +1994,7 @@
       "id": "non-public-organization-octopus",
       "name": "Non-Public Organization Octopus",
       "slug": "non-public-organization-octopus",
-      "logo": "/img/end-user-members/7d9f92dfcbf08746-octopus.svg",
+      "logo": "/img/end-user-members/0763a179fd0d8a8b-octopus.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2012,7 +2012,7 @@
           "subcategory": "Nonprofit",
           "homepageUrl": "https://www.cncf.io/",
           "joined": null,
-          "localLogo": "/img/end-user-members/7d9f92dfcbf08746-octopus.svg",
+          "localLogo": "/img/end-user-members/0763a179fd0d8a8b-octopus.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2022,7 +2022,7 @@
       "id": "non-public-organization-quail",
       "name": "Non-Public Organization Quail",
       "slug": "non-public-organization-quail",
-      "logo": "/img/end-user-members/ffb6b6eae51be51c-quail.svg",
+      "logo": "/img/end-user-members/557f32e0d3e15ec8-quail.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2040,7 +2040,7 @@
           "subcategory": "Nonprofit",
           "homepageUrl": "https://www.cncf.io/",
           "joined": null,
-          "localLogo": "/img/end-user-members/ffb6b6eae51be51c-quail.svg",
+          "localLogo": "/img/end-user-members/557f32e0d3e15ec8-quail.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2050,7 +2050,7 @@
       "id": "novo-nordisk",
       "name": "Novo Nordisk",
       "slug": "novo-nordisk",
-      "logo": "/img/end-user-members/ff73ecfaa6941c16-novo-nordisk.svg",
+      "logo": "/img/end-user-members/63b918d35ecc80f2-novo-nordisk.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2068,7 +2068,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.novonordisk.com",
           "joined": "2024-12-01",
-          "localLogo": "/img/end-user-members/ff73ecfaa6941c16-novo-nordisk.svg",
+          "localLogo": "/img/end-user-members/63b918d35ecc80f2-novo-nordisk.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2078,7 +2078,7 @@
       "id": "porch-financial",
       "name": "Porch Financial",
       "slug": "porch-financial",
-      "logo": "/img/end-user-members/98924a38190c3a01-porch-financial.svg",
+      "logo": "/img/end-user-members/18db6ee6824f3ce8-porch-financial.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2096,7 +2096,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.porchfinancial.com",
           "joined": "2025-04-01",
-          "localLogo": "/img/end-user-members/98924a38190c3a01-porch-financial.svg",
+          "localLogo": "/img/end-user-members/18db6ee6824f3ce8-porch-financial.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2106,7 +2106,7 @@
       "id": "prodigy-education",
       "name": "Prodigy Education",
       "slug": "prodigy-education",
-      "logo": "/img/end-user-members/e1c913de9e1416fb-prodigy-education.svg",
+      "logo": "/img/end-user-members/c9794697a9102f4f-prodigy-education.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2124,7 +2124,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.prodigygame.com/main-en/",
           "joined": "2022-04-01",
-          "localLogo": "/img/end-user-members/e1c913de9e1416fb-prodigy-education.svg",
+          "localLogo": "/img/end-user-members/c9794697a9102f4f-prodigy-education.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2134,7 +2134,7 @@
       "id": "qube-research-technologies",
       "name": "Qube Research & Technologies",
       "slug": "qube-research-technologies",
-      "logo": "/img/end-user-members/7c1dc13e8cd78954-qrt.svg",
+      "logo": "/img/end-user-members/d924d023c7b0e1a2-qrt.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2152,7 +2152,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.qube-rt.com",
           "joined": "2026-03-01",
-          "localLogo": "/img/end-user-members/7c1dc13e8cd78954-qrt.svg",
+          "localLogo": "/img/end-user-members/d924d023c7b0e1a2-qrt.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2162,7 +2162,7 @@
       "id": "reodev",
       "name": "reo.dev",
       "slug": "reodev",
-      "logo": "/img/end-user-members/124234657033cc4b-reo.dev.svg",
+      "logo": "/img/end-user-members/090c0950728404e2-reo.dev.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2180,7 +2180,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.reo.dev",
           "joined": "2025-05-01",
-          "localLogo": "/img/end-user-members/124234657033cc4b-reo.dev.svg",
+          "localLogo": "/img/end-user-members/090c0950728404e2-reo.dev.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2190,7 +2190,7 @@
       "id": "royal-bank-of-canada",
       "name": "Royal Bank of Canada",
       "slug": "royal-bank-of-canada",
-      "logo": "/img/end-user-members/920f2e7119194a33-royalbankofcanada.svg",
+      "logo": "/img/end-user-members/34c2233c7a4bc10b-royalbankofcanada.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2208,7 +2208,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.rbc.com",
           "joined": "2024-10-01",
-          "localLogo": "/img/end-user-members/920f2e7119194a33-royalbankofcanada.svg",
+          "localLogo": "/img/end-user-members/34c2233c7a4bc10b-royalbankofcanada.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2218,7 +2218,7 @@
       "id": "rtx",
       "name": "RTX",
       "slug": "rtx",
-      "logo": "/img/end-user-members/82f4d2f5bf1cf725-raytheontechnologies.svg",
+      "logo": "/img/end-user-members/9758d7208151b957-raytheontechnologies.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2236,7 +2236,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.rtx.com/",
           "joined": "2021-04-01",
-          "localLogo": "/img/end-user-members/82f4d2f5bf1cf725-raytheontechnologies.svg",
+          "localLogo": "/img/end-user-members/9758d7208151b957-raytheontechnologies.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2246,7 +2246,7 @@
       "id": "shopify",
       "name": "Shopify",
       "slug": "shopify",
-      "logo": "/img/end-user-members/f2bfd7d6f61fc2ff-shopify-supporter.svg",
+      "logo": "/img/end-user-members/d936e9d0d5f7550f-shopify-supporter.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2264,7 +2264,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "https://www.shopify.com/",
           "joined": "2017-12-01",
-          "localLogo": "/img/end-user-members/f2bfd7d6f61fc2ff-shopify-supporter.svg",
+          "localLogo": "/img/end-user-members/d936e9d0d5f7550f-shopify-supporter.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2274,7 +2274,7 @@
       "id": "sky-betting-gaming",
       "name": "Sky Betting & Gaming",
       "slug": "sky-betting-gaming",
-      "logo": "/img/end-user-members/7dd884dfc8671303-sky-bet.svg",
+      "logo": "/img/end-user-members/2dca37ea198f533b-sky-bet.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2292,7 +2292,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "https://www.skybet.com/",
           "joined": "2019-10-01",
-          "localLogo": "/img/end-user-members/7dd884dfc8671303-sky-bet.svg",
+          "localLogo": "/img/end-user-members/2dca37ea198f533b-sky-bet.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2372,7 +2372,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://open.spotify.com",
           "joined": "2018-03-01",
-          "localLogo": "/img/end-user-members/79ab77b0c85c22fb-spotify-member.svg",
+          "localLogo": "/img/end-user-members/6e01367cde4cb752-spotify-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2382,7 +2382,7 @@
       "id": "springer-nature",
       "name": "Springer Nature",
       "slug": "springer-nature",
-      "logo": "/img/end-user-members/2f034d78796f0f76-springer-nature.svg",
+      "logo": "/img/end-user-members/d79ffdb8ea2b24b2-springer-nature.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2400,7 +2400,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.springernature.com/gp",
           "joined": "2020-03-01",
-          "localLogo": "/img/end-user-members/2f034d78796f0f76-springer-nature.svg",
+          "localLogo": "/img/end-user-members/d79ffdb8ea2b24b2-springer-nature.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2410,7 +2410,7 @@
       "id": "squarespace",
       "name": "Squarespace",
       "slug": "squarespace",
-      "logo": "/img/end-user-members/d49ec0feba190c3d-squarespace-member.svg",
+      "logo": "/img/end-user-members/8ecae6d4e90541e1-squarespace-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2428,7 +2428,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.squarespace.com",
           "joined": "2018-04-01",
-          "localLogo": "/img/end-user-members/d49ec0feba190c3d-squarespace-member.svg",
+          "localLogo": "/img/end-user-members/8ecae6d4e90541e1-squarespace-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2438,7 +2438,7 @@
       "id": "strategic-education",
       "name": "Strategic Education",
       "slug": "strategic-education",
-      "logo": "/img/end-user-members/042d60776b78d54c-strategic-education.svg",
+      "logo": "/img/end-user-members/18371103c6cd84dd-strategic-education.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2456,7 +2456,7 @@
           "subcategory": "Academic",
           "homepageUrl": "https://www.strategiceducation.com/home/default.aspx",
           "joined": "2020-08-01",
-          "localLogo": "/img/end-user-members/042d60776b78d54c-strategic-education.svg",
+          "localLogo": "/img/end-user-members/18371103c6cd84dd-strategic-education.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2466,7 +2466,7 @@
       "id": "strava",
       "name": "Strava",
       "slug": "strava",
-      "logo": "/img/end-user-members/6c5c9a39e7fc3ffc-strava.svg",
+      "logo": "/img/end-user-members/a4fdb1f731628925-strava.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2484,7 +2484,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.strava.com/",
           "joined": "2023-06-01",
-          "localLogo": "/img/end-user-members/6c5c9a39e7fc3ffc-strava.svg",
+          "localLogo": "/img/end-user-members/a4fdb1f731628925-strava.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2522,7 +2522,7 @@
       "id": "swedish-public-employment-service",
       "name": "Swedish Public Employment Service",
       "slug": "swedish-public-employment-service",
-      "logo": "/img/end-user-members/e4952885852ee49a-swedish-public-employment-service.svg",
+      "logo": "/img/end-user-members/4a0c6186d38dd404-swedish-public-employment-service.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2540,7 +2540,7 @@
           "subcategory": "Nonprofit",
           "homepageUrl": "https://arbetsformedlingen.se",
           "joined": "2026-09-01",
-          "localLogo": "/img/end-user-members/e4952885852ee49a-swedish-public-employment-service.svg",
+          "localLogo": "/img/end-user-members/4a0c6186d38dd404-swedish-public-employment-service.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2550,7 +2550,7 @@
       "id": "swiss-post",
       "name": "Swiss Post",
       "slug": "swiss-post",
-      "logo": "/img/end-user-members/6959f8a59950e42c-swisspost.svg",
+      "logo": "/img/end-user-members/5de2bb18fd21ceb9-swisspost.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2568,7 +2568,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "https://www.swisspost.com/",
           "joined": "2023-07-01",
-          "localLogo": "/img/end-user-members/6959f8a59950e42c-swisspost.svg",
+          "localLogo": "/img/end-user-members/5de2bb18fd21ceb9-swisspost.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2627,7 +2627,7 @@
       "id": "teciem",
       "name": "Teciem",
       "slug": "teciem",
-      "logo": "/img/end-user-members/faaaaa1742847fca-teciem.svg",
+      "logo": "/img/end-user-members/2751a19fb8f64f9f-teciem.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2645,7 +2645,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://teciem.com/",
           "joined": "2026-03-01",
-          "localLogo": "/img/end-user-members/faaaaa1742847fca-teciem.svg",
+          "localLogo": "/img/end-user-members/2751a19fb8f64f9f-teciem.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2655,7 +2655,7 @@
       "id": "telenor-norway",
       "name": "Telenor Norway",
       "slug": "telenor-norway",
-      "logo": "/img/end-user-members/655351efc9959598-telenor.svg",
+      "logo": "/img/end-user-members/1243fcb0d8f91693-telenor.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2673,7 +2673,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.telenor.no/privat",
           "joined": "2025-12-01",
-          "localLogo": "/img/end-user-members/655351efc9959598-telenor.svg",
+          "localLogo": "/img/end-user-members/1243fcb0d8f91693-telenor.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2683,7 +2683,7 @@
       "id": "thales",
       "name": "Thales",
       "slug": "thales",
-      "logo": "/img/end-user-members/3f3fb8156203c217-thales.svg",
+      "logo": "/img/end-user-members/9f8e31e8f57eff8d-thales.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2701,7 +2701,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.thalesgroup.com/en",
           "joined": "2023-11-01",
-          "localLogo": "/img/end-user-members/3f3fb8156203c217-thales.svg",
+          "localLogo": "/img/end-user-members/9f8e31e8f57eff8d-thales.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2711,7 +2711,7 @@
       "id": "toyota-motor-corporation",
       "name": "Toyota Motor Corporation",
       "slug": "toyota-motor-corporation",
-      "logo": "/img/end-user-members/6be8be52a621adb4-toyota.svg",
+      "logo": "/img/end-user-members/7db5a026fe633e79-toyota.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2729,7 +2729,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://global.toyota/",
           "joined": "2020-03-01",
-          "localLogo": "/img/end-user-members/6be8be52a621adb4-toyota.svg",
+          "localLogo": "/img/end-user-members/7db5a026fe633e79-toyota.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2739,7 +2739,7 @@
       "id": "uber",
       "name": "Uber",
       "slug": "uber",
-      "logo": "/img/end-user-members/24fad9cc06f16c07-uber.svg",
+      "logo": "/img/end-user-members/bef7ea3598249b75-uber.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2757,7 +2757,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.uber.com",
           "joined": "2026-02-01",
-          "localLogo": "/img/end-user-members/24fad9cc06f16c07-uber.svg",
+          "localLogo": "/img/end-user-members/bef7ea3598249b75-uber.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2767,7 +2767,7 @@
       "id": "ubs",
       "name": "UBS",
       "slug": "ubs",
-      "logo": "/img/end-user-members/923437b82997d677-ubs.svg",
+      "logo": "/img/end-user-members/b8c79eaf8dcc5ec3-ubs.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2785,7 +2785,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.ubs.com",
           "joined": "2025-02-01",
-          "localLogo": "/img/end-user-members/923437b82997d677-ubs.svg",
+          "localLogo": "/img/end-user-members/b8c79eaf8dcc5ec3-ubs.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2795,7 +2795,7 @@
       "id": "upsider",
       "name": "Upsider",
       "slug": "upsider",
-      "logo": "/img/end-user-members/3f7674833fc4d5ed-upsider-supporter.svg",
+      "logo": "/img/end-user-members/dd447105e70d6be4-upsider-supporter.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2813,7 +2813,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://corp.up-sider.com/en",
           "joined": "2019-05-01",
-          "localLogo": "/img/end-user-members/3f7674833fc4d5ed-upsider-supporter.svg",
+          "localLogo": "/img/end-user-members/dd447105e70d6be4-upsider-supporter.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2823,7 +2823,7 @@
       "id": "valve-software",
       "name": "Valve Software",
       "slug": "valve-software",
-      "logo": "/img/end-user-members/f9f87cc63214fd34-Valve.svg",
+      "logo": "/img/end-user-members/15e3af94ef19802e-Valve.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2841,7 +2841,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.valvesoftware.com/en/",
           "joined": "2021-04-01",
-          "localLogo": "/img/end-user-members/f9f87cc63214fd34-Valve.svg",
+          "localLogo": "/img/end-user-members/15e3af94ef19802e-Valve.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2851,7 +2851,7 @@
       "id": "volvo",
       "name": "Volvo",
       "slug": "volvo",
-      "logo": "/img/end-user-members/a8ac41339869501d-volvo.svg",
+      "logo": "/img/end-user-members/517eb7b351a16cbd-volvo.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2869,7 +2869,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "https://www.volvocars.com/us",
           "joined": "2022-03-01",
-          "localLogo": "/img/end-user-members/a8ac41339869501d-volvo.svg",
+          "localLogo": "/img/end-user-members/517eb7b351a16cbd-volvo.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2879,7 +2879,7 @@
       "id": "walmart",
       "name": "Walmart",
       "slug": "walmart",
-      "logo": "/img/end-user-members/ec1f133cab1aef6b-walmart-member.svg",
+      "logo": "/img/end-user-members/657a658c57df2ca4-walmart-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2897,7 +2897,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.walmartlabs.com",
           "joined": "2018-09-01",
-          "localLogo": "/img/end-user-members/ec1f133cab1aef6b-walmart-member.svg",
+          "localLogo": "/img/end-user-members/657a658c57df2ca4-walmart-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2907,7 +2907,7 @@
       "id": "wikimedia",
       "name": "Wikimedia",
       "slug": "wikimedia",
-      "logo": "/img/end-user-members/65e35beafc7abf28-wikimedia-member.svg",
+      "logo": "/img/end-user-members/71b83187e801d90d-wikimedia-member.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2925,7 +2925,7 @@
           "subcategory": "Nonprofit",
           "homepageUrl": "https://www.wikimedia.org/",
           "joined": "2017-09-01",
-          "localLogo": "/img/end-user-members/65e35beafc7abf28-wikimedia-member.svg",
+          "localLogo": "/img/end-user-members/71b83187e801d90d-wikimedia-member.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -2984,7 +2984,7 @@
       "id": "ziax",
       "name": "Ziax",
       "slug": "ziax",
-      "logo": "/img/end-user-members/76de749d3a0729cb-ziax.svg",
+      "logo": "/img/end-user-members/f75f1b62e0af62a8-ziax.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -3002,7 +3002,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://ziax.com",
           "joined": "2026-02-01",
-          "localLogo": "/img/end-user-members/76de749d3a0729cb-ziax.svg",
+          "localLogo": "/img/end-user-members/f75f1b62e0af62a8-ziax.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],

@@ -6,6 +6,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pruneOwnedLandscapeAssets } from './lib/enduser-assets.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -336,4 +337,12 @@ writeFileSync(
   join(root, 'data/members.json'),
   JSON.stringify(output, null, 2) + '\n',
 );
+if (snapshot) {
+  pruneOwnedLandscapeAssets({
+    assetRoot: join(root, 'static/img/end-user-members'),
+    manifestPath: join(root, 'data/enduser-landscape-assets.json'),
+    snapshot,
+    members: output.members,
+  });
+}
 console.log(`Generated ${members.length} member entries.`);
