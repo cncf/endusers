@@ -113,7 +113,10 @@ test('a failing suite still prints the table and fails the reporter', () => {
       /Tests failed; coverage above is reported for context\./,
     );
     // Reported for context means the table is still there to read.
-    assert.match(result.stdout, /^all files\s+\|\s+100\.00 \|\s+100\.00 \|$/m);
+    assert.match(
+      result.stdout,
+      /^all files\s+\|\s+100\.00 \|\s+100\.00 \| \d+\/\d+ lines \| \d+\/\d+ regions$/m,
+    );
     // The suite failure takes precedence: --check passed at 100% here, so the
     // exit code cannot have come from the gate.
     assert.doesNotMatch(result.stderr, /is below the required/);

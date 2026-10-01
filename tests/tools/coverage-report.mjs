@@ -14,6 +14,10 @@
 // back to its repo-relative origin, merges the runs, and reports line
 // coverage against the real source files.
 //
+// The table carries two gap columns. "uncovered lines" names the lines no
+// recorded range executed; "uncovered regions" names the start line of every
+// uncovered region, which includes sub-line gaps the line column cannot show.
+//
 // Usage:
 //   node tests/tools/coverage-report.mjs [--check <minLinePercent>]
 //     [--check-regions <minRegionPercent>] [--check-source <minLinePercent>]
@@ -364,13 +368,18 @@ export function summarizeRegions(source, counts) {
   return total;
 }
 
-function formatRanges(lines) {
+// `lines` must be ascending. Repeats are collapsed: two uncovered regions can
+// start on the same line (`a ?? b ?? c`), and summarizeRegions records one
+// entry for each, but the reader only needs the line named once.
+export function formatRanges(lines) {
   const out = [];
   let start = null;
   let previous = null;
   for (const line of lines) {
     if (start === null) {
       start = line;
+    } else if (line === previous) {
+      continue;
     } else if (line !== previous + 1) {
       out.push(start === previous ? `${start}` : `${start}-${previous}`);
       start = line;
@@ -476,7 +485,7 @@ export function collect(coverageDir, root = repoRoot) {
   return { merged, unmapped };
 }
 
-function report(merged) {
+export function report(merged) {
   const rows = [...merged.entries()]
     .map(([file, { source, counts }]) => ({
       file,
@@ -486,7 +495,13 @@ function report(merged) {
     .sort((a, b) => a.file.localeCompare(b.file));
 
   const width = Math.max(4, ...rows.map((row) => row.file.length));
-  const header = `${'file'.padEnd(width)} | line % | region % | uncovered lines`;
+  // The region column is what makes a `--check-source-regions` failure
+  // actionable. A sub-line gap -- an unexecuted `??` fallback or ternary arm --
+  // leaves its line fully covered, so a file can sit at 100% lines with a
+  // region percentage below the gate and nothing in the "uncovered lines"
+  // column to point at. Naming the start line of each uncovered region is the
+  // only thing in this report that locates such a gap.
+  const header = `${'file'.padEnd(width)} | line % | region % | uncovered lines | uncovered regions`;
   console.log(header);
   console.log('-'.repeat(header.length));
 
@@ -516,19 +531,19 @@ function report(merged) {
       .toFixed(2)
       .padStart(8);
     console.log(
-      `${row.file.padEnd(width)} | ${linePct} | ${regionPct} | ${formatRanges(row.lines.uncovered)}`,
+      `${row.file.padEnd(width)} | ${linePct} | ${regionPct} | ${formatRanges(row.lines.uncovered)} | ${formatRanges(row.regions.uncovered)}`,
     );
   }
   console.log('-'.repeat(header.length));
   const sourceLinePct = percent(sourceCovered, sourceExecutable);
   const sourceRegionPct = percent(sourceRegionsCovered, sourceRegions);
   console.log(
-    `${'src files'.padEnd(width)} | ${sourceLinePct.toFixed(2).padStart(6)} | ${sourceRegionPct.toFixed(2).padStart(8)} | ${sourceCovered}/${sourceExecutable} lines`,
+    `${'src files'.padEnd(width)} | ${sourceLinePct.toFixed(2).padStart(6)} | ${sourceRegionPct.toFixed(2).padStart(8)} | ${sourceCovered}/${sourceExecutable} lines | ${sourceRegionsCovered}/${sourceRegions} regions`,
   );
   const totalLinePct = percent(covered, executable);
   const totalRegionPct = percent(regionsCovered, regions);
   console.log(
-    `${'all files'.padEnd(width)} | ${totalLinePct.toFixed(2).padStart(6)} | ${totalRegionPct.toFixed(2).padStart(8)} |`,
+    `${'all files'.padEnd(width)} | ${totalLinePct.toFixed(2).padStart(6)} | ${totalRegionPct.toFixed(2).padStart(8)} | ${covered}/${executable} lines | ${regionsCovered}/${regions} regions`,
   );
   return {
     totalLinePct,
