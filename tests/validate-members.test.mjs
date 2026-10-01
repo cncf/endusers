@@ -245,3 +245,38 @@ test('accepts award URL fields that are absent rather than null', () => {
   );
   assert.equal(result.status, 0, result.stderr);
 });
+
+// Each of the three URL-bearing collections is iterated through an
+// `Array.isArray(...) ? ... : []` guard. A string is iterable, so without the
+// guard a non-array value would be walked one character at a time and reported
+// as that many malformed-URL errors, burying the single type error that
+// actually describes the defect.
+test('reports only the type error when architectures is not an array', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    withMember({ architectures: 'https://example.com/a' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /architectures must be an array/);
+  assert.doesNotMatch(result.stderr, /architectures\[\]\.sourceUrl/);
+});
+
+test('reports only the type error when awards is not an array', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    withMember({ awards: 'https://example.com/a' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /awards must be an array/);
+  assert.doesNotMatch(result.stderr, /awards\[\]\./);
+});
+
+test('reports only the type error when sourceAttribution is not an array', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    withMember({ sourceAttribution: 'https://example.com/a' }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sourceAttribution must be an array/);
+  assert.doesNotMatch(result.stderr, /sourceAttribution\[\]/);
+});
