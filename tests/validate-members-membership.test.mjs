@@ -279,3 +279,21 @@ test('reports a null member entry instead of crashing when a landscape snapshot 
   );
   assert.doesNotMatch(result.stderr, /TypeError/);
 });
+
+// The requires-both check reads its two field tests through a short-circuited
+// `||`: a member with neither field never evaluates the membershipSources
+// side, and the committed data always carries both. Pin the one shape that
+// drives that second test — membershipStatus present, membershipSources
+// absent — so the half-migrated record is reported rather than accepted.
+test('rejects a landscape-backed member with membershipStatus but no membershipSources', () => {
+  const partial = member('status-only', 'member', [
+    source('member-source', 'member'),
+  ]);
+  delete partial.membershipSources;
+  const result = run([partial], snapshot(['member-source']));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /landscape-backed output requires membershipStatus and membershipSources/,
+  );
+});

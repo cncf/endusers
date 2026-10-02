@@ -228,13 +228,17 @@ for (const member of members) {
     checkHttpsUrl(errors, path, 'sourceAttribution[]', url);
   }
 
+  // Evaluate the null-member fallback once: inline `(member || {})` on each
+  // `in` test leaves the later fallbacks unreachable, because a null member
+  // already short-circuits the first test.
+  const membershipFields = member || {};
   const hasMembershipFields =
-    'membershipStatus' in (member || {}) ||
-    'membershipSources' in (member || {});
+    'membershipStatus' in membershipFields ||
+    'membershipSources' in membershipFields;
   if (
     landscape &&
-    (!('membershipStatus' in (member || {})) ||
-      !('membershipSources' in (member || {})))
+    (!('membershipStatus' in membershipFields) ||
+      !('membershipSources' in membershipFields))
   ) {
     errors.push({
       path,
