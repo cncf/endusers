@@ -16,6 +16,7 @@
   --cncf-button-background: #005ea8;
   --cncf-button-background-hover: #004f91;
   --cncf-button-text: #fff;
+  --cncf-warning-text: #8a5700;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
   --ifm-link-color: #a71970;
@@ -38,6 +39,7 @@
   --cncf-button-background: #007f68;
   --cncf-button-background-hover: #006f5b;
   --cncf-button-text: #fff;
+  --cncf-warning-text: #ffb648;
   --ifm-link-color: #ff8bd6;
   --ifm-link-hover-color: #ff8bd6;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
