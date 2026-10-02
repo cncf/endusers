@@ -225,22 +225,13 @@ test('the persist-credentials baseline retires itself', () => {
 // a runner for six hours. Only deploy-gh-pages declares a concurrency group, so
 // the next run does not supersede a stuck one either.
 //
-// KNOWN_UNBOUNDED_JOBS is a retiring baseline, not an allowance: it records the
-// jobs unbounded as of #743. The companion test below fails once an entry
-// gains a timeout, so bounding a job forces its exception to be removed in the
-// same change.
-const KNOWN_UNBOUNDED_JOBS = new Set([
-  'ci.yml: validate',
-  'ci.yml: lint',
-  'codeql.yml: analyze',
-  'create-milestones.yml: create-milestones',
-  'deploy-gh-pages.yml: build',
-  'deploy-gh-pages.yml: deploy',
-  'import-architectures.yml: import',
-  'pr-queue-hygiene.yml: hygiene',
-  'refresh-community-people.yml: refresh',
-  'refresh-radar-reports.yml: refresh',
-]);
+// KNOWN_UNBOUNDED_JOBS is a retiring baseline, not an allowance: it recorded
+// the jobs unbounded as of #743, and the companion test below fails once an
+// entry gains a timeout, so bounding a job forces its exception to be removed
+// in the same change. The baseline retired fully in #969: every boundable job
+// now declares timeout-minutes, and this set stays empty so the gap cannot
+// reopen silently.
+const KNOWN_UNBOUNDED_JOBS = new Set([]);
 
 // `timeout-minutes` is not accepted on a job that delegates to a reusable
 // workflow, so those jobs are outside this contract.
