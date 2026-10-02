@@ -105,6 +105,40 @@ test('reports no catalog id for a non-markdown path', () => {
   assert.equal(pageCatalogId('adobe.txt'), null);
 });
 
+// Docusaurus publishes .mdx from the same default `include` as .md, so an
+// .mdx page left out of this listing is published without ever reaching the
+// active-content gate in validate-architectures.mjs and is never pruned by
+// the importer.
+test('lists .mdx pages alongside .md pages', () => {
+  withDocsDir(
+    (docsDir) => {
+      writeFileSync(join(docsDir, 'adobe.md'), '# Adobe\n');
+      writeFileSync(join(docsDir, 'evil.mdx'), '# Evil\n');
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, ['adobe.md', 'evil.mdx']);
+      assert.deepEqual(irregular, []);
+    },
+  );
+});
+
+test('reports a symlinked .mdx page as irregular rather than skipping it', () => {
+  withDocsDir(
+    (docsDir) => {
+      writeFileSync(join(docsDir, 'adobe.md'), '# Adobe\n');
+      symlinkSync(join(docsDir, 'adobe.md'), join(docsDir, 'evil.mdx'));
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, ['adobe.md']);
+      assert.deepEqual(irregular, ['evil.mdx']);
+    },
+  );
+});
+
+test('maps a top-level .mdx page to its catalog id', () => {
+  assert.equal(pageCatalogId('evil.mdx'), 'evil');
+});
+
 test('exempts only the hand-authored index page', () => {
   assert.ok(REPO_AUTHORED_PAGES.has('index.md'));
   assert.equal(REPO_AUTHORED_PAGES.has('adobe.md'), false);

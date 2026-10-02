@@ -2,8 +2,12 @@
 // imported pages.
 //
 // Docusaurus routes docs/ by filesystem, not by data/architectures/catalog.json,
-// so every .md in this directory is published whether or not a catalog record
-// names it. Driving either the import pruner or the active-content gate from
+// so every page in this directory is published whether or not a catalog record
+// names it. The docs plugin's default `include` globs both .md and .mdx, so an
+// .mdx page is published exactly like a .md one and has to be enumerated here
+// too; listing only .md left an .mdx page unscanned by the active-content gate
+// and unpruned by the importer.
+// Driving either the import pruner or the active-content gate from
 // the catalog (or from the upstream checkout) therefore leaves any file the
 // two disagree about published and unguarded — the failure mode
 // scripts/validate-community-people.mjs already documents for its own loop.
@@ -39,7 +43,7 @@ export const REPO_AUTHORED_PAGES = new Set(['index.md']);
  * path, so the ids are reserved here and rejected by the validator.
  */
 export const RESERVED_PAGE_IDS = new Set(
-  [...REPO_AUTHORED_PAGES].map((page) => page.replace(/\.md$/, '')),
+  [...REPO_AUTHORED_PAGES].map((page) => page.replace(/\.mdx?$/, '')),
 );
 
 /**
@@ -55,6 +59,13 @@ export const RESERVED_PAGE_IDS = new Set(
 export function isReservedPageId(id) {
   return typeof id === 'string' && RESERVED_PAGE_IDS.has(id.toLowerCase());
 }
+
+/**
+ * Page extensions Docusaurus publishes from docs/. Mirrors the docs plugin's
+ * default `include`, which globs both `.md` and `.mdx`; a file this does not
+ * match is not routed, so it needs neither gating nor pruning.
+ */
+const PAGE_EXTENSION = /\.mdx?$/;
 
 /**
  * Lists every Markdown page under docs/architectures/, as paths relative to
@@ -81,7 +92,7 @@ export function listArchitecturePages(docsDir) {
         walk(join(dir, entry.name), relativePath);
         continue;
       }
-      if (!entry.name.endsWith('.md')) continue;
+      if (!PAGE_EXTENSION.test(entry.name)) continue;
       if (entry.isFile()) pages.push(relativePath);
       else irregular.push(relativePath);
     }
@@ -93,12 +104,14 @@ export function listArchitecturePages(docsDir) {
 
 /**
  * The catalog id a page path corresponds to, or null when the path is not a
- * top-level `<id>.md`. Nested paths have no catalog record by construction.
+ * top-level `<id>.md`/`<id>.mdx`. Nested paths have no catalog record by
+ * construction.
  *
  * @param {string} relativePath
  * @returns {string|null}
  */
 export function pageCatalogId(relativePath) {
   if (relativePath.includes('/')) return null;
-  return relativePath.endsWith('.md') ? relativePath.slice(0, -3) : null;
+  const extension = relativePath.match(PAGE_EXTENSION);
+  return extension ? relativePath.slice(0, -extension[0].length) : null;
 }

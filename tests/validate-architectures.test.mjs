@@ -254,6 +254,39 @@ test('scans a catalog-less page for MDX expressions', () => {
   );
 });
 
+// Docusaurus's docs plugin publishes .mdx from the same default `include` as
+// .md, so a page that only differs by extension must reach the same gate. It
+// did not: listArchitecturePages() matched '.md' alone, leaving an .mdx page
+// published with unscanned active content.
+test('scans an .mdx page for active content', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/architectures/orphan.mdx':
+        '# Orphan\n\n<iframe src="https://evil.example"></iframe>\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /orphan\.mdx:3: active content in imported page \(disallowed element <iframe>\)/,
+  );
+});
+
+test('scans an .mdx page for MDX expressions', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/architectures/orphan.mdx': '# Orphan\n\nvalue: {String(1)}\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /orphan\.mdx:3: active content in imported page \(MDX expression\)/,
+  );
+});
+
 // index.md is hand-authored, not imported: it renders layout elements and
 // imports a component, all of which the imported-content gate is right to
 // reject in an imported body. Scanning it would turn CI red on repo content.
