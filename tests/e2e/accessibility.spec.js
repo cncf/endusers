@@ -28,22 +28,39 @@
 // baselines in tests/ci-supply-chain.test.mjs, and it is what stops a
 // temporary allowance from quietly becoming permanent.
 import AxeBuilder from '@axe-core/playwright';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // One route per page template.
+//
+// Routes that reuse a template already listed here are deliberately absent:
+// /blog/authors/<name> and /blog/tags/<tag> render the same blog list page as
+// /blog, and /community/user-groups/<group> renders the same doc page as
+// /community/technical-advisory-board. Scanning them would cost time without
+// covering new markup.
 const ROUTES = [
   { path: '/', label: 'practitioners home' },
   { path: '/community', label: 'community landing' },
   { path: '/community/members', label: 'member directory' },
   { path: '/community/technical-advisory-board', label: 'TAB roster' },
+  { path: '/community/user-groups', label: 'generated doc category index' },
   { path: '/architectures', label: 'architecture catalog' },
-  { path: '/awards', label: 'awards timeline' },
+  { path: '/architectures/adobe', label: 'architecture detail' },
+  // /awards is a three-line "Awards moved" stub with unlisted: true; the page
+  // that mounts <AwardsTimeline /> is docs/community/awards.md.
+  { path: '/community/awards', label: 'awards timeline' },
   { path: '/metrics', label: 'metrics dashboard' },
   { path: '/events', label: 'events' },
   { path: '/resources', label: 'resources landing' },
   { path: '/resources/case-studies', label: 'case studies' },
   { path: '/resources/radar-reports', label: 'radar reports' },
   { path: '/blog', label: 'blog index' },
+  { path: '/blog/welcome-to-endusers-cncf-io', label: 'blog post' },
+  { path: '/blog/archive', label: 'blog archive' },
+  { path: '/blog/authors', label: 'blog authors index' },
+  { path: '/blog/tags', label: 'blog tags index' },
 ];
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
@@ -146,6 +163,36 @@ test('every baselined route is a route this spec scans', () => {
   expect(unknown, 'KNOWN_VIOLATIONS names routes ROUTES does not scan').toEqual(
     [],
   );
+});
+
+test('every scanned route is a listed page of the built site', () => {
+  // How /awards went unnoticed: it is an unlisted "Awards moved" stub, so the
+  // route labelled "awards timeline" scanned three lines of redirect notice
+  // and passed, while /community/awards -- the only page that mounts
+  // <AwardsTimeline /> -- was never scanned at all. Every real page template
+  // appears in the sitemap, and a stub excluded from it does not, so
+  // membership is the check that separates the two.
+  const sitemap = readFileSync(resolve('build/sitemap.xml'), 'utf8');
+  const listed = new Set(
+    [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => {
+      const path = new URL(loc).pathname.replace(/\/$/, '');
+      return path === '' ? '/' : path;
+    }),
+  );
+
+  expect(
+    listed.size,
+    'no routes parsed out of build/sitemap.xml',
+  ).toBeGreaterThan(0);
+
+  const unlisted = ROUTES.map((route) => route.path).filter(
+    (path) => !listed.has(path),
+  );
+
+  expect(
+    unlisted,
+    'these routes are not in build/sitemap.xml — an unlisted stub scans nothing',
+  ).toEqual([]);
 });
 
 test('the scan is not vacuous', async ({ page }) => {
