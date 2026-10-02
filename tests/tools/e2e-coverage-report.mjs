@@ -42,6 +42,19 @@ function linePercent(covered, executable) {
   return Number(percent(covered, executable).toFixed(2));
 }
 
+function parsePercent(value) {
+  // Number('') is 0 and Number(' ') is 0, so a missing or blank value would
+  // otherwise read as a satisfied gate rather than as the typo it is.
+  const blank = String(value ?? '').trim() === '';
+  const parsed = blank ? Number.NaN : Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+    throw new Error(
+      `--check-source expects a percentage between 0 and 100, got ${value}`,
+    );
+  }
+  return parsed;
+}
+
 function parseArgs(argv) {
   const options = {
     input: null,
@@ -49,6 +62,7 @@ function parseArgs(argv) {
     root: repoRoot,
     json: null,
     text: null,
+    checkSource: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -57,6 +71,8 @@ function parseArgs(argv) {
     else if (arg === '--root') options.root = argv[++index];
     else if (arg === '--json') options.json = argv[++index];
     else if (arg === '--text') options.text = argv[++index];
+    else if (arg === '--check-source')
+      options.checkSource = parsePercent(argv[++index]);
     else throw new Error(`unknown e2e coverage report option: ${arg}`);
   }
   if (!options.input) throw new Error('--input is required');
@@ -552,8 +568,9 @@ export async function writeE2ECoverageReport(report, { jsonPath, textPath }) {
 
 export async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
+  let report;
   try {
-    const report = await collectE2ECoverage(options.input, {
+    report = await collectE2ECoverage(options.input, {
       root: resolve(options.root),
       buildDir: resolve(options.build),
     });
@@ -562,7 +579,6 @@ export async function main(argv = process.argv.slice(2)) {
       textPath: options.text,
     });
     if (!options.text) process.stdout.write(text);
-    return report;
   } catch (error) {
     const failure = {
       schemaVersion: 1,
@@ -589,6 +605,19 @@ export async function main(argv = process.argv.slice(2)) {
     });
     throw error;
   }
+
+  // Evaluated after the report is on disk: a threshold failure must still leave
+  // the summary and artifact behind for the CI step that publishes them.
+  const { linePercent: sourcePercent } = report.summary;
+  if (
+    options.checkSource !== null &&
+    sourcePercent + 1e-9 < options.checkSource
+  ) {
+    throw new Error(
+      `Source line coverage ${sourcePercent.toFixed(2)}% is below the required ${options.checkSource}%.`,
+    );
+  }
+  return report;
 }
 
 if (
