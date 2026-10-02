@@ -1,0 +1,14 @@
+{
+  "description": "Adds one archived group so GroupLinkStatus renders its drift warning. Both real groups are archived:false / reachable:true, so the warning arm (src/components/GroupLinkStatus/index.js lines 30-39) is unreachable from the checked-in data.",
+  "append": {
+    "groups": [
+      {
+        "slug": "e2e-coverage-archived",
+        "name": "Coverage Fixture User Group",
+        "repository": "https://github.com/cncf/endusers",
+        "archived": true,
+        "reachable": true
+      }
+    ]
+  }
+}

@@ -235,6 +235,26 @@ The report is source-mapped back to `src/**`; it is informational initially and
 has no percentage thresholds. Invalid maps, stale manifests, and empty aggregate
 attribution fail visibly and leave their raw artifacts for review.
 
+Some component branches render only for data shapes the checked-in `data/*.json`
+never take — an archived End User Group, a person with neither role nor company,
+an organization holding both membership roles. The components read those files
+at build time, so no browser test can reach those branches against the shipped
+data. `npm run build:e2e:coverage` therefore applies the overlays committed
+under `tests/e2e/fixtures/data/`, which add the missing records to the data the
+coverage build compiles. Each overlay states only its delta, and every path it
+names must still exist in the real file, so a regenerated data file fails the
+build rather than quietly taking the coverage with it. See
+[`tests/tools/e2e-data-fixtures.cjs`](tests/tools/e2e-data-fixtures.cjs) for the
+format, and `tests/e2e/data-fixtures.spec.js` for the specs that drive the
+branches. A spec that asserts against a data file should read it through
+`loadSiteData()` so it describes the build it is running against.
+
+`npm run build:production`, the gating end-to-end job and the deployed site are
+unaffected: nothing outside `E2E_COVERAGE=1` registers the overlay. The coverage
+build opts out of the bundler's persistent cache for the same reason — the cache
+is keyed on neither the loader nor `E2E_COVERAGE`, so sharing it would replay
+overlaid data into the next production build in the same working tree.
+
 ## Agent contributors
 
 AI agents should start at [`AGENTS.md`](AGENTS.md) and the skill manifest in

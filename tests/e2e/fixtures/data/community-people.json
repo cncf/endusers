@@ -1,0 +1,19 @@
+{
+  "description": "Adds one staff entry with neither role nor company so PersonDialog falls back to 'Community member' (src/components/CommunityPeople/index.js line 63). All real people carry a role or a company. Appended to 'staff' rather than 'tab' so the TAB roster assertions in tests/e2e/community-people.spec.js keep describing the real data.",
+  "append": {
+    "people.staff": [
+      {
+        "name": "Coverage Fixture Person",
+        "company": null,
+        "role": null,
+        "bio": "",
+        "location": "",
+        "image": "/img/favicon.svg",
+        "github": "",
+        "linkedin": "",
+        "twitter": "",
+        "blog": ""
+      }
+    ]
+  }
+}
