@@ -24,11 +24,14 @@ const PROFILE_BASES = Object.assign(Object.create(null), {
  *
  * @param {string} [value] - the handle, percent-encoded before interpolation
  * @param {'github'|'linkedin'|'twitter'} type
- * @returns {string|null} an absolute URL, or null when there is no handle
+ * @returns {string|null} an absolute URL, or null when there is no handle or
+ *   the network is not one of the three known bases — a silent fallback would
+ *   link the handle to the wrong site.
  */
 export function profileUrl(value, type) {
   if (!value) return null;
-  const base = PROFILE_BASES[type] ?? PROFILE_BASES.twitter;
+  const base = PROFILE_BASES[type];
+  if (!base) return null;
   return `${base}${encodeURIComponent(value)}`;
 }
 

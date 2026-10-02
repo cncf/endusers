@@ -62,16 +62,18 @@ test('every workflow parses as YAML and declares at least one job', () => {
 // it never evaluates truthy and the job never runs, on any trigger. This bit
 // #813: an `architecture-ready` label never started the submission job.
 // https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
+function envContextJobs(parsed) {
+  return Object.entries(parsed?.jobs ?? {})
+    .filter(([, job]) => typeof job?.if === 'string' && /\benv\./.test(job.if))
+    .map(([jobName]) => jobName);
+}
+
 test('no job-level `if:` references the env context', () => {
-  const offenders = [];
-  for (const file of workflowFiles) {
-    const parsed = parse(readFileSync(join(workflowDir, file), 'utf8'));
-    for (const [jobName, job] of Object.entries(parsed?.jobs ?? {})) {
-      if (typeof job?.if === 'string' && /\benv\./.test(job.if)) {
-        offenders.push(`${file}:${jobName}`);
-      }
-    }
-  }
+  const offenders = workflowFiles.flatMap((file) =>
+    envContextJobs(parse(readFileSync(join(workflowDir, file), 'utf8'))).map(
+      (jobName) => `${file}:${jobName}`,
+    ),
+  );
   assert.deepEqual(
     offenders,
     [],
@@ -105,32 +107,120 @@ test('every `npm run` inside a package.json script names a defined script', () =
   assert.deepEqual(missing, [], 'undefined scripts invoked by other scripts');
 });
 
-test('every `node scripts/...` target in package.json exists on disk', () => {
-  const missing = [];
-  for (const [name, body] of Object.entries(scripts)) {
-    for (const match of body.matchAll(/\bnode\s+(scripts\/[\w./-]+)/g)) {
-      if (!existsSync(join(repoRoot, match[1]))) {
-        missing.push(`${name} -> ${match[1]}`);
-      }
+// `node scripts/...` and `-c .dotfile` references, paired with the script that
+// names them. Collecting references separately from resolving them is what
+// lets the reporting arm below be driven by a test: the repository is expected
+// to resolve every reference, so a guard that only ever scans the real tree
+// never executes the branch that reports a broken one.
+function scriptFileRefs(scriptBodies) {
+  return referencesMatching(scriptBodies, /\bnode\s+(scripts\/[\w./-]+)/g);
+}
+
+function linterConfigRefs(scriptBodies) {
+  return referencesMatching(
+    scriptBodies,
+    /(?:^|\s)(?:-c|--config)\s+(\.[\w.-]+)/g,
+  );
+}
+
+function referencesMatching(scriptBodies, pattern) {
+  const refs = [];
+  for (const [name, body] of Object.entries(scriptBodies)) {
+    for (const match of body.matchAll(pattern)) {
+      refs.push({ name, path: match[1] });
     }
   }
-  assert.deepEqual(missing, [], 'package.json scripts point at missing files');
+  return refs;
+}
+
+function unresolved(refs, exists) {
+  return refs
+    .filter(({ path }) => !exists(path))
+    .map(({ name, path }) => `${name} -> ${path}`);
+}
+
+const onDisk = (path) => existsSync(join(repoRoot, path));
+
+test('every `node scripts/...` target in package.json exists on disk', () => {
+  assert.deepEqual(
+    unresolved(scriptFileRefs(scripts), onDisk),
+    [],
+    'package.json scripts point at missing files',
+  );
 });
 
 test('every config file passed to a linter in package.json exists', () => {
   // A missing dotfile here makes `npm run check` fail on a fresh clone while
   // every unit test still passes, because no test runs the linters.
-  const missing = [];
-  for (const [name, body] of Object.entries(scripts)) {
-    for (const match of body.matchAll(
-      /(?:^|\s)(?:-c|--config)\s+(\.[\w.-]+)/g,
-    )) {
-      if (!existsSync(join(repoRoot, match[1]))) {
-        missing.push(`${name} -> ${match[1]}`);
-      }
-    }
-  }
-  assert.deepEqual(missing, [], 'linter config files referenced but absent');
+  assert.deepEqual(
+    unresolved(linterConfigRefs(scripts), onDisk),
+    [],
+    'linter config files referenced but absent',
+  );
+});
+
+// The three guards above pass by finding nothing, so on a healthy repository
+// their reporting arms never execute and nothing proves they would fire. Each
+// case below drives one detector with a synthetic input carrying the exact
+// defect it exists to catch, and with a clean one, so a detector that silently
+// stopped matching fails here instead of passing everywhere.
+test('the env-context guard names the job whose `if:` reads env', () => {
+  // The shape of #813: a job gated on a label it reads through `env`, which
+  // GitHub does not expose to `jobs.<id>.if`.
+  const broken = parse(`
+jobs:
+  import:
+    if: contains(github.event.pull_request.labels.*.name, env.READY_LABEL)
+    runs-on: ubuntu-24.04
+  unrelated:
+    runs-on: ubuntu-24.04
+`);
+  assert.deepEqual(envContextJobs(broken), ['import']);
+
+  const fixed = parse(`
+jobs:
+  import:
+    if: contains(github.event.pull_request.labels.*.name, 'architecture-ready')
+    runs-on: ubuntu-24.04
+`);
+  assert.deepEqual(envContextJobs(fixed), []);
+  assert.deepEqual(envContextJobs({}), []);
+});
+
+test('the reference guards report a reference that resolves to nothing', () => {
+  const synthetic = {
+    'collect:metrics': 'node scripts/collect-metrics.mjs',
+    'check:spelling': 'npx cspell --no-progress -c .cspell.yml docs *.md',
+    build: 'BUILD_ENV=dev npm run _build',
+  };
+
+  assert.deepEqual(scriptFileRefs(synthetic), [
+    { name: 'collect:metrics', path: 'scripts/collect-metrics.mjs' },
+  ]);
+  assert.deepEqual(linterConfigRefs(synthetic), [
+    { name: 'check:spelling', path: '.cspell.yml' },
+  ]);
+
+  // Nothing on disk: every reference is reported, with the script that made it.
+  assert.deepEqual(
+    unresolved(scriptFileRefs(synthetic), () => false),
+    ['collect:metrics -> scripts/collect-metrics.mjs'],
+  );
+  assert.deepEqual(
+    unresolved(linterConfigRefs(synthetic), () => false),
+    ['check:spelling -> .cspell.yml'],
+  );
+
+  // Everything on disk: the same inputs report nothing, so the arm above is
+  // the resolver answering rather than the scanner matching indiscriminately.
+  assert.deepEqual(
+    unresolved(scriptFileRefs(synthetic), () => true),
+    [],
+  );
+  assert.deepEqual(
+    unresolved(linterConfigRefs(synthetic), () => true),
+    [],
+  );
 });
 
 test('every scripts/*.mjs entry point is reachable from a package.json script', () => {

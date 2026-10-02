@@ -7,7 +7,7 @@
     "_check:format:any": "npx prettier --check --ignore-path ''",
     "_check:format:delta": "npm run _check:format:any -- $(npm run -s _list:git:delta)",
     "_check:format": "npx prettier --check .",
-    "_check:links-md": "bash -c 'for f in *.md; do npx markdown-link-check --config .markdown-link-check.json -p -v $f || exit 1; done'",
+    "_check:links-md": "bash -c 'for f in *.md; do npx markdown-link-check --config .markdown-link-check.json -p -v \"$f\" || exit 1; done'",
     "_check:links": "npm run _check:links-md",
     "_check:markdown:1": "npx -p markdownlint-cli markdownlint -c .markdownlint.yaml",
     "_check:markdown:all": "npm run -s _list:check:md | xargs -I {} -P 4 npx -p markdownlint-cli markdownlint -c .markdownlint.yaml {}",

@@ -15,13 +15,17 @@
 // "End-to-end tests" job builds with the real data, where every expectation
 // here would be false.
 //
-// One class of branch is deliberately absent here. AwardsTimeline renders its
-// provenance paragraph only when data/awards.json carries a verifiedAt, and
-// the ': null' arm beside it only when it does not. verifiedAt is a single
-// document-level field on the one file one page reads, so an overlay that
-// clears it does not add a case -- it swaps which arm is reachable, covering
-// one line at the cost of the fourteen that render the paragraph. Those
-// branches get a second build of their own rather than a second record; see
+// One related branch class is deliberately absent, in two places. AwardsTimeline
+// renders its provenance paragraph only when data/awards.json carries a
+// verifiedAt, and the ': null' arm beside it only when it does not; the same
+// shape holds for ReferenceArchitectures' SyncStatus, whose sync-date ternary
+// reads data/metrics.json's generatedAt (src/components/ReferenceArchitectures/
+// index.js line 23). Each is a single document-level field on the one file one
+// page reads, so an overlay that clears it does not add a case -- it swaps
+// which arm is reachable, covering one line at the cost of the many that
+// render the populated text (measured: thirteen for AwardsTimeline, five for
+// SyncStatus). Those branches need per-route data, not a per-build overlay,
+// and get a second build of their own rather than a second record; see
 // tests/e2e/data-variants.spec.js.
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
