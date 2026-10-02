@@ -902,6 +902,64 @@ test('collectE2ECoverage rejects a nominal src symlink to an unrelated repo file
   }
 });
 
+test('collectE2ECoverage rejects a src tree symlinked outside the repository', async () => {
+  const fixture = await fixtureRun();
+  const outsideRoot = await mkdtemp(join(tmpdir(), 'endusers-outside-src-'));
+  try {
+    // `src` itself is the symlink, so every containment check that resolves
+    // through it agrees the source is inside `src` -- only the repository
+    // check sees that `src` now points out of the tree.
+    const source = 'const outside = 1;\n';
+    await mkdir(join(outsideRoot, 'components/Link'), { recursive: true });
+    await writeFile(join(outsideRoot, 'components/Link/index.js'), source);
+    await symlink(outsideRoot, join(fixture.root, 'src'));
+    const script = 'const value = 1;\n//# sourceMappingURL=outside.js.map\n';
+    await writeFile(join(fixture.buildDir, 'assets/js/outside.js'), script);
+    await writeFile(
+      join(fixture.buildDir, 'assets/js/outside.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'outside.js',
+        sources: ['../../../src/components/Link/index.js'],
+        sourcesContent: [source],
+        names: [],
+        mappings: 'AAAA',
+      }),
+    );
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/outside.js',
+          scriptId: 'outside',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [{ startOffset: 0, endOffset: script.length, count: 1 }],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /source map source escapes repository/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+    await rm(outsideRoot, { recursive: true, force: true });
+  }
+});
+
 test('collectE2ECoverage flattens an indexed multi-source map', async () => {
   const fixture = await fixtureRun();
   try {
