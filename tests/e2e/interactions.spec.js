@@ -214,6 +214,50 @@ test.describe('member profile dialog', () => {
     await expect(page.getByRole('button', { name: triggerName })).toBeFocused();
   });
 
+  test('Shift+Tab from the close button wraps to the last focusable', async ({
+    page,
+  }) => {
+    await page.goto('/community/members');
+    const section = page.getByRole('region', {
+      name: 'End User Community organization directory',
+    });
+    const trigger = section
+      .getByRole('button', { name: /^Open .+ profile$/ })
+      .first();
+    await waitForHydration(trigger);
+    await trigger.click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    // useFocusTrap focuses the close button on mount, and the close button is
+    // the first element matched by the trap's 'button, a[href]' query, so a
+    // backward Tab from here is what drives the shiftKey wrap branch.
+    const close = dialog.getByRole('button', { name: /^Close .+ profile$/ });
+    await expect(close).toBeFocused();
+
+    // The wrap is only observable when the dialog has somewhere else to send
+    // focus; the first card's profile carries attribution links besides close.
+    const focusables = dialog.locator('button, a[href]');
+    expect(await focusables.count()).toBeGreaterThan(1);
+
+    await page.keyboard.press('Shift+Tab');
+
+    // Focus lands on the dialog's last focusable rather than escaping backward
+    // to the page behind it.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const node = document.querySelector('[role="dialog"]');
+          const items = node?.querySelectorAll('button, a[href]');
+          return Boolean(
+            items?.length && document.activeElement === items[items.length - 1],
+          );
+        }),
+      )
+      .toBe(true);
+  });
+
   test('clicking the backdrop closes the dialog', async ({ page }) => {
     await page.goto('/community/members');
     const section = page.getByRole('region', {
