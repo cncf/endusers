@@ -40,8 +40,42 @@ function endusersE2ESourceMaps() {
   };
 }
 
-const E2E_SOURCE_MAP_PLUGIN =
-  process.env.E2E_COVERAGE === '1' ? endusersE2ESourceMaps : null;
+// Applies the committed data overlays in tests/e2e/fixtures/data/** to the
+// site's data/*.json imports. Some component branches render only for data
+// shapes the checked-in files never take (an archived user group, an awards
+// file with no verification date), so no browser test can reach them against
+// production data. Overlaying only in the coverage build keeps
+// `npm run build:production`, the gating end-to-end job and the deployed site
+// on the real data. See tests/tools/e2e-data-fixtures.cjs.
+function endusersE2EDataFixtures() {
+  return {
+    name: 'endusers-e2e-data-fixtures',
+    configureWebpack(config) {
+      // Both paths are derived from the site directory the bundler was handed
+      // rather than from this file's own location: Docusaurus evaluates this
+      // config through its own loader, so a relative require here resolves
+      // against whatever module did the evaluating.
+      const { join } = require('path');
+      const siteDir = config.resolve.alias['@site'];
+      return {
+        module: {
+          rules: [
+            {
+              test: /\.json$/,
+              include: join(siteDir, 'data'),
+              type: 'json',
+              use: [join(siteDir, 'tests/tools/e2e-data-fixture-loader.cjs')],
+            },
+          ],
+        },
+      };
+    },
+  };
+}
+
+const E2E_COVERAGE = process.env.E2E_COVERAGE === '1';
+const E2E_SOURCE_MAP_PLUGIN = E2E_COVERAGE ? endusersE2ESourceMaps : null;
+const E2E_DATA_FIXTURE_PLUGIN = E2E_COVERAGE ? endusersE2EDataFixtures : null;
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -302,6 +336,7 @@ const config = {
     }),
   plugins: [
     E2E_SOURCE_MAP_PLUGIN,
+    E2E_DATA_FIXTURE_PLUGIN,
     [
       require.resolve('docusaurus-plugin-search-local'),
       /** @type {import('docusaurus-plugin-search-local').PluginOptions} */

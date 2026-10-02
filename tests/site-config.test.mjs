@@ -292,6 +292,42 @@ test('e2e coverage source maps are opt-in and client-only', async () => {
   assert.deepEqual(plugin.configureWebpack({}, true), {});
 });
 
+test('the e2e data fixtures are opt-in and scoped to the site data directory', async () => {
+  // The overlay rewrites data/*.json at build time (see
+  // tests/tools/e2e-data-fixtures.cjs). Registering it outside the coverage
+  // build would put fixture records into what the site ships, and widening
+  // the rule past data/ would hand every other JSON import to the loader.
+  const normal = await loadConfig({ E2E_COVERAGE: undefined });
+  assert.equal(
+    normal.plugins.some(
+      (plugin) =>
+        typeof plugin === 'function' &&
+        plugin.name === 'endusersE2EDataFixtures',
+    ),
+    false,
+  );
+
+  const coverage = await loadConfig({ E2E_COVERAGE: '1' });
+  const factory = coverage.plugins.find(
+    (plugin) =>
+      typeof plugin === 'function' && plugin.name === 'endusersE2EDataFixtures',
+  );
+  assert.equal(typeof factory, 'function');
+
+  const siteDir = '/srv/site';
+  const [rule] = factory().configureWebpack({
+    resolve: { alias: { '@site': siteDir } },
+  }).module.rules;
+  assert.equal(rule.include, `${siteDir}/data`);
+  assert.equal(rule.type, 'json');
+  assert.ok(rule.test.test('members.json'));
+  assert.equal(rule.test.test('members.jsonc'), false);
+  assert.equal(
+    rule.use[0],
+    `${siteDir}/tests/tools/e2e-data-fixture-loader.cjs`,
+  );
+});
+
 // The meta Content-Security-Policy is the browser-side backstop for content
 // this site does not author. Nothing asserted it until now, so it could be
 // weakened or deleted without a single test failing.
