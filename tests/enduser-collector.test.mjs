@@ -5,6 +5,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -155,6 +156,26 @@ test('rejects a logo that would fetch remote resources', () => {
     });
     assert.equal(result.localLogo, null);
     assert.match(result.logoWarning, /remote resource references/);
+  });
+});
+
+test('rejects a logo whose DOCTYPE removal re-forms active content', () => {
+  withRoots(({ sourceRoot, destinationRoot }) => {
+    // Each fragment is inert on its own, so stripActiveContent() passes it
+    // through; deleting the DOCTYPE between them splices "<sc" onto "ript>".
+    writeFileSync(
+      join(sourceRoot, 'hosted_logos/acme.svg'),
+      '<svg xmlns="http://www.w3.org/2000/svg">' +
+        '<sc<!DOCTYPE d>ript>alert(1)</script></svg>',
+    );
+    const result = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.equal(result.localLogo, null);
+    assert.match(result.logoWarning, /active content after cleanup/);
+    assert.deepEqual(readdirSync(destinationRoot), []);
   });
 });
 

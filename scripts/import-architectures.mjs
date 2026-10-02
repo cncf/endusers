@@ -14,7 +14,10 @@ import { execFileSync } from 'node:child_process';
 import { basename, extname, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { stripActiveContent } from './lib/svg-active-content.mjs';
+import {
+  findActiveContent,
+  stripActiveContent,
+} from './lib/svg-active-content.mjs';
 import {
   REPO_AUTHORED_PAGES,
   listArchitecturePages,
@@ -255,6 +258,17 @@ function sanitizeArchitectureAssets(dir) {
           `<svg viewBox="0 0 ${width} ${height}"`,
         );
       }
+    }
+
+    // stripActiveContent() verifies the string it returns, but the DOCTYPE and
+    // content-attribute removals above delete text, which can join two inert
+    // fragments into a live one ("<sc" + "ript>"). Verify the bytes that are
+    // actually written rather than the ones that were checked earlier.
+    const residual = findActiveContent(source);
+    if (residual.length) {
+      throw new Error(
+        `Active content reappeared after cleanup in ${relative(join(root, 'static'), file)}: ${residual.join('; ')}`,
+      );
     }
 
     if (source !== original) {
