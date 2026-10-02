@@ -13,6 +13,7 @@ import {
 } from 'node:fs';
 import { basename, join, sep } from 'node:path';
 import {
+  findActiveContent,
   findRemoteReferences,
   stripActiveContent,
 } from './svg-active-content.mjs';
@@ -175,6 +176,17 @@ export function mirrorLandscapeLogo({
         .map((line) => line.replace(/\s+$/, ''))
         .join('\n')
         .replace(/\s+$/, '');
+      // stripActiveContent() verifies the string it returns, but the DOCTYPE
+      // removal and trimming above delete text, which can join two inert
+      // fragments into a live one ("<sc" + "ript>"). Verify the bytes that are
+      // actually written rather than the ones that were checked earlier.
+      const residual = findActiveContent(cleaned);
+      if (residual.length > 0) {
+        return warning(
+          record,
+          `landscape logo still contains active content after cleanup: ${filename} (${residual.join('; ')})`,
+        );
+      }
       if (findRemoteReferences(cleaned).length > 0) {
         return warning(
           record,

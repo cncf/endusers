@@ -820,6 +820,31 @@ test('strips active content from an imported SVG asset and reports it', () => {
   }
 });
 
+test('fails the import when DOCTYPE removal re-forms active content', () => {
+  // "<sc" and "ript>" are each inert, so stripActiveContent() verifies the
+  // source clean; deleting the DOCTYPE between them splices them back into a
+  // live <script>. The import must not write bytes it never verified.
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'splice',
+        '---\ntitle: Splice\norg_name: Splice Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/splice/images/diagram.svg':
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+        '<sc<!DOCTYPE d>ript>alert(1)</script></svg>',
+    },
+  });
+
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /Active content reappeared after cleanup/);
+    assert.match(run.stderr, /contains a <script> element/);
+  } finally {
+    run.cleanup();
+  }
+});
+
 test('strips active content from an imported SVG asset under an uppercase .SVG extension', () => {
   // MIRRORABLE_ASSET_EXTENSIONS is matched against a lowercased extension, so
   // an upstream `diagram.SVG` is copied in as an SVG. The sanitizer has to
