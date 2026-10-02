@@ -256,6 +256,112 @@ test('collectE2ECoverage maps V8 ranges through an external source map to src li
   }
 });
 
+// `npm run build:e2e:coverage` compiles the site twice: once from the real
+// data, and once with tests/e2e/fixtures/data-variants/** layered on, into
+// build/e2e-coverage-variant under its own base URL. That is what makes a
+// branch gated on a document-level field reachable -- clearing the field in
+// the one build would swap which arm the one page renders rather than add a
+// case -- and it only pays off if the report treats the two builds as one
+// measurement. Both conditions are pinned here: a script served under the
+// variant base must resolve inside the ordinary build directory, and the lines
+// it reached must union with the ones the real build's script reached rather
+// than replace them.
+test('collectE2ECoverage unions the two builds of one source file', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const source = 'const verified = 1;\nconst unverified = 2;\n';
+    const original = join(fixture.root, 'src/components/Example/index.js');
+    await mkdir(join(fixture.root, 'src/components/Example'), {
+      recursive: true,
+    });
+    await writeFile(original, source);
+    await mkdir(join(fixture.buildDir, 'e2e-coverage-variant/assets/js'), {
+      recursive: true,
+    });
+
+    // Each build covers the line the other does not: the real page renders the
+    // field-present arm, the variant page the arm beside it.
+    const builds = [
+      { dir: 'assets/js', path: '/assets/js', covered: 0, uncovered: 1 },
+      {
+        dir: 'e2e-coverage-variant/assets/js',
+        path: '/e2e-coverage-variant/assets/js',
+        covered: 1,
+        uncovered: 0,
+      },
+    ];
+    const lineOffsets = [0, source.indexOf('const unverified')];
+    const scriptText = `${source}\n//# sourceMappingURL=app.js.map\n`;
+    for (const build of builds) {
+      await writeFile(join(fixture.buildDir, build.dir, 'app.js'), scriptText);
+      await writeFile(
+        join(fixture.buildDir, build.dir, 'app.js.map'),
+        JSON.stringify({
+          version: 3,
+          file: 'app.js',
+          sources: ['webpack://endusers/./src/components/Example/index.js'],
+          sourcesContent: [source],
+          names: [],
+          mappings: mapLines([
+            [0, 0],
+            [0, 1],
+          ]),
+        }),
+      );
+      await writeCoverageArtifact(
+        fixture.runDir,
+        `worker-0-page-${build.covered}`,
+        {
+          schemaVersion: 1,
+          kind: 'endusers.playwright.v8-coverage',
+          runId: 'run-1',
+          result: [
+            {
+              url: `http://localhost:3000${build.path}/app.js`,
+              scriptId: '1',
+              functions: [
+                {
+                  functionName: '',
+                  isBlockCoverage: true,
+                  ranges: [
+                    {
+                      startOffset: lineOffsets[build.uncovered],
+                      endOffset:
+                        build.uncovered === 0
+                          ? lineOffsets[1]
+                          : scriptText.length,
+                      count: 0,
+                    },
+                    { startOffset: 0, endOffset: scriptText.length, count: 1 },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      );
+    }
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    assert.deepEqual(report.sources, [
+      {
+        file: 'src/components/Example/index.js',
+        executableLines: 2,
+        coveredLines: 2,
+        linePercent: 100,
+        uncoveredLines: [],
+      },
+    ]);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('collectE2ECoverage rejects an unreadable source map', async () => {
   const fixture = await fixtureRun();
   try {

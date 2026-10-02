@@ -1,0 +1,6 @@
+{
+  "description": "Clears the document-level generatedAt so ReferenceArchitectures renders the ': null' arm of its syncDate ternary (src/components/ReferenceArchitectures/index.js line 23) and the '' arm beside it at line 33. Four other components read generatedAt, so clearing it moves five pages at once -- which is exactly why it belongs to the variant build rather than to the ordinary coverage build the real pages are measured from.",
+  "set": {
+    "generatedAt": null
+  }
+}

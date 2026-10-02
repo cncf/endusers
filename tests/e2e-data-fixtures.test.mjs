@@ -19,9 +19,12 @@ import test from 'node:test';
 import {
   DATA_DIR,
   FIXTURE_DIR,
+  VARIANT_FIXTURE_DIR,
   applyOverlay,
   loadSiteData,
+  overlayDirs,
   overlayPathFor,
+  overlayPathsFor,
   overlaySource,
 } from './tools/e2e-data-fixtures.cjs';
 
@@ -126,20 +129,72 @@ test('a data file outside data/ has no overlay path', () => {
 
 test('a data file with no committed overlay is returned byte-for-byte', () => {
   const source = '{"untouched": true}';
-  assert.deepEqual(overlaySource(join(DATA_DIR, 'no-such-file.json'), source), {
-    source,
-    overlay: null,
-  });
+  assert.deepEqual(
+    overlaySource(join(DATA_DIR, 'no-such-file.json'), source, {}),
+    { source, overlays: [] },
+  );
 });
 
 test('overlaySource reports the overlay it applied', () => {
   const path = join(DATA_DIR, 'community-groups.json');
-  const result = overlaySource(path, readFileSync(path, 'utf8'));
-  assert.equal(result.overlay, join(FIXTURE_DIR, 'community-groups.json'));
+  const result = overlaySource(path, readFileSync(path, 'utf8'), {});
+  assert.deepEqual(result.overlays, [
+    join(FIXTURE_DIR, 'community-groups.json'),
+  ]);
   assert.ok(
     JSON.parse(result.source).groups.length >
       JSON.parse(readFileSync(path, 'utf8')).groups.length,
   );
+});
+
+// The variant build is a second site compiled from the same sources and
+// served beside the first, which is the only way to cover a branch that turns
+// on a document-level field: clearing it in the one coverage build would swap
+// which arm the one page renders rather than add a case. The directory is
+// additive and second, so a variant overlay patches what the ordinary
+// coverage build already produced.
+test('the variant overlay directory is additive and applies last', () => {
+  assert.deepEqual(overlayDirs({}), [FIXTURE_DIR]);
+  assert.deepEqual(overlayDirs({ E2E_COVERAGE_VARIANT: '1' }), [
+    FIXTURE_DIR,
+    VARIANT_FIXTURE_DIR,
+  ]);
+});
+
+test('a data file patched by both directories collects both overlays', () => {
+  const path = join(DATA_DIR, 'awards.json');
+  assert.deepEqual(overlayPathsFor(path, {}), []);
+  assert.deepEqual(overlayPathsFor(path, { E2E_COVERAGE_VARIANT: '1' }), [
+    join(VARIANT_FIXTURE_DIR, 'awards.json'),
+  ]);
+  const groups = join(DATA_DIR, 'community-groups.json');
+  assert.deepEqual(overlayPathsFor(groups, { E2E_COVERAGE_VARIANT: '1' }), [
+    join(FIXTURE_DIR, 'community-groups.json'),
+  ]);
+});
+
+// Both arms have to be reachable in one Playwright run, which is the whole
+// point of building twice rather than overlaying once. If the variant overlay
+// ever stopped applying, tests/e2e/data-variants.spec.js would fail against a
+// page that looks perfectly ordinary, with nothing to say why.
+test('the variant build clears the fields the ordinary build keeps', () => {
+  const cases = [
+    ['awards.json', (data) => data.verifiedAt],
+    ['metrics.json', (data) => data.generatedAt],
+  ];
+  for (const [name, field] of cases) {
+    assert.ok(
+      field(loadSiteData(name, { E2E_COVERAGE: '1' })),
+      `${name}: the coverage build must keep the field the real page renders`,
+    );
+    assert.equal(
+      field(
+        loadSiteData(name, { E2E_COVERAGE: '1', E2E_COVERAGE_VARIANT: '1' }),
+      ),
+      null,
+      `${name}: the variant build must clear it`,
+    );
+  }
 });
 
 test('loadSiteData returns the checked-in file outside the coverage build', () => {
@@ -204,9 +259,33 @@ test('the coverage build does not share a bundler cache with the real build', ()
   const scripts = JSON.parse(
     readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
   ).scripts;
+  // Both passes compile different data from the same sources, so the second
+  // would replay the first's cache just as readily as it would the production
+  // build's.
+  for (const name of [
+    'build:e2e:coverage:site',
+    'build:e2e:coverage:variant',
+  ]) {
+    assert.match(
+      scripts[name],
+      /DOCUSAURUS_NO_PERSISTENT_CACHE=1/,
+      `${name} must opt out of the shared bundler cache`,
+    );
+  }
   assert.match(
     scripts['build:e2e:coverage'],
-    /DOCUSAURUS_NO_PERSISTENT_CACHE=1/,
-    'build:e2e:coverage must opt out of the shared bundler cache',
+    /build:e2e:coverage:site(?:.|\n)*build:e2e:coverage:variant/,
+    'build:e2e:coverage must run the site build before the variant build',
+  );
+  // The variant is written inside the ordinary build output so one
+  // `docusaurus serve` offers both sites, and under its own base URL so the
+  // real routes keep their paths.
+  assert.match(
+    scripts['build:e2e:coverage:variant'],
+    /BASE_URL=\/e2e-coverage-variant\//,
+  );
+  assert.match(
+    scripts['build:e2e:coverage:variant'],
+    /--out-dir build\/e2e-coverage-variant/,
   );
 });

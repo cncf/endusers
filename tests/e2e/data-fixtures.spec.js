@@ -24,7 +24,9 @@
 // page reads, so an overlay that clears it does not add a case -- it swaps
 // which arm is reachable, covering one line at the cost of the many that
 // render the populated text (measured: thirteen for AwardsTimeline, five for
-// SyncStatus). Those branches need per-route data, not a per-build overlay.
+// SyncStatus). Those branches need per-route data, not a per-build overlay,
+// and get a second build of their own rather than a second record; see
+// tests/e2e/data-variants.spec.js.
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 

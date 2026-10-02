@@ -10,9 +10,18 @@
 //
 // The overlay is per-build, so it only helps where the missing shape is an
 // *additional* record. A branch that turns on a single document-level field
-// -- AwardsTimeline's verifiedAt, say -- cannot be reached this way: clearing
-// the field swaps which arm the one page renders rather than adding a case,
-// trading one covered line for the arm it displaces.
+// -- AwardsTimeline's verifiedAt, say -- cannot be reached from one build:
+// clearing the field swaps which arm the one page renders rather than adding
+// a case, trading one covered line for the arm it displaces.
+//
+// Those branches get a *second* build instead. With E2E_COVERAGE_VARIANT=1 the
+// overlays in tests/e2e/fixtures/data-variants/** are applied on top of the
+// ones above, and `npm run build:e2e:coverage` compiles that variant into a
+// sub-directory of the ordinary coverage build under its own base URL. One
+// `docusaurus serve` then offers both sites at once: the real page keeps
+// rendering the field-present arm, the variant page renders the arm beside it,
+// and because the two builds compile the same `src/**` sources the coverage
+// report folds their scripts onto the same lines and unions what each reached.
 //
 // This module applies a small, committed overlay to a data file so the missing
 // shapes exist in the coverage build only. It is used from two places:
@@ -34,7 +43,7 @@
 // shape change fails the build instead of quietly dropping the coverage it
 // was written for.
 //
-// Overlay format (tests/e2e/fixtures/data/<same relative path>.json):
+// Overlay format (tests/e2e/fixtures/data[-variants]/<same relative path>.json):
 //
 //   {
 //     "description": "why this overlay exists",
@@ -55,6 +64,13 @@ const path = require('node:path');
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DATA_DIR = path.join(REPO_ROOT, 'data');
 const FIXTURE_DIR = path.join(REPO_ROOT, 'tests', 'e2e', 'fixtures', 'data');
+const VARIANT_FIXTURE_DIR = path.join(
+  REPO_ROOT,
+  'tests',
+  'e2e',
+  'fixtures',
+  'data-variants',
+);
 
 const OVERLAY_KEYS = new Set(['description', 'set', 'append']);
 
@@ -63,13 +79,44 @@ const OVERLAY_KEYS = new Set(['description', 'set', 'append']);
  * path is outside data/.
  *
  * @param {string} dataPath absolute or repo-relative path to a data file
+ * @param {string} [fixtureDir] directory the overlay is looked up in
  * @returns {string|null} absolute path to the overlay file
  */
-function overlayPathFor(dataPath) {
+function overlayPathFor(dataPath, fixtureDir = FIXTURE_DIR) {
   const relative = path.relative(DATA_DIR, path.resolve(REPO_ROOT, dataPath));
   if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative))
     return null;
-  return path.join(FIXTURE_DIR, relative);
+  return path.join(fixtureDir, relative);
+}
+
+/**
+ * The overlay directories a build reads, in the order they are applied.
+ *
+ * The variant directory is additive and comes second, so a variant overlay
+ * patches the document the ordinary coverage build was already compiled from
+ * rather than replacing it. Only `npm run build:e2e:coverage`'s second pass
+ * sets E2E_COVERAGE_VARIANT.
+ *
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {string[]} absolute fixture directories
+ */
+function overlayDirs(env = process.env) {
+  return env.E2E_COVERAGE_VARIANT === '1'
+    ? [FIXTURE_DIR, VARIANT_FIXTURE_DIR]
+    : [FIXTURE_DIR];
+}
+
+/**
+ * Every committed overlay that applies to one data file, in order.
+ *
+ * @param {string} dataPath path to the real data file
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {string[]} absolute paths to the overlay files that exist
+ */
+function overlayPathsFor(dataPath, env = process.env) {
+  return overlayDirs(env)
+    .map((dir) => overlayPathFor(dataPath, dir))
+    .filter((overlayPath) => overlayPath && fs.existsSync(overlayPath));
 }
 
 function parentOf(document, dottedPath, label) {
@@ -148,17 +195,20 @@ function applyOverlay(data, overlay, label) {
  *
  * @param {string} dataPath path to the real data file
  * @param {string} source its contents
- * @returns {{source: string, overlay: string|null}} patched source, and the
- *   overlay that produced it (null when the file was returned unchanged)
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {{source: string, overlays: string[]}} patched source, and the
+ *   overlays that produced it (empty when the file was returned unchanged)
  */
-function overlaySource(dataPath, source) {
-  const overlayPath = overlayPathFor(dataPath);
-  if (!overlayPath || !fs.existsSync(overlayPath))
-    return { source, overlay: null };
-  const label = path.relative(REPO_ROOT, overlayPath);
-  const overlay = JSON.parse(fs.readFileSync(overlayPath, 'utf8'));
-  const patched = applyOverlay(JSON.parse(source), overlay, label);
-  return { source: JSON.stringify(patched), overlay: overlayPath };
+function overlaySource(dataPath, source, env = process.env) {
+  const overlays = overlayPathsFor(dataPath, env);
+  if (overlays.length === 0) return { source, overlays };
+  let document = JSON.parse(source);
+  for (const overlayPath of overlays) {
+    const label = path.relative(REPO_ROOT, overlayPath);
+    const overlay = JSON.parse(fs.readFileSync(overlayPath, 'utf8'));
+    document = applyOverlay(document, overlay, label);
+  }
+  return { source: JSON.stringify(document), overlays };
 }
 
 /**
@@ -176,14 +226,17 @@ function loadSiteData(relativePath, env = process.env) {
   const dataPath = path.join(DATA_DIR, relativePath);
   const source = fs.readFileSync(dataPath, 'utf8');
   if (env.E2E_COVERAGE !== '1') return JSON.parse(source);
-  return JSON.parse(overlaySource(dataPath, source).source);
+  return JSON.parse(overlaySource(dataPath, source, env).source);
 }
 
 module.exports = {
   DATA_DIR,
   FIXTURE_DIR,
+  VARIANT_FIXTURE_DIR,
   applyOverlay,
   loadSiteData,
+  overlayDirs,
   overlayPathFor,
+  overlayPathsFor,
   overlaySource,
 };
