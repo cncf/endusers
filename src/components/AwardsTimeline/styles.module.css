@@ -5,7 +5,7 @@
 }
 
 .verification {
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
   font-size: 0.85rem;
   margin: -1rem 0 1.5rem;
 }
@@ -27,8 +27,8 @@
   display: inline-block;
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  background: rgb(1, 117, 228);
-  color: #fff;
+  background: var(--cncf-button-background);
+  color: var(--cncf-button-text);
   font-weight: 700;
   font-size: 1.05rem;
   letter-spacing: 0.03em;
@@ -112,7 +112,7 @@
   letter-spacing: 0.12em;
   font-size: 0.75rem;
   font-weight: 700;
-  color: rgb(1, 117, 228);
+  color: var(--ifm-color-primary);
 }
 
 .orgName {
@@ -129,7 +129,7 @@
 .event {
   margin: 0.25rem 0 0;
   font-size: 0.85rem;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-800);
 }
 
 .links {
