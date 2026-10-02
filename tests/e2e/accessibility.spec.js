@@ -74,18 +74,7 @@ const DISABLED_RULES = Object.create(null);
 // an axe rule id. Deleting a fixed entry is required, not optional: the
 // "records no violation that has been fixed" test below fails while a stale
 // entry remains, so the baseline cannot outlive the bug it describes.
-//
-// The baseline is per-build because the data is. Under E2E_COVERAGE=1 the
-// overlays in tests/e2e/fixtures/data/ put an archived group into
-// data/community-groups.json so GroupLinkStatus renders the drift warning it
-// exists to show (see tests/tools/e2e-data-fixtures.cjs). That warning's
-// colour fails contrast — a real defect in
-// src/components/GroupLinkStatus/styles.module.css, tracked in #964, which
-// ships the moment CNCF archives a user-group repository. Recording it for
-// the production build too would make the retirement test permanently stale
-// there, since that build cannot render the element at all.
-const KNOWN_VIOLATIONS =
-  process.env.E2E_COVERAGE === '1' ? { '/community': ['color-contrast'] } : {};
+const KNOWN_VIOLATIONS = {};
 
 function scanner(page) {
   const builder = new AxeBuilder({ page }).withTags(WCAG_TAGS);

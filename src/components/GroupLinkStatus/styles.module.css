@@ -5,5 +5,5 @@
 }
 
 .warning {
-  color: var(--ifm-color-warning-dark);
+  color: var(--cncf-warning-text);
 }
