@@ -318,7 +318,23 @@ function validateSvg(path, quality) {
     );
   }
 
+  // The viewBox and mxfile edits above run after the active-content and
+  // remote-reference scans, and the mxfile edit deletes text, which can join
+  // two inert fragments into a live one ("<sc" + "ript>"). Verify the bytes
+  // that are actually written rather than the ones that were checked earlier.
   if (shouldFix && source !== original) {
+    const residual = [
+      ...findActiveContent(source),
+      ...findRemoteReferences(source),
+    ];
+    if (residual.length) {
+      record(
+        path,
+        'error',
+        `auto-fix produced active content: ${residual.join('; ')}`,
+      );
+      return;
+    }
     writeFileSync(path, source, 'utf8');
   }
 }
