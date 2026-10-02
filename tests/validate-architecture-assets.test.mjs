@@ -240,6 +240,20 @@ test('--fix strips draw.io mxfile metadata that would otherwise warn', () => {
   assert.match(result.stdout, /stripped draw\.io mxfile metadata/);
 });
 
+// The mxfile strip deletes text, and deleting text can join two fragments that
+// were inert while separated. The scans run before that edit, so the bytes
+// written have to be re-checked or an auto-fix publishes a live script.
+test('--fix refuses to write an mxfile strip that splices a <script> together', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+    '<sc content="&lt;mxfile host=x"ript>alert(1)</script></svg>';
+  const result = runFix(svg);
+  assert.notEqual(result.status, 0, result.stdout);
+  assert.match(result.stderr, /auto-fix produced active content/);
+  assert.match(result.stderr, /<script> element/);
+  assert.equal(result.files[ASSET], svg);
+});
+
 test('--fix does not suppress a missing xmlns, and leaves the file alone', () => {
   const svg = '<svg viewBox="0 0 100 100"><rect/></svg>';
   const result = runFix(svg);
