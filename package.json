@@ -68,7 +68,9 @@
     "test:unit:coverage": "TZ=UTC node tests/tools/coverage-report.mjs",
     "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 99 --check-source 100 --check-regions 94 --check-source-regions 99",
     "test:e2e": "playwright test",
-    "build:e2e:coverage": "DOCUSAURUS_NO_PERSISTENT_CACHE=1 E2E_COVERAGE=1 npm run build:production",
+    "build:e2e:coverage": "npm run build:e2e:coverage:site && npm run build:e2e:coverage:variant",
+    "build:e2e:coverage:site": "DOCUSAURUS_NO_PERSISTENT_CACHE=1 E2E_COVERAGE=1 npm run build:production",
+    "build:e2e:coverage:variant": "DOCUSAURUS_NO_PERSISTENT_CACHE=1 E2E_COVERAGE=1 E2E_COVERAGE_VARIANT=1 BASE_URL=/e2e-coverage-variant/ npm run docus:build -- --out-dir build/e2e-coverage-variant",
     "test:e2e:coverage": "E2E_COVERAGE=1 playwright test --workers=2",
     "report:e2e:coverage": "node tests/tools/e2e-coverage-report.mjs"
   },
