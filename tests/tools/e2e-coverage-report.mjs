@@ -127,12 +127,7 @@ function decodeDataUrl(value) {
   return JSON.parse(raw);
 }
 
-async function loadSourceMap(generatedSource, scriptPath, buildDir) {
-  const match = SOURCE_MAPPING_URL.exec(generatedSource);
-  if (!match) {
-    throw new Error(`generated script has no sourceMappingURL: ${scriptPath}`);
-  }
-  const reference = match[1];
+async function loadSourceMap(reference, scriptPath, buildDir) {
   const inline = decodeDataUrl(reference);
   if (inline) return { map: inline, mapPath: scriptPath };
 
@@ -149,11 +144,17 @@ async function loadSourceMap(generatedSource, scriptPath, buildDir) {
   return { map: JSON.parse(raw), mapPath: resolvedMapPath };
 }
 
-function stripSourceMapComment(source) {
+// The generated bundle is scanned for its sourceMappingURL exactly once: the
+// stripped source and the map reference both come from that single match, so
+// neither caller can be reached with a source that has no comment.
+function splitSourceMapComment(source) {
   const match = SOURCE_MAPPING_URL.exec(source);
   if (!match)
     throw new Error('generated source has no sourceMappingURL comment');
-  return source.slice(0, match.index).replace(/\r?\n$/u, '');
+  return {
+    mappedSource: source.slice(0, match.index).replace(/\r?\n$/u, ''),
+    reference: match[1],
+  };
 }
 
 async function normalizeSourceMap(rawMap, mapPath, root) {
@@ -176,11 +177,10 @@ async function normalizeSourceMap(rawMap, mapPath, root) {
       sourcesContent.push(suppliedContent ?? '');
       continue;
     }
-    if (!isInside(srcRoot, sourceFile.absolute)) {
-      throw new Error(
-        `source map source escapes src directory: ${sourceFile.relative}`,
-      );
-    }
+    // `sourcePathFromReference` only ever returns a path whose repo-relative
+    // form starts with `src/`, so a lexical containment check here can never
+    // fire. Containment is enforced below against the resolved path, which is
+    // what catches a symlink pointing out of `src`.
     const resolvedSource = await realpath(sourceFile.absolute);
     if (!isInside(srcRootPath, resolvedSource)) {
       throw new Error(
@@ -314,9 +314,9 @@ async function convertScript(scriptCoverage, root, buildDir) {
     throw new Error(`generated source hash mismatch for ${scriptCoverage.url}`);
   }
 
-  const mappedSource = stripSourceMapComment(generatedSource);
+  const { mappedSource, reference } = splitSourceMapComment(generatedSource);
   const { map: rawMap, mapPath } = await loadSourceMap(
-    generatedSource,
+    reference,
     resolvedScriptPath,
     buildRoot,
   );

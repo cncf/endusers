@@ -10,7 +10,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 
 import {
   collectE2ECoverage,
@@ -653,7 +653,7 @@ test('collectE2ECoverage rejects an eligible script without a map', async () => 
           root: fixture.root,
           buildDir: fixture.buildDir,
         }),
-      /no sourceMappingURL/,
+      /^Error: generated source has no sourceMappingURL comment$/,
     );
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
@@ -1466,6 +1466,43 @@ test('sourcePathFromReference rejects an absolute reference outside the reposito
     ),
     null,
   );
+});
+
+test('sourcePathFromReference never returns a path outside <root>/src', () => {
+  // The single containment guard in normalizeSourceMap checks the *resolved*
+  // path, because this contract already rules out a lexical escape. Pin it:
+  // every reference either resolves inside <root>/src or is rejected outright.
+  const mapPath = '/repo/build/assets/js/app.js.map';
+  const root = '/repo';
+  const srcRoot = '/repo/src';
+  const references = [
+    '../../../src/components/Example/index.js',
+    '../../../../elsewhere/lib/index.js',
+    '/repo/docusaurus.config.js',
+    '/repo/src/../scripts/validate-members.mjs',
+    '/repo/srcish/index.js',
+    '/repo/src',
+    'webpack://endusers/./src/components/Example/index.js',
+    'webpack://endusers/./node_modules/clsx/dist/clsx.js',
+    'file:///repo/src/components/Example/index.js',
+    'file:///repo/package.json',
+    'src/../../outside.js',
+    '%2e%2e/%2e%2e/outside.js',
+    'src\\components\\Example\\index.js',
+  ];
+
+  for (const reference of references) {
+    const resolved = sourcePathFromReference(reference, mapPath, root);
+    if (resolved === null) continue;
+    assert.ok(
+      resolved.absolute === join(srcRoot, relative(srcRoot, resolved.absolute)),
+      `${reference} resolved outside src: ${resolved.absolute}`,
+    );
+    assert.ok(
+      resolved.relative.startsWith('src/'),
+      `${reference} produced a non-src relative path: ${resolved.relative}`,
+    );
+  }
 });
 
 test('collectE2ECoverage ignores a bundled dependency alongside a src source', async () => {
