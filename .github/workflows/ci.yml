@@ -21,6 +21,7 @@ jobs:
   validate:
     name: Validate repository
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -83,6 +84,7 @@ jobs:
   lint:
     name: Lint repository
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -118,8 +120,28 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: >-
+          echo "version=$(node -p
+          "require('./package-lock.json').packages['node_modules/@playwright/test'].version")"
+          >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key:
+            playwright-${{ runner.os }}-${{
+            steps.playwright-version.outputs.version }}
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+      - name: Install Playwright system dependencies
+        # The cache restores the browser bundle but not the OS packages it
+        # needs, which do not persist across runner images.
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - name: Build production site
         # Deliberately built without SITE_URL/BASE_URL: the suite navigates
         # with paths relative to the site root (playwright.config.js sets
@@ -159,8 +181,28 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: >-
+          echo "version=$(node -p
+          "require('./package-lock.json').packages['node_modules/@playwright/test'].version")"
+          >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key:
+            playwright-${{ runner.os }}-${{
+            steps.playwright-version.outputs.version }}
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+      - name: Install Playwright system dependencies
+        # The cache restores the browser bundle but not the OS packages it
+        # needs, which do not persist across runner images.
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - name: Initialize coverage run
         run: >-
           node tests/tools/e2e-coverage-run.mjs init --dir "$RUN_DIR" --run-id

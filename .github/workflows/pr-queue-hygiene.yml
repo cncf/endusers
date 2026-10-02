@@ -12,6 +12,7 @@ jobs:
   hygiene:
     name: Flag stale conflicting PRs
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: write
