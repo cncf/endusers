@@ -315,4 +315,41 @@ test.describe('reference architecture filters', () => {
       .toBe(total);
     await expect(organization).toHaveValue('');
   });
+
+  test('a query that matches nothing shows the empty state', async ({
+    page,
+  }) => {
+    await page.goto('/architectures');
+    const search = page.getByLabel(
+      'Search architectures by organization or title',
+    );
+    await waitForHydration(search);
+
+    const results = page.getByText(/Showing \d+ of \d+ architectures/);
+    const total = totalCount(await results.textContent());
+    expect(total).toBeGreaterThan(0);
+
+    await search.fill('zzz-no-such-architecture-zzz');
+
+    const heading = page.getByRole('heading', {
+      name: 'No architectures match',
+    });
+    await expect(heading).toBeVisible();
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBe(0);
+
+    // The empty state carries its own escape hatch, distinct from the
+    // toolbar's clear button, so scope the click to the empty-state block.
+    await heading
+      .locator('..')
+      .getByRole('button', { name: 'Clear filters' })
+      .click();
+
+    await expect(heading).toHaveCount(0);
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBe(total);
+    await expect(search).toHaveValue('');
+  });
 });
