@@ -232,7 +232,20 @@ function validateSvg(path, quality) {
   // Critical: DOCTYPE is unnecessary in SVG images and can break XML parsers.
   if (hasDoctype(source)) {
     if (shouldFix) {
-      source = stripDoctype(source);
+      const withoutDoctype = stripDoctype(source);
+      // Report the fix only once it has demonstrably happened. A DOCTYPE the
+      // pattern cannot express (one opening an internal subset it never
+      // closes) comes back unchanged, and recording "removed DOCTYPE" for it
+      // would hand back a declaration this run claims to have deleted.
+      if (hasDoctype(withoutDoctype)) {
+        record(
+          path,
+          'error',
+          'contains a DOCTYPE declaration that could not be removed automatically',
+        );
+        return;
+      }
+      source = withoutDoctype;
       fixed.push(`${rel}: removed DOCTYPE`);
     } else {
       record(path, 'error', 'contains a DOCTYPE declaration');

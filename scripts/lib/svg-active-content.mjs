@@ -77,13 +77,29 @@ const ATTRIBUTE_PATTERN =
  * `<!DOCTYPE\s[^>]*>` cannot express this: the first `>` inside an internal
  * subset closes an `<!ENTITY ...>` declaration, not the DOCTYPE, so that
  * pattern deletes the declaration and leaves a bare `]>` behind -- in a file
- * the caller then publishes as well-formed XML. The subset alternative carries
- * its own closing `>` so that a `]` inside a quoted entity value cannot end
- * the subset early. A DOCTYPE that opens a subset and never closes it matches
- * neither alternative and is left in place, where hasDoctype() and the entity
- * check below still see it.
+ * the caller then publishes as well-formed XML.
+ *
+ * Neither can a pattern that treats `[` as the unambiguous start of the
+ * subset. Per the XML grammar a DOCTYPE is
+ * `'<!DOCTYPE' S Name (S ExternalID)? S? ('[' intSubset ']' S?)? '>'`, and an
+ * ExternalID carries quoted literals that may themselves contain `[`, `]` or
+ * `>`. `<!DOCTYPE svg SYSTEM "https://host/x[.dtd">` is an external
+ * identifier with no subset at all, but an unquoted reading sees its `[` as a
+ * subset that never closes: the declaration is then left in place (so the
+ * strip silently does nothing), or -- where the document later holds any
+ * `]`-then-`>`, which every `<![CDATA[...]]>` section provides -- everything
+ * between is deleted, destroying live markup that was never part of the
+ * declaration. Both outcomes survive the callers' post-strip rescans, because
+ * an unstripped external identifier and a truncated document are each inert.
+ *
+ * So each part is matched with the quote-aware alternation below, in which a
+ * `"` or `'` always consumes through its closing mate. A `]` inside a quoted
+ * entity value therefore cannot end the subset early either. A DOCTYPE that
+ * opens a subset and never closes it still matches nothing and is left in
+ * place, where hasDoctype() and the entity check below see it.
  */
-const DOCTYPE_PATTERN = /<!DOCTYPE\s[^[>]*(?:\[[\s\S]*?\]\s*>|>)\s*/gi;
+const DOCTYPE_PATTERN =
+  /<!DOCTYPE\s(?:[^[>"']|"[^"]*"|'[^']*')*(?:\[(?:[^\]"']|"[^"]*"|'[^']*')*\]\s*)?>\s*/gi;
 
 /** An entity declaration, which only appears inside an internal DTD subset. */
 const ENTITY_DECLARATION = /<!ENTITY\s/i;

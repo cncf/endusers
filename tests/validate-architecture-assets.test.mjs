@@ -203,6 +203,30 @@ test('--fix removes a DOCTYPE declaration instead of reporting it', () => {
   assert.match(result.stdout, /removed DOCTYPE/);
 });
 
+test('--fix removes a DOCTYPE whose external identifier contains a bracket', () => {
+  const svg = `<!DOCTYPE svg SYSTEM "https://host.example/x[.dtd">\n${VALID_SVG}`;
+  const result = runFix(svg);
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.files[ASSET], /DOCTYPE/);
+  assert.equal(result.files[ASSET], VALID_SVG);
+  assert.match(result.stdout, /removed DOCTYPE/);
+});
+
+test('--fix reports a DOCTYPE it could not remove instead of claiming success', () => {
+  // An internal subset that never closes matches no DOCTYPE pattern, so the
+  // strip returns the source unchanged. Recording "removed DOCTYPE" for it
+  // would hand back a declaration the run claims to have deleted.
+  const svg = `<!DOCTYPE svg [<!ENTITY x "y">\n${VALID_SVG}`;
+  const result = runFix(svg);
+  assert.notEqual(result.status, 0);
+  assert.equal(result.files[ASSET], svg);
+  assert.doesNotMatch(result.stdout, /removed DOCTYPE/);
+  assert.match(
+    result.stdout + result.stderr,
+    /DOCTYPE declaration that could not be removed automatically/,
+  );
+});
+
 test('--fix adds a viewBox derived from width and height', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect/></svg>';

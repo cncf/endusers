@@ -684,6 +684,61 @@ test('stripDoctype removes a plain DOCTYPE and every repeat of one', () => {
   assert.equal(stripDoctype(INERT), INERT);
 });
 
+// An ExternalID carries quoted literals, and a quoted literal may hold any of
+// the characters that otherwise delimit the declaration. Reading `[` as the
+// unambiguous start of an internal subset therefore misreads a subset-less
+// declaration as one that never closes, and the strip silently does nothing.
+test('stripDoctype removes an external identifier containing a bracket', () => {
+  const svg = '<!DOCTYPE svg SYSTEM "https://host.example/x[.dtd">\n' + INERT;
+  assert.equal(stripDoctype(svg), INERT);
+  assert.equal(hasDoctype(stripDoctype(svg)), false);
+});
+
+test('stripDoctype removes an external identifier containing "]>" or ">"', () => {
+  assert.equal(
+    stripDoctype(
+      '<!DOCTYPE svg SYSTEM "https://host.example/x]>y.dtd">\n' + INERT,
+    ),
+    INERT,
+  );
+  assert.equal(
+    stripDoctype(
+      '<!DOCTYPE svg SYSTEM "https://host.example/x>y.dtd">\n' + INERT,
+    ),
+    INERT,
+  );
+});
+
+// The deletion that an unterminated subset reading produces is unbounded: it
+// runs to the next `]`-then-`>`, and every `<![CDATA[...]]>` section supplies
+// one. The wreckage is inert, so it survives the callers' post-strip rescans
+// and is published as a well-formed-looking asset.
+test('stripDoctype does not swallow markup up to a later CDATA terminator', () => {
+  const body =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+    '<style><![CDATA[ .a{fill:red} ]]></style><rect width="10" height="10"/></svg>';
+  const svg = '<!DOCTYPE svg SYSTEM "https://host.example/x[.dtd">\n' + body;
+  assert.equal(stripDoctype(svg), body);
+});
+
+test('stripDoctype leaves an unclosed subset in place for the entity check', () => {
+  const svg = '<!DOCTYPE svg [<!ENTITY x "javascript:alert(1)">\n' + INERT;
+  assert.equal(stripDoctype(svg), svg);
+  assert.equal(hasDoctype(svg), true);
+  assert.deepEqual(findActiveContent(svg), [
+    'contains an entity declaration in an internal DTD subset ' +
+      '(the XML parser expands it, so its payload is not visible here)',
+  ]);
+});
+
+test('stripDoctype matches an unterminated literal in linear time', () => {
+  // The alternation branches are disjoint on their first character, so no
+  // input can make the engine explore them combinatorially.
+  const started = Date.now();
+  stripDoctype('<!DOCTYPE svg SYSTEM "' + 'a'.repeat(200000));
+  assert.ok(Date.now() - started < 1000);
+});
+
 // A processing instruction is not a start tag, so no tag or attribute scan
 // ever sees it. `<?xml-stylesheet href?>` makes the browser fetch the target
 // when the SVG is opened directly, and `type="text/xsl"` applies an XSLT
