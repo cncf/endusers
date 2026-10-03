@@ -249,6 +249,10 @@ test('collectE2ECoverage maps V8 ranges through an external source map to src li
         coveredLines: 1,
         linePercent: 50,
         uncoveredLines: [2],
+        regions: 4,
+        coveredRegions: 2,
+        regionPercent: 50,
+        uncoveredRegions: [2],
       },
     ]);
   } finally {
@@ -355,6 +359,10 @@ test('collectE2ECoverage unions the two builds of one source file', async () => 
         coveredLines: 2,
         linePercent: 100,
         uncoveredLines: [],
+        regions: 4,
+        coveredRegions: 4,
+        regionPercent: 100,
+        uncoveredRegions: [],
       },
     ]);
   } finally {
@@ -1289,6 +1297,10 @@ test('collectE2ECoverage attributes a real JSX source map to original lines', as
         coveredLines: 3,
         linePercent: 100,
         uncoveredLines: [],
+        regions: 3,
+        coveredRegions: 3,
+        regionPercent: 100,
+        uncoveredRegions: [],
       },
     ]);
   } finally {
@@ -1357,6 +1369,10 @@ test('collectE2ECoverage attributes a real mjs source map to exact lines', async
         coveredLines: 2,
         linePercent: 100,
         uncoveredLines: [],
+        regions: 3,
+        coveredRegions: 3,
+        regionPercent: 100,
+        uncoveredRegions: [],
       },
     ]);
   } finally {
@@ -1366,7 +1382,7 @@ test('collectE2ECoverage attributes a real mjs source map to exact lines', async
 
 test('renderE2ECoverageReport exposes original src paths and no bundle paths', () => {
   const text = renderE2ECoverageReport({
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: 'endusers.e2e.coverage-report',
     status: 'ok',
     runId: 'run-1',
@@ -1377,12 +1393,19 @@ test('renderE2ECoverageReport exposes original src paths and no bundle paths', (
         coveredLines: 1,
         linePercent: 50,
         uncoveredLines: [2],
+        regions: 4,
+        coveredRegions: 2,
+        regionPercent: 50,
+        uncoveredRegions: [2],
       },
     ],
     summary: {
       executableLines: 2,
       coveredLines: 1,
       linePercent: 50,
+      regions: 4,
+      coveredRegions: 2,
+      regionPercent: 50,
     },
     diagnostics: { warnings: [], errors: [] },
     unmappedSources: [],
@@ -1395,7 +1418,7 @@ test('renderE2ECoverageReport exposes original src paths and no bundle paths', (
 
 test('renderE2ECoverageReport names unmapped sources and diagnostics', () => {
   const text = renderE2ECoverageReport({
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: 'endusers.e2e.coverage-report-error',
     status: 'tooling-error',
     runId: 'run-1',
@@ -1404,6 +1427,9 @@ test('renderE2ECoverageReport names unmapped sources and diagnostics', () => {
       executableLines: 0,
       coveredLines: 0,
       linePercent: 0,
+      regions: 0,
+      coveredRegions: 0,
+      regionPercent: 0,
     },
     unmappedSources: ['src/components/NotLoaded/index.js'],
     missingSourceFiles: [],

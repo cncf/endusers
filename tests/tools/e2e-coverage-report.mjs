@@ -38,18 +38,18 @@ function percent(covered, total) {
   return total === 0 ? 100 : (covered / total) * 100;
 }
 
-function linePercent(covered, executable) {
-  return Number(percent(covered, executable).toFixed(2));
+function scorePercent(covered, total) {
+  return Number(percent(covered, total).toFixed(2));
 }
 
-function parsePercent(value) {
+function parsePercent(flag, value) {
   // Number('') is 0 and Number(' ') is 0, so a missing or blank value would
   // otherwise read as a satisfied gate rather than as the typo it is.
   const blank = String(value ?? '').trim() === '';
   const parsed = blank ? Number.NaN : Number(value);
   if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
     throw new Error(
-      `--check-source expects a percentage between 0 and 100, got ${value}`,
+      `${flag} expects a percentage between 0 and 100, got ${value}`,
     );
   }
   return parsed;
@@ -63,6 +63,7 @@ function parseArgs(argv) {
     json: null,
     text: null,
     checkSource: null,
+    checkSourceRegions: null,
     requireSourceFiles: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -73,7 +74,9 @@ function parseArgs(argv) {
     else if (arg === '--json') options.json = argv[++index];
     else if (arg === '--text') options.text = argv[++index];
     else if (arg === '--check-source')
-      options.checkSource = parsePercent(argv[++index]);
+      options.checkSource = parsePercent(arg, argv[++index]);
+    else if (arg === '--check-source-regions')
+      options.checkSourceRegions = parsePercent(arg, argv[++index]);
     else if (arg === '--require-source-files')
       options.requireSourceFiles = true;
     else throw new Error(`unknown e2e coverage report option: ${arg}`);
@@ -300,6 +303,64 @@ function getLineCoverage(coverageData) {
   return lines;
 }
 
+// Line coverage folds every statement on a line together with Math.max, so a
+// `??` fallback, a short-circuit, or a ternary arm that never ran is invisible
+// there whenever the rest of its line did run. The istanbul object
+// v8-to-istanbul already hands back carries each of those as a located entry
+// with its own count, so scoring them is the e2e lane's equivalent of the unit
+// reporter's regions (see summarizeRegions in coverage-report.mjs).
+//
+// Regions are keyed by location rather than by istanbul's per-file ids: the
+// same source file is converted once per bundle that contains it, and only the
+// location is stable across those conversions.
+function addRegion(regions, kind, location, count) {
+  const line = location?.start?.line;
+  if (!Number.isInteger(line)) return;
+  const key = [
+    kind,
+    line,
+    location.start.column,
+    location.end?.line,
+    location.end?.column,
+  ].join(':');
+  const existing = regions.get(key);
+  regions.set(key, { line, count: Math.max(existing?.count ?? 0, count) });
+}
+
+function getRegionCoverage(coverageData) {
+  const regions = new Map();
+  for (const [statementId, count] of Object.entries(coverageData.s ?? {})) {
+    addRegion(regions, 's', coverageData.statementMap?.[statementId], count);
+  }
+  for (const [branchId, counts] of Object.entries(coverageData.b ?? {})) {
+    const locations = coverageData.branchMap?.[branchId]?.locations ?? [];
+    for (const [index, count] of (counts ?? []).entries()) {
+      addRegion(regions, 'b', locations[index], count);
+    }
+  }
+  return regions;
+}
+
+function summarizeRegions(regions, observations) {
+  const uncovered = new Set();
+  let covered = 0;
+  for (const region of regions.values()) {
+    // Each conversion of a bundle produces its own statement and branch map,
+    // so a gap one page recorded may simply be absent from another page's map
+    // rather than contradicted by it. A region therefore counts as uncovered
+    // only when every observation of the file agreed it was: anything less and
+    // a file the suite fully exercises could never reach 100%.
+    if (region.covered || region.misses < observations) covered += 1;
+    else uncovered.add(region.line);
+  }
+  return {
+    regions: regions.size,
+    coveredRegions: covered,
+    regionPercent: scorePercent(covered, regions.size),
+    uncoveredRegions: [...uncovered].sort((a, b) => a - b),
+  };
+}
+
 async function convertScript(scriptCoverage, root, buildDir) {
   const parsed = new URL(scriptCoverage.url);
   const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, '');
@@ -395,14 +456,21 @@ function isEligibleScript(url) {
 
 function emptyReport(run, status = 'ok') {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: REPORT_KIND,
     status,
     runId: run.runId,
     runStatus: run.status,
     scripts: { captured: 0, converted: 0, ignored: 0 },
     sources: [],
-    summary: { executableLines: 0, coveredLines: 0, linePercent: 100 },
+    summary: {
+      executableLines: 0,
+      coveredLines: 0,
+      linePercent: 100,
+      regions: 0,
+      coveredRegions: 0,
+      regionPercent: 100,
+    },
     unmappedSources: [],
     missingSourceFiles: [],
     diagnostics: { warnings: [], errors: [] },
@@ -477,9 +545,22 @@ export async function collectE2ECoverage(
         if (lineCoverage.size === 0) continue;
         const target = sources.get(relativePath) ?? {
           lines: new Map(),
+          regions: new Map(),
+          observations: 0,
         };
+        target.observations += 1;
         for (const [line, count] of lineCoverage) {
           target.lines.set(line, Math.max(target.lines.get(line) ?? 0, count));
+        }
+        for (const [key, region] of getRegionCoverage(coverageData)) {
+          const existing = target.regions.get(key) ?? {
+            line: region.line,
+            covered: false,
+            misses: 0,
+          };
+          if (region.count > 0) existing.covered = true;
+          else existing.misses += 1;
+          target.regions.set(key, existing);
         }
         sources.set(relativePath, target);
         unmapped.delete(relativePath);
@@ -501,8 +582,9 @@ export async function collectE2ECoverage(
         file,
         executableLines,
         coveredLines,
-        linePercent: linePercent(coveredLines, executableLines),
+        linePercent: scorePercent(coveredLines, executableLines),
         uncoveredLines,
+        ...summarizeRegions(coverage.regions, coverage.observations),
       };
     })
     .filter((row) => row.executableLines > 0)
@@ -524,16 +606,26 @@ export async function collectE2ECoverage(
       executableLines: summary.executableLines + row.executableLines,
       coveredLines: summary.coveredLines + row.coveredLines,
       linePercent: 0,
+      regions: summary.regions + row.regions,
+      coveredRegions: summary.coveredRegions + row.coveredRegions,
+      regionPercent: 0,
     }),
     {
       executableLines: 0,
       coveredLines: 0,
       linePercent: 0,
+      regions: 0,
+      coveredRegions: 0,
+      regionPercent: 0,
     },
   );
-  report.summary.linePercent = linePercent(
+  report.summary.linePercent = scorePercent(
     report.summary.coveredLines,
     report.summary.executableLines,
+  );
+  report.summary.regionPercent = scorePercent(
+    report.summary.coveredRegions,
+    report.summary.regions,
   );
   if (report.summary.executableLines === 0) {
     throw new Error('No src/** coverage was attributable');
@@ -545,16 +637,16 @@ export function renderE2ECoverageReport(report) {
   const lines = [
     `E2E coverage: ${report.status} (run ${report.runId}; status ${report.runStatus ?? 'unknown'})`,
     '',
-    'file | line % | uncovered lines',
-    '--- | ---: | ---',
+    'file | line % | region % | uncovered lines | uncovered regions',
+    '--- | ---: | ---: | --- | ---',
   ];
   for (const row of report.sources) {
     lines.push(
-      `${row.file} | ${row.linePercent.toFixed(2)} | ${row.uncoveredLines.join(' ')}`,
+      `${row.file} | ${row.linePercent.toFixed(2)} | ${row.regionPercent.toFixed(2)} | ${row.uncoveredLines.join(' ')} | ${row.uncoveredRegions.join(' ')}`,
     );
   }
   lines.push(
-    `src files | ${report.summary.linePercent.toFixed(2)} | ${report.summary.coveredLines}/${report.summary.executableLines} lines`,
+    `src files | ${report.summary.linePercent.toFixed(2)} | ${report.summary.regionPercent.toFixed(2)} | ${report.summary.coveredLines}/${report.summary.executableLines} lines | ${report.summary.coveredRegions}/${report.summary.regions} regions`,
   );
   if (report.unmappedSources.length > 0) {
     lines.push(
@@ -603,7 +695,7 @@ export async function main(argv = process.argv.slice(2)) {
     if (!options.text) process.stdout.write(text);
   } catch (error) {
     const failure = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       kind: ERROR_KIND,
       status:
         error.runStatus === 'failed' || error.runStatus === 'cancelled'
@@ -617,6 +709,9 @@ export async function main(argv = process.argv.slice(2)) {
         executableLines: 0,
         coveredLines: 0,
         linePercent: 0,
+        regions: 0,
+        coveredRegions: 0,
+        regionPercent: 0,
       },
       unmappedSources: [],
       missingSourceFiles: [],
@@ -631,13 +726,21 @@ export async function main(argv = process.argv.slice(2)) {
 
   // Evaluated after the report is on disk: a threshold failure must still leave
   // the summary and artifact behind for the CI step that publishes them.
-  const { linePercent: sourcePercent } = report.summary;
+  const { linePercent: sourcePercent, regionPercent } = report.summary;
   if (
     options.checkSource !== null &&
     sourcePercent + 1e-9 < options.checkSource
   ) {
     throw new Error(
       `Source line coverage ${sourcePercent.toFixed(2)}% is below the required ${options.checkSource}%.`,
+    );
+  }
+  if (
+    options.checkSourceRegions !== null &&
+    regionPercent + 1e-9 < options.checkSourceRegions
+  ) {
+    throw new Error(
+      `Source region coverage ${regionPercent.toFixed(2)}% is below the required ${options.checkSourceRegions}%.`,
     );
   }
   if (options.requireSourceFiles && report.missingSourceFiles.length > 0) {

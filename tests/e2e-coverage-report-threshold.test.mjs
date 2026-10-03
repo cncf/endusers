@@ -143,9 +143,10 @@ test('--check-source fails a report below the floor and keeps the artifacts', as
     );
     assert.equal(json.status, 'ok');
     assert.equal(json.summary.linePercent, 50);
+    assert.equal(json.summary.regionPercent, 50);
     assert.match(
       await readFile(join(fixture.root, 'report.txt'), 'utf8'),
-      /src\/components\/Example\/index\.js \| 50\.00 \| 2/,
+      /src\/components\/Example\/index\.js \| 50\.00 \| 50\.00 \| 2 \| 2/,
     );
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
