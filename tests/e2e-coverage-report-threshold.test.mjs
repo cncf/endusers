@@ -189,3 +189,63 @@ test('--check-source rejects thresholds that are not a percentage', async () => 
     /--check-source expects a percentage between 0 and 100/,
   );
 });
+
+// The percentage above is a ratio over the files the run observed. A src
+// module the bundle drops -- or that attribution loses -- contributes neither
+// numerator nor denominator, so `--check-source 100` keeps passing while a
+// whole file goes unmeasured (#992). `--require-source-files` is the file-set
+// guarantee: every module on disk under the root's src/ must appear in the
+// run, and the report records the gap either way.
+test('the report lists a src file on disk the run never measured', async () => {
+  const fixture = await halfCoveredRun();
+  try {
+    await writeFile(
+      join(fixture.root, 'src/components/Example/orphan.js'),
+      'export const never = 1;\n',
+    );
+    const report = await main(reportArgs(fixture));
+    assert.deepEqual(report.missingSourceFiles, [
+      'src/components/Example/orphan.js',
+    ]);
+    assert.match(
+      await readFile(join(fixture.root, 'report.txt'), 'utf8'),
+      /Source files never measured by this run:\n- src\/components\/Example\/orphan\.js/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('--require-source-files fails on the gap and keeps the artifacts', async () => {
+  const fixture = await halfCoveredRun();
+  try {
+    await writeFile(
+      join(fixture.root, 'src/components/Example/orphan.js'),
+      'export const never = 1;\n',
+    );
+    await assert.rejects(
+      () => main(reportArgs(fixture, ['--require-source-files'])),
+      /--require-source-files was requested, but the run never measured:\n\s+src\/components\/Example\/orphan\.js/,
+    );
+
+    // The gate must not cost the operator the report that explains it.
+    const json = JSON.parse(
+      await readFile(join(fixture.root, 'report.json'), 'utf8'),
+    );
+    assert.deepEqual(json.missingSourceFiles, [
+      'src/components/Example/orphan.js',
+    ]);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('--require-source-files passes when every src module was measured', async () => {
+  const fixture = await halfCoveredRun();
+  try {
+    const report = await main(reportArgs(fixture, ['--require-source-files']));
+    assert.deepEqual(report.missingSourceFiles, []);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});

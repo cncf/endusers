@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import v8ToIstanbul from 'v8-to-istanbul';
 import { AnyMap, encodedMap } from '@jridgewell/trace-mapping';
 
-import { countsForScript } from './coverage-report.mjs';
+import { countsForScript, enumerateSourceFiles } from './coverage-report.mjs';
 import {
   COVERAGE_ARTIFACT_KIND,
   readCoverageRun,
@@ -63,6 +63,7 @@ function parseArgs(argv) {
     json: null,
     text: null,
     checkSource: null,
+    requireSourceFiles: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -73,6 +74,8 @@ function parseArgs(argv) {
     else if (arg === '--text') options.text = argv[++index];
     else if (arg === '--check-source')
       options.checkSource = parsePercent(argv[++index]);
+    else if (arg === '--require-source-files')
+      options.requireSourceFiles = true;
     else throw new Error(`unknown e2e coverage report option: ${arg}`);
   }
   if (!options.input) throw new Error('--input is required');
@@ -401,6 +404,7 @@ function emptyReport(run, status = 'ok') {
     sources: [],
     summary: { executableLines: 0, coveredLines: 0, linePercent: 100 },
     unmappedSources: [],
+    missingSourceFiles: [],
     diagnostics: { warnings: [], errors: [] },
   };
 }
@@ -504,6 +508,17 @@ export async function collectE2ECoverage(
     .filter((row) => row.executableLines > 0)
     .sort((a, b) => a.file.localeCompare(b.file));
   report.unmappedSources = [...unmapped].sort();
+  // The summary below is a ratio over the files the run *observed*. A src
+  // module the bundle dropped (or that attribution lost) contributes neither
+  // numerator nor denominator, so the percentage cannot see it (#992). The
+  // file-set comparison is the second, different guarantee: every module on
+  // disk under src/ must have been measured. Enumerated with the unit
+  // reporter's walker so the two gates share one definition of "a source
+  // file"; restricted to src/ because that is the only tree this reporter
+  // admits coverage for.
+  report.missingSourceFiles = enumerateSourceFiles(root)
+    .filter((file) => file.startsWith('src/') && !sources.has(file))
+    .sort();
   report.summary = report.sources.reduce(
     (summary, row) => ({
       executableLines: summary.executableLines + row.executableLines,
@@ -546,6 +561,13 @@ export function renderE2ECoverageReport(report) {
       '',
       'Unmapped sources:',
       ...report.unmappedSources.map((file) => `- ${file}`),
+    );
+  }
+  if (report.missingSourceFiles.length > 0) {
+    lines.push(
+      '',
+      'Source files never measured by this run:',
+      ...report.missingSourceFiles.map((file) => `- ${file}`),
     );
   }
   if (report.diagnostics.errors.length > 0) {
@@ -597,6 +619,7 @@ export async function main(argv = process.argv.slice(2)) {
         linePercent: 0,
       },
       unmappedSources: [],
+      missingSourceFiles: [],
       diagnostics: { warnings: [], errors: [error.message ?? String(error)] },
     };
     await writeE2ECoverageReport(failure, {
@@ -615,6 +638,12 @@ export async function main(argv = process.argv.slice(2)) {
   ) {
     throw new Error(
       `Source line coverage ${sourcePercent.toFixed(2)}% is below the required ${options.checkSource}%.`,
+    );
+  }
+  if (options.requireSourceFiles && report.missingSourceFiles.length > 0) {
+    throw new Error(
+      '--require-source-files was requested, but the run never measured:\n' +
+        report.missingSourceFiles.map((file) => `  ${file}`).join('\n'),
     );
   }
   return report;

@@ -230,6 +230,7 @@ jobs:
             --input "$RUN_DIR" \
             --build build \
             --check-source 100 \
+            --require-source-files \
             --json coverage/e2e/report.json \
             --text coverage/e2e/report.txt
       - name: Publish e2e coverage summary
