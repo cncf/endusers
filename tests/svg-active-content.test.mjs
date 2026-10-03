@@ -720,6 +720,14 @@ test('stripDoctype leaves an unclosed subset in place for callers to reject', ()
   assert.equal(hasDoctype(stripDoctype(svg)), true);
 });
 
+test('stripDoctype matches an unterminated literal in linear time', () => {
+  // The alternation branches are disjoint on their first character, so no
+  // input can make the engine explore them combinatorially.
+  const started = Date.now();
+  stripDoctype('<!DOCTYPE svg SYSTEM "' + 'a'.repeat(200000));
+  assert.ok(Date.now() - started < 1000);
+});
+
 test('stripDoctype removes a plain DOCTYPE and every repeat of one', () => {
   assert.equal(stripDoctype('<!DOCTYPE svg>\n' + INERT), INERT);
   assert.equal(
