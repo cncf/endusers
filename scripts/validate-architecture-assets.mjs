@@ -12,6 +12,8 @@ import { collectError, reportAndExit } from './lib/validate-utils.mjs';
 import {
   findActiveContent,
   findRemoteReferences,
+  hasDoctype,
+  stripDoctype,
 } from './lib/svg-active-content.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -228,9 +230,9 @@ function validateSvg(path, quality) {
   }
 
   // Critical: DOCTYPE is unnecessary in SVG images and can break XML parsers.
-  if (/<!DOCTYPE\s/i.test(source)) {
+  if (hasDoctype(source)) {
     if (shouldFix) {
-      source = source.replace(/<!DOCTYPE\s[^>]*>\s*/i, '');
+      source = stripDoctype(source);
       fixed.push(`${rel}: removed DOCTYPE`);
     } else {
       record(path, 'error', 'contains a DOCTYPE declaration');

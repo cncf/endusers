@@ -3,7 +3,9 @@ import test from 'node:test';
 import {
   findActiveContent,
   findRemoteReferences,
+  hasDoctype,
   stripActiveContent,
+  stripDoctype,
 } from '../scripts/lib/svg-active-content.mjs';
 
 const INERT =
@@ -628,4 +630,56 @@ test('throws rather than returning a source the detector still flags', () => {
   assert.throws(() => stripActiveContent(svg), {
     message: /Could not strip active content from SVG: contains a <script>/,
   });
+});
+
+// An XML parser expands author-defined general entities before the document
+// tree exists, so a payload parked in a declaration never appears in any
+// attribute value this module can normalize. The scanner cannot resolve them,
+// so it has to refuse the document rather than scan around it.
+const ENTITY_SVG =
+  '<!DOCTYPE svg [<!ENTITY x "javascript:alert(1)">]>\n' +
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+  '<a xlink:href="&x;"><rect width="10" height="10"/></a></svg>';
+
+test('flags an entity declaration whose payload it cannot resolve', () => {
+  assert.deepEqual(findActiveContent(ENTITY_SVG), [
+    'contains an entity declaration in an internal DTD subset ' +
+      '(the XML parser expands it, so its payload is not visible here)',
+  ]);
+});
+
+test('throws rather than returning an entity-bearing SVG as sanitized', () => {
+  assert.throws(() => stripActiveContent(ENTITY_SVG), {
+    message:
+      /Could not strip active content from SVG: contains an entity declaration/,
+  });
+});
+
+test('hasDoctype reports a DOCTYPE with and without an internal subset', () => {
+  assert.equal(hasDoctype(ENTITY_SVG), true);
+  assert.equal(hasDoctype('<!DOCTYPE svg>' + INERT), true);
+  assert.equal(hasDoctype(INERT), false);
+});
+
+test('stripDoctype consumes an internal subset instead of halving it', () => {
+  // `<!DOCTYPE\s[^>]*>` stops at the `>` closing the <!ENTITY> declaration and
+  // leaves a bare `]>` behind, in a file the caller then publishes as XML.
+  const stripped = stripDoctype(ENTITY_SVG);
+  assert.doesNotMatch(stripped, /DOCTYPE|ENTITY|\]>/);
+  assert.ok(stripped.startsWith('<svg '));
+  assert.deepEqual(findActiveContent(stripped), []);
+});
+
+test('stripDoctype removes a subset whose entity value contains a bracket', () => {
+  const svg = '<!DOCTYPE svg [<!ENTITY x "a]b">]>\n' + INERT;
+  assert.equal(stripDoctype(svg), INERT);
+});
+
+test('stripDoctype removes a plain DOCTYPE and every repeat of one', () => {
+  assert.equal(stripDoctype('<!DOCTYPE svg>\n' + INERT), INERT);
+  assert.equal(
+    stripDoctype('<!DOCTYPE svg>\n<!DOCTYPE svg PUBLIC "a" "b">\n' + INERT),
+    INERT,
+  );
+  assert.equal(stripDoctype(INERT), INERT);
 });

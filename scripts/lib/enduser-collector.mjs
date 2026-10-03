@@ -16,6 +16,7 @@ import {
   findActiveContent,
   findRemoteReferences,
   stripActiveContent,
+  stripDoctype,
 } from './svg-active-content.mjs';
 import {
   classifyLandscapeDocument,
@@ -170,8 +171,7 @@ export function mirrorLandscapeLogo({
     if (extension === '.svg') {
       const original = readFileSync(source, 'utf8');
       const stripped = stripActiveContent(original);
-      const cleaned = stripped.source
-        .replace(/<!DOCTYPE\s[^>]*>\s*/gi, '')
+      const cleaned = stripDoctype(stripped.source)
         .split('\n')
         .map((line) => line.replace(/\s+$/, ''))
         .join('\n')

@@ -160,7 +160,7 @@
       "id": "american-express",
       "name": "American Express",
       "slug": "american-express",
-      "logo": "/img/end-user-members/5dee70aaef915ad8-american-express.svg",
+      "logo": "/img/end-user-members/75a36f956c78718a-american-express.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -178,7 +178,7 @@
           "subcategory": "Gold",
           "homepageUrl": "https://www.americanexpress.com/",
           "joined": "2021-06-01",
-          "localLogo": "/img/end-user-members/5dee70aaef915ad8-american-express.svg",
+          "localLogo": "/img/end-user-members/75a36f956c78718a-american-express.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
@@ -977,7 +977,7 @@
       "id": "dkb",
       "name": "DKB",
       "slug": "dkb",
-      "logo": "/img/end-user-members/7d5fd6d939c4cce6-dkb.svg",
+      "logo": "/img/end-user-members/a99dee1837aa15c1-dkb.svg",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -995,7 +995,7 @@
           "subcategory": "Silver",
           "homepageUrl": "https://www.dkb.de",
           "joined": "2026-09-01",
-          "localLogo": "/img/end-user-members/7d5fd6d939c4cce6-dkb.svg",
+          "localLogo": "/img/end-user-members/a99dee1837aa15c1-dkb.svg",
           "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
         }
       ],
