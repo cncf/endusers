@@ -21,7 +21,8 @@
 // Usage:
 //   node tests/tools/coverage-report.mjs [--check <minLinePercent>]
 //     [--check-regions <minRegionPercent>] [--check-source <minLinePercent>]
-//     [--check-source-regions <minRegionPercent>] [-- <node --test args>]
+//     [--check-source-regions <minRegionPercent>] [--require-source-files]
+//     [-- <node --test args>]
 //
 // The test files are themselves part of the recorded coverage, and they
 // outweigh the code they exercise several times over. An all-files threshold
@@ -31,6 +32,17 @@
 // --check-source-regions apply a threshold to the shipped sources alone
 // (everything outside tests/), which is the number that actually falls when
 // a test file is dropped or a source path stops being exercised.
+//
+// Those four thresholds are all ratios over the files the run happened to
+// observe, which leaves one kind of regression invisible to every one of
+// them. A file under scripts/ or src/ that no test imports is recorded
+// nowhere, so it never becomes a row: its lines are absent from the
+// numerator and the denominator alike and `src files` does not move. Adding
+// a brand-new source file with an untaken branch therefore keeps
+// --check-source 100 green. --require-source-files closes that by comparing
+// the files on disk against the files the run measured, and failing when any
+// is missing. A ratio floor and a file-set floor are different guarantees;
+// this is the second one.
 
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -47,6 +59,17 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const MIRRORED_DIRS = ['scripts', 'src', 'tests'];
 const SCRIPT_URL = /\.(js|jsx|mjs)$/;
 
+// The directories --require-source-files enumerates. Deliberately narrower
+// than isSourceFile()'s "outside tests/": that predicate classifies a path
+// that was already recorded, whereas this list is walked on disk and so has
+// to name exactly the trees whose every module is expected to be exercised.
+// Root-level configuration (docusaurus.config.js, playwright.config.js,
+// sidebars.js) is measured today but is not enumerated here -- it is not a
+// tree, and a guess about which root files "ought to" be covered would be a
+// rule this reporter cannot state.
+const SOURCE_ROOTS = ['scripts', 'src'];
+const SOURCE_FILE = /\.(c|m)?jsx?$/;
+
 // A flag takes one numeric percentage argument; the option key it sets on
 // the parsed options object.
 const PERCENT_FLAGS = {
@@ -62,6 +85,7 @@ function parseArgs(argv) {
     checkRegions: null,
     checkSource: null,
     checkSourceRegions: null,
+    requireSourceFiles: false,
     testArgs: [],
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -74,6 +98,8 @@ function parseArgs(argv) {
       }
       options[key] = value;
       i += 1;
+    } else if (arg === '--require-source-files') {
+      options.requireSourceFiles = true;
     } else if (arg === '--') {
       options.testArgs.push(...argv.slice(i + 1));
       break;
@@ -403,6 +429,45 @@ export function isSourceFile(file) {
   return !file.startsWith('tests/');
 }
 
+// Every module on disk under SOURCE_ROOTS, as repo-relative '/'-joined paths.
+// Walked rather than globbed so the traversal order is the sort order and a
+// directory that does not exist is simply absent instead of throwing -- the
+// caller is asking "what should have been measured", and a repository that
+// has dropped scripts/ entirely has nothing to answer with.
+export function enumerateSourceFiles(root = repoRoot) {
+  const found = [];
+  const walk = (relDir) => {
+    let entries;
+    try {
+      entries = readdirSync(join(root, relDir), { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const relPath = `${relDir}/${entry.name}`;
+      // Symlinked trees would report the same module under two paths, and
+      // only one of them can match a coverage record.
+      if (entry.isSymbolicLink()) continue;
+      if (entry.isDirectory()) walk(relPath);
+      else if (entry.isFile() && SOURCE_FILE.test(entry.name))
+        found.push(relPath);
+    }
+  };
+  for (const dir of SOURCE_ROOTS) walk(dir);
+  return found.sort();
+}
+
+// Source files that exist but that this run never recorded.
+//
+// `unmapped` counts as measured: those files were executed, and the reporter
+// could only not attribute the offsets back to the text on disk. Folding them
+// into the missing set would turn every JSX component into a permanent
+// failure of a check that is about files nothing ran at all.
+export function missingSourceFiles(measured, root = repoRoot) {
+  const seen = new Set(measured);
+  return enumerateSourceFiles(root).filter((file) => !seen.has(file));
+}
+
 // Reproduces the exact transform tests/tools/jsx-hooks.mjs applied when it
 // loaded this file, so the generated text V8 recorded coverage against can be
 // rebuilt outside the test run. Returns null when the file was not JSX, or
@@ -582,6 +647,24 @@ function main() {
       sourceExecutable,
       sourceRegions,
     } = report(merged);
+    const missing = options.requireSourceFiles
+      ? missingSourceFiles([...merged.keys(), ...unmapped])
+      : [];
+    // Printed before the "Not reported" notice so that notice stays the last
+    // thing on stdout, which is where tests/coverage-report-cli.test.mjs
+    // reads it from. Computed only under the flag: an ad-hoc run over a
+    // single test file leaves almost every source file unmeasured by
+    // construction, and listing all of them would bury the table.
+    if (missing.length > 0) {
+      console.log(
+        `\nNever measured (${missing.length}): these files exist under ` +
+          `${SOURCE_ROOTS.join('/ or ')}/ but no\n` +
+          'coverage record named them, so they are absent from the "src files"\n' +
+          'numerator and denominator alike and the percentage gates below pass\n' +
+          'over them in silence.',
+      );
+      for (const file of missing) console.log(`  ${file}`);
+    }
     if (unmapped.size > 0) {
       console.log(
         `\nNot reported (${unmapped.size}): every coverage record for these\n` +
@@ -595,6 +678,18 @@ function main() {
     if (result.status !== 0) {
       console.error('\nTests failed; coverage above is reported for context.');
       process.exit(result.status ?? 1);
+    }
+    // Checked ahead of the percentage gates because it is the more specific
+    // diagnosis: when a source file was never loaded, every ratio below is
+    // computed over a denominator that silently excludes it, so whatever
+    // those gates report about it is not an answer.
+    if (missing.length > 0) {
+      console.error(
+        `\n${missing.length} source file(s) were never measured; ` +
+          '--require-source-files requires every file under ' +
+          `${SOURCE_ROOTS.join('/ and ')}/ to be exercised.`,
+      );
+      process.exit(1);
     }
     if (options.check !== null && totalLinePct + 1e-9 < options.check) {
       console.error(
