@@ -77,13 +77,25 @@ const ATTRIBUTE_PATTERN =
  * `<!DOCTYPE\s[^>]*>` cannot express this: the first `>` inside an internal
  * subset closes an `<!ENTITY ...>` declaration, not the DOCTYPE, so that
  * pattern deletes the declaration and leaves a bare `]>` behind -- in a file
- * the caller then publishes as well-formed XML. The subset alternative carries
- * its own closing `>` so that a `]` inside a quoted entity value cannot end
- * the subset early. A DOCTYPE that opens a subset and never closes it matches
- * neither alternative and is left in place, where hasDoctype() and the entity
- * check below still see it.
+ * the caller then publishes as well-formed XML.
+ *
+ * Quoted literals need the same care. An ExternalID's system identifier may
+ * contain `[`, `]` or `>` (`<!DOCTYPE svg SYSTEM "https://h/x[.dtd">`), so a
+ * pattern that reads a bare `[` as the start of an internal subset either
+ * matches nothing -- returning the declaration to a caller that reports it
+ * removed -- or swallows everything up to an unrelated `]>` such as the end
+ * of a CDATA section. Each alternation branch below therefore consumes a
+ * quoted literal through its closing mate before the structural characters
+ * `[`, `]` and `>` are given any meaning. The branches are disjoint on their
+ * first character, so matching stays linear.
+ *
+ * A DOCTYPE whose subset or quoted literal never closes matches nothing and
+ * is left in place. Callers must treat that as a failed strip: check
+ * hasDoctype() on the result and refuse to publish, rather than assume the
+ * replacement succeeded.
  */
-const DOCTYPE_PATTERN = /<!DOCTYPE\s[^[>]*(?:\[[\s\S]*?\]\s*>|>)\s*/gi;
+const DOCTYPE_PATTERN =
+  /<!DOCTYPE\s(?:[^[>"']|"[^"]*"|'[^']*')*(?:\[(?:[^\]"']|"[^"]*"|'[^']*')*\]\s*)?>\s*/gi;
 
 /** An entity declaration, which only appears inside an internal DTD subset. */
 const ENTITY_DECLARATION = /<!ENTITY\s/i;
@@ -155,6 +167,11 @@ export function hasDoctype(source) {
  * breaks some XML consumers. Removing only the part before the subset's first
  * `>` leaves markup that is neither a DOCTYPE nor valid content, so the single
  * pattern lives here and every caller shares it.
+ *
+ * A malformed declaration (unclosed subset or quoted literal) is deliberately
+ * left in place rather than guessed at. Callers that publish the result must
+ * re-check hasDoctype() and fail closed instead of reporting the strip as
+ * done.
  *
  * @param {string} source - SVG file contents.
  * @returns {string}

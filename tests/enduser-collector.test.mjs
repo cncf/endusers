@@ -179,6 +179,28 @@ test('rejects a logo whose DOCTYPE removal re-forms active content', () => {
   });
 });
 
+test('rejects a logo with a DOCTYPE that cannot be removed', () => {
+  withRoots(({ sourceRoot, destinationRoot }) => {
+    // An unclosed internal subset matches neither stripDoctype() alternative,
+    // so the declaration survives the strip. The surviving declaration is
+    // inert to the active-content and remote-reference rescans, so without a
+    // hasDoctype() gate the logo would be published as cleaned.
+    writeFileSync(
+      join(sourceRoot, 'hosted_logos/acme.svg'),
+      '<!DOCTYPE svg [\n' +
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect/></svg>',
+    );
+    const result = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.equal(result.localLogo, null);
+    assert.match(result.logoWarning, /DOCTYPE that could not be removed/);
+    assert.deepEqual(readdirSync(destinationRoot), []);
+  });
+});
+
 test('keeps records with no logo and rejects unsafe logo filenames', () => {
   withRoots(({ sourceRoot, destinationRoot }) => {
     const noLogo = mirrorLandscapeLogo({

@@ -845,6 +845,31 @@ test('fails the import when DOCTYPE removal re-forms active content', () => {
   }
 });
 
+test('fails the import when a DOCTYPE cannot be removed', () => {
+  // An unclosed internal subset matches neither stripDoctype() alternative, so
+  // the declaration survives the strip. The surviving declaration is inert to
+  // the findActiveContent() rescan, so without a hasDoctype() gate the import
+  // would publish the asset believing it was cleaned.
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'doctype',
+        '---\ntitle: Doctype\norg_name: Doctype Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/doctype/images/diagram.svg':
+        '<!DOCTYPE svg [\n' +
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect/></svg>',
+    },
+  });
+
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /DOCTYPE could not be removed/);
+  } finally {
+    run.cleanup();
+  }
+});
+
 test('strips active content from an imported SVG asset under an uppercase .SVG extension', () => {
   // MIRRORABLE_ASSET_EXTENSIONS is matched against a lowercased extension, so
   // an upstream `diagram.SVG` is copied in as an SVG. The sanitizer has to
