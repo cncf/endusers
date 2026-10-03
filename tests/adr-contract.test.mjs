@@ -182,10 +182,19 @@ test('relative links between ADR files resolve', () => {
   }
 });
 
-// Known deviation, tracked separately: adr/0001-stakeholder-outreach-draft.md
-// takes the 0001 prefix without being ADR 0001, so the directory holds two
-// files claiming that number and one of them is absent from the index.
-test('each ADR number is claimed by exactly one file', { todo: true }, () => {
+// Both assertions below were marked `{ todo: true }` when this file was
+// written (#282), because adr/0001-stakeholder-outreach-draft.md took the
+// 0001 prefix without being ADR 0001: the directory held two files claiming
+// that number and one of them was absent from the index. #385 resolved that
+// by renaming the draft to adr/stakeholder-outreach-draft-for-0001.md, which
+// drops it out of `numberPrefixed` entirely -- but this file was not touched
+// again, so the markers outlived the deviation they documented.
+//
+// A `todo` test still runs; node --test simply does not let its failure fail
+// the suite. Both of these have therefore been passing and inert, and the
+// contract they describe -- one file per ADR number, every numbered ADR in
+// the index -- has not actually been enforced on any pull request since #385.
+test('each ADR number is claimed by exactly one file', () => {
   const byNumber = new Map();
   for (const name of numberPrefixed) {
     const number = name.slice(0, 4);
@@ -200,18 +209,11 @@ test('each ADR number is claimed by exactly one file', { todo: true }, () => {
   }
 });
 
-test(
-  'every number-prefixed ADR file is listed in the index',
-  { todo: true },
-  () => {
-    const indexed = new Set(
-      indexRows.map((row) => row.href.replace(/^\.\//, '')),
-    );
-    for (const name of numberPrefixed) {
-      assert.ok(
-        indexed.has(name),
-        `adr/${name} is not listed in adr/README.md`,
-      );
-    }
-  },
-);
+test('every number-prefixed ADR file is listed in the index', () => {
+  const indexed = new Set(
+    indexRows.map((row) => row.href.replace(/^\.\//, '')),
+  );
+  for (const name of numberPrefixed) {
+    assert.ok(indexed.has(name), `adr/${name} is not listed in adr/README.md`);
+  }
+});
