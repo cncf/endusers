@@ -162,8 +162,7 @@ jobs:
           retention-days: 7
 
   e2e-coverage:
-    name: End-to-end coverage (non-gating)
-    continue-on-error: true
+    name: End-to-end coverage
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -230,6 +229,7 @@ jobs:
           npm run report:e2e:coverage -- \
             --input "$RUN_DIR" \
             --build build \
+            --check-source 100 \
             --json coverage/e2e/report.json \
             --text coverage/e2e/report.txt
       - name: Publish e2e coverage summary
@@ -237,14 +237,14 @@ jobs:
         run: |
           if [ -f coverage/e2e/report.txt ]; then
             {
-              echo '## E2E browser coverage (non-gating)'
+              echo '## E2E browser coverage'
               echo '```'
               cat coverage/e2e/report.txt
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo '::error::E2E coverage report was not produced.'
-            echo '## E2E browser coverage (non-gating)' >> "$GITHUB_STEP_SUMMARY"
+            echo '## E2E browser coverage' >> "$GITHUB_STEP_SUMMARY"
             echo 'Coverage tooling failed before producing a report; inspect the artifact.' >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Upload e2e coverage artifacts

@@ -2,7 +2,8 @@
 // worth running: that a failing gate actually fails its job.
 //
 // `.github/workflows/ci.yml` is the only `pull_request`-triggered workflow, so
-// its `validate`, `lint` and `e2e` jobs are the entire pre-merge gate. Adding
+// its `validate`, `lint`, `e2e` and `e2e-coverage` jobs are the entire
+// pre-merge gate. Adding
 // `continue-on-error: true` to any of them leaves every step running and every
 // step reporting, and makes the job report success regardless. The same line on
 // the `Run unit tests with coverage` step discards the unit suite and all four
@@ -12,9 +13,7 @@
 // pins the threshold values and that ci.yml runs the gate command; both survive
 // the exit code being ignored. tests/workflow-scripts.test.mjs asks whether a
 // command is *run* by some workflow, and `continue-on-error` does not stop it
-// being run. Its `browser coverage is isolated in a visible non-gating job`
-// test asserts the relationship in one direction only — that `e2e-coverage`
-// *is* opted out — and says nothing about the jobs that must not be.
+// being run.
 //
 // The allowlist below follows the FLOORS convention in
 // coverage-gate-thresholds.test.mjs: a legitimate future non-gating job stays
@@ -32,19 +31,13 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const workflowDir = join(repoRoot, '.github', 'workflows');
 
 // `<workflow>#<job>` → why that job is allowed to swallow its own failure.
-const NON_GATING_JOBS = new Map([
-  [
-    'ci.yml#e2e-coverage',
-    'Browser coverage is published for information only; the required signal ' +
-      'is the separate e2e job. Pinned from the other side by the "browser ' +
-      'coverage is isolated in a visible non-gating job" test in ' +
-      'tests/workflow-scripts.test.mjs.',
-  ],
-]);
+// Empty since #990 made e2e-coverage gating; the map and its stale-entry test
+// stay so a future opt-out has to be recorded here with a reason.
+const NON_GATING_JOBS = new Map([]);
 
 // Jobs of ci.yml that are the pull_request gate. Named rather than derived so
 // that deleting one fails as loudly as disarming one.
-const REQUIRED_CI_JOBS = ['validate', 'lint', 'e2e'];
+const REQUIRED_CI_JOBS = ['validate', 'lint', 'e2e', 'e2e-coverage'];
 
 const workflowFiles = readdirSync(workflowDir)
   .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
