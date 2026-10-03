@@ -6,7 +6,7 @@
 // contributor. The components read those files at build time through
 // `@site/data/*.json`, so no Playwright spec can reach those branches against
 // the shipped data, and they sit permanently uncovered in the "End-to-end
-// coverage (non-gating)" job.
+// coverage" job.
 //
 // The overlay is per-build, so it only helps where the missing shape is an
 // *additional* record. A branch that turns on a single document-level field

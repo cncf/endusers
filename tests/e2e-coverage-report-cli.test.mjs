@@ -1,7 +1,7 @@
 // `npm run report:e2e:coverage` runs tests/tools/e2e-coverage-report.mjs as a
-// command, and the e2e-coverage CI job is `continue-on-error: true` -- so the
-// only signal that the reporter failed rather than reported is the exit code
-// its CLI entrypoint sets. tests/e2e-coverage-report.test.mjs drives `main()`
+// command, and the e2e-coverage CI job gates the run on its exit code -- so
+// the only signal that the reporter failed rather than reported is the exit
+// code its CLI entrypoint sets. tests/e2e-coverage-report.test.mjs drives `main()`
 // in process, which never executes that entrypoint: the module-level
 // `import.meta.url === pathToFileURL(process.argv[1]).href` guard is false
 // under an import, so the `.catch()` that prints the stack and sets

@@ -315,13 +315,21 @@ test('the Playwright end-to-end suite runs in some workflow', () => {
   assert.ok(runsIt, 'no workflow runs `npm run test:e2e`');
 });
 
-test('browser coverage is isolated in a visible non-gating job', () => {
+test('browser coverage is isolated in a visible gating job with a source floor', () => {
   const workflow = parse(readFileSync(join(workflowDir, 'ci.yml'), 'utf8'));
   const required = workflow.jobs?.e2e;
   const coverage = workflow.jobs?.['e2e-coverage'];
   assert.ok(required, 'required e2e job is missing');
-  assert.ok(coverage, 'non-gating e2e coverage job is missing');
-  assert.equal(coverage['continue-on-error'], true);
+  assert.ok(coverage, 'e2e coverage job is missing');
+  // #990: the reporter supports --check-source, but an unwired threshold and a
+  // continue-on-error job meant browser coverage was measured and never
+  // enforced. The job must fail the run, and the report command must carry
+  // the floor, or the gate is a summary nobody has to read.
+  assert.equal(
+    coverage['continue-on-error'],
+    undefined,
+    'e2e-coverage must gate the run; see ci-gating-jobs.test.mjs',
+  );
 
   const coverageCommands = (coverage.steps ?? [])
     .map((step) => step.run)
@@ -330,6 +338,11 @@ test('browser coverage is isolated in a visible non-gating job', () => {
   assert.match(coverageCommands, /npm run build:e2e:coverage/);
   assert.match(coverageCommands, /npm run test:e2e:coverage/);
   assert.match(coverageCommands, /npm run report:e2e:coverage/);
+  assert.match(
+    coverageCommands,
+    /--check-source\s+100\b/,
+    'the e2e coverage report must gate on --check-source 100',
+  );
 
   const requiredCoverageEnv = (required.steps ?? []).some(
     (step) => step.env?.E2E_COVERAGE !== undefined,
