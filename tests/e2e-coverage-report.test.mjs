@@ -1386,6 +1386,7 @@ test('renderE2ECoverageReport exposes original src paths and no bundle paths', (
     },
     diagnostics: { warnings: [], errors: [] },
     unmappedSources: [],
+    missingSourceFiles: [],
   });
 
   assert.match(text, /src\/components\/Example\/index\.js/);
@@ -1405,6 +1406,7 @@ test('renderE2ECoverageReport names unmapped sources and diagnostics', () => {
       linePercent: 0,
     },
     unmappedSources: ['src/components/NotLoaded/index.js'],
+    missingSourceFiles: [],
     diagnostics: { warnings: [], errors: ['invalid map'] },
   });
   assert.match(text, /Unmapped sources/);

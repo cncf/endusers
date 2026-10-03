@@ -343,6 +343,14 @@ test('browser coverage is isolated in a visible gating job with a source floor',
     /--check-source\s+100\b/,
     'the e2e coverage report must gate on --check-source 100',
   );
+  // #992: the ratio is computed over observed files only, so a src module the
+  // bundle drops vanishes from numerator and denominator alike. The file-set
+  // gate is the guarantee the percentage cannot give.
+  assert.match(
+    coverageCommands,
+    /--require-source-files\b/,
+    'the e2e coverage report must fail on a src file the run never measured',
+  );
 
   const requiredCoverageEnv = (required.steps ?? []).some(
     (step) => step.env?.E2E_COVERAGE !== undefined,
