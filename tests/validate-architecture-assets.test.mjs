@@ -203,6 +203,21 @@ test('--fix removes a DOCTYPE declaration instead of reporting it', () => {
   assert.match(result.stdout, /removed DOCTYPE/);
 });
 
+test('--fix fails closed on a DOCTYPE it cannot remove', () => {
+  // An unclosed internal subset matches neither stripDoctype() alternative, so
+  // the declaration survives the strip. Reporting "removed DOCTYPE" here would
+  // certify a fix that never happened.
+  const svg = `<!DOCTYPE svg [\n${VALID_SVG}`;
+  const result = runFix(svg);
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /DOCTYPE declaration that could not be removed automatically/,
+  );
+  assert.doesNotMatch(result.stdout, /removed DOCTYPE/);
+  assert.equal(result.files[ASSET], svg);
+});
+
 test('--fix adds a viewBox derived from width and height', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect/></svg>';
@@ -373,6 +388,25 @@ test('--fix writes a repaired mirrored asset back to disk', () => {
   assert.equal(result.files[icon], VALID_SVG);
   assert.doesNotMatch(result.files[icon], /DOCTYPE/);
   assert.match(result.stdout, /removed DOCTYPE/);
+});
+
+test('--fix fails closed on a mirrored-asset DOCTYPE it cannot remove', () => {
+  // Mirrored artwork is written at an early return with no post-strip rescan,
+  // so an unverified "removed DOCTYPE" on this path would publish the bytes
+  // with no later gate catching the surviving declaration.
+  const icon = 'static/img/cncf-projects/helm-helm-icon-color.svg';
+  const svg = `<!DOCTYPE svg [\n${VALID_SVG}`;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    { [icon]: svg },
+    { args: ['--fix'], readBack: [icon] },
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /DOCTYPE declaration that could not be removed automatically/,
+  );
+  assert.equal(result.files[icon], svg);
 });
 
 test('warns on an asset larger than 2 MB but still passes', () => {

@@ -16,6 +16,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
   findActiveContent,
+  hasDoctype,
   stripActiveContent,
   stripDoctype,
 } from './lib/svg-active-content.mjs';
@@ -241,8 +242,17 @@ function sanitizeArchitectureAssets(dir) {
       );
     }
 
-    // Remove DOCTYPE declarations that can break XML consumers.
+    // Remove DOCTYPE declarations that can break XML consumers. stripDoctype()
+    // leaves a malformed declaration (unclosed subset or quoted literal) in
+    // place rather than guessing where it ends, and an unstripped external DTD
+    // reference is inert to the findActiveContent() rescan below -- so verify
+    // the removal happened instead of assuming it.
     source = stripDoctype(source);
+    if (hasDoctype(source)) {
+      throw new Error(
+        `DOCTYPE could not be removed from ${relative(join(root, 'static'), file)}`,
+      );
+    }
 
     // Strip draw.io/Excalidraw editable metadata to reduce bloat.
     source = source.replace(/\scontent\s*=\s*["'][^"']*["']/gi, '');

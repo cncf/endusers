@@ -15,6 +15,7 @@ import { basename, join, sep } from 'node:path';
 import {
   findActiveContent,
   findRemoteReferences,
+  hasDoctype,
   stripActiveContent,
   stripDoctype,
 } from './svg-active-content.mjs';
@@ -180,6 +181,16 @@ export function mirrorLandscapeLogo({
       // removal and trimming above delete text, which can join two inert
       // fragments into a live one ("<sc" + "ript>"). Verify the bytes that are
       // actually written rather than the ones that were checked earlier.
+      // hasDoctype() covers stripDoctype()'s documented failure mode: a
+      // malformed declaration is left in place instead of guessed at, and an
+      // unstripped external DTD reference is inert to the two scans below, so
+      // without this gate it would be published as cleaned.
+      if (hasDoctype(cleaned)) {
+        return warning(
+          record,
+          `landscape logo contains a DOCTYPE that could not be removed: ${filename}`,
+        );
+      }
       const residual = findActiveContent(cleaned);
       if (residual.length > 0) {
         return warning(

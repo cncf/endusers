@@ -675,6 +675,51 @@ test('stripDoctype removes a subset whose entity value contains a bracket', () =
   assert.equal(stripDoctype(svg), INERT);
 });
 
+// XML's doctypedecl grammar allows `[`, `]` and `>` inside an ExternalID's
+// quoted literals. A pattern that reads a bare `[` as the start of an internal
+// subset either matches nothing -- so a caller reports an intact declaration
+// as removed -- or deletes everything up to an unrelated `]>`, such as the end
+// of a CDATA section later in the document.
+test('stripDoctype removes a declaration whose system identifier contains a bracket', () => {
+  const svg = '<!DOCTYPE svg SYSTEM "https://evil.example/x[.dtd">\n' + INERT;
+  assert.equal(stripDoctype(svg), INERT);
+});
+
+test('stripDoctype does not delete markup between a bracketed identifier and a CDATA close', () => {
+  const body =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+    '<style><![CDATA[.a{fill:#fff}]]></style>' +
+    '<rect width="10" height="10"/></svg>';
+  const svg = '<!DOCTYPE svg SYSTEM "https://evil.example/x[.dtd">\n' + body;
+  assert.equal(stripDoctype(svg), body);
+});
+
+test('stripDoctype handles ">" and "]>" inside quoted literals', () => {
+  assert.equal(
+    stripDoctype('<!DOCTYPE svg SYSTEM "a>b.dtd">\n' + INERT),
+    INERT,
+  );
+  assert.equal(
+    stripDoctype("<!DOCTYPE svg SYSTEM 'a]>b.dtd'>\n" + INERT),
+    INERT,
+  );
+  assert.equal(
+    stripDoctype("<!DOCTYPE svg [<!ENTITY y 'c]>d'>]>\n" + INERT),
+    INERT,
+  );
+});
+
+test('stripDoctype leaves an unclosed subset in place for callers to reject', () => {
+  // Guessing where a malformed declaration ends would delete live markup, so
+  // the pattern matches nothing. Callers must re-check hasDoctype() and fail
+  // closed instead of publishing the result as cleaned.
+  const svg =
+    '<!DOCTYPE svg [\n' +
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect/></svg>';
+  assert.equal(stripDoctype(svg), svg);
+  assert.equal(hasDoctype(stripDoctype(svg)), true);
+});
+
 test('stripDoctype removes a plain DOCTYPE and every repeat of one', () => {
   assert.equal(stripDoctype('<!DOCTYPE svg>\n' + INERT), INERT);
   assert.equal(
