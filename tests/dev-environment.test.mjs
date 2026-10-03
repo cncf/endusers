@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import { parse as parseYaml } from 'yaml';
@@ -445,4 +445,136 @@ test('.gitignore ignores node_modules as a file as well as a directory', () => {
     stdio: 'pipe',
   });
   assert.equal(status, '');
+});
+
+// .vscode/settings.json is the third entry point a contributor meets before CI
+// does, and the only one nothing read until now. It once described a Hugo site
+// using the Docsy theme — `themes/docsy`, `vendor`, `resources`, `.docker/` —
+// none of which this Docusaurus repo has, while every directory the repo does
+// generate was searched and watched. Both halves of that drift are silent:
+// VS Code ignores an exclude whose path is absent, and never reports one that
+// is missing.
+const vscodeSettings = JSON.parse(
+  stripJsonComments(readFileSync(join(root, '.vscode/settings.json'), 'utf8')),
+);
+
+const EXCLUDE_MAPS = [
+  'files.exclude',
+  'files.watcherExclude',
+  'search.exclude',
+];
+
+// Directories the repo's own commands write, each ignored by .gitignore:
+// `build/` and `.docusaurus` from the docusaurus build, `coverage` from
+// test:unit:coverage, `test-results`/`playwright-report` from test:e2e.
+const GENERATED_DIRS = [
+  'build',
+  '.docusaurus',
+  'coverage',
+  'test-results',
+  'playwright-report',
+];
+
+// A VS Code exclude key is a glob. Only keys that name one literal path can be
+// checked against the checkout; `**/.DS_Store` and friends address no single
+// location. A leading `**/` is stripped because it means "at any depth",
+// which includes the root.
+function literalExcludePath(key) {
+  const trimmed = key.replace(/^\*\*\//, '').replace(/\/$/, '');
+  if (trimmed === '' || /[*?{}[\]!]/.test(trimmed)) return null;
+  return trimmed;
+}
+
+// git check-ignore matches a rule against the pathname it is handed, without
+// stat()ing it, so the shape of the pathname decides which rules can match.
+// .gitignore:10 is `/build/`, and a directory-only rule never matches the bare
+// pathname `build`; a file rule such as `.DS_Store` never matches `.DS_Store/`.
+// Both shapes are probed so either kind of rule counts.
+function gitIgnores(path) {
+  return [path, `${path}/`].some((candidate) => {
+    try {
+      execFileSync('git', ['check-ignore', '-q', candidate], {
+        cwd: root,
+        stdio: 'ignore',
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  });
+}
+
+function excludeEntries(mapName) {
+  const map = vscodeSettings[mapName];
+  assert.ok(
+    map && typeof map === 'object',
+    `.vscode/settings.json declares no ${mapName}`,
+  );
+  return map;
+}
+
+test('every path .vscode/settings.json excludes exists or is gitignored', () => {
+  const fiction = [];
+  for (const mapName of EXCLUDE_MAPS) {
+    for (const key of Object.keys(excludeEntries(mapName))) {
+      const path = literalExcludePath(key);
+      if (path === null) continue;
+      if (existsSync(join(root, path))) continue;
+      if (gitIgnores(path)) continue;
+      fiction.push(`${mapName}["${key}"]`);
+    }
+  }
+  assert.deepEqual(
+    fiction,
+    [],
+    `.vscode/settings.json excludes paths this repo neither contains nor generates: ${fiction.join(', ')}`,
+  );
+});
+
+// Searching the build output is not a cosmetic annoyance: it buries every real
+// hit under the bundled copy of the same source, and the watcher walking it
+// costs a file handle per generated file.
+test('.vscode/settings.json excludes every directory the repo generates', () => {
+  const missing = [];
+  for (const mapName of ['search.exclude', 'files.watcherExclude']) {
+    const map = excludeEntries(mapName);
+    for (const dir of GENERATED_DIRS) {
+      if (map[dir] === true) continue;
+      if (map[`**/${dir}`] === true) continue;
+      missing.push(`${mapName} omits ${dir}`);
+    }
+  }
+  assert.deepEqual(
+    missing,
+    [],
+    `generated directories are searched and watched: ${missing.join(', ')}`,
+  );
+});
+
+// Every directory this test requires excluded has to be one git already
+// ignores, or the rule above would be asking contributors to hide tracked
+// files from themselves.
+test('every directory required to be excluded is gitignored', () => {
+  const tracked = GENERATED_DIRS.filter((dir) => !gitIgnores(dir));
+  assert.deepEqual(
+    tracked,
+    [],
+    `.gitignore no longer ignores directories .vscode/settings.json hides: ${tracked.join(', ')}`,
+  );
+});
+
+// files.exclude hides entries from the explorer outright. Hiding .vscode hides
+// this very file, which is how it stayed wrong: a contributor cannot fix
+// configuration they cannot see.
+test('files.exclude does not hide .vscode from the explorer', () => {
+  const hidden = Object.entries(excludeEntries('files.exclude'))
+    .filter(
+      ([key, value]) => value === true && literalExcludePath(key) === '.vscode',
+    )
+    .map(([key]) => key);
+  assert.deepEqual(
+    hidden,
+    [],
+    `files.exclude hides the editor settings it is written in: ${hidden.join(', ')}`,
+  );
 });
