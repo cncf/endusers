@@ -683,3 +683,109 @@ test('stripDoctype removes a plain DOCTYPE and every repeat of one', () => {
   );
   assert.equal(stripDoctype(INERT), INERT);
 });
+
+// A processing instruction is not a start tag, so no tag or attribute scan
+// ever sees it. `<?xml-stylesheet href?>` makes the browser fetch the target
+// when the SVG is opened directly, and `type="text/xsl"` applies an XSLT
+// program to the document. The only PI an SVG image needs is the XML
+// declaration, which stays allowed.
+test('allows the XML declaration but flags any other processing instruction', () => {
+  const declared = '<?xml version="1.0" encoding="UTF-8"?>\n' + INERT;
+  assert.deepEqual(findActiveContent(declared), []);
+  assert.deepEqual(stripActiveContent(declared), {
+    source: declared,
+    removed: [],
+  });
+
+  const svg =
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<?xml-stylesheet type="text/css" href="https://evil.example/x.css"?>\n' +
+    INERT;
+  assert.deepEqual(findActiveContent(svg), [
+    'contains a <?xml-stylesheet?> processing instruction ' +
+      '(can load a remote stylesheet or apply an XSLT program to the image)',
+  ]);
+
+  const { source, removed } = stripActiveContent(svg);
+  assert.doesNotMatch(source, /xml-stylesheet|evil\.example/);
+  assert.match(source, /^<\?xml version/);
+  assert.ok(removed.includes('<?xml-stylesheet?> processing instruction'));
+  assert.deepEqual(findActiveContent(source), []);
+});
+
+test('flags an XSLT processing instruction regardless of target case', () => {
+  const svg = '<?XML-STYLESHEET type="text/xsl" href="payload.xsl"?>\n' + INERT;
+  assert.equal(findActiveContent(svg).length, 1);
+  assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
+});
+
+test('does not manufacture a script element by splicing around a removed PI', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg">' +
+    '<scr<?pi?>ipt>alert(1)</scr<?pi?>ipt>' +
+    '</svg>';
+  const { source } = stripActiveContent(svg);
+  assert.doesNotMatch(source, /<script/i);
+  assert.deepEqual(findActiveContent(source), []);
+});
+
+// The validators read every SVG as UTF-8. A file in another encoding turns
+// into text this module's patterns cannot faithfully scan, while a browser
+// honoring the BOM or encoding declaration parses the original bytes. The
+// mismatch itself is the finding, and nothing can repair it, so
+// stripActiveContent refuses the document.
+test('fails closed on NUL or replacement characters from a mis-decoded file', () => {
+  const utf16ish = INERT.split('').join('\u0000');
+  const findings = findActiveContent(utf16ish);
+  assert.ok(
+    findings.some((finding) =>
+      finding.includes('NUL or replacement characters'),
+    ),
+    `expected a mis-decoding finding, got ${JSON.stringify(findings)}`,
+  );
+  assert.throws(() => stripActiveContent(utf16ish), {
+    message: /NUL or replacement characters/,
+  });
+
+  const replaced = '\ufffd\ufffd' + INERT;
+  assert.ok(findActiveContent(replaced).length > 0);
+});
+
+test('fails closed on a declared multi-byte or ASCII-incompatible encoding', () => {
+  for (const encoding of ['UTF-16', 'UTF-7', 'shift_jis', 'gb2312']) {
+    const svg = `<?xml version="1.0" encoding="${encoding}"?>\n` + INERT;
+    const findings = findActiveContent(svg);
+    assert.ok(
+      findings.some((finding) =>
+        finding.includes(
+          `declares a non-UTF-8 encoding (${encoding.toLowerCase()})`,
+        ),
+      ),
+      `expected an encoding finding for ${encoding}, got ${JSON.stringify(findings)}`,
+    );
+    assert.throws(() => stripActiveContent(svg), {
+      message: /declares a non-UTF-8 encoding/,
+    });
+  }
+});
+
+test('accepts the UTF-8 encoding spellings a generator actually emits', () => {
+  // ISO-8859-1 appears in the committed member-logo corpus; its 0x00-0x7F
+  // range is ASCII, so markup tokenizes exactly as this module's UTF-8
+  // reading saw it.
+  for (const encoding of [
+    'UTF-8',
+    'utf-8',
+    'utf8',
+    'US-ASCII',
+    'ISO-8859-1',
+    'windows-1252',
+  ]) {
+    const svg = `<?xml version="1.0" encoding="${encoding}"?>\n` + INERT;
+    assert.deepEqual(
+      findActiveContent(svg),
+      [],
+      `expected no findings for ${encoding}`,
+    );
+  }
+});

@@ -89,6 +89,56 @@ const DOCTYPE_PATTERN = /<!DOCTYPE\s[^[>]*(?:\[[\s\S]*?\]\s*>|>)\s*/gi;
 const ENTITY_DECLARATION = /<!ENTITY\s/i;
 
 /**
+ * An XML processing instruction, target captured.
+ *
+ * The only PI an SVG image legitimately carries is the XML declaration
+ * `<?xml ...?>`. Anything else is at best a remote fetch and at worst code:
+ * `<?xml-stylesheet href="https://evil.example/x.css"?>` makes the browser
+ * fetch a third-party stylesheet when the SVG is opened directly, and a
+ * `type="text/xsl"` target applies an XSLT program to the document. Start-tag
+ * and attribute scanning never sees either, because a PI is not a tag.
+ */
+const PROCESSING_INSTRUCTION = /<\?([^\s?>]*)[\s\S]*?\?>/g;
+
+/**
+ * Characters that only appear when a file was decoded with the wrong charset.
+ *
+ * The validators read every SVG as UTF-8. A UTF-16 file read that way turns
+ * into NUL-riddled text (or U+FFFD replacements where the bytes are not valid
+ * UTF-8 at all), and every regex in this module then scans a string that is
+ * not what a browser honoring the BOM or `encoding=` declaration parses. The
+ * mismatch is the finding: this scanner cannot vouch for bytes it cannot read.
+ */
+// eslint-disable-next-line no-control-regex
+const MISDECODED_CHARACTER = /[\u0000\ufffd]/;
+
+/**
+ * The encoding pseudo-attribute of an XML declaration at the start of the
+ * document. Encodings that are not a UTF-8 subset shift byte interpretation
+ * away from what this module's UTF-8 reading saw.
+ */
+const XML_DECLARATION_ENCODING =
+  /^\uFEFF?\s*<\?xml\b[^?]*\bencoding\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+
+/** Encodings under which a UTF-8 reading of the bytes is faithful. */
+const SAFE_ENCODINGS = new Set(['utf-8', 'utf8', 'us-ascii', 'ascii']);
+
+/**
+ * Single-byte encodings whose 0x00-0x7F range is ASCII.
+ *
+ * Under these every structural character (`<`, `>`, `&`, quotes) occupies the
+ * same byte it does in UTF-8, so markup tokenizes identically and only
+ * non-ASCII text content reads differently -- a difference that cannot hide an
+ * element or attribute from the scan. Multi-byte or ASCII-incompatible
+ * encodings (UTF-16, UTF-7, Shift_JIS, EBCDIC) stay flagged: a lead byte can
+ * swallow a following ASCII byte, or the whole byte-to-character mapping
+ * shifts, and either lets a parser honoring the declaration see markup this
+ * UTF-8 scan did not.
+ */
+const SINGLE_BYTE_ASCII_ENCODING =
+  /^(?:iso-8859-\d{1,2}|windows-125[0-8]|latin[1-9])$/;
+
+/**
  * Report whether `source` carries a DOCTYPE declaration.
  *
  * @param {string} source - SVG file contents.
@@ -376,6 +426,45 @@ export function findActiveContent(source) {
     );
   }
 
+  // A file this module could not read faithfully cannot be vouched for: every
+  // check below ran against a string a browser never sees. Fail closed rather
+  // than certify bytes the scanner did not actually scan.
+  if (MISDECODED_CHARACTER.test(source)) {
+    findings.push(
+      'contains NUL or replacement characters ' +
+        '(the file is not UTF-8, so this scan did not see what a browser decodes)',
+    );
+  }
+  const declaredEncoding = String(source).match(XML_DECLARATION_ENCODING);
+  if (declaredEncoding) {
+    const encoding = (declaredEncoding[1] ?? declaredEncoding[2])
+      .trim()
+      .toLowerCase();
+    if (
+      !SAFE_ENCODINGS.has(encoding) &&
+      !SINGLE_BYTE_ASCII_ENCODING.test(encoding)
+    ) {
+      findings.push(
+        `declares a non-UTF-8 encoding (${encoding || 'empty'}) ` +
+          '(an XML parser honoring it reads different bytes than this scan did)',
+      );
+    }
+  }
+
+  const instructions = new Set();
+  for (const match of String(source).matchAll(PROCESSING_INSTRUCTION)) {
+    const target = match[1].toLowerCase();
+    if (target !== 'xml') {
+      instructions.add(target || '(unnamed)');
+    }
+  }
+  for (const target of [...instructions].sort()) {
+    findings.push(
+      `contains a <?${target}?> processing instruction ` +
+        '(can load a remote stylesheet or apply an XSLT program to the image)',
+    );
+  }
+
   const element = source.match(ACTIVE_ELEMENT_PATTERN);
   if (element) {
     findings.push(`contains a <${element[1].toLowerCase()}> element`);
@@ -459,7 +548,9 @@ export function findActiveContent(source) {
  *   must never be handed back as sanitized. An entity declaration reaches this
  *   throw by design: nothing here removes a DOCTYPE, and silently repairing a
  *   document whose payload this module cannot read would be the opposite of
- *   what the verification is for.
+ *   what the verification is for. Mis-decoded input (NUL/replacement
+ *   characters, a declared non-UTF-8 encoding) throws for the same reason:
+ *   there is no safe edit to bytes the scanner could not faithfully read.
  */
 export function stripActiveContent(source) {
   const removed = [];
@@ -520,6 +611,15 @@ function stripOnce(source, removed) {
       '',
     );
   }
+
+  output = output.replace(PROCESSING_INSTRUCTION, (match, target) => {
+    const name = target.toLowerCase();
+    if (name === 'xml') {
+      return match;
+    }
+    removed.push(`<?${name || '(unnamed)'}?> processing instruction`);
+    return '';
+  });
 
   output = output.replace(ATTRIBUTE_PATTERN, (match, name, dq, sq, uq) => {
     const attribute = name.toLowerCase();
