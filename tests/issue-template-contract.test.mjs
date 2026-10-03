@@ -174,14 +174,166 @@ test('every blog-post author option resolves in blog/authors.yml', () => {
   );
 });
 
+const PULL_REQUEST_TEMPLATE = '.github/PULL_REQUEST_TEMPLATE.md';
+
 test('the pull request template is present and non-empty', () => {
-  const body = readFileSync(
-    repoPath('.github/PULL_REQUEST_TEMPLATE.md'),
-    'utf8',
-  );
+  const body = readFileSync(repoPath(PULL_REQUEST_TEMPLATE), 'utf8');
   assert.notEqual(
     body.trim(),
     '',
-    '.github/PULL_REQUEST_TEMPLATE.md must not be empty',
+    `${PULL_REQUEST_TEMPLATE} must not be empty`,
   );
+});
+
+// These templates are read in two different places, and a relative link only
+// works in one of them. In the file viewer `../CONTRIBUTING.md` resolves, which
+// is what anyone editing the template sees. Where the template is actually
+// read it does not: GitHub prefills it into a pull request body, and a
+// relative target there is resolved against the /compare URL the contributor
+// is on rather than against the repository, so the link 404s. An absolute URL
+// is the only form that works in both views.
+//
+// Nothing else in the repository would notice. `npm run check:links` is
+// `for f in *.md` (package.json, `_check:links-md`), so it iterates root-level
+// markdown and never descends into .github/; `npm run check:markdown` lints
+// style, not resolution.
+//
+// This asserts link *form*, not link *liveness*. Resolving targets over the
+// network is exactly what `check:links` is exempted from CI for in
+// tests/workflow-scripts.test.mjs (GATES_NOT_RUN_BY_CI): a third-party outage
+// must not fail an unrelated pull request. The same reasoning applies here, so
+// a target is judged by its shape alone.
+//
+// Strips HTML comments first: they are not rendered, so a link parked inside
+// one is not shown to anybody.
+function markdownLinkTargets(text) {
+  const withoutComments = text.replace(/<!--[\s\S]*?-->/g, '');
+  const targets = [];
+  // Title-bearing forms such as [a](https://x "t") are matched so the title is
+  // not mistaken for part of the target.
+  const pattern = /\[[^\]]*\]\(\s*([^)\s]+)(?:\s+(?:"[^"]*"|'[^']*'))?\s*\)/g;
+  for (const match of withoutComments.matchAll(pattern)) targets.push(match[1]);
+  return targets;
+}
+
+function badLinkTarget(target) {
+  if (target.startsWith('#')) return null;
+  if (target.startsWith('https://')) return null;
+  if (target.startsWith('http://')) {
+    return `${target} must use https://`;
+  }
+  return `${target} is relative; GitHub resolves it against the /compare URL when the template is rendered into a body, not against the repository`;
+}
+
+// The markdown GitHub renders out of an issue form: the form's own description
+// and, per element, the markdown blocks and the help text under a field.
+function renderedFormText(form) {
+  const chunks = [];
+  if (typeof form.description === 'string') chunks.push(form.description);
+  for (const element of form.body) {
+    const { value, description } = element.attributes;
+    if (element.type === 'markdown' && typeof value === 'string') {
+      chunks.push(value);
+    }
+    if (typeof description === 'string') chunks.push(description);
+  }
+  return chunks;
+}
+
+function formLinkProblems(path, form) {
+  const problems = [];
+  for (const chunk of renderedFormText(form)) {
+    for (const target of markdownLinkTargets(chunk)) {
+      const problem = badLinkTarget(target);
+      if (problem !== null) problems.push(`${path}: ${problem}`);
+    }
+  }
+  return problems;
+}
+
+test('the pull request template links only with absolute URLs or anchors', () => {
+  const body = readFileSync(repoPath(PULL_REQUEST_TEMPLATE), 'utf8');
+  const problems = markdownLinkTargets(body)
+    .map(badLinkTarget)
+    .filter((problem) => problem !== null);
+  assert.deepEqual(
+    problems,
+    [],
+    `${PULL_REQUEST_TEMPLATE}: unusable link targets:\n${problems.join('\n')}`,
+  );
+});
+
+test('every issue form links only with absolute URLs or anchors', () => {
+  const problems = templates.flatMap(({ path, form }) =>
+    formLinkProblems(path, form),
+  );
+  assert.deepEqual(
+    problems,
+    [],
+    `issue forms carry unusable link targets:\n${problems.join('\n')}`,
+  );
+});
+
+test('formLinkProblems reports a relative link anywhere a form renders markdown', () => {
+  const form = {
+    description: 'see [guide](../CONTRIBUTING.md)',
+    body: [
+      { type: 'markdown', attributes: { value: 'intro [a](./a.md)' } },
+      { type: 'input', id: 'title', attributes: { label: 'Title' } },
+      {
+        type: 'textarea',
+        id: 'content',
+        attributes: { label: 'Content', description: 'help [b](b.md)' },
+      },
+    ],
+  };
+  assert.deepEqual(
+    formLinkProblems('form.yml', form).map((problem) =>
+      problem.replace(/ is relative;.*/, ''),
+    ),
+    ['form.yml: ../CONTRIBUTING.md', 'form.yml: ./a.md', 'form.yml: b.md'],
+  );
+  assert.deepEqual(
+    formLinkProblems('form.yml', {
+      description: 'see [guide](https://example.com)',
+      body: [{ type: 'input', id: 'title', attributes: { label: 'Title' } }],
+    }),
+    [],
+  );
+});
+
+// Without this the two tests above would keep passing if the templates lost
+// their links altogether, or if the link syntax drifted past the matcher.
+test('the templates still carry the links the guards above check', () => {
+  const body = readFileSync(repoPath(PULL_REQUEST_TEMPLATE), 'utf8');
+  const targets = markdownLinkTargets(body);
+  assert.ok(
+    targets.length > 0,
+    `${PULL_REQUEST_TEMPLATE}: no markdown link found; the link-form guard is asserting nothing`,
+  );
+  assert.ok(
+    targets.some((target) => /\/CONTRIBUTING\.md$/.test(target)),
+    `${PULL_REQUEST_TEMPLATE}: expected a link to CONTRIBUTING.md, got ${JSON.stringify(targets)}`,
+  );
+});
+
+test('markdownLinkTargets reads targets apart from titles and comments', () => {
+  assert.deepEqual(markdownLinkTargets('see [a](https://example.com)'), [
+    'https://example.com',
+  ]);
+  assert.deepEqual(markdownLinkTargets('[a](https://example.com "title")'), [
+    'https://example.com',
+  ]);
+  assert.deepEqual(markdownLinkTargets('<!-- [a](../x.md) -->'), []);
+  assert.deepEqual(markdownLinkTargets('- [ ] a checkbox, not a link'), []);
+  assert.deepEqual(markdownLinkTargets('[a](#anchor)'), ['#anchor']);
+});
+
+test('badLinkTarget accepts anchors and absolute URLs and rejects the rest', () => {
+  assert.equal(badLinkTarget('#summary'), null);
+  assert.equal(badLinkTarget('https://example.com/x'), null);
+  assert.match(badLinkTarget('http://example.com/x'), /must use https/);
+  assert.match(badLinkTarget('../CONTRIBUTING.md'), /is relative/);
+  assert.match(badLinkTarget('CONTRIBUTING.md'), /is relative/);
+  assert.match(badLinkTarget('/CONTRIBUTING.md'), /is relative/);
 });
