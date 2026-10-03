@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import {
   findActiveContent,
   stripActiveContent,
+  stripDoctype,
 } from './lib/svg-active-content.mjs';
 import {
   REPO_AUTHORED_PAGES,
@@ -241,7 +242,7 @@ function sanitizeArchitectureAssets(dir) {
     }
 
     // Remove DOCTYPE declarations that can break XML consumers.
-    source = source.replace(/<!DOCTYPE\s[^>]*>\s*/gi, '');
+    source = stripDoctype(source);
 
     // Strip draw.io/Excalidraw editable metadata to reduce bloat.
     source = source.replace(/\scontent\s*=\s*["'][^"']*["']/gi, '');

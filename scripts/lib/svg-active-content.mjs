@@ -72,6 +72,48 @@ const ATTRIBUTE_PATTERN =
   /\s([a-z_:][-a-z0-9_:.]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>`]+))/gi;
 
 /**
+ * A DOCTYPE declaration, internal subset included.
+ *
+ * `<!DOCTYPE\s[^>]*>` cannot express this: the first `>` inside an internal
+ * subset closes an `<!ENTITY ...>` declaration, not the DOCTYPE, so that
+ * pattern deletes the declaration and leaves a bare `]>` behind -- in a file
+ * the caller then publishes as well-formed XML. The subset alternative carries
+ * its own closing `>` so that a `]` inside a quoted entity value cannot end
+ * the subset early. A DOCTYPE that opens a subset and never closes it matches
+ * neither alternative and is left in place, where hasDoctype() and the entity
+ * check below still see it.
+ */
+const DOCTYPE_PATTERN = /<!DOCTYPE\s[^[>]*(?:\[[\s\S]*?\]\s*>|>)\s*/gi;
+
+/** An entity declaration, which only appears inside an internal DTD subset. */
+const ENTITY_DECLARATION = /<!ENTITY\s/i;
+
+/**
+ * Report whether `source` carries a DOCTYPE declaration.
+ *
+ * @param {string} source - SVG file contents.
+ * @returns {boolean}
+ */
+export function hasDoctype(source) {
+  return /<!DOCTYPE\s/i.test(String(source));
+}
+
+/**
+ * Remove every DOCTYPE declaration from `source`, internal subset included.
+ *
+ * Callers strip the DOCTYPE because it is unnecessary in an SVG image and
+ * breaks some XML consumers. Removing only the part before the subset's first
+ * `>` leaves markup that is neither a DOCTYPE nor valid content, so the single
+ * pattern lives here and every caller shares it.
+ *
+ * @param {string} source - SVG file contents.
+ * @returns {string}
+ */
+export function stripDoctype(source) {
+  return String(source).replace(DOCTYPE_PATTERN, '');
+}
+
+/**
  * Elements whose `href`/`xlink:href` makes the browser fetch and render a
  * separate resource from the host in the value.
  *
@@ -319,6 +361,21 @@ function activeScheme(value) {
 export function findActiveContent(source) {
   const findings = [];
 
+  // An XML parser expands author-defined general entities before the document
+  // tree exists, so a payload moved into a declaration is invisible to every
+  // value-based check below: `<!ENTITY x "javascript:alert(1)">` paired with
+  // `href="&x;"` reaches the browser as a script URI, while this scanner sees
+  // only the undecodable reference `&x;`. Resolving them would mean
+  // implementing entity expansion, and its recursion limits, inside a scanner;
+  // failing closed costs nothing, because an SVG image has no reason to define
+  // entities at all.
+  if (ENTITY_DECLARATION.test(source)) {
+    findings.push(
+      'contains an entity declaration in an internal DTD subset ' +
+        '(the XML parser expands it, so its payload is not visible here)',
+    );
+  }
+
   const element = source.match(ACTIVE_ELEMENT_PATTERN);
   if (element) {
     findings.push(`contains a <${element[1].toLowerCase()}> element`);
@@ -399,7 +456,10 @@ export function findActiveContent(source) {
  * @returns {{ source: string, removed: string[] }}
  * @throws {Error} If active content survives the loop. Callers write this
  *   output to the site origin verbatim, so a source the detector still flags
- *   must never be handed back as sanitized.
+ *   must never be handed back as sanitized. An entity declaration reaches this
+ *   throw by design: nothing here removes a DOCTYPE, and silently repairing a
+ *   document whose payload this module cannot read would be the opposite of
+ *   what the verification is for.
  */
 export function stripActiveContent(source) {
   const removed = [];
