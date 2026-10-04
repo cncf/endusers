@@ -210,10 +210,73 @@ const RESOURCE_ELEMENTS = new Set([
 const TAG_PATTERN =
   /<\s*([A-Za-z_][-A-Za-z0-9_.:]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
 
-const STYLE_BLOCK_PATTERN = new RegExp(
-  `<\\s*${NS_PREFIX}style\\b(?:"[^"]*"|'[^']*'|[^>"'])*>([\\s\\S]*?)<\\s*/\\s*${NS_PREFIX}style\\s*>`,
+const STYLE_OPEN_TAG = new RegExp(
+  `<\\s*${NS_PREFIX}style\\b((?:"[^"]*"|'[^']*'|[^>"'])*)>`,
   'gi',
 );
+
+/** Sticky, so the close tag can be tested in place without slicing. */
+const STYLE_CLOSE_TAG = new RegExp(`<\\s*/\\s*${NS_PREFIX}style\\s*>`, 'iy');
+
+const CDATA_OPEN = '<![CDATA[';
+const CDATA_CLOSE = ']]>';
+
+/**
+ * The CSS text of every `<style>` element in `source`.
+ *
+ * A single lazy `<style ...>([\s\S]*?)</style>` regex cannot express this. In
+ * XML -- which is how a browser parses a standalone `.svg` -- a `</style>`
+ * inside a CDATA section is ordinary character data, so it does not close the
+ * element; the lazy match stops there anyway and every declaration after it
+ * goes unscanned, in a file that is well-formed and renders. That hid a live
+ * `url(https://host/...)` fetch from findRemoteReferences, which is the gate
+ * that keeps a visitor's IP, User-Agent and Referer from reaching a host the
+ * diagram's author chose.
+ *
+ * CDATA sections are therefore consumed whole before `<` is given any
+ * meaning. A `<style>` that never closes is read to the end of the document:
+ * that is what an HTML parser does, and in XML it is a fatal error, so
+ * scanning the remainder is the conservative reading under either grammar.
+ * A self-closing `<style/>` has no content and is skipped.
+ *
+ * @param {string} source - SVG file contents.
+ * @returns {string[]}
+ */
+function styleBlockContents(source) {
+  const blocks = [];
+  STYLE_OPEN_TAG.lastIndex = 0;
+  let open;
+  while ((open = STYLE_OPEN_TAG.exec(source))) {
+    const contentStart = open.index + open[0].length;
+    if ((open[1] ?? '').trimEnd().endsWith('/')) {
+      STYLE_OPEN_TAG.lastIndex = contentStart;
+      continue;
+    }
+
+    let cursor = contentStart;
+    let contentEnd = -1;
+    while (cursor < source.length) {
+      if (source.startsWith(CDATA_OPEN, cursor)) {
+        const close = source.indexOf(CDATA_CLOSE, cursor + CDATA_OPEN.length);
+        cursor = close === -1 ? source.length : close + CDATA_CLOSE.length;
+        continue;
+      }
+      if (source[cursor] === '<') {
+        STYLE_CLOSE_TAG.lastIndex = cursor;
+        if (STYLE_CLOSE_TAG.test(source)) {
+          contentEnd = cursor;
+          break;
+        }
+      }
+      cursor += 1;
+    }
+
+    const end = contentEnd === -1 ? source.length : contentEnd;
+    blocks.push(source.slice(contentStart, end));
+    STYLE_OPEN_TAG.lastIndex = end;
+  }
+  return blocks;
+}
 
 /** A CSS `url(...)` target, quoted or bare. Covers `@font-face` `src` too. */
 const CSS_URL_PATTERN = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s"']*))\s*\)/gi;
@@ -308,8 +371,8 @@ export function findRemoteReferences(source) {
     }
   }
 
-  for (const block of String(source).matchAll(STYLE_BLOCK_PATTERN)) {
-    for (const target of cssTargets(block[1] || '')) {
+  for (const block of styleBlockContents(String(source))) {
+    for (const target of cssTargets(block)) {
       findings.add(
         `references a remote resource in a <style> block: ${describeTarget(target)}`,
       );
