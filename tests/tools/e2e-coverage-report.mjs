@@ -42,14 +42,14 @@ function linePercent(covered, executable) {
   return Number(percent(covered, executable).toFixed(2));
 }
 
-function parsePercent(value) {
+function parsePercent(value, flag = '--check-source') {
   // Number('') is 0 and Number(' ') is 0, so a missing or blank value would
   // otherwise read as a satisfied gate rather than as the typo it is.
   const blank = String(value ?? '').trim() === '';
   const parsed = blank ? Number.NaN : Number(value);
   if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
     throw new Error(
-      `--check-source expects a percentage between 0 and 100, got ${value}`,
+      `${flag} expects a percentage between 0 and 100, got ${value}`,
     );
   }
   return parsed;
@@ -63,6 +63,7 @@ function parseArgs(argv) {
     json: null,
     text: null,
     checkSource: null,
+    checkSourceRegions: null,
     requireSourceFiles: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -74,6 +75,11 @@ function parseArgs(argv) {
     else if (arg === '--text') options.text = argv[++index];
     else if (arg === '--check-source')
       options.checkSource = parsePercent(argv[++index]);
+    else if (arg === '--check-source-regions')
+      options.checkSourceRegions = parsePercent(
+        argv[++index],
+        '--check-source-regions',
+      );
     else if (arg === '--require-source-files')
       options.requireSourceFiles = true;
     else throw new Error(`unknown e2e coverage report option: ${arg}`);
@@ -300,6 +306,36 @@ function getLineCoverage(coverageData) {
   return lines;
 }
 
+// A region is one branch location from the istanbul object convertScript
+// already builds -- the arm of a ternary, a short-circuit operand, a default
+// parameter -- data the line map cannot see because several of them share a
+// line and the per-line fold reports the line covered when any one of them
+// ran. Keyed by original-source coordinates so that the same region observed
+// by two scripts (the real build and the data-variant build compile the same
+// file twice) unions to one entry instead of counting twice.
+function getRegionCoverage(coverageData) {
+  const regions = new Map();
+  for (const [branchId, counts] of Object.entries(coverageData.b ?? {})) {
+    const locations = coverageData.branchMap?.[branchId]?.locations ?? [];
+    for (const [index, location] of locations.entries()) {
+      const line = location?.start?.line;
+      if (!Number.isInteger(line)) continue;
+      const key = [
+        line,
+        location.start?.column ?? 0,
+        location.end?.line ?? line,
+        location.end?.column ?? 0,
+      ].join(':');
+      const count = counts?.[index] ?? 0;
+      const existing = regions.get(key);
+      if (!existing || count > existing.count) {
+        regions.set(key, { line, count });
+      }
+    }
+  }
+  return regions;
+}
+
 async function convertScript(scriptCoverage, root, buildDir) {
   const parsed = new URL(scriptCoverage.url);
   const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, '');
@@ -395,14 +431,21 @@ function isEligibleScript(url) {
 
 function emptyReport(run, status = 'ok') {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: REPORT_KIND,
     status,
     runId: run.runId,
     runStatus: run.status,
     scripts: { captured: 0, converted: 0, ignored: 0 },
     sources: [],
-    summary: { executableLines: 0, coveredLines: 0, linePercent: 100 },
+    summary: {
+      executableLines: 0,
+      coveredLines: 0,
+      linePercent: 100,
+      regions: 0,
+      coveredRegions: 0,
+      regionPercent: 100,
+    },
     unmappedSources: [],
     missingSourceFiles: [],
     diagnostics: { warnings: [], errors: [] },
@@ -475,11 +518,22 @@ export async function collectE2ECoverage(
         }
         const lineCoverage = getLineCoverage(coverageData);
         if (lineCoverage.size === 0) continue;
+        const regionCoverage = getRegionCoverage(coverageData);
         const target = sources.get(relativePath) ?? {
           lines: new Map(),
+          regions: new Map(),
         };
         for (const [line, count] of lineCoverage) {
           target.lines.set(line, Math.max(target.lines.get(line) ?? 0, count));
+        }
+        // Regions union across scripts and artifacts exactly as lines do: the
+        // real build and the data-variant build each exercise one arm of a
+        // branch, and only the union sees both arms covered.
+        for (const [key, region] of regionCoverage) {
+          const existing = target.regions.get(key);
+          if (!existing || region.count > existing.count) {
+            target.regions.set(key, region);
+          }
         }
         sources.set(relativePath, target);
         unmapped.delete(relativePath);
@@ -497,12 +551,28 @@ export async function collectE2ECoverage(
       const coveredLines = [...coverage.lines.values()].filter(
         (count) => count > 0,
       ).length;
+      const regionValues = [...coverage.regions.values()];
+      const regions = regionValues.length;
+      const coveredRegions = regionValues.filter(
+        (region) => region.count > 0,
+      ).length;
+      const uncoveredRegions = [
+        ...new Set(
+          regionValues
+            .filter((region) => region.count <= 0)
+            .map((region) => region.line),
+        ),
+      ].sort((a, b) => a - b);
       return {
         file,
         executableLines,
         coveredLines,
         linePercent: linePercent(coveredLines, executableLines),
         uncoveredLines,
+        regions,
+        coveredRegions,
+        regionPercent: linePercent(coveredRegions, regions),
+        uncoveredRegions,
       };
     })
     .filter((row) => row.executableLines > 0)
@@ -524,16 +594,26 @@ export async function collectE2ECoverage(
       executableLines: summary.executableLines + row.executableLines,
       coveredLines: summary.coveredLines + row.coveredLines,
       linePercent: 0,
+      regions: summary.regions + row.regions,
+      coveredRegions: summary.coveredRegions + row.coveredRegions,
+      regionPercent: 0,
     }),
     {
       executableLines: 0,
       coveredLines: 0,
       linePercent: 0,
+      regions: 0,
+      coveredRegions: 0,
+      regionPercent: 0,
     },
   );
   report.summary.linePercent = linePercent(
     report.summary.coveredLines,
     report.summary.executableLines,
+  );
+  report.summary.regionPercent = linePercent(
+    report.summary.coveredRegions,
+    report.summary.regions,
   );
   if (report.summary.executableLines === 0) {
     throw new Error('No src/** coverage was attributable');
@@ -545,16 +625,18 @@ export function renderE2ECoverageReport(report) {
   const lines = [
     `E2E coverage: ${report.status} (run ${report.runId}; status ${report.runStatus ?? 'unknown'})`,
     '',
-    'file | line % | uncovered lines',
-    '--- | ---: | ---',
+    // The region column is what makes a --check-source-regions failure
+    // diagnosable from the text artifact alone, mirroring the unit reporter.
+    'file | line % | region % | uncovered lines | uncovered regions',
+    '--- | ---: | ---: | --- | ---',
   ];
   for (const row of report.sources) {
     lines.push(
-      `${row.file} | ${row.linePercent.toFixed(2)} | ${row.uncoveredLines.join(' ')}`,
+      `${row.file} | ${row.linePercent.toFixed(2)} | ${row.regionPercent.toFixed(2)} | ${row.uncoveredLines.join(' ')} | ${row.uncoveredRegions.join(' ')}`,
     );
   }
   lines.push(
-    `src files | ${report.summary.linePercent.toFixed(2)} | ${report.summary.coveredLines}/${report.summary.executableLines} lines`,
+    `src files | ${report.summary.linePercent.toFixed(2)} | ${report.summary.regionPercent.toFixed(2)} | ${report.summary.coveredLines}/${report.summary.executableLines} lines | ${report.summary.coveredRegions}/${report.summary.regions} regions`,
   );
   if (report.unmappedSources.length > 0) {
     lines.push(
@@ -603,7 +685,7 @@ export async function main(argv = process.argv.slice(2)) {
     if (!options.text) process.stdout.write(text);
   } catch (error) {
     const failure = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       kind: ERROR_KIND,
       status:
         error.runStatus === 'failed' || error.runStatus === 'cancelled'
@@ -617,6 +699,9 @@ export async function main(argv = process.argv.slice(2)) {
         executableLines: 0,
         coveredLines: 0,
         linePercent: 0,
+        regions: 0,
+        coveredRegions: 0,
+        regionPercent: 0,
       },
       unmappedSources: [],
       missingSourceFiles: [],
@@ -631,13 +716,22 @@ export async function main(argv = process.argv.slice(2)) {
 
   // Evaluated after the report is on disk: a threshold failure must still leave
   // the summary and artifact behind for the CI step that publishes them.
-  const { linePercent: sourcePercent } = report.summary;
+  const { linePercent: sourcePercent, regionPercent: sourceRegionPercent } =
+    report.summary;
   if (
     options.checkSource !== null &&
     sourcePercent + 1e-9 < options.checkSource
   ) {
     throw new Error(
       `Source line coverage ${sourcePercent.toFixed(2)}% is below the required ${options.checkSource}%.`,
+    );
+  }
+  if (
+    options.checkSourceRegions !== null &&
+    sourceRegionPercent + 1e-9 < options.checkSourceRegions
+  ) {
+    throw new Error(
+      `Source region coverage ${sourceRegionPercent.toFixed(2)}% is below the required ${options.checkSourceRegions}%.`,
     );
   }
   if (options.requireSourceFiles && report.missingSourceFiles.length > 0) {

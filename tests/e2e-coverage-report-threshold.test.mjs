@@ -145,10 +145,56 @@ test('--check-source fails a report below the floor and keeps the artifacts', as
     assert.equal(json.summary.linePercent, 50);
     assert.match(
       await readFile(join(fixture.root, 'report.txt'), 'utf8'),
-      /src\/components\/Example\/index\.js \| 50\.00 \| 2/,
+      /src\/components\/Example\/index\.js \| 50\.00 \| 50\.00 \| 2 \| 2/,
     );
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+// The halfCoveredRun V8 block ranges convert to two branch regions, one per
+// line, so the same fixture lands on exactly 50.00% regions as well.
+test('--check-source-regions fails a report below the floor and keeps the artifacts', async () => {
+  const fixture = await halfCoveredRun();
+  try {
+    await assert.rejects(
+      () => main(reportArgs(fixture, ['--check-source-regions', '100'])),
+      /Source region coverage 50\.00% is below the required 100%\./,
+    );
+
+    // The gate must not cost the operator the report that explains it.
+    const json = JSON.parse(
+      await readFile(join(fixture.root, 'report.json'), 'utf8'),
+    );
+    assert.equal(json.status, 'ok');
+    assert.equal(json.summary.regionPercent, 50);
+    assert.deepEqual(json.sources[0].uncoveredRegions, [2]);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('--check-source-regions passes when coverage exactly meets the floor', async () => {
+  const fixture = await halfCoveredRun();
+  try {
+    const report = await main(
+      reportArgs(fixture, ['--check-source-regions', '50']),
+    );
+    assert.equal(report.status, 'ok');
+    assert.equal(report.summary.regionPercent, 50);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+// A silently-ignored bad threshold is the failure mode that matters here: it
+// would read as a gate in the workflow while enforcing nothing.
+test('--check-source-regions rejects thresholds that are not a percentage', async () => {
+  for (const value of ['', 'ninety', '-1', '101']) {
+    await assert.rejects(
+      () => main(['--input', 'unused', '--check-source-regions', value]),
+      /--check-source-regions expects a percentage between 0 and 100/,
+    );
   }
 });
 
