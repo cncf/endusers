@@ -206,18 +206,20 @@ test.describe('case study facet filters', () => {
 // dated ones, so the fallback on the other side would stay unreached. See
 // tests/tools/e2e-data-fixtures.cjs; `npm run build:production` and the gating
 // end-to-end job never load the overlay.
-test.describe('case studies with no publication date', () => {
+//
+// The block is therefore skipped outside the coverage run, the same way
+// tests/e2e/data-fixtures.spec.js gates its overlay-only assertions: against
+// the real data the page has no undated row and every expectation below would
+// be false. The data file is read through the ambient environment so the
+// records the spec looks for are exactly the ones the build it is running
+// against rendered.
+const describeCoverage =
+  process.env.E2E_COVERAGE === '1' ? test.describe : test.describe.skip;
+
+describeCoverage('case studies with no publication date', () => {
   test('sort last and leave their date cells empty', async ({ page }) => {
-    const studies = loadSiteData('case-studies.json', {
-      E2E_COVERAGE: '1',
-    }).caseStudies;
+    const studies = loadSiteData('case-studies.json').caseStudies;
     const undated = studies.filter((study) => !study.publishedAt);
-    // Outside the coverage build the overlay is not applied and there are no
-    // undated studies to look for.
-    test.skip(
-      undated.length === 0,
-      'no undated case study in this build (overlay not applied)',
-    );
     // Both sides of the comparator need an undated operand.
     expect(undated.length).toBeGreaterThanOrEqual(2);
     expect(studies.length).toBeGreaterThan(undated.length);
