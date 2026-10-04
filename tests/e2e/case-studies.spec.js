@@ -8,6 +8,7 @@
 // stays green while the shipped toolbar does nothing. These tests exercise the
 // controls in a real browser against `build/`.
 import { test, expect } from '../tools/e2e-coverage.cjs';
+import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 
 // React attaches its fiber to the DOM node it hydrates, so the presence of a
 // `__react*` property is the signal that the element's handlers are live.
@@ -187,5 +188,76 @@ test.describe('case study facet filters', () => {
       .toBe(total);
     await expect(search).toHaveValue('');
     await expect(project).toHaveValue('');
+  });
+});
+
+// Every study in data/case-studies.json carries a publishedAt, so two arms of
+// the table are unreachable from the shipped data: the "|| ''" fallbacks
+// sortByPublishedAtDesc compares with when a study has no date
+// (src/components/CaseStudies/index.js line 25), and the empty arm of the date
+// cell beside it (line 204).
+//
+// Unlike a cleared document-level field, a missing date is a property of one
+// record, so tests/e2e/fixtures/data/case-studies.json appends undated studies
+// to the coverage build. The real studies keep rendering exactly as they did
+// and the undated rows render alongside them, which is what makes this an
+// added case rather than a swapped one. The overlay appends two of them: a
+// lone undated study only ever lands on one side of a comparison against the
+// dated ones, so the fallback on the other side would stay unreached. See
+// tests/tools/e2e-data-fixtures.cjs; `npm run build:production` and the gating
+// end-to-end job never load the overlay.
+test.describe('case studies with no publication date', () => {
+  test('sort last and leave their date cells empty', async ({ page }) => {
+    const studies = loadSiteData('case-studies.json', {
+      E2E_COVERAGE: '1',
+    }).caseStudies;
+    const undated = studies.filter((study) => !study.publishedAt);
+    // Outside the coverage build the overlay is not applied and there are no
+    // undated studies to look for.
+    test.skip(
+      undated.length === 0,
+      'no undated case study in this build (overlay not applied)',
+    );
+    // Both sides of the comparator need an undated operand.
+    expect(undated.length).toBeGreaterThanOrEqual(2);
+    expect(studies.length).toBeGreaterThan(undated.length);
+
+    const { section, results } = await openCaseStudies(page);
+    expect(totalCount(await results.textContent())).toBe(studies.length);
+
+    const rows = section.locator('tbody tr');
+    await expect(rows).toHaveCount(studies.length);
+
+    for (const study of undated) {
+      const row = rows.filter({
+        has: page.getByRole('link', { name: study.title }),
+      });
+      await expect(row).toHaveCount(1);
+
+      // Date is the third column; for these rows it is the branch rendering
+      // nothing, while the cells either side still carry their values.
+      const cells = row.locator('th, td');
+      await expect(cells.nth(1)).toHaveText(study.organization);
+      await expect(cells.nth(2)).toHaveText('');
+      await expect(cells.nth(3)).toHaveText(study.projects.join(', '));
+    }
+
+    // An empty publishedAt compares lowest, so the descending sort puts the
+    // undated studies in the final rows -- which is also what proves the
+    // comparator ran its fallbacks rather than dropping the rows.
+    const trailing = rows.nth(studies.length - undated.length);
+    await expect(trailing).toHaveCount(1);
+    const tailText = (
+      await rows
+        .nth(studies.length - undated.length)
+        .locator('td')
+        .first()
+        .textContent()
+    ).trim();
+    expect(undated.map((study) => study.organization)).toContain(tailText);
+
+    // Every other row still shows a formatted date, so these are the rows
+    // taking the empty arm rather than the column having broken.
+    await expect(rows.first().locator('td').nth(1)).not.toHaveText('');
   });
 });
