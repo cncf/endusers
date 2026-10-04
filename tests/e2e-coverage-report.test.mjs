@@ -1909,3 +1909,232 @@ test('collectE2ECoverage reports a script recorded with no functions as unattrib
     await rm(fixture.root, { recursive: true, force: true });
   }
 });
+
+// The published artifact has to carry its own inputs. Rendering it required a
+// byte-identical build/, and that build does not reproduce outside the runner,
+// so the number behind the merge gate could not be audited anywhere else.
+async function selfContainedFixture({ writeMap = true } = {}) {
+  const fixture = await fixtureRun();
+  const source = 'const hit = 1;\nconst miss = 2;\n';
+  const scriptText = `${source}\n//# sourceMappingURL=app.js.map\n`;
+  const original = join(fixture.root, 'src/components/Example/index.js');
+  await mkdir(join(fixture.root, 'src/components/Example'), {
+    recursive: true,
+  });
+  await writeFile(original, source);
+  await writeFile(join(fixture.buildDir, 'assets/js/app.js'), scriptText);
+  if (writeMap) {
+    await writeFile(
+      join(fixture.buildDir, 'assets/js/app.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'app.js',
+        sources: ['webpack://endusers/./src/components/Example/index.js'],
+        sourcesContent: [source],
+        names: [],
+        mappings: mapLines([
+          [0, 0],
+          [0, 1],
+        ]),
+      }),
+    );
+  }
+  await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+    schemaVersion: 1,
+    kind: 'endusers.playwright.v8-coverage',
+    runId: 'run-1',
+    result: [
+      {
+        url: 'http://localhost:3000/assets/js/app.js',
+        scriptId: '1',
+        functions: [
+          {
+            functionName: '',
+            isBlockCoverage: true,
+            ranges: [
+              {
+                startOffset: source.indexOf('const miss'),
+                endOffset: scriptText.length,
+                count: 0,
+              },
+              { startOffset: 0, endOffset: scriptText.length, count: 1 },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  return { ...fixture, scriptText };
+}
+
+test('collectE2ECoverage renders a sealed run after the build directory is gone', async () => {
+  const fixture = await selfContainedFixture();
+  try {
+    const manifest = await sealCoverageRun(fixture.runDir, 'passed', {
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(manifest.capturedScripts, 2);
+    assert.deepEqual(manifest.uncapturedScripts, []);
+
+    // The exact condition an auditor is in: the artifact, the repository, and
+    // no build whatsoever.
+    await rm(fixture.buildDir, { recursive: true, force: true });
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    assert.deepEqual(
+      report.sources.map((entry) => [
+        entry.file,
+        entry.executableLines,
+        entry.coveredLines,
+      ]),
+      [['src/components/Example/index.js', 2, 1]],
+    );
+    assert.deepEqual(report.sources[0].uncoveredLines, [2]);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('the captured copy is still held to the recorded source hash', async () => {
+  const fixture = await selfContainedFixture();
+  try {
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-1', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/app.js',
+          scriptId: '2',
+          functions: [],
+          sourceLength: fixture.scriptText.length,
+          sourceSha256: createHash('sha256')
+            .update(fixture.scriptText)
+            .digest('hex'),
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed', {
+      buildDir: fixture.buildDir,
+    });
+    await rm(fixture.buildDir, { recursive: true, force: true });
+
+    // A self-contained artifact is only trustworthy while the integrity checks
+    // still apply to the copy that travels with it.
+    const captured = join(fixture.runDir, 'scripts/assets/js/app.js');
+    await writeFile(captured, fixture.scriptText.replace('hit', 'HIT'));
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /generated source hash mismatch/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a script resolvable from no root fails the report closed', async () => {
+  const fixture = await selfContainedFixture();
+  try {
+    await sealCoverageRun(fixture.runDir, 'passed', {
+      buildDir: fixture.buildDir,
+    });
+    await rm(fixture.buildDir, { recursive: true, force: true });
+    await rm(join(fixture.runDir, 'scripts'), {
+      recursive: true,
+      force: true,
+    });
+    // Skipping the script instead would let the gate pass on partial data.
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /coverage script not found/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a script whose source map is missing is left to the build directory', async () => {
+  const fixture = await selfContainedFixture({ writeMap: false });
+  try {
+    const manifest = await sealCoverageRun(fixture.runDir, 'passed', {
+      buildDir: fixture.buildDir,
+    });
+    // Copying the script without its map would shadow a usable build/ copy
+    // with one the reporter cannot map, so neither is captured.
+    assert.equal(manifest.capturedScripts, 0);
+    assert.deepEqual(manifest.uncapturedScripts, ['assets/js/app.js']);
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /ENOENT/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('sealing without a build directory captures nothing', async () => {
+  const fixture = await selfContainedFixture();
+  try {
+    const manifest = await sealCoverageRun(fixture.runDir, 'passed');
+    assert.equal(manifest.capturedScripts, undefined);
+    assert.equal(manifest.uncapturedScripts, undefined);
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('an escaping coverage URL is declined by capture and rejected by the report', async () => {
+  const fixture = await fixtureRun();
+  try {
+    await writeFile(join(fixture.root, 'outside.js'), 'const outside = 1;\n');
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/%2e%2e%2foutside.js',
+          scriptId: '1',
+          functions: [],
+        },
+      ],
+    });
+    // Capture declines quietly so that sealing a run can never fail on a
+    // hostile URL; the reporter stays the one place that rejects it.
+    const manifest = await sealCoverageRun(fixture.runDir, 'passed', {
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(manifest.capturedScripts, 0);
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /coverage script escapes build directory/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});

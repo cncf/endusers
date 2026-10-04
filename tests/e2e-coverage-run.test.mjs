@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import {
+  mkdir,
   mkdtemp,
   readFile,
   readdir,
@@ -240,5 +241,130 @@ test('run CLI entrypoint reports a failing command on stderr and exits 1', async
     assert.equal((await readdir(runDir)).length, 0);
   } finally {
     await rm(runDir, { recursive: true, force: true });
+  }
+});
+
+test('the seal CLI captures referenced scripts into the run directory', async () => {
+  const runDir = await tempRunDir();
+  const buildDir = join(runDir, '..', 'build-cli');
+  try {
+    await mkdir(join(buildDir, 'assets/js'), { recursive: true });
+    const scriptText = 'const hit = 1;\n//# sourceMappingURL=app.js.map\n';
+    await writeFile(join(buildDir, 'assets/js/app.js'), scriptText);
+    await writeFile(join(buildDir, 'assets/js/app.js.map'), '{"version":3}');
+    await initCoverageRun(runDir, 'run-capture');
+    await writeCoverageArtifact(runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-capture',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/app.js',
+          scriptId: '1',
+          functions: [],
+        },
+      ],
+    });
+
+    await main([
+      'seal',
+      '--dir',
+      runDir,
+      '--status',
+      'passed',
+      '--build-dir',
+      buildDir,
+    ]);
+
+    const manifest = await readCoverageRun(runDir);
+    assert.equal(manifest.capturedScripts, 2);
+    assert.deepEqual(manifest.uncapturedScripts, []);
+    assert.equal(
+      await readFile(join(runDir, 'scripts/assets/js/app.js'), 'utf8'),
+      scriptText,
+    );
+    // No stray temporaries: the reporter refuses a run that holds any.
+    assert.deepEqual(
+      (await readdir(join(runDir, 'scripts/assets/js'))).sort(),
+      ['app.js', 'app.js.map'],
+    );
+  } finally {
+    await rm(runDir, { recursive: true, force: true });
+    await rm(buildDir, { recursive: true, force: true });
+  }
+});
+
+test('sealing tolerates a build directory that was never produced', async () => {
+  const runDir = await tempRunDir();
+  try {
+    await initCoverageRun(runDir, 'run-nobuild');
+    await writeCoverageArtifact(runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-nobuild',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/app.js',
+          scriptId: '1',
+          functions: [],
+        },
+      ],
+    });
+    // The seal step runs with if: always(), so a run that failed before the
+    // build step must still seal rather than mask the real failure.
+    const manifest = await sealCoverageRun(runDir, 'failed', {
+      buildDir: join(runDir, 'absent-build'),
+    });
+    assert.equal(manifest.status, 'failed');
+    assert.equal(manifest.capturedScripts, 0);
+    assert.deepEqual(manifest.uncapturedScripts, []);
+  } finally {
+    await rm(runDir, { recursive: true, force: true });
+  }
+});
+
+test('capture skips unreadable files and scripts absent from the build', async () => {
+  const runDir = await tempRunDir();
+  const buildDir = join(runDir, '..', 'build-partial');
+  try {
+    await mkdir(join(buildDir, 'assets/js'), { recursive: true });
+    await writeFile(join(buildDir, 'assets/js/present.js'), 'const a = 1;\n');
+    await initCoverageRun(runDir, 'run-partial');
+    await writeCoverageArtifact(runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-partial',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/present.js',
+          scriptId: '1',
+          functions: [],
+        },
+        {
+          url: 'http://localhost:3000/assets/js/absent.js',
+          scriptId: '2',
+          functions: [],
+        },
+        // Already self-contained, so there is nothing on disk to copy.
+        {
+          url: 'http://localhost:3000/assets/js/inline.js',
+          scriptId: '3',
+          source: 'const inline = 1;\n',
+          functions: [],
+        },
+        { url: 'about:blank', scriptId: '4', functions: [] },
+      ],
+    });
+    await writeFile(join(runDir, 'not-json.json'), 'this is not json');
+
+    const manifest = await sealCoverageRun(runDir, 'passed', { buildDir });
+    assert.equal(manifest.capturedScripts, 1);
+    assert.deepEqual(manifest.uncapturedScripts, ['assets/js/absent.js']);
+    assert.deepEqual(await readdir(join(runDir, 'scripts/assets/js')), [
+      'present.js',
+    ]);
+  } finally {
+    await rm(runDir, { recursive: true, force: true });
+    await rm(buildDir, { recursive: true, force: true });
   }
 });

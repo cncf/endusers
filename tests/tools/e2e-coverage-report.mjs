@@ -13,12 +13,17 @@ import {
   COVERAGE_ARTIFACT_KIND,
   readCoverageRun,
 } from './e2e-coverage-run.mjs';
+import {
+  COVERAGE_SCRIPTS_DIR,
+  isEligibleScript,
+  resolveScriptInRoot,
+  scriptPathname,
+} from './e2e-coverage-scripts.mjs';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const REPORT_KIND = 'endusers.e2e.coverage-report';
 const ERROR_KIND = 'endusers.e2e.coverage-report-error';
 const SOURCE_MAPPING_URL = /(?:\/\/[#@]\s*sourceMappingURL=)(\S+)/u;
-const ELIGIBLE_SCRIPT = /(?:\.m?js$|\/assets\/js\/)/u;
 const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 
 class CoverageReportError extends Error {
@@ -336,22 +341,25 @@ function getRegionCoverage(coverageData) {
   return regions;
 }
 
-async function convertScript(scriptCoverage, root, buildDir) {
-  const parsed = new URL(scriptCoverage.url);
-  const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, '');
-  const scriptPath = resolve(buildDir, pathname);
-  if (!isInside(resolve(buildDir), scriptPath)) {
-    throw new Error(
-      `coverage script escapes build directory: ${scriptCoverage.url}`,
-    );
+// Captured scripts are resolved against each root in order -- the run's own
+// `scripts/` copies first, then the build directory. A script missing from one
+// root falls through to the next; a script missing from all of them still
+// aborts the report, because rendering on partial data would let the merge gate
+// pass on a number nobody can reproduce.
+async function locateScript(scriptRoots, pathname, url) {
+  for (const root of scriptRoots) {
+    const located = await resolveScriptInRoot(root, pathname, url);
+    if (located) return located;
   }
-  const buildRoot = await realpath(buildDir);
-  const resolvedScriptPath = await realpath(scriptPath);
-  if (!isInside(buildRoot, resolvedScriptPath)) {
-    throw new Error(
-      `coverage script escapes build directory: ${scriptCoverage.url}`,
-    );
-  }
+  throw new Error(
+    `coverage script not found in ${scriptRoots.join(', ')}: ${url}`,
+  );
+}
+
+async function convertScript(scriptCoverage, root, scriptRoots) {
+  const pathname = scriptPathname(scriptCoverage.url);
+  const located = await locateScript(scriptRoots, pathname, scriptCoverage.url);
+  const resolvedScriptPath = located.path;
   const generatedSource =
     scriptCoverage.source ?? (await readFile(resolvedScriptPath, 'utf8'));
   if (
@@ -373,7 +381,7 @@ async function convertScript(scriptCoverage, root, buildDir) {
   const { map: rawMap, mapPath } = await loadSourceMap(
     reference,
     resolvedScriptPath,
-    buildRoot,
+    located.root,
   );
   const { map, sourceFiles } = await normalizeSourceMap(rawMap, mapPath, root);
   const converter = v8ToIstanbul(resolvedScriptPath, 0, {
@@ -415,18 +423,6 @@ async function convertScript(scriptCoverage, root, buildDir) {
     attributed: true,
     attributedPaths,
   };
-}
-
-function isEligibleScript(url) {
-  try {
-    const parsed = new URL(url);
-    return (
-      (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
-      ELIGIBLE_SCRIPT.test(parsed.pathname)
-    );
-  } catch {
-    return false;
-  }
 }
 
 function emptyReport(run, status = 'ok') {
@@ -474,6 +470,10 @@ export async function collectE2ECoverage(
     throw new Error(`coverage run contains incomplete temporary artifacts`);
   }
 
+  // The run's own copies win over build/ so a published artifact renders the
+  // same way wherever it is unpacked, including where no build exists at all.
+  const scriptRoots = [join(runDir, COVERAGE_SCRIPTS_DIR), buildDir];
+
   const report = emptyReport(run);
   const sources = new Map();
   const unmapped = new Set();
@@ -499,7 +499,7 @@ export async function collectE2ECoverage(
         report.scripts.ignored += 1;
         continue;
       }
-      const converted = await convertScript(scriptCoverage, root, buildDir);
+      const converted = await convertScript(scriptCoverage, root, scriptRoots);
       report.scripts.converted += 1;
       if (!converted.attributed) continue;
       for (const sourceFile of converted.sourceFiles) {
