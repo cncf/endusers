@@ -454,6 +454,43 @@ test('detects a protocol-relative reference, which inherits https at the origin'
   ]);
 });
 
+// The URL parser treats `\` as `/` in the scheme and authority prefix of a
+// special-scheme URL, and the site is served over https. Each value below
+// therefore reaches evil.example in a browser exactly as `//evil.example`
+// does, so a `//`-only remote test reads a cross-origin fetch as a local path.
+for (const [value, expected] of [
+  ['\\\\evil.example/b.png', '//evil.example/b.png'],
+  ['/\\evil.example/b.png', '//evil.example/b.png'],
+  ['\\/evil.example/b.png', '//evil.example/b.png'],
+  ['\\\\\\evil.example/b.png', '//evil.example/b.png'],
+  ['https:\\\\evil.example/b.png', 'https://evil.example/b.png'],
+  ['https:/\\evil.example/b.png', 'https://evil.example/b.png'],
+  ['https:\\/evil.example/b.png', 'https://evil.example/b.png'],
+]) {
+  test(`detects a backslash authority prefix: ${value}`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><image href="${value}"/></svg>`;
+    assert.deepEqual(findRemoteReferences(svg), [
+      `references a remote resource in <image> href: ${expected}`,
+    ]);
+  });
+}
+
+// Only the leading run of separators is an authority. A single separator keeps
+// the value on this origin, and an interior backslash is an ordinary path
+// character -- flagging either would fail diagrams that reference their own
+// sibling assets.
+for (const [label, value] of [
+  ['a single leading backslash, which is a path on this origin', '\\local.png'],
+  ['a scheme with a single separator', 'https:/local.png'],
+  ['an interior backslash in a relative path', 'a\\b/c.png'],
+  ['a backslash inside a dot-relative path', './sub\\dir/x.png'],
+]) {
+  test(`does not flag ${label}`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><image href="${value}"/></svg>`;
+    assert.deepEqual(findRemoteReferences(svg), []);
+  });
+}
+
 test('detects a remote url() in a <style> block, including @font-face src', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style>@font-face{font-family:x;src:url(https://evil.example/f.woff)}</style><text style="font-family:x">a</text></svg>';
