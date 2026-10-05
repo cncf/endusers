@@ -77,6 +77,30 @@ const E2E_COVERAGE = process.env.E2E_COVERAGE === '1';
 const E2E_SOURCE_MAP_PLUGIN = E2E_COVERAGE ? endusersE2ESourceMaps : null;
 const E2E_DATA_FIXTURE_PLUGIN = E2E_COVERAGE ? endusersE2EDataFixtures : null;
 
+// The data overlays above reach components that read data/*.json. They cannot
+// reach a component whose props come from generated MDX: the architecture
+// pages under docs/architectures/ are committed files produced by
+// `npm run import:architectures`, not documents assembled at build time, so a
+// prop shape absent from every one of them is absent from every build.
+//
+// This second docs instance serves tests/e2e/fixtures/docs/** under its own
+// route so such a shape can exist without touching published content. Like the
+// data overlays it is registered only when E2E_COVERAGE=1, so
+// `npm run build:production`, the gating "End-to-end tests" job and the
+// deployed site never compile or link these pages.
+const E2E_FIXTURE_DOCS_ROUTE = 'e2e-coverage-fixtures';
+const E2E_FIXTURE_DOCS_PLUGIN = E2E_COVERAGE
+  ? [
+      require.resolve('@docusaurus/plugin-content-docs'),
+      {
+        id: 'e2e-coverage-fixtures',
+        path: 'tests/e2e/fixtures/docs',
+        routeBasePath: E2E_FIXTURE_DOCS_ROUTE,
+        sidebarPath: false,
+      },
+    ]
+  : null;
+
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 /** @type {import('@docusaurus/types').Config} */
@@ -337,6 +361,7 @@ const config = {
   plugins: [
     E2E_SOURCE_MAP_PLUGIN,
     E2E_DATA_FIXTURE_PLUGIN,
+    E2E_FIXTURE_DOCS_PLUGIN,
     [
       require.resolve('docusaurus-plugin-search-local'),
       /** @type {import('docusaurus-plugin-search-local').PluginOptions} */
