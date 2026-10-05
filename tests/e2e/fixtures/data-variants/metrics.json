@@ -1,6 +1,14 @@
 {
-  "description": "Clears the document-level generatedAt so ReferenceArchitectures renders the ': null' arm of its syncDate ternary (src/components/ReferenceArchitectures/index.js line 23) and the '' arm beside it at line 33. Four other components read generatedAt, so clearing it moves five pages at once -- which is exactly why it belongs to the variant build rather than to the ordinary coverage build the real pages are measured from.",
+  "description": "Clears the document-level generatedAt so ReferenceArchitectures renders the ': null' arm of its syncDate ternary (src/components/ReferenceArchitectures/index.js line 23) and the '' arm beside it at line 33. Four other components read generatedAt, so clearing it moves five pages at once -- which is exactly why it belongs to the variant build rather than to the ordinary coverage build the real pages are measured from. The appended point gives the 'submissions' trend exactly one value, so MetricsDashboard's Sparkline takes the 'values.length === 1 ? 50' arm of its x-coordinate ternary (src/components/MetricsDashboard/index.js line 28). That arm has no reachable shape in the checked-in data: 'submissions' carries zero values and renders 'No trend data yet' instead, 'publications' carries five and takes the arm beside it, and those are the only two trends. Appending the point in the ordinary coverage build would not add a case -- it would trade the empty-values arm for this one, since 'submissions' is the only trend that reaches it. The variant build keeps both: the real /metrics page still renders 'No trend data yet'.",
   "set": {
     "generatedAt": null
+  },
+  "append": {
+    "referenceArchitectureLifecycle.trends.submissions.values": [
+      {
+        "date": "2026-01",
+        "value": 1
+      }
+    ]
   }
 }
