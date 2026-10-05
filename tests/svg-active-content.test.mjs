@@ -911,6 +911,69 @@ test('fails closed on a declared multi-byte or ASCII-incompatible encoding', () 
   }
 });
 
+// XML allows either quote around the encoding pseudo-attribute, so
+// XML_DECLARATION_ENCODING captures the single-quoted spelling in its second
+// group. A reader that only consulted the first group would see no declared
+// encoding at all and silently certify a file it cannot faithfully scan.
+test('reads the declared encoding from a single-quoted declaration', () => {
+  const svg = "<?xml version='1.0' encoding='utf-16'?>\n" + INERT;
+  assert.deepEqual(findActiveContent(svg), [
+    'declares a non-UTF-8 encoding (utf-16) ' +
+      '(an XML parser honoring it reads different bytes than this scan did)',
+  ]);
+  assert.throws(() => stripActiveContent(svg), {
+    message: /declares a non-UTF-8 encoding \(utf-16\)/,
+  });
+
+  // The single-quoted spelling is no more permissive than the double-quoted
+  // one: a safe encoding still passes through either way.
+  assert.deepEqual(
+    findActiveContent("<?xml version='1.0' encoding='UTF-8'?>\n" + INERT),
+    [],
+  );
+});
+
+// An empty encoding names no encoding at all, so a parser falls back to its
+// own default rather than to this module's UTF-8 reading. The finding has to
+// stay legible when there is no name to quote.
+test('names an empty declared encoding rather than printing a blank', () => {
+  const svg = '<?xml version="1.0" encoding=""?>\n' + INERT;
+  assert.deepEqual(findActiveContent(svg), [
+    'declares a non-UTF-8 encoding (empty) ' +
+      '(an XML parser honoring it reads different bytes than this scan did)',
+  ]);
+  assert.throws(() => stripActiveContent(svg), {
+    message: /declares a non-UTF-8 encoding \(empty\)/,
+  });
+});
+
+// PROCESSING_INSTRUCTION stops its target capture at the first whitespace, so
+// `<? ... ?>` and `<??>` both carry an empty target. A target-less short tag
+// is still a processing instruction the browser hands to the XML parser, and
+// it is precisely the shape that slips past a filter keyed on known names --
+// so it must be reported and removed under a label, not under a blank.
+test('reports and removes a processing instruction with no target', () => {
+  for (const instruction of ['<??>', '<? type="text/xsl" ?>']) {
+    const svg = INERT.replace('<rect', instruction + '<rect');
+    assert.deepEqual(
+      findActiveContent(svg),
+      [
+        'contains a <?(unnamed)?> processing instruction ' +
+          '(can load a remote stylesheet or apply an XSLT program to the image)',
+      ],
+      `expected an unnamed-PI finding for ${instruction}`,
+    );
+
+    const { source, removed } = stripActiveContent(svg);
+    assert.ok(
+      removed.includes('<?(unnamed)?> processing instruction'),
+      `expected an unnamed-PI removal for ${instruction}, got ${JSON.stringify(removed)}`,
+    );
+    assert.doesNotMatch(source, /<\?/);
+    assert.deepEqual(findActiveContent(source), []);
+  }
+});
+
 test('accepts the UTF-8 encoding spellings a generator actually emits', () => {
   // ISO-8859-1 appears in the committed member-logo corpus; its 0x00-0x7F
   // range is ASCII, so markup tokenizes exactly as this module's UTF-8
