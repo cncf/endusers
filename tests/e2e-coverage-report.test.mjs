@@ -260,6 +260,136 @@ test('collectE2ECoverage maps V8 ranges through an external source map to src li
   }
 });
 
+// v8-to-istanbul builds every region from a *generated* block boundary and maps
+// its endpoints back through the source map. Minified output has no mapping at
+// most boundaries, so an endpoint lands on whatever mapping precedes it and a
+// block that never ran is reported as an original span that demonstrably did:
+// at 900592b the report put a zero-count region across useFocusTrap.js lines
+// 38-40 -- the Shift+Tab wrap arm that tests/e2e/interactions.spec.js:217
+// presses and asserts -- while statement coverage put all three of those lines
+// at 1 in the same union (#1035). Those spans inflated the denominator and sent
+// contributors to write tests for branches that were already covered.
+test('a zero-count region spanning only covered lines is not counted against the file', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const lines = [
+      'const a = 1;',
+      '',
+      'const c = 3;',
+      'const d = 4;',
+      'const e = 5;',
+    ];
+    const source = `${lines.join('\n')}\n`;
+    const scriptText = `${source}\n//# sourceMappingURL=app.js.map\n`;
+    const offset = (text) => source.indexOf(text);
+    const original = join(fixture.root, 'src/components/Example/index.js');
+    await mkdir(join(fixture.root, 'src/components/Example'), {
+      recursive: true,
+    });
+    await writeFile(original, source);
+    await writeFile(join(fixture.buildDir, 'assets/js/app.js'), scriptText);
+    await writeFile(
+      join(fixture.buildDir, 'assets/js/app.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'app.js',
+        sources: ['webpack://endusers/./src/components/Example/index.js'],
+        sourcesContent: [source],
+        names: [],
+        // Every line maps at column 0; line 4 carries a second mapping at
+        // column 8, so a block opening mid-line resolves inside it rather
+        // than snapping back to the start of the line.
+        mappings: `${mapLines([
+          [0, 0],
+          [0, 1],
+          [0, 2],
+          [0, 3],
+          [0, 4],
+        ])},${[vlq(8), vlq(0), vlq(0), vlq(8)].join('')}`,
+      }),
+    );
+
+    // One page runs everything but the last line.
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/app.js',
+          scriptId: '1',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                {
+                  startOffset: 0,
+                  endOffset: scriptText.length,
+                  count: 1,
+                },
+                {
+                  startOffset: offset('const e'),
+                  endOffset: scriptText.length,
+                  count: 0,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    // A second page contributes two more zero-count blocks: one over lines
+    // 1-3, standing in for the mis-mapped multi-line span (line 2 is blank, so
+    // the span has to be judged on the lines that carry statements), and one
+    // from inside line 4 to the end of line 5, which closes on a line nothing
+    // ran. Only the first is a phantom.
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-1', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/app.js',
+          scriptId: '2',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                { startOffset: 0, endOffset: scriptText.length, count: 1 },
+                { startOffset: 0, endOffset: offset('const d'), count: 0 },
+                {
+                  startOffset: offset('const d') + 'const d'.length,
+                  endOffset: offset('const e') + 'const e = 5;'.length,
+                  count: 0,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    const [entry] = report.sources;
+    assert.equal(entry.file, 'src/components/Example/index.js');
+    assert.deepEqual(entry.uncoveredLines, [5]);
+    // Line 1 is gone: nothing in lines 1-3 went unexecuted, so no region can
+    // span them unexecuted. The span closing on line 5 and the region confined
+    // to line 5 both stay, and so does their weight in the denominator.
+    assert.deepEqual(entry.uncoveredRegions, [4, 5]);
+    assert.equal(entry.regions - entry.coveredRegions, 2);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 // `npm run build:e2e:coverage` compiles the site twice: once from the real
 // data, and once with tests/e2e/fixtures/data-variants/** layered on, into
 // build/e2e-coverage-variant under its own base URL. That is what makes a
@@ -1905,6 +2035,113 @@ test('collectE2ECoverage reports a script recorded with no functions as unattrib
         }),
       /No src\/\*\* coverage was attributable/,
     );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('sourcePathFromReference rejects a webpack reference with no path after the authority', () => {
+  // `webpack://<authority>` with no following slash leaves nothing to resolve,
+  // so the reference must not fall through to the map's own directory.
+  assert.equal(
+    sourcePathFromReference(
+      'webpack://endusers',
+      '/repo/build/assets/js/app.js.map',
+      '/repo',
+    ),
+    null,
+  );
+});
+
+test('sourcePathFromReference rejects a reference that resolves to the repository root', () => {
+  // Containment alone accepts the root itself; only the repo-relative form
+  // being empty rejects it.
+  assert.equal(
+    sourcePathFromReference(
+      '../../..',
+      '/repo/build/assets/js/app.js.map',
+      '/repo',
+    ),
+    null,
+  );
+});
+
+test('collectE2ECoverage reads original content from disk when the map omits sourcesContent', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const source = 'const hit = 1;\nconst miss = 2;\n';
+    const scriptText = `${source}\n//# sourceMappingURL=app.js.map\n`;
+    const script = join(fixture.buildDir, 'assets/js/app.js');
+    const map = join(fixture.buildDir, 'assets/js/app.js.map');
+    const original = join(fixture.root, 'src/components/Example/index.js');
+    await mkdir(join(fixture.root, 'src/components/Example'), {
+      recursive: true,
+    });
+    await writeFile(original, source);
+    await writeFile(script, scriptText);
+    await writeFile(
+      map,
+      JSON.stringify({
+        version: 3,
+        file: 'app.js',
+        // Both a src source and an external one, and no sourcesContent at all:
+        // the src source must be read from disk and the external one blanked.
+        sources: [
+          'webpack://endusers/./src/components/Example/index.js',
+          'webpack://endusers/./node_modules/vendor/index.js',
+        ],
+        names: [],
+        mappings: mapLines([
+          [0, 0],
+          [0, 1],
+        ]),
+      }),
+    );
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/app.js',
+          scriptId: '1',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                {
+                  startOffset: source.indexOf('const miss'),
+                  endOffset: scriptText.length,
+                  count: 0,
+                },
+                { startOffset: 0, endOffset: scriptText.length, count: 1 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    assert.deepEqual(report.sources, [
+      {
+        file: 'src/components/Example/index.js',
+        executableLines: 2,
+        coveredLines: 1,
+        linePercent: 50,
+        uncoveredLines: [2],
+        regions: 2,
+        coveredRegions: 1,
+        regionPercent: 50,
+        uncoveredRegions: [2],
+      },
+    ]);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }

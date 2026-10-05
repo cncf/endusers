@@ -18,7 +18,10 @@ import {
   artworkUrls,
   projectAsset,
 } from './project-assets.mjs';
-import { stripActiveContent } from './svg-active-content.mjs';
+import {
+  findRemoteReferences,
+  stripActiveContent,
+} from './svg-active-content.mjs';
 import { isCncfProjectHref } from './project-card-links.mjs';
 import { jsxElement } from './jsx-attributes.mjs';
 
@@ -156,12 +159,27 @@ export async function mirrorArtworkUrls(root, urls) {
             ].join(', ')}`,
           );
         }
+        // stripActiveContent() reports script-capable content, not remote
+        // resource references, so an href or a CSS url() pointing at a
+        // third-party host survives it untouched. A mirrored asset is
+        // published from static/ at the site origin, so writing one would
+        // beacon every visitor's IP, User-Agent and Referer to that host --
+        // the exact hot-linking the mirror exists to prevent. Gate the write
+        // the way mirrorLandscapeLogo() does, rather than relying on
+        // validate-architecture-assets to catch it after the bytes are on
+        // disk.
+        const remote = findRemoteReferences(source);
+        if (remote.length) {
+          throw new Error(`remote resource references: ${remote.join('; ')}`);
+        }
         writeFileSync(destination, source, 'utf8');
       } else {
         writeFileSync(destination, fetched);
       }
-    } catch {
-      console.warn(`Could not mirror CNCF project asset: ${path}`);
+    } catch (error) {
+      console.warn(
+        `Could not mirror CNCF project asset: ${path}: ${error.message}`,
+      );
     }
   }
 }
