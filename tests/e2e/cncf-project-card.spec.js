@@ -18,7 +18,9 @@
 //
 // The card is asserted from both ends: the version is shown, and "Since" is
 // absent. Asserting only the version would pass against a card that rendered
-// both, which is the shape the real pages already cover.
+// both, which is the shape the real pages already cover. The fixture card is
+// named so that neither its name nor its description contains the substring
+// "Since", or the negative assertion could never hold.
 import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const FIXTURE_ROUTE = '/e2e-coverage-fixtures/cncf-project-card';
@@ -31,7 +33,7 @@ describeCoverage('CNCFProjectCard meta row', () => {
     const response = await page.goto(FIXTURE_ROUTE);
     expect(response?.status()).toBe(200);
 
-    const card = page.getByRole('link', { name: /Version Without Since/ });
+    const card = page.getByRole('link', { name: /Versioned Fixture Project/ });
     await expect(card).toHaveCount(1);
 
     // The meta row is the only place either value is printed, so scoping to
