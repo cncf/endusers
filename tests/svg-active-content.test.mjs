@@ -454,6 +454,43 @@ test('detects a protocol-relative reference, which inherits https at the origin'
   ]);
 });
 
+// The URL parser treats `\` as `/` in the scheme and authority prefix of a
+// special-scheme URL, and the site is served over https. Each value below
+// therefore reaches evil.example in a browser exactly as `//evil.example`
+// does, so a `//`-only remote test reads a cross-origin fetch as a local path.
+for (const [value, expected] of [
+  ['\\\\evil.example/b.png', '//evil.example/b.png'],
+  ['/\\evil.example/b.png', '//evil.example/b.png'],
+  ['\\/evil.example/b.png', '//evil.example/b.png'],
+  ['\\\\\\evil.example/b.png', '//evil.example/b.png'],
+  ['https:\\\\evil.example/b.png', 'https://evil.example/b.png'],
+  ['https:/\\evil.example/b.png', 'https://evil.example/b.png'],
+  ['https:\\/evil.example/b.png', 'https://evil.example/b.png'],
+]) {
+  test(`detects a backslash authority prefix: ${value}`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><image href="${value}"/></svg>`;
+    assert.deepEqual(findRemoteReferences(svg), [
+      `references a remote resource in <image> href: ${expected}`,
+    ]);
+  });
+}
+
+// Only the leading run of separators is an authority. A single separator keeps
+// the value on this origin, and an interior backslash is an ordinary path
+// character -- flagging either would fail diagrams that reference their own
+// sibling assets.
+for (const [label, value] of [
+  ['a single leading backslash, which is a path on this origin', '\\local.png'],
+  ['a scheme with a single separator', 'https:/local.png'],
+  ['an interior backslash in a relative path', 'a\\b/c.png'],
+  ['a backslash inside a dot-relative path', './sub\\dir/x.png'],
+]) {
+  test(`does not flag ${label}`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><image href="${value}"/></svg>`;
+    assert.deepEqual(findRemoteReferences(svg), []);
+  });
+}
+
 test('detects a remote url() in a <style> block, including @font-face src', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style>@font-face{font-family:x;src:url(https://evil.example/f.woff)}</style><text style="font-family:x">a</text></svg>';
@@ -538,11 +575,63 @@ test('an unquoted href is read as a value, not skipped', () => {
 });
 
 test('an empty <style> block does not break the block scan that follows it', () => {
-  // STYLE_BLOCK_PATTERN captures its body lazily, so an empty block yields an
-  // empty capture. Nothing may be reported for the block itself, and the rest
-  // of the document still has to be scanned.
+  // The block scan reads from the end of the open tag to the close tag, so an
+  // empty block yields empty CSS. Nothing may be reported for the block
+  // itself, and the rest of the document still has to be scanned.
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style></style><image href="https://evil.example/after.png"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <image> href: https://evil.example/after.png',
+  ]);
+});
+
+test('a </style> inside a CDATA section does not end the <style> block', () => {
+  // A browser parses a standalone .svg as XML, where a `</style>` inside a
+  // CDATA section is character data and does not close the element. A lazy
+  // `<style ...>([\s\S]*?)</style>` match stops there anyway, so every
+  // declaration after it went unscanned in a file that is well-formed and
+  // renders -- a live remote fetch hidden from the gate that keeps a
+  // visitor's IP, User-Agent and Referer off a host the diagram chose.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style type="text/css"><![CDATA[' +
+    '/* </style> */ rect{fill:url(https://evil.example/track.svg#g)}' +
+    ']]></style><rect width="10" height="10"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/track.svg#g',
+  ]);
+});
+
+test('a <style> block after a CDATA-hiding one is still scanned', () => {
+  // The scan resumes at the real close tag, not at the decoy, so a second
+  // block cannot be skipped by hiding a `</style>` in the first.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg">' +
+    '<style><![CDATA[/* </style> */ a{fill:url(https://a.example/1.svg#g)}]]></style>' +
+    '<style>b{fill:url(https://b.example/2.svg#g)}</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://a.example/1.svg#g',
+    'references a remote resource in a <style> block: https://b.example/2.svg#g',
+  ]);
+});
+
+test('an unclosed <style> block is scanned to the end of the document', () => {
+  // An HTML parser runs an unclosed <style> to EOF and XML rejects the file
+  // outright, so reading the remainder is the conservative answer under
+  // either grammar. Stopping at a missing close tag reported nothing at all.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><defs><style type="text/css">' +
+    'rect{fill:url(https://evil.example/late.svg#g)}';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/late.svg#g',
+  ]);
+});
+
+test('a self-closing <style/> swallows no content', () => {
+  // `<style/>` has no body; treating what follows it as CSS would report a
+  // local `url(#id)` reference as remote-adjacent noise and, worse, would
+  // make the scan's idea of where CSS ends depend on later markup.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style /><image href="https://evil.example/after.png"/></svg>';
   assert.deepEqual(findRemoteReferences(svg), [
     'references a remote resource in <image> href: https://evil.example/after.png',
   ]);
@@ -819,6 +908,69 @@ test('fails closed on a declared multi-byte or ASCII-incompatible encoding', () 
     assert.throws(() => stripActiveContent(svg), {
       message: /declares a non-UTF-8 encoding/,
     });
+  }
+});
+
+// XML allows either quote around the encoding pseudo-attribute, so
+// XML_DECLARATION_ENCODING captures the single-quoted spelling in its second
+// group. A reader that only consulted the first group would see no declared
+// encoding at all and silently certify a file it cannot faithfully scan.
+test('reads the declared encoding from a single-quoted declaration', () => {
+  const svg = "<?xml version='1.0' encoding='utf-16'?>\n" + INERT;
+  assert.deepEqual(findActiveContent(svg), [
+    'declares a non-UTF-8 encoding (utf-16) ' +
+      '(an XML parser honoring it reads different bytes than this scan did)',
+  ]);
+  assert.throws(() => stripActiveContent(svg), {
+    message: /declares a non-UTF-8 encoding \(utf-16\)/,
+  });
+
+  // The single-quoted spelling is no more permissive than the double-quoted
+  // one: a safe encoding still passes through either way.
+  assert.deepEqual(
+    findActiveContent("<?xml version='1.0' encoding='UTF-8'?>\n" + INERT),
+    [],
+  );
+});
+
+// An empty encoding names no encoding at all, so a parser falls back to its
+// own default rather than to this module's UTF-8 reading. The finding has to
+// stay legible when there is no name to quote.
+test('names an empty declared encoding rather than printing a blank', () => {
+  const svg = '<?xml version="1.0" encoding=""?>\n' + INERT;
+  assert.deepEqual(findActiveContent(svg), [
+    'declares a non-UTF-8 encoding (empty) ' +
+      '(an XML parser honoring it reads different bytes than this scan did)',
+  ]);
+  assert.throws(() => stripActiveContent(svg), {
+    message: /declares a non-UTF-8 encoding \(empty\)/,
+  });
+});
+
+// PROCESSING_INSTRUCTION stops its target capture at the first whitespace, so
+// `<? ... ?>` and `<??>` both carry an empty target. A target-less short tag
+// is still a processing instruction the browser hands to the XML parser, and
+// it is precisely the shape that slips past a filter keyed on known names --
+// so it must be reported and removed under a label, not under a blank.
+test('reports and removes a processing instruction with no target', () => {
+  for (const instruction of ['<??>', '<? type="text/xsl" ?>']) {
+    const svg = INERT.replace('<rect', instruction + '<rect');
+    assert.deepEqual(
+      findActiveContent(svg),
+      [
+        'contains a <?(unnamed)?> processing instruction ' +
+          '(can load a remote stylesheet or apply an XSLT program to the image)',
+      ],
+      `expected an unnamed-PI finding for ${instruction}`,
+    );
+
+    const { source, removed } = stripActiveContent(svg);
+    assert.ok(
+      removed.includes('<?(unnamed)?> processing instruction'),
+      `expected an unnamed-PI removal for ${instruction}, got ${JSON.stringify(removed)}`,
+    );
+    assert.doesNotMatch(source, /<\?/);
+    assert.deepEqual(findActiveContent(source), []);
   }
 });
 

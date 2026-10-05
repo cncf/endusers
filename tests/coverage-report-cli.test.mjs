@@ -35,6 +35,12 @@ const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const REPORTER = fileURLToPath(
   new URL('./tools/coverage-report.mjs', import.meta.url),
 );
+// Absolute, because the one suite below is generated into a temporary
+// directory from which no relative path reaches the repository.
+const VALIDATE_UTILS = new URL(
+  '../scripts/lib/validate-utils.mjs',
+  import.meta.url,
+).href;
 
 // Unlike tests/coverage-report.test.mjs, NODE_V8_COVERAGE is left in place so
 // the reporter's own run is recorded. NODE_TEST_CONTEXT still has to go: the
@@ -120,6 +126,54 @@ test('a failing suite still prints the table and fails the reporter', () => {
     // The suite failure takes precedence: --check passed at 100% here, so the
     // exit code cannot have come from the gate.
     assert.doesNotMatch(result.stderr, /is below the required/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a suite killed by a signal fails the reporter rather than passing it', () => {
+  // `spawnSync` reports a child terminated by a signal as `status: null`, not
+  // as a number, and `process.exit(null)` exits 0. Without the `?? 1` fallback
+  // the reporter would therefore announce "Tests failed" and then report
+  // success, so a run the OOM killer or a CI timeout cut short would satisfy
+  // the coverage gate on no evidence at all.
+  //
+  // The suite kills `node --test` itself, not its own process: `process.ppid`
+  // inside a test file is the runner the reporter spawned, one level below the
+  // reporter. SIGKILL rather than SIGTERM because the runner handles SIGTERM
+  // and exits 1, which is the numeric path the test above already covers.
+  const dir = mkdtempSync(join(tmpdir(), 'endusers-reporter-signal-'));
+  const killer = join(dir, 'killer.test.mjs');
+  writeFileSync(
+    killer,
+    [
+      "import test from 'node:test';",
+      "import { takeCoverage } from 'node:v8';",
+      `import { collectError } from ${JSON.stringify(VALIDATE_UTILS)};`,
+      "test('kills the runner', async () => {",
+      // Exercised so the run records coverage for a repository file: with an
+      // empty profile the reporter stops at "No coverage data was recorded."
+      // and never reaches the exit path under test.
+      "  collectError([], 'x', 'error', 'recorded so the run is not empty');",
+      // The runner dies without flushing, and the orphan is killed with it, so
+      // this process has to write its own profile before pulling the trigger.
+      '  takeCoverage();',
+      "  process.kill(process.ppid, 'SIGKILL');",
+      '  await new Promise((resolve) => setTimeout(resolve, 1000));',
+      '});',
+      '',
+    ].join('\n'),
+  );
+  try {
+    const result = runReporter(['--', killer]);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(
+      result.stderr,
+      /Tests failed; coverage above is reported for context\./,
+    );
+    // The earlier no-coverage exit is also 1, so the status alone would not
+    // show which path ran.
+    assert.doesNotMatch(result.stderr, /No coverage data was recorded\./);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

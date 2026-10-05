@@ -32,24 +32,28 @@ yet.
 
 ## Known unpatched dependency advisories
 
-`npm audit` currently reports 34 high-severity packages. They resolve to the two
-advisories below, and every other entry is transitive bubbling from them. Both
-packages are already at their newest published version, so there is no upgrade
-to apply and Dependabot has nothing to offer:
+`npm audit` currently reports 28 high-severity packages. They all resolve to the
+single advisory below, and every other entry is transitive bubbling from it. The
+package is already at its newest published version, so there is no upgrade to
+apply and Dependabot has nothing to offer:
 
-| Advisory                                                                 | Package                | Installed | Reached through                                         |
-| ------------------------------------------------------------------------ | ---------------------- | --------- | ------------------------------------------------------- |
-| [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | `braces`               | 3.0.3     | `@docusaurus/utils` globbing, via `micromatch`          |
-| [GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp) | `http-cache-semantics` | 4.2.0     | `@docusaurus/core` version check, via `update-notifier` |
+| Advisory                                                                 | Package  | Installed | Reached through                                |
+| ------------------------------------------------------------------------ | -------- | --------- | ---------------------------------------------- |
+| [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | `braces` | 3.0.3     | `@docusaurus/utils` globbing, via `micromatch` |
 
-Both are build-time only. `braces` glob patterns come from Docusaurus rather
-than from submitted content, and `update-notifier` makes an unauthenticated
-npm-registry request that carries no repository secret. Neither package is
-bundled into the static output, so neither advisory is reachable by a visitor to
-the published site.
+It is build-time only: `braces` glob patterns come from Docusaurus rather than
+from submitted content, and the package is not bundled into the static output,
+so the advisory is not reachable by a visitor to the published site.
 
-**Do not run `npm audit fix --force` against these.** No patched version exists
-for either package, so the command can only try to force-resolve the
-`@docusaurus/*` tree onto incompatible versions — breaking the build without
-removing the advisories. Remove this section once upstream publishes fixes and
-the dependency tree picks them up.
+**Do not run `npm audit fix --force` against this.** No patched version exists —
+`3.0.3` is the newest release and the advisory's vulnerable range is `<= 3.0.3`
+— so the command can only try to force-resolve the `@docusaurus/*` tree onto
+incompatible versions, breaking the build without removing the advisory. Remove
+this section once upstream publishes a fix and the dependency tree picks it up.
+
+A second advisory, GHSA-ch52-4w7c-c8xp against `http-cache-semantics`, was
+listed here until upstream published `4.3.0` — outside that advisory's
+`<= 4.2.0` vulnerable range. The lockfile now resolves `4.3.0` and the advisory
+no longer appears, which is why the count above dropped from 34 to 28. When an
+entry here is said to have no fix, re-check the registry before trusting it: "no
+patched version" is only true as of the day it was written.

@@ -332,6 +332,85 @@ Intro paragraph.
   }
 });
 
+test('refuses to mirror an artwork SVG that references a remote resource', () => {
+  const logoUrl =
+    'https://raw.githubusercontent.com/cncf/artwork/main/projects/envoy/icon/color/envoy-icon-color.svg';
+  // stripActiveContent() finds nothing to remove here: an <image href> is not
+  // script-capable. Published from static/ at the site origin it would still
+  // beacon every visitor to evil.example, so the mirror must refuse it.
+  const run = runImportArchitectures({
+    upstream: architecture(
+      'beacon',
+      `---
+title: Beacon
+org_name: Beacon Co
+---
+
+Intro paragraph.
+
+{{< card header="Envoy" >}}
+![Envoy](${logoUrl})
+{{< /card >}}
+`,
+    ),
+    fetchResponses: {
+      [logoUrl]: {
+        status: 200,
+        body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><image href="https://evil.example/beacon.png" width="1" height="1"/></svg>',
+      },
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stderr, /remote resource references/);
+    assert.equal(
+      run.exists('static/img/cncf-projects/envoy-envoy-icon-color.svg'),
+      false,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('mirrors an artwork SVG with no remote references', () => {
+  const logoUrl =
+    'https://raw.githubusercontent.com/cncf/artwork/main/projects/envoy/icon/color/envoy-icon-color.svg';
+  const run = runImportArchitectures({
+    upstream: architecture(
+      'local-only',
+      `---
+title: Local Only
+org_name: Local Only Co
+---
+
+Intro paragraph.
+
+{{< card header="Envoy" >}}
+![Envoy](${logoUrl})
+{{< /card >}}
+`,
+    ),
+    fetchResponses: {
+      [logoUrl]: {
+        status: 200,
+        body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1"/></svg>',
+      },
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.doesNotMatch(run.stderr, /Could not mirror CNCF project asset/);
+    assert.match(
+      run.read('static/img/cncf-projects/envoy-envoy-icon-color.svg'),
+      /<rect width="1" height="1"\/>/,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
+
 test('copies architecture images and rewrites relative image links', () => {
   const run = runImportArchitectures({
     upstream: {

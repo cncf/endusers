@@ -42,11 +42,23 @@ const MIRRORABLE_ARTWORK_EXTENSIONS = new Set([
  */
 const ARTWORK_REF = '(?:main|master)';
 
+/**
+ * Only TLS-protected artwork URLs are mirrored.
+ *
+ * mirrorArtworkUrls() fetches the URL matched here verbatim and writes the
+ * response body into static/, where it is published at the site origin. Over
+ * cleartext that content is whatever an on-path network position between the
+ * import runner and the origin chose to return: answering the plaintext
+ * request directly means the usual redirect to https never happens. The URL
+ * itself comes from third-party Markdown imported unattended, so the scheme
+ * cannot be assumed. Every sibling gate in this repository requires https for
+ * the same reason (see project-card-links.mjs and profile-image.mjs).
+ */
 const ARTWORK_URL_PATTERNS = [
   new RegExp(
-    `^https?://raw\\.githubusercontent\\.com/cncf/artwork/${ARTWORK_REF}/(.+)$`,
+    `^https://raw\\.githubusercontent\\.com/cncf/artwork/${ARTWORK_REF}/(.+)$`,
   ),
-  new RegExp(`^https?://github\\.com/cncf/artwork/raw/${ARTWORK_REF}/(.+)$`),
+  new RegExp(`^https://github\\.com/cncf/artwork/raw/${ARTWORK_REF}/(.+)$`),
 ];
 
 const MIRROR_DIR = 'static/img/cncf-projects';
