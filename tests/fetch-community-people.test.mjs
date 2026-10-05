@@ -646,7 +646,11 @@ test('decodes a percent-encoded handle segment', () => {
       [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
     },
     records: [
-      { name: 'Ada Lovelace', bio: 'Computing pioneer', github: 'https://github.com/ad%61' },
+      {
+        name: 'Ada Lovelace',
+        bio: 'Computing pioneer',
+        github: 'https://github.com/ad%61',
+      },
     ],
   });
 
@@ -662,7 +666,11 @@ test('falls back to the raw segment when percent-decoding throws', () => {
       [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
     },
     records: [
-      { name: 'Impostor', bio: 'Spoofed', github: 'https://github.com/%E0%A4%A' },
+      {
+        name: 'Impostor',
+        bio: 'Spoofed',
+        github: 'https://github.com/%E0%A4%A',
+      },
     ],
   });
 
