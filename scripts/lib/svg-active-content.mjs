@@ -242,8 +242,22 @@ const CSS_IMPORT_PATTERN = /@import\s+(?:"([^"]*)"|'([^']*)')/gi;
  */
 function remoteTarget(value) {
   const normalized = normalizeUri(value);
-  if (/^https?:\/\//.test(normalized) || normalized.startsWith('//')) {
-    return normalized;
+  // The URL parser treats `\` as `/` in the scheme and authority prefix of a
+  // special-scheme URL, and the site is served over https, so every relative
+  // reference resolves against a special-scheme base. `\\host`, `/\host`,
+  // `\/host` and `https:\\host` therefore reach `host` exactly as `//host`
+  // does, while a `//`-only test reads all four as same-origin paths.
+  //
+  // Only the leading run of separators is translated. A single separator
+  // keeps the value on this origin (`\host` is the path `/host`, and
+  // `https:/host` likewise), and an interior backslash is an ordinary path
+  // character -- `./sub\dir/x.png` must stay local, not become a host.
+  const authority = normalized.replace(
+    /^(https?:)?[/\\]{2,}/,
+    (match, scheme) => `${scheme ?? ''}//`,
+  );
+  if (/^https?:\/\//.test(authority) || authority.startsWith('//')) {
+    return authority;
   }
   return null;
 }
