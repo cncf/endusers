@@ -197,13 +197,27 @@ function blankFences(markdown) {
 }
 
 /**
- * Blank inline code spans by scanning for a backtick run and searching the
- * rest of its line for a closing run of *exactly* the same length -- the
- * CommonMark rule a single `` `+...`+ `` regex cannot express, because it
- * accepts mismatched run lengths and forms a span that does not exist. The
- * search is deliberately bounded to the current line: a code span that wraps
- * a newline is left scannable, which errs toward reporting rather than
- * hiding content.
+ * Blank inline code spans by scanning for a backtick run and searching for a
+ * closing run of *exactly* the same length -- the CommonMark rule a single
+ * `` `+...`+ `` regex cannot express, because it accepts mismatched run
+ * lengths and forms a span that does not exist.
+ *
+ * The closer search crosses a single newline, because a CommonMark inline
+ * code span does too: `` `a\nb` `` is one span, not an unterminated backtick
+ * on each line. It stops at a blank line, because inline parsing does not
+ * cross a paragraph boundary -- a backtick before the blank line cannot close
+ * after it, so searching past it would blank a live paragraph in between.
+ *
+ * Stopping the search at the newline (the previous behaviour) paired the wrong
+ * backticks: it matched the opener against a later run on the second line
+ * while the real compiler matched it against the run that closes the span
+ * across the break. Everything the real span did not cover was then blanked as
+ * if it were code, hiding live MDX (an expression, a JSX element, a
+ * `javascript:` href) that sits between two genuine multi-line spans from
+ * every scan below.
+ *
+ * Newlines inside a blanked span are preserved so the later line-based scans
+ * and finding line numbers stay aligned with the original text.
  *
  * @param {string} text
  * @returns {string}
@@ -228,7 +242,10 @@ function blankInlineSpans(text) {
     let k = openEnd;
     let closeStart = -1;
     let closeEnd = -1;
-    while (k < text.length && text[k] !== '\n') {
+    while (k < text.length) {
+      // A blank line ends the paragraph, and with it any unclosed code span:
+      // the real parser cannot pair a backtick across it, so neither can this.
+      if (text[k] === '\n' && /^[ \t]*\n/.test(text.slice(k + 1))) break;
       if (text[k] === '`') {
         let runEnd = k;
         while (text[runEnd] === '`') runEnd += 1;
@@ -244,15 +261,15 @@ function blankInlineSpans(text) {
     }
 
     if (closeStart === -1) {
-      // No closing run of matching length on this line: not a code span, so
-      // emit the opening backticks as literal text and keep scanning from
-      // just past them.
+      // No closing run of matching length before the paragraph ends: not a
+      // code span, so emit the opening backticks as literal text and keep
+      // scanning from just past them.
       result += text.slice(i, openEnd);
       i = openEnd;
       continue;
     }
 
-    result += ' '.repeat(closeEnd - i);
+    result += text.slice(i, closeEnd).replace(/[^\n]/g, ' ');
     i = closeEnd;
   }
 

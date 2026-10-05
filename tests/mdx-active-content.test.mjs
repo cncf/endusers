@@ -325,3 +325,35 @@ test('does not flag braces inside code, which MDX does not evaluate', () => {
     [],
   );
 });
+
+test('flags live content wedged between two multi-line code spans', () => {
+  // A CommonMark inline code span pairs backticks across a single newline, so
+  // `` `a\nb` `` and `` `c\nd` `` are two spans and the text between them is
+  // live. A line-bounded scan instead paired `` b` `` with `` `c `` on the
+  // middle line and blanked the payload with it. Each active form must be
+  // reported, not hidden.
+  assert.deepEqual(
+    reasons('`a\nb` <iframe src="https://evil.test"></iframe> `c\nd`'),
+    ['disallowed element <iframe>'],
+  );
+  assert.deepEqual(reasons('`a\nb` {fetch("https://evil.test")} `c\nd`'), [
+    'MDX expression',
+  ]);
+  assert.deepEqual(reasons('`a\nb` [x](javascript:alert(1)) `c\nd`'), [
+    'script-capable URL scheme',
+  ]);
+});
+
+test('does not let a code span swallow a live paragraph across a blank line', () => {
+  // Inline parsing stops at a paragraph boundary, so the opening backtick
+  // before the blank line cannot close after it: the iframe is its own live
+  // paragraph and must be reported rather than blanked as span content.
+  assert.deepEqual(
+    reasons('`a\n\n<iframe src="https://evil.test"></iframe>\n\nb`'),
+    ['disallowed element <iframe>'],
+  );
+});
+
+test('still treats a genuine multi-line code span as inert', () => {
+  assert.deepEqual(reasons('`a\nb` and then `c\nd` as prose.'), []);
+});
