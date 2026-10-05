@@ -575,11 +575,63 @@ test('an unquoted href is read as a value, not skipped', () => {
 });
 
 test('an empty <style> block does not break the block scan that follows it', () => {
-  // STYLE_BLOCK_PATTERN captures its body lazily, so an empty block yields an
-  // empty capture. Nothing may be reported for the block itself, and the rest
-  // of the document still has to be scanned.
+  // The block scan reads from the end of the open tag to the close tag, so an
+  // empty block yields empty CSS. Nothing may be reported for the block
+  // itself, and the rest of the document still has to be scanned.
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style></style><image href="https://evil.example/after.png"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <image> href: https://evil.example/after.png',
+  ]);
+});
+
+test('a </style> inside a CDATA section does not end the <style> block', () => {
+  // A browser parses a standalone .svg as XML, where a `</style>` inside a
+  // CDATA section is character data and does not close the element. A lazy
+  // `<style ...>([\s\S]*?)</style>` match stops there anyway, so every
+  // declaration after it went unscanned in a file that is well-formed and
+  // renders -- a live remote fetch hidden from the gate that keeps a
+  // visitor's IP, User-Agent and Referer off a host the diagram chose.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style type="text/css"><![CDATA[' +
+    '/* </style> */ rect{fill:url(https://evil.example/track.svg#g)}' +
+    ']]></style><rect width="10" height="10"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/track.svg#g',
+  ]);
+});
+
+test('a <style> block after a CDATA-hiding one is still scanned', () => {
+  // The scan resumes at the real close tag, not at the decoy, so a second
+  // block cannot be skipped by hiding a `</style>` in the first.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg">' +
+    '<style><![CDATA[/* </style> */ a{fill:url(https://a.example/1.svg#g)}]]></style>' +
+    '<style>b{fill:url(https://b.example/2.svg#g)}</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://a.example/1.svg#g',
+    'references a remote resource in a <style> block: https://b.example/2.svg#g',
+  ]);
+});
+
+test('an unclosed <style> block is scanned to the end of the document', () => {
+  // An HTML parser runs an unclosed <style> to EOF and XML rejects the file
+  // outright, so reading the remainder is the conservative answer under
+  // either grammar. Stopping at a missing close tag reported nothing at all.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><defs><style type="text/css">' +
+    'rect{fill:url(https://evil.example/late.svg#g)}';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/late.svg#g',
+  ]);
+});
+
+test('a self-closing <style/> swallows no content', () => {
+  // `<style/>` has no body; treating what follows it as CSS would report a
+  // local `url(#id)` reference as remote-adjacent noise and, worse, would
+  // make the scan's idea of where CSS ends depend on later markup.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style /><image href="https://evil.example/after.png"/></svg>';
   assert.deepEqual(findRemoteReferences(svg), [
     'references a remote resource in <image> href: https://evil.example/after.png',
   ]);
