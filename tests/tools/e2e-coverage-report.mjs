@@ -306,6 +306,29 @@ function getLineCoverage(coverageData) {
   return lines;
 }
 
+// v8-to-istanbul derives every region from a *generated* block boundary and
+// maps its endpoints back through the source map. In minified output those
+// endpoints land on whatever mapping precedes them, so a block that never ran
+// can be reported as a multi-line original span that demonstrably did run --
+// `useFocusTrap`'s Shift+Tab arm reported a zero-count region over lines
+// 38-40 while statement coverage put all three lines at 1 (#1035). A span
+// cannot be unexecuted while every line it covers executed, so those spans are
+// dropped rather than counted against the file. Single-line regions are kept:
+// several of them share one line and the per-line fold cannot tell them apart,
+// which is the whole reason regions are measured.
+function isPhantomRegion(region, lines) {
+  if (region.count > 0) return false;
+  if (region.endLine <= region.line) return false;
+  for (let line = region.line; line <= region.endLine; line += 1) {
+    const count = lines.get(line);
+    // Blank lines and comments inside the span carry no statement, so they
+    // neither confirm nor contradict the region.
+    if (count === undefined) continue;
+    if (count <= 0) return false;
+  }
+  return true;
+}
+
 // A region is one branch location from the istanbul object convertScript
 // already builds -- the arm of a ternary, a short-circuit operand, a default
 // parameter -- data the line map cannot see because several of them share a
@@ -320,16 +343,17 @@ function getRegionCoverage(coverageData) {
     for (const [index, location] of locations.entries()) {
       const line = location?.start?.line;
       if (!Number.isInteger(line)) continue;
+      const endLine = location.end?.line ?? line;
       const key = [
         line,
         location.start?.column ?? 0,
-        location.end?.line ?? line,
+        endLine,
         location.end?.column ?? 0,
       ].join(':');
       const count = counts?.[index] ?? 0;
       const existing = regions.get(key);
       if (!existing || count > existing.count) {
-        regions.set(key, { line, count });
+        regions.set(key, { line, endLine, count });
       }
     }
   }
@@ -551,7 +575,9 @@ export async function collectE2ECoverage(
       const coveredLines = [...coverage.lines.values()].filter(
         (count) => count > 0,
       ).length;
-      const regionValues = [...coverage.regions.values()];
+      const regionValues = [...coverage.regions.values()].filter(
+        (region) => !isPhantomRegion(region, coverage.lines),
+      );
       const regions = regionValues.length;
       const coveredRegions = regionValues.filter(
         (region) => region.count > 0,
