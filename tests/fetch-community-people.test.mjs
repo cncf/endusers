@@ -622,3 +622,49 @@ test('still matches genuine github.com profile URLs', () => {
     );
   }
 });
+
+test('ignores a github field that is not a parseable URL or not http(s)', () => {
+  for (const github of ['github.com/ada', 'ftp://github.com/ada']) {
+    const result = run({
+      fixtures: {
+        [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+      },
+      records: [{ name: 'Impostor', bio: 'Spoofed', github }],
+    });
+
+    assert.equal(
+      parseOutput(result).people.tab[0].bio,
+      '',
+      `expected ${github} not to claim the handle "ada"`,
+    );
+  }
+});
+
+test('decodes a percent-encoded handle segment', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+    },
+    records: [
+      { name: 'Ada Lovelace', bio: 'Computing pioneer', github: 'https://github.com/ad%61' },
+    ],
+  });
+
+  assert.equal(parseOutput(result).people.tab[0].bio, 'Computing pioneer');
+});
+
+test('falls back to the raw segment when percent-decoding throws', () => {
+  // Roster handles are validated, so an undecodable segment can never match
+  // one; the fallback just has to index the record under the raw text instead
+  // of crashing the run.
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+    },
+    records: [
+      { name: 'Impostor', bio: 'Spoofed', github: 'https://github.com/%E0%A4%A' },
+    ],
+  });
+
+  assert.equal(parseOutput(result).people.tab[0].bio, '');
+});
