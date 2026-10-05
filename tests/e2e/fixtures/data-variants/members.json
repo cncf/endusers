@@ -1,0 +1,6 @@
+{
+  "description": "Makes the landscape snapshot timestamp unparseable so DirectoryFreshness drops its membership sentence: formatDate() takes its Number.isNaN guard (src/components/MemberDirectory/utils.js line 16), the all-absent check at src/components/MemberDirectory/DirectoryFreshness.js line 19 evaluates its remaining operands instead of short-circuiting on a truthy landscape date, and the separator at line 49 falls through to architecturesDate. The field is read by that one component, so clearing it in the ordinary coverage build would swap which arm the note renders rather than add a case; the variant build renders the degraded note beside the real one.",
+  "set": {
+    "sources.landscape.collectedAt": "not a timestamp"
+  }
+}
