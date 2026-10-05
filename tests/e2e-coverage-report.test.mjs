@@ -1909,3 +1909,66 @@ test('collectE2ECoverage reports a script recorded with no functions as unattrib
     await rm(fixture.root, { recursive: true, force: true });
   }
 });
+
+test('a tooling-error artifact still names the run the manifest records', async () => {
+  const fixture = await fixtureRun();
+  try {
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+    const jsonPath = join(fixture.root, 'identified-error.json');
+    const textPath = join(fixture.root, 'identified-error.txt');
+
+    await assert.rejects(
+      () =>
+        main([
+          '--input',
+          fixture.runDir,
+          '--root',
+          fixture.root,
+          '--build',
+          fixture.buildDir,
+          '--json',
+          jsonPath,
+          '--text',
+          textPath,
+        ]),
+      /No src\/\*\* coverage was attributable/,
+    );
+
+    const report = JSON.parse(await readFile(jsonPath, 'utf8'));
+    assert.equal(report.status, 'tooling-error');
+    assert.equal(report.runId, 'run-1');
+    assert.equal(report.runStatus, 'passed');
+    assert.match(
+      await readFile(textPath, 'utf8'),
+      /^E2E coverage: tooling-error \(run run-1; status passed\)$/mu,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a tooling-error artifact reports no run when the manifest is unreadable', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'endusers-e2e-report-'));
+  try {
+    const runDir = join(root, 'coverage');
+    await mkdir(runDir, { recursive: true });
+    const jsonPath = join(root, 'unreadable-error.json');
+
+    await assert.rejects(() =>
+      main(['--input', runDir, '--root', root, '--json', jsonPath]),
+    );
+
+    const report = JSON.parse(await readFile(jsonPath, 'utf8'));
+    assert.equal(report.status, 'tooling-error');
+    assert.equal(report.runId, null);
+    assert.equal(report.runStatus, null);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

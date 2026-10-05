@@ -684,6 +684,10 @@ export async function main(argv = process.argv.slice(2)) {
     });
     if (!options.text) process.stdout.write(text);
   } catch (error) {
+    // Only the run-status guards raise CoverageReportError; every later failure
+    // is a plain Error, so re-read the manifest rather than publish a report
+    // that cannot say whether the run passed or the tooling broke.
+    const run = await readCoverageRun(resolve(options.input)).catch(() => null);
     const failure = {
       schemaVersion: 2,
       kind: ERROR_KIND,
@@ -691,8 +695,8 @@ export async function main(argv = process.argv.slice(2)) {
         error.runStatus === 'failed' || error.runStatus === 'cancelled'
           ? error.runStatus
           : 'tooling-error',
-      runId: error.runId ?? null,
-      runStatus: error.runStatus ?? null,
+      runId: error.runId ?? run?.runId ?? null,
+      runStatus: error.runStatus ?? run?.status ?? null,
       scripts: { captured: 0, converted: 0, ignored: 0 },
       sources: [],
       summary: {
