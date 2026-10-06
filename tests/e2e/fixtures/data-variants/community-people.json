@@ -1,0 +1,6 @@
+{
+  "description": "Empties the document-level fetchedAt so PeopleFreshness takes both of its 'return null' arms -- formatDate's Number.isNaN guard (src/components/PeopleFreshness/index.js line 7) and the !fetchedAt guard that drops the paragraph (line 22). fetchedAt is one field on the one file the community pages read, so emptying it in the ordinary coverage build would swap which arm renders rather than add a case; it belongs to the variant build, which is served beside the real one. The value is \"\" and not null because formatDate runs `new Date(isoDate)`: new Date(null) coerces to 0 and formats as December 31, 1969, which would keep the paragraph rendering with an absurd date instead of reaching the guards this overlay exists for.",
+  "set": {
+    "fetchedAt": ""
+  }
+}

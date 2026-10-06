@@ -82,6 +82,29 @@ test('setting through a non-object parent is rejected', () => {
   );
 });
 
+// The test above walks one segment before it throws, so the error names the
+// prefix it reached. Nothing reached the other arm of that message. When the
+// very first segment fails there is no prefix: `walked.join('.')` is '', and
+// without the `|| dottedPath` fallback the overlay would be rejected with
+// `"" is not an object in the real data`, naming nothing a reader could act
+// on.
+//
+// It is reachable because applyOverlay validates the *overlay* document but
+// never the real data it patches: `overlaySource` hands it whatever
+// `JSON.parse` returned for the data file, which is an object today only
+// because every file under data/ happens to be one. A data file regenerated
+// as a top-level array — the shape a list of records most naturally takes —
+// would land here, which is exactly the case the message has to explain.
+test('a document that is not an object names the whole path, not an empty prefix', () => {
+  for (const document of [[], null, 'text', 7]) {
+    assert.throws(
+      () => applyOverlay(document, overlay({ set: { 'a.b': 1 } }), 'f'),
+      /"a\.b" is not an object in the real data/,
+      `${JSON.stringify(document) ?? 'undefined'}: the message must name the path`,
+    );
+  }
+});
+
 test('setting a leaf whose parent is an array is rejected', () => {
   assert.throws(
     () =>
@@ -178,11 +201,16 @@ test('a data file patched by both directories collects both overlays', () => {
 // ever stopped applying, tests/e2e/data-variants.spec.js would fail against a
 // page that looks perfectly ordinary, with nothing to say why.
 test('the variant build clears the fields the ordinary build keeps', () => {
+  // community-people.json clears to '' rather than null: PeopleFreshness
+  // formats the field with `new Date(fetchedAt)`, and new Date(null) is 0
+  // rather than an invalid date, so null would render a 1969 timestamp
+  // instead of reaching the guards the overlay exists for.
   const cases = [
-    ['awards.json', (data) => data.verifiedAt],
-    ['metrics.json', (data) => data.generatedAt],
+    ['awards.json', (data) => data.verifiedAt, null],
+    ['metrics.json', (data) => data.generatedAt, null],
+    ['community-people.json', (data) => data.fetchedAt, ''],
   ];
-  for (const [name, field] of cases) {
+  for (const [name, field, cleared] of cases) {
     assert.ok(
       field(loadSiteData(name, { E2E_COVERAGE: '1' })),
       `${name}: the coverage build must keep the field the real page renders`,
@@ -191,8 +219,21 @@ test('the variant build clears the fields the ordinary build keeps', () => {
       field(
         loadSiteData(name, { E2E_COVERAGE: '1', E2E_COVERAGE_VARIANT: '1' }),
       ),
-      null,
+      cleared,
       `${name}: the variant build must clear it`,
+    );
+    // Whatever the cleared value is, it has to be falsy: every one of these
+    // paragraphs is gated on the field being truthy somewhere before it is
+    // formatted, so a cleared value that is merely different would leave the
+    // paragraph rendering instead of switching the arm.
+    assert.ok(
+      !field(
+        loadSiteData(name, {
+          E2E_COVERAGE: '1',
+          E2E_COVERAGE_VARIANT: '1',
+        }),
+      ),
+      `${name}: the cleared value must be falsy`,
     );
   }
 });

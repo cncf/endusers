@@ -218,6 +218,49 @@ test.describe('TAB roster profile dialog', () => {
       .toBe(true);
   });
 
+  test('Shift+Tab from the first focusable element wraps to the last', async ({
+    page,
+  }) => {
+    const { dialog } = await openProfile(page);
+
+    // useFocusTrap mounts with focus on the close button, which is the first
+    // element its `button, a[href]` query matches. Backwards from there is the
+    // only way into the `event.shiftKey && activeElement === first` arm of
+    // src/components/hooks/useFocusTrap.js: forwards tabbing short-circuits on
+    // `event.shiftKey` and never evaluates it. Without this case the dialog
+    // could leak focus to the roster behind it on Shift+Tab and every existing
+    // assertion would still pass.
+    const focusable = dialog.locator('button, a[href]');
+    const count = await focusable.count();
+    expect(count).toBeGreaterThan(1);
+
+    await expect(focusable.first()).toBeFocused();
+
+    await page.keyboard.press('Shift+Tab');
+
+    await expect(focusable.nth(count - 1)).toBeFocused();
+  });
+
+  test('a key that is neither Escape nor Tab leaves the dialog alone', async ({
+    page,
+  }) => {
+    const { dialog } = await openProfile(page);
+
+    const focusable = dialog.locator('button, a[href]');
+    await expect(focusable.first()).toBeFocused();
+
+    // The keydown listener is on `document`, so it sees every key pressed
+    // while the dialog is mounted, not only the two it acts on. This is the
+    // early `return` for everything else: an ordinary key must neither close
+    // the dialog nor move focus, which is what stops typing from behaving like
+    // Escape or Tab.
+    for (const key of ['a', 'ArrowDown', 'End']) {
+      await page.keyboard.press(key);
+      await expect(dialog).toBeVisible();
+      await expect(focusable.first()).toBeFocused();
+    }
+  });
+
   test('offers only absolute external profile links', async ({ page }) => {
     const { dialog } = await openProfile(page);
 

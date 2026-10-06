@@ -1,0 +1,24 @@
+---
+title: CNCFProjectCard coverage fixture
+description:
+  Renders the <CNCFProjectCard> prop shapes the generated architecture docs
+  never produce.
+---
+
+import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
+
+# CNCFProjectCard coverage fixture
+
+This page exists only in the end-to-end coverage build. The generated
+architecture pages under `docs/architectures/` render `<CNCFProjectCard>` with
+`since` and `version`, with `since` alone, or with neither — never with
+`version` alone — so the right-hand operand of the meta guard
+`(since || version)` is the one arm of the component no production page reaches.
+The card below supplies that shape.
+
+<CNCFProjectCard
+  name="Versioned Fixture Project"
+  href="https://www.cncf.io/projects/kubernetes/"
+  version="v1.2.3"
+  description="Fixture card carrying a version and no adoption year."
+/>

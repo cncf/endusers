@@ -41,6 +41,14 @@ const groups = loadSiteData('community-groups.json').groups;
 const stale = groups.filter((group) => group.archived || !group.reachable);
 const people = loadSiteData('community-people.json').people.staff || [];
 const anonymous = people.find((person) => !person.role && !person.company);
+const byName = (name) => people.find((person) => person.name === name);
+// websiteUrl() resolves the free-text "blog" field of a third-party GitHub
+// profile. Each fixture below holds open one arm of that resolution; they are
+// addressed through the overlay so a renamed or dropped record fails here
+// rather than quietly stopping the coverage it was added for.
+const absentWebsite = byName('Coverage Fixture Absent Website');
+const bareHostWebsite = byName('Coverage Fixture Bare Host Website');
+const unparseableWebsite = byName('Coverage Fixture Unparseable Website');
 const members = loadSiteData('members.json').members;
 const dualRole = members.find(
   (member) => member.membershipStatus === 'member-and-contributor',
@@ -58,6 +66,17 @@ async function waitForHydration(locator) {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
   });
+}
+
+async function openStaffProfile(page, name) {
+  await page.goto('/community');
+  const trigger = page.getByRole('button', { name: `Open ${name} profile` });
+  await waitForHydration(trigger);
+  await trigger.click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('#profile-name')).toHaveText(name);
+  return dialog;
 }
 
 describeCoverage('drifted upstream data', () => {
@@ -94,6 +113,57 @@ describeCoverage('drifted upstream data', () => {
     await expect(
       dialog.getByText('Community member', { exact: true }),
     ).toHaveCount(1);
+  });
+
+  test('PersonDialog resolves a website given as a bare host', async ({
+    page,
+  }) => {
+    expect(bareHostWebsite).toBeTruthy();
+    expect(bareHostWebsite.blog).toBe('fixture.example');
+
+    const dialog = await openStaffProfile(page, bareHostWebsite.name);
+
+    // The value carries no scheme, so websiteUrl resolves it against https
+    // rather than concatenating it: the rendered href is an absolute URL whose
+    // authority is the value itself, which is what stops a value such as
+    // "trusted.example@attacker.example" from linking somewhere else.
+    const website = dialog.getByRole('link', { name: 'Website' });
+    await expect(website).toHaveAttribute(
+      'href',
+      `https://${bareHostWebsite.blog}/`,
+    );
+  });
+
+  test('PersonDialog drops a website that parses as no URL at all', async ({
+    page,
+  }) => {
+    expect(unparseableWebsite).toBeTruthy();
+    expect(unparseableWebsite.blog).toBe('https://[');
+    // The value opens with a scheme, so websiteUrl passes it to the URL parser
+    // unchanged; the parser is what rejects it.
+    expect(() => new URL(unparseableWebsite.blog)).toThrow();
+
+    const dialog = await openStaffProfile(page, unparseableWebsite.name);
+
+    // The links array is filtered on href, so an unresolvable value renders no
+    // anchor rather than a dead one.
+    await expect(dialog.getByRole('link', { name: 'Website' })).toHaveCount(0);
+    await expect(dialog.locator('a[href]')).toHaveCount(0);
+  });
+
+  test('PersonDialog drops a website the profile does not carry', async ({
+    page,
+  }) => {
+    expect(absentWebsite).toBeTruthy();
+    expect(absentWebsite.blog).toBe(null);
+
+    const dialog = await openStaffProfile(page, absentWebsite.name);
+
+    // A non-string reaches websiteUrl before it is trimmed, so the guard that
+    // rejects it is a different one from the empty-string case the role-less
+    // fixture above covers.
+    await expect(dialog.getByRole('link', { name: 'Website' })).toHaveCount(0);
+    await expect(dialog.locator('a[href]')).toHaveCount(0);
   });
 
   test('MemberCard labels an organization holding both membership roles', async ({

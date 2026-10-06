@@ -601,6 +601,20 @@ test('a </style> inside a CDATA section does not end the <style> block', () => {
   ]);
 });
 
+test('an unterminated CDATA section inside <style> is scanned to the end', () => {
+  // A `<![CDATA[` with no `]]>` has no close to skip to, so the scan runs to
+  // EOF rather than abandoning the block. Stopping at the missing terminator
+  // would let a truncated file -- or one that simply opens a CDATA section and
+  // never closes it -- carry a remote fetch past the gate unreported, which is
+  // the same hiding place the closed-CDATA case above covers.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style><![CDATA[' +
+    'rect{fill:url(https://evil.example/track.svg#g)}';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/track.svg#g',
+  ]);
+});
+
 test('a <style> block after a CDATA-hiding one is still scanned', () => {
   // The scan resumes at the real close tag, not at the decoy, so a second
   // block cannot be skipped by hiding a `</style>` in the first.

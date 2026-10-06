@@ -16,6 +16,11 @@
 //     the ': null' arm at line 23 and the '' arm at line 33 are the date
 //     being left off. metrics.generatedAt is read by four other components,
 //     so clearing it build-wide moves five pages at once.
+//   * PeopleFreshness renders its paragraph only when
+//     data/community-people.json's fetchedAt parses as a date; emptying that
+//     one field takes both of the component's 'return null' arms at once --
+//     formatDate's Number.isNaN guard (line 7) and the !fetchedAt guard that
+//     drops the paragraph (line 22).
 //
 // `npm run build:e2e:coverage` therefore produces two sites: the ordinary
 // coverage build, and a second one under /e2e-coverage-variant/ with
@@ -47,9 +52,12 @@ const awards = loadSiteData('awards.json', COVERAGE_ENV);
 const variantAwards = loadSiteData('awards.json', VARIANT_ENV);
 const metrics = loadSiteData('metrics.json', COVERAGE_ENV);
 const variantMetrics = loadSiteData('metrics.json', VARIANT_ENV);
+const people = loadSiteData('community-people.json', COVERAGE_ENV);
+const variantPeople = loadSiteData('community-people.json', VARIANT_ENV);
 
 const PROVENANCE = /Winner history audited for completeness against/;
 const SYNC_STATUS = /Last synced from/;
+const PROFILES_REFRESHED = /Profiles last refreshed from public GitHub sources/;
 
 describeCoverage('data the site has not received yet', () => {
   test('AwardsTimeline drops its provenance paragraph with no verifiedAt', async ({
@@ -87,5 +95,29 @@ describeCoverage('data the site has not received yet', () => {
     // date and only the date.
     await expect(unsynced).toContainText(revision);
     await expect(unsynced).toHaveText(new RegExp(`${revision}\\.$`));
+  });
+
+  test('PeopleFreshness drops its paragraph with an unparseable fetchedAt', async ({
+    page,
+  }) => {
+    expect(people.fetchedAt).toBeTruthy();
+    expect(variantPeople.fetchedAt).toBe('');
+    // new Date('') is an invalid date, so formatDate returns null and the
+    // component returns null in turn. Had the overlay used null instead, the
+    // field would coerce to 0 and the paragraph would still render.
+    expect(Number.isNaN(new Date(variantPeople.fetchedAt).getTime())).toBe(
+      true,
+    );
+
+    await page.goto('/community');
+    await expect(page.getByText(PROFILES_REFRESHED)).toBeVisible();
+
+    await page.goto(`${VARIANT_BASE}/community`);
+    // The rest of the page still renders: this is the paragraph being absent,
+    // not the page failing to build.
+    await expect(
+      page.getByRole('heading', { name: 'Community', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText(PROFILES_REFRESHED)).toHaveCount(0);
   });
 });
