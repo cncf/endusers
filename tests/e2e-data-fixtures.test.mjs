@@ -82,6 +82,29 @@ test('setting through a non-object parent is rejected', () => {
   );
 });
 
+// The test above walks one segment before it throws, so the error names the
+// prefix it reached. Nothing reached the other arm of that message. When the
+// very first segment fails there is no prefix: `walked.join('.')` is '', and
+// without the `|| dottedPath` fallback the overlay would be rejected with
+// `"" is not an object in the real data`, naming nothing a reader could act
+// on.
+//
+// It is reachable because applyOverlay validates the *overlay* document but
+// never the real data it patches: `overlaySource` hands it whatever
+// `JSON.parse` returned for the data file, which is an object today only
+// because every file under data/ happens to be one. A data file regenerated
+// as a top-level array — the shape a list of records most naturally takes —
+// would land here, which is exactly the case the message has to explain.
+test('a document that is not an object names the whole path, not an empty prefix', () => {
+  for (const document of [[], null, 'text', 7]) {
+    assert.throws(
+      () => applyOverlay(document, overlay({ set: { 'a.b': 1 } }), 'f'),
+      /"a\.b" is not an object in the real data/,
+      `${JSON.stringify(document) ?? 'undefined'}: the message must name the path`,
+    );
+  }
+});
+
 test('setting a leaf whose parent is an array is rejected', () => {
   assert.throws(
     () =>
