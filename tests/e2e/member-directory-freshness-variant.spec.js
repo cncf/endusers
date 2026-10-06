@@ -42,17 +42,29 @@ const COVERAGE_ENV = { E2E_COVERAGE: '1' };
 const VARIANT_ENV = { E2E_COVERAGE: '1', E2E_COVERAGE_VARIANT: '1' };
 
 // Read through the overlay rather than hard-coded, so an edited variant
-// overlay fails here instead of leaving a test that asserts nothing.
+// overlay fails here instead of leaving a test that asserts nothing. Each
+// document is loaded with the env of the build whose page it is asserted
+// against: the real route is built from the COVERAGE_ENV overlay, the variant
+// route from the VARIANT_ENV one. metrics.json and awards.json are patched by
+// the variant overlay too, so reading them with COVERAGE_ENV would describe a
+// document the variant page was never built from.
 const members = loadSiteData('members.json', COVERAGE_ENV);
 const variantMembers = loadSiteData('members.json', VARIANT_ENV);
-const metrics = loadSiteData('metrics.json', COVERAGE_ENV);
-const awards = loadSiteData('awards.json', COVERAGE_ENV);
+const variantMetrics = loadSiteData('metrics.json', VARIANT_ENV);
+const variantAwards = loadSiteData('awards.json', VARIANT_ENV);
 
-const parses = (value) =>
-  Boolean(value) && !Number.isNaN(new Date(value).getTime());
+// formatDate()'s own test: `null` is not unparseable. `new Date(null)` is the
+// Unix epoch, not an Invalid Date, so Number.isNaN(getTime()) is false and the
+// sentence renders with an epoch date rather than being dropped
+// (src/components/MemberDirectory/utils.js lines 14-22).
+const formatsToADate = (value) => !Number.isNaN(new Date(value).getTime());
 
 const MEMBERSHIP_SENTENCE = /Directory membership data last synced from/;
 const ARCHITECTURES_SENTENCE = /Architecture-derived profiles last synced from/;
+// The epoch rendered by formatDate(null), in whichever timezone the browser
+// runs: nothing pins TZ for the Playwright run, and 0ms is the last day of
+// 1969 west of UTC.
+const EPOCH_DATE = /December 31, 1969|January 1, 1970/;
 
 const note = (page) => page.locator('p[class*="freshnessNote"]');
 
@@ -62,14 +74,25 @@ describeCoverage(
     test('the membership sentence is dropped rather than rendering "Invalid Date"', async ({
       page,
     }) => {
-      expect(parses(members?.sources?.landscape?.collectedAt)).toBe(true);
-      expect(parses(variantMembers?.sources?.landscape?.collectedAt)).toBe(
-        false,
+      expect(formatsToADate(members?.sources?.landscape?.collectedAt)).toBe(
+        true,
       );
+      expect(
+        formatsToADate(variantMembers?.sources?.landscape?.collectedAt),
+      ).toBe(false);
       // The other two sentences must survive, or the note would disappear
-      // entirely and this would stop being a test of the sentence being dropped.
-      expect(parses(metrics?.generatedAt)).toBe(true);
-      expect(parses(awards?.verifiedAt)).toBe(true);
+      // entirely and this would stop being a test of the sentence being
+      // dropped. They survive on the variant page for a reason worth stating:
+      // the variant overlay clears both of their timestamps to null, and
+      // formatDate(null) is the epoch rather than null, so each renders an
+      // epoch date. That is why the assertions below pin that text -- if
+      // formatDate is ever changed to treat null as missing, DirectoryFreshness
+      // returns null here and this test must be revisited rather than quietly
+      // asserting an empty page.
+      expect(variantMetrics?.generatedAt).toBe(null);
+      expect(variantAwards?.verifiedAt).toBe(null);
+      expect(formatsToADate(variantMetrics?.generatedAt)).toBe(true);
+      expect(formatsToADate(variantAwards?.verifiedAt)).toBe(true);
 
       await page.goto(MEMBERS_PATH);
       await expect(note(page)).toContainText(MEMBERSHIP_SENTENCE);
@@ -79,6 +102,7 @@ describeCoverage(
       // component returning null or the page failing to build.
       await expect(note(page)).toHaveCount(1);
       await expect(note(page)).toContainText(ARCHITECTURES_SENTENCE);
+      await expect(note(page)).toContainText(EPOCH_DATE);
       await expect(note(page)).not.toContainText(MEMBERSHIP_SENTENCE);
       // "Invalid Date" is what formatDate() exists to prevent: without its
       // Number.isNaN guard, toLocaleDateString() would render that string into
