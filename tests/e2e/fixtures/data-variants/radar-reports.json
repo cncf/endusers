@@ -1,0 +1,7 @@
+{
+  "description": "Clears the document-level generatedAt and the radarReports list so src/components/RadarReports/index.js takes its two empty-corpus arms: SyncStatus returns null at line 6, and the '|| []' fallback at line 24 supplies the list the page maps over. Both fields are document-level on the one file the one /resources/radar-reports page reads, so clearing them in the ordinary coverage build would not add a case -- it would trade the provenance line and all six rendered reports for these two arms. The variant build is served beside the real one, so one Playwright run reaches both. It does not yet move the two regions out of the e2e report's uncovered list: both builds' generated code maps the branches back to different original coordinates, which is the region-attribution problem tracked in #1066 and #1079. The browser taking the arms is pinned by tests/e2e/radar-reports-variant.spec.js regardless.",
+  "set": {
+    "generatedAt": null,
+    "radarReports": null
+  }
+}

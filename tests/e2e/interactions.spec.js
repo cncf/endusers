@@ -352,4 +352,54 @@ test.describe('reference architecture filters', () => {
       .toBe(total);
     await expect(search).toHaveValue('');
   });
+
+  // The organization test above is the only facet a browser has ever driven,
+  // so filterArchitectures' industry and project guards and the two selects'
+  // onChange handlers are reached by the unit suite's fake DOM alone. Those
+  // are three separate select elements wired to three separate state setters,
+  // and nothing about one working implies the others do: a mismatched `id`,
+  // an option list built from the wrong field, or a handler bound to the
+  // wrong setter leaves the shipped toolbar inert on that facet while the
+  // organization test stays green.
+  for (const label of ['Filter by industry', 'Filter by CNCF project']) {
+    test(`${label.toLowerCase()} narrows the catalog and clears back`, async ({
+      page,
+    }) => {
+      await page.goto('/architectures');
+      const search = page.getByLabel(
+        'Search architectures by organization or title',
+      );
+      await waitForHydration(search);
+
+      const results = page.getByText(/Showing \d+ of \d+ architectures/);
+      const total = totalCount(await results.textContent());
+      expect(total).toBeGreaterThan(0);
+
+      const select = page.getByLabel(label);
+      await expect(select).toHaveValue('');
+      // Index 0 is the "All ..." placeholder, so the first real facet value
+      // is index 1. The option list is derived from the catalog, so a value
+      // here is also a value at least one architecture carries.
+      const value = await select.locator('option').nth(1).getAttribute('value');
+      expect(value).toBeTruthy();
+      await select.selectOption(value);
+
+      // At least one architecture carries the value, and the catalog is wider
+      // than any single facet value, so the guard has to return false for some
+      // entries and true for others: a count strictly between 1 and the total.
+      await expect
+        .poll(async () => shownCount(await results.textContent()))
+        .toBeGreaterThan(0);
+      expect(shownCount(await results.textContent())).toBeLessThan(total);
+
+      const clear = page.getByRole('button', { name: 'Clear filters' });
+      await expect(clear).toBeVisible();
+      await clear.click();
+
+      await expect
+        .poll(async () => shownCount(await results.textContent()))
+        .toBe(total);
+      await expect(select).toHaveValue('');
+    });
+  }
 });
