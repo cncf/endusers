@@ -111,3 +111,101 @@ test.describe('member profile dialog without a logo', () => {
     await expect(stage.locator('span[class^="initialsLarge_"]')).toHaveCount(0);
   });
 });
+
+// The directory toolbar carries six controls -- a search box, three selects
+// and two checkboxes -- and until now a browser had driven only two of them.
+// tests/e2e/interactions.spec.js fills the search box and selects a membership
+// status; the industry select, the project select, and the "Has architecture"
+// and "Has award" toggles were reached by the unit suite's fake DOM alone.
+//
+// That left eight regions of src/components/MemberDirectory/index.js executed
+// only outside a browser: the four predicate guards at lines 31, 34, 40 and 43,
+// and the four handlers that feed them at lines 101, 140, 155 and 163. Those
+// handlers are the part a fake DOM cannot vouch for -- each control is bound to
+// its own `useState` setter through its own `htmlFor`/`id` pair or its own
+// `checked` prop, so a duplicated id, an option list built from the wrong
+// field, or a handler wired to the neighbouring setter leaves the shipped
+// toolbar inert on that control while the search and membership tests stay
+// green.
+//
+// Every control here is asserted to narrow the count *strictly*: the guard has
+// to return false for some members and true for others, which is what proves
+// both arms ran rather than just the one that renders everything.
+function shownCount(text) {
+  const [, shown] = text?.match(/Showing\s+(\d+)\s+of\s+(\d+)/) || [];
+  return Number(shown);
+}
+
+function totalCount(text) {
+  const [, , total] = text?.match(/Showing\s+(\d+)\s+of\s+(\d+)/) || [];
+  return Number(total);
+}
+
+async function openDirectory(page) {
+  await page.goto(MEMBERS_PATH);
+  const section = page.getByRole('region', {
+    name: 'End User Community organization directory',
+  });
+  await waitForHydration(section.getByLabel('Search organizations by name'));
+  const results = section.getByText(/Showing \d+ of \d+ organizations/);
+  const total = totalCount(await results.textContent());
+  expect(total).toBeGreaterThan(1);
+  return { section, results, total };
+}
+
+test.describe('member directory facet filtering', () => {
+  for (const label of ['Filter by industry', 'Filter by CNCF project']) {
+    test(`${label.toLowerCase()} narrows the directory and clears back`, async ({
+      page,
+    }) => {
+      const { section, results, total } = await openDirectory(page);
+
+      const select = section.getByLabel(label);
+      await expect(select).toHaveValue('');
+      // Index 0 is the "All ..." placeholder, so index 1 is the first real
+      // facet value. The options are derived from the members the page was
+      // built from, so a value here is one at least one member carries, and
+      // reading it off the page keeps this test independent of which data
+      // document the build used.
+      const value = await select.locator('option').nth(1).getAttribute('value');
+      expect(value).toBeTruthy();
+      await select.selectOption(value);
+
+      await expect
+        .poll(async () => shownCount(await results.textContent()))
+        .toBeGreaterThan(0);
+      expect(shownCount(await results.textContent())).toBeLessThan(total);
+
+      await section.getByRole('button', { name: 'Clear filters' }).click();
+
+      await expect
+        .poll(async () => shownCount(await results.textContent()))
+        .toBe(total);
+      await expect(select).toHaveValue('');
+    });
+  }
+
+  for (const label of ['Has architecture', 'Has award']) {
+    test(`the ${label.toLowerCase()} toggle narrows the directory and clears back`, async ({
+      page,
+    }) => {
+      const { section, results, total } = await openDirectory(page);
+
+      const toggle = section.getByLabel(label);
+      await expect(toggle).not.toBeChecked();
+      await toggle.check();
+
+      await expect
+        .poll(async () => shownCount(await results.textContent()))
+        .toBeGreaterThan(0);
+      expect(shownCount(await results.textContent())).toBeLessThan(total);
+
+      await section.getByRole('button', { name: 'Clear filters' }).click();
+
+      await expect
+        .poll(async () => shownCount(await results.textContent()))
+        .toBe(total);
+      await expect(toggle).not.toBeChecked();
+    });
+  }
+});
