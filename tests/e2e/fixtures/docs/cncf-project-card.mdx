@@ -14,11 +14,29 @@ architecture pages under `docs/architectures/` render `<CNCFProjectCard>` with
 `since` and `version`, with `since` alone, or with neither — never with
 `version` alone — so the right-hand operand of the meta guard
 `(since || version)` is the one arm of the component no production page reaches.
-The card below supplies that shape.
+The first card below supplies that shape.
+
+The second card is what makes the `||` itself measurable. Docusaurus gives each
+docs page its own bundle chunk, so the browser reports one set of V8 ranges per
+page, and V8 only emits a range for `version` when its count differs from the
+count of the surrounding render. Every production page is uniform: on
+`adobe.md`, `zeiss.md` and the rest every card carries `since`, so `version` is
+never evaluated and the range is reported zero; on
+`cern-scientific-computing.md` and `colopl.md` no card carries `since`, so
+`version` is always evaluated and no range is emitted at all. A page that mixes
+the two shapes evaluates `version` for one card and not the other, which is the
+only arrangement that reports the operand as reached.
 
 <CNCFProjectCard
   name="Versioned Fixture Project"
   href="https://www.cncf.io/projects/kubernetes/"
   version="v1.2.3"
   description="Fixture card carrying a version and no adoption year."
+/>
+
+<CNCFProjectCard
+  name="Adopted Fixture Project"
+  href="https://www.cncf.io/projects/helm/"
+  since="2021"
+  description="Fixture card carrying an adoption year and no version."
 />
