@@ -1,0 +1,7 @@
+{
+  "description": "Clears the document-level generatedAt and the caseStudies list so src/components/CaseStudies/index.js takes its two empty-corpus arms: SyncStatus returns null at line 46, and the '|| []' fallback at line 64 supplies the list the page filters, counts and maps over. Both fields are document-level on the one file the one /resources/case-studies page reads, so clearing them in the ordinary coverage build would not add a case -- it would trade the provenance line and every rendered row for these two arms, including the undated-study rows the additive overlay in tests/e2e/fixtures/data/case-studies.json exists to render. The variant build is served beside the real one, so one Playwright run reaches both and neither displaces the other. It does not yet move the two regions out of the e2e report's uncovered list: both builds' generated code maps the branches back to different original coordinates, which is the region-attribution problem tracked in #1066 and #1079. The browser taking the arms is pinned by tests/e2e/case-studies-variant.spec.js regardless.",
+  "set": {
+    "generatedAt": null,
+    "caseStudies": null
+  }
+}
