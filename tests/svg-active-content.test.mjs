@@ -1046,6 +1046,25 @@ test('the whitespace terminating a hex escape does not end a bare url token', ()
   ]);
 });
 
+test('an unterminated escaped url() does not backtrack exponentially', () => {
+  // The bare-url alternatives must be mutually exclusive. When a hex run could
+  // split across them, `url(` followed by repeated escapes and never closed
+  // grew about 7x per repetition, so an upstream SVG could hang every job that
+  // scans one. 400 repetitions finished in under a second here and took tens
+  // of seconds at 10 repetitions before the fix.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{fill:url(' +
+    '\\abcdef'.repeat(400) +
+    '</style></svg>';
+  const started = Date.now();
+  assert.deepEqual(findRemoteReferences(svg), []);
+  assert.ok(
+    Date.now() - started < 1000,
+    'findRemoteReferences must stay linear on repeated unterminated escapes',
+  );
+});
+
 test('escaped separators still resolve to a protocol-relative target', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style>' +

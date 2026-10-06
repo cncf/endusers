@@ -334,9 +334,19 @@ function decodeCssEscapes(value) {
  * belongs to the escape: `url(\000068 ttps://evil.example/x.css)` is one url
  * token whose value is `https://evil.example/x.css`, and a `[^)\s"']*` read
  * would capture only `\000068` and lose the host entirely.
+ *
+ * The alternatives inside the bare branch are mutually exclusive on purpose.
+ * A single `\\[0-9a-f]{1,6}` alternative lets a hex run split across branches
+ * — `\abcdef` as `\abcde` plus a bare `f`, and so on — so an unterminated
+ * `url(` followed by repeated escapes backtracks exponentially (about 7x per
+ * repetition). findRemoteReferences runs on third-party SVGs, so that is a
+ * hang an upstream diagram can trigger. Splitting the hex run into a full
+ * six-digit form and a shorter form guarded by `(?![0-9a-f])`, and excluding
+ * hex digits from the single-character escape, leaves exactly one way to match
+ * any input and keeps the scan linear.
  */
 const CSS_URL_PATTERN =
-  /url\(\s*(?:"([^"]*)"|'([^']*)'|((?:\\[0-9a-f]{1,6}[ \n\r\t\f]?|\\[\s\S]|[^)\s"'\\])*))\s*\)/gi;
+  /url\(\s*(?:"([^"]*)"|'([^']*)'|((?:\\[0-9a-f]{6}[ \n\r\t\f]?|\\[0-9a-f]{1,5}(?![0-9a-f])[ \n\r\t\f]?|\\[^0-9a-f]|[^)\s"'\\])*))\s*\)/gi;
 
 /**
  * An `@import` whose target is a bare string rather than a `url(...)`.
