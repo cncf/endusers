@@ -328,6 +328,36 @@ test('the e2e data fixtures are opt-in and scoped to the site data directory', a
   );
 });
 
+test('the e2e fixture docs instance is opt-in and scoped to the fixture directory', async () => {
+  // The fixture page renders a <CNCFProjectCard> prop shape no generated
+  // architecture page produces (tests/e2e/cncf-project-card.spec.js).
+  // Registering the instance outside the coverage build would publish a test
+  // fixture as a real page; pointing it anywhere but the fixture directory
+  // would publish whatever else it found.
+  const normal = await loadConfig({ E2E_COVERAGE: undefined });
+  assert.equal(
+    normal.plugins.some(
+      (plugin) =>
+        Array.isArray(plugin) && plugin[1]?.id === 'e2e-coverage-fixtures',
+    ),
+    false,
+  );
+
+  const coverage = await loadConfig({ E2E_COVERAGE: '1' });
+  const instance = coverage.plugins.find(
+    (plugin) =>
+      Array.isArray(plugin) && plugin[1]?.id === 'e2e-coverage-fixtures',
+  );
+  assert.ok(instance, 'no e2e fixture docs instance in the coverage config');
+  const [modulePath, options] = instance;
+  assert.match(modulePath, /plugin-content-docs/);
+  assert.equal(options.path, 'tests/e2e/fixtures/docs');
+  assert.equal(options.routeBasePath, 'e2e-coverage-fixtures');
+  // A sidebar would pull the fixture into the docs navigation it is served
+  // beside; false is what keeps it reachable only by its own route.
+  assert.equal(options.sidebarPath, false);
+});
+
 // The meta Content-Security-Policy is the browser-side backstop for content
 // this site does not author. Nothing asserted it until now, so it could be
 // weakened or deleted without a single test failing.
