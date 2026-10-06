@@ -1,5 +1,5 @@
 {
-  "description": "Adds one staff entry with neither role nor company so PersonDialog falls back to 'Community member' (src/components/CommunityPeople/index.js line 63). All real people carry a role or a company. Appended to 'staff' rather than 'tab' so the TAB roster assertions in tests/e2e/community-people.spec.js keep describing the real data.",
+  "description": "Adds staff entries for four branches no real profile reaches. The first has neither role nor company, so PersonDialog falls back to 'Community member' (src/components/CommunityPeople/index.js line 63). The remaining three carry the three website shapes websiteUrl (src/lib/profile-links.mjs) resolves differently and data/community-people.json never contains: an absent blog (the typeof guard at line 51), a bare host with no scheme (the ternary's no-scheme arm at line 55, resolved against https rather than concatenated), and a value that parses as a scheme but not as a URL (the catch at line 62). The blog field is copied verbatim from a third-party GitHub profile, so every one of those shapes is an input the next refresh can deliver. Appended to 'staff' rather than 'tab' so the TAB roster assertions in tests/e2e/community-people.spec.js keep describing the real data; all three carry a role and a company so they cannot displace the role-less entry above.",
   "append": {
     "people.staff": [
       {
@@ -13,6 +13,42 @@
         "linkedin": "",
         "twitter": "",
         "blog": ""
+      },
+      {
+        "name": "Coverage Fixture Absent Website",
+        "company": "Coverage Fixture Org",
+        "role": "Fixture",
+        "bio": "",
+        "location": "",
+        "image": "/img/favicon.svg",
+        "github": "",
+        "linkedin": "",
+        "twitter": "",
+        "blog": null
+      },
+      {
+        "name": "Coverage Fixture Bare Host Website",
+        "company": "Coverage Fixture Org",
+        "role": "Fixture",
+        "bio": "",
+        "location": "",
+        "image": "/img/favicon.svg",
+        "github": "",
+        "linkedin": "",
+        "twitter": "",
+        "blog": "fixture.example"
+      },
+      {
+        "name": "Coverage Fixture Unparseable Website",
+        "company": "Coverage Fixture Org",
+        "role": "Fixture",
+        "bio": "",
+        "location": "",
+        "image": "/img/favicon.svg",
+        "github": "",
+        "linkedin": "",
+        "twitter": "",
+        "blog": "https://["
       }
     ]
   }
