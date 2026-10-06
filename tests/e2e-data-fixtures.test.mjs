@@ -113,6 +113,139 @@ test('setting a leaf whose parent is an array is rejected', () => {
   );
 });
 
+// `set` and `append` both walk a dotted path down from a root object, which
+// leaves a data file whose root is an array with no addressable path at all:
+// the two guards pinned above are what a root-array file hits on every form.
+// `setWhere` is the way in, and it keeps the fail-loud property the dotted
+// paths have -- it names a record that must exist, by a field rather than a
+// positional index, because the files it reaches are regenerated and their
+// entry order is not stable.
+test('setWhere patches one record of a top-level array', () => {
+  const data = [
+    { id: 'kept', industries: ['Financial'] },
+    { id: 'target', industries: ['Insurance'] },
+  ];
+  const patched = applyOverlay(
+    data,
+    overlay({ setWhere: { 'id=target': { industries: [] } } }),
+    'f',
+  );
+  assert.deepEqual(patched, [
+    { id: 'kept', industries: ['Financial'] },
+    { id: 'target', industries: [] },
+  ]);
+  // The overlay is a patch, not an edit of the document it was handed.
+  assert.deepEqual(data[1].industries, ['Insurance']);
+});
+
+test('setWhere compares the selector value as a string', () => {
+  assert.deepEqual(
+    applyOverlay(
+      [{ id: 7, seats: 1 }],
+      overlay({ setWhere: { 'id=7': { seats: 0 } } }),
+      'f',
+    ),
+    [{ id: 7, seats: 0 }],
+  );
+});
+
+test('setWhere against a document that is not an array is rejected', () => {
+  assert.throws(
+    () =>
+      applyOverlay({ groups: [] }, overlay({ setWhere: { 'id=a': {} } }), 'f'),
+    /cannot select "id=a"; the real data is not a top-level array/,
+  );
+});
+
+test('setWhere naming no record is rejected', () => {
+  assert.throws(
+    () =>
+      applyOverlay(
+        [{ id: 'other' }],
+        overlay({ setWhere: { 'id=a': {} } }),
+        'f',
+      ),
+    /cannot select "id=a"; no record matches in the real data/,
+  );
+});
+
+test('setWhere matching more than one record is rejected', () => {
+  assert.throws(
+    () =>
+      applyOverlay(
+        [{ id: 'a' }, { id: 'a' }],
+        overlay({ setWhere: { 'id=a': {} } }),
+        'f',
+      ),
+    /"id=a" matches 2 records in the real data; the selector must name one/,
+  );
+});
+
+test('setWhere setting a field absent from the record is rejected', () => {
+  assert.throws(
+    () =>
+      applyOverlay(
+        [{ id: 'a' }],
+        overlay({ setWhere: { 'id=a': { gone: 1 } } }),
+        'f',
+      ),
+    /cannot set "gone" on "id=a"; it is absent from the real data/,
+  );
+});
+
+test('a malformed setWhere selector is rejected', () => {
+  for (const selector of ['id', '=a', '']) {
+    assert.throws(
+      () => applyOverlay([], overlay({ setWhere: { [selector]: {} } }), 'f'),
+      /must be "<field>=<value>"/,
+      `${JSON.stringify(selector)}: the message must name the expected form`,
+    );
+  }
+});
+
+test('a setWhere value that is not an object is rejected', () => {
+  for (const fields of [1, null, []]) {
+    assert.throws(
+      () =>
+        applyOverlay(
+          [{ id: 'a' }],
+          overlay({ setWhere: { 'id=a': fields } }),
+          'f',
+        ),
+      /"setWhere\.id=a" must be a JSON object of fields to set/,
+      `${JSON.stringify(fields)}: the message must name the expected shape`,
+    );
+  }
+});
+
+// The two data files whose root is a JSON array. Both were outside the
+// overlay mechanism entirely before `setWhere`; this pins that each is
+// addressable today, against the real file rather than a sample.
+test('both root-array data files are reachable by the mechanism', () => {
+  const cases = [
+    ['architectures/catalog.json', 'id', 'industries'],
+    ['projects-born.json', 'name', 'origin'],
+  ];
+  for (const [name, selector, field] of cases) {
+    const data = loadSiteData(name, {});
+    assert.ok(Array.isArray(data), `${name}: expected a top-level array`);
+    const [first] = data;
+    assert.ok(
+      first?.[selector],
+      `${name}: expected records keyed by ${selector}`,
+    );
+    const patched = applyOverlay(
+      data,
+      overlay({
+        setWhere: { [`${selector}=${first[selector]}`]: { [field]: null } },
+      }),
+      name,
+    );
+    assert.equal(patched[0][field], null);
+    assert.equal(patched.length, data.length);
+  }
+});
+
 test('appending to something that is not an array is rejected', () => {
   assert.throws(
     () => applyOverlay({ a: 'text' }, overlay({ append: { a: [1] } }), 'f'),
@@ -281,6 +414,16 @@ test('every committed overlay still applies to its data file', () => {
           (member) => member.membershipStatus === 'member-and-contributor',
         ),
       'no member holds both roles',
+    ],
+    [
+      'architectures/catalog.json',
+      (data) => data.some((entry) => entry.industries.length === 0),
+      'every catalog entry still carries an industry, so ArchitectureCard\u2019s eyebrow fallback stays unreachable',
+    ],
+    [
+      'architectures/catalog.json',
+      (data) => data.some((entry) => entry.industries.length > 0),
+      'no catalog entry carries an industry, so the populated arm stopped rendering',
     ],
   ];
   for (const [name, holds, why] of cases) {
