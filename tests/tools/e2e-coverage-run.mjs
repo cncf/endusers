@@ -7,8 +7,12 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { captureRunScripts } from './e2e-coverage-scripts.mjs';
+
+const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
 export const COVERAGE_RUN_SCHEMA_VERSION = 1;
 export const COVERAGE_RUN_KIND = 'endusers.e2e.coverage-run';
@@ -98,7 +102,11 @@ export async function readCoverageRun(runDir) {
   return validateManifest(JSON.parse(raw));
 }
 
-export async function sealCoverageRun(runDir, status) {
+export async function sealCoverageRun(
+  runDir,
+  status,
+  { buildDir = null } = {},
+) {
   if (!SEALED_STATUSES.has(status)) {
     throw new Error(`invalid coverage seal status: ${status}`);
   }
@@ -108,10 +116,26 @@ export async function sealCoverageRun(runDir, status) {
       `coverage run ${manifest.runId} is already sealed as ${manifest.status}`,
     );
   }
+  // Copied before the manifest flips to a sealed status: once sealed the run is
+  // immutable, and the reporter refuses to read it until then. Capture is
+  // opt-in so that sealing never reaches for a build directory the caller did
+  // not name; the CLI supplies the one CI builds into.
+  const scripts = buildDir
+    ? await captureRunScripts(runDir, {
+        buildDir,
+        artifactKind: COVERAGE_ARTIFACT_KIND,
+      })
+    : null;
   const sealed = {
     ...manifest,
     status,
     sealedAt: new Date().toISOString(),
+    ...(scripts
+      ? {
+          capturedScripts: scripts.copied.length,
+          uncapturedScripts: scripts.missing,
+        }
+      : {}),
   };
   await writeJsonAtomic(manifestPath(runDir), sealed);
   return sealed;
@@ -148,6 +172,11 @@ function optionValue(argv, name) {
   return argv[index + 1];
 }
 
+function optionalValue(argv, name) {
+  const index = argv.indexOf(name);
+  return index === -1 ? undefined : argv[index + 1];
+}
+
 export async function main(argv = process.argv.slice(2)) {
   const command = argv[0];
   const runDir = optionValue(argv, '--dir');
@@ -161,9 +190,12 @@ export async function main(argv = process.argv.slice(2)) {
     return manifest;
   }
   if (command === 'seal') {
+    const buildDir =
+      optionalValue(argv, '--build-dir') ?? join(repoRoot, 'build');
     const manifest = await sealCoverageRun(
       runDir,
       optionValue(argv, '--status'),
+      { buildDir: resolve(buildDir) },
     );
     process.stdout.write(`${JSON.stringify(manifest)}\n`);
     return manifest;
