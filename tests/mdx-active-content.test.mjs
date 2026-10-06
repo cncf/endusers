@@ -357,3 +357,43 @@ test('does not let a code span swallow a live paragraph across a blank line', ()
 test('still treats a genuine multi-line code span as inert', () => {
   assert.deepEqual(reasons('`a\nb` and then `c\nd` as prose.'), []);
 });
+
+test('does not let a code span swallow live content across a block boundary', () => {
+  // CommonMark parses inlines one leaf block at a time, so an unclosed
+  // backtick at the end of one block cannot pair with a backtick in the next
+  // one. Both the reference parser and micromark render each payload below
+  // live, with the backticks left as literal text; stopping the closer search
+  // only at a blank line blanked every one of them as span content.
+  assert.deepEqual(
+    reasons('- a `\n- <iframe src="https://evil.test"></iframe> `'),
+    ['disallowed element <iframe>'],
+  );
+  assert.deepEqual(
+    reasons('text `\n# <iframe src="https://evil.test"></iframe> `'),
+    ['disallowed element <iframe>'],
+  );
+  assert.deepEqual(
+    reasons('text `\n1. <iframe src="https://evil.test"></iframe> `'),
+    ['disallowed element <iframe>'],
+  );
+  assert.deepEqual(
+    reasons('text `\n> <iframe src="https://evil.test"></iframe> `'),
+    ['disallowed element <iframe>'],
+  );
+  assert.deepEqual(
+    reasons('text `\n<iframe src="https://evil.test"></iframe> `'),
+    ['disallowed element <iframe>'],
+  );
+  assert.deepEqual(
+    reasons('text `\n---\n<iframe src="https://evil.test"></iframe> `'),
+    ['disallowed element <iframe>'],
+  );
+});
+
+test('still pairs a code span across a lazy paragraph continuation', () => {
+  // A plain continuation line starts no block, so the span really does close
+  // on it and its contents stay inert -- the stop must not fire here.
+  // (micromark renders `a `x\n  plain y` b` as a single <code> span.)
+  assert.deepEqual(reasons('a `x\n  plain y` b'), []);
+  assert.deepEqual(reasons('- item `x\n  plain y` b'), []);
+});
