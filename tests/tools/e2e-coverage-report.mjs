@@ -341,6 +341,56 @@ function isPhantomRegion(region, lines) {
   return true;
 }
 
+function comparePositions(lineA, columnA, lineB, columnB) {
+  if (lineA !== lineB) return lineA < lineB ? -1 : 1;
+  if (columnA !== columnB) return columnA < columnB ? -1 : 1;
+  return 0;
+}
+
+// Two branch spans of one source file either nest or stay disjoint. Both are
+// derived from AST node extents, so one cannot begin inside another and end
+// after it -- a *crossing* pair is not a shape the language can produce. When
+// the union does hold one, the two halves were mapped through source maps that
+// placed the same original branch at different spans, which is exactly how
+// #1079's drifted twins appear: `MemberProfile.js` contributes a zero region
+// at `10:40-10:48` from one artifact and a covered `10:44-15:19` from another
+// artifact of the *same* chunk, and `15:19-15:80` against `15:70-38:15`
+// likewise. Both pairs cross; neither contains the other, so neither #1051's
+// multi-line fold nor an enclosure rule reaches them.
+//
+// Crossing is the whole test, and it is deliberately narrower than
+// containment. A covered region that *encloses* a zero one is the ordinary
+// shape of a branch arm inside an executed block -- GroupLinkStatus's
+// `checkedAt` guard and RadarReports' empty-corpus arms are enclosed exactly
+// that way -- so enclosure is never treated as drift.
+function crossesRegion(zero, covered) {
+  return (
+    comparePositions(covered.line, covered.column, zero.line, zero.column) >
+      0 &&
+    comparePositions(
+      covered.line,
+      covered.column,
+      zero.endLine,
+      zero.endColumn,
+    ) < 0 &&
+    comparePositions(
+      covered.endLine,
+      covered.endColumn,
+      zero.endLine,
+      zero.endColumn,
+    ) > 0
+  );
+}
+
+function isDriftedRegion(region, regions) {
+  if (region.count > 0) return false;
+  for (const other of regions) {
+    if (other.count <= 0) continue;
+    if (crossesRegion(region, other)) return true;
+  }
+  return false;
+}
+
 // A region is one branch location from the istanbul object convertScript
 // already builds -- the arm of a ternary, a short-circuit operand, a default
 // parameter -- data the line map cannot see because several of them share a
@@ -356,16 +406,13 @@ function getRegionCoverage(coverageData) {
       const line = location?.start?.line;
       if (!Number.isInteger(line)) continue;
       const endLine = location.end?.line ?? line;
-      const key = [
-        line,
-        location.start?.column ?? 0,
-        endLine,
-        location.end?.column ?? 0,
-      ].join(':');
+      const column = location.start?.column ?? 0;
+      const endColumn = location.end?.column ?? 0;
+      const key = [line, column, endLine, endColumn].join(':');
       const count = counts?.[index] ?? 0;
       const existing = regions.get(key);
       if (!existing || count > existing.count) {
-        regions.set(key, { line, endLine, count });
+        regions.set(key, { line, column, endLine, endColumn, count });
       }
     }
   }
@@ -582,8 +629,11 @@ export async function collectE2ECoverage(
       const coveredLines = [...coverage.lines.values()].filter(
         (count) => count > 0,
       ).length;
-      const regionValues = [...coverage.regions.values()].filter(
-        (region) => !isPhantomRegion(region, coverage.lines),
+      const allRegions = [...coverage.regions.values()];
+      const regionValues = allRegions.filter(
+        (region) =>
+          !isPhantomRegion(region, coverage.lines) &&
+          !isDriftedRegion(region, allRegions),
       );
       const regions = regionValues.length;
       const coveredRegions = regionValues.filter(
