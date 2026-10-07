@@ -16,25 +16,40 @@
 //
 // The card-level fallback in MemberCard.js is a separate element that *is*
 // server-rendered, and is already covered; this spec is about the dialog.
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+//
+// The case is data-dependent, and that is the hazard it has to defend against
+// itself. data/members.json is regenerated from the CNCF landscape by
+// `npm run generate:members`, so which organizations lack a logo is upstream
+// state, not a source edit: today two of the 101 members carry no logo, and on
+// the day the landscape gives both of them one, a `test.skip` reading the real
+// file would quietly retire the dialog's only browser coverage of the initials
+// arm. A green run would report nothing, because a skipped case is not a
+// failing one.
+//
+// The coverage build already has the fixture that closes that hole.
+// tests/e2e/fixtures/data/members.json appends `coverage-fixture-org` with
+// `"logo": null`, so reading the members through the overlay -- the same
+// `loadSiteData()` tests/e2e/data-fixtures.spec.js and
+// tests/e2e/data-variants.spec.js read theirs through -- makes a logo-less
+// member a property of the build rather than an accident of the landscape.
+// Under E2E_COVERAGE=1 the absence of one is therefore a broken fixture and is
+// asserted, not skipped. Outside the coverage run the overlay is not applied
+// (loadSiteData returns the file unchanged), so the plain "End-to-end tests"
+// job keeps the skip: there the case genuinely depends on upstream data.
 import { test, expect } from '../tools/e2e-coverage.cjs';
+import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 
 const MEMBERS_PATH = '/community/members';
 
-// Playwright transpiles these .js specs to CommonJS (the package is not
-// "type": "module"), so import.meta is unavailable. Playwright runs from the
-// directory holding playwright.config.js, so the data file is addressed from
-// the project root.
-const membersData = JSON.parse(
-  readFileSync(resolve('data/members.json'), 'utf8'),
-);
-const members = membersData.members || [];
+// Read through the overlay rather than off disk, so this spec sees the same
+// document the page was built from.
+const members = loadSiteData('members.json').members || [];
 
-// data/members.json is regenerated from the CNCF landscape by
-// `npm run generate:members`, so which organizations happen to lack a logo
-// changes with no source edit. The member driving this case is therefore
-// selected from the data at run time rather than named here.
+const COVERAGE_RUN = process.env.E2E_COVERAGE === '1';
+
+// The member driving this case is selected from the data at run time rather
+// than named here: under the coverage build the overlay guarantees at least
+// one, and a real logo-less member is preferred when the data still has one.
 const withoutLogo = members.find((member) => !member.logo);
 
 // React attaches its fiber to the DOM node it hydrates, so the presence of a
@@ -55,7 +70,20 @@ test.describe('member profile dialog without a logo', () => {
   test('shows the member initials in place of a logo image', async ({
     page,
   }) => {
-    test.skip(!withoutLogo, 'every member in data/members.json carries a logo');
+    if (COVERAGE_RUN) {
+      // The overlay is committed, so its absence is a broken fixture rather
+      // than a property of the landscape. Failing here is what keeps the
+      // guarantee from degrading back into a skip.
+      expect(
+        withoutLogo,
+        'tests/e2e/fixtures/data/members.json must append a member with no logo',
+      ).toBeTruthy();
+    } else {
+      test.skip(
+        !withoutLogo,
+        'every member in data/members.json carries a logo',
+      );
+    }
 
     await page.goto(MEMBERS_PATH);
     const section = page.getByRole('region', {
