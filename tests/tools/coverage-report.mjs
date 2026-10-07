@@ -35,8 +35,8 @@
 //
 // Those four thresholds are all ratios over the files the run happened to
 // observe, which leaves one kind of regression invisible to every one of
-// them. A file under scripts/ or src/ that no test imports is recorded
-// nowhere, so it never becomes a row: its lines are absent from the
+// them. A file under scripts/, src/ or tests/tools/ that no test imports is
+// recorded nowhere, so it never becomes a row: its lines are absent from the
 // numerator and the denominator alike and `src files` does not move. Adding
 // a brand-new source file with an untaken branch therefore keeps
 // --check-source 100 green. --require-source-files closes that by comparing
@@ -67,7 +67,15 @@ const SCRIPT_URL = /\.(js|jsx|mjs)$/;
 // sidebars.js) is measured today but is not enumerated here -- it is not a
 // tree, and a guess about which root files "ought to" be covered would be a
 // rule this reporter cannot state.
-const SOURCE_ROOTS = ['scripts', 'src'];
+//
+// tests/tools/ is enumerated for the same reason scripts/ and src/ are: it is
+// a tree, not a scattering of root-level configuration, and every module in
+// it is part of the harness the suite runs on. A tool nobody imports is the
+// measuring apparatus going unmeasured, which is the failure this flag exists
+// to name. It is the one subtree of tests/ that is enumerated; isSourceFile()
+// still classifies everything under tests/ as non-source, so a harness module
+// counts toward the file-set floor without entering the `src files` ratios.
+const SOURCE_ROOTS = ['scripts', 'src', join('tests', 'tools')];
 const SOURCE_FILE = /\.(c|m)?jsx?$/;
 
 // A flag takes one numeric percentage argument; the option key it sets on

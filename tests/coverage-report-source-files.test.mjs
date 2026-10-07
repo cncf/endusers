@@ -4,10 +4,11 @@
 // `npm run test:unit:coverage:check` gates on --check, --check-regions,
 // --check-source and --check-source-regions. All four are computed from the
 // rows tests/tools/coverage-report.mjs built out of the V8 records the run
-// produced, so a module under scripts/ or src/ that no test ever imports is
-// not a row at all: its lines are missing from the numerator and the
-// denominator together. Adding a brand-new source file with an untaken branch
-// therefore left `src files | 100.00 | 8351/8351 lines | 2395/2395 regions`
+// produced, so a module under scripts/, src/ or tests/tools/ that no test
+// ever imports is not a row at all: its lines are missing from the numerator
+// and the denominator together. Adding a brand-new source file with an
+// untaken branch therefore left
+// `src files | 100.00 | 8351/8351 lines | 2395/2395 regions`
 // character-for-character unchanged and the gate exiting 0.
 //
 // The only whole-set guard the reporter had was the total-wipeout case
@@ -69,16 +70,41 @@ function runReporter(args) {
   });
 }
 
-test('enumerateSourceFiles walks scripts/ and src/ for modules only', () => {
+// The "Never measured" block runs from the header to the first line that is
+// not an indented path, so it is read the same way whether or not a "Not
+// reported" notice follows it. Asserts the header's count matches the paths
+// it lists, then returns those lines.
+function namedInNotice(stdout) {
+  const notice = stdout.match(/\nNever measured \((\d+)\):([\s\S]*)$/);
+  assert.ok(notice, `no "Never measured" notice in:\n${stdout}`);
+  const named = [];
+  for (const line of notice[2].split('\n')) {
+    if (/^ {2}\S+$/.test(line)) named.push(line);
+    else if (named.length > 0) break;
+  }
+  assert.equal(
+    named.length,
+    Number(notice[1]),
+    'the count in the notice must match the files it lists',
+  );
+  return named;
+}
+
+test('enumerateSourceFiles walks scripts/, src/ and tests/tools/ for modules only', () => {
   const root = fixtureRoot({
     'scripts/one.mjs': '',
     'scripts/lib/two.js': '',
     'scripts/lib/nested/three.cjs': '',
     'src/components/Four/index.jsx': '',
+    // The harness tree is enumerated too: a tool nothing imports is the
+    // measuring apparatus going unmeasured.
+    'tests/tools/five.mjs': '',
+    'tests/tools/nested/six.cjs': '',
     // Not modules: the reporter cannot hold a coverage record for them.
     'src/css/custom.css': '',
     'src/pages/about.md': '',
-    // Outside the enumerated trees.
+    // Outside the enumerated trees: the rest of tests/ is the suite itself,
+    // not the harness it runs on.
     'tests/five.test.mjs': '',
     'docusaurus.config.js': '',
   });
@@ -88,6 +114,8 @@ test('enumerateSourceFiles walks scripts/ and src/ for modules only', () => {
       'scripts/lib/two.js',
       'scripts/one.mjs',
       'src/components/Four/index.jsx',
+      'tests/tools/five.mjs',
+      'tests/tools/nested/six.cjs',
     ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -133,6 +161,42 @@ test('missingSourceFiles reports only files nothing recorded', () => {
   }
 });
 
+test('--require-source-files names an unimported module under tests/tools/', () => {
+  // tests/tools/ is the harness itself -- the overlay engine, the loaders,
+  // the coverage reporters. A module there that nothing imports is exactly as
+  // invisible to the ratio gates as one under src/, and that is not
+  // hypothetical: tests/tools/e2e-data-fixture-loader.cjs sat imported by
+  // nothing with no row in the table at all, and no gate in the repository
+  // moved. It was found by eye. This pins that the file-set floor finds it.
+  const gated = runReporter([
+    '--require-source-files',
+    '--',
+    'tests/validate-utils.test.mjs',
+  ]);
+  assert.equal(gated.status, 1);
+  assert.match(gated.stderr, /--require-source-files requires every file/);
+  assert.match(gated.stderr, /tests\/tools\//);
+
+  const named = namedInNotice(gated.stdout);
+  assert.ok(
+    named.includes('  tests/tools/e2e-data-fixture-loader.cjs'),
+    `the harness tree was not enumerated:\n${named.join('\n')}`,
+  );
+  // The control: the one module this narrow suite does exercise stays off the
+  // list, so the new root widens what is enumerated without widening what
+  // counts as unmeasured.
+  assert.ok(
+    !named.includes('  scripts/lib/validate-utils.mjs'),
+    `a measured file was reported as missing:\n${named.join('\n')}`,
+  );
+  // Test files themselves are not enumerated: tests/tools/ is the harness,
+  // and the rest of tests/ is the suite that runs on it.
+  assert.ok(
+    !named.some((line) => /^ {2}tests\/(?!tools\/)/.test(line)),
+    `a test file outside the harness was enumerated:\n${named.join('\n')}`,
+  );
+});
+
 test('--require-source-files fails a run the percentage gates pass', () => {
   // One real test file, so the suite passes and produces coverage, but almost
   // nothing under scripts/ or src/ is loaded. Without the flag the source
@@ -153,21 +217,7 @@ test('--require-source-files fails a run the percentage gates pass', () => {
   assert.equal(gated.status, 1);
   assert.match(gated.stderr, /--require-source-files requires every file/);
 
-  const notice = gated.stdout.match(/\nNever measured \((\d+)\):([\s\S]*)$/);
-  assert.ok(notice, `no "Never measured" notice in:\n${gated.stdout}`);
-  // The block runs from the header to the first line that is not an indented
-  // path, so it is read the same way whether or not a "Not reported" notice
-  // follows it.
-  const named = [];
-  for (const line of notice[2].split('\n')) {
-    if (/^ {2}\S+$/.test(line)) named.push(line);
-    else if (named.length > 0) break;
-  }
-  assert.equal(
-    named.length,
-    Number(notice[1]),
-    'the count in the notice must match the files it lists',
-  );
+  const named = namedInNotice(gated.stdout);
   // scripts/lib/validate-utils.mjs is the one module that suite exercises, so
   // it is the control: everything else is listed and it is not.
   assert.ok(
