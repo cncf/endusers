@@ -9,7 +9,7 @@
  * scripts.
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { lstatSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse as yamlParse } from 'yaml';
 import {
@@ -144,6 +144,20 @@ export async function mirrorArtworkUrls(root, urls) {
     if (!relativeDestination) continue;
     const destination = join(root, relativeDestination);
     mkdirSync(join(destination, '..'), { recursive: true });
+    // writeFileSync() follows a symlink at the destination, so a link sitting
+    // on a mirror path would redirect these third-party bytes to its target,
+    // outside static/img/cncf-projects. Those bytes then never reach the tree
+    // validate-architecture-assets.mjs scans, so the post-hoc asset gate could
+    // not see what was written even in principle. Gate the write here the way
+    // mirrorLandscapeLogo() does, for the same reason the remote-reference
+    // check below is applied before the write rather than after it.
+    const existing = lstatSync(destination, { throwIfNoEntry: false });
+    if (existing?.isSymbolicLink() || (existing && !existing.isFile())) {
+      console.warn(
+        `Could not mirror CNCF project asset: ${path}: destination is not a regular file`,
+      );
+      continue;
+    }
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
