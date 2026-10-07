@@ -66,7 +66,7 @@
     "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
     "test:unit": "TZ=UTC node --test",
     "test:unit:coverage": "TZ=UTC node tests/tools/coverage-report.mjs",
-    "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 99 --check-source 100 --check-regions 94 --check-source-regions 99 --require-source-files",
+    "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 99 --check-source 100 --check-regions 95 --check-source-regions 99 --require-source-files",
     "test:e2e": "playwright test",
     "build:e2e:coverage": "npm run build:e2e:coverage:site && npm run build:e2e:coverage:variant",
     "build:e2e:coverage:site": "DOCUSAURUS_NO_PERSISTENT_CACHE=1 E2E_COVERAGE=1 npm run build:production",

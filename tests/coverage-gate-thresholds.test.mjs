@@ -28,12 +28,16 @@ const GATE_SCRIPT = 'test:unit:coverage:check';
 
 // Measured on the suite this commit ships, floored to a whole percent so a
 // rounding difference between runs cannot fail the build:
-//   all files   99.26% lines / 94.45% regions
-//   src files  100.00% lines / 99.72% regions  (6645/6645 lines)
+//   all files   99.42% lines / 95.07% regions  (48197/48476 lines, 8060/8478 regions)
+//   src files  100.00% lines / 99.96% regions  (8721/8721 lines, 2475/2476 regions)
+//
+// Only `--check-regions` has cleared a whole percent since the floors were
+// last set; the other three sit under their next whole percent (99.42, 99.96)
+// or are already at 100, so flooring leaves them where they are.
 const FLOORS = {
   '--check': 99,
   '--check-source': 100,
-  '--check-regions': 94,
+  '--check-regions': 95,
   '--check-source-regions': 99,
 };
 
