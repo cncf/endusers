@@ -326,6 +326,15 @@ test('a data file patched by both directories collects both overlays', () => {
   const groups = join(DATA_DIR, 'community-groups.json');
   assert.deepEqual(overlayPathsFor(groups, { E2E_COVERAGE_VARIANT: '1' }), [
     join(FIXTURE_DIR, 'community-groups.json'),
+    join(VARIANT_FIXTURE_DIR, 'community-groups.json'),
+  ]);
+  // The contrast case: a file the ordinary coverage build overlays and the
+  // variant build has nothing to add to still collects one path, which is
+  // what proves the variant directory is consulted only when it has
+  // something to say rather than always appended.
+  const catalog = join(DATA_DIR, 'architectures', 'catalog.json');
+  assert.deepEqual(overlayPathsFor(catalog, { E2E_COVERAGE_VARIANT: '1' }), [
+    join(FIXTURE_DIR, 'architectures', 'catalog.json'),
   ]);
 });
 
