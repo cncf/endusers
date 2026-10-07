@@ -42,6 +42,8 @@ import { join } from 'node:path';
 import {
   COVERAGE_SCRIPTS_DIR,
   captureRunScripts,
+  scriptPathname,
+  totalDecodeURIComponent,
 } from './tools/e2e-coverage-scripts.mjs';
 
 const ARTIFACT_KIND = 'endusers.playwright.v8-coverage';
@@ -178,6 +180,39 @@ test('a coverage payload carrying no result list seals without throwing', async 
     copied: ['assets/js/wanted.js'],
     missing: [],
   });
+});
+
+// A literal `%` not followed by two hex digits is a valid URL pathname
+// character that decodeURIComponent rejects. The seal step must capture such
+// a script, not crash on it: before #1150 one executed asset named 100%.js
+// failed the whole End-to-end coverage job.
+test('a script whose name defeats percent-decoding is still captured', async (t) => {
+  const { root, buildDir, runDir } = await workspace();
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  await writeScript(buildDir, '100%.js');
+  await writePayload(runDir, 'coverage.json', coveragePayload(['100%.js']));
+
+  const result = await seal({ buildDir, runDir });
+
+  assert.deepEqual(result, { copied: ['assets/js/100%.js'], missing: [] });
+  assert.deepEqual(
+    await readdir(join(runDir, COVERAGE_SCRIPTS_DIR, 'assets', 'js')),
+    ['100%.js'],
+  );
+});
+
+test('scriptPathname decodes an encoded name and passes a malformed one through', () => {
+  assert.equal(
+    scriptPathname(`${ORIGIN}/assets/js/na%20me.js`),
+    'assets/js/na me.js',
+  );
+  assert.equal(
+    scriptPathname(`${ORIGIN}/assets/js/100%.js`),
+    'assets/js/100%.js',
+  );
+  assert.equal(totalDecodeURIComponent('%7E'), '~');
+  assert.equal(totalDecodeURIComponent('100%'), '100%');
 });
 
 test('a script and the map it names are copied together into the run directory', async (t) => {
