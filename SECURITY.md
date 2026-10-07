@@ -57,3 +57,10 @@ listed here until upstream published `4.3.0` — outside that advisory's
 no longer appears, which is why the count above dropped from 34 to 28. When an
 entry here is said to have no fix, re-check the registry before trusting it: "no
 patched version" is only true as of the day it was written.
+
+CI enforces this table: `npm run check:audit` (`scripts/audit-gate.mjs`) fails
+the build on any high or critical advisory other than the allowlisted ones
+above, so a new lockfile advisory cannot land silently. When an advisory listed
+here gains a patched release, apply the fix and remove both the table row and
+the matching allowlist entry in `scripts/audit-gate.mjs` — a unit test keeps the
+two in sync.
