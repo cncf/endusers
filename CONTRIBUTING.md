@@ -239,7 +239,7 @@ node tests/tools/e2e-coverage-run.mjs seal \
   --dir "$RUN_DIR" --status passed
 npm run report:e2e:coverage -- \
   --input "$RUN_DIR" --build build \
-  --check-source 100 --check-source-regions 80 \
+  --check-source 100 --check-source-regions 91 \
   --require-source-files \
   --json "coverage/e2e/$RUN_ID-report.json" \
   --text "coverage/e2e/$RUN_ID-report.txt"
