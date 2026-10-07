@@ -16,8 +16,8 @@ metrics, events, and pathways to participate.
 the target announcement window (see issue #104): the largest concentration of
 CNCF end users this year, and every Phase 1 content pillar is exactly what that
 audience looks for. The weekly backwards plan lives in `LAUNCH.md` (PR #108).
-The ownership decision that must land before the announcement is tracked in ADR
-0001 / issue #99.
+The ownership decision has landed (ADR 0001 is Accepted; issue #99 closed); the
+remaining pre-launch dependency is the DNS cutover tracked in issue #46.
 
 ## Guiding principles
 

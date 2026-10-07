@@ -42,6 +42,8 @@ Never assert counts or winner lists from memory.
 
 ## Build
 
-- Install: `npm install`
+- Install: `npm ci` (installs the exact, integrity-checked versions in
+  `package-lock.json`, matching CI; use `npm install <package>` only for
+  deliberate dependency changes)
 - Dev server: `npm run docus:start`
 - Build: `npm run build` (broken links fail the build)

@@ -22,6 +22,17 @@ The dev server runs at `http://localhost:3000`. In the devcontainer:
 npm run docusaurus start -- --host 0.0.0.0 --port 3000 --poll 10000
 ```
 
+Two `package.json` scripts deserve a note because nothing else references them:
+
+- `build:preview` is an alias of `build:production` kept for preview-style
+  deploys of the production build; the two run the identical command, and the
+  deploy workflow uses `build:production`.
+- `update:pkgs` (`npx npm-check-updates -u`) is a maintainer-only bulk-refresh
+  tool that rewrites every semver range in `package.json` at once. It is not the
+  routine upgrade path — that remains per-package `npm install <package>` and
+  Dependabot — and any output it produces still lands as a deliberately reviewed
+  lockfile commit.
+
 ### Justfile shortcuts
 
 If you have [`just`](https://github.com/casey/just) installed, the repository's
