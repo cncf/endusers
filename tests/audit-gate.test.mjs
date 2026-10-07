@@ -284,3 +284,30 @@ test('cli: exits 1 when npm cannot be spawned at all', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /failed to run npm audit/);
 });
+
+test('cli: exits 1 when npm audit fails with an error document', () => {
+  // A failed audit (registry outage, proxy error, rate limit) still prints
+  // parseable JSON, but an error document carrying no `vulnerabilities` key.
+  // Reading that as "no vulnerabilities" would fail the gate open and report
+  // a green audit that never ran.
+  const result = runGate({
+    stdout: JSON.stringify({
+      message: '502 Bad Gateway - POST /-/npm/v1/security/advisories/bulk',
+      statusCode: 502,
+      error: { summary: '', detail: '' },
+    }),
+    status: '1',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /did not return a report/);
+  assert.doesNotMatch(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: exits 1 when the report carries a non-object vulnerabilities key', () => {
+  const result = runGate({
+    stdout: JSON.stringify({ vulnerabilities: null }),
+    status: '1',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /did not return a report/);
+});
