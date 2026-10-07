@@ -390,6 +390,129 @@ test('a zero-count region spanning only covered lines is not counted against the
   }
 });
 
+// The fold above is deliberately limited to *multi-line* zero spans, and this
+// is the boundary it must not cross. Every genuinely uncovered arm the report
+// still reports is single-line and sits inside the span of some covered region
+// contributed by another artifact of the same script -- that is simply what a
+// branch arm inside an enclosing block looks like once V8's ranges are mapped
+// back. Measured on the published `e2e-coverage` artifact for run
+// 37412914368, GroupLinkStatus's `checkedAt` guard, DirectoryFreshness's
+// plural arms and RadarReports' empty-corpus arms are each enclosed exactly as
+// the drifted spans in #1079 are, so folding a zero region into a covered one
+// that contains it would erase real gaps that tests are still being written
+// for (#1094, #1097). Enclosure is therefore not evidence of drift.
+//
+// The two artifacts below put one zero region, `1:6:1:12`, against three
+// covered regions that each enclose it in a different way: `1:0:3:12` from the
+// *other* artifact (whole-span containment across artifacts), `1:0:1:12` (the
+// same line), and `1:6:3:12` (the same start column, differing end -- the
+// shape #1066 proposed keying away). It survives all three.
+test('a single-line zero-count region survives a covered region that encloses it', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const lines = ['const a = 1;', 'const b = 2;', 'const c = 3;'];
+    const source = `${lines.join('\n')}\n`;
+    const scriptText = `${source}\n//# sourceMappingURL=app.js.map\n`;
+    const original = join(fixture.root, 'src/components/Example/index.js');
+    await mkdir(join(fixture.root, 'src/components/Example'), {
+      recursive: true,
+    });
+    await writeFile(original, source);
+    await writeFile(join(fixture.buildDir, 'assets/js/app.js'), scriptText);
+    await writeFile(
+      join(fixture.buildDir, 'assets/js/app.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'app.js',
+        sources: ['webpack://endusers/./src/components/Example/index.js'],
+        sourcesContent: [source],
+        names: [],
+        // Line 1 carries a second mapping at column 6 so a block opening and
+        // closing inside it resolves to columns of its own instead of
+        // snapping back to the start of the line. Without that the zero
+        // region would be a zero-width span and prove nothing about columns.
+        mappings: [
+          `${[vlq(0), vlq(0), vlq(0), vlq(0)].join('')},${[
+            vlq(6),
+            vlq(0),
+            vlq(0),
+            vlq(6),
+          ].join('')}`,
+          `${[vlq(0), vlq(0), vlq(1), vlq(-6)].join('')}`,
+          `${[vlq(0), vlq(0), vlq(1), vlq(0)].join('')}`,
+        ].join(';'),
+      }),
+    );
+
+    // One page runs the whole script and nothing else, contributing a covered
+    // region that spans every line of the file.
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/app.js',
+          scriptId: '1',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                { startOffset: 0, endOffset: scriptText.length, count: 1 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    // A second page reaches the same script but leaves one arm inside line 1
+    // unexecuted. The covered region from the first page encloses it on both
+    // lines and columns; it is still a real gap.
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-1', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/app.js',
+          scriptId: '2',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                { startOffset: 0, endOffset: scriptText.length, count: 1 },
+                {
+                  startOffset: source.indexOf('= 1;'),
+                  endOffset: source.indexOf('= 1;') + '= 1;'.length,
+                  count: 0,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    const [entry] = report.sources;
+    assert.equal(entry.file, 'src/components/Example/index.js');
+    // Every line ran somewhere, so the line view sees nothing -- which is
+    // precisely why the region has to survive on its own.
+    assert.deepEqual(entry.uncoveredLines, []);
+    assert.deepEqual(entry.uncoveredRegions, [1]);
+    assert.equal(entry.regions - entry.coveredRegions, 1);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 // `npm run build:e2e:coverage` compiles the site twice: once from the real
 // data, and once with tests/e2e/fixtures/data-variants/** layered on, into
 // build/e2e-coverage-variant under its own base URL. That is what makes a
