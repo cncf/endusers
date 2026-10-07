@@ -254,6 +254,19 @@ format, and `tests/e2e/data-fixtures.spec.js` for the specs that drive the
 branches. A spec that asserts against a data file should read it through
 `loadSiteData()` so it describes the build it is running against.
 
+Data overlays reach only components that read `data/*.json`. A branch whose
+props arrive through generated MDX — the architecture pages under
+`docs/architectures/` are committed output of `npm run import:architectures`, so
+a prop shape absent from every imported page is absent from every build — needs
+the second mechanism: MDX fixture pages committed under
+`tests/e2e/fixtures/docs/`. When `E2E_COVERAGE=1`, `docusaurus.config.js`
+registers an extra docs-plugin instance that serves them at the
+`/e2e-coverage-fixtures/` route, where a spec can render the component with
+exactly the props the real corpus never supplies. See
+`tests/e2e/cncf-project-card.spec.js` for a worked example. Like the data
+overlays, nothing outside `E2E_COVERAGE=1` registers the instance, so these
+pages never reach a production build or the deployed site.
+
 `npm run build:production`, the gating end-to-end job and the deployed site are
 unaffected: nothing outside `E2E_COVERAGE=1` registers the overlay. The coverage
 build opts out of the bundler's persistent cache for the same reason — the cache
