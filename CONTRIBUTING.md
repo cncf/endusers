@@ -202,7 +202,8 @@ that `npm run test:e2e` does not handle for you:
 ```bash
 npm run build:production      # required first: the suite serves build/, it
                                # does not build it
-npx playwright install chromium   # once per machine: downloads the browser
+npx playwright install --with-deps chromium   # once per machine: downloads the
+                               # browser and the OS packages it needs to launch
 npm run test:e2e
 ```
 
@@ -227,12 +228,16 @@ node tests/tools/e2e-coverage-run.mjs seal \
   --dir "$RUN_DIR" --status passed
 npm run report:e2e:coverage -- \
   --input "$RUN_DIR" --build build \
+  --check-source 100 --check-source-regions 80 \
+  --require-source-files \
   --json "coverage/e2e/$RUN_ID-report.json" \
   --text "coverage/e2e/$RUN_ID-report.txt"
 ```
 
-The report is source-mapped back to `src/**`; it is informational initially and
-has no percentage thresholds. Invalid maps, stale manifests, and empty aggregate
+The report is source-mapped back to `src/**`. The thresholds above are the ones
+the `e2e-coverage` job in `.github/workflows/ci.yml` enforces, so a local render
+that omits them passes where CI fails; `tests/e2e-coverage-gate.test.mjs` holds
+floors under them. Invalid maps, stale manifests, and empty aggregate
 attribution fail visibly and leave their raw artifacts for review.
 
 Some component branches render only for data shapes the checked-in `data/*.json`
@@ -248,6 +253,19 @@ build rather than quietly taking the coverage with it. See
 format, and `tests/e2e/data-fixtures.spec.js` for the specs that drive the
 branches. A spec that asserts against a data file should read it through
 `loadSiteData()` so it describes the build it is running against.
+
+Data overlays reach only components that read `data/*.json`. A branch whose
+props arrive through generated MDX — the architecture pages under
+`docs/architectures/` are committed output of `npm run import:architectures`, so
+a prop shape absent from every imported page is absent from every build — needs
+the second mechanism: MDX fixture pages committed under
+`tests/e2e/fixtures/docs/`. When `E2E_COVERAGE=1`, `docusaurus.config.js`
+registers an extra docs-plugin instance that serves them at the
+`/e2e-coverage-fixtures/` route, where a spec can render the component with
+exactly the props the real corpus never supplies. See
+`tests/e2e/cncf-project-card.spec.js` for a worked example. Like the data
+overlays, nothing outside `E2E_COVERAGE=1` registers the instance, so these
+pages never reach a production build or the deployed site.
 
 `npm run build:production`, the gating end-to-end job and the deployed site are
 unaffected: nothing outside `E2E_COVERAGE=1` registers the overlay. The coverage
