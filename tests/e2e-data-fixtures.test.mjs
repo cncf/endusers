@@ -332,11 +332,10 @@ test('a data file patched by both directories collects both overlays', () => {
   // variant build has nothing to add to still collects one path, which is
   // what proves the variant directory is consulted only when it has
   // something to say rather than always appended.
-  const caseStudies = join(DATA_DIR, 'case-studies.json');
-  assert.deepEqual(
-    overlayPathsFor(caseStudies, { E2E_COVERAGE_VARIANT: '1' }),
-    [join(FIXTURE_DIR, 'case-studies.json')],
-  );
+  const catalog = join(DATA_DIR, 'architectures', 'catalog.json');
+  assert.deepEqual(overlayPathsFor(catalog, { E2E_COVERAGE_VARIANT: '1' }), [
+    join(FIXTURE_DIR, 'architectures', 'catalog.json'),
+  ]);
 });
 
 // Both arms have to be reachable in one Playwright run, which is the whole
