@@ -197,6 +197,44 @@ function blankFences(markdown) {
 }
 
 /**
+ * Line beginnings that start a new block and so end the paragraph before
+ * them, taking any unclosed inline code span with it.  CommonMark parses
+ * inlines one leaf block at a time, so a backtick in the paragraph above
+ * cannot pair with a backtick in the block below -- the real compiler leaves
+ * both as literal text and renders everything between them.
+ *
+ * A blank line ends a paragraph; the rest are the constructs that interrupt
+ * one.  Code fences are absent because `blankFences` has already replaced
+ * every fence line with spaces by the time this runs, so a real fence is
+ * matched as a blank line.  Ordered lists are matched at any start number
+ * even though CommonMark only lets `1.` interrupt a paragraph, and every
+ * line-initial `<` is matched even though only HTML blocks of types 1-6
+ * interrupt one: stopping the search early can only leave more text scanned,
+ * which is the fail-closed direction this module requires, while missing a
+ * stop hides live content.
+ */
+const BLOCK_INTERRUPT_PATTERNS = [
+  /^[ \t]*$/,
+  /^ {0,3}#{1,6}(?:[ \t]|$)/,
+  /^ {0,3}>/,
+  /^ {0,3}[-+*](?:[ \t]|$)/,
+  /^ {0,3}\d{1,9}[.)](?:[ \t]|$)/,
+  /^ {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})$/,
+  /^ {0,3}</,
+];
+
+/**
+ * Whether a line begins a block, so an inline code span opened above it
+ * cannot close on or after it.
+ *
+ * @param {string} line
+ * @returns {boolean}
+ */
+function startsNewBlock(line) {
+  return BLOCK_INTERRUPT_PATTERNS.some((pattern) => pattern.test(line));
+}
+
+/**
  * Blank inline code spans by scanning for a backtick run and searching for a
  * closing run of *exactly* the same length -- the CommonMark rule a single
  * `` `+...`+ `` regex cannot express, because it accepts mismatched run
@@ -204,11 +242,16 @@ function blankFences(markdown) {
  *
  * The closer search crosses a single newline, because a CommonMark inline
  * code span does too: `` `a\nb` `` is one span, not an unterminated backtick
- * on each line. It stops at a blank line, because inline parsing does not
- * cross a paragraph boundary -- a backtick before the blank line cannot close
- * after it, so searching past it would blank a live paragraph in between.
+ * on each line. It stops at the first line that begins a new block, because
+ * inline parsing does not cross a block boundary -- a backtick before the
+ * boundary cannot close after it, so searching past it would blank live
+ * content in between. Stopping only at a blank line (the previous behaviour)
+ * let an unclosed backtick at the end of one block pair with a backtick in
+ * the next one, and every construct between them -- a `<script>` element, an
+ * MDX expression, a `javascript:` href -- was blanked as if it were code and
+ * passed the gate unscanned.
  *
- * Stopping the search at the newline (the previous behaviour) paired the wrong
+ * Stopping the search at the newline (an earlier behaviour) paired the wrong
  * backticks: it matched the opener against a later run on the second line
  * while the real compiler matched it against the run that closes the span
  * across the break. Everything the real span did not cover was then blanked as
@@ -243,9 +286,17 @@ function blankInlineSpans(text) {
     let closeStart = -1;
     let closeEnd = -1;
     while (k < text.length) {
-      // A blank line ends the paragraph, and with it any unclosed code span:
-      // the real parser cannot pair a backtick across it, so neither can this.
-      if (text[k] === '\n' && /^[ \t]*\n/.test(text.slice(k + 1))) break;
+      // A new block ends the paragraph, and with it any unclosed code span:
+      // the real parser cannot pair a backtick across a block boundary, so
+      // neither can this.
+      if (text[k] === '\n') {
+        const lineEnd = text.indexOf('\n', k + 1);
+        const nextLine = text.slice(
+          k + 1,
+          lineEnd === -1 ? text.length : lineEnd,
+        );
+        if (startsNewBlock(nextLine)) break;
+      }
       if (text[k] === '`') {
         let runEnd = k;
         while (text[runEnd] === '`') runEnd += 1;
