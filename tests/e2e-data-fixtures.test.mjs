@@ -55,6 +55,73 @@ test('an overlay appends to an existing array', () => {
   ]);
 });
 
+// `add` is the one operation whose leaf must be absent rather than present:
+// it exists so an overlay can introduce a record under a keyed collection,
+// which `set`, `append` and `setWhere` all refuse to do.
+test('an overlay adds a key the real data does not carry', () => {
+  const patched = applyOverlay(
+    { lifecycle: { trends: { real: { values: [] } } } },
+    overlay({ add: { 'lifecycle.trends.fixture': { values: [1] } } }),
+    'fixture',
+  );
+  assert.deepEqual(patched.lifecycle.trends, {
+    real: { values: [] },
+    fixture: { values: [1] },
+  });
+});
+
+// The fail-loud guarantee, pointing the other way from `set`'s: a regenerated
+// data file that grows the same key must break the build rather than have the
+// record it grew silently replaced by the fixture.
+test('adding a key the real data already carries is rejected', () => {
+  assert.throws(
+    () =>
+      applyOverlay(
+        { lifecycle: { trends: { fixture: { values: [] } } } },
+        overlay({ add: { 'lifecycle.trends.fixture': { values: [1] } } }),
+        'fixture',
+      ),
+    /cannot add "lifecycle\.trends\.fixture"; the real data already carries it/,
+  );
+});
+
+test('adding through a missing parent is rejected', () => {
+  assert.throws(
+    () =>
+      applyOverlay(
+        { lifecycle: {} },
+        overlay({ add: { 'lifecycle.trends.fixture': {} } }),
+        'fixture',
+      ),
+    /"lifecycle\.trends" is missing from the real data/,
+  );
+});
+
+test('an added value is cloned rather than shared with the overlay', () => {
+  const value = { values: [] };
+  const patched = applyOverlay(
+    { trends: {} },
+    overlay({ add: { 'trends.fixture': value } }),
+    'fixture',
+  );
+  value.values.push('mutated after the fact');
+  assert.deepEqual(patched.trends.fixture, { values: [] });
+});
+
+// `set` runs before `add`, and `add` before `append`, so one overlay can add
+// an array and then push onto it.
+test('an overlay can append to the array it added', () => {
+  const patched = applyOverlay(
+    { trends: {} },
+    overlay({
+      add: { 'trends.fixture': { values: [] } },
+      append: { 'trends.fixture.values': [{ date: '2026-01' }] },
+    }),
+    'fixture',
+  );
+  assert.deepEqual(patched.trends.fixture.values, [{ date: '2026-01' }]);
+});
+
 test('the real document is not mutated', () => {
   const data = { groups: [{ slug: 'real' }] };
   applyOverlay(data, overlay({ append: { groups: [{ slug: 'added' }] } }), 'f');
@@ -433,6 +500,25 @@ test('every committed overlay still applies to its data file', () => {
       'architectures/catalog.json',
       (data) => data.some((entry) => entry.industries.length > 0),
       'no catalog entry carries an industry, so the populated arm stopped rendering',
+    ],
+    [
+      'metrics.json',
+      (data) =>
+        Object.values(data.referenceArchitectureLifecycle.trends).filter(
+          (trend) => trend.values.length === 1,
+        ).length === 1,
+      'the ordinary coverage build must carry exactly one single-point trend, or Sparkline\u2019s centring arm has nothing to render',
+    ],
+    [
+      'metrics.json',
+      (data) =>
+        Object.values(data.referenceArchitectureLifecycle.trends).some(
+          (trend) => trend.values.length === 0,
+        ) &&
+        Object.values(data.referenceArchitectureLifecycle.trends).some(
+          (trend) => trend.values.length > 1,
+        ),
+      'the added trend displaced a real one instead of rendering beside it, so the arms it was added next to stopped rendering',
     ],
   ];
   for (const [name, holds, why] of cases) {
