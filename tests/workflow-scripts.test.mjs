@@ -346,13 +346,14 @@ test('browser coverage is isolated in a visible gating job with a source floor',
   // #1026: the line map folds every statement on a line to one bit, so an
   // uncovered ternary arm or short-circuit that shares a line with covered
   // code is invisible to --check-source. The region floor is the granularity
-  // the line gate cannot give. 80 sits just under the 81.43% a full run of
-  // the suite measured when the gate was introduced, the same ratchet
-  // pattern as the unit lane's region floors.
+  // the line gate cannot give. The gate landed at 80, just under the 81.43%
+  // a full run of the suite measured at the time, and was ratcheted to 91
+  // under the 91.63% measured after the 2026-10-07 coverage merges (#1105),
+  // the same ratchet pattern as the unit lane's region floors.
   assert.match(
     coverageCommands,
-    /--check-source-regions\s+80\b/,
-    'the e2e coverage report must gate on --check-source-regions 80',
+    /--check-source-regions\s+91\b/,
+    'the e2e coverage report must gate on --check-source-regions 91',
   );
   // #992: the ratio is computed over observed files only, so a src module the
   // bundle drops vanishes from numerator and denominator alike. The file-set
