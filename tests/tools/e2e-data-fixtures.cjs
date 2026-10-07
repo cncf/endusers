@@ -47,14 +47,26 @@
 //
 //   {
 //     "description": "why this overlay exists",
-//     "set":    { "verifiedAt": null },
-//     "append": { "people.staff": [ { ... } ] }
+//     "set":      { "verifiedAt": null },
+//     "append":   { "people.staff": [ { ... } ] },
+//     "setWhere": { "id=allianz": { "industries": [] } }
 //   }
 //
 // `set` replaces the value at a dotted path that must already be present.
-// `append` pushes onto an array that must already be present. Both are
-// optional; `description` is required so the next reader knows which branch
-// the overlay is holding open.
+// `append` pushes onto an array that must already be present. `setWhere`
+// patches fields of the one record of a top-level JSON array whose selector
+// field holds the named value. All three are optional; `description` is
+// required so the next reader knows which branch the overlay is holding open.
+//
+// `setWhere` exists because `set` and `append` both walk dotted paths from a
+// root object, so a data file whose root is an array -- data/architectures/
+// catalog.json and data/projects-born.json -- had no addressable path at all.
+// It is keyed on a field value rather than a positional index because both
+// files are regenerated (`npm run import:architectures`,
+// `npm run collect:projects-born`) and entry order is not stable, while the
+// fail-loud guarantee is the point: an overlay naming a record that the
+// regenerated file no longer carries breaks the build instead of quietly
+// dropping the coverage it was written for.
 
 'use strict';
 
@@ -72,7 +84,7 @@ const VARIANT_FIXTURE_DIR = path.join(
   'data-variants',
 );
 
-const OVERLAY_KEYS = new Set(['description', 'set', 'append']);
+const OVERLAY_KEYS = new Set(['description', 'set', 'append', 'setWhere']);
 
 /**
  * Maps a file under data/ to the overlay that patches it, or null when the
@@ -144,6 +156,50 @@ function parentOf(document, dottedPath, label) {
 }
 
 /**
+ * Resolves a `setWhere` selector to the one record it names.
+ *
+ * The selector is `<field>=<value>`, matched against a top-level JSON array.
+ * Values are compared as strings so a selector stays writable in JSON for a
+ * numeric or boolean field; a selector that matches no record, or more than
+ * one, is an error rather than a silent no-op.
+ *
+ * @param {unknown} document the patched document
+ * @param {string} selector `<field>=<value>`
+ * @param {string} label path reported in error messages
+ * @returns {Record<string, unknown>} the matched record, in place
+ */
+function recordOf(document, selector, label) {
+  const separator = selector.indexOf('=');
+  if (separator <= 0)
+    throw new Error(
+      `${label}: setWhere selector "${selector}" must be "<field>=<value>"`,
+    );
+  const field = selector.slice(0, separator);
+  const value = selector.slice(separator + 1);
+  if (!Array.isArray(document))
+    throw new Error(
+      `${label}: cannot select "${selector}"; the real data is not a top-level array`,
+    );
+  const matches = document.filter(
+    (record) =>
+      record !== null &&
+      typeof record === 'object' &&
+      !Array.isArray(record) &&
+      Object.prototype.hasOwnProperty.call(record, field) &&
+      String(record[field]) === value,
+  );
+  if (matches.length === 0)
+    throw new Error(
+      `${label}: cannot select "${selector}"; no record matches in the real data`,
+    );
+  if (matches.length > 1)
+    throw new Error(
+      `${label}: "${selector}" matches ${matches.length} records in the real data; the selector must name one`,
+    );
+  return matches[0];
+}
+
+/**
  * Applies one overlay document to parsed data, returning a new document.
  *
  * Every path the overlay names must already exist: an overlay that no longer
@@ -185,6 +241,20 @@ function applyOverlay(data, overlay, label) {
         `${label}: cannot append to "${dottedPath}"; it is not an array in the real data`,
       );
     parent[leaf] = [...parent[leaf], ...structuredClone(entries)];
+  }
+  for (const [selector, fields] of Object.entries(overlay.setWhere || {})) {
+    if (fields === null || typeof fields !== 'object' || Array.isArray(fields))
+      throw new Error(
+        `${label}: "setWhere.${selector}" must be a JSON object of fields to set`,
+      );
+    const record = recordOf(patched, selector, label);
+    for (const [field, value] of Object.entries(fields)) {
+      if (!Object.prototype.hasOwnProperty.call(record, field))
+        throw new Error(
+          `${label}: cannot set "${field}" on "${selector}"; it is absent from the real data`,
+        );
+      record[field] = structuredClone(value);
+    }
   }
   return patched;
 }

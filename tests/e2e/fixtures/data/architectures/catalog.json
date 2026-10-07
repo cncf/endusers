@@ -1,0 +1,8 @@
+{
+  "description": "Clears one catalog entry's industries so ArchitectureCard renders the 'Reference architecture' eyebrow fallback (src/components/ReferenceArchitectures/index.js line 66). Every shipped entry carries a non-empty industries array, so the fallback never renders against the real data. The other seven entries keep their industries, so both arms of the `||` render in the same build and no second build is needed.",
+  "setWhere": {
+    "id=allianz": {
+      "industries": []
+    }
+  }
+}
