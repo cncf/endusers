@@ -1008,3 +1008,119 @@ test('accepts the UTF-8 encoding spellings a generator actually emits', () => {
     );
   }
 });
+
+test('a CSS hex escape in a bare url() does not hide the host', () => {
+  // A browser's CSS tokenizer resolves escapes before the value is read as a
+  // URL, so `url(\68ttps://...)` fetches `https://...`. Scanning the raw text
+  // instead sees a value starting with a backslash -- neither absolute nor
+  // protocol-relative -- and the remote fetch walked past the gate.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{fill:url(\\68ttps://evil.example/esc.svg#g)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/esc.svg#g',
+  ]);
+});
+
+test('a CSS hex escape inside a quoted url() does not hide the host', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{fill:url("\\68ttps://evil.example/q.svg#g")}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/q.svg#g',
+  ]);
+});
+
+test('the whitespace terminating a hex escape does not end a bare url token', () => {
+  // The space after a six-digit escape belongs to the escape, so this is one
+  // url token worth `https://evil.example/ws.css`. Stopping the bare token at
+  // the first whitespace captured only `\000068` and lost the host entirely.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    '@import url(\\000068 ttps://evil.example/ws.css);' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/ws.css',
+  ]);
+});
+
+test('an unterminated escaped url() does not backtrack exponentially', () => {
+  // The bare-url alternatives must be mutually exclusive. When a hex run could
+  // split across them, `url(` followed by repeated escapes and never closed
+  // grew about 7x per repetition, so an upstream SVG could hang every job that
+  // scans one. 400 repetitions finished in under a second here and took tens
+  // of seconds at 10 repetitions before the fix.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{fill:url(' +
+    '\\abcdef'.repeat(400) +
+    '</style></svg>';
+  const started = Date.now();
+  assert.deepEqual(findRemoteReferences(svg), []);
+  assert.ok(
+    Date.now() - started < 1000,
+    'findRemoteReferences must stay linear on repeated unterminated escapes',
+  );
+});
+
+test('escaped separators still resolve to a protocol-relative target', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{fill:url(\\00002f\\00002fevil.example/sep.svg#g)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: //evil.example/sep.svg#g',
+  ]);
+});
+
+test('a backslash before a non-hex character decodes to that character', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{fill:url(\\https://evil.example/lit.svg#g)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/lit.svg#g',
+  ]);
+});
+
+test('a backslash-newline line continuation joins the text either side', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    '@import "htt\\\nps://evil.example/cont.css";' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/cont.css',
+  ]);
+});
+
+test('a CSS escape in a presentation attribute does not hide the host', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg">' +
+    '<rect fill="url(\\68ttps://evil.example/attr.svg#g)"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a fill presentation attribute: https://evil.example/attr.svg#g',
+  ]);
+});
+
+test('an escape naming NUL or a surrogate decodes to U+FFFD, not a host', () => {
+  // CSS maps NUL, the surrogate range and out-of-range code points to U+FFFD.
+  // Decoding them to the character the digits name would invent a host that
+  // no browser fetches.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{fill:url(\\000000ttps://evil.example/nul.css)}' +
+    'circle{fill:url(\\00d800ttps://evil.example/sur.css)}' +
+    'path{fill:url(\\110000ttps://evil.example/over.css)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), []);
+});
+
+test('an interior backslash in a local CSS path stays local', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{fill:url(./sub\\dir/x.png)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), []);
+});

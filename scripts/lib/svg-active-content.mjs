@@ -278,8 +278,75 @@ function styleBlockContents(source) {
   return blocks;
 }
 
-/** A CSS `url(...)` target, quoted or bare. Covers `@font-face` `src` too. */
-const CSS_URL_PATTERN = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s"']*))\s*\)/gi;
+/**
+ * A CSS escape sequence: a hex escape of one to six digits with the single
+ * optional whitespace character that terminates it, a backslash-newline line
+ * continuation, or a backslash before any other single character.
+ */
+const CSS_ESCAPE_PATTERN =
+  /\\(?:([0-9a-f]{1,6})(?:\r\n|[ \n\r\t\f])?|(\r\n|[\n\r\f])|([\s\S]))/gi;
+
+/**
+ * Decode the CSS escape sequences in a url token or string.
+ *
+ * A browser's CSS tokenizer resolves escapes before the value is ever read as
+ * a URL, so `url(\68ttps://evil.example/x.css)` fetches
+ * `https://evil.example/x.css`. Scanning the raw text instead sees a value
+ * starting with a backslash, which is neither absolute nor protocol-relative,
+ * and the remote fetch walks past findRemoteReferences -- the gate that keeps
+ * a visitor's IP, User-Agent and Referer from reaching a host the diagram's
+ * author chose. Every escapable character is reachable this way, so no
+ * substring test on the undecoded value can stand in for decoding.
+ *
+ * This is CSS syntax only. Attribute values that are URLs rather than CSS keep
+ * a backslash's URL meaning, which remoteTarget already handles, so decoding
+ * stays scoped to the CSS callers.
+ *
+ * @param {string} value - Raw CSS url token or string contents.
+ * @returns {string}
+ */
+function decodeCssEscapes(value) {
+  return String(value).replace(
+    CSS_ESCAPE_PATTERN,
+    (match, hex, newline, literal) => {
+      if (hex !== undefined) {
+        const code = Number.parseInt(hex, 16);
+        // CSS maps NUL, the surrogate range and out-of-range code points to
+        // U+FFFD rather than to the character the digits name.
+        return code === 0 ||
+          code > 0x10ffff ||
+          (code >= 0xd800 && code <= 0xdfff)
+          ? '\ufffd'
+          : String.fromCodePoint(code);
+      }
+      // A backslash-newline inside a string is a line continuation: it
+      // contributes nothing, so the text either side joins up.
+      return newline !== undefined ? '' : literal;
+    },
+  );
+}
+
+/**
+ * A CSS `url(...)` target, quoted or bare. Covers `@font-face` `src` too.
+ *
+ * The bare branch spells out escape sequences rather than stopping at the
+ * first whitespace, because the whitespace that terminates a hex escape
+ * belongs to the escape: `url(\000068 ttps://evil.example/x.css)` is one url
+ * token whose value is `https://evil.example/x.css`, and a `[^)\s"']*` read
+ * would capture only `\000068` and lose the host entirely.
+ *
+ * The alternatives inside the bare branch are mutually exclusive on purpose.
+ * A single `\\[0-9a-f]{1,6}` alternative lets a hex run split across branches
+ * — `\abcdef` as `\abcde` plus a bare `f`, and so on — so an unterminated
+ * `url(` followed by repeated escapes backtracks exponentially (about 7x per
+ * repetition). findRemoteReferences runs on third-party SVGs, so that is a
+ * hang an upstream diagram can trigger. Splitting the hex run into a full
+ * six-digit form and a shorter form guarded by `(?![0-9a-f])`, and excluding
+ * hex digits from the single-character escape, leaves exactly one way to match
+ * any input and keeps the scan linear.
+ */
+const CSS_URL_PATTERN =
+  /url\(\s*(?:"([^"]*)"|'([^']*)'|((?:\\[0-9a-f]{6}[ \n\r\t\f]?|\\[0-9a-f]{1,5}(?![0-9a-f])[ \n\r\t\f]?|\\[^0-9a-f]|[^)\s"'\\])*))\s*\)/gi;
 
 /**
  * An `@import` whose target is a bare string rather than a `url(...)`.
@@ -407,7 +474,7 @@ function cssTargets(css) {
   for (const pattern of [CSS_URL_PATTERN, CSS_IMPORT_PATTERN]) {
     for (const match of String(css).matchAll(pattern)) {
       const value = match[1] ?? match[2] ?? match[3];
-      const target = remoteTarget(value);
+      const target = remoteTarget(decodeCssEscapes(value));
       if (target) targets.push(target);
     }
   }
