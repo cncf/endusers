@@ -22,6 +22,7 @@ words:
   - GHSA
   - cutover
   - linuxfoundation
+  - pkgs
   - reprioritizations
   - retag
   - endusers
