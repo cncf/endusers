@@ -202,7 +202,8 @@ that `npm run test:e2e` does not handle for you:
 ```bash
 npm run build:production      # required first: the suite serves build/, it
                                # does not build it
-npx playwright install chromium   # once per machine: downloads the browser
+npx playwright install --with-deps chromium   # once per machine: downloads the
+                               # browser and the OS packages it needs to launch
 npm run test:e2e
 ```
 
@@ -227,12 +228,16 @@ node tests/tools/e2e-coverage-run.mjs seal \
   --dir "$RUN_DIR" --status passed
 npm run report:e2e:coverage -- \
   --input "$RUN_DIR" --build build \
+  --check-source 100 --check-source-regions 80 \
+  --require-source-files \
   --json "coverage/e2e/$RUN_ID-report.json" \
   --text "coverage/e2e/$RUN_ID-report.txt"
 ```
 
-The report is source-mapped back to `src/**`; it is informational initially and
-has no percentage thresholds. Invalid maps, stale manifests, and empty aggregate
+The report is source-mapped back to `src/**`. The thresholds above are the ones
+the `e2e-coverage` job in `.github/workflows/ci.yml` enforces, so a local render
+that omits them passes where CI fails; `tests/e2e-coverage-gate.test.mjs` holds
+floors under them. Invalid maps, stale manifests, and empty aggregate
 attribution fail visibly and leave their raw artifacts for review.
 
 Some component branches render only for data shapes the checked-in `data/*.json`
