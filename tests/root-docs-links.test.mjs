@@ -6,9 +6,14 @@ import { dirname, join, relative, resolve } from 'node:path';
 const repoRoot = resolve(dirname(new URL(import.meta.url).pathname), '..');
 
 // Root-level *.md are the contributor-facing entry points. They are not part
-// of the Docusaurus route tree, so `onBrokenMarkdownLinks` never reads them,
-// and `npm run check:links` delegates to a Makefile that does not exist.
-// Nothing else verifies that their relative links still resolve.
+// of the Docusaurus route tree, so `onBrokenMarkdownLinks` never reads them.
+//
+// `npm run check:links` does work -- it shells out to markdown-link-check with
+// .markdown-link-check.json, which tests/markdown-link-check-config.test.mjs
+// guards -- but no workflow invokes it, so it never runs on a change (#1137).
+// It also checks outbound http(s) URLs rather than relative paths, which is
+// the complementary half: these cases resolve targets on disk and issue no
+// request. Nothing else verifies that their relative links still resolve.
 const ROOT_DOCS = readdirSync(repoRoot)
   .filter((name) => name.endsWith('.md'))
   .sort();
