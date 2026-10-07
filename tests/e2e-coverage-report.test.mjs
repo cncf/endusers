@@ -880,6 +880,17 @@ test('collectE2ECoverage accepts base64 and URI-encoded inline maps', async () =
         encode: (map) =>
           `data:application/json,${encodeURIComponent(JSON.stringify(map))}`,
       },
+      {
+        // Written without percent-encoding and containing a raw `%` that
+        // defeats decodeURIComponent: before #1150 this aborted the whole
+        // report with URIError. The undecoded payload is the JSON itself.
+        // The source text carries no whitespace because the
+        // sourceMappingURL comment only captures up to the first space.
+        name: 'inline-raw',
+        source: "x='100%';\n",
+        mapPath: 'src/components/InlineRaw/index.js',
+        encode: (map) => `data:application/json,${JSON.stringify(map)}`,
+      },
     ];
     const result = [];
     for (const [index, entry] of entries.entries()) {
@@ -926,7 +937,7 @@ test('collectE2ECoverage accepts base64 and URI-encoded inline maps', async () =
       root: fixture.root,
       buildDir: fixture.buildDir,
     });
-    assert.equal(report.sources.length, 2);
+    assert.equal(report.sources.length, 3);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
@@ -1721,6 +1732,27 @@ test('sourcePathFromReference handles empty and webpack source references', () =
       absolute: '/repo/src/components/Example/index.js',
       relative: 'src/components/Example/index.js',
     },
+  );
+});
+
+// Before #1150 a stray `%` in a sources entry threw URIError out of the
+// decode and aborted the entire report; the undecoded text is now treated as
+// the already-decoded path, with containment still enforced afterwards.
+test('sourcePathFromReference tolerates a reference that defeats percent-decoding', () => {
+  assert.deepEqual(
+    sourcePathFromReference(
+      'webpack://endusers/./src/components/Share/100%.js',
+      '/repo/build/app.js.map',
+      '/repo',
+    ),
+    {
+      absolute: '/repo/src/components/Share/100%.js',
+      relative: 'src/components/Share/100%.js',
+    },
+  );
+  assert.equal(
+    sourcePathFromReference('../100%.js', '/repo/build/app.js.map', '/repo'),
+    null,
   );
 });
 

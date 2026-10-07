@@ -37,12 +37,28 @@ export function isEligibleScript(url) {
   }
 }
 
+// decodeURIComponent throws URIError on a literal `%` not followed by two
+// hex digits -- a sequence the URL parser accepts and preserves verbatim
+// (e.g. /assets/js/100%.js). The decode only normalises encoded names back
+// to their on-disk spelling; when the text was never encoded, the raw text
+// is that spelling, so the total form falls back to it instead of crashing
+// the seal step or the reporter. Nothing security-relevant depends on the
+// decode succeeding: every caller re-checks containment after
+// resolve/realpath on whichever form is returned.
+export function totalDecodeURIComponent(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 // The leading slash is stripped so the pathname can be joined onto a root. The
 // result is still attacker-controlled -- every caller re-checks containment
 // after resolving it.
 export function scriptPathname(url) {
   const parsed = new URL(url);
-  return decodeURIComponent(parsed.pathname).replace(/^\/+/u, '');
+  return totalDecodeURIComponent(parsed.pathname).replace(/^\/+/u, '');
 }
 
 async function directoryExists(path) {

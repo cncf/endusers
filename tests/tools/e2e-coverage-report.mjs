@@ -18,6 +18,7 @@ import {
   isEligibleScript,
   resolveScriptInRoot,
   scriptPathname,
+  totalDecodeURIComponent,
 } from './e2e-coverage-scripts.mjs';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -114,7 +115,10 @@ function sourcePathFromReference(reference, mapPath, root) {
     value = slash === -1 ? '' : value.slice(slash);
   }
 
-  value = decodeURIComponent(value).replaceAll('\\', '/');
+  // Total decode: a source-map `sources` entry with a stray `%` is treated
+  // as already-decoded text rather than aborting the whole report (#1150);
+  // containment against the root is still checked below either way.
+  value = totalDecodeURIComponent(value).replaceAll('\\', '/');
   const absoluteSpecifier = value.lastIndexOf('|/');
   if (absoluteSpecifier !== -1) {
     value = value.slice(absoluteSpecifier + 1);
@@ -153,7 +157,10 @@ function decodeDataUrl(value) {
   if (!match) return null;
   const raw = match[1]
     ? Buffer.from(match[2], 'base64').toString('utf8')
-    : decodeURIComponent(match[2]);
+    : // Total decode: an inline map that was written without percent-encoding
+      // contains raw `%` sequences that would make decodeURIComponent throw;
+      // the undecoded text is then the JSON itself (#1150).
+      totalDecodeURIComponent(match[2]);
   return JSON.parse(raw);
 }
 
