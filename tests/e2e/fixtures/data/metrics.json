@@ -1,0 +1,14 @@
+{
+  "description": "Adds one lifecycle trend carrying exactly one value so Sparkline takes the `values.length === 1 ? 50` arm of its x-coordinate ternary (src/components/MetricsDashboard/index.js line 28), which centres a lone point because the expression beside it divides by `values.length - 1`. The checked-in data defines exactly two trends: `submissions` carries zero values and returns \"No trend data yet\" before the ternary is reached, and `publications` carries five and takes the arm beside it, so no shipped shape reaches it. A trend holding one point is an ordinary shape -- `submissions` becomes one the first month a single submission is recorded. This is `add` rather than `append` onto `trends.submissions.values` on purpose: `submissions` is the only trend that reaches the no-values arm, so giving it a point would trade that arm for this one rather than add a case, which is why this arm previously needed the variant build. Adding a trend beside it is additive in the sense tests/e2e/data-fixtures.spec.js means -- both real trends keep rendering exactly as they did -- so all three Sparkline arms render on the one real /metrics page in one build, and the variant overlay is freed to clear `referenceArchitectureLifecycle.trends` outright for the `|| {}` fallback at line 76. The key must be absent from the real data or the build fails, so a collector run that grows a trend of this name breaks here instead of having it silently overwritten.",
+  "add": {
+    "referenceArchitectureLifecycle.trends.coverageFixture": {
+      "label": "Coverage fixture trend with a single point",
+      "values": [
+        {
+          "date": "2026-01",
+          "value": 1
+        }
+      ]
+    }
+  }
+}

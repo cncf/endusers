@@ -48,15 +48,34 @@
 //   {
 //     "description": "why this overlay exists",
 //     "set":      { "verifiedAt": null },
+//     "add":      { "lifecycle.trends.coverageFixture": { ... } },
 //     "append":   { "people.staff": [ { ... } ] },
 //     "setWhere": { "id=allianz": { "industries": [] } }
 //   }
 //
 // `set` replaces the value at a dotted path that must already be present.
-// `append` pushes onto an array that must already be present. `setWhere`
-// patches fields of the one record of a top-level JSON array whose selector
-// field holds the named value. All three are optional; `description` is
-// required so the next reader knows which branch the overlay is holding open.
+// `add` introduces a key that must be absent, under a parent object that must
+// be present. `append` pushes onto an array that must already be present.
+// `setWhere` patches fields of the one record of a top-level JSON array whose
+// selector field holds the named value. All four are optional; `description`
+// is required so the next reader knows which branch the overlay is holding
+// open.
+//
+// `add` exists because `set`, `append` and `setWhere` all require the key they
+// name to be present, so an overlay could only ever reshape a record the real
+// data already carries -- never introduce one under a keyed collection. That
+// turned any branch keyed on a collection's *presence* into a build of its
+// own: MetricsDashboard's lifecycle trends are addressed by key, and the one
+// trend carrying no values is also the only one that could be given a single
+// value, so covering the single-value sparkline arm meant trading the
+// no-values arm for it unless the trend grid could grow a record. `add` keeps
+// the fail-loud guarantee pointing the other way: the parent must exist, and
+// the leaf must *not*, so a regenerated data file that grows the same key
+// breaks the build instead of silently having its record overwritten by the
+// fixture.
+//
+// Operations are applied in the order `set`, `add`, `append`, `setWhere`, so
+// one overlay can add an array and then push onto it.
 //
 // `setWhere` exists because `set` and `append` both walk dotted paths from a
 // root object, so a data file whose root is an array -- data/architectures/
@@ -84,7 +103,13 @@ const VARIANT_FIXTURE_DIR = path.join(
   'data-variants',
 );
 
-const OVERLAY_KEYS = new Set(['description', 'set', 'append', 'setWhere']);
+const OVERLAY_KEYS = new Set([
+  'description',
+  'set',
+  'add',
+  'append',
+  'setWhere',
+]);
 
 /**
  * Maps a file under data/ to the overlay that patches it, or null when the
@@ -202,9 +227,11 @@ function recordOf(document, selector, label) {
 /**
  * Applies one overlay document to parsed data, returning a new document.
  *
- * Every path the overlay names must already exist: an overlay that no longer
- * matches the data it patches is a broken fixture, and failing here is what
- * keeps a regenerated data file from silently taking the coverage with it.
+ * Every path the overlay names must already exist, except an `add` leaf, which
+ * must not: an overlay that no longer matches the data it patches is a broken
+ * fixture, and failing here is what keeps a regenerated data file from
+ * silently taking the coverage with it -- or, for `add`, from silently having
+ * the record it grew overwritten by the fixture.
  *
  * @param {unknown} data parsed contents of the real data file
  * @param {unknown} overlay parsed contents of the overlay file
@@ -231,6 +258,14 @@ function applyOverlay(data, overlay, label) {
         `${label}: cannot set "${dottedPath}"; it is absent from the real data`,
       );
     parent[leaf] = value;
+  }
+  for (const [dottedPath, value] of Object.entries(overlay.add || {})) {
+    const [parent, leaf] = parentOf(patched, dottedPath, label);
+    if (Object.prototype.hasOwnProperty.call(parent, leaf))
+      throw new Error(
+        `${label}: cannot add "${dottedPath}"; the real data already carries it, so the fixture would overwrite real data instead of adding a shape beside it`,
+      );
+    parent[leaf] = structuredClone(value);
   }
   for (const [dottedPath, entries] of Object.entries(overlay.append || {})) {
     if (!Array.isArray(entries))
