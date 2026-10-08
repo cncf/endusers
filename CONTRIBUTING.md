@@ -57,8 +57,10 @@ the same checks the "Validate repository" and "Lint repository" PR gates run,
 and a green `just build`/`just import` locally does **not** imply a green PR
 check. Before opening a PR, also run `npm run test:unit:coverage:check` and the
 local check scripts that match "Lint repository": `npm run check:format`,
-`npm run check:spelling`, and `npm run check:markdown`. `npm run check` also
-runs these three, but it additionally runs `check:links` (network-dependent) and
+`npm run check:spelling`, and `npm run check:markdown`. The "Validate
+repository" gate additionally runs `npm run check:audit` (dependency advisory
+allowlist) — see step 5 below. `npm run check` also runs the lint trio, but it
+additionally runs `check:audit`, `check:links` (network-dependent) and
 `check:community-group-links` (needs `GH_TOKEN` and rewrites
 `data/community-groups.json`) — see step 5 below before running the full
 `npm run check`. `just` is optional — the npm scripts remain the canonical
@@ -186,9 +188,20 @@ enough for a first contribution.
    - `check:markdown` — fix the reported issue, or add an inline disable comment
      per the rules in `.markdownlint.yaml` if the rule doesn't apply.
 
-   `npm run check` runs these three plus two more scripts that "Lint repository"
-   does **not** enforce, so treat it as a superset rather than a drop-in for the
-   CI check:
+   The "Validate repository" check also runs `npm run check:audit` on every PR,
+   which fails differently from the lint trio:
+   - `check:audit` — fails the build on any high/critical dependency advisory
+     not in the allowlist (see "Known unpatched dependency advisories" in
+     [`SECURITY.md`](SECURITY.md)). The advisory database updates daily, so a
+     branch that was green yesterday can fail with no code change. Do **not**
+     run `npm audit fix --force`; flag the failure for maintainers, who own the
+     allowlist in `scripts/audit-gate.mjs`.
+
+   `npm run check` runs the lint trio plus three more scripts that the PR gates
+   enforce separately ("Validate repository") or not at all, so treat it as a
+   superset rather than a drop-in for the CI checks:
+   - `check:audit` — see above; part of "Validate repository", not "Lint
+     repository".
    - `check:links` — runs `markdown-link-check` over every root-level `*.md`
      file; it needs network access and can fail for reasons unrelated to your
      change (a linked site being temporarily down, for example).
