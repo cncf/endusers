@@ -1344,3 +1344,49 @@ test('a comment is replaced by a separator, not deleted', () => {
     '</style></svg>';
   assert.deepEqual(findRemoteReferences(svg), []);
 });
+
+test('an escaped quote does not open a CSS string for the comment stripper', () => {
+  // `font-family: \"` is an escaped quote character, not a string opener, so
+  // the browser closes the rule at the `}` and parses the next one normally.
+  // Reading that quote as a string opener pairs it with the opening quote of
+  // the url() argument below, leaving the comment between `url(` and its
+  // argument in place -- and CSS_URL_PATTERN matches neither a commented
+  // `url(` nor the text after it.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{font-family:\\"}\n' +
+    'rect{background-image:url(/* c */"https://evil.example/escaped.png")}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/escaped.png',
+  ]);
+});
+
+test('a newline ends an unterminated CSS string before the next rule', () => {
+  // The tokenizer ends a string at a newline as a bad-string and resumes
+  // parsing there, so the rule after it is live. Treating the string as still
+  // open to the next quote anywhere in the fragment leaves the comment in the
+  // url() below unstripped.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect::before{content:"no closing quote\n' +
+    'rect{background-image:url(/* c */"https://evil.example/badstring.png")}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/badstring.png',
+  ]);
+});
+
+test('an escaped quote inside an image-set() string does not shift the pairing', () => {
+  // `"a\""` is one string containing a quote. Pairing quotes without honouring
+  // the escape splits it, shifts every later quote by one, and leaves the real
+  // target inside what the scan then reads as unquoted filler.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{background-image:image-set("a\\"" 1x,' +
+    '"https://evil.example/shifted.png" 2x)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/shifted.png',
+  ]);
+});

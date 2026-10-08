@@ -380,8 +380,47 @@ const CSS_IMPORT_PATTERN = /@import\s+(?:"([^"]*)"|'([^']*)')/gi;
  */
 const IMAGE_SET_OPEN = /(?:-webkit-)?image-set\(/gi;
 
-/** A quoted CSS string, matched as a unit so its contents stay opaque. */
-const CSS_STRING = /"([^"]*)"|'([^']*)'/g;
+/** The code points that end a CSS string as a bad-string token. */
+const CSS_NEWLINE = /[\n\r\f]/;
+
+/**
+ * The offset just past the CSS string whose opening quote sits at `start`.
+ *
+ * A backslash escapes the code point after it, so `"\""` is one string
+ * containing a quote rather than two strings. Pairing quotes without honouring
+ * escapes shifts every later quote by one and mis-reads the rest of the
+ * fragment, which hides whatever the mis-paired region contains.
+ *
+ * A newline ends the string, as the tokenizer's bad-string rule does, so an
+ * unterminated string cannot swallow the declarations that follow it — a
+ * browser resumes parsing there, and so must this scan.
+ */
+function endOfCssString(css, start) {
+  const quote = css[start];
+  let cursor = start + 1;
+  while (cursor < css.length) {
+    const char = css[cursor];
+    if (char === '\\') {
+      cursor += 2;
+      continue;
+    }
+    if (CSS_NEWLINE.test(char)) return cursor;
+    if (char === quote) return cursor + 1;
+    cursor += 1;
+  }
+  return css.length;
+}
+
+/**
+ * The raw (still CSS-escaped) contents of the string at `start`, with the
+ * offset just past it. A string the tokenizer never closed contributes
+ * everything up to where it ended.
+ */
+function cssStringAt(css, start) {
+  const end = endOfCssString(css, start);
+  const closed = end - 1 > start && css[end - 1] === css[start];
+  return { end, value: css.slice(start + 1, closed ? end - 1 : end) };
+}
 
 /**
  * The bare-string arguments of every `image-set()` in a fragment of CSS.
@@ -409,13 +448,12 @@ function imageSetArguments(css) {
     const start = cursor;
     while (cursor < css.length && depth > 0) {
       const char = css[cursor];
-      if (char === '"' || char === "'") {
-        const close = css.indexOf(char, cursor + 1);
-        cursor = close === -1 ? css.length : close + 1;
-        continue;
-      }
       if (char === '\\') {
         cursor += 2;
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        cursor = endOfCssString(css, cursor);
         continue;
       }
       if (char === '(') depth += 1;
@@ -424,9 +462,20 @@ function imageSetArguments(css) {
     }
     const end = depth === 0 ? cursor - 1 : css.length;
     const args = css.slice(start, end);
-    CSS_STRING.lastIndex = 0;
-    for (const string of args.matchAll(CSS_STRING)) {
-      values.push(string[1] ?? string[2]);
+    let scan = 0;
+    while (scan < args.length) {
+      const char = args[scan];
+      if (char === '\\') {
+        scan += 2;
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        const string = cssStringAt(args, scan);
+        values.push(string.value);
+        scan = string.end;
+        continue;
+      }
+      scan += 1;
     }
     IMAGE_SET_OPEN.lastIndex = end;
   }
@@ -445,6 +494,14 @@ function imageSetArguments(css) {
  * the scan, which is the opposite of what this gate is for. An unterminated
  * comment runs to the end of the fragment, as the tokenizer does.
  *
+ * The converse costs just as much, so escapes are honoured in both
+ * directions: a backslash escapes the code point after it, and
+ * `font-family: \"` therefore carries a quote character rather than opening a
+ * string. Reading that quote as a string opener pairs it with the next quote
+ * in the fragment and leaves every comment in between in place, so a comment
+ * sitting between a later `url(` and its quoted argument survives the strip
+ * and the fetch it hides is never reported.
+ *
  * Each comment is replaced by a single space rather than deleted. A comment
  * separates tokens, so deleting it would fuse the text either side and
  * manufacture a token the browser never sees: a comment inserted into the
@@ -458,9 +515,13 @@ function stripCssComments(css) {
   let cursor = 0;
   while (cursor < css.length) {
     const char = css[cursor];
+    if (char === '\\') {
+      output += css.slice(cursor, cursor + 2);
+      cursor += 2;
+      continue;
+    }
     if (char === '"' || char === "'") {
-      const close = css.indexOf(char, cursor + 1);
-      const end = close === -1 ? css.length : close + 1;
+      const end = endOfCssString(css, cursor);
       output += css.slice(cursor, end);
       cursor = end;
       continue;
