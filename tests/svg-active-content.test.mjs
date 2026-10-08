@@ -1181,6 +1181,21 @@ test('a parenthesis inside an image-set() string does not close the list', () =>
   ]);
 });
 
+test('an escaped parenthesis inside image-set() does not close the list', () => {
+  // A backslash escape is how an unquoted url token carries a parenthesis.
+  // Counting that ')' as a closer would end the argument list early and hide
+  // every later option, so the walk steps over the escaped character.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{cursor:image-set(url(https://evil.example/a\\).png) 1x,' +
+    '"https://evil.example/b.png" 2x)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/a).png',
+    'references a remote resource in a <style> block: https://evil.example/b.png',
+  ]);
+});
+
 test('an image-set() type() media type is not mistaken for a target', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
