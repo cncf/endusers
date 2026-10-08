@@ -27,6 +27,34 @@ const ERROR_KIND = 'endusers.e2e.coverage-report-error';
 const SOURCE_MAPPING_URL = /(?:\/\/[#@]\s*sourceMappingURL=)(\S+)/u;
 const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 
+// Residual uncovered regions, recorded so the file's region percentage is not
+// re-investigated every cycle (#1210). The guards in the four istanbul readers
+// below are reached directly by tests/e2e-coverage-report-readers.test.mjs,
+// which is what the test-only export beneath `getRegionCoverage` exists for.
+// What remains after that is unreachable from this module, and each entry is
+// named by function and expression rather than by line so the note does not go
+// stale when the file moves:
+//
+//   normalizeSourceMap  `map.resolvedSources ?? ...` -- whether `AnyMap`
+//       populates `resolvedSources` is private behaviour of the transitive
+//       dependency `@jridgewell/trace-mapping`, not something a caller sets.
+//   convertScript       `converter.branches ?? {}` and `converter.functions
+//       ?? {}`, and the `.map(([path]) => path)` arm that only runs when one
+//       of those is absent -- `v8-to-istanbul` always defines both after
+//       `load()`, so the fallback needs a shape the library does not emit.
+//   collectE2ECoverage  `converted.coverage ?? {}` -- `convertScript` returns
+//       `converter.toIstanbul()` on every path and that never returns nullish;
+//       and `if (lineCoverage.size === 0) continue`, which needs an istanbul
+//       object carrying branches but no statements at all.
+//   main                `error.message ?? String(error)` and `error.stack ??
+//       error` -- both need `main()` to reject with a non-`Error`, and nothing
+//       in its call graph throws one.
+//
+// Reachability was established empirically rather than by reading: probe tests
+// were written against each candidate and these are the ones no probe could
+// close. Raise the per-file region floor rather than this list when a probe
+// does land.
+
 class CoverageReportError extends Error {
   constructor(message, { runId = null, runStatus = null } = {}) {
     super(message);
@@ -483,6 +511,21 @@ function getRegionCoverage(coverageData) {
   }
   return regions;
 }
+
+// These four readers are exported for tests only. Every guard below them is a
+// defence against a malformed *istanbul* object, and istanbul objects are not
+// inputs to this module -- `convertScript` builds them from the V8 payload via
+// `v8-to-istanbul`. Reaching a guard from the public surface would require that
+// library to emit a shape it does not emit, so no capture artifact written at
+// the boundary can exercise one (#1210). Exporting the readers lets the guards
+// be driven directly with hand-built istanbul objects instead of being carried
+// as a permanent uncovered residual.
+export {
+  getLineCoverage,
+  getRegionCoverage,
+  isPhantomRegion,
+  isContradictedRegion,
+};
 
 // Captured scripts are resolved against each root in order -- the run's own
 // `scripts/` copies first, then the build directory. A script missing from one
