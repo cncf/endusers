@@ -32,13 +32,15 @@ const REPORT_SCRIPT = 'report:e2e:coverage';
 const COVERAGE_JOB = 'e2e-coverage';
 
 // Measured on the suite this commit ships: the e2e-coverage job renders with
-// `--check-source 100 --check-source-regions 91` and the run clears both; the
+// `--check-source 100 --check-source-regions 95` and the run clears both; the
 // full suite measured 100.00% source lines and 81.43% source regions when the
-// region gate landed (#1026, #1031), and 91.63% source regions when the floor
-// was ratcheted to 91 (#1105).
+// region gate landed (#1026, #1031), 91.63% source regions when the floor was
+// ratcheted to 91 (#1105), and 95.22% (438/460) when it was ratcheted to 95
+// after #1163 folded the crossing-region source-map drift and #1060 covered
+// the member-directory toolbar arms (#1079).
 const FLOORS = {
   '--check-source': 100,
-  '--check-source-regions': 91,
+  '--check-source-regions': 95,
 };
 
 // Present-or-absent guarantees, which carry no percentage. --require-source-files
@@ -188,10 +190,10 @@ test('a job that never invokes the reporter fails the guard', () => {
 // fixture text it edits is its own line, so it gets its own staleness guard
 // and its own proof the floor can go red.
 function weakenedRegions(replacement) {
-  const original = '            --check-source-regions 91 \\\n';
+  const original = '            --check-source-regions 95 \\\n';
   assert.ok(
     workflowText.includes(original),
-    'fixture is stale: ci.yml no longer renders with --check-source-regions 91',
+    'fixture is stale: ci.yml no longer renders with --check-source-regions 95',
   );
   return workflowText.replace(original, replacement);
 }
@@ -204,7 +206,7 @@ test('a lowered --check-source-regions fails the guard', () => {
           weakenedRegions('            --check-source-regions 50 \\\n'),
         ),
       ),
-    /--check-source-regions is 50, below the 91/,
+    /--check-source-regions is 50, below the 95/,
   );
 });
 
