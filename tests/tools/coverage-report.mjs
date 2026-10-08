@@ -21,7 +21,8 @@
 // Usage:
 //   node tests/tools/coverage-report.mjs [--check <minLinePercent>]
 //     [--check-regions <minRegionPercent>] [--check-source <minLinePercent>]
-//     [--check-source-regions <minRegionPercent>] [--require-source-files]
+//     [--check-source-regions <minRegionPercent>]
+//     [--check-source-file-regions <minRegionPercent>] [--require-source-files]
 //     [-- <node --test args>]
 //
 // The test files are themselves part of the recorded coverage, and they
@@ -43,6 +44,18 @@
 // the files on disk against the files the run measured, and failing when any
 // is missing. A ratio floor and a file-set floor are different guarantees;
 // this is the second one.
+//
+// --check-source-regions is also an aggregate, and an aggregate hides where
+// its own slack is spent. The gate is cleared by the whole of scripts/ and
+// src/ together, so the regions one file loses are paid for by every other
+// file that still has them: at 2545/2547 source regions a floor of 99% leaves
+// 23 regions of slack, and a single file may take all of them. The companion
+// line gate does not catch that, because a lost *region* need not be a lost
+// *line* -- an unexecuted `??` fallback or ternary arm sits on a line the
+// surrounding statement still covers, so the file stays at 100% lines while
+// its region percentage falls. --check-source-file-regions applies the floor
+// to each source file on its own, so a regression concentrated in one file
+// fails on that file's name instead of being averaged away.
 
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -85,6 +98,7 @@ const PERCENT_FLAGS = {
   '--check-regions': 'checkRegions',
   '--check-source': 'checkSource',
   '--check-source-regions': 'checkSourceRegions',
+  '--check-source-file-regions': 'checkSourceFileRegions',
 };
 
 function parseArgs(argv) {
@@ -93,6 +107,7 @@ function parseArgs(argv) {
     checkRegions: null,
     checkSource: null,
     checkSourceRegions: null,
+    checkSourceFileRegions: null,
     requireSourceFiles: false,
     testArgs: [],
   };
@@ -586,6 +601,7 @@ export function report(merged) {
   let sourceCovered = 0;
   let sourceRegions = 0;
   let sourceRegionsCovered = 0;
+  const sourceFileRegions = [];
   for (const row of rows) {
     executable += row.lines.executable;
     covered += row.lines.covered;
@@ -596,6 +612,18 @@ export function report(merged) {
       sourceCovered += row.lines.covered;
       sourceRegions += row.regions.regions;
       sourceRegionsCovered += row.regions.covered;
+      // Files with no regions at all are left out: percent() reports 100%
+      // for a 0/0 fraction, so including them would add rows that can never
+      // fail the per-file floor and never say anything either.
+      if (row.regions.regions > 0) {
+        sourceFileRegions.push({
+          file: row.file,
+          percent: percent(row.regions.covered, row.regions.regions),
+          covered: row.regions.covered,
+          regions: row.regions.regions,
+          uncovered: row.regions.uncovered,
+        });
+      }
     }
     const linePct = percent(row.lines.covered, row.lines.executable)
       .toFixed(2)
@@ -625,6 +653,7 @@ export function report(merged) {
     sourceRegionPct,
     sourceExecutable,
     sourceRegions,
+    sourceFileRegions,
   };
 }
 
@@ -654,6 +683,7 @@ function main() {
       sourceRegionPct,
       sourceExecutable,
       sourceRegions,
+      sourceFileRegions,
     } = report(merged);
     const missing = options.requireSourceFiles
       ? missingSourceFiles([...merged.keys(), ...unmapped])
@@ -746,6 +776,33 @@ function main() {
         `\nSource region coverage ${sourceRegionPct.toFixed(2)}% is below the required ${options.checkSourceRegions}%.`,
       );
       process.exit(1);
+    }
+    if (options.checkSourceFileRegions !== null) {
+      // Same vacuous-pass guard as --check-source-regions: with no source
+      // rows carrying regions there is nothing for a per-file floor to
+      // measure, and an empty list of offenders is not a pass.
+      if (sourceFileRegions.length === 0) {
+        console.error(
+          '\n--check-source-file-regions was requested, but no source file outside tests/ recorded any region.',
+        );
+        process.exit(1);
+      }
+      const below = sourceFileRegions.filter(
+        (entry) => entry.percent + 1e-9 < options.checkSourceFileRegions,
+      );
+      if (below.length > 0) {
+        console.error(
+          `\n${below.length} source file(s) fall below the required ` +
+            `${options.checkSourceFileRegions}% region coverage per file:`,
+        );
+        for (const entry of below) {
+          console.error(
+            `  ${entry.file} ${entry.percent.toFixed(2)}% ` +
+              `(${entry.covered}/${entry.regions} regions; uncovered at ${formatRanges(entry.uncovered)})`,
+          );
+        }
+        process.exit(1);
+      }
     }
   } finally {
     rmSync(coverageDir, { recursive: true, force: true });
