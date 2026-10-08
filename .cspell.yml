@@ -22,9 +22,13 @@ words:
   - GHSA
   - cutover
   - linuxfoundation
+  - livescript
+  - mxfile
   - pkgs
   - reprioritizations
   - retag
+  - srcdoc
+  - vbscript
   - endusers
   - docusaurus
   - kubestellar
