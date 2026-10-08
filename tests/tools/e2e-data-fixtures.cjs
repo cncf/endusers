@@ -14,14 +14,31 @@
 // clearing the field swaps which arm the one page renders rather than adding
 // a case, trading one covered line for the arm it displaces.
 //
-// Those branches get a *second* build instead. With E2E_COVERAGE_VARIANT=1 the
-// overlays in tests/e2e/fixtures/data-variants/** are applied on top of the
-// ones above, and `npm run build:e2e:coverage` compiles that variant into a
-// sub-directory of the ordinary coverage build under its own base URL. One
-// `docusaurus serve` then offers both sites at once: the real page keeps
-// rendering the field-present arm, the variant page renders the arm beside it,
-// and because the two builds compile the same `src/**` sources the coverage
-// report folds their scripts onto the same lines and unions what each reached.
+// Those branches get a build of their own instead. Every directory named
+// `tests/e2e/fixtures/data-<name>/` declares one additional build: with
+// E2E_COVERAGE_BUILD=<name> its overlays are applied on top of the ones above,
+// and `npm run build:e2e:coverage` compiles that build into
+// `build/e2e-coverage-<name>` under base URL `/e2e-coverage-<name>/`. One
+// `docusaurus serve` then offers every site at once: the real page keeps
+// rendering the field-present arm, each named build renders the arm beside it,
+// and because the builds compile the same `src/**` sources the coverage report
+// folds their scripts onto the same lines and unions what each reached.
+//
+// The build list is the directory listing, not a registry: adding
+// `tests/e2e/fixtures/data-<name>/` adds a build, and nothing else has to be
+// told about it. That matters because one additional build is not enough.
+// `data-variant` clears `metrics.generatedAt`, which is what reaches
+// ReferenceArchitectures' `: null` syncDate arm; the same component's
+// absent-revision guard needs `sources.architectures.revision` cleared while
+// `generatedAt` stays present, so the two shapes cannot share a build. With
+// a fixed number of builds every such pair is a standoff where covering one
+// arm un-covers another; with a directory per build it is one more directory.
+//
+// Each build is a full Docusaurus compile, so CI time for the end-to-end
+// coverage job grows linearly in the number of `data-<name>/` directories.
+// A new build is worth adding when the shape it needs provably conflicts with
+// every existing one -- not as the first reach for a branch an additive
+// overlay in `tests/e2e/fixtures/data/` could cover instead.
 //
 // This module applies a small, committed overlay to a data file so the missing
 // shapes exist in the coverage build only. It is used from two places:
@@ -43,7 +60,7 @@
 // shape change fails the build instead of quietly dropping the coverage it
 // was written for.
 //
-// Overlay format (tests/e2e/fixtures/data[-variants]/<same relative path>.json):
+// Overlay format (tests/e2e/fixtures/data[-<name>]/<same relative path>.json):
 //
 //   {
 //     "description": "why this overlay exists",
@@ -94,14 +111,9 @@ const path = require('node:path');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DATA_DIR = path.join(REPO_ROOT, 'data');
-const FIXTURE_DIR = path.join(REPO_ROOT, 'tests', 'e2e', 'fixtures', 'data');
-const VARIANT_FIXTURE_DIR = path.join(
-  REPO_ROOT,
-  'tests',
-  'e2e',
-  'fixtures',
-  'data-variants',
-);
+const FIXTURES_ROOT = path.join(REPO_ROOT, 'tests', 'e2e', 'fixtures');
+const FIXTURE_DIR = path.join(FIXTURES_ROOT, 'data');
+const BUILD_DIR_PREFIX = 'data-';
 
 const OVERLAY_KEYS = new Set([
   'description',
@@ -127,20 +139,62 @@ function overlayPathFor(dataPath, fixtureDir = FIXTURE_DIR) {
 }
 
 /**
+ * The overlay directory of one named build.
+ *
+ * @param {string} name build name, e.g. 'variant'
+ * @returns {string} absolute path to tests/e2e/fixtures/data-<name>
+ */
+function overlayDirFor(name) {
+  return path.join(FIXTURES_ROOT, `${BUILD_DIR_PREFIX}${name}`);
+}
+
+/**
+ * Every named build the repository declares, in a stable order.
+ *
+ * The list is the directory listing rather than a committed registry: a build
+ * exists because `tests/e2e/fixtures/data-<name>/` exists, so adding one is
+ * adding a directory and nothing has to be kept in step with it. Sorted so the
+ * build order, the base URLs and the test expectations do not depend on the
+ * order a filesystem happens to return.
+ *
+ * @param {string} [fixturesRoot]
+ * @returns {string[]} build names, without the `data-` prefix
+ */
+function coverageBuildNames(fixturesRoot = FIXTURES_ROOT) {
+  return fs
+    .readdirSync(fixturesRoot, { withFileTypes: true })
+    .filter(
+      (entry) => entry.isDirectory() && entry.name.startsWith(BUILD_DIR_PREFIX),
+    )
+    .map((entry) => entry.name.slice(BUILD_DIR_PREFIX.length))
+    .sort();
+}
+
+/**
  * The overlay directories a build reads, in the order they are applied.
  *
- * The variant directory is additive and comes second, so a variant overlay
+ * The named build's directory is additive and comes second, so its overlay
  * patches the document the ordinary coverage build was already compiled from
- * rather than replacing it. Only `npm run build:e2e:coverage`'s second pass
- * sets E2E_COVERAGE_VARIANT.
+ * rather than replacing it. Only the per-build passes of
+ * `npm run build:e2e:coverage` set E2E_COVERAGE_BUILD; the ordinary coverage
+ * build leaves it unset and reads tests/e2e/fixtures/data/ alone.
+ *
+ * An unknown name is an error rather than a silent fall-back to the ordinary
+ * build: a typo would otherwise compile a site that looks right, serves, and
+ * covers nothing the real build did not already cover.
  *
  * @param {NodeJS.ProcessEnv} [env]
  * @returns {string[]} absolute fixture directories
  */
 function overlayDirs(env = process.env) {
-  return env.E2E_COVERAGE_VARIANT === '1'
-    ? [FIXTURE_DIR, VARIANT_FIXTURE_DIR]
-    : [FIXTURE_DIR];
+  const name = env.E2E_COVERAGE_BUILD;
+  if (!name) return [FIXTURE_DIR];
+  const known = coverageBuildNames();
+  if (!known.includes(name))
+    throw new Error(
+      `E2E_COVERAGE_BUILD="${name}" names no overlay directory; expected one of ${known.join(', ')} (tests/e2e/fixtures/${BUILD_DIR_PREFIX}<name>/)`,
+    );
+  return [FIXTURE_DIR, overlayDirFor(name)];
 }
 
 /**
@@ -336,10 +390,12 @@ function loadSiteData(relativePath, env = process.env) {
 
 module.exports = {
   DATA_DIR,
+  FIXTURES_ROOT,
   FIXTURE_DIR,
-  VARIANT_FIXTURE_DIR,
   applyOverlay,
+  coverageBuildNames,
   loadSiteData,
+  overlayDirFor,
   overlayDirs,
   overlayPathFor,
   overlayPathsFor,

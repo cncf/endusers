@@ -11,8 +11,9 @@
 // which looks the same from CI as a branch that was never covered.
 //
 // The cases below are therefore derived from the contents of
-// tests/e2e/fixtures/data/ and tests/e2e/fixtures/data-variants/, so a newly
-// committed overlay is held to them without anyone remembering to register it.
+// tests/e2e/fixtures/data/ and of every tests/e2e/fixtures/data-<name>/ build
+// directory, so a newly committed overlay -- and a newly committed build -- is
+// held to them without anyone remembering to register it.
 //
 // This is deliberately not an assertion about *which* branch an overlay
 // reaches — that belongs with the spec that drives it. It is the weaker
@@ -27,8 +28,9 @@ import test from 'node:test';
 import {
   DATA_DIR,
   FIXTURE_DIR,
-  VARIANT_FIXTURE_DIR,
   applyOverlay,
+  coverageBuildNames,
+  overlayDirFor,
 } from './tools/e2e-data-fixtures.cjs';
 
 const REPO_ROOT = new URL('..', import.meta.url).pathname;
@@ -42,23 +44,32 @@ function overlaysIn(dir) {
 }
 
 const FIXTURE_OVERLAYS = overlaysIn(FIXTURE_DIR);
-const VARIANT_OVERLAYS = overlaysIn(VARIANT_FIXTURE_DIR);
-const ALL_OVERLAYS = [...FIXTURE_OVERLAYS, ...VARIANT_OVERLAYS];
+const BUILD_DIRS = coverageBuildNames().map(overlayDirFor);
+const BUILD_OVERLAYS = BUILD_DIRS.flatMap(overlaysIn);
+const ALL_OVERLAYS = [...FIXTURE_OVERLAYS, ...BUILD_OVERLAYS];
 
 const label = (overlayPath) => relative(REPO_ROOT, overlayPath);
 
 // A directory that has gone empty would make every test below vacuous: each
 // one iterates the list, so zero overlays means zero assertions and a green
 // run that proves nothing.
-test('both fixture directories hold at least one committed overlay', () => {
+test('every fixture directory holds at least one committed overlay', () => {
   assert.ok(
     FIXTURE_OVERLAYS.length > 0,
     `${label(FIXTURE_DIR)} holds no overlay; the tests below would assert nothing`,
   );
   assert.ok(
-    VARIANT_OVERLAYS.length > 0,
-    `${label(VARIANT_FIXTURE_DIR)} holds no overlay; the tests below would assert nothing`,
+    BUILD_DIRS.length > 0,
+    'no tests/e2e/fixtures/data-<name>/ build directory; the tests below would assert nothing',
   );
+  // An empty build directory is worse than no build directory: it still costs
+  // a full Docusaurus compile in the coverage job, and the site it produces
+  // is byte-for-byte the ordinary coverage build.
+  for (const dir of BUILD_DIRS)
+    assert.ok(
+      overlaysIn(dir).length > 0,
+      `${label(dir)} holds no overlay; its build would compile the ordinary coverage site again`,
+    );
 });
 
 // overlayPathFor maps data/<name> to <dir>/<name>, so an overlay whose name

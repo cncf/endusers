@@ -4,9 +4,9 @@
 // docusaurus.config.js installs this on the site's data directory only when
 // E2E_COVERAGE=1, so the production build and the gating end-to-end job
 // compile the checked-in data untouched. A data file with no committed
-// overlay passes through byte-for-byte. The second pass of
-// `npm run build:e2e:coverage` additionally sets E2E_COVERAGE_VARIANT=1, which
-// layers tests/e2e/fixtures/data-variants/** on top for that build only.
+// overlay passes through byte-for-byte. Each additional pass of
+// `npm run build:e2e:coverage` sets E2E_COVERAGE_BUILD=<name>, which layers
+// tests/e2e/fixtures/data-<name>/** on top for that build only.
 //
 // See tests/tools/e2e-data-fixtures.cjs for the overlay format and for why
 // the branches involved are unreachable without it.

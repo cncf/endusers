@@ -282,6 +282,29 @@ format, and `tests/e2e/data-fixtures.spec.js` for the specs that drive the
 branches. A spec that asserts against a data file should read it through
 `loadSiteData()` so it describes the build it is running against.
 
+An overlay in `tests/e2e/fixtures/data/` only helps where the missing shape is
+an _additional_ record. A branch that turns on a document-level field — an
+awards file with no verification date, an architectures source with no resolved
+revision — cannot be reached that way: clearing the field swaps which arm the
+one page renders rather than adding a case, trading covered lines for the arm it
+displaces. Those branches get a build of their own. Every directory named
+`tests/e2e/fixtures/data-<name>/` declares one: `npm run build:e2e:coverage`
+compiles it into `build/e2e-coverage-<name>` with those overlays layered on top
+of `tests/e2e/fixtures/data/`, under base URL `/e2e-coverage-<name>/`. One
+`docusaurus serve` offers every site at once, so a single Playwright run visits
+the real page and each fixture build, and the report unions what each reached —
+the builds compile the same `src/**` sources, so their scripts fold onto the
+same lines.
+
+Adding a build is adding a directory; nothing else has to be told about it. Pair
+the new route with the real one in the spec — on its own, an assertion that a
+page omits something passes just as well when the page is broken. Each build is
+a full Docusaurus compile, so the coverage job's wall time grows linearly in the
+number of these directories: add one when the shape it needs provably conflicts
+with every existing build, not as the first reach for a branch an additive
+overlay could cover instead. `tests/e2e/data-variants.spec.js` and
+`tests/e2e/reference-architectures-no-revision.spec.js` are worked examples.
+
 Data overlays reach only components that read `data/*.json`. A branch whose
 props arrive through generated MDX — the architecture pages under
 `docs/architectures/` are committed output of `npm run import:architectures`, so
