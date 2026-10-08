@@ -98,8 +98,9 @@ function main() {
   // --package-lock-only audits the lockfile without needing node_modules,
   // which is also what keeps the result identical between a fresh CI
   // checkout and a developer tree. npm exits non-zero whenever any
-  // vulnerability exists (including the allowlisted ones), so the exit code
-  // is ignored and only the JSON report is judged.
+  // vulnerability exists (including the allowlisted ones), so a non-zero
+  // exit on its own cannot mean failure; the report's shape is what
+  // separates a completed audit from one that never ran.
   const result = spawnSync('npm', ['audit', '--package-lock-only', '--json'], {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
@@ -113,6 +114,25 @@ function main() {
     report = JSON.parse(result.stdout);
   } catch {
     console.error('audit-gate: npm audit did not produce parseable JSON:');
+    console.error(result.stderr || result.stdout);
+    process.exit(1);
+  }
+
+  // A successful `npm audit --json` always carries a `vulnerabilities` object
+  // (empty on a clean tree). When the audit cannot run — registry outage,
+  // proxy error, rate limit — npm still prints parseable JSON, but an error
+  // document with no such key. Judging that as "no vulnerabilities" would turn
+  // every audit outage into a silent pass, so anything that is not a report
+  // fails the gate instead.
+  if (
+    !report ||
+    typeof report.vulnerabilities !== 'object' ||
+    report.vulnerabilities === null
+  ) {
+    console.error(
+      'audit-gate: npm audit did not return a report (exit code ' +
+        `${result.status}); refusing to treat that as a clean audit:`,
+    );
     console.error(result.stderr || result.stdout);
     process.exit(1);
   }
