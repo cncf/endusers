@@ -132,7 +132,7 @@ test('runImportArchitectures fails loudly when a fixture FIFO cannot be created'
       assert.match(error.message, /could not create FIFO/);
       // The failing path is named, and mkfifo's own stderr is carried through
       // rather than discarded -- without it the message cannot say why.
-      assert.match(error.message, new RegExp(collision.replace(/\./g, '\\.')));
+      assert.ok(error.message.includes(collision));
       assert.match(error.message, /mkfifo/);
       return true;
     },
