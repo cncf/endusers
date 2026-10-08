@@ -173,7 +173,7 @@ enough for a first contribution.
 2. Make your change and run the relevant validation script.
 3. Run `npm run test:unit:coverage:check` — the required "Validate repository"
    check runs this on every PR, and it fails the build if unit-test coverage
-   drops below its thresholds (99% lines / 100% source / 94% regions / 99%
+   drops below its thresholds (99% lines / 100% source / 95% regions / 99%
    source regions). `npm run test:unit` alone skips the coverage gate, so a
    green `test:unit` locally does not guarantee a green PR check.
 4. Verify with `npm run build` before opening a PR. If your change touches
