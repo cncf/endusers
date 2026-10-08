@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   lstatSync,
   mkdirSync,
+  readdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -96,6 +97,76 @@ test('mirrorArtworkUrls still writes a regular-file destination', async () => {
       'mirrored-bytes',
     );
   } finally {
+    cleanup();
+  }
+});
+
+// The destination guard has two arms. The symlink arm is pinned above; this is
+// the other one -- an entry that exists but is not a regular file. It needs no
+// adversary: a directory on a mirror path is what an interrupted run, or an
+// upstream asset renamed from `<name>` to `<name>/<name>`, leaves behind, and
+// `.github/workflows/import-architectures.yml` reruns `npm run
+// import:architectures` daily over whatever the last run left. Without the
+// guard, writeFileSync() would throw EISDIR and abort the whole import instead
+// of skipping the one asset it cannot mirror.
+test('mirrorArtworkUrls skips a destination that is not a regular file', async () => {
+  const { root, cleanup } = sandbox();
+  const originalWarn = console.warn;
+  const warnings = [];
+  try {
+    const relativeDestination = artworkMirrorPath(artworkPath(PNG_URL));
+    const destination = join(root, relativeDestination);
+    // A directory, so the destination is neither a symlink nor a regular file:
+    // the second operand of the guard is what has to reject it.
+    mkdirSync(destination, { recursive: true });
+    writeFileSync(join(destination, 'occupant'), 'left by an earlier run');
+
+    console.warn = (...args) => warnings.push(args.join(' '));
+    await withStubbedFetch('mirrored-bytes', () =>
+      mirrorArtworkUrls(root, [PNG_URL]),
+    );
+  } finally {
+    console.warn = originalWarn;
+    cleanup();
+  }
+
+  // Skipping has to be audible: a silent `continue` would leave the asset
+  // missing with nothing in the import log explaining why.
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /destination is not a regular file/);
+});
+
+test('mirrorArtworkUrls leaves an irregular destination byte-for-byte alone', async () => {
+  const { root, cleanup } = sandbox();
+  const originalWarn = console.warn;
+  try {
+    const relativeDestination = artworkMirrorPath(artworkPath(PNG_URL));
+    const destination = join(root, relativeDestination);
+    mkdirSync(destination, { recursive: true });
+    writeFileSync(join(destination, 'occupant'), 'left by an earlier run');
+
+    console.warn = () => {};
+    await withStubbedFetch('mirrored-bytes', () =>
+      mirrorArtworkUrls(root, [PNG_URL]),
+    );
+    console.warn = originalWarn;
+
+    assert.ok(
+      lstatSync(destination).isDirectory(),
+      'the destination must still be the directory it was',
+    );
+    assert.deepEqual(
+      readdirSync(destination),
+      ['occupant'],
+      'nothing may be written underneath the occupied destination',
+    );
+    assert.equal(
+      readFileSync(join(destination, 'occupant'), 'utf8'),
+      'left by an earlier run',
+      'the occupant must not be overwritten',
+    );
+  } finally {
+    console.warn = originalWarn;
     cleanup();
   }
 });
