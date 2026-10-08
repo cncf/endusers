@@ -1,0 +1,41 @@
+# Runs `npm run check:links` (markdown-link-check over every root-level *.md
+# file) on a weekly schedule and on demand.
+#
+# This gate deliberately does not run on pull requests: it resolves every
+# outbound URL against the live internet, so a third-party outage would fail
+# unrelated PRs (the reasoning previously recorded in GATES_NOT_RUN_BY_CI in
+# tests/workflow-scripts.test.mjs). A schedule keeps link rot from
+# accumulating unnoticed without putting the network between a contributor
+# and a green check. See #1188.
+name: Check links
+
+on:
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-links-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  check-links:
+    name: Check markdown links
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run check:links

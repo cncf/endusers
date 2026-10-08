@@ -199,10 +199,10 @@ test('the pull request template is present and non-empty', () => {
 // style, not resolution.
 //
 // This asserts link *form*, not link *liveness*. Resolving targets over the
-// network is exactly what `check:links` is exempted from CI for in
-// tests/workflow-scripts.test.mjs (GATES_NOT_RUN_BY_CI): a third-party outage
-// must not fail an unrelated pull request. The same reasoning applies here, so
-// a target is judged by its shape alone.
+// network is exactly why `check:links` runs on a schedule
+// (.github/workflows/check-links.yml) rather than in the per-PR gates: a
+// third-party outage must not fail an unrelated pull request. The same
+// reasoning applies here, so a target is judged by its shape alone.
 //
 // Strips HTML comments first: they are not rendered, so a link parked inside
 // one is not shown to anybody.
