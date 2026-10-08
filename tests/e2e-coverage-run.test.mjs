@@ -12,7 +12,7 @@ import {
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   initCoverageRun,
@@ -366,5 +366,73 @@ test('capture skips unreadable files and scripts absent from the build', async (
   } finally {
     await rm(runDir, { recursive: true, force: true });
     await rm(buildDir, { recursive: true, force: true });
+  }
+});
+
+// The CLI entrypoint reports a rejection as `error.stack ?? error`. The sibling
+// case above covers the `error.stack` side -- `main()` throws an Error for an
+// unknown command -- and leaves the `?? error` fallback as the file's only
+// uncovered region: `TZ=UTC node tests/tools/coverage-report.mjs` on `main`
+// reports tests/tools/e2e-coverage-run.mjs at 98.65% of regions with line 211
+// named.
+//
+// The fallback is not decoration. `.github/workflows/ci.yml` runs this tool as
+// `node tests/tools/e2e-coverage-run.mjs init|seal`, and its stderr is the only
+// account of why the e2e-coverage job stopped. A rejection that is not an Error
+// -- anything thrown by a host facility rather than by this module's own
+// `throw new Error(...)` -- has no `.stack`, and without the fallback the job
+// log would say `undefined` and nothing else.
+//
+// Reaching it needs `main()` to reject with a stackless value, which the tool's
+// own code never does. A `--import` prelude makes the one host call `main()`
+// issues on the success path -- the `process.stdout.write()` of the manifest --
+// throw a bare string, so the rejection arrives at the entrypoint exactly as a
+// non-Error would. The `init` itself succeeds first, which is what keeps this
+// case about the reporting rather than about the command.
+test('run CLI entrypoint reports a stackless rejection without an Error', async () => {
+  const runDir = await tempRunDir();
+  const preludeDir = await mkdtemp(join(tmpdir(), 'endusers-e2e-run-prelude-'));
+  const prelude = join(preludeDir, 'throw-on-stdout.mjs');
+  try {
+    await writeFile(
+      prelude,
+      [
+        'const write = process.stdout.write.bind(process.stdout);',
+        'process.stdout.write = (chunk, ...rest) => {',
+        "  if (typeof chunk === 'string' && chunk.startsWith('{')) {",
+        "    throw 'stdout refused the manifest';",
+        '  }',
+        '  return write(chunk, ...rest);',
+        '};',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(prelude).href,
+        RUN_TOOL,
+        'init',
+        '--dir',
+        runDir,
+        '--run-id',
+        'stackless-rejection',
+      ],
+      { encoding: 'utf8' },
+    );
+
+    assert.equal(result.status, 1);
+    // The thrown value itself, not `undefined`: the fallback is what put it
+    // there, since a string has no `.stack`.
+    assert.equal(result.stderr.trim(), 'stdout refused the manifest');
+    assert.doesNotMatch(result.stderr, /undefined/);
+    // The command had already done its work before stdout refused it, so the
+    // failure under test is the reporting path and not a failed `init`.
+    assert.equal((await readCoverageRun(runDir)).runId, 'stackless-rejection');
+  } finally {
+    await rm(runDir, { recursive: true, force: true });
+    await rm(preludeDir, { recursive: true, force: true });
   }
 });
