@@ -167,12 +167,19 @@ jobs:
         # The CI reporter (playwright.config.js) is 'github', which only
         # annotates the run; it writes no HTML report. Failure traces
         # (trace: 'retain-on-failure') land in test-results/ instead.
-        if: failure()
+        # Runs on green jobs too: with retries: 1 a flaky spec fails, retries,
+        # passes, and the job exits 0 — under `if: failure()` the trace of
+        # that first failing attempt was discarded, leaving no evidence to
+        # debug the flake (#1179). `!cancelled()` keeps the upload out of
+        # cancelled runs, and if-no-files-found: ignore keeps fully green
+        # runs quiet instead of warning about an empty test-results/.
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-traces
           path: test-results/
           retention-days: 7
+          if-no-files-found: ignore
 
   e2e-coverage:
     name: End-to-end coverage

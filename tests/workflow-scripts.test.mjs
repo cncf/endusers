@@ -395,11 +395,6 @@ test('browser coverage is isolated in a visible gating job with a source floor',
 // one.
 const GATES_NOT_RUN_BY_CI = new Map([
   [
-    'check:links',
-    'markdown-link-check resolves every outbound URL against the live ' +
-      'internet, so a third-party outage would fail unrelated pull requests.',
-  ],
-  [
     'check:community-group-links',
     'calls the GitHub API and requires GH_TOKEN; it also rewrites ' +
       'data/community-groups.json, which is a refresh job rather than a check ' +
