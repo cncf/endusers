@@ -1209,6 +1209,19 @@ test('an unclosed image-set() is read to the end rather than skipped', () => {
   ]);
 });
 
+test('an unterminated string inside image-set() does not hide earlier arguments', () => {
+  // The argument walk skips quoted strings as units; a string with no closing
+  // quote runs to the end of the fragment. The complete argument before it
+  // must still be collected and reported.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{cursor:image-set("https://evil.example/kept.png" 1x, "unterminated' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/kept.png',
+  ]);
+});
+
 test('a parenthesis inside an image-set() string does not close the list', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
@@ -1305,6 +1318,20 @@ test('an unterminated CSS comment runs to the end of the block', () => {
     '</style></svg>';
   assert.deepEqual(findRemoteReferences(svg), [
     'references a remote resource in a <style> block: https://evil.example/before.png',
+  ]);
+});
+
+test('an unterminated CSS string does not hide a later remote reference', () => {
+  // The comment stripper copies a quoted string as a unit; one with no
+  // closing quote is copied verbatim to the end of the fragment, so a `/*`
+  // opener inside it stays literal and the url() after it is still seen.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect::before{content:"unterminated /* ' +
+    'url(https://evil.example/after-string.png)' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/after-string.png',
   ]);
 });
 
