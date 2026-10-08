@@ -62,7 +62,19 @@ const EXPRESSION_PATTERN = /\{/;
 
 const ELEMENT_PATTERN = /<\/?([A-Za-z][A-Za-z0-9._-]*)/g;
 const EVENT_HANDLER_PATTERN = /\bon[a-z]{3,}\s*=/gi;
-const DANGEROUS_URL_PATTERN = /(?:javascript|vbscript):|data:text\/html/gi;
+/**
+ * Script-capable URL schemes, and the `data:` media types a browser parses as
+ * a *document* rather than as an image. Both lists mirror
+ * `scripts/lib/svg-active-content.mjs` (`ACTIVE_SCHEMES` and `activeScheme`),
+ * which guards imported SVGs against the identical threat: a body that
+ * reaches the site through this scanner and one that reaches it through that
+ * one can carry the same payload, so a scheme rejected for an SVG must be
+ * rejected here too. `application/xhtml+xml`, `text/xml` and
+ * `application/xml` all run `<script>` in the XHTML namespace, so enumerating
+ * only `text/html` lets the identical payload through under a sibling type.
+ */
+const DANGEROUS_URL_PATTERN =
+  /(?:javascript|vbscript|livescript|mocha):|data:(?:text\/html|image\/svg\+xml|application\/xhtml\+xml|text\/xml|application\/xml)/gi;
 const ESM_PATTERN = /^\s*(?:import|export)\s/;
 
 /** The character references a scheme can hide a character behind by name. */

@@ -66,6 +66,43 @@ test('flags script-capable schemes hidden behind character references', () => {
   ]);
 });
 
+test('flags the markup-bearing data: media types besides text/html', () => {
+  // Each payload is base64 so no raw `<element>` is present to trip the
+  // element scan: the only thing that can produce a finding is the scheme
+  // test itself. A browser parses every one of these media types as a
+  // document, and runs `<script>` in it, exactly as it does for text/html --
+  // see `activeScheme` in scripts/lib/svg-active-content.mjs, which rejects
+  // the same set for imported SVGs.
+  for (const mediaType of [
+    'image/svg+xml',
+    'application/xhtml+xml',
+    'text/xml',
+    'application/xml',
+  ]) {
+    assert.deepEqual(
+      reasons(`[click](data:${mediaType};base64,PHN2Zz4=)`),
+      ['script-capable URL scheme'],
+      `data:${mediaType} should be reported`,
+    );
+  }
+});
+
+test('flags the legacy script schemes the SVG scanner also rejects', () => {
+  assert.deepEqual(reasons('[click](livescript:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('[click](mocha:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+  // Obfuscated the same way the javascript: cases above are.
+  assert.deepEqual(reasons('[click](live&#115;cript:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('[d](data:image/&#115;vg+xml;base64,PHN2Zz4=)'), [
+    'script-capable URL scheme',
+  ]);
+});
+
 test('reports one finding per line when raw and decoded forms both match', () => {
   assert.deepEqual(
     reasons('[a](javascript:alert(1)) [b](java&#115;cript:alert(1))'),
