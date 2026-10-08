@@ -513,6 +513,125 @@ test('a single-line zero-count region survives a covered region that encloses it
   }
 });
 
+// The shape above survives; this one must not. Two branch spans of one source
+// file either nest or stay disjoint, because both are AST extents -- so a
+// covered span that *begins inside* a zero span and *ends after* it is a
+// crossing, which no source can produce. It only appears when two artifacts of
+// the same chunk map one original branch to different spans (#1079): the
+// `''` arm of `useBaseUrl(member.logo || '')` in
+// `src/components/MemberDirectory/MemberProfile.js` is reported zero at
+// `10:40-10:48` by one artifact while another reports it covered at
+// `10:44-15:19`, and `15:19-15:80` crosses `15:70-38:15` the same way. The
+// start columns differ, so the ordinal key proposed in #1066 keeps them apart,
+// and neither contains the other, so #1051's multi-line fold and the
+// enclosure rule the test above pins both leave them standing.
+//
+// Below, the zero region `1:0-1:6` is crossed by the covered `1:3-3:12`: the
+// covered region starts at column 3, strictly inside the zero span, and runs
+// past its end. That pair cannot both be real, so the zero half is dropped.
+test('a zero-count region crossed by a covered one is treated as source-map drift', async () => {
+  const fixture = await fixtureRun();
+  try {
+    const lines = ['const a = 1;', 'const b = 2;', 'const c = 3;'];
+    const source = `${lines.join('\n')}\n`;
+    const scriptText = `${source}\n//# sourceMappingURL=app.js.map\n`;
+    const original = join(fixture.root, 'src/components/Example/index.js');
+    await mkdir(join(fixture.root, 'src/components/Example'), {
+      recursive: true,
+    });
+    await writeFile(original, source);
+    await writeFile(join(fixture.buildDir, 'assets/js/app.js'), scriptText);
+    await writeFile(
+      join(fixture.buildDir, 'assets/js/app.js.map'),
+      JSON.stringify({
+        version: 3,
+        file: 'app.js',
+        sources: ['webpack://endusers/./src/components/Example/index.js'],
+        sourcesContent: [source],
+        names: [],
+        // Line 1 carries mappings at columns 0, 3 and 6 so that two block
+        // boundaries inside it resolve to distinct original columns. Without
+        // the middle one the two spans could only nest or coincide, and the
+        // crossing this test is about would be unrepresentable.
+        mappings: [
+          [
+            [vlq(0), vlq(0), vlq(0), vlq(0)].join(''),
+            [vlq(3), vlq(0), vlq(0), vlq(3)].join(''),
+            [vlq(3), vlq(0), vlq(0), vlq(3)].join(''),
+          ].join(','),
+          [vlq(0), vlq(0), vlq(1), vlq(-6)].join(''),
+          [vlq(0), vlq(0), vlq(1), vlq(0)].join(''),
+        ].join(';'),
+      }),
+    );
+
+    // One page runs the whole script, and a block from column 3 onwards twice
+    // over -- a loop body. Its differing count is what makes V8 emit the
+    // boundary at column 3 at all.
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/app.js',
+          scriptId: '1',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                { startOffset: 0, endOffset: scriptText.length, count: 1 },
+                { startOffset: 3, endOffset: scriptText.length, count: 2 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    // A second page maps the same original branch to a span that starts
+    // earlier and ends earlier, and reports it unexecuted.
+    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-1', {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: 'http://localhost:3000/assets/js/app.js',
+          scriptId: '2',
+          functions: [
+            {
+              functionName: '',
+              isBlockCoverage: true,
+              ranges: [
+                { startOffset: 0, endOffset: scriptText.length, count: 1 },
+                { startOffset: 0, endOffset: 6, count: 0 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await sealCoverageRun(fixture.runDir, 'passed');
+
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    const [entry] = report.sources;
+    assert.equal(entry.file, 'src/components/Example/index.js');
+    assert.deepEqual(entry.uncoveredLines, []);
+    assert.deepEqual(entry.uncoveredRegions, []);
+    assert.equal(entry.regions, entry.coveredRegions);
+    // The drifted half is dropped, not counted as covered: the denominator
+    // loses it too, so the file cannot be credited for a region nobody saw.
+    assert.equal(entry.regions, 3);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 // `npm run build:e2e:coverage` compiles the site twice: once from the real
 // data, and once with tests/e2e/fixtures/data-variants/** layered on, into
 // build/e2e-coverage-variant under its own base URL. That is what makes a
