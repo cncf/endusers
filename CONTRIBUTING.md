@@ -104,7 +104,11 @@ Rules:
 - Verify award entries against the linked cncf.io announcement before adding.
 - Reference architectures are imported from
   [cncf/architecture](https://github.com/cncf/architecture) — fix content
-  upstream, then re-import.
+  upstream, then re-import. Imported pages and SVG diagrams must pass the
+  content-security validators (`validate:architectures`,
+  `validate:architecture-assets`); the rules they enforce — and how to fix an
+  `active content` or `remote reference` failure — are documented in
+  [CONTENT-SECURITY.md](CONTENT-SECURITY.md).
 - Verify CNCF facts (award winners, TAB scope, architecture counts) against
   authoritative sources. Never assert numbers without a source.
 - Radar report `summary` fields in `data/radar-reports.json` are hand-written

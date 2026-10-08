@@ -65,7 +65,7 @@ jobs:
       - name: Comment on failure
         if: failure()
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body "The automated import from this issue failed. See the [workflow run]($RUN_URL) for details, fix the issue body, then re-apply the \`$SUBMISSION_LABEL\` label to try again."
+          gh issue comment "$ISSUE_NUMBER" --body "The automated import from this issue failed. See the [workflow run]($RUN_URL) for details, fix the issue body, then re-apply the \`$SUBMISSION_LABEL\` label to try again. If the log reports \`active content\` or \`remote reference\` findings, [CONTENT-SECURITY.md](https://github.com/cncf/endusers/blob/main/CONTENT-SECURITY.md) explains each rule and how to export a compliant diagram."
           gh issue edit "$ISSUE_NUMBER" --remove-label "$SUBMISSION_LABEL"
         env:
           GH_TOKEN: ${{ github.token }}
