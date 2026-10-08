@@ -391,6 +391,71 @@ function isDriftedRegion(region, regions) {
   return false;
 }
 
+// The crossing fold above needs the drifted twin to be *recorded*. One shape
+// leaves no twin at all (#1202): when an artifact executes a span at the same
+// count as its enclosing code, V8 emits no deviation range over it, so the
+// artifact carries no region -- covered or zero -- for the span.
+// `useFocusTrap`'s cleanup runs once with the trigger unmounted and the
+// `previousFocus` arm executes uniformly with the arrow around it; that
+// artifact records lines 49-51 covered and no range in the cleanup at all,
+// while every truthy-path artifact of the same chunk records `51:25-51:41`
+// at zero. The zero survives the union because no covered region ever shares
+// (or crosses) its key.
+//
+// Absence only proves execution inside one script: V8 emits a zero range
+// wherever text inside executed code did not run, and one script has one
+// source map, so the same unexecuted text always lands on the same original
+// span. If some artifact of a script records a zero region and another
+// artifact of the *same script* covers the region's lines while recording no
+// zero on any of them, the second artifact executed that text -- had it been
+// skipped there too, the identical zero mapping would reappear. Across
+// scripts the inference fails: a different bundle maps the same skipped arm
+// to a different original span (#1066's drift), so a chunk that never
+// records the zero at these coordinates says nothing about them. The witness
+// is therefore required to come from a script that produced the zero itself.
+// The exclusion test is by line rather than exact span, the conservative
+// direction: a zero whose flattened range grew past the arm (adjacent
+// unexecuted text merges into one range) still disqualifies the witness.
+function zeroTouchesLines(zero, region) {
+  return zero.line <= region.endLine && zero.endLine >= region.line;
+}
+
+function regionKey(region) {
+  return [region.line, region.column, region.endLine, region.endColumn].join(
+    ':',
+  );
+}
+
+function isContradictedRegion(region, witnesses) {
+  if (region.count > 0) return false;
+  const key = regionKey(region);
+  const scripts = new Set();
+  for (const witness of witnesses) {
+    if (witness.zeroKeys.has(key)) scripts.add(witness.script);
+  }
+  if (scripts.size === 0) return false;
+  for (const witness of witnesses) {
+    if (!scripts.has(witness.script)) continue;
+    let sawExecutableLine = false;
+    let linesCovered = true;
+    for (let line = region.line; line <= region.endLine; line += 1) {
+      const count = witness.lines.get(line);
+      // Blank lines and comments carry no statement; they neither confirm
+      // nor contradict, exactly as in isPhantomRegion.
+      if (count === undefined) continue;
+      sawExecutableLine = true;
+      if (count <= 0) {
+        linesCovered = false;
+        break;
+      }
+    }
+    if (!sawExecutableLine || !linesCovered) continue;
+    if (witness.zeros.some((zero) => zeroTouchesLines(zero, region))) continue;
+    return true;
+  }
+  return false;
+}
+
 // A region is one branch location from the istanbul object convertScript
 // already builds -- the arm of a ternary, a short-circuit operand, a default
 // parameter -- data the line map cannot see because several of them share a
@@ -600,6 +665,7 @@ export async function collectE2ECoverage(
         const target = sources.get(relativePath) ?? {
           lines: new Map(),
           regions: new Map(),
+          witnesses: [],
         };
         for (const [line, count] of lineCoverage) {
           target.lines.set(line, Math.max(target.lines.get(line) ?? 0, count));
@@ -613,6 +679,20 @@ export async function collectE2ECoverage(
             target.regions.set(key, region);
           }
         }
+        // Each conversion is one artifact's view of one script: a complete
+        // partition of that text into executed and zero spans. Kept whole,
+        // with the script's identity, so isContradictedRegion can ask whether
+        // an artifact of the same script executed a region's lines without
+        // recording any zero on them.
+        const zeros = [...regionCoverage.values()].filter(
+          (region) => region.count <= 0,
+        );
+        target.witnesses.push({
+          script: scriptCoverage.url,
+          lines: lineCoverage,
+          zeros,
+          zeroKeys: new Set(zeros.map(regionKey)),
+        });
         sources.set(relativePath, target);
         unmapped.delete(relativePath);
       }
@@ -633,7 +713,8 @@ export async function collectE2ECoverage(
       const regionValues = allRegions.filter(
         (region) =>
           !isPhantomRegion(region, coverage.lines) &&
-          !isDriftedRegion(region, allRegions),
+          !isDriftedRegion(region, allRegions) &&
+          !isContradictedRegion(region, coverage.witnesses),
       );
       const regions = regionValues.length;
       const coveredRegions = regionValues.filter(
