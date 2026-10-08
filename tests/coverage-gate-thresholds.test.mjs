@@ -39,6 +39,11 @@ const FLOORS = {
   '--check-source': 100,
   '--check-regions': 95,
   '--check-source-regions': 99,
+  // Per-file rather than aggregate, so its floor is set by the worst source
+  // file rather than by the whole of scripts/ and src/ together. Measured on
+  // the suite this commit ships, the lowest is
+  // scripts/lib/architecture-content.mjs at 97.78%, floored to 97.
+  '--check-source-file-regions': 97,
 };
 
 function parseGate(command) {
