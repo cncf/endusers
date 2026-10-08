@@ -478,6 +478,74 @@ for (const [label, element] of [
   });
 }
 
+// `<foreignObject>` is deliberately allowed, so an imported diagram can carry
+// ordinary HTML. These attributes are fetched on load with no user
+// interaction and carry no active content, so nothing else in this module
+// reports them; gating only `src` published them from static/ at the site
+// origin, where opening the SVG directly beacons the visitor to the chosen
+// host.
+test('detects a remote srcset on <img> in a foreignObject', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject width="1" height="1">' +
+    '<img xmlns="http://www.w3.org/1999/xhtml" srcset="https://evil.example/beacon.png 1x"/>' +
+    '</foreignObject></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <img> srcset: https://evil.example/beacon.png',
+  ]);
+});
+
+// The whole srcset value is not a URL. Normalizing it undivided strips the
+// descriptors' whitespace and leaves a value beginning with the local first
+// candidate, which reads as same-origin and hides every candidate after it.
+test('detects a remote srcset candidate after a local one', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject width="1" height="1">' +
+    '<img xmlns="http://www.w3.org/1999/xhtml" srcset="/local.png 1x, https://evil.example/x.png 2x"/>' +
+    '</foreignObject></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <img> srcset: https://evil.example/x.png',
+  ]);
+});
+
+test('detects a remote srcset on <source> inside <picture>', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject width="1" height="1">' +
+    '<picture xmlns="http://www.w3.org/1999/xhtml">' +
+    '<source srcset="https://evil.example/b.webp"/><img src="/local.png"/>' +
+    '</picture></foreignObject></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <source> srcset: https://evil.example/b.webp',
+  ]);
+});
+
+test('detects a remote poster on <video>', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject width="1" height="1">' +
+    '<video xmlns="http://www.w3.org/1999/xhtml" poster="https://evil.example/beacon.png"></video>' +
+    '</foreignObject></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <video> poster: https://evil.example/beacon.png',
+  ]);
+});
+
+test('detects a remote legacy background attribute', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject width="1" height="1">' +
+    '<table xmlns="http://www.w3.org/1999/xhtml" background="https://evil.example/b.png">' +
+    '<tr><td>x</td></tr></table></foreignObject></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in <table> background: https://evil.example/b.png',
+  ]);
+});
+
+test('leaves a srcset whose every candidate is local alone', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject width="1" height="1">' +
+    '<img xmlns="http://www.w3.org/1999/xhtml" srcset="/a.png 1x, ./b.png 2x"/>' +
+    '</foreignObject></svg>';
+  assert.deepEqual(findRemoteReferences(svg), []);
+});
+
 test('detects a remote xlink:href, the legacy spelling', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><image xlink:href="http://evil.example/b.png"/></svg>';

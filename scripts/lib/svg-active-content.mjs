@@ -516,6 +516,63 @@ function describeTarget(target) {
 }
 
 /**
+ * Attribute names whose value a browser fetches on load, on any element.
+ *
+ * `href` is deliberately absent: it is gated per-element by RESOURCE_ELEMENTS,
+ * because `<a href>` is navigation the visitor chooses rather than a load the
+ * page performs.
+ *
+ * The rest are here because `<foreignObject>` is allowed, so an imported
+ * diagram can carry ordinary HTML. `srcset` on `<img>`/`<source>`, `poster`
+ * on `<video>` and the legacy presentational `background` on `<body>`/
+ * `<table>`/`<td>` each make the browser fetch a third-party host with no
+ * user interaction, and none of them is active content, so neither
+ * findActiveContent() nor stripActiveContent() sees them. Gating only `src`
+ * let all three walk past this check and publish from static/ at the site
+ * origin, where a visitor opening the SVG directly -- a document, not an
+ * image, and served without the meta CSP that only Docusaurus HTML pages
+ * carry -- discloses their IP, User-Agent and Referer to the chosen host.
+ */
+const FETCHED_URL_ATTRIBUTES = new Set([
+  'src',
+  'srcset',
+  'poster',
+  'background',
+]);
+
+/**
+ * The remote targets named by one fetched-URL attribute value.
+ *
+ * `srcset` is a comma-separated candidate list, each candidate a URL followed
+ * by an optional descriptor, so the whole value is not a URL. Testing it
+ * undivided only happens to work when the list has one candidate:
+ * normalizeUri() strips the whitespace, so `"/local.png 1x,
+ * https://evil.example/x.png 2x"` collapses to a value that begins with
+ * `/local.png` and is read as same-origin, hiding the second candidate. Each
+ * candidate's URL part is therefore tested on its own. Splitting can never
+ * lose a remote target: a comma cannot appear in a scheme or an authority, so
+ * a URL containing one still carries its full authority in the first piece.
+ *
+ * @param {string} name - Local attribute name, lowercased.
+ * @param {string} value - Raw attribute value.
+ * @returns {string[]}
+ */
+function urlAttributeTargets(name, value) {
+  const raw = String(value ?? '');
+  const candidates =
+    name === 'srcset'
+      ? raw.split(',').map((part) => part.trim().split(/\s+/)[0])
+      : [raw];
+  const targets = [];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const target = remoteTarget(candidate);
+    if (target && !targets.includes(target)) targets.push(target);
+  }
+  return targets;
+}
+
+/**
  * Describe every remote resource reference in an SVG source string.
  *
  * Distinct from {@link findActiveContent}: these references execute nothing,
@@ -541,10 +598,9 @@ export function findRemoteReferences(source) {
 
       if (
         (name === 'href' && RESOURCE_ELEMENTS.has(element)) ||
-        name === 'src'
+        FETCHED_URL_ATTRIBUTES.has(name)
       ) {
-        const target = remoteTarget(value);
-        if (target) {
+        for (const target of urlAttributeTargets(name, value)) {
           findings.add(
             `references a remote resource in <${element}> ${match[1].toLowerCase()}: ${describeTarget(target)}`,
           );
