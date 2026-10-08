@@ -554,9 +554,15 @@ function activeScheme(value) {
       return `${scheme}:`;
     }
   }
-  // `data:` URIs that carry markup execute script in the same way.
+  // `data:` URIs that carry markup execute script in the same way. Every
+  // media type a browser parses as a *document* belongs here, not just HTML:
+  // `application/xhtml+xml`, `text/xml` and `application/xml` all run
+  // `<script>` in the XHTML namespace, so enumerating only `text/html` and
+  // `image/svg+xml` lets the identical payload through under a sibling type.
+  // Longer alternatives precede their prefixes so the reported scheme is the
+  // full media type rather than a truncation of it.
   const markup = normalized.match(
-    /(?:^|[^a-z0-9+.-])(data:(?:text\/html|image\/svg\+xml))/,
+    /(?:^|[^a-z0-9+.-])(data:(?:text\/html|image\/svg\+xml|application\/xhtml\+xml|text\/xml|application\/xml))/,
   );
   if (markup) {
     return `${markup[1]}`;

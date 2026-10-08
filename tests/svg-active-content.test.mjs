@@ -177,13 +177,37 @@ test('detects script URIs in animation targets, not just href', () => {
   assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
 });
 
-test('detects markup-bearing data: URIs', () => {
+test('detects every markup-bearing data: media type, not just text/html', () => {
+  // A browser parses each of these as a document and runs <script> in the
+  // XHTML namespace, so the gate must treat them identically to text/html.
+  for (const mediaType of [
+    'text/html',
+    'image/svg+xml',
+    'application/xhtml+xml',
+    'text/xml',
+    'application/xml',
+  ]) {
+    const svg = INERT.replace(
+      'https://example.com/docs',
+      `data:${mediaType};base64,PHNjcmlwdD4=`,
+    );
+    assert.deepEqual(
+      findActiveContent(svg),
+      [`contains a script URI in href="data:${mediaType}..."`],
+      `${mediaType} must be reported as a script URI`,
+    );
+  }
+});
+
+test('detects an entity-obfuscated markup data: media type', () => {
+  // normalizeUri() decodes &#43; to "+" before the media-type scan, so the
+  // obfuscated spelling must not buy a bypass that the plain one does not.
   const svg = INERT.replace(
     'https://example.com/docs',
-    'data:text/html;base64,PHNjcmlwdD4=',
+    'data:application/xhtml&#43;xml;base64,PHNjcmlwdD4=',
   );
   assert.deepEqual(findActiveContent(svg), [
-    'contains a script URI in href="data:text/html..."',
+    'contains a script URI in href="data:application/xhtml+xml..."',
   ]);
 });
 
@@ -193,6 +217,22 @@ test('does not flag inert data: URIs such as raster images', () => {
     'data:image/png;base64,iVBOR',
   );
   assert.deepEqual(findActiveContent(svg), []);
+});
+
+test('does not flag inert non-document data: URIs', () => {
+  // Guards the widened media-type list against over-matching: these are not
+  // parsed as documents and must stay publishable.
+  for (const mediaType of ['application/json', 'text/plain', 'font/woff2']) {
+    const svg = INERT.replace(
+      'https://example.com/docs',
+      `data:${mediaType};base64,AAAA`,
+    );
+    assert.deepEqual(
+      findActiveContent(svg),
+      [],
+      `${mediaType} must stay unflagged`,
+    );
+  }
 });
 
 test('detects active content nested inside foreignObject', () => {
