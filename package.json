@@ -2,6 +2,9 @@
   "name": "endusers",
   "version": "0.9.0",
   "description": "Community resources for CNCF end users.",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "_build": "npm run docus:build",
     "_check:format:any": "npx prettier --check --ignore-path ''",

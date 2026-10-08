@@ -380,6 +380,27 @@ test('devcontainer Node major matches the Node major every workflow pins', () =>
   );
 });
 
+// package.json's engines field is the only Node pin npm itself reads. The
+// devcontainer, the workflows and CONTRIBUTING.md all have to be opened to be
+// seen, so a contributor who clones outside the devcontainer gets no signal at
+// all: `npm ci` endorses whatever major is installed. Pinning the field here
+// puts it in the same parity chain as the two assertions above, so a Node bump
+// that misses it fails the suite rather than leaving npm silently permissive.
+test('package.json engines.node matches the pinned Node major', () => {
+  const devcontainerMajor = devcontainerNodeMajor();
+  const engines = packageJson.engines?.node;
+  assert.ok(
+    engines,
+    'package.json declares no engines.node; npm has no Node pin to enforce',
+  );
+  const major = String(engines).match(/\d+/)?.[0];
+  assert.equal(
+    major,
+    devcontainerMajor,
+    `package.json engines.node (${engines}) pins a different Node major than the devcontainer (${devcontainerMajor})`,
+  );
+});
+
 // CONTRIBUTING.md tells a contributor which Node to install. If that drifts
 // below the major CI and the devcontainer run on, the documented setup is one
 // a maintainer never reproduces.
