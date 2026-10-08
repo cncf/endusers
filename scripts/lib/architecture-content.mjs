@@ -86,22 +86,49 @@ export function renderProjectCards(body, id) {
 }
 
 /**
+ * A Markdown link destination that carries its own authority: either an
+ * absolute `scheme://host/...` or a protocol-relative `//host/...`, which
+ * inherits the page's scheme and loads off-site exactly like an absolute one.
+ *
+ * Written as a character class rather than with the `i` flag so the rest of
+ * each pattern it appears in stays case-sensitive.
+ */
+const REMOTE_DESTINATION = '(?:[a-zA-Z][a-zA-Z0-9+.-]*:)?\\/\\/';
+
+/**
  * Strips remaining Hugo/Docsy shortcodes, rewrites image references to their
  * local `/img/architectures/<id>/...` or mirrored artwork path, and collapses
  * blank-line runs. `id` scopes relative image paths (`images/foo.png`) to the
  * architecture's own asset directory.
+ *
+ * An image whose destination names a host is demoted to a plain link unless
+ * projectAsset() can resolve it to a mirrored path. A published `<img>` is
+ * fetched by every visitor's browser, so leaving one pointed at a third-party
+ * host beacons their IP, User-Agent and Referer there -- the hot-linking the
+ * mirror exists to prevent. The test for "names a host" is
+ * REMOTE_DESTINATION, not `https?://`: a protocol-relative `//host/x.png`
+ * inherits the page's scheme and loads off-site just the same, and an
+ * uppercase `HTTPS://` is the same URL to a browser. Both slipped past the
+ * old `https?://` test, and the local-path rewrite below then either left
+ * them live or mangled them into a path that cannot resolve.
  */
 export function cleanMarkdown(body, id) {
   return body
     .replace(/{{<[\s\S]*?>}}/g, '')
     .replace(/{{<\/?[^>]+>}}/g, '')
-    .replace(/!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g, (_, alt, url) => {
-      const asset = projectAsset(url);
-      return asset ? `![${alt}](${asset})` : `[${alt}](${url})`;
-    })
+    .replace(
+      new RegExp(`!\\[([^\\]]*)\\]\\((${REMOTE_DESTINATION}[^\\)]+)\\)`, 'g'),
+      (_, alt, url) => {
+        const asset = projectAsset(url);
+        return asset ? `![${alt}](${asset})` : `[${alt}](${url})`;
+      },
+    )
     .replace(/\[\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\]/g, '[$1]($2)')
     .replace(
-      /!\[([^\]]*)\]\((?!(?:https?:)?\/\/)(?:\.\/)?(?:images\/)?([^/][^\)]*)\)/g,
+      new RegExp(
+        `!\\[([^\\]]*)\\]\\((?!${REMOTE_DESTINATION})(?:\\.\\/)?(?:images\\/)?([^/][^\\)]*)\\)`,
+        'g',
+      ),
       `![$1](/img/architectures/${id}/$2)`,
     )
     .replace(/<>/g, '&lt;&gt;')
