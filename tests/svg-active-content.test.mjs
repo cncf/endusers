@@ -1164,3 +1164,156 @@ test('an interior backslash in a local CSS path stays local', () => {
     '</style></svg>';
   assert.deepEqual(findRemoteReferences(svg), []);
 });
+
+test('a bare-string image-set() target is a remote reference', () => {
+  // CSS Images 4: "Each <string> inside image-set() represents a <url>", so
+  // this fetches exactly as url("...") does while carrying no url( token.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{cursor:image-set("https://evil.example/set.png" 1x)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/set.png',
+  ]);
+});
+
+test('the -webkit-image-set() alias is scanned like image-set()', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    "rect{cursor:-webkit-image-set('https://evil.example/pre.png' 2x)}" +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/pre.png',
+  ]);
+});
+
+test('a CSS escape inside an image-set() string does not hide the host', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{cursor:image-set("\\68 ttps://evil.example/esc-set.png" 1x)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/esc-set.png',
+  ]);
+});
+
+test('an unclosed image-set() is read to the end rather than skipped', () => {
+  // Fail closed: a target hidden behind a missing parenthesis is still a
+  // target, and the browser's error recovery is not this scanner's to guess.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{cursor:image-set("https://evil.example/open.png" 1x' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/open.png',
+  ]);
+});
+
+test('a parenthesis inside an image-set() string does not close the list', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{cursor:image-set("https://evil.example/a).png" 1x,' +
+    '"https://evil.example/b.png" 2x)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/a).png',
+    'references a remote resource in a <style> block: https://evil.example/b.png',
+  ]);
+});
+
+test('an escaped parenthesis inside image-set() does not close the list', () => {
+  // A backslash escape is how an unquoted url token carries a parenthesis.
+  // Counting that ')' as a closer would end the argument list early and hide
+  // every later option, so the walk steps over the escaped character.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{cursor:image-set(url(https://evil.example/a\\).png) 1x,' +
+    '"https://evil.example/b.png" 2x)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/a).png',
+    'references a remote resource in a <style> block: https://evil.example/b.png',
+  ]);
+});
+
+test('an image-set() type() media type is not mistaken for a target', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{cursor:image-set(url("./local.png") 1x type("image/png"))}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), []);
+});
+
+test('an image-set() target reached through both spellings is reported once', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{cursor:image-set(url("https://evil.example/dup.png") 1x)}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/dup.png',
+  ]);
+});
+
+test('an image-set() in a presentation attribute is scanned', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg">' +
+    '<rect style=\'cursor:image-set("https://evil.example/attr-set.png" 1x)\'/>' +
+    '</svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a style attribute: https://evil.example/attr-set.png',
+  ]);
+});
+
+test('a CSS comment between url( and its argument does not hide the host', () => {
+  // A browser's tokenizer discards comments before the value is read.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{background:url( /* c */ "https://evil.example/cmt.png")}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/cmt.png',
+  ]);
+});
+
+test('a CSS comment after @import does not hide the host', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    '@import /* c */ "https://evil.example/cmt.css";' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/cmt.css',
+  ]);
+});
+
+test('a comment opener inside a CSS string does not blind the rest of the scan', () => {
+  // `content: "/*"` is two literal characters. Treating it as a comment would
+  // swallow every declaration after it, hiding the live fetch below.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect::before{content:"/*"}' +
+    'rect{background:url("https://evil.example/after.png")}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/after.png',
+  ]);
+});
+
+test('an unterminated CSS comment runs to the end of the block', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{background:url("https://evil.example/before.png")}/* trailing' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: https://evil.example/before.png',
+  ]);
+});
+
+test('a comment is replaced by a separator, not deleted', () => {
+  // Deleting it would fuse the text either side into a `url(` token the
+  // browser never sees, inventing a finding out of inert text.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'rect{background:ur/* x */l("https://evil.example/fused.png")}' +
+    '</style></svg>';
+  assert.deepEqual(findRemoteReferences(svg), []);
+});

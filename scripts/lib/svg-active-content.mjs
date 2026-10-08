@@ -360,6 +360,124 @@ const CSS_URL_PATTERN =
 const CSS_IMPORT_PATTERN = /@import\s+(?:"([^"]*)"|'([^']*)')/gi;
 
 /**
+ * The opening of an `image-set()` argument list, `-webkit-` alias included.
+ *
+ * CSS Images 4 gives `image-set()` a second spelling for its image reference:
+ * `<image-set-option> = [ <image> | <string> ] ...`, and "each `<string>`
+ * inside `image-set()` represents a `<url>`". So
+ * `image-set("https://evil.example/x.png" 1x)` is a live remote fetch that
+ * carries no `url(` token for CSS_URL_PATTERN to find and no `@import` for
+ * CSS_IMPORT_PATTERN -- the same shape of gap CSS_IMPORT_PATTERN exists to
+ * close. `image-set()` is accepted wherever an `<image>` is (`cursor`,
+ * `background-image`, `mask-image`, `list-style-image`), and `cursor` and
+ * `mask-image` are not `img-src` fetch directives, so the meta CSP does not
+ * stand in for this check.
+ *
+ * Only the opening is a pattern. The argument list is walked by
+ * {@link imageSetTargets} rather than matched, because a nested
+ * `url(...)`/`type(...)` means the closing parenthesis cannot be found by a
+ * regex without either stopping early or backtracking.
+ */
+const IMAGE_SET_OPEN = /(?:-webkit-)?image-set\(/gi;
+
+/** A quoted CSS string, matched as a unit so its contents stay opaque. */
+const CSS_STRING = /"([^"]*)"|'([^']*)'/g;
+
+/**
+ * The bare-string arguments of every `image-set()` in a fragment of CSS.
+ *
+ * The argument list is walked with a parenthesis depth counter, skipping
+ * quoted strings so a parenthesis inside one cannot close the list early. An
+ * `image-set(` that never closes is read to the end of the fragment, which is
+ * the fail-closed reading: a target hidden behind a missing parenthesis is
+ * still reported. Strings belonging to a nested `url("...")` are collected
+ * too; that only duplicates what CSS_URL_PATTERN already found, and
+ * findRemoteReferences collects into a Set. A `type("image/png")` string is
+ * collected and then discarded by remoteTarget(), which no media type
+ * satisfies.
+ *
+ * @param {string} css
+ * @returns {string[]} Raw string contents, still CSS-escaped.
+ */
+function imageSetArguments(css) {
+  const values = [];
+  IMAGE_SET_OPEN.lastIndex = 0;
+  let open;
+  while ((open = IMAGE_SET_OPEN.exec(css))) {
+    let cursor = open.index + open[0].length;
+    let depth = 1;
+    const start = cursor;
+    while (cursor < css.length && depth > 0) {
+      const char = css[cursor];
+      if (char === '"' || char === "'") {
+        const close = css.indexOf(char, cursor + 1);
+        cursor = close === -1 ? css.length : close + 1;
+        continue;
+      }
+      if (char === '\\') {
+        cursor += 2;
+        continue;
+      }
+      if (char === '(') depth += 1;
+      else if (char === ')') depth -= 1;
+      cursor += 1;
+    }
+    const end = depth === 0 ? cursor - 1 : css.length;
+    const args = css.slice(start, end);
+    CSS_STRING.lastIndex = 0;
+    for (const string of args.matchAll(CSS_STRING)) {
+      values.push(string[1] ?? string[2]);
+    }
+    IMAGE_SET_OPEN.lastIndex = end;
+  }
+  return values;
+}
+
+/**
+ * Remove CSS comments, which a browser's tokenizer discards before any value
+ * is read. A comment placed between `url(` and its quoted argument, or
+ * between `@import` and its string, still fetches, while the raw text matches
+ * neither CSS_URL_PATTERN nor CSS_IMPORT_PATTERN.
+ *
+ * Quoted strings are skipped: a comment opener inside a CSS string is two
+ * literal characters, not the start of a comment, and treating it as one
+ * would swallow the rest of the stylesheet -- hiding every later `url()` from
+ * the scan, which is the opposite of what this gate is for. An unterminated
+ * comment runs to the end of the fragment, as the tokenizer does.
+ *
+ * Each comment is replaced by a single space rather than deleted. A comment
+ * separates tokens, so deleting it would fuse the text either side and
+ * manufacture a token the browser never sees: a comment inserted into the
+ * middle of the letters of `url(` does not leave a `url(` behind.
+ *
+ * @param {string} css
+ * @returns {string}
+ */
+function stripCssComments(css) {
+  let output = '';
+  let cursor = 0;
+  while (cursor < css.length) {
+    const char = css[cursor];
+    if (char === '"' || char === "'") {
+      const close = css.indexOf(char, cursor + 1);
+      const end = close === -1 ? css.length : close + 1;
+      output += css.slice(cursor, end);
+      cursor = end;
+      continue;
+    }
+    if (char === '/' && css[cursor + 1] === '*') {
+      const close = css.indexOf('*/', cursor + 2);
+      cursor = close === -1 ? css.length : close + 2;
+      output += ' ';
+      continue;
+    }
+    output += char;
+    cursor += 1;
+  }
+  return output;
+}
+
+/**
  * Report whether a value points at a resource on another host.
  *
  * Only absolute http(s) and protocol-relative values qualify. A fragment, a
@@ -464,19 +582,27 @@ export function findRemoteReferences(source) {
 }
 
 /**
- * Collect the remote targets in a fragment of CSS, from both `url(...)` and
- * the bare-string `@import` form.
+ * Collect the remote targets in a fragment of CSS, from the `url(...)` token,
+ * the bare-string `@import` form and the bare-string `image-set()` form.
+ *
+ * Comments are removed first, because a browser's tokenizer discards them
+ * before any of these three constructs is read.
  * @param {string} css
  * @returns {string[]}
  */
 function cssTargets(css) {
   const targets = [];
+  const normalized = stripCssComments(String(css));
   for (const pattern of [CSS_URL_PATTERN, CSS_IMPORT_PATTERN]) {
-    for (const match of String(css).matchAll(pattern)) {
+    for (const match of normalized.matchAll(pattern)) {
       const value = match[1] ?? match[2] ?? match[3];
       const target = remoteTarget(decodeCssEscapes(value));
       if (target) targets.push(target);
     }
+  }
+  for (const value of imageSetArguments(normalized)) {
+    const target = remoteTarget(decodeCssEscapes(value));
+    if (target) targets.push(target);
   }
   return targets;
 }
