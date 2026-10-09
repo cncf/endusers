@@ -1,8 +1,35 @@
+// The workflow supply-chain contract, asserted over the real
+// .github/workflows/** tree.
+//
+// The scanners live in ./helpers-ci-supply-chain.mjs and are pinned
+// independently by ./ci-supply-chain-helpers.test.mjs: every workflow here is
+// compliant and every retiring baseline below is empty, so nothing in this file
+// executes a scanner's violation arm or a baseline guard's body. Driving them
+// from there is what keeps a green run here evidence that the contract was
+// checked rather than evidence that it found nothing to look at.
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import { parse } from 'yaml';
+
+import {
+  actionsMissingVersionComment,
+  blanketWriteScopes,
+  credentialPersistingCheckouts,
+  floatingRunnerBaselineProblems,
+  floatingRunnerJobs,
+  jobs,
+  jobsWithUnconstrainedToken,
+  jobsWithoutRunner,
+  persistingCheckoutBaselineProblems,
+  steps,
+  timeoutBaselineProblems,
+  timeoutFaults,
+  triggers,
+  unboundedJobs,
+  unpinnedActions,
+} from './helpers-ci-supply-chain.mjs';
 
 const workflowDir = new URL('../.github/workflows/', import.meta.url).pathname;
 
@@ -13,32 +40,6 @@ const workflows = readdirSync(workflowDir)
     return { name, source, doc: parse(source) };
   });
 
-// `on` is parsed as the boolean true by YAML 1.1 compatibility rules, so the
-// trigger block is read back through both keys.
-function triggers(doc) {
-  const on = doc.on ?? doc[true];
-  if (!on) return [];
-  if (typeof on === 'string') return [on];
-  if (Array.isArray(on)) return on;
-  return Object.keys(on);
-}
-
-function jobs(doc) {
-  return Object.entries(doc.jobs ?? {});
-}
-
-function steps(doc) {
-  return jobs(doc).flatMap(([jobName, job]) =>
-    (job?.steps ?? []).map((step, index) => ({
-      jobName,
-      index,
-      step,
-    })),
-  );
-}
-
-const SHA_PINNED = /^[^@]+@[0-9a-f]{40}$/;
-
 test('every workflow parses and declares at least one job', () => {
   assert.ok(workflows.length > 0, 'no workflow files found');
   for (const { name, doc } of workflows) {
@@ -48,20 +49,7 @@ test('every workflow parses and declares at least one job', () => {
 });
 
 test('every third-party action is pinned to a full commit SHA', () => {
-  const unpinned = [];
-  for (const { name, doc } of workflows) {
-    for (const { jobName, step } of steps(doc)) {
-      const uses = step?.uses;
-      if (!uses) continue;
-      // Local composite actions and reusable workflows in this repository are
-      // resolved from the checked-out tree, so they carry no external ref.
-      if (uses.startsWith('./')) continue;
-      if (uses.startsWith('docker://')) continue;
-      if (!SHA_PINNED.test(uses)) {
-        unpinned.push(`${name} (${jobName}): ${uses}`);
-      }
-    }
-  }
+  const unpinned = unpinnedActions(workflows);
   assert.deepEqual(
     unpinned,
     [],
@@ -70,18 +58,7 @@ test('every third-party action is pinned to a full commit SHA', () => {
 });
 
 test('every pinned action records the human-readable version in a comment', () => {
-  const missing = [];
-  for (const { name, source } of workflows) {
-    for (const line of source.split('\n')) {
-      const match = line.match(/^\s*(?:-\s*)?uses:\s*(\S+)/);
-      if (!match) continue;
-      const uses = match[1];
-      if (uses.startsWith('./') || uses.startsWith('docker://')) continue;
-      if (!/#\s*\S/.test(line)) {
-        missing.push(`${name}: ${uses}`);
-      }
-    }
-  }
+  const missing = actionsMissingVersionComment(workflows);
   assert.deepEqual(
     missing,
     [],
@@ -90,13 +67,7 @@ test('every pinned action records the human-readable version in a comment', () =
 });
 
 test('every workflow constrains GITHUB_TOKEN permissions', () => {
-  const unconstrained = [];
-  for (const { name, doc } of workflows) {
-    if (doc.permissions) continue;
-    for (const [jobName, job] of jobs(doc)) {
-      if (!job?.permissions) unconstrained.push(`${name}: job ${jobName}`);
-    }
-  }
+  const unconstrained = jobsWithUnconstrainedToken(workflows);
   assert.deepEqual(
     unconstrained,
     [],
@@ -105,19 +76,12 @@ test('every workflow constrains GITHUB_TOKEN permissions', () => {
 });
 
 test('no workflow grants blanket write-all permissions', () => {
-  for (const { name, doc } of workflows) {
-    const scopes = [
-      doc.permissions,
-      ...jobs(doc).map(([, job]) => job?.permissions),
-    ];
-    for (const scope of scopes) {
-      assert.notEqual(
-        scope,
-        'write-all',
-        `${name}: 'permissions: write-all' defeats least privilege`,
-      );
-    }
-  }
+  const blanket = blanketWriteScopes(workflows);
+  assert.deepEqual(
+    blanket,
+    [],
+    `'permissions: write-all' defeats least privilege:\n${blanket.join('\n')}`,
+  );
 });
 
 test('no workflow uses the pull_request_target trigger', () => {
@@ -173,26 +137,11 @@ test('every Node setup step pins the same Node major version', () => {
 // workflow forces the exception to be removed in the same change.
 const KNOWN_PERSISTING_CHECKOUTS = new Set([]);
 
-function checkoutSteps(doc) {
-  return steps(doc).filter(({ step }) =>
-    step?.uses?.startsWith('actions/checkout@'),
-  );
-}
-
-function persistsCredentials(step) {
-  return step?.with?.['persist-credentials'] !== false;
-}
-
 test('every checkout step disables credential persistence', () => {
-  const offenders = [];
-  for (const { name, doc } of workflows) {
-    if (KNOWN_PERSISTING_CHECKOUTS.has(name)) continue;
-    for (const { jobName, index, step } of checkoutSteps(doc)) {
-      if (persistsCredentials(step)) {
-        offenders.push(`${name} (${jobName}, step ${index})`);
-      }
-    }
-  }
+  const offenders = credentialPersistingCheckouts(
+    workflows,
+    KNOWN_PERSISTING_CHECKOUTS,
+  );
   assert.deepEqual(
     offenders,
     [],
@@ -201,21 +150,11 @@ test('every checkout step disables credential persistence', () => {
 });
 
 test('the persist-credentials baseline retires itself', () => {
-  for (const name of KNOWN_PERSISTING_CHECKOUTS) {
-    const entry = workflows.find((workflow) => workflow.name === name);
-    assert.ok(
-      entry,
-      `${name} is listed as a known persist-credentials gap but no such workflow exists; remove the entry`,
-    );
-    const offending = checkoutSteps(entry.doc).filter(({ step }) =>
-      persistsCredentials(step),
-    );
-    assert.notEqual(
-      offending.length,
-      0,
-      `${name} now sets persist-credentials: false on every checkout; remove it from KNOWN_PERSISTING_CHECKOUTS so the gap cannot reopen`,
-    );
-  }
+  const problems = persistingCheckoutBaselineProblems(
+    workflows,
+    KNOWN_PERSISTING_CHECKOUTS,
+  );
+  assert.deepEqual(problems, [], problems.join('\n'));
 });
 
 // A job without `timeout-minutes` inherits GitHub's 6-hour default. The commands
@@ -233,25 +172,8 @@ test('the persist-credentials baseline retires itself', () => {
 // reopen silently.
 const KNOWN_UNBOUNDED_JOBS = new Set([]);
 
-// `timeout-minutes` is not accepted on a job that delegates to a reusable
-// workflow, so those jobs are outside this contract.
-function boundableJobs(doc) {
-  return jobs(doc).filter(([, job]) => !job?.uses);
-}
-
-function timeoutOf(job) {
-  return job?.['timeout-minutes'];
-}
-
 test('every workflow job bounds its runtime with timeout-minutes', () => {
-  const unbounded = [];
-  for (const { name, doc } of workflows) {
-    for (const [jobName, job] of boundableJobs(doc)) {
-      const label = `${name}: ${jobName}`;
-      if (KNOWN_UNBOUNDED_JOBS.has(label)) continue;
-      if (timeoutOf(job) === undefined) unbounded.push(label);
-    }
-  }
+  const unbounded = unboundedJobs(workflows, KNOWN_UNBOUNDED_JOBS);
   assert.deepEqual(
     unbounded,
     [],
@@ -259,69 +181,14 @@ test('every workflow job bounds its runtime with timeout-minutes', () => {
   );
 });
 
-// Describes why a declared timeout-minutes value is unusable, or null when the
-// value is fine. A quoted YAML scalar parses as a string and a fractional value
-// is silently floored by the runner, so neither is accepted; a value at or above
-// 360 restates the 6-hour default this contract exists to replace.
-function timeoutProblem(declared) {
-  if (typeof declared !== 'number') {
-    return `timeout-minutes must be a number, got ${JSON.stringify(declared)}`;
-  }
-  if (!Number.isInteger(declared) || declared <= 0) {
-    return `timeout-minutes must be a positive whole number of minutes, got ${declared}`;
-  }
-  if (declared >= 360) {
-    return `timeout-minutes of ${declared} is at or above the 6-hour default it exists to replace`;
-  }
-  return null;
-}
-
-test('timeoutProblem accepts usable values and names the fault in the rest', () => {
-  for (const usable of [1, 15, 30, 359]) {
-    assert.equal(timeoutProblem(usable), null, `${usable} should be usable`);
-  }
-  assert.match(timeoutProblem('30'), /must be a number/);
-  assert.match(timeoutProblem(null), /must be a number/);
-  assert.match(timeoutProblem(true), /must be a number/);
-  assert.match(timeoutProblem(2.5), /positive whole number/);
-  assert.match(timeoutProblem(0), /positive whole number/);
-  assert.match(timeoutProblem(-5), /positive whole number/);
-  assert.match(timeoutProblem(360), /6-hour default/);
-  assert.match(timeoutProblem(600), /6-hour default/);
-});
-
 test('every declared timeout-minutes is a positive number below the 6-hour default', () => {
-  const faults = [];
-  for (const { name, doc } of workflows) {
-    for (const [jobName, job] of boundableJobs(doc)) {
-      const declared = timeoutOf(job);
-      if (declared === undefined) continue;
-      const problem = timeoutProblem(declared);
-      if (problem) faults.push(`${name} (${jobName}): ${problem}`);
-    }
-  }
+  const faults = timeoutFaults(workflows);
   assert.deepEqual(faults, [], faults.join('\n'));
 });
 
 test('the timeout-minutes baseline retires itself', () => {
-  for (const label of KNOWN_UNBOUNDED_JOBS) {
-    const [name, jobName] = label.split(': ');
-    const entry = workflows.find((workflow) => workflow.name === name);
-    assert.ok(
-      entry,
-      `${label} is listed as a known timeout gap but ${name} does not exist; remove the entry`,
-    );
-    const job = boundableJobs(entry.doc).find(([id]) => id === jobName);
-    assert.ok(
-      job,
-      `${label} is listed as a known timeout gap but ${name} declares no boundable job '${jobName}'; remove the entry`,
-    );
-    assert.equal(
-      timeoutOf(job[1]),
-      undefined,
-      `${label} now declares timeout-minutes; remove it from KNOWN_UNBOUNDED_JOBS so the gap cannot reopen`,
-    );
-  }
+  const problems = timeoutBaselineProblems(workflows, KNOWN_UNBOUNDED_JOBS);
+  assert.deepEqual(problems, [], problems.join('\n'));
 });
 
 // A `*-latest` runner label is re-pointed by GitHub at a new image on its own
@@ -338,76 +205,8 @@ test('the timeout-minutes baseline retires itself', () => {
 // removed in the same change.
 const KNOWN_FLOATING_RUNNERS = new Set([]);
 
-// Only jobs that request a GitHub-hosted runner directly are in scope: a job
-// delegating to a reusable workflow declares no `runs-on`, and a self-hosted
-// label set is the repository's own choice of image rather than a floating one.
-function runnerLabels(job) {
-  const declared = job?.['runs-on'];
-  if (declared === undefined) return [];
-  if (typeof declared === 'string') return [declared];
-  if (Array.isArray(declared)) return declared;
-  if (Array.isArray(declared?.labels)) return declared.labels;
-  return [declared];
-}
-
-// Names the reason a runner label is unpinned, or null when the label is fine.
-// A non-string label cannot be checked for a version, and `self-hosted` opts the
-// job out of GitHub's image rotation entirely.
-function floatingRunnerProblem(labels) {
-  if (labels.some((label) => label === 'self-hosted')) return null;
-  const faults = labels.filter(
-    (label) => typeof label !== 'string' || /-latest$/.test(label),
-  );
-  if (faults.length === 0) return null;
-  return `pins no runner image version: ${faults.map((label) => JSON.stringify(label)).join(', ')}`;
-}
-
-test('runnerLabels normalises every form runs-on can take', () => {
-  assert.deepEqual(runnerLabels({}), []);
-  assert.deepEqual(runnerLabels(undefined), []);
-  assert.deepEqual(runnerLabels({ 'runs-on': 'ubuntu-24.04' }), [
-    'ubuntu-24.04',
-  ]);
-  assert.deepEqual(runnerLabels({ 'runs-on': ['self-hosted', 'linux'] }), [
-    'self-hosted',
-    'linux',
-  ]);
-  assert.deepEqual(
-    runnerLabels({ 'runs-on': { group: 'ci', labels: ['ubuntu-24.04'] } }),
-    ['ubuntu-24.04'],
-  );
-  // A group without labels names no image, so the raw value is surfaced and the
-  // contract below reports it rather than silently passing an empty list.
-  assert.deepEqual(runnerLabels({ 'runs-on': { group: 'ci' } }), [
-    { group: 'ci' },
-  ]);
-});
-
-test('floatingRunnerProblem accepts pinned runners and names the fault in the rest', () => {
-  assert.equal(floatingRunnerProblem(['ubuntu-24.04']), null);
-  assert.equal(floatingRunnerProblem(['windows-2022']), null);
-  assert.equal(floatingRunnerProblem(['self-hosted', 'linux']), null);
-  assert.equal(floatingRunnerProblem([]), null);
-  assert.match(floatingRunnerProblem(['ubuntu-latest']), /no runner image/);
-  assert.match(floatingRunnerProblem(['macos-latest']), /no runner image/);
-  assert.match(
-    floatingRunnerProblem(['ubuntu-24.04', 'windows-latest']),
-    /"windows-latest"/,
-  );
-  assert.match(floatingRunnerProblem([null]), /no runner image/);
-  assert.match(floatingRunnerProblem([{ group: 'ci' }]), /no runner image/);
-});
-
 test('every job pins a versioned runner image', () => {
-  const floating = [];
-  for (const { name, doc } of workflows) {
-    for (const [jobName, job] of jobs(doc)) {
-      const label = `${name}: ${jobName}`;
-      if (KNOWN_FLOATING_RUNNERS.has(label)) continue;
-      const problem = floatingRunnerProblem(runnerLabels(job));
-      if (problem) floating.push(`${label} ${problem}`);
-    }
-  }
+  const floating = floatingRunnerJobs(workflows, KNOWN_FLOATING_RUNNERS);
   assert.deepEqual(
     floating,
     [],
@@ -416,13 +215,7 @@ test('every job pins a versioned runner image', () => {
 });
 
 test('every non-reusable job declares a runner', () => {
-  const missing = [];
-  for (const { name, doc } of workflows) {
-    for (const [jobName, job] of jobs(doc)) {
-      if (job?.uses) continue;
-      if (runnerLabels(job).length === 0) missing.push(`${name}: ${jobName}`);
-    }
-  }
+  const missing = jobsWithoutRunner(workflows);
   assert.deepEqual(
     missing,
     [],
@@ -431,22 +224,9 @@ test('every non-reusable job declares a runner', () => {
 });
 
 test('the runner pinning baseline retires itself', () => {
-  for (const label of KNOWN_FLOATING_RUNNERS) {
-    const [name, jobName] = label.split(': ');
-    const entry = workflows.find((workflow) => workflow.name === name);
-    assert.ok(
-      entry,
-      `${label} is listed as a known floating-runner gap but ${name} does not exist; remove the entry`,
-    );
-    const job = jobs(entry.doc).find(([id]) => id === jobName);
-    assert.ok(
-      job,
-      `${label} is listed as a known floating-runner gap but ${name} declares no job '${jobName}'; remove the entry`,
-    );
-    assert.notEqual(
-      floatingRunnerProblem(runnerLabels(job[1])),
-      null,
-      `${label} now pins a versioned runner image; remove it from KNOWN_FLOATING_RUNNERS so the gap cannot reopen`,
-    );
-  }
+  const problems = floatingRunnerBaselineProblems(
+    workflows,
+    KNOWN_FLOATING_RUNNERS,
+  );
+  assert.deepEqual(problems, [], problems.join('\n'));
 });
