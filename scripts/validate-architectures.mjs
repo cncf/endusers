@@ -122,7 +122,7 @@ for (const page of irregular)
     path: page,
     severity: 'error',
     message:
-      'page must be a regular file; a symlinked page is published but cannot be gated',
+      'page must be a regular file; a symlinked page, or a symlinked directory of pages, is published but cannot be gated',
   });
 
 for (const page of pages) {
