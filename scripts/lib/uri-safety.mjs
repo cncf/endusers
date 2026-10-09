@@ -120,6 +120,33 @@ export function activeScheme(value) {
  */
 export function remoteTarget(value) {
   const normalized = normalizeUri(value);
+  // A scheme does not make a value absolute on its own: the parser only
+  // enters the relative states when the value's scheme equals the base
+  // document's. The site is served over https (`url` in
+  // docusaurus.config.js), so `https:local.png` is the path `local.png` on
+  // this origin and is correctly left alone below.
+  //
+  // `http:` is a *different* special scheme, so it never reaches those
+  // states. It goes to "special authority ignore slashes", which skips
+  // however many `/` or `\` follow -- including none -- and reads what comes
+  // next as the host. `http:evil.example/b.png`, `http:/evil.example/b.png`
+  // and `http:\evil.example/b.png` therefore load from evil.example exactly
+  // as `http://evil.example/b.png` does, while matching neither the `//`
+  // test nor the two-or-more-separator rewrite below.
+  //
+  // Being cleartext does not make the reference harmless: a browser that
+  // blocks the mixed-content subresource has already been told to, and one
+  // that auto-upgrades it to https still sends the request -- with the
+  // visitor's IP, User-Agent and Referer -- to the host named here.
+  //
+  // Lookahead: a value with nothing after the separators (`http:`, `http:/`,
+  // `http://`) has no host, and one continuing with `?` or `#` is not a URL
+  // the parser accepts, so neither fetches anything to report.
+  const insecureAuthority = /^http:[/\\]*(?=[^/\\?#])/.exec(normalized);
+  if (insecureAuthority) {
+    return `http://${normalized.slice(insecureAuthority[0].length)}`;
+  }
+
   // The URL parser treats `\` as `/` in the scheme and authority prefix of a
   // special-scheme URL, and the site is served over https, so every relative
   // reference resolves against a special-scheme base. `\\host`, `/\host`,
