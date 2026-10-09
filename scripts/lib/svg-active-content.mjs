@@ -121,8 +121,30 @@ function localName(name) {
   return (colon === -1 ? name : name.slice(colon + 1)).toLowerCase();
 }
 
-const PROLOG_DOCTYPE =
-  /^[\s\uFEFF]*(?:<\?[^]*?\?>\s*|<!--[^]*?-->\s*)*<!DOCTYPE/i;
+/**
+ * Whether a DOCTYPE follows the prolog (whitespace, processing instructions and
+ * comments). A linear walk rather than a pattern: nested lazy repetition over
+ * `<?...?>` and `<!--...-->` backtracks exponentially on adversarial input.
+ *
+ * @param {string} source
+ * @returns {boolean}
+ */
+function startsWithDoctype(source) {
+  let index = 0;
+  for (;;) {
+    while (/[\s\uFEFF]/.test(source[index] ?? '')) index += 1;
+    const closer = source.startsWith('<?', index)
+      ? '?>'
+      : source.startsWith('<!--', index)
+        ? '-->'
+        : null;
+    if (!closer) break;
+    const end = source.indexOf(closer, index + 2);
+    if (end === -1) return false;
+    index = end + closer.length;
+  }
+  return source.slice(index, index + 9).toUpperCase() === '<!DOCTYPE';
+}
 
 /**
  * Parse `source` as XML into a flat event list.
@@ -187,7 +209,7 @@ function parseXml(source) {
   // as markup; a browser reads it as part of the subset.
   if (
     !events.some((event) => event.type === 'doctype') &&
-    PROLOG_DOCTYPE.test(source)
+    startsWithDoctype(source)
   ) {
     errors.push('Unterminated DOCTYPE');
   }

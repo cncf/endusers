@@ -1356,3 +1356,22 @@ test('reads an unterminated escaped url( to the end of the value', () => {
     '</style></svg>';
   assert.equal(findRemoteReferences(svg).length, 1);
 });
+
+test('rejects an unterminated DOCTYPE after a prolog, in linear time', () => {
+  const body = '<svg xmlns="http://www.w3.org/2000/svg"/>';
+  assert.match(
+    findActiveContent(
+      '<?xml version="1.0"?>\n<!-- c -->\n<!DOCTYPE svg [\n' + body,
+    )[0],
+    /Unterminated DOCTYPE/,
+  );
+  // An unterminated prolog item is not a DOCTYPE, and must not hang.
+  const started = Date.now();
+  for (const unit of ['<?', '<!--']) {
+    assert.ok(findActiveContent(unit.repeat(20000) + body).length > 0);
+  }
+  for (const unit of ['?><?', '--><!--']) {
+    findActiveContent('<?' + unit.repeat(20000) + body);
+  }
+  assert.ok(Date.now() - started < 5000);
+});
