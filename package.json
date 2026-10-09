@@ -70,7 +70,7 @@
     "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
     "test:unit": "TZ=UTC node --test",
     "test:unit:coverage": "TZ=UTC node tests/tools/coverage-report.mjs",
-    "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 99 --check-source 100 --check-regions 95 --check-source-regions 99 --check-source-file-regions 97 --require-source-files",
+    "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 99 --check-source 100 --check-regions 95 --check-source-regions 99 --check-source-file-regions 97 --check-harness 100 --check-harness-regions 97 --check-harness-file-regions 93 --require-source-files",
     "test:e2e": "playwright test",
     "build:e2e:coverage": "npm run build:e2e:coverage:site && npm run build:e2e:coverage:fixtures",
     "build:e2e:coverage:site": "DOCUSAURUS_NO_PERSISTENT_CACHE=1 E2E_COVERAGE=1 npm run build:production",
@@ -89,6 +89,7 @@
     "@docusaurus/preset-classic": "3.10.2",
     "@mdx-js/react": "^3.1.1",
     "clsx": "^2.1.1",
+    "css-tree": "^2.3.1",
     "docusaurus-plugin-search-local": "^2.1.2",
     "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-gfm": "^3.1.0",
@@ -97,7 +98,8 @@
     "micromark-extension-mdxjs": "^3.0.0",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "sax": "^1.6.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

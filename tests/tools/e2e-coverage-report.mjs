@@ -6,7 +6,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import v8ToIstanbul from 'v8-to-istanbul';
-import { AnyMap, encodedMap } from '@jridgewell/trace-mapping';
+import { AnyMap, decodedMap, encodedMap } from '@jridgewell/trace-mapping';
 
 import { countsForScript, enumerateSourceFiles } from './coverage-report.mjs';
 import {
@@ -26,6 +26,34 @@ const REPORT_KIND = 'endusers.e2e.coverage-report';
 const ERROR_KIND = 'endusers.e2e.coverage-report-error';
 const SOURCE_MAPPING_URL = /(?:\/\/[#@]\s*sourceMappingURL=)(\S+)/u;
 const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
+
+// Residual uncovered regions, recorded so the file's region percentage is not
+// re-investigated every cycle (#1210). The guards in the four istanbul readers
+// below are reached directly by tests/e2e-coverage-report-readers.test.mjs,
+// which is what the test-only export beneath `getRegionCoverage` exists for.
+// What remains after that is unreachable from this module, and each entry is
+// named by function and expression rather than by line so the note does not go
+// stale when the file moves:
+//
+//   normalizeSourceMap  `map.resolvedSources ?? ...` -- whether `AnyMap`
+//       populates `resolvedSources` is private behaviour of the transitive
+//       dependency `@jridgewell/trace-mapping`, not something a caller sets.
+//   convertScript       `converter.branches ?? {}` and `converter.functions
+//       ?? {}`, and the `.map(([path]) => path)` arm that only runs when one
+//       of those is absent -- `v8-to-istanbul` always defines both after
+//       `load()`, so the fallback needs a shape the library does not emit.
+//   collectE2ECoverage  `converted.coverage ?? {}` -- `convertScript` returns
+//       `converter.toIstanbul()` on every path and that never returns nullish;
+//       and `if (lineCoverage.size === 0) continue`, which needs an istanbul
+//       object carrying branches but no statements at all.
+//   main                `error.message ?? String(error)` and `error.stack ??
+//       error` -- both need `main()` to reject with a non-`Error`, and nothing
+//       in its call graph throws one.
+//
+// Reachability was established empirically rather than by reading: probe tests
+// were written against each candidate and these are the ones no probe could
+// close. Raise the per-file region floor rather than this list when a probe
+// does land.
 
 class CoverageReportError extends Error {
   constructor(message, { runId = null, runStatus = null } = {}) {
@@ -70,6 +98,7 @@ function parseArgs(argv) {
     text: null,
     checkSource: null,
     checkSourceRegions: null,
+    checkSourceFileRegions: null,
     requireSourceFiles: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -85,6 +114,11 @@ function parseArgs(argv) {
       options.checkSourceRegions = parsePercent(
         argv[++index],
         '--check-source-regions',
+      );
+    else if (arg === '--check-source-file-regions')
+      options.checkSourceFileRegions = parsePercent(
+        argv[++index],
+        '--check-source-file-regions',
       );
     else if (arg === '--require-source-files')
       options.requireSourceFiles = true;
@@ -391,6 +425,71 @@ function isDriftedRegion(region, regions) {
   return false;
 }
 
+// The crossing fold above needs the drifted twin to be *recorded*. One shape
+// leaves no twin at all (#1202): when an artifact executes a span at the same
+// count as its enclosing code, V8 emits no deviation range over it, so the
+// artifact carries no region -- covered or zero -- for the span.
+// `useFocusTrap`'s cleanup runs once with the trigger unmounted and the
+// `previousFocus` arm executes uniformly with the arrow around it; that
+// artifact records lines 49-51 covered and no range in the cleanup at all,
+// while every truthy-path artifact of the same chunk records `51:25-51:41`
+// at zero. The zero survives the union because no covered region ever shares
+// (or crosses) its key.
+//
+// Absence only proves execution inside one script: V8 emits a zero range
+// wherever text inside executed code did not run, and one script has one
+// source map, so the same unexecuted text always lands on the same original
+// span. If some artifact of a script records a zero region and another
+// artifact of the *same script* covers the region's lines while recording no
+// zero on any of them, the second artifact executed that text -- had it been
+// skipped there too, the identical zero mapping would reappear. Across
+// scripts the inference fails: a different bundle maps the same skipped arm
+// to a different original span (#1066's drift), so a chunk that never
+// records the zero at these coordinates says nothing about them. The witness
+// is therefore required to come from a script that produced the zero itself.
+// The exclusion test is by line rather than exact span, the conservative
+// direction: a zero whose flattened range grew past the arm (adjacent
+// unexecuted text merges into one range) still disqualifies the witness.
+function zeroTouchesLines(zero, region) {
+  return zero.line <= region.endLine && zero.endLine >= region.line;
+}
+
+function regionKey(region) {
+  return [region.line, region.column, region.endLine, region.endColumn].join(
+    ':',
+  );
+}
+
+function isContradictedRegion(region, witnesses) {
+  if (region.count > 0) return false;
+  const key = regionKey(region);
+  const scripts = new Set();
+  for (const witness of witnesses) {
+    if (witness.zeroKeys.has(key)) scripts.add(witness.script);
+  }
+  if (scripts.size === 0) return false;
+  for (const witness of witnesses) {
+    if (!scripts.has(witness.script)) continue;
+    let sawExecutableLine = false;
+    let linesCovered = true;
+    for (let line = region.line; line <= region.endLine; line += 1) {
+      const count = witness.lines.get(line);
+      // Blank lines and comments carry no statement; they neither confirm
+      // nor contradict, exactly as in isPhantomRegion.
+      if (count === undefined) continue;
+      sawExecutableLine = true;
+      if (count <= 0) {
+        linesCovered = false;
+        break;
+      }
+    }
+    if (!sawExecutableLine || !linesCovered) continue;
+    if (witness.zeros.some((zero) => zeroTouchesLines(zero, region))) continue;
+    return true;
+  }
+  return false;
+}
+
 // A region is one branch location from the istanbul object convertScript
 // already builds -- the arm of a ternary, a short-circuit operand, a default
 // parameter -- data the line map cannot see because several of them share a
@@ -419,6 +518,21 @@ function getRegionCoverage(coverageData) {
   return regions;
 }
 
+// These four readers are exported for tests only. Every guard below them is a
+// defence against a malformed *istanbul* object, and istanbul objects are not
+// inputs to this module -- `convertScript` builds them from the V8 payload via
+// `v8-to-istanbul`. Reaching a guard from the public surface would require that
+// library to emit a shape it does not emit, so no capture artifact written at
+// the boundary can exercise one (#1210). Exporting the readers lets the guards
+// be driven directly with hand-built istanbul objects instead of being carried
+// as a permanent uncovered residual.
+export {
+  getLineCoverage,
+  getRegionCoverage,
+  isPhantomRegion,
+  isContradictedRegion,
+};
+
 // Captured scripts are resolved against each root in order -- the run's own
 // `scripts/` copies first, then the build directory. A script missing from one
 // root falls through to the next; a script missing from all of them still
@@ -432,6 +546,75 @@ async function locateScript(scriptRoots, pathname, url) {
   throw new Error(
     `coverage script not found in ${scriptRoots.join(', ')}: ${url}`,
   );
+}
+
+// `normalizeRanges` rewrites a V8 record into the coarsest partition it can:
+// one range per run of equal counts, however far that run reaches. In a bundle
+// that carries several `src/**` modules such a run routinely starts in one
+// module and ends in another, and v8-to-istanbul cannot place it. It picks the
+// original source of the range's *start* and then converts the range's end --
+// a position in a different source -- into that source's coordinates, which
+// lands past its last line, so `sliceRange` returns no lines and the range is
+// dropped without recording a branch anywhere (v8-to-istanbul applyCoverage,
+// `if (!lines.length) return`). Neither the starting module nor the module the
+// run actually ended in is credited, and because `attributedPaths` is built
+// from the branches that were recorded, every source of the script is then
+// skipped by the multi-source guard in `collectE2ECoverage`.
+//
+// Splitting each range at the generated offsets where the source map changes
+// source keeps every sub-range inside one original file, which is the only
+// shape v8-to-istanbul can attribute. A single-source map yields no boundaries
+// and no splits, so 1:1 bundles are byte-identical to before.
+function sourceBoundaryOffsets(map, mappedSource) {
+  const lineStarts = [0];
+  for (let index = 0; index < mappedSource.length; index += 1) {
+    if (mappedSource[index] === '\n') lineStarts.push(index + 1);
+  }
+  const boundaries = new Set();
+  let previousSource = null;
+  for (const [line, segments] of decodedMap(
+    new AnyMap(map),
+  ).mappings.entries()) {
+    for (const segment of segments) {
+      if (segment.length < 4) continue;
+      const source = segment[1];
+      if (previousSource !== null && source !== previousSource) {
+        const lineStart = lineStarts[line];
+        if (lineStart !== undefined) {
+          const offset = Math.min(lineStart + segment[0], mappedSource.length);
+          if (offset > 0) boundaries.add(offset);
+        }
+      }
+      previousSource = source;
+    }
+  }
+  return [...boundaries].sort((a, b) => a - b);
+}
+
+function splitRangeAtBoundaries(range, boundaries) {
+  const cuts = boundaries.filter(
+    (offset) => offset > range.startOffset && offset < range.endOffset,
+  );
+  if (cuts.length === 0) return [range];
+  const parts = [];
+  let start = range.startOffset;
+  for (const cut of cuts) {
+    // The sub-range must end *inside* the source it starts in: v8-to-istanbul
+    // abandons a range whose start and end map to different originals
+    // (source.js `if (start.source !== end.source) return {}`), and the first
+    // offset at a boundary already belongs to the next source. Ending one
+    // offset short keeps the end position on the source side of the cut; that
+    // offset is not lost, because it opens the following sub-range.
+    const end = cut - 1;
+    if (end > start) {
+      parts.push({ ...range, startOffset: start, endOffset: end });
+    }
+    start = cut;
+  }
+  if (range.endOffset > start) {
+    parts.push({ ...range, startOffset: start, endOffset: range.endOffset });
+  }
+  return parts.length === 0 ? [range] : parts;
 }
 
 async function convertScript(scriptCoverage, root, scriptRoots) {
@@ -471,13 +654,15 @@ async function convertScript(scriptCoverage, root, scriptRoots) {
     scriptCoverage,
     generatedSource.length,
   );
+  const boundaries = sourceBoundaryOffsets(map, mappedSource);
   for (const fn of normalizedFunctions) {
     fn.ranges = fn.ranges
       .map((range) => ({
         ...range,
         endOffset: Math.min(range.endOffset, mappedSource.length),
       }))
-      .filter((range) => range.startOffset < range.endOffset);
+      .filter((range) => range.startOffset < range.endOffset)
+      .flatMap((range) => splitRangeAtBoundaries(range, boundaries));
   }
   const usableFunctions = normalizedFunctions.filter(
     (fn) => fn.ranges.length > 0,
@@ -600,6 +785,7 @@ export async function collectE2ECoverage(
         const target = sources.get(relativePath) ?? {
           lines: new Map(),
           regions: new Map(),
+          witnesses: [],
         };
         for (const [line, count] of lineCoverage) {
           target.lines.set(line, Math.max(target.lines.get(line) ?? 0, count));
@@ -613,6 +799,20 @@ export async function collectE2ECoverage(
             target.regions.set(key, region);
           }
         }
+        // Each conversion is one artifact's view of one script: a complete
+        // partition of that text into executed and zero spans. Kept whole,
+        // with the script's identity, so isContradictedRegion can ask whether
+        // an artifact of the same script executed a region's lines without
+        // recording any zero on them.
+        const zeros = [...regionCoverage.values()].filter(
+          (region) => region.count <= 0,
+        );
+        target.witnesses.push({
+          script: scriptCoverage.url,
+          lines: lineCoverage,
+          zeros,
+          zeroKeys: new Set(zeros.map(regionKey)),
+        });
         sources.set(relativePath, target);
         unmapped.delete(relativePath);
       }
@@ -633,7 +833,8 @@ export async function collectE2ECoverage(
       const regionValues = allRegions.filter(
         (region) =>
           !isPhantomRegion(region, coverage.lines) &&
-          !isDriftedRegion(region, allRegions),
+          !isDriftedRegion(region, allRegions) &&
+          !isContradictedRegion(region, coverage.witnesses),
       );
       const regions = regionValues.length;
       const coveredRegions = regionValues.filter(
@@ -820,6 +1021,42 @@ export async function main(argv = process.argv.slice(2)) {
     throw new Error(
       `Source region coverage ${sourceRegionPercent.toFixed(2)}% is below the required ${options.checkSourceRegions}%.`,
     );
+  }
+  // --check-source-regions is an aggregate, and an aggregate hides where its
+  // own slack is spent: the gate is cleared by the whole of src/ together, so
+  // the regions one file loses are paid for by every other file that still has
+  // them. At the 95% the CI job asks for, a single small component may sit at
+  // nothing and the job stays green. The companion line gate does not catch
+  // that either, because a lost *region* need not be a lost *line* -- an
+  // unexecuted ternary arm or `??` fallback sits on a line the surrounding
+  // statement still covers. This applies the floor to each source file on its
+  // own, so a regression concentrated in one file fails on that file's name
+  // instead of being averaged away. tests/tools/coverage-report.mjs already
+  // gates the unit run this way; this is the same guarantee for the browser
+  // run.
+  if (options.checkSourceFileRegions !== null) {
+    // No vacuous-pass guard is needed here, unlike the unit reporter's
+    // equivalent: collectE2ECoverage above already refuses a run that
+    // attributed nothing to src/**, so this list can never be empty for the
+    // reason that guard exists to catch.
+    const below = report.sources.filter(
+      (row) =>
+        row.regions > 0 &&
+        row.regionPercent + 1e-9 < options.checkSourceFileRegions,
+    );
+    if (below.length > 0) {
+      throw new Error(
+        `${below.length} source file(s) fall below the required ` +
+          `${options.checkSourceFileRegions}% region coverage per file:\n` +
+          below
+            .map(
+              (row) =>
+                `  ${row.file} ${row.regionPercent.toFixed(2)}% ` +
+                `(${row.coveredRegions}/${row.regions} regions; uncovered at ${row.uncoveredRegions.join(' ')})`,
+            )
+            .join('\n'),
+      );
+    }
   }
   if (options.requireSourceFiles && report.missingSourceFiles.length > 0) {
     throw new Error(

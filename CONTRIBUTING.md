@@ -178,8 +178,12 @@ enough for a first contribution.
 3. Run `npm run test:unit:coverage:check` — the required "Validate repository"
    check runs this on every PR, and it fails the build if unit-test coverage
    drops below its thresholds (99% lines / 100% source / 95% regions / 99%
-   source regions). `npm run test:unit` alone skips the coverage gate, so a
-   green `test:unit` locally does not guarantee a green PR check.
+   source regions). The harness under `tests/tools/` is floored separately (100%
+   lines / 97% regions, and 93% regions per harness file): it is measured like
+   source but reported in its own `harness files` row, so a gap in the test
+   apparatus cannot be paid for out of `src/`'s slack. `npm run test:unit` alone
+   skips the coverage gate, so a green `test:unit` locally does not guarantee a
+   green PR check.
 4. Verify with `npm run build` before opening a PR. If your change touches
    pages, components, or navigation, also run the end-to-end suite — see
    [End-to-end tests](#end-to-end-tests) below.

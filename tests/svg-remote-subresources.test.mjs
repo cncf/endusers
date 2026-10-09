@@ -168,3 +168,50 @@ test('still reports a style attribute with its own wording', () => {
     ],
   );
 });
+
+// The tokenizer decodes escapes and XML decodes character references before
+// CSS is read, so none of these spellings hides a fetch.
+const CSS_SPELLINGS = [
+  ['an escaped url( name', 'a{background:\\75rl(https://evil.example/t.png)}'],
+  [
+    'an escaped name before a string',
+    'a{background:ur\\6c("https://evil.example/t.png")}',
+  ],
+  [
+    'XML character references in the function name',
+    'a{background:u&#114;l(https://evil.example/t.png)}',
+  ],
+  [
+    'a single-quoted string inside a double-quoted attribute',
+    "a{background:url('https://evil.example/t.png')}",
+  ],
+];
+
+for (const [label, css] of CSS_SPELLINGS) {
+  test(`reports a remote reference written with ${label}`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><style>${css}</style></svg>`;
+    assert.equal(findRemoteReferences(svg).length, 1, css);
+  });
+}
+
+test('reports a remote reference in a style attribute written with character references', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg">' +
+    '<rect style="background:ur&#x6c;(https://evil.example/e.png)"/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a style attribute: https://evil.example/e.png',
+  ]);
+});
+
+test('reports srcset, poster and background targets', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject>' +
+    '<img srcset="/ok.png 1x, https://evil.example/1.png 2x"/>' +
+    '<video poster="https://evil.example/p.png"/>' +
+    '<body background="//evil.example/b.png"/></foreignObject></svg>';
+  assert.deepEqual(findRemoteReferences(svg).sort(), [
+    'references a remote resource in <body> background: //evil.example/b.png',
+    'references a remote resource in <img> srcset: https://evil.example/1.png',
+    'references a remote resource in <video> poster: https://evil.example/p.png',
+  ]);
+});

@@ -4,20 +4,29 @@
  *
  * Architecture documentation is imported verbatim from a third-party
  * repository, and Docusaurus treats `.md` as MDX, so raw HTML/JSX in an
- * imported body is rendered into the published site rather than escaped.  This
+ * imported body is rendered into the published site rather than escaped. This
  * helper reports the constructs that can execute or load remote code so a
  * validator can fail the build before such a body ships.
  *
- * MDX evaluates a braced expression as JavaScript, so `{fetch(...)}` in an
- * imported body is live code and not prose; every `{` is therefore a finding
- * unless it is one of the inert string-literal attributes the importer emits
- * itself.  The check is deliberately fail-closed: literal braces in upstream
- * prose are reported rather than assumed harmless.
+ * The body is parsed with the grammar Docusaurus compiles pages with (MDX plus
+ * GFM) and the resulting tree is inspected, rather than the text being
+ * pattern-matched. What counts as code, which backticks pair, where a JSX tag
+ * ends and how a link destination is decoded are therefore decided by the same
+ * parser the site uses, not by an approximation of it. Text the parser rejects
+ * is a finding: Docusaurus cannot compile it either, and a scan that cannot
+ * read a document cannot vouch for it.
  *
- * Scheme detection normalizes each line before testing it, because CommonMark
- * decodes character references in a link destination: `java&#115;cript:` is a
- * live `javascript:` href by the time the page renders.
+ * MDX evaluates a braced expression as JavaScript, so any expression node is a
+ * finding unless it is one of the inert string-literal attributes the importer
+ * emits itself.
  */
+
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { mdxjs } from 'micromark-extension-mdxjs';
+import { mdxFromMarkdown } from 'mdast-util-mdx';
+import { gfm } from 'micromark-extension-gfm';
+import { gfmFromMarkdown } from 'mdast-util-gfm';
+import { activeScheme } from './uri-safety.mjs';
 
 /** Inert inline elements that carry no script, network or layout capability. */
 const ALLOWED_ELEMENTS = new Set([
@@ -45,302 +54,42 @@ const ALLOWED_IMPORT =
 /**
  * The one expression form the importer itself emits: an attribute whose value
  * is a single JSON string literal, as produced by `jsxAttribute`
- * (`scripts/lib/jsx-attributes.mjs`).  The pattern requires the closing brace
- * to follow the closing quote immediately, so the braces can enclose nothing
- * but the literal -- `{"a" + fetch(x)}` does not match.  An expression whose
- * entire body is a string literal evaluates to that string and has no call,
- * member access or identifier reference available to it, so it is inert
- * wherever it appears.
+ * (`scripts/lib/jsx-attributes.mjs`). An expression whose entire body is a
+ * string literal evaluates to that string and has no call, member access or
+ * identifier reference available to it, so it is inert wherever it appears.
  */
-const ALLOWED_ATTRIBUTE_EXPRESSION =
-  /(?<=\s)[A-Za-z_$][A-Za-z0-9_$-]*=\{"(?:[^"\\]|\\.)*"\}/g;
+const STRING_LITERAL_EXPRESSION = /^"(?:[^"\\\n]|\\.)*"$/;
 
-/**
- * Any remaining `{` opens an MDX expression, which is evaluated JavaScript.
- */
-const EXPRESSION_PATTERN = /\{/;
+const EVENT_HANDLER_ATTRIBUTE = /^on[a-z]+$/i;
 
-const ELEMENT_PATTERN = /<\/?([A-Za-z][A-Za-z0-9._-]*)/g;
-const EVENT_HANDLER_PATTERN = /\bon[a-z]{3,}\s*=/gi;
-const DANGEROUS_URL_PATTERN = /(?:javascript|vbscript):|data:text\/html/gi;
-const ESM_PATTERN = /^\s*(?:import|export)\s/;
+/** Link-like nodes whose `url` a browser navigates to or loads. */
+const URL_NODES = new Set(['link', 'definition', 'image']);
 
-/** The character references a scheme can hide a character behind by name. */
-const NAMED_ENTITIES = {
-  colon: ':',
-  tab: '\t',
-  newline: '\n',
-  lf: '\n',
-  sol: '/',
-  amp: '&',
+const parserOptions = {
+  extensions: [mdxjs(), gfm()],
+  mdastExtensions: [mdxFromMarkdown(), gfmFromMarkdown()],
 };
 
 /**
- * Decode the HTML character references a scheme may hide behind.  MDX is
- * CommonMark, which decodes references in a link destination, so
- * `[x](java&#115;cript:alert(1))` is a live `javascript:` href by the time it
- * renders and a raw substring test never sees it.
+ * The value an inert string-literal expression evaluates to, or null when the
+ * expression is anything else.
  *
- * @param {string} value
- * @returns {string}
+ * @param {string} expression
+ * @returns {string | null}
  */
-function decodeEntities(value) {
-  return value
-    .replace(/&#x([0-9a-f]+);?/gi, (match, hex) => {
-      const code = Number.parseInt(hex, 16);
-      return Number.isFinite(code) && code <= 0x10ffff
-        ? String.fromCodePoint(code)
-        : match;
-    })
-    .replace(/&#(\d+);?/g, (match, dec) => {
-      const code = Number.parseInt(dec, 10);
-      return Number.isFinite(code) && code <= 0x10ffff
-        ? String.fromCodePoint(code)
-        : match;
-    })
-    .replace(
-      /&([a-z]+);?/gi,
-      (match, name) => NAMED_ENTITIES[name.toLowerCase()] ?? match,
-    );
-}
-
-/**
- * Collapse a line to the form a browser's URL parser sees.  Control characters
- * (tab included) go because a URL parser ignores them; the space character is
- * deliberately kept, since a browser does not read `java script:` as a scheme
- * and removing it would flag ordinary prose.
- *
- * @param {string} line
- * @returns {string}
- */
-function normalizeSchemes(line) {
-  // Decode twice: some generators emit double-encoded references (&amp;#58;).
-  // eslint-disable-next-line no-control-regex
-  return decodeEntities(decodeEntities(line)).replace(
-    // eslint-disable-next-line no-control-regex
-    /[\u0000-\u001f\u007f]+/g,
-    '',
-  );
-}
-
-/**
- * Replaces fenced code blocks and inline code spans with blank padding.  MDX
- * does not evaluate either, and keeping the line count and line lengths
- * stable lets findings report accurate line numbers.
- *
- * Both passes are written to agree with the CommonMark/MDX parser Docusaurus
- * actually compiles the body with, rather than approximating it with a
- * single regular expression -- see #611 for the exploit a mismatch allowed.
- *
- * @param {string} markdown
- * @returns {string}
- */
-function blankCodeSpans(markdown) {
-  return blankInlineSpans(blankFences(markdown));
-}
-
-/**
- * Blank fenced code blocks by walking lines and tracking fence state, rather
- * than matching the whole block with one lazy regex. A closing fence must use
- * the same character as the opener, be at least as long, and carry nothing
- * but trailing whitespace after it; a fence that is never closed runs to EOF.
- *
- * Both the opener and closer must be indented no more than three spaces
- * (CommonMark). A line indented four or more spaces, or by a tab (which
- * advances to the next four-column stop), forms no fence at all -- it is an
- * indented code block instead, a single-line construct that does not absorb
- * the lines after it. Matching it as a fence opener would blank every
- * subsequent line up to the next fence-shaped line unscanned, hiding live
- * content the real MDX compiler renders (see #689).
- *
- * @param {string} markdown
- * @returns {string}
- */
-function blankFences(markdown) {
-  const lines = markdown.split('\n');
-  const output = [];
-  let fenceChar = null;
-  let fenceLength = 0;
-
-  for (const line of lines) {
-    if (fenceChar) {
-      output.push(' '.repeat(line.length));
-      const closer = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
-      if (
-        closer &&
-        closer[1][0] === fenceChar &&
-        closer[1].length >= fenceLength
-      ) {
-        fenceChar = null;
-        fenceLength = 0;
-      }
-      continue;
-    }
-
-    const opener = line.match(/^ {0,3}(`{3,}|~{3,})([^\n]*)$/);
-    // A backtick fence's info string may not contain a backtick (CommonMark);
-    // a line like "```<script>x</script>`" therefore opens no fence at all --
-    // it is a paragraph, and the element in it is live. Treating it as a
-    // fence would blank it (and everything after it) unscanned, which is a
-    // bypass, not a false positive. A tilde fence has no such restriction.
-    if (opener && !(opener[1][0] === '`' && opener[2].includes('`'))) {
-      fenceChar = opener[1][0];
-      fenceLength = opener[1].length;
-      output.push(' '.repeat(line.length));
-      continue;
-    }
-
-    output.push(line);
+function literalValue(expression) {
+  const trimmed = expression.trim();
+  if (!STRING_LITERAL_EXPRESSION.test(trimmed)) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
   }
-
-  return output.join('\n');
 }
 
-/**
- * Line beginnings that start a new block and so end the paragraph before
- * them, taking any unclosed inline code span with it.  CommonMark parses
- * inlines one leaf block at a time, so a backtick in the paragraph above
- * cannot pair with a backtick in the block below -- the real compiler leaves
- * both as literal text and renders everything between them.
- *
- * A blank line ends a paragraph; the rest are the constructs that interrupt
- * one.  Code fences are absent because `blankFences` has already replaced
- * every fence line with spaces by the time this runs, so a real fence is
- * matched as a blank line.  Ordered lists are matched at any start number
- * even though CommonMark only lets `1.` interrupt a paragraph, and every
- * line-initial `<` is matched even though only HTML blocks of types 1-6
- * interrupt one: stopping the search early can only leave more text scanned,
- * which is the fail-closed direction this module requires, while missing a
- * stop hides live content.
- */
-const BLOCK_INTERRUPT_PATTERNS = [
-  /^[ \t]*$/,
-  /^ {0,3}#{1,6}(?:[ \t]|$)/,
-  /^ {0,3}>/,
-  /^ {0,3}[-+*](?:[ \t]|$)/,
-  /^ {0,3}\d{1,9}[.)](?:[ \t]|$)/,
-  /^ {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})$/,
-  /^ {0,3}</,
-];
-
-/**
- * Whether a line begins a block, so an inline code span opened above it
- * cannot close on or after it.
- *
- * @param {string} line
- * @returns {boolean}
- */
-function startsNewBlock(line) {
-  return BLOCK_INTERRUPT_PATTERNS.some((pattern) => pattern.test(line));
-}
-
-/**
- * Blank inline code spans by scanning for a backtick run and searching for a
- * closing run of *exactly* the same length -- the CommonMark rule a single
- * `` `+...`+ `` regex cannot express, because it accepts mismatched run
- * lengths and forms a span that does not exist.
- *
- * The closer search crosses a single newline, because a CommonMark inline
- * code span does too: `` `a\nb` `` is one span, not an unterminated backtick
- * on each line. It stops at the first line that begins a new block, because
- * inline parsing does not cross a block boundary -- a backtick before the
- * boundary cannot close after it, so searching past it would blank live
- * content in between. Stopping only at a blank line (the previous behaviour)
- * let an unclosed backtick at the end of one block pair with a backtick in
- * the next one, and every construct between them -- a `<script>` element, an
- * MDX expression, a `javascript:` href -- was blanked as if it were code and
- * passed the gate unscanned.
- *
- * Stopping the search at the newline (an earlier behaviour) paired the wrong
- * backticks: it matched the opener against a later run on the second line
- * while the real compiler matched it against the run that closes the span
- * across the break. Everything the real span did not cover was then blanked as
- * if it were code, hiding live MDX (an expression, a JSX element, a
- * `javascript:` href) that sits between two genuine multi-line spans from
- * every scan below.
- *
- * Newlines inside a blanked span are preserved so the later line-based scans
- * and finding line numbers stay aligned with the original text.
- *
- * @param {string} text
- * @returns {string}
- */
-function blankInlineSpans(text) {
-  let result = '';
-  let i = 0;
-
-  while (i < text.length) {
-    const ch = text[i];
-
-    if (ch !== '`') {
-      result += ch;
-      i += 1;
-      continue;
-    }
-
-    let openEnd = i;
-    while (text[openEnd] === '`') openEnd += 1;
-    const openLength = openEnd - i;
-
-    let k = openEnd;
-    let closeStart = -1;
-    let closeEnd = -1;
-    while (k < text.length) {
-      // A new block ends the paragraph, and with it any unclosed code span:
-      // the real parser cannot pair a backtick across a block boundary, so
-      // neither can this.
-      if (text[k] === '\n') {
-        const lineEnd = text.indexOf('\n', k + 1);
-        const nextLine = text.slice(
-          k + 1,
-          lineEnd === -1 ? text.length : lineEnd,
-        );
-        if (startsNewBlock(nextLine)) break;
-      }
-      if (text[k] === '`') {
-        let runEnd = k;
-        while (text[runEnd] === '`') runEnd += 1;
-        if (runEnd - k === openLength) {
-          closeStart = k;
-          closeEnd = runEnd;
-          break;
-        }
-        k = runEnd;
-        continue;
-      }
-      k += 1;
-    }
-
-    if (closeStart === -1) {
-      // No closing run of matching length before the paragraph ends: not a
-      // code span, so emit the opening backticks as literal text and keep
-      // scanning from just past them.
-      result += text.slice(i, openEnd);
-      i = openEnd;
-      continue;
-    }
-
-    result += text.slice(i, closeEnd).replace(/[^\n]/g, ' ');
-    i = closeEnd;
-  }
-
-  return result;
-}
-
-/**
- * Neutralize the braces of the importer's own attribute expressions so the
- * expression scan does not flag generated markup.  Only the `{` and `}`
- * characters are replaced, by a space each: the quoted value between them is
- * left in place so the scheme, handler and element scans still read it, and
- * the line keeps its length so findings keep accurate line numbers.
- *
- * @param {string} text
- * @returns {string}
- */
-function blankAllowedExpressions(text) {
-  return text.replace(ALLOWED_ATTRIBUTE_EXPRESSION, (match) =>
-    match.replace(/[{}]/g, ' '),
-  );
+function eachNode(node, visitor) {
+  visitor(node);
+  for (const child of node.children ?? []) eachNode(child, visitor);
 }
 
 /**
@@ -351,61 +100,65 @@ function blankAllowedExpressions(text) {
  *   per finding, ordered by line.
  */
 export function findActiveContent(markdown) {
+  const text = String(markdown ?? '');
+  const lines = text.split('\n');
   const findings = [];
-  const scannable = blankAllowedExpressions(
-    blankCodeSpans(String(markdown ?? '')),
-  );
-  const lines = scannable.split('\n');
-
-  lines.forEach((line, index) => {
-    const number = index + 1;
-    const snippet = line.trim().slice(0, 120);
-
-    for (const match of line.matchAll(ELEMENT_PATTERN)) {
-      const name = match[1];
-      const isAllowed =
-        name === ALLOWED_COMPONENT || ALLOWED_ELEMENTS.has(name.toLowerCase());
-      if (!isAllowed)
-        findings.push({
-          line: number,
-          reason: `disallowed element <${name}>`,
-          snippet,
-        });
-    }
-
-    if (EVENT_HANDLER_PATTERN.test(line))
-      findings.push({
-        line: number,
-        reason: 'event handler attribute',
-        snippet,
-      });
-    EVENT_HANDLER_PATTERN.lastIndex = 0;
-
-    const dangerous = [line, normalizeSchemes(line)].some((candidate) => {
-      DANGEROUS_URL_PATTERN.lastIndex = 0;
-      return DANGEROUS_URL_PATTERN.test(candidate);
+  const report = (line, reason) =>
+    findings.push({
+      line,
+      reason,
+      snippet: lines[line - 1].trim().slice(0, 120),
     });
-    DANGEROUS_URL_PATTERN.lastIndex = 0;
-    if (dangerous)
-      findings.push({
-        line: number,
-        reason: 'script-capable URL scheme',
-        snippet,
-      });
 
-    if (ESM_PATTERN.test(line) && line.trim() !== ALLOWED_IMPORT)
-      findings.push({
-        line: number,
-        reason: 'unexpected ESM statement',
-        snippet,
-      });
+  let tree;
+  try {
+    tree = fromMarkdown(text, parserOptions);
+  } catch (error) {
+    report(error.line ?? 1, `MDX parse error (${error.reason})`);
+    return findings;
+  }
 
-    if (EXPRESSION_PATTERN.test(line))
-      findings.push({
-        line: number,
-        reason: 'MDX expression',
-        snippet,
-      });
+  eachNode(tree, (node) => {
+    const line = node.position.start.line;
+
+    if (
+      node.type === 'mdxJsxFlowElement' ||
+      node.type === 'mdxJsxTextElement'
+    ) {
+      const name = node.name ?? '';
+      const allowed =
+        name === ALLOWED_COMPONENT || ALLOWED_ELEMENTS.has(name.toLowerCase());
+      if (!allowed) report(line, `disallowed element <${name}>`);
+
+      for (const attribute of node.attributes) {
+        if (attribute.type === 'mdxJsxExpressionAttribute') {
+          report(line, 'MDX expression');
+          continue;
+        }
+        if (EVENT_HANDLER_ATTRIBUTE.test(attribute.name)) {
+          report(line, 'event handler attribute');
+        }
+        let value = attribute.value;
+        if (value && typeof value === 'object') {
+          value = literalValue(value.value);
+          if (value === null) report(line, 'MDX expression');
+        }
+        if (typeof value === 'string' && activeScheme(value)) {
+          report(line, 'script-capable URL scheme');
+        }
+      }
+    } else if (
+      node.type === 'mdxFlowExpression' ||
+      node.type === 'mdxTextExpression'
+    ) {
+      report(line, 'MDX expression');
+    } else if (node.type === 'mdxjsEsm') {
+      if (node.value.trim() !== ALLOWED_IMPORT) {
+        report(line, 'unexpected ESM statement');
+      }
+    } else if (URL_NODES.has(node.type) && activeScheme(node.url)) {
+      report(line, 'script-capable URL scheme');
+    }
   });
 
   const seen = new Set();

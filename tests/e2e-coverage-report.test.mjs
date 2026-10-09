@@ -403,56 +403,69 @@ test('a zero-count region spanning only covered lines is not counted against the
 // for (#1094, #1097). Enclosure is therefore not evidence of drift.
 //
 // The two artifacts below put one zero region, `1:6:1:12`, against three
-// covered regions that each enclose it in a different way: `1:0:3:12` from the
-// *other* artifact (whole-span containment across artifacts), `1:0:1:12` (the
-// same line), and `1:6:3:12` (the same start column, differing end -- the
-// shape #1066 proposed keying away). It survives all three.
+// covered regions that each enclose it in a different way: `1:0:3:12` from a
+// *different script* compiled from the same file (whole-span containment
+// across chunks -- RadarReports' dead arms are enclosed exactly this way by
+// the chunks that never record their zero), `1:0:1:12` (the same line), and
+// `1:6:3:12` (the same start column, differing end -- the shape #1066
+// proposed keying away). It survives all three. The enclosing script must be
+// a different chunk here: an artifact of the *same* script that covers the
+// arm's lines while recording no zero over them is V8's way of saying the arm
+// executed, which is the contradiction fold's evidence, pinned separately
+// below.
 test('a single-line zero-count region survives a covered region that encloses it', async () => {
   const fixture = await fixtureRun();
   try {
     const lines = ['const a = 1;', 'const b = 2;', 'const c = 3;'];
     const source = `${lines.join('\n')}\n`;
-    const scriptText = `${source}\n//# sourceMappingURL=app.js.map\n`;
     const original = join(fixture.root, 'src/components/Example/index.js');
     await mkdir(join(fixture.root, 'src/components/Example'), {
       recursive: true,
     });
     await writeFile(original, source);
-    await writeFile(join(fixture.buildDir, 'assets/js/app.js'), scriptText);
-    await writeFile(
-      join(fixture.buildDir, 'assets/js/app.js.map'),
-      JSON.stringify({
-        version: 3,
-        file: 'app.js',
-        sources: ['webpack://endusers/./src/components/Example/index.js'],
-        sourcesContent: [source],
-        names: [],
-        // Line 1 carries a second mapping at column 6 so a block opening and
-        // closing inside it resolves to columns of its own instead of
-        // snapping back to the start of the line. Without that the zero
-        // region would be a zero-width span and prove nothing about columns.
-        mappings: [
-          `${[vlq(0), vlq(0), vlq(0), vlq(0)].join('')},${[
-            vlq(6),
-            vlq(0),
-            vlq(0),
-            vlq(6),
-          ].join('')}`,
-          `${[vlq(0), vlq(0), vlq(1), vlq(-6)].join('')}`,
-          `${[vlq(0), vlq(0), vlq(1), vlq(0)].join('')}`,
-        ].join(';'),
-      }),
-    );
+    // Two chunks carry the same file, as the real bundle splits do. Line 1
+    // carries a second mapping at column 6 so a block opening and closing
+    // inside it resolves to columns of its own instead of snapping back to
+    // the start of the line. Without that the zero region would be a
+    // zero-width span and prove nothing about columns.
+    const mappings = [
+      `${[vlq(0), vlq(0), vlq(0), vlq(0)].join('')},${[
+        vlq(6),
+        vlq(0),
+        vlq(0),
+        vlq(6),
+      ].join('')}`,
+      `${[vlq(0), vlq(0), vlq(1), vlq(-6)].join('')}`,
+      `${[vlq(0), vlq(0), vlq(1), vlq(0)].join('')}`,
+    ].join(';');
+    for (const name of ['app.js', 'app2.js']) {
+      await writeFile(
+        join(fixture.buildDir, `assets/js/${name}`),
+        `${source}\n//# sourceMappingURL=${name}.map\n`,
+      );
+      await writeFile(
+        join(fixture.buildDir, `assets/js/${name}.map`),
+        JSON.stringify({
+          version: 3,
+          file: name,
+          sources: ['webpack://endusers/./src/components/Example/index.js'],
+          sourcesContent: [source],
+          names: [],
+          mappings,
+        }),
+      );
+    }
+    const scriptText = `${source}\n//# sourceMappingURL=app.js.map\n`;
 
-    // One page runs the whole script and nothing else, contributing a covered
-    // region that spans every line of the file.
+    // One page runs the whole of the *other* chunk and nothing else,
+    // contributing a covered region that spans every line of the file.
     await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
       schemaVersion: 1,
       kind: 'endusers.playwright.v8-coverage',
       runId: 'run-1',
       result: [
         {
-          url: 'http://localhost:3000/assets/js/app.js',
+          url: 'http://localhost:3000/assets/js/app2.js',
           scriptId: '1',
           functions: [
             {
@@ -627,6 +640,159 @@ test('a zero-count region crossed by a covered one is treated as source-map drif
     // The drifted half is dropped, not counted as covered: the denominator
     // loses it too, so the file cannot be credited for a region nobody saw.
     assert.equal(entry.regions, 3);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+// Drift needs the twin *recorded*; one shape leaves none (#1202). V8 emits a
+// deviation range only where a count differs from the enclosing one, so an
+// artifact that executes a branch arm at the same count as the code around it
+// carries no range over the arm at all -- `useFocusTrap`'s `previousFocus`
+// arm runs exactly like that on the trigger-unmounted page, while every
+// truthy-path artifact of the same chunk records `51:25-51:41` at zero. The
+// zero then survives the union with no covered region sharing or crossing its
+// key. The silence is still proof, but only within one script: one script has
+// one source map, so had the arm been skipped in the silent artifact too, the
+// identical zero mapping would have reappeared. These three tests pin the
+// fold and both edges of its evidence requirement.
+//
+// Shared fixture shape: one source file carried by one chunk, line 1 mapped
+// at columns 0, 3 and 6 so distinct spans inside it resolve to distinct
+// original columns. Artifacts differ only in their V8 ranges.
+async function contradictionFixture(buildArtifacts) {
+  const fixture = await fixtureRun();
+  const lines = ['const a = 1;', 'const b = 2;', 'const c = 3;'];
+  const source = `${lines.join('\n')}\n`;
+  const scriptText = `${source}\n//# sourceMappingURL=app.js.map\n`;
+  await mkdir(join(fixture.root, 'src/components/Example'), {
+    recursive: true,
+  });
+  await writeFile(
+    join(fixture.root, 'src/components/Example/index.js'),
+    source,
+  );
+  await writeFile(join(fixture.buildDir, 'assets/js/app.js'), scriptText);
+  await writeFile(
+    join(fixture.buildDir, 'assets/js/app.js.map'),
+    JSON.stringify({
+      version: 3,
+      file: 'app.js',
+      sources: ['webpack://endusers/./src/components/Example/index.js'],
+      sourcesContent: [source],
+      names: [],
+      mappings: [
+        [
+          [vlq(0), vlq(0), vlq(0), vlq(0)].join(''),
+          [vlq(3), vlq(0), vlq(0), vlq(3)].join(''),
+          [vlq(3), vlq(0), vlq(0), vlq(3)].join(''),
+        ].join(','),
+        [vlq(0), vlq(0), vlq(1), vlq(-6)].join(''),
+        [vlq(0), vlq(0), vlq(1), vlq(0)].join(''),
+      ].join(';'),
+    }),
+  );
+  const artifacts = buildArtifacts(scriptText.length);
+  for (const [index, { url, ranges }] of artifacts.entries()) {
+    await writeCoverageArtifact(fixture.runDir, `worker-0-page-${index}`, {
+      schemaVersion: 1,
+      kind: 'endusers.playwright.v8-coverage',
+      runId: 'run-1',
+      result: [
+        {
+          url: url ?? 'http://localhost:3000/assets/js/app.js',
+          scriptId: String(index + 1),
+          functions: [{ functionName: '', isBlockCoverage: true, ranges }],
+        },
+      ],
+    });
+  }
+  await sealCoverageRun(fixture.runDir, 'passed');
+  return fixture;
+}
+
+test('a zero-count region contradicted by a silent artifact of its own script is folded', async () => {
+  // Page 0 skips the arm at columns 6-10 and records the zero; page 1 runs
+  // the whole script uniformly, so V8 emits no range over the arm at all.
+  // Same script, lines covered, no zero anywhere near it: the arm executed.
+  const fixture = await contradictionFixture((length) => [
+    {
+      ranges: [
+        { startOffset: 0, endOffset: length, count: 1 },
+        { startOffset: 6, endOffset: 10, count: 0 },
+      ],
+    },
+    { ranges: [{ startOffset: 0, endOffset: length, count: 1 }] },
+  ]);
+  try {
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    const [entry] = report.sources;
+    assert.equal(entry.file, 'src/components/Example/index.js');
+    assert.deepEqual(entry.uncoveredRegions, []);
+    assert.equal(entry.regions, entry.coveredRegions);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a zero-count region recorded by every artifact of its script survives', async () => {
+  // Both pages skip the arm -- the genuinely dead shape (RadarReports'
+  // empty-corpus arms). No artifact of the chunk is silent about it, so
+  // nothing contradicts the zero.
+  const skipArm = (length) => [
+    { startOffset: 0, endOffset: length, count: 1 },
+    { startOffset: 6, endOffset: 10, count: 0 },
+  ];
+  const fixture = await contradictionFixture((length) => [
+    { ranges: skipArm(length) },
+    { ranges: skipArm(length) },
+  ]);
+  try {
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    const [entry] = report.sources;
+    assert.deepEqual(entry.uncoveredRegions, [1]);
+    assert.equal(entry.regions - entry.coveredRegions, 1);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a witness with any zero touching the region lines does not contradict it', async () => {
+  // Page 1 covers the arm's line but skips the *neighbouring* arm at columns
+  // 3-6 on the same line. A zero that near the region means the witness was
+  // on a path where flattening could have merged or shifted spans, so it is
+  // disqualified -- both zeros survive, neither contradicts the other.
+  const fixture = await contradictionFixture((length) => [
+    {
+      ranges: [
+        { startOffset: 0, endOffset: length, count: 1 },
+        { startOffset: 6, endOffset: 10, count: 0 },
+      ],
+    },
+    {
+      ranges: [
+        { startOffset: 0, endOffset: length, count: 1 },
+        { startOffset: 3, endOffset: 6, count: 0 },
+      ],
+    },
+  ]);
+  try {
+    const report = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.equal(report.status, 'ok');
+    const [entry] = report.sources;
+    assert.deepEqual(entry.uncoveredRegions, [1]);
+    assert.equal(entry.regions - entry.coveredRegions, 2);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }

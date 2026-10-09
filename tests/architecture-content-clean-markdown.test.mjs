@@ -79,3 +79,62 @@ test('a protocol-relative plain link is left alone', () => {
     '[docs](//example.com/x)',
   );
 });
+
+test('demotes a reference-style remote image to a plain link', () => {
+  assert.equal(
+    cleanMarkdown('![beacon][b]\n\n[b]: https://evil.example/b.png', 'demo'),
+    '[beacon](https://evil.example/b.png)\n\n[b]: https://evil.example/b.png',
+  );
+  assert.equal(
+    cleanMarkdown('![beacon][]\n\n[beacon]: //evil.example/b.png', 'demo'),
+    '[beacon](//evil.example/b.png)\n\n[beacon]: //evil.example/b.png',
+  );
+});
+
+test('rebases a reference-style local image and drops a non-http scheme', () => {
+  assert.equal(
+    cleanMarkdown('![d][x]\n\n[x]: images/d.png', 'demo'),
+    '![d](/img/architectures/demo/d.png)\n\n[x]: images/d.png',
+  );
+  assert.equal(cleanMarkdown('![hi](javascript:alert(1))', 'demo'), 'hi');
+});
+
+test('reduces a remote image inside a link to its alt text', () => {
+  assert.equal(
+    cleanMarkdown(
+      '[![logo](https://evil.example/l.png)](https://example.com)',
+      'demo',
+    ),
+    '[logo](https://example.com)',
+  );
+});
+
+test('does not touch an image written inside a code span or fence', () => {
+  const body =
+    'Use `![x](https://evil.example/b.png)` here.\n\n```\n![x](https://evil.example/b.png)\n```';
+  assert.equal(cleanMarkdown(body, 'demo'), body);
+});
+
+test('leaves an unresolved image reference and an absolute reference path alone', () => {
+  assert.equal(cleanMarkdown('![a][missing]', 'demo'), '![a][missing]');
+  assert.equal(
+    cleanMarkdown('![a][x]\n\n[x]: /img/shared/a.png', 'demo'),
+    '![a](/img/shared/a.png)\n\n[x]: /img/shared/a.png',
+  );
+});
+
+test('keeps mirrored artwork referenced by definition and escapes labels and paths', () => {
+  assert.equal(
+    cleanMarkdown(`![He\\]lm][h]\n\n[h]: ${ARTWORK_SVG}`, 'demo'),
+    cleanMarkdown(`![He\\]lm](${ARTWORK_SVG})`, 'demo') +
+      `\n\n[h]: ${ARTWORK_SVG}`,
+  );
+  assert.equal(
+    cleanMarkdown('![](<images/my diagram.png>)', 'demo'),
+    '![](</img/architectures/demo/my diagram.png>)',
+  );
+  assert.equal(
+    cleanMarkdown('![x](<https://evil.example/a b.png>)', 'demo'),
+    '[x](<https://evil.example/a b.png>)',
+  );
+});

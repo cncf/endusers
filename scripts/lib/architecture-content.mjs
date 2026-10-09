@@ -12,6 +12,9 @@
 import { lstatSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse as yamlParse } from 'yaml';
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { gfm } from 'micromark-extension-gfm';
+import { gfmFromMarkdown } from 'mdast-util-gfm';
 import {
   artworkMirrorPath,
   artworkPath,
@@ -86,51 +89,110 @@ export function renderProjectCards(body, id) {
 }
 
 /**
- * A Markdown link destination that carries its own authority: either an
- * absolute `scheme://host/...` or a protocol-relative `//host/...`, which
- * inherits the page's scheme and loads off-site exactly like an absolute one.
- *
- * Written as a character class rather than with the `i` flag so the rest of
- * each pattern it appears in stays case-sensitive.
+ * A Markdown destination that carries its own authority: either an absolute
+ * `scheme://host/...` or a protocol-relative `//host/...`, which inherits the
+ * page's scheme and loads off-site exactly like an absolute one.
  */
-const REMOTE_DESTINATION = '(?:[a-zA-Z][a-zA-Z0-9+.-]*:)?\\/\\/';
+const REMOTE_DESTINATION = /^(?:[a-z][a-z0-9+.-]*:)?\/\//i;
+
+/** Any URI scheme; a scheme-less destination is a path on this site. */
+const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
+const markdownGrammar = {
+  extensions: [gfm()],
+  mdastExtensions: [gfmFromMarkdown()],
+};
+
+function escapeLabel(text) {
+  return text.replace(/[\\[\]]/g, '\\$&');
+}
+
+function destination(url) {
+  return /[\s()<>]/.test(url)
+    ? `<${url.replace(/[<>]/g, encodeURIComponent)}>`
+    : url;
+}
 
 /**
- * Strips remaining Hugo/Docsy shortcodes, rewrites image references to their
- * local `/img/architectures/<id>/...` or mirrored artwork path, and collapses
- * blank-line runs. `id` scopes relative image paths (`images/foo.png`) to the
- * architecture's own asset directory.
+ * Applies the image policy to every image in a parsed document.
  *
- * An image whose destination names a host is demoted to a plain link unless
- * projectAsset() can resolve it to a mirrored path. A published `<img>` is
- * fetched by every visitor's browser, so leaving one pointed at a third-party
- * host beacons their IP, User-Agent and Referer there -- the hot-linking the
- * mirror exists to prevent. The test for "names a host" is
- * REMOTE_DESTINATION, not `https?://`: a protocol-relative `//host/x.png`
- * inherits the page's scheme and loads off-site just the same, and an
- * uppercase `HTTPS://` is the same URL to a browser. Both slipped past the
- * old `https?://` test, and the local-path rewrite below then either left
- * them live or mangled them into a path that cannot resolve.
+ * Images are found in the parse tree, not by pattern, so the reference style
+ * (`![alt][ref]` with `[ref]: url` elsewhere), nested brackets and titles are
+ * all seen as the parser sees them. Each image is replaced by exactly the
+ * source range it occupies.
+ *
+ * - A destination that names a host (REMOTE_DESTINATION, which includes
+ *   protocol-relative and any-case schemes) is mirrored when projectAsset()
+ *   resolves it and otherwise demoted to a plain link, or to its alt text
+ *   inside an existing link. A published `<img>` is fetched by every visitor's
+ *   browser, so a third-party host would see their IP, User-Agent and Referer.
+ * - Any other scheme (`data:`, `javascript:`, ...) is reduced to its alt text.
+ * - A relative path is rebased onto `/img/architectures/<id>/`.
+ */
+function rewriteImages(body, id) {
+  const tree = fromMarkdown(body, markdownGrammar);
+  const definitions = new Map();
+  const images = [];
+
+  const walk = (node, inLink) => {
+    if (node.type === 'definition') definitions.set(node.identifier, node.url);
+    if (node.type === 'image' || node.type === 'imageReference') {
+      images.push({ node, inLink });
+    }
+    const nested =
+      inLink || node.type === 'link' || node.type === 'linkReference';
+    for (const child of node.children ?? []) walk(child, nested);
+  };
+  walk(tree, false);
+
+  const edits = [];
+  for (const { node, inLink } of images) {
+    const url =
+      node.type === 'image' ? node.url : definitions.get(node.identifier);
+    const { alt } = node;
+    let replacement;
+
+    if (REMOTE_DESTINATION.test(url)) {
+      const asset = projectAsset(url);
+      if (asset) replacement = `![${escapeLabel(alt)}](${asset})`;
+      else if (inLink) replacement = escapeLabel(alt);
+      else replacement = `[${escapeLabel(alt)}](${destination(url)})`;
+    } else if (HAS_SCHEME.test(url)) {
+      replacement = escapeLabel(alt);
+    } else if (url.startsWith('/')) {
+      if (node.type === 'image') continue;
+      replacement = `![${escapeLabel(alt)}](${destination(url)})`;
+    } else {
+      const rest = url.replace(/^\.\//, '').replace(/^images\//, '');
+      replacement = `![${escapeLabel(alt)}](${destination(`/img/architectures/${id}/${rest}`)})`;
+    }
+    edits.push({
+      start: node.position.start.offset,
+      end: node.position.end.offset,
+      replacement,
+    });
+  }
+
+  let output = body;
+  for (const edit of edits.sort((x, y) => y.start - x.start)) {
+    output =
+      output.slice(0, edit.start) + edit.replacement + output.slice(edit.end);
+  }
+  return output;
+}
+
+/**
+ * Strips remaining Hugo/Docsy shortcodes, applies the image policy described
+ * on {@link rewriteImages}, and collapses blank-line runs. `id` scopes
+ * relative image paths (`images/foo.png`) to the architecture's own asset
+ * directory.
  */
 export function cleanMarkdown(body, id) {
-  return body
-    .replace(/{{<[\s\S]*?>}}/g, '')
-    .replace(/{{<\/?[^>]+>}}/g, '')
-    .replace(
-      new RegExp(`!\\[([^\\]]*)\\]\\((${REMOTE_DESTINATION}[^\\)]+)\\)`, 'g'),
-      (_, alt, url) => {
-        const asset = projectAsset(url);
-        return asset ? `![${alt}](${asset})` : `[${alt}](${url})`;
-      },
-    )
+  return rewriteImages(
+    body.replace(/{{<[\s\S]*?>}}/g, '').replace(/{{<\/?[^>]+>}}/g, ''),
+    id,
+  )
     .replace(/\[\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\]/g, '[$1]($2)')
-    .replace(
-      new RegExp(
-        `!\\[([^\\]]*)\\]\\((?!${REMOTE_DESTINATION})(?:\\.\\/)?(?:images\\/)?([^/][^\\)]*)\\)`,
-        'g',
-      ),
-      `![$1](/img/architectures/${id}/$2)`,
-    )
     .replace(/<>/g, '&lt;&gt;')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
