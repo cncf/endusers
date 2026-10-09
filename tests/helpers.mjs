@@ -54,6 +54,8 @@ export function runScriptWithFixtures(scriptName, fixtures = {}, options = {}) {
     cpSync(join(repoRoot, 'scripts', 'lib'), join(work, 'scripts', 'lib'), {
       recursive: true,
     });
+    // The mirrored modules import parser packages by bare name.
+    symlinkSync(join(repoRoot, 'node_modules'), join(work, 'node_modules'));
     for (const [relativePath, content] of Object.entries(fixtures)) {
       const target = join(work, relativePath);
       mkdirSync(dirname(target), { recursive: true });

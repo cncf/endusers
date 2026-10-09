@@ -89,6 +89,7 @@
     "@docusaurus/preset-classic": "3.10.2",
     "@mdx-js/react": "^3.1.1",
     "clsx": "^2.1.1",
+    "css-tree": "^2.3.1",
     "docusaurus-plugin-search-local": "^2.1.2",
     "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-gfm": "^3.1.0",
@@ -97,7 +98,8 @@
     "micromark-extension-mdxjs": "^3.0.0",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "sax": "^1.6.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

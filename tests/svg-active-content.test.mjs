@@ -69,6 +69,13 @@ test('sees through entity and control-character obfuscation of javascript:', () 
 // the more usual way to hide a scheme. The last payload is double-encoded and
 // only resolves because decodeEntities is deliberately applied twice.
 test('sees through hex numeric-entity obfuscation of javascript:', () => {
+  assert.deepEqual(
+    findActiveContent(
+      INERT.replace('https://example.com/docs', 'javascript&#58;alert(1)'),
+    ),
+    ['contains a script URI in href="javascript:..."'],
+  );
+
   for (const payload of [
     'java&#x73;cript:alert(1)',
     'java&#X73;cript:alert(1)',
@@ -85,83 +92,38 @@ test('sees through hex numeric-entity obfuscation of javascript:', () => {
   }
 });
 
-// The hex callback guards `code <= 0x10ffff` before calling String.fromCodePoint
-// and returns the literal match when the codepoint is out of range. Pinning the
-// guard keeps it from being "simplified" into a throw, and confirms the literal
-// entity that survives does not itself read as a scheme.
-test('leaves an out-of-range hex entity literal rather than forming a scheme', () => {
-  const svg = INERT.replace(
-    'https://example.com/docs',
-    'java&#x110000;cript:alert(1)',
-  );
-  assert.deepEqual(findActiveContent(svg), []);
-  assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
+// An XML parser treats a character reference outside the Unicode range as a
+// fatal error, so such a document is rejected as malformed rather than decoded
+// into -- or around -- a scheme.
+test('rejects an out-of-range numeric entity as not well-formed', () => {
+  for (const reference of ['&#x110000;', '&#1114112;']) {
+    const svg = INERT.replace(
+      'https://example.com/docs',
+      `java${reference}cript:alert(1)`,
+    );
+    const findings = findActiveContent(svg);
+    assert.equal(findings.length, 1);
+    assert.match(findings[0], /^is not well-formed XML/);
+    assert.throws(() => stripActiveContent(svg), {
+      message: /is not well-formed XML/,
+    });
+  }
 });
 
-// The decimal callback carries the same `code <= 0x10ffff` guard as the hex one
-// above, but no payload in this file had ever pushed a decimal entity past the
-// limit, so that guard's false arm never ran. It is not cosmetic: without it
-// String.fromCodePoint(1114112) throws a RangeError, and decodeEntities runs on
-// every attribute value of every imported third-party SVG -- so an asset
-// carrying `&#1114112;` would crash the validator rather than be reported on.
-// 1114112 is the first codepoint over the 0x10ffff limit.
-test('leaves an out-of-range decimal entity literal rather than forming a scheme', () => {
-  const svg = INERT.replace(
-    'https://example.com/docs',
-    'java&#1114112;cript:alert(1)',
-  );
-  assert.deepEqual(findActiveContent(svg), []);
-  assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
-
-  // The true arm must still decode, so the guard cannot be "satisfied" by
-  // rejecting decimal entities wholesale: &#58; is a colon, and decoding it is
-  // what turns the payload below into a scheme the scanner reports.
-  const inRange = INERT.replace(
-    'https://example.com/docs',
-    'javascript&#58;alert(1)',
-  );
-  assert.deepEqual(findActiveContent(inRange), [
-    'contains a script URI in href="javascript:..."',
-  ]);
-});
-
-// ATTRIBUTE_PATTERN only matches an attribute that carries a value, so a
-// handler written without one slips past the scanner. findActiveContent has an
-// explicit fallback for that case, but every handler in the tests above is
-// valued and therefore caught by the scanner, leaving the fallback unreached.
-test('falls back to on* for a handler the attribute scanner cannot see', () => {
+// A handler written without a quoted value is not well-formed XML, so a
+// browser never runs it; the document is rejected as malformed all the same,
+// because a scan that could not read it cannot vouch for what follows.
+test('rejects a handler with no quoted value as not well-formed', () => {
   for (const svg of [
     '<svg onload=></svg>',
     '<svg onload= ></svg>',
     '<svg onload=`alert(1)`></svg>',
   ]) {
-    assert.deepEqual(
-      findActiveContent(svg),
-      ['contains event handler attribute(s): on*'],
-      `expected the on* fallback for ${JSON.stringify(svg)}`,
-    );
-  }
-});
-
-// Fixed in #540: the on* fallback existed only in findActiveContent.
-// stripActiveContent now runs an equivalent fallback pass after
-// ATTRIBUTE_PATTERN, so a value-less or backtick-delimited handler is both
-// removed and recorded. Re-detecting on the stripped output is the invariant:
-// stripping must leave an SVG that findActiveContent considers inert.
-test('stripActiveContent removes a handler the attribute scanner cannot see', () => {
-  for (const svg of ['<svg onload=></svg>', '<svg onload=`alert(1)`></svg>']) {
-    const { source, removed } = stripActiveContent(svg);
-    assert.doesNotMatch(
-      source,
-      /onload/i,
-      `onload survived stripping of ${JSON.stringify(svg)}`,
-    );
-    assert.notDeepEqual(
-      removed,
-      [],
-      `stripping ${JSON.stringify(svg)} reported no removal`,
-    );
-    assert.deepEqual(findActiveContent(source), []);
+    const findings = findActiveContent(svg);
+    assert.match(findings[0], /^is not well-formed XML/, JSON.stringify(svg));
+    assert.throws(() => stripActiveContent(svg), {
+      message: /is not well-formed XML/,
+    });
   }
 });
 
@@ -394,10 +356,7 @@ test('leaves foreignObject itself untouched', () => {
 // capture group, would have left the suite green while every
 // `onclick='alert(1)'` and `href=javascript:alert(1)` an SVG editor emits
 // passed the gate unseen. Browsers accept all three forms identically.
-const QUOTING_VARIANTS = [
-  { article: 'a', label: 'single-quoted', quote: "'" },
-  { article: 'an', label: 'unquoted', quote: '' },
-];
+const QUOTING_VARIANTS = [{ article: 'a', label: 'single-quoted', quote: "'" }];
 
 for (const { article, label, quote } of QUOTING_VARIANTS) {
   test(`detects and removes ${article} ${label} event handler attribute`, () => {
@@ -443,6 +402,23 @@ for (const { article, label, quote } of QUOTING_VARIANTS) {
     assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
   });
 }
+
+// An unquoted value is a fatal error in XML, which is how a standalone SVG is
+// parsed, so each spelling is rejected as malformed rather than read leniently.
+test('rejects unquoted attribute values as not well-formed XML', () => {
+  for (const attribute of [
+    'onclick=alert(1)',
+    'href=javascript:alert(1)',
+    'srcdoc=payload',
+    'fill=#fff',
+  ]) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><a ${attribute}><rect/></a></svg>`;
+    assert.match(findActiveContent(svg)[0], /^is not well-formed XML/);
+    assert.throws(() => stripActiveContent(svg), {
+      message: /is not well-formed XML/,
+    });
+  }
+});
 
 // findRemoteReferences is a separate gate from findActiveContent: a remote
 // reference executes nothing, so it is not "active content", but the browser
@@ -606,12 +582,11 @@ test('a single-quoted href is read as a value, not skipped', () => {
   ]);
 });
 
-test('an unquoted href is read as a value, not skipped', () => {
+test('an unquoted href is rejected as not well-formed', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><image href=https://evil.example/uq.png /></svg>';
-  assert.deepEqual(findRemoteReferences(svg), [
-    'references a remote resource in <image> href: https://evil.example/uq.png',
-  ]);
+  const findings = findRemoteReferences(svg);
+  assert.match(findings[0], /^is not well-formed XML/);
 });
 
 test('an empty <style> block does not break the block scan that follows it', () => {
@@ -641,18 +616,13 @@ test('a </style> inside a CDATA section does not end the <style> block', () => {
   ]);
 });
 
-test('an unterminated CDATA section inside <style> is scanned to the end', () => {
-  // A `<![CDATA[` with no `]]>` has no close to skip to, so the scan runs to
-  // EOF rather than abandoning the block. Stopping at the missing terminator
-  // would let a truncated file -- or one that simply opens a CDATA section and
-  // never closes it -- carry a remote fetch past the gate unreported, which is
-  // the same hiding place the closed-CDATA case above covers.
+test('an unterminated CDATA section inside <style> is rejected as not well-formed', () => {
+  // The parser cannot say where the section ends, so what it holds is not
+  // readable; the file is rejected rather than certified.
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style><![CDATA[' +
     'rect{fill:url(https://evil.example/track.svg#g)}';
-  assert.deepEqual(findRemoteReferences(svg), [
-    'references a remote resource in a <style> block: https://evil.example/track.svg#g',
-  ]);
+  assert.match(findRemoteReferences(svg)[0], /^is not well-formed XML/);
 });
 
 test('a <style> block after a CDATA-hiding one is still scanned', () => {
@@ -668,16 +638,13 @@ test('a <style> block after a CDATA-hiding one is still scanned', () => {
   ]);
 });
 
-test('an unclosed <style> block is scanned to the end of the document', () => {
-  // An HTML parser runs an unclosed <style> to EOF and XML rejects the file
-  // outright, so reading the remainder is the conservative answer under
-  // either grammar. Stopping at a missing close tag reported nothing at all.
+test('an unclosed <style> block is rejected as not well-formed', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><defs><style type="text/css">' +
     'rect{fill:url(https://evil.example/late.svg#g)}';
-  assert.deepEqual(findRemoteReferences(svg), [
-    'references a remote resource in a <style> block: https://evil.example/late.svg#g',
-  ]);
+  const findings = findRemoteReferences(svg);
+  assert.match(findings[0], /^is not well-formed XML/);
+  assert.ok(findings.some((finding) => finding.includes('evil.example/late')));
 });
 
 test('a self-closing <style/> swallows no content', () => {
@@ -704,74 +671,69 @@ test('a long remote target is truncated so one URL cannot flood the output', () 
   assert.ok(target.startsWith(reported.slice(0, -3)));
 });
 
-test('an unrecognized named entity is left intact rather than dropped', () => {
-  // decodeEntities only resolves the named entities that can hide a scheme.
-  // Anything else has to survive decoding unchanged: silently deleting it
-  // would splice the surrounding characters together and could manufacture a
-  // scheme that the source never contained.
+test('an undefined named entity is rejected as not well-formed', () => {
+  // XML defines five named entities. A browser treats any other reference,
+  // `&nbsp;` included, as a fatal error rather than a character, so it must
+  // not be decoded into a scheme here either.
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><a href="java&nbsp;script:alert(1)">x</a></svg>';
-  assert.deepEqual(findActiveContent(svg), []);
+  assert.match(findActiveContent(svg)[0], /^is not well-formed XML/);
 });
 
-test('an unrecognized named entity does not hide a scheme that follows it', () => {
+test('an undefined named entity does not hide a scheme that follows it', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><a href="&unknown;javascript:alert(1)">x</a></svg>';
-  assert.deepEqual(findActiveContent(svg), [
-    'contains a script URI in href="javascript:..."',
-  ]);
+  const findings = findActiveContent(svg);
+  assert.match(findings[0], /^is not well-formed XML/);
+  assert.ok(
+    findings.includes('contains a script URI in href="javascript:..."'),
+  );
 });
 
-// Removing an element splices the characters on either side of it together.
-// `script` is stripped before `embed`/`object`, so a single removal pass
-// returned a `<script>` the input never contained and the detector never saw.
-test('does not manufacture a script element by splicing around a removed embed', () => {
+// Removal rebuilds the document from its parse instead of deleting character
+// ranges, so deleting an element cannot join the text either side of it into a
+// new one. These shapes -- a tag name split by the element being removed -- are
+// not well-formed XML at all, so they are rejected before any edit is tried.
+for (const [label, markup] of [
+  [
+    'embed',
+    '<scr<embed src="x"></embed>ipt>alert(1)</scr<embed src="y"></embed>ipt>',
+  ],
+  ['object', '<scr<object></object>ipt>alert(1)</scr<object></object>ipt>'],
+  ['self-closing embed', '<scr<embed/>ipt>alert(1)</scr<embed/>ipt>'],
+  ['processing instruction', '<scr<?pi?>ipt>alert(1)</scr<?pi?>ipt>'],
+]) {
+  test(`does not manufacture a script element by splicing around a removed ${label}`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg">${markup}</svg>`;
+    assert.match(findActiveContent(svg)[0], /^is not well-formed XML/);
+    assert.throws(() => stripActiveContent(svg), {
+      message: /Could not strip active content from SVG/,
+    });
+  });
+}
+
+test('removing an element never joins the text on either side of it', () => {
+  // Well-formed input: the text nodes around the removed <embed> stay separate
+  // text, and the rebuilt document parses back to the same inert content.
   const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg">' +
-    '<scr<embed src="x"></embed>ipt>alert(1)</scr<embed src="y"></embed>ipt>' +
-    '</svg>';
-  // The input carries no script element -- only the <embed> halves the
-  // detector reports -- so a <script> in the output is one the sanitizer built.
-  assert.deepEqual(findActiveContent(svg), ['contains a <embed> element']);
-
-  const { source } = stripActiveContent(svg);
-  assert.doesNotMatch(source, /<script/i);
-  assert.doesNotMatch(source, /alert\(1\)/);
-  assert.deepEqual(findActiveContent(source), []);
-});
-
-test('does not manufacture a script element by splicing around a removed object', () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg">' +
-    '<scr<object></object>ipt>alert(1)</scr<object></object>ipt>' +
-    '</svg>';
-  assert.deepEqual(findActiveContent(svg), ['contains a <object> element']);
-
-  const { source } = stripActiveContent(svg);
-  assert.doesNotMatch(source, /<script/i);
-  assert.deepEqual(findActiveContent(source), []);
-});
-
-test('does not manufacture a script element by splicing around a self-closing embed', () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg">' +
-    '<scr<embed/>ipt>alert(1)</scr<embed/>ipt>' +
-    '</svg>';
-  assert.deepEqual(findActiveContent(svg), ['contains a <embed> element']);
-
-  const { source } = stripActiveContent(svg);
-  assert.doesNotMatch(source, /<script/i);
+    '<svg xmlns="http://www.w3.org/2000/svg"><text>scr<embed/>ipt</text></svg>';
+  const { source, removed } = stripActiveContent(svg);
+  assert.equal(
+    source,
+    '<svg xmlns="http://www.w3.org/2000/svg"><text>script</text></svg>',
+  );
+  assert.deepEqual(removed, ['<embed> element']);
   assert.deepEqual(findActiveContent(source), []);
 });
 
 test('throws rather than returning a source the detector still flags', () => {
-  // An unterminated active element has no `>` for the removal patterns to
-  // match, so no number of passes can remove it. Returning it as sanitized
-  // would publish it at the site origin, so the function fails closed.
+  // An unterminated element is not well-formed XML, so there is no parse to
+  // rebuild from. Returning it as sanitized would publish it at the site
+  // origin, so the function fails closed.
   const svg = '<svg xmlns="http://www.w3.org/2000/svg"><script';
   assert.ok(findActiveContent(svg).length > 0);
   assert.throws(() => stripActiveContent(svg), {
-    message: /Could not strip active content from SVG: contains a <script>/,
+    message: /Could not strip active content from SVG: is not well-formed XML/,
   });
 });
 
@@ -785,16 +747,18 @@ const ENTITY_SVG =
   '<a xlink:href="&x;"><rect width="10" height="10"/></a></svg>';
 
 test('flags an entity declaration whose payload it cannot resolve', () => {
-  assert.deepEqual(findActiveContent(ENTITY_SVG), [
-    'contains an entity declaration in an internal DTD subset ' +
-      '(the XML parser expands it, so its payload is not visible here)',
-  ]);
+  assert.ok(
+    findActiveContent(ENTITY_SVG).includes(
+      'contains an entity declaration in an internal DTD subset ' +
+        '(the XML parser expands it, so its payload is not visible here)',
+    ),
+  );
 });
 
 test('throws rather than returning an entity-bearing SVG as sanitized', () => {
   assert.throws(() => stripActiveContent(ENTITY_SVG), {
     message:
-      /Could not strip active content from SVG: contains an entity declaration/,
+      /Could not strip active content from SVG: .*contains an entity declaration/,
   });
 });
 
@@ -805,12 +769,16 @@ test('hasDoctype reports a DOCTYPE with and without an internal subset', () => {
 });
 
 test('stripDoctype consumes an internal subset instead of halving it', () => {
-  // `<!DOCTYPE\s[^>]*>` stops at the `>` closing the <!ENTITY> declaration and
-  // leaves a bare `]>` behind, in a file the caller then publishes as XML.
-  const stripped = stripDoctype(ENTITY_SVG);
+  const stripped = stripDoctype(
+    ENTITY_SVG.replace('&x;', 'ok').replace('xlink:', ''),
+  );
   assert.doesNotMatch(stripped, /DOCTYPE|ENTITY|\]>/);
   assert.ok(stripped.startsWith('<svg '));
   assert.deepEqual(findActiveContent(stripped), []);
+  // A document that still uses the entity cannot be repaired: it is returned
+  // untouched, and hasDoctype() tells the caller to reject it.
+  assert.equal(stripDoctype(ENTITY_SVG), ENTITY_SVG);
+  assert.equal(hasDoctype(stripDoctype(ENTITY_SVG)), true);
 });
 
 test('stripDoctype removes a subset whose entity value contains a bracket', () => {
@@ -861,6 +829,7 @@ test('stripDoctype leaves an unclosed subset in place for callers to reject', ()
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect/></svg>';
   assert.equal(stripDoctype(svg), svg);
   assert.equal(hasDoctype(stripDoctype(svg)), true);
+  assert.match(findActiveContent(svg)[0], /^is not well-formed XML/);
 });
 
 test('stripDoctype matches an unterminated literal in linear time', () => {
@@ -873,10 +842,11 @@ test('stripDoctype matches an unterminated literal in linear time', () => {
 
 test('stripDoctype removes a plain DOCTYPE and every repeat of one', () => {
   assert.equal(stripDoctype('<!DOCTYPE svg>\n' + INERT), INERT);
-  assert.equal(
-    stripDoctype('<!DOCTYPE svg>\n<!DOCTYPE svg PUBLIC "a" "b">\n' + INERT),
-    INERT,
-  );
+  // A second DOCTYPE is not well-formed; the source comes back untouched so
+  // the caller's hasDoctype() check rejects it.
+  const repeated = '<!DOCTYPE svg>\n<!DOCTYPE svg PUBLIC "a" "b">\n' + INERT;
+  assert.equal(stripDoctype(repeated), repeated);
+  assert.equal(hasDoctype(repeated), true);
   assert.equal(stripDoctype(INERT), INERT);
 });
 
@@ -913,16 +883,6 @@ test('flags an XSLT processing instruction regardless of target case', () => {
   const svg = '<?XML-STYLESHEET type="text/xsl" href="payload.xsl"?>\n' + INERT;
   assert.equal(findActiveContent(svg).length, 1);
   assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
-});
-
-test('does not manufacture a script element by splicing around a removed PI', () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg">' +
-    '<scr<?pi?>ipt>alert(1)</scr<?pi?>ipt>' +
-    '</svg>';
-  const { source } = stripActiveContent(svg);
-  assert.doesNotMatch(source, /<script/i);
-  assert.deepEqual(findActiveContent(source), []);
 });
 
 // The validators read every SVG as UTF-8. A file in another encoding turns
@@ -1277,14 +1237,15 @@ test('an image-set() in a presentation attribute is scanned', () => {
   ]);
 });
 
-test('a CSS comment between url( and its argument does not hide the host', () => {
-  // A browser's tokenizer discards comments before the value is read.
+test('a CSS comment between url( and its argument is a malformed url token', () => {
+  // The tokenizer ends the url token at the comment, so the target is not a
+  // fetch a browser makes; the shape is reported rather than skipped.
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
     'rect{background:url( /* c */ "https://evil.example/cmt.png")}' +
     '</style></svg>';
   assert.deepEqual(findRemoteReferences(svg), [
-    'references a remote resource in a <style> block: https://evil.example/cmt.png',
+    'contains a malformed url() token in a <style> block',
   ]);
 });
 
@@ -1321,16 +1282,17 @@ test('an unterminated CSS comment runs to the end of the block', () => {
   ]);
 });
 
-test('an unterminated CSS string does not hide a later remote reference', () => {
-  // The comment stripper copies a quoted string as a unit; one with no
-  // closing quote is copied verbatim to the end of the fragment, so a `/*`
-  // opener inside it stays literal and the url() after it is still seen.
+test('an unterminated CSS string swallows what follows, as it does in a browser', () => {
+  // A bad string runs to the end of the line, so the url() inside it is text
+  // and never fetched.
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
     'rect::before{content:"unterminated /* ' +
     'url(https://evil.example/after-string.png)' +
     '</style></svg>';
-  assert.deepEqual(findRemoteReferences(svg), [
+  assert.deepEqual(findRemoteReferences(svg), []);
+  const nextLine = svg.replace('/* url', '\nurl');
+  assert.deepEqual(findRemoteReferences(nextLine), [
     'references a remote resource in a <style> block: https://evil.example/after-string.png',
   ]);
 });
@@ -1343,4 +1305,73 @@ test('a comment is replaced by a separator, not deleted', () => {
     'rect{background:ur/* x */l("https://evil.example/fused.png")}' +
     '</style></svg>';
   assert.deepEqual(findRemoteReferences(svg), []);
+});
+
+test('detects script-capable data: types beyond text/html', () => {
+  for (const uri of [
+    'data:text/javascript,alert(1)',
+    'data:application/javascript,alert(1)',
+    'data:text/xsl,x',
+    'data:application/vnd.example+xml,x',
+  ]) {
+    const svg = INERT.replace('https://example.com/docs', uri);
+    assert.equal(findActiveContent(svg).length, 1, uri);
+  }
+});
+
+test('rejects a document with no root or more than one root element', () => {
+  for (const svg of ['', '<!-- nothing -->', '<svg/><svg/>']) {
+    assert.match(findActiveContent(svg)[0], /^is not well-formed XML/);
+  }
+});
+
+test('rebuilds around a BOM, comments, a DOCTYPE and a trailing newline', () => {
+  const svg =
+    '\uFEFF<?xml version="1.0"?>\n<!DOCTYPE svg>\n<!-- keep -->\n' +
+    '<svg xmlns="http://www.w3.org/2000/svg"><script>x</script><rect/></svg>\n';
+  const { source, removed } = stripActiveContent(svg);
+  assert.equal(
+    source,
+    '\uFEFF<?xml version="1.0"?>\n<!DOCTYPE svg>\n<!-- keep -->\n' +
+      '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>\n',
+  );
+  assert.deepEqual(removed, ['<script> element']);
+  assert.equal(
+    stripDoctype(svg),
+    '\uFEFF<?xml version="1.0"?>\n<!-- keep -->\n' +
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>x</script><rect/></svg>\n',
+  );
+});
+
+test('stripDoctype leaves other processing instructions for the scan to report', () => {
+  const svg =
+    '<!DOCTYPE svg>\n<?xml-stylesheet href="a.css"?>\n' + INERT.trim();
+  assert.match(stripDoctype(svg), /<\?xml-stylesheet href="a.css"\?>/);
+});
+
+test('reads an unterminated escaped url( to the end of the value', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>' +
+    'a{background:\\75rl(https://evil.example/open.png' +
+    '</style></svg>';
+  assert.equal(findRemoteReferences(svg).length, 1);
+});
+
+test('rejects an unterminated DOCTYPE after a prolog, in linear time', () => {
+  const body = '<svg xmlns="http://www.w3.org/2000/svg"/>';
+  assert.match(
+    findActiveContent(
+      '<?xml version="1.0"?>\n<!-- c -->\n<!DOCTYPE svg [\n' + body,
+    )[0],
+    /Unterminated DOCTYPE/,
+  );
+  // An unterminated prolog item is not a DOCTYPE, and must not hang.
+  const started = Date.now();
+  for (const unit of ['<?', '<!--']) {
+    assert.ok(findActiveContent(unit.repeat(20000) + body).length > 0);
+  }
+  for (const unit of ['?><?', '--><!--']) {
+    findActiveContent('<?' + unit.repeat(20000) + body);
+  }
+  assert.ok(Date.now() - started < 5000);
 });

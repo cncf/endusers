@@ -159,10 +159,10 @@ test('rejects a logo that would fetch remote resources', () => {
   });
 });
 
-test('rejects a logo whose DOCTYPE removal re-forms active content', () => {
+test('rejects a logo whose markup is split by a DOCTYPE', () => {
   withRoots(({ sourceRoot, destinationRoot }) => {
-    // Each fragment is inert on its own, so stripActiveContent() passes it
-    // through; deleting the DOCTYPE between them splices "<sc" onto "ript>".
+    // A DOCTYPE inside a tag name is not well-formed XML, so the parse rejects
+    // it; nothing is ever deleted to splice "<sc" onto "ript>".
     writeFileSync(
       join(sourceRoot, 'hosted_logos/acme.svg'),
       '<svg xmlns="http://www.w3.org/2000/svg">' +
@@ -174,17 +174,15 @@ test('rejects a logo whose DOCTYPE removal re-forms active content', () => {
       destinationRoot,
     });
     assert.equal(result.localLogo, null);
-    assert.match(result.logoWarning, /active content after cleanup/);
+    assert.match(result.logoWarning, /is not well-formed XML/);
     assert.deepEqual(readdirSync(destinationRoot), []);
   });
 });
 
 test('rejects a logo with a DOCTYPE that cannot be removed', () => {
   withRoots(({ sourceRoot, destinationRoot }) => {
-    // An unclosed internal subset matches neither stripDoctype() alternative,
-    // so the declaration survives the strip. The surviving declaration is
-    // inert to the active-content and remote-reference rescans, so without a
-    // hasDoctype() gate the logo would be published as cleaned.
+    // An unclosed internal subset is not well-formed, and a parser that
+    // swallows it would otherwise certify the markup it hides.
     writeFileSync(
       join(sourceRoot, 'hosted_logos/acme.svg'),
       '<!DOCTYPE svg [\n' +
@@ -196,7 +194,10 @@ test('rejects a logo with a DOCTYPE that cannot be removed', () => {
       destinationRoot,
     });
     assert.equal(result.localLogo, null);
-    assert.match(result.logoWarning, /DOCTYPE that could not be removed/);
+    assert.match(
+      result.logoWarning,
+      /is not well-formed XML \(Unterminated DOCTYPE\)/,
+    );
     assert.deepEqual(readdirSync(destinationRoot), []);
   });
 });

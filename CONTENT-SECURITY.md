@@ -27,6 +27,39 @@ how to fix a rejected submission.
   User-Agent, and Referer to a host the submitter chose. All imported artwork is
   mirrored locally for exactly this reason.
 
+## How the scanners work
+
+The scanners read a parse tree; they do not pattern-match text. SVG is parsed
+with [`sax`](https://github.com/isaacs/sax-js) as strict XML, CSS inside SVG is
+tokenized with the [`css-tree`](https://github.com/csstree/csstree) tokenizer
+(so escapes, comments, and quote pairing are resolved the way a browser resolves
+them), and Markdown/MDX is parsed with the same micromark grammar Docusaurus
+compiles pages with. Shared URI rules live in `scripts/lib/uri-safety.mjs`.
+
+Two consequences matter when a submission is rejected:
+
+- **A document the parser rejects is itself a finding.** An unquoted attribute,
+  an unclosed tag, an undefined entity such as `&nbsp;`, or an unterminated
+  DOCTYPE is reported as `is not well-formed XML`. A scanner that cannot read a
+  file cannot vouch for it, and a browser may read it differently. Fix the
+  markup rather than working around the message.
+- **Stripping rebuilds the document from the parse** instead of deleting
+  character ranges, so removing one element cannot join the text around it into
+  a new one.
+
+### Residual risks and compensating controls
+
+- The site's Content-Security-Policy is delivered as a `<meta>` tag, which
+  browsers do not apply to a file opened directly (for example a `.svg` URL).
+  The parser-based gates above are therefore the primary control, and the CSP is
+  defense in depth.
+- A parser can still disagree with a browser on exotic input. The gates fail
+  closed on anything the parser rejects, and every historical bypass is kept as
+  a regression fixture in `tests/svg-active-content.test.mjs` and
+  `tests/mdx-active-content.test.mjs`. A new bypass belongs in those fixtures
+  and, if it needs a new rule, in the parser walk, not in a new regular
+  expression.
+
 ## SVG rules (`active content: ...` findings)
 
 `validate:architecture-assets` rejects a diagram that contains any of the
@@ -38,9 +71,9 @@ characters, and whitespace obfuscation, so re-spelling a construct does not help
   `<listener>`, `<iframe>`, `<embed>`, `<object>`.
 - **Event-handler attributes**: any `on*` attribute (`onload`, `onclick`, ...).
 - **Script-executing URI schemes** in any attribute: `javascript:`, `vbscript:`,
-  `livescript:`, `mocha:`, and `data:` URIs carrying a markup media type
-  (`text/html`, `image/svg+xml`, `application/xhtml+xml`, `text/xml`,
-  `application/xml`).
+  `livescript:`, `mocha:`, and `data:` URIs carrying a markup or script media
+  type (`text/html`, `text/xml`, `application/xml`, `text/xsl`, any `+xml` type
+  such as `image/svg+xml`, and JavaScript types).
 - **Embedded-document attributes**: `srcdoc`.
 - **`<animate>`/`<set>` targeting `href`**: an animation can install a script
   URI at runtime on an element that looks inert in the source.
@@ -97,7 +130,9 @@ the check fails closed.
 Image references in page bodies are rewritten during import: relative paths are
 scoped to the architecture's own asset directory, and an image whose destination
 names any host — including protocol-relative `//host/...` — is demoted to a
-plain link unless it is a cncf/artwork URL the importer can mirror.
+plain link unless it is a cncf/artwork URL the importer can mirror. Images are
+found in the parse tree, so reference-style images (`![alt][ref]`) follow the
+same rules as inline ones.
 
 ## Project-card logo policy
 

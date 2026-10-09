@@ -492,7 +492,7 @@ Intro paragraph.
 
 test('sanitizes imported SVG assets', () => {
   const svg = `<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" content="&lt;mxfile&gt;"><rect /></svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" content="&lt;mxfile&gt;"><rect/></svg>`;
   const run = runImportArchitectures({
     upstream: {
       ...architecture(
@@ -516,7 +516,7 @@ test('sanitizes imported SVG assets', () => {
 
 test('leaves SVGs untouched when a viewBox is already present', () => {
   const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><rect /></svg>';
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><rect/></svg>';
   const run = runImportArchitectures({
     upstream: {
       ...architecture(
@@ -872,7 +872,7 @@ test('strips active content from an imported SVG asset and reports it', () => {
     assert.doesNotMatch(sanitized, /onload/i);
     assert.doesNotMatch(sanitized, /javascript:/i);
     // The inert markup around the active content survives the strip.
-    assert.match(sanitized, /<rect \/>/);
+    assert.match(sanitized, /<rect\/>/);
 
     // The warning names the file and every distinct thing removed from it, so
     // the import log is enough to triage what upstream shipped.
@@ -899,10 +899,9 @@ test('strips active content from an imported SVG asset and reports it', () => {
   }
 });
 
-test('fails the import when DOCTYPE removal re-forms active content', () => {
-  // "<sc" and "ript>" are each inert, so stripActiveContent() verifies the
-  // source clean; deleting the DOCTYPE between them splices them back into a
-  // live <script>. The import must not write bytes it never verified.
+test('fails the import when a DOCTYPE splits a tag name', () => {
+  // A DOCTYPE inside a tag name is not well-formed XML; the import rejects it
+  // instead of deleting the DOCTYPE and splicing "<sc" onto "ript>".
   const run = runImportArchitectures({
     upstream: {
       ...architecture(
@@ -917,18 +916,15 @@ test('fails the import when DOCTYPE removal re-forms active content', () => {
 
   try {
     assert.notEqual(run.status, 0);
-    assert.match(run.stderr, /Active content reappeared after cleanup/);
-    assert.match(run.stderr, /contains a <script> element/);
+    assert.match(run.stderr, /is not well-formed XML/);
   } finally {
     run.cleanup();
   }
 });
 
-test('fails the import when a DOCTYPE cannot be removed', () => {
-  // An unclosed internal subset matches neither stripDoctype() alternative, so
-  // the declaration survives the strip. The surviving declaration is inert to
-  // the findActiveContent() rescan, so without a hasDoctype() gate the import
-  // would publish the asset believing it was cleaned.
+test('fails the import when a DOCTYPE subset is unclosed', () => {
+  // An unclosed internal subset is not well-formed XML, and a lenient parse
+  // would certify whatever markup it hides.
   const run = runImportArchitectures({
     upstream: {
       ...architecture(
@@ -943,7 +939,31 @@ test('fails the import when a DOCTYPE cannot be removed', () => {
 
   try {
     assert.notEqual(run.status, 0);
-    assert.match(run.stderr, /DOCTYPE could not be removed/);
+    assert.match(run.stderr, /Unterminated DOCTYPE/);
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('fails the import when stripping the editable-metadata attribute leaves unparseable SVG', () => {
+  // The `content` attribute removal is a text edit. On this document it eats
+  // the quote that closes `b`, so the written bytes would not be well-formed;
+  // the final rescan has to catch it.
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'meta',
+        '---\ntitle: Meta\norg_name: Meta Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/meta/images/diagram.svg':
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+        '<g b=" content=\'" c="x"/></svg>',
+    },
+  });
+
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /Active content reappeared after cleanup/);
   } finally {
     run.cleanup();
   }
@@ -974,7 +994,7 @@ test('strips active content from an imported SVG asset under an uppercase .SVG e
     assert.doesNotMatch(sanitized, /<script/i);
     assert.doesNotMatch(sanitized, /onload/i);
     assert.doesNotMatch(sanitized, /javascript:/i);
-    assert.match(sanitized, /<rect \/>/);
+    assert.match(sanitized, /<rect\/>/);
 
     assert.match(
       run.stderr,
@@ -1019,7 +1039,7 @@ Intro paragraph.
     assert.doesNotMatch(mirrored, /<script/i);
     assert.doesNotMatch(mirrored, /onload/i);
     assert.doesNotMatch(mirrored, /javascript:/i);
-    assert.match(mirrored, /<rect \/>/);
+    assert.match(mirrored, /<rect\/>/);
 
     assert.match(
       run.stderr,
