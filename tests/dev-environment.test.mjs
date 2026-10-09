@@ -4,6 +4,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import { parse as parseYaml } from 'yaml';
+import { stripJsonComments } from './helpers-jsonc.mjs';
 
 // The Justfile and .devcontainer/devcontainer.json are the two entry points a
 // contributor uses before CI ever sees the change. Both reach into
@@ -18,61 +19,6 @@ const packageJson = JSON.parse(
 const scriptNames = new Set(Object.keys(packageJson.scripts ?? {}));
 
 const justfile = readFileSync(join(root, 'Justfile'), 'utf8');
-
-// Strips // and /* */ comments without touching sequences inside strings, so
-// a URL such as "https://example.com" survives. devcontainer.json is JSON
-// with Comments: JSON.parse rejects it, and the repo has no jsonc dependency.
-function stripJsonComments(source) {
-  let out = '';
-  let inString = false;
-  let inLine = false;
-  let inBlock = false;
-  for (let i = 0; i < source.length; i += 1) {
-    const char = source[i];
-    const next = source[i + 1];
-    if (inLine) {
-      if (char === '\n') {
-        inLine = false;
-        out += char;
-      }
-      continue;
-    }
-    if (inBlock) {
-      if (char === '*' && next === '/') {
-        inBlock = false;
-        i += 1;
-      }
-      continue;
-    }
-    if (inString) {
-      out += char;
-      if (char === '\\') {
-        out += source[i + 1] ?? '';
-        i += 1;
-      } else if (char === '"') {
-        inString = false;
-      }
-      continue;
-    }
-    if (char === '"') {
-      inString = true;
-      out += char;
-      continue;
-    }
-    if (char === '/' && next === '/') {
-      inLine = true;
-      i += 1;
-      continue;
-    }
-    if (char === '/' && next === '*') {
-      inBlock = true;
-      i += 1;
-      continue;
-    }
-    out += char;
-  }
-  return out;
-}
 
 const devcontainerRaw = readFileSync(
   join(root, '.devcontainer/devcontainer.json'),
