@@ -19,6 +19,21 @@
  * MDX evaluates a braced expression as JavaScript, so any expression node is a
  * finding unless it is one of the inert string-literal attributes the importer
  * emits itself.
+ *
+ * The scan answers the second of the two questions `uri-safety.mjs` states
+ * both gates must answer -- does the value make a visitor's browser contact
+ * another host -- only for destinations the browser fetches with no user
+ * action, which on this surface means images. An imported page is written
+ * verbatim from a repository this project does not control, so a remote `<img>`
+ * in one is a third-party beacon that sees every visitor's IP, User-Agent and
+ * Referer on page load. `rewriteImages()` already demotes such a destination at
+ * import time, but that is a gate on what is *imported*; this is the gate on
+ * what is *published*, and it has to hold when a page reaches `docs/` without
+ * passing the importer.
+ *
+ * Ordinary links are deliberately left alone. A link is followed only when a
+ * reader clicks it, and `rewriteImages()` demotes a remote image *to* a remote
+ * link, so rejecting them would reject every imported page.
  */
 
 import { fromMarkdown } from 'mdast-util-from-markdown';
@@ -26,7 +41,7 @@ import { mdxjs } from 'micromark-extension-mdxjs';
 import { mdxFromMarkdown } from 'mdast-util-mdx';
 import { gfm } from 'micromark-extension-gfm';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
-import { activeScheme } from './uri-safety.mjs';
+import { activeScheme, describeTarget, remoteTarget } from './uri-safety.mjs';
 
 /** Inert inline elements that carry no script, network or layout capability. */
 const ALLOWED_ELEMENTS = new Set([
@@ -64,6 +79,18 @@ const EVENT_HANDLER_ATTRIBUTE = /^on[a-z]+$/i;
 
 /** Link-like nodes whose `url` a browser navigates to or loads. */
 const URL_NODES = new Set(['link', 'definition', 'image']);
+
+/**
+ * The only attribute of the only allowed component that reaches an `<img src>`.
+ *
+ * `CNCFProjectCard` renders `logo` through `useBaseUrl()`, which returns a
+ * value carrying a protocol unchanged, so an absolute URL there is loaded
+ * off-origin exactly as a Markdown image destination is. `href` on the same
+ * card is remote by contract (`https://www.cncf.io/projects/...`) and is
+ * followed only on a click, so attributes are checked by name rather than as a
+ * class.
+ */
+const REMOTE_IMAGE_ATTRIBUTES = new Set(['logo']);
 
 const parserOptions = {
   extensions: [mdxjs(), gfm()],
@@ -118,6 +145,24 @@ export function findActiveContent(markdown) {
     return findings;
   }
 
+  // Collected before the scan: a definition may be written after the
+  // reference that uses it, and an `imageReference` carries only an
+  // identifier. The definition node itself is never reported as remote --
+  // `linkReference` resolves through the same map, and an imported page
+  // legitimately carries remote link definitions.
+  const definitions = new Map();
+  eachNode(tree, (node) => {
+    if (node.type === 'definition') definitions.set(node.identifier, node.url);
+  });
+
+  // Every caller passes a string: an image node's `url`, a definition `url`
+  // resolved from the map, or an attribute value already narrowed to a string.
+  const reportRemoteImage = (line, url) => {
+    const target = remoteTarget(url);
+    if (target)
+      report(line, `remote image destination ${describeTarget(target)}`);
+  };
+
   eachNode(tree, (node) => {
     const line = node.position.start.line;
 
@@ -143,8 +188,13 @@ export function findActiveContent(markdown) {
           value = literalValue(value.value);
           if (value === null) report(line, 'MDX expression');
         }
-        if (typeof value === 'string' && activeScheme(value)) {
-          report(line, 'script-capable URL scheme');
+        if (typeof value === 'string') {
+          if (activeScheme(value)) {
+            report(line, 'script-capable URL scheme');
+          }
+          if (REMOTE_IMAGE_ATTRIBUTES.has(attribute.name)) {
+            reportRemoteImage(line, value);
+          }
         }
       }
     } else if (
@@ -156,8 +206,13 @@ export function findActiveContent(markdown) {
       if (node.value.trim() !== ALLOWED_IMPORT) {
         report(line, 'unexpected ESM statement');
       }
-    } else if (URL_NODES.has(node.type) && activeScheme(node.url)) {
-      report(line, 'script-capable URL scheme');
+    } else if (node.type === 'imageReference') {
+      const url = definitions.get(node.identifier);
+      // An unresolved reference renders as literal text and loads nothing.
+      if (url !== undefined) reportRemoteImage(line, url);
+    } else if (URL_NODES.has(node.type)) {
+      if (activeScheme(node.url)) report(line, 'script-capable URL scheme');
+      if (node.type === 'image') reportRemoteImage(line, node.url);
     }
   });
 
