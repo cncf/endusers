@@ -96,6 +96,65 @@ export function renderProjectCards(body, id) {
 const REMOTE_DESTINATION = '(?:[a-zA-Z][a-zA-Z0-9+.-]*:)?\\/\\/';
 
 /**
+ * A link-reference definition: `[label]: destination "optional title"`, with
+ * the destination optionally wrapped in angle brackets. Up to three leading
+ * spaces still make a definition, as CommonMark allows.
+ */
+const LINK_DEFINITION =
+  /^[ \t]{0,3}\[([^\]\n]+)\]:[ \t]*(?:<([^>\n]*)>|(\S+))/gm;
+
+/**
+ * An image written in one of the three reference forms: full
+ * `![alt][label]`, collapsed `![alt][]` or shortcut `![alt]`. The inline form
+ * `![alt](dest)` matches this too — it is told apart by the `(` that follows,
+ * which the caller checks.
+ */
+const IMAGE_REFERENCE = /!\[([^\]\n]*)\](?:\[([^\]\n]*)\])?/g;
+
+/** A reference label, normalized the way CommonMark matches labels. */
+function normalizeLabel(label) {
+  return label.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * Rewrites reference-style images into their inline equivalent so the image
+ * rules in cleanMarkdown() see every image.
+ *
+ * Those rules match `![alt](dest)` only, and an image whose destination lives
+ * in a link-reference definition elsewhere in the document is the same image
+ * to the compiler. Left unresolved it is never demoted, so a
+ * `![alt][beacon]` pointed at a third-party host publishes the very `<img>`
+ * the inline demotion exists to prevent -- every visitor's browser then hands
+ * that host their IP, User-Agent and Referer. It is also never rewritten, so
+ * a cncf/artwork destination misses its mirrored path and a relative one
+ * misses its `/img/architectures/<id>/` scope, and both render broken.
+ *
+ * A destination carrying whitespace or parentheses cannot be expressed in the
+ * `[^\)]+` destinations those rules match, so it fails closed: the `!` is
+ * dropped and the construct renders as a link reference rather than as an
+ * image, which fetches nothing.
+ *
+ * The definition line itself is left in place. A definition renders as
+ * nothing, and it may still be the target of a text link on the same page.
+ */
+function inlineImageReferences(body) {
+  const definitions = new Map();
+  for (const [, label, bracketed, bare] of body.matchAll(LINK_DEFINITION)) {
+    const key = normalizeLabel(label);
+    const destination = bracketed ?? bare;
+    if (destination && !definitions.has(key)) definitions.set(key, destination);
+  }
+  if (definitions.size === 0) return body;
+  return body.replace(IMAGE_REFERENCE, (match, alt, label, offset) => {
+    if (body[offset + match.length] === '(') return match;
+    const destination = definitions.get(normalizeLabel(label || alt));
+    if (destination === undefined) return match;
+    if (/[\s()]/.test(destination)) return match.slice(1);
+    return `![${alt}](${destination})`;
+  });
+}
+
+/**
  * Strips remaining Hugo/Docsy shortcodes, rewrites image references to their
  * local `/img/architectures/<id>/...` or mirrored artwork path, and collapses
  * blank-line runs. `id` scopes relative image paths (`images/foo.png`) to the
@@ -111,11 +170,16 @@ const REMOTE_DESTINATION = '(?:[a-zA-Z][a-zA-Z0-9+.-]*:)?\\/\\/';
  * uppercase `HTTPS://` is the same URL to a browser. Both slipped past the
  * old `https?://` test, and the local-path rewrite below then either left
  * them live or mangled them into a path that cannot resolve.
+ *
+ * Reference-style images are resolved to their inline form first, so a
+ * destination hidden in a link-reference definition is held to those same
+ * rules rather than published verbatim.
  */
 export function cleanMarkdown(body, id) {
-  return body
+  const withoutShortcodes = body
     .replace(/{{<[\s\S]*?>}}/g, '')
-    .replace(/{{<\/?[^>]+>}}/g, '')
+    .replace(/{{<\/?[^>]+>}}/g, '');
+  return inlineImageReferences(withoutShortcodes)
     .replace(
       new RegExp(`!\\[([^\\]]*)\\]\\((${REMOTE_DESTINATION}[^\\)]+)\\)`, 'g'),
       (_, alt, url) => {
