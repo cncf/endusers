@@ -1,0 +1,6 @@
+{
+  "description": "Clears sources.architectures.revision so src/components/ReferenceArchitectures/index.js takes the absent-revision guard at line 13 -- SyncStatus returns null and the whole provenance line goes with it. The field is a scalar on a singleton object of the one file the one /architectures page reads, so clearing it in the ordinary coverage build would not add a case: it would take lines 14-34 with it, including the `on ${syncDate}` arm the real build is the only one to reach. It cannot share the variant build either, which clears metrics.generatedAt to reach the ': null' syncDate arm at line 23 -- that arm is inside the guard this overlay closes, so one build cannot hold both shapes. That standoff is why the fixture mechanism takes a directory per build rather than a fixed second one. metrics.generatedAt is deliberately left present here: with it cleared this build would cover nothing the variant does not.",
+  "set": {
+    "sources.architectures.revision": null
+  }
+}

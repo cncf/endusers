@@ -24,7 +24,7 @@
 //
 // `npm run build:e2e:coverage` therefore produces two sites: the ordinary
 // coverage build, and a second one under /e2e-coverage-variant/ with
-// tests/e2e/fixtures/data-variants/** layered on top. One `docusaurus serve`
+// tests/e2e/fixtures/data-variant/** layered on top. One `docusaurus serve`
 // offers both, so a single Playwright run visits the real page and its variant
 // and the report unions what each reached -- the two builds compile the same
 // src/** sources, so their scripts fold onto the same lines.
@@ -43,7 +43,7 @@ const VARIANT_BASE = '/e2e-coverage-variant';
 const describeCoverage =
   process.env.E2E_COVERAGE === '1' ? test.describe : test.describe.skip;
 
-const VARIANT_ENV = { E2E_COVERAGE: '1', E2E_COVERAGE_VARIANT: '1' };
+const VARIANT_ENV = { E2E_COVERAGE: '1', E2E_COVERAGE_BUILD: 'variant' };
 const COVERAGE_ENV = { E2E_COVERAGE: '1' };
 
 // Read through the overlay rather than hard-coded, so an edited variant

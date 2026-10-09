@@ -26,7 +26,7 @@
 // the variant build for the same reason AwardsTimeline's provenance paragraph
 // does — see the preamble of tests/e2e/data-variants.spec.js for the
 // mechanism. `npm run build:e2e:coverage` compiles a second site under
-// /e2e-coverage-variant/ with tests/e2e/fixtures/data-variants/** layered on,
+// /e2e-coverage-variant/ with tests/e2e/fixtures/data-variant/** layered on,
 // one `docusaurus serve` offers both, and the report unions what each build
 // reached.
 //
@@ -63,7 +63,7 @@ const describeCoverage =
   process.env.E2E_COVERAGE === '1' ? test.describe : test.describe.skip;
 
 const COVERAGE_ENV = { E2E_COVERAGE: '1' };
-const VARIANT_ENV = { E2E_COVERAGE: '1', E2E_COVERAGE_VARIANT: '1' };
+const VARIANT_ENV = { E2E_COVERAGE: '1', E2E_COVERAGE_BUILD: 'variant' };
 
 // Read the corpus through the overlay rather than hard-coding a count, so an
 // edited overlay fails here instead of leaving a test that asserts nothing.

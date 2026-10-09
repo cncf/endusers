@@ -43,7 +43,7 @@ const loader = require('./tools/e2e-data-fixture-loader.cjs');
 const {
   DATA_DIR,
   FIXTURE_DIR,
-  VARIANT_FIXTURE_DIR,
+  overlayDirFor,
   overlayPathsFor,
 } = require('./tools/e2e-data-fixtures.cjs');
 
@@ -64,21 +64,21 @@ function run(relativeDataPath, { variant = false } = {}) {
   const resourcePath = join(DATA_DIR, relativeDataPath);
   const source = readFileSync(resourcePath, 'utf8');
   const context = loaderContext(resourcePath);
-  // The loader reads the variant flag through process.env, so setting it here
-  // is the only way to drive the second pass. A unit run never arrives with it
-  // set -- the variant build is a separate pass of `npm run
+  // The loader reads the build name through process.env, so setting it here
+  // is the only way to drive a fixture pass. A unit run never arrives with it
+  // set -- each fixture build is a separate pass of `npm run
   // build:e2e:coverage` -- so the helper asserts that and restores by
   // deleting, rather than carrying a restore branch no test can reach.
   assert.equal(
-    process.env.E2E_COVERAGE_VARIANT,
+    process.env.E2E_COVERAGE_BUILD,
     undefined,
-    'E2E_COVERAGE_VARIANT leaked into the unit run',
+    'E2E_COVERAGE_BUILD leaked into the unit run',
   );
-  if (variant) process.env.E2E_COVERAGE_VARIANT = '1';
+  if (variant) process.env.E2E_COVERAGE_BUILD = 'variant';
   try {
     return { source, context, patched: loader.call(context, source) };
   } finally {
-    delete process.env.E2E_COVERAGE_VARIANT;
+    delete process.env.E2E_COVERAGE_BUILD;
   }
 }
 
@@ -113,10 +113,10 @@ test('the variant build layers both overlays and registers both', () => {
   // community-people.json is the one data file carrying an overlay in each
   // directory, so it is the only path on which the ordering is observable.
   assert.deepEqual(
-    overlayPathsFor(resourcePath, { E2E_COVERAGE_VARIANT: '1' }),
+    overlayPathsFor(resourcePath, { E2E_COVERAGE_BUILD: 'variant' }),
     [
       join(FIXTURE_DIR, 'community-people.json'),
-      join(VARIANT_FIXTURE_DIR, 'community-people.json'),
+      join(overlayDirFor('variant'), 'community-people.json'),
     ],
   );
 
@@ -124,7 +124,7 @@ test('the variant build layers both overlays and registers both', () => {
 
   assert.deepEqual(context.dependencies, [
     join(FIXTURE_DIR, 'community-people.json'),
-    join(VARIANT_FIXTURE_DIR, 'community-people.json'),
+    join(overlayDirFor('variant'), 'community-people.json'),
   ]);
   // The variant overlay empties fetchedAt and is applied second, so seeing it
   // win proves the base overlay did not overwrite it on the way past.

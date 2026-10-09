@@ -18,7 +18,7 @@
 // and so does the ordinary coverage build. Clearing it there would not add a
 // case: it would trade the membership sentence covered by
 // tests/e2e/member-directory-freshness.spec.js for the arms above. The
-// timestamp is made unparseable in tests/e2e/fixtures/data-variants/members.json
+// timestamp is made unparseable in tests/e2e/fixtures/data-variant/members.json
 // instead, the mechanism tests/e2e/data-variants.spec.js documents for this
 // class of branch, so one Playwright run visits /community/members and
 // /e2e-coverage-variant/community/members and the report unions what each
@@ -39,7 +39,7 @@ const describeCoverage =
   process.env.E2E_COVERAGE === '1' ? test.describe : test.describe.skip;
 
 const COVERAGE_ENV = { E2E_COVERAGE: '1' };
-const VARIANT_ENV = { E2E_COVERAGE: '1', E2E_COVERAGE_VARIANT: '1' };
+const VARIANT_ENV = { E2E_COVERAGE: '1', E2E_COVERAGE_BUILD: 'variant' };
 
 // Read through the overlay rather than hard-coded, so an edited variant
 // overlay fails here instead of leaving a test that asserts nothing. Each

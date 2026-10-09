@@ -12,16 +12,17 @@
 // instead of taking the coverage with it.
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
 import {
   DATA_DIR,
   FIXTURE_DIR,
-  VARIANT_FIXTURE_DIR,
   applyOverlay,
+  coverageBuildNames,
   loadSiteData,
+  overlayDirFor,
   overlayDirs,
   overlayPathFor,
   overlayPathsFor,
@@ -370,39 +371,72 @@ test('overlaySource reports the overlay it applied', () => {
   );
 });
 
-// The variant build is a second site compiled from the same sources and
+// A named fixture build is a second site compiled from the same sources and
 // served beside the first, which is the only way to cover a branch that turns
 // on a document-level field: clearing it in the one coverage build would swap
 // which arm the one page renders rather than add a case. The directory is
-// additive and second, so a variant overlay patches what the ordinary
-// coverage build already produced.
-test('the variant overlay directory is additive and applies last', () => {
+// additive and second, so its overlay patches what the ordinary coverage
+// build already produced.
+test('a named build directory is additive and applies last', () => {
   assert.deepEqual(overlayDirs({}), [FIXTURE_DIR]);
-  assert.deepEqual(overlayDirs({ E2E_COVERAGE_VARIANT: '1' }), [
+  assert.deepEqual(overlayDirs({ E2E_COVERAGE_BUILD: 'variant' }), [
     FIXTURE_DIR,
-    VARIANT_FIXTURE_DIR,
+    overlayDirFor('variant'),
   ]);
+});
+
+// Every build name is a directory and every directory is a build: the list is
+// what package.json's build pass loops over, so a directory missing from it
+// would be a site nothing compiles and a spec asserting against a route that
+// 404s.
+test('the build names are the data-* fixture directories', () => {
+  const names = coverageBuildNames();
+  assert.ok(
+    names.includes('variant'),
+    'the variant build must still be declared',
+  );
+  assert.ok(
+    names.includes('no-revision'),
+    'the no-revision build must still be declared',
+  );
+  assert.deepEqual(names, [...names].sort(), 'build order must be stable');
+  for (const name of names)
+    assert.ok(
+      statSync(overlayDirFor(name)).isDirectory(),
+      `${name}: no overlay directory`,
+    );
+});
+
+// A misspelled name must not quietly compile the ordinary coverage build
+// under a second base URL: that site serves, passes a smoke test, and covers
+// nothing the real build did not already cover.
+test('an unknown build name is an error, not a silent ordinary build', () => {
+  assert.throws(
+    () => overlayDirs({ E2E_COVERAGE_BUILD: 'no-such-build' }),
+    /names no overlay directory/,
+  );
 });
 
 test('a data file patched by both directories collects both overlays', () => {
   const path = join(DATA_DIR, 'awards.json');
   assert.deepEqual(overlayPathsFor(path, {}), []);
-  assert.deepEqual(overlayPathsFor(path, { E2E_COVERAGE_VARIANT: '1' }), [
-    join(VARIANT_FIXTURE_DIR, 'awards.json'),
+  assert.deepEqual(overlayPathsFor(path, { E2E_COVERAGE_BUILD: 'variant' }), [
+    join(overlayDirFor('variant'), 'awards.json'),
   ]);
   const groups = join(DATA_DIR, 'community-groups.json');
-  assert.deepEqual(overlayPathsFor(groups, { E2E_COVERAGE_VARIANT: '1' }), [
+  assert.deepEqual(overlayPathsFor(groups, { E2E_COVERAGE_BUILD: 'variant' }), [
     join(FIXTURE_DIR, 'community-groups.json'),
-    join(VARIANT_FIXTURE_DIR, 'community-groups.json'),
+    join(overlayDirFor('variant'), 'community-groups.json'),
   ]);
   // The contrast case: a file the ordinary coverage build overlays and the
   // variant build has nothing to add to still collects one path, which is
-  // what proves the variant directory is consulted only when it has
+  // what proves the named directory is consulted only when it has
   // something to say rather than always appended.
   const catalog = join(DATA_DIR, 'architectures', 'catalog.json');
-  assert.deepEqual(overlayPathsFor(catalog, { E2E_COVERAGE_VARIANT: '1' }), [
-    join(FIXTURE_DIR, 'architectures', 'catalog.json'),
-  ]);
+  assert.deepEqual(
+    overlayPathsFor(catalog, { E2E_COVERAGE_BUILD: 'variant' }),
+    [join(FIXTURE_DIR, 'architectures', 'catalog.json')],
+  );
 });
 
 // Both arms have to be reachable in one Playwright run, which is the whole
@@ -426,7 +460,10 @@ test('the variant build clears the fields the ordinary build keeps', () => {
     );
     assert.equal(
       field(
-        loadSiteData(name, { E2E_COVERAGE: '1', E2E_COVERAGE_VARIANT: '1' }),
+        loadSiteData(name, {
+          E2E_COVERAGE: '1',
+          E2E_COVERAGE_BUILD: 'variant',
+        }),
       ),
       cleared,
       `${name}: the variant build must clear it`,
@@ -439,7 +476,7 @@ test('the variant build clears the fields the ordinary build keeps', () => {
       !field(
         loadSiteData(name, {
           E2E_COVERAGE: '1',
-          E2E_COVERAGE_VARIANT: '1',
+          E2E_COVERAGE_BUILD: 'variant',
         }),
       ),
       `${name}: the cleared value must be falsy`,
@@ -538,33 +575,37 @@ test('the coverage build does not share a bundler cache with the real build', ()
   const scripts = JSON.parse(
     readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
   ).scripts;
-  // Both passes compile different data from the same sources, so the second
-  // would replay the first's cache just as readily as it would the production
-  // build's.
-  for (const name of [
-    'build:e2e:coverage:site',
-    'build:e2e:coverage:variant',
-  ]) {
-    assert.match(
-      scripts[name],
-      /DOCUSAURUS_NO_PERSISTENT_CACHE=1/,
-      `${name} must opt out of the shared bundler cache`,
-    );
-  }
+  const driver = readFileSync(
+    new URL('./tools/e2e-coverage-builds.mjs', import.meta.url),
+    'utf8',
+  );
+  // The site pass compiles different data from the same sources, so the
+  // fixture passes would replay its cache just as readily as the production
+  // build's -- and so would it replay theirs.
+  assert.match(
+    scripts['build:e2e:coverage:site'],
+    /DOCUSAURUS_NO_PERSISTENT_CACHE=1/,
+    'build:e2e:coverage:site must opt out of the shared bundler cache',
+  );
+  assert.match(
+    driver,
+    /DOCUSAURUS_NO_PERSISTENT_CACHE: '1'/,
+    'every fixture build must opt out of the shared bundler cache',
+  );
   assert.match(
     scripts['build:e2e:coverage'],
-    /build:e2e:coverage:site(?:.|\n)*build:e2e:coverage:variant/,
-    'build:e2e:coverage must run the site build before the variant build',
-  );
-  // The variant is written inside the ordinary build output so one
-  // `docusaurus serve` offers both sites, and under its own base URL so the
-  // real routes keep their paths.
-  assert.match(
-    scripts['build:e2e:coverage:variant'],
-    /BASE_URL=\/e2e-coverage-variant\//,
+    /build:e2e:coverage:site(?:.|\n)*build:e2e:coverage:fixtures/,
+    'build:e2e:coverage must run the site build before the fixture builds',
   );
   assert.match(
-    scripts['build:e2e:coverage:variant'],
-    /--out-dir build\/e2e-coverage-variant/,
+    scripts['build:e2e:coverage:fixtures'],
+    /tests\/tools\/e2e-coverage-builds\.mjs/,
   );
+  // Each fixture build is written inside the ordinary build output so one
+  // `docusaurus serve` offers every site, and under its own base URL so the
+  // real routes keep their paths. Both are derived from the build name, which
+  // is what lets a new build be a new directory and nothing else.
+  assert.match(driver, /BASE_URL: `\/e2e-coverage-\$\{name\}\/`/);
+  assert.match(driver, /`build\/e2e-coverage-\$\{name\}`/);
+  assert.match(driver, /E2E_COVERAGE_BUILD: name/);
 });

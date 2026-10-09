@@ -33,7 +33,7 @@
 // AwardsTimeline's provenance paragraph does; see the preamble of
 // tests/e2e/data-variants.spec.js for the mechanism. `npm run
 // build:e2e:coverage` compiles a second site under /e2e-coverage-variant/
-// with tests/e2e/fixtures/data-variants/** layered on, one `docusaurus serve`
+// with tests/e2e/fixtures/data-variant/** layered on, one `docusaurus serve`
 // offers both, and the report unions what each build reached.
 //
 // The real route is asserted alongside the variant one. On its own, an
@@ -56,7 +56,7 @@ const describeCoverage =
   process.env.E2E_COVERAGE === '1' ? test.describe : test.describe.skip;
 
 const COVERAGE_ENV = { E2E_COVERAGE: '1' };
-const VARIANT_ENV = { E2E_COVERAGE: '1', E2E_COVERAGE_VARIANT: '1' };
+const VARIANT_ENV = { E2E_COVERAGE: '1', E2E_COVERAGE_BUILD: 'variant' };
 
 // Read the corpus through the overlays rather than hard-coding names or a
 // count, so an edited overlay fails here instead of leaving a test that
