@@ -33,7 +33,12 @@ const HELPER_URL = new URL(
   import.meta.url,
 ).href;
 
-function withModuleStubbedFor(importerUrl, run) {
+// `run` is awaited before the hook is removed. Module resolution inside a
+// dynamic `import()` happens in a later microtask, so deregistering on the
+// synchronous return of `run()` would tear the hook down before the helper's
+// `node:module` specifier is ever resolved -- the redirect would silently not
+// apply and the real builtin (with a working `registerHooks`) would load.
+async function withModuleStubbedFor(importerUrl, run) {
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
       if (specifier === 'node:module' && context.parentURL === importerUrl) {
@@ -43,7 +48,7 @@ function withModuleStubbedFor(importerUrl, run) {
     },
   });
   try {
-    return run();
+    return await run();
   } finally {
     hooks.deregister();
   }
