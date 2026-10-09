@@ -16,7 +16,6 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
   findActiveContent,
-  hasDoctype,
   stripActiveContent,
   stripDoctype,
 } from './lib/svg-active-content.mjs';
@@ -242,17 +241,10 @@ function sanitizeArchitectureAssets(dir) {
       );
     }
 
-    // Remove DOCTYPE declarations that can break XML consumers. stripDoctype()
-    // leaves a malformed declaration (unclosed subset or quoted literal) in
-    // place rather than guessing where it ends, and an unstripped external DTD
-    // reference is inert to the findActiveContent() rescan below -- so verify
-    // the removal happened instead of assuming it.
+    // Remove DOCTYPE declarations that can break XML consumers. A document
+    // with an unclosed or otherwise malformed one was already rejected by
+    // stripActiveContent(), so nothing is left to guess at here.
     source = stripDoctype(source);
-    if (hasDoctype(source)) {
-      throw new Error(
-        `DOCTYPE could not be removed from ${relative(join(root, 'static'), file)}`,
-      );
-    }
 
     // Strip draw.io/Excalidraw editable metadata to reduce bloat.
     source = source.replace(/\scontent\s*=\s*["'][^"']*["']/gi, '');
@@ -271,10 +263,10 @@ function sanitizeArchitectureAssets(dir) {
       }
     }
 
-    // stripActiveContent() verifies the string it returns, but the DOCTYPE and
-    // content-attribute removals above delete text, which can join two inert
-    // fragments into a live one ("<sc" + "ript>"). Verify the bytes that are
-    // actually written rather than the ones that were checked earlier.
+    // stripActiveContent() verifies the string it returns, but the
+    // content-attribute removal above is a text edit, which can leave a
+    // document that no longer parses. Verify the bytes that are actually
+    // written rather than the ones that were checked earlier.
     const residual = findActiveContent(source);
     if (residual.length) {
       throw new Error(

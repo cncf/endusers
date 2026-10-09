@@ -6,48 +6,43 @@
  * any script it contains in the origin that served it. Assets imported from
  * third-party repositories therefore have to be treated as untrusted input.
  *
- * Detection normalizes attribute values before testing them so that entity and
- * control-character obfuscation (`java&#115;cript:`, `java\tscript:`) does not
- * slip past a naive substring match.
+ * This module reads SVG the way a browser does: as XML, through a real XML
+ * parser (`sax`, strict mode), and reads embedded CSS through the CSS Syntax
+ * tokenizer (`css-tree`). Detection asks the resulting element and attribute
+ * tree, and the resulting token stream, what they contain. It never pattern
+ * matches over source text, so comments, CDATA sections, entity and character
+ * references, CSS escapes and quote pairing are resolved by the parsers rather
+ * than guessed at here.
+ *
+ * The scan fails closed. A document the XML parser rejects, or that declares
+ * entities or a non-UTF-8 encoding, is itself a finding: this module cannot
+ * vouch for bytes it cannot read the way a browser does.
  */
 
+import sax from 'sax';
+import { ident, string, tokenize, tokenTypes, url } from 'css-tree';
+import { activeScheme, describeTarget, remoteTarget } from './uri-safety.mjs';
+
 /**
- * Elements that execute or bind script, or that embed a separate document.
+ * Elements that execute or bind script, embed a separate document, or change
+ * how the page resolves or leaves itself.
  *
  * `iframe`, `embed` and `object` are only reachable inside `<foreignObject>`,
  * where they load an attacker-chosen document into the origin serving the SVG.
  * `foreignObject` itself stays allowed: editors such as draw.io emit it for
- * ordinary text, and imported diagrams already rely on it.
+ * ordinary text, and imported diagrams already rely on it. `base` re-points
+ * every relative reference, and `meta` carries `http-equiv="refresh"`.
  */
-const ACTIVE_ELEMENTS = [
+const ACTIVE_ELEMENTS = new Set([
   'script',
   'handler',
   'listener',
   'iframe',
   'embed',
   'object',
-];
-
-/** URI schemes that execute script when navigated to or rendered. */
-const ACTIVE_SCHEMES = ['javascript', 'vbscript', 'livescript', 'mocha'];
-
-/**
- * An optional XML namespace prefix.
- *
- * Standalone SVG is served as image/svg+xml and parsed as XML, where the
- * prefix is arbitrary and only the namespace URI it binds matters:
- * `<x:script xmlns:x="http://www.w3.org/2000/svg">` is a script element and
- * executes. Every active-element pattern therefore has to tolerate a prefix,
- * or a one-character edit walks past the whole gate.
- */
-const NS_PREFIX = '(?:[a-z_][-a-z0-9_.]*:)?';
-
-const ACTIVE_ELEMENT_PATTERN = new RegExp(
-  `<\\s*${NS_PREFIX}(${ACTIVE_ELEMENTS.join('|')})\\b`,
-  'i',
-);
-
-const EVENT_HANDLER_ATTRIBUTE = /\son[a-z]+\s*=/i;
+  'base',
+  'meta',
+]);
 
 /**
  * Attributes that carry a whole document as their value. `srcdoc` markup is
@@ -56,81 +51,36 @@ const EVENT_HANDLER_ATTRIBUTE = /\son[a-z]+\s*=/i;
  */
 const DOCUMENT_ATTRIBUTES = new Set(['srcdoc']);
 
-/**
- * `<animate>`/`<set>` can assign a value to `href` at runtime, so an element
- * that is inert in the source becomes a javascript: link once the animation
- * begins. The element itself is the finding — its `to`/`values`/`from`
- * payloads are ordinary attribute values that no scheme scan would flag on an
- * element that is not itself a link.
- */
-const ANIMATED_URI_ELEMENT = new RegExp(
-  `<\\s*${NS_PREFIX}(animate|set)\\b[^>]*\\battributeName\\s*=\\s*(?:"\\s*(?:xlink:)?href\\s*"|'\\s*(?:xlink:)?href\\s*'|(?:xlink:)?href\\b)[^>]*>`,
-  'gi',
-);
+/** Attributes whose value is a single URL the browser fetches. */
+const FETCHED_ATTRIBUTES = new Set(['src', 'poster', 'background']);
 
-const ATTRIBUTE_PATTERN =
-  /\s([a-z_:][-a-z0-9_:.]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>`]+))/gi;
+/** `srcset` holds a list of candidates, each a URL and an optional descriptor. */
+const SRCSET_ATTRIBUTE = 'srcset';
 
 /**
- * A DOCTYPE declaration, internal subset included.
- *
- * `<!DOCTYPE\s[^>]*>` cannot express this: the first `>` inside an internal
- * subset closes an `<!ENTITY ...>` declaration, not the DOCTYPE, so that
- * pattern deletes the declaration and leaves a bare `]>` behind -- in a file
- * the caller then publishes as well-formed XML.
- *
- * Quoted literals need the same care. An ExternalID's system identifier may
- * contain `[`, `]` or `>` (`<!DOCTYPE svg SYSTEM "https://h/x[.dtd">`), so a
- * pattern that reads a bare `[` as the start of an internal subset either
- * matches nothing -- returning the declaration to a caller that reports it
- * removed -- or swallows everything up to an unrelated `]>` such as the end
- * of a CDATA section. Each alternation branch below therefore consumes a
- * quoted literal through its closing mate before the structural characters
- * `[`, `]` and `>` are given any meaning. The branches are disjoint on their
- * first character, so matching stays linear.
- *
- * A DOCTYPE whose subset or quoted literal never closes matches nothing and
- * is left in place. Callers must treat that as a failed strip: check
- * hasDoctype() on the result and refuse to publish, rather than assume the
- * replacement succeeded.
+ * Elements whose `href` is navigation the visitor chooses rather than a load
+ * the page performs. draw.io exports legitimately carry such links, so
+ * flagging them would fail the existing corpus. Every other element's `href`
+ * is treated as a fetch: that fails closed for elements this module does not
+ * enumerate (`use`, `image`, `feImage`, `filter`, `script`, `link`, `pattern`,
+ * gradients, `textPath`, and whatever SVG adds next).
  */
-const DOCTYPE_PATTERN =
-  /<!DOCTYPE\s(?:[^[>"']|"[^"]*"|'[^']*')*(?:\[(?:[^\]"']|"[^"]*"|'[^']*')*\]\s*)?>\s*/gi;
-
-/** An entity declaration, which only appears inside an internal DTD subset. */
-const ENTITY_DECLARATION = /<!ENTITY\s/i;
+const NAVIGATION_ELEMENTS = new Set(['a']);
 
 /**
- * An XML processing instruction, target captured.
- *
- * The only PI an SVG image legitimately carries is the XML declaration
- * `<?xml ...?>`. Anything else is at best a remote fetch and at worst code:
- * `<?xml-stylesheet href="https://evil.example/x.css"?>` makes the browser
- * fetch a third-party stylesheet when the SVG is opened directly, and a
- * `type="text/xsl"` target applies an XSLT program to the document. Start-tag
- * and attribute scanning never sees either, because a PI is not a tag.
+ * CSS functions that take a bare string as a URL to fetch. `url()` with a
+ * quoted argument is a function token, not a url token, so it belongs here
+ * with the image functions.
  */
-const PROCESSING_INSTRUCTION = /<\?([^\s?>]*)[\s\S]*?\?>/g;
-
-/**
- * Characters that only appear when a file was decoded with the wrong charset.
- *
- * The validators read every SVG as UTF-8. A UTF-16 file read that way turns
- * into NUL-riddled text (or U+FFFD replacements where the bytes are not valid
- * UTF-8 at all), and every regex in this module then scans a string that is
- * not what a browser honoring the BOM or `encoding=` declaration parses. The
- * mismatch is the finding: this scanner cannot vouch for bytes it cannot read.
- */
-// eslint-disable-next-line no-control-regex
-const MISDECODED_CHARACTER = /[\u0000\ufffd]/;
-
-/**
- * The encoding pseudo-attribute of an XML declaration at the start of the
- * document. Encodings that are not a UTF-8 subset shift byte interpretation
- * away from what this module's UTF-8 reading saw.
- */
-const XML_DECLARATION_ENCODING =
-  /^\uFEFF?\s*<\?xml\b[^?]*\bencoding\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+const URL_STRING_FUNCTIONS = new Set([
+  'url',
+  'src',
+  'image',
+  'image-set',
+  '-webkit-image-set',
+  'cross-fade',
+  '-webkit-cross-fade',
+]);
 
 /** Encodings under which a UTF-8 reading of the bytes is faithful. */
 const SAFE_ENCODINGS = new Set(['utf-8', 'utf8', 'us-ascii', 'ascii']);
@@ -151,368 +101,216 @@ const SINGLE_BYTE_ASCII_ENCODING =
   /^(?:iso-8859-\d{1,2}|windows-125[0-8]|latin[1-9])$/;
 
 /**
- * Report whether `source` carries a DOCTYPE declaration.
+ * Characters that only appear when a file was decoded with the wrong charset.
  *
- * @param {string} source - SVG file contents.
- * @returns {boolean}
+ * The validators read every SVG as UTF-8. A UTF-16 file read that way turns
+ * into NUL-riddled text (or U+FFFD replacements where the bytes are not valid
+ * UTF-8 at all), and the parse then covers a string that is not what a browser
+ * honoring the BOM or `encoding=` declaration parses.
  */
-export function hasDoctype(source) {
-  return /<!DOCTYPE\s/i.test(String(source));
-}
+// eslint-disable-next-line no-control-regex
+const MISDECODED_CHARACTER = /[\u0000\ufffd]/;
 
 /**
- * Remove every DOCTYPE declaration from `source`, internal subset included.
- *
- * Callers strip the DOCTYPE because it is unnecessary in an SVG image and
- * breaks some XML consumers. Removing only the part before the subset's first
- * `>` leaves markup that is neither a DOCTYPE nor valid content, so the single
- * pattern lives here and every caller shares it.
- *
- * A malformed declaration (unclosed subset or quoted literal) is deliberately
- * left in place rather than guessed at. Callers that publish the result must
- * re-check hasDoctype() and fail closed instead of reporting the strip as
- * done.
- *
- * @param {string} source - SVG file contents.
+ * Strip any XML namespace prefix from a qualified name.
+ * @param {string} name
  * @returns {string}
  */
-export function stripDoctype(source) {
-  return String(source).replace(DOCTYPE_PATTERN, '');
+function localName(name) {
+  const colon = name.lastIndexOf(':');
+  return (colon === -1 ? name : name.slice(colon + 1)).toLowerCase();
+}
+
+const PROLOG_DOCTYPE =
+  /^[\s\uFEFF]*(?:<\?[^]*?\?>\s*|<!--[^]*?-->\s*)*<!DOCTYPE/i;
+
+/**
+ * Parse `source` as XML into a flat event list.
+ *
+ * `sax` is run in strict mode, with errors recorded and parsing resumed so a
+ * malformed document still yields whatever it recovered: the scans below then
+ * report both the malformation and anything active they can still see.
+ * Namespace prefixes are deliberately not resolved. Every name is compared by
+ * local name, whatever namespace it binds, because the prefix is arbitrary
+ * (`<x:script xmlns:x="http://www.w3.org/2000/svg">` is a script element) and
+ * a name that is only dangerous in one namespace is not worth distinguishing
+ * in an image.
+ *
+ * @param {string} source - SVG file contents.
+ * @returns {{ events: object[], errors: string[] }}
+ */
+function parseXml(source) {
+  const events = [];
+  const errors = [];
+  const parser = sax.parser(true);
+  // sax resolves the HTML named entities even in strict mode. XML defines
+  // five, and a browser parsing a standalone SVG treats any other reference as
+  // a fatal error, so `&nbsp;` must not quietly become U+00A0 here.
+  parser.ENTITIES = Object.create(sax.XML_ENTITIES);
+  let depth = 0;
+  let roots = 0;
+
+  parser.onerror = (error) => {
+    errors.push(error.message.split('\n')[0]);
+    parser.error = null;
+    parser.resume();
+  };
+  parser.onopentag = (tag) => {
+    if (depth === 0) roots += 1;
+    events.push({
+      type: 'open',
+      depth,
+      name: tag.name,
+      attributes: Object.entries(tag.attributes),
+      selfClosing: tag.isSelfClosing,
+    });
+    depth += 1;
+  };
+  parser.onclosetag = (name) => {
+    depth -= 1;
+    events.push({ type: 'close', depth, name });
+  };
+  parser.ontext = (value) => events.push({ type: 'text', depth, value });
+  parser.oncdata = (value) => events.push({ type: 'cdata', depth, value });
+  parser.oncomment = (value) => events.push({ type: 'comment', depth, value });
+  parser.ondoctype = (value) => events.push({ type: 'doctype', depth, value });
+  parser.onprocessinginstruction = ({ name, body }) =>
+    events.push({ type: 'pi', depth, name, body });
+
+  parser.write(source).close();
+
+  // sax accepts any number of top-level elements; an XML document has one.
+  if (roots !== 1) {
+    errors.push(roots === 0 ? 'No root element' : 'Multiple root elements');
+  }
+  // sax swallows a DOCTYPE whose subset never closes and parses what follows
+  // as markup; a browser reads it as part of the subset.
+  if (
+    !events.some((event) => event.type === 'doctype') &&
+    PROLOG_DOCTYPE.test(source)
+  ) {
+    errors.push('Unterminated DOCTYPE');
+  }
+  return { events, errors };
 }
 
 /**
- * Elements whose `href`/`xlink:href` makes the browser fetch and render a
- * separate resource from the host in the value.
+ * The CSS text of every `<style>` element, in document order.
  *
- * `link` is here for the same reason the HTML-only elements below are: it is
- * reachable inside `<foreignObject>`, where `<link rel="stylesheet" href>`
- * fetches a third-party stylesheet on load.
+ * The XML parser has already resolved CDATA sections and character references,
+ * so a `</style>` inside CDATA is data and `&#117;rl(` is `url(`.
  *
- * `a` is deliberately absent. A hyperlink is navigation the visitor chooses,
- * not a load the page performs, and draw.io exports legitimately carry one
- * (every imported diagram exported with text problems links to
- * drawio.com/doc/faq/...), so flagging it would fail the existing corpus.
- */
-const RESOURCE_ELEMENTS = new Set([
-  'image',
-  'use',
-  'feimage',
-  'script',
-  'filter',
-  'link',
-]);
-
-/**
- * A start tag with its attribute section. Quoted runs are matched as units so
- * a raw `>` inside an attribute value -- legal in XML, where only `<` and `&`
- * must be escaped -- cannot end the tag early and hide the attributes after it.
- */
-const TAG_PATTERN =
-  /<\s*([A-Za-z_][-A-Za-z0-9_.:]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
-
-const STYLE_OPEN_TAG = new RegExp(
-  `<\\s*${NS_PREFIX}style\\b((?:"[^"]*"|'[^']*'|[^>"'])*)>`,
-  'gi',
-);
-
-/** Sticky, so the close tag can be tested in place without slicing. */
-const STYLE_CLOSE_TAG = new RegExp(`<\\s*/\\s*${NS_PREFIX}style\\s*>`, 'iy');
-
-const CDATA_OPEN = '<![CDATA[';
-const CDATA_CLOSE = ']]>';
-
-/**
- * The CSS text of every `<style>` element in `source`.
- *
- * A single lazy `<style ...>([\s\S]*?)</style>` regex cannot express this. In
- * XML -- which is how a browser parses a standalone `.svg` -- a `</style>`
- * inside a CDATA section is ordinary character data, so it does not close the
- * element; the lazy match stops there anyway and every declaration after it
- * goes unscanned, in a file that is well-formed and renders. That hid a live
- * `url(https://host/...)` fetch from findRemoteReferences, which is the gate
- * that keeps a visitor's IP, User-Agent and Referer from reaching a host the
- * diagram's author chose.
- *
- * CDATA sections are therefore consumed whole before `<` is given any
- * meaning. A `<style>` that never closes is read to the end of the document:
- * that is what an HTML parser does, and in XML it is a fatal error, so
- * scanning the remainder is the conservative reading under either grammar.
- * A self-closing `<style/>` has no content and is skipped.
- *
- * @param {string} source - SVG file contents.
+ * @param {object[]} events
  * @returns {string[]}
  */
-function styleBlockContents(source) {
+function styleBlocks(events) {
   const blocks = [];
-  STYLE_OPEN_TAG.lastIndex = 0;
-  let open;
-  while ((open = STYLE_OPEN_TAG.exec(source))) {
-    const contentStart = open.index + open[0].length;
-    if ((open[1] ?? '').trimEnd().endsWith('/')) {
-      STYLE_OPEN_TAG.lastIndex = contentStart;
-      continue;
+  const open = [];
+  for (const event of events) {
+    if (event.type === 'open' && localName(event.name) === 'style') {
+      open.push(blocks.length);
+      blocks.push('');
+    } else if (event.type === 'close' && localName(event.name) === 'style') {
+      open.pop();
+    } else if (
+      (event.type === 'text' || event.type === 'cdata') &&
+      open.length
+    ) {
+      blocks[open.at(-1)] += event.value;
     }
-
-    let cursor = contentStart;
-    let contentEnd = -1;
-    while (cursor < source.length) {
-      if (source.startsWith(CDATA_OPEN, cursor)) {
-        const close = source.indexOf(CDATA_CLOSE, cursor + CDATA_OPEN.length);
-        cursor = close === -1 ? source.length : close + CDATA_CLOSE.length;
-        continue;
-      }
-      if (source[cursor] === '<') {
-        STYLE_CLOSE_TAG.lastIndex = cursor;
-        if (STYLE_CLOSE_TAG.test(source)) {
-          contentEnd = cursor;
-          break;
-        }
-      }
-      cursor += 1;
-    }
-
-    const end = contentEnd === -1 ? source.length : contentEnd;
-    blocks.push(source.slice(contentStart, end));
-    STYLE_OPEN_TAG.lastIndex = end;
   }
   return blocks;
 }
 
 /**
- * A CSS escape sequence: a hex escape of one to six digits with the single
- * optional whitespace character that terminates it, a backslash-newline line
- * continuation, or a backslash before any other single character.
- */
-const CSS_ESCAPE_PATTERN =
-  /\\(?:([0-9a-f]{1,6})(?:\r\n|[ \n\r\t\f])?|(\r\n|[\n\r\f])|([\s\S]))/gi;
-
-/**
- * Decode the CSS escape sequences in a url token or string.
+ * Collect the remote targets in a fragment of CSS.
  *
- * A browser's CSS tokenizer resolves escapes before the value is ever read as
- * a URL, so `url(\68ttps://evil.example/x.css)` fetches
- * `https://evil.example/x.css`. Scanning the raw text instead sees a value
- * starting with a backslash, which is neither absolute nor protocol-relative,
- * and the remote fetch walks past findRemoteReferences -- the gate that keeps
- * a visitor's IP, User-Agent and Referer from reaching a host the diagram's
- * author chose. Every escapable character is reachable this way, so no
- * substring test on the undecoded value can stand in for decoding.
+ * The fragment is read through the CSS Syntax tokenizer, which is the same
+ * tokenization a browser performs before it interprets anything: comments are
+ * gone, escapes are decoded when a token is read (`\75rl(` is the function
+ * `url(`), strings end where the specification says they end, and an
+ * unquoted `url(...)` is one token. Three constructs fetch a URL:
  *
- * This is CSS syntax only. Attribute values that are URLs rather than CSS keep
- * a backslash's URL meaning, which remoteTarget already handles, so decoding
- * stays scoped to the CSS callers.
+ * - an unquoted `url(...)` token;
+ * - a function in {@link URL_STRING_FUNCTIONS} whose argument is a string,
+ *   which covers `url("...")` and the bare-string forms of `image-set()`;
+ * - `@import` followed by a string.
  *
- * @param {string} value - Raw CSS url token or string contents.
- * @returns {string}
- */
-function decodeCssEscapes(value) {
-  return String(value).replace(
-    CSS_ESCAPE_PATTERN,
-    (match, hex, newline, literal) => {
-      if (hex !== undefined) {
-        const code = Number.parseInt(hex, 16);
-        // CSS maps NUL, the surrogate range and out-of-range code points to
-        // U+FFFD rather than to the character the digits name.
-        return code === 0 ||
-          code > 0x10ffff ||
-          (code >= 0xd800 && code <= 0xdfff)
-          ? '\ufffd'
-          : String.fromCodePoint(code);
-      }
-      // A backslash-newline inside a string is a line continuation: it
-      // contributes nothing, so the text either side joins up.
-      return newline !== undefined ? '' : literal;
-    },
-  );
-}
-
-/**
- * A CSS `url(...)` target, quoted or bare. Covers `@font-face` `src` too.
- *
- * The bare branch spells out escape sequences rather than stopping at the
- * first whitespace, because the whitespace that terminates a hex escape
- * belongs to the escape: `url(\000068 ttps://evil.example/x.css)` is one url
- * token whose value is `https://evil.example/x.css`, and a `[^)\s"']*` read
- * would capture only `\000068` and lose the host entirely.
- *
- * The alternatives inside the bare branch are mutually exclusive on purpose.
- * A single `\\[0-9a-f]{1,6}` alternative lets a hex run split across branches
- * — `\abcdef` as `\abcde` plus a bare `f`, and so on — so an unterminated
- * `url(` followed by repeated escapes backtracks exponentially (about 7x per
- * repetition). findRemoteReferences runs on third-party SVGs, so that is a
- * hang an upstream diagram can trigger. Splitting the hex run into a full
- * six-digit form and a shorter form guarded by `(?![0-9a-f])`, and excluding
- * hex digits from the single-character escape, leaves exactly one way to match
- * any input and keeps the scan linear.
- */
-const CSS_URL_PATTERN =
-  /url\(\s*(?:"([^"]*)"|'([^']*)'|((?:\\[0-9a-f]{6}[ \n\r\t\f]?|\\[0-9a-f]{1,5}(?![0-9a-f])[ \n\r\t\f]?|\\[^0-9a-f]|[^)\s"'\\])*))\s*\)/gi;
-
-/**
- * An `@import` whose target is a bare string rather than a `url(...)`.
- *
- * `@import "https://evil.example/x.css";` is valid CSS and fetches the
- * stylesheet exactly as the `url()` form does, but carries no `url(` token for
- * CSS_URL_PATTERN to find. The `url()` form stays CSS_URL_PATTERN's business;
- * a target matched by both is reported once, because findRemoteReferences
- * collects descriptions in a Set.
- */
-const CSS_IMPORT_PATTERN = /@import\s+(?:"([^"]*)"|'([^']*)')/gi;
-
-/**
- * The opening of an `image-set()` argument list, `-webkit-` alias included.
- *
- * CSS Images 4 gives `image-set()` a second spelling for its image reference:
- * `<image-set-option> = [ <image> | <string> ] ...`, and "each `<string>`
- * inside `image-set()` represents a `<url>`". So
- * `image-set("https://evil.example/x.png" 1x)` is a live remote fetch that
- * carries no `url(` token for CSS_URL_PATTERN to find and no `@import` for
- * CSS_IMPORT_PATTERN -- the same shape of gap CSS_IMPORT_PATTERN exists to
- * close. `image-set()` is accepted wherever an `<image>` is (`cursor`,
- * `background-image`, `mask-image`, `list-style-image`), and `cursor` and
- * `mask-image` are not `img-src` fetch directives, so the meta CSP does not
- * stand in for this check.
- *
- * Only the opening is a pattern. The argument list is walked by
- * {@link imageSetTargets} rather than matched, because a nested
- * `url(...)`/`type(...)` means the closing parenthesis cannot be found by a
- * regex without either stopping early or backtracking.
- */
-const IMAGE_SET_OPEN = /(?:-webkit-)?image-set\(/gi;
-
-/** A quoted CSS string, matched as a unit so its contents stay opaque. */
-const CSS_STRING = /"([^"]*)"|'([^']*)'/g;
-
-/**
- * The bare-string arguments of every `image-set()` in a fragment of CSS.
- *
- * The argument list is walked with a parenthesis depth counter, skipping
- * quoted strings so a parenthesis inside one cannot close the list early. An
- * `image-set(` that never closes is read to the end of the fragment, which is
- * the fail-closed reading: a target hidden behind a missing parenthesis is
- * still reported. Strings belonging to a nested `url("...")` are collected
- * too; that only duplicates what CSS_URL_PATTERN already found, and
- * findRemoteReferences collects into a Set. A `type("image/png")` string is
- * collected and then discarded by remoteTarget(), which no media type
- * satisfies.
+ * A bad-url token (`url(/* c *\/"x")`) is invalid CSS that no browser fetches,
+ * but the scanner and a browser must not disagree about it silently, so it is
+ * reported rather than ignored.
  *
  * @param {string} css
- * @returns {string[]} Raw string contents, still CSS-escaped.
+ * @returns {{ targets: string[], malformed: boolean }}
  */
-function imageSetArguments(css) {
-  const values = [];
-  IMAGE_SET_OPEN.lastIndex = 0;
-  let open;
-  while ((open = IMAGE_SET_OPEN.exec(css))) {
-    let cursor = open.index + open[0].length;
-    let depth = 1;
-    const start = cursor;
-    while (cursor < css.length && depth > 0) {
-      const char = css[cursor];
-      if (char === '"' || char === "'") {
-        const close = css.indexOf(char, cursor + 1);
-        cursor = close === -1 ? css.length : close + 1;
+function cssTargets(css) {
+  // Every fetching construct needs a literal `(` or `@`, which no escape can
+  // supply, so a value without either cannot contain one. This only avoids
+  // tokenizing large `d` and base64 attribute values for nothing.
+  if (!/[(@]/.test(css)) return { targets: [], malformed: false };
+
+  const tokens = [];
+  tokenize(css, (type, start, end) => {
+    if (type !== tokenTypes.WhiteSpace && type !== tokenTypes.Comment) {
+      tokens.push({ type, text: css.slice(start, end), start, end });
+    }
+  });
+
+  const targets = [];
+  let malformed = false;
+  const add = (value) => {
+    const target = remoteTarget(value);
+    if (target) targets.push(target);
+  };
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const { type, text } = tokens[index];
+
+    if (type === tokenTypes.Url) {
+      add(url.decode(text));
+    } else if (type === tokenTypes.BadUrl) {
+      malformed = true;
+    } else if (type === tokenTypes.Function) {
+      const name = ident.decode(text.slice(0, -1)).toLowerCase();
+      if (!URL_STRING_FUNCTIONS.has(name)) continue;
+      // An escaped name (`\75rl(`) is still `url(` to a browser, which then
+      // reads an unquoted argument as a url token the tokenizer did not build.
+      if (
+        name === 'url' &&
+        text.toLowerCase() !== 'url(' &&
+        tokens[index + 1]?.type !== tokenTypes.String
+      ) {
+        const close = css.indexOf(')', tokens[index].end);
+        const raw = css.slice(
+          tokens[index].end,
+          close < 0 ? css.length : close,
+        );
+        add(url.decode(`url(${raw.trim()})`));
         continue;
       }
-      if (char === '\\') {
-        cursor += 2;
-        continue;
+      let nesting = 1;
+      for (let next = index + 1; next < tokens.length && nesting; next += 1) {
+        const token = tokens[next];
+        if (
+          token.type === tokenTypes.Function ||
+          token.type === tokenTypes.LeftParenthesis
+        ) {
+          nesting += 1;
+        } else if (token.type === tokenTypes.RightParenthesis) {
+          nesting -= 1;
+        } else if (token.type === tokenTypes.String) {
+          add(string.decode(token.text));
+        }
       }
-      if (char === '(') depth += 1;
-      else if (char === ')') depth -= 1;
-      cursor += 1;
+    } else if (
+      type === tokenTypes.AtKeyword &&
+      ident.decode(text.slice(1)).toLowerCase() === 'import' &&
+      tokens[index + 1]?.type === tokenTypes.String
+    ) {
+      add(string.decode(tokens[index + 1].text));
     }
-    const end = depth === 0 ? cursor - 1 : css.length;
-    const args = css.slice(start, end);
-    CSS_STRING.lastIndex = 0;
-    for (const string of args.matchAll(CSS_STRING)) {
-      values.push(string[1] ?? string[2]);
-    }
-    IMAGE_SET_OPEN.lastIndex = end;
   }
-  return values;
-}
-
-/**
- * Remove CSS comments, which a browser's tokenizer discards before any value
- * is read. A comment placed between `url(` and its quoted argument, or
- * between `@import` and its string, still fetches, while the raw text matches
- * neither CSS_URL_PATTERN nor CSS_IMPORT_PATTERN.
- *
- * Quoted strings are skipped: a comment opener inside a CSS string is two
- * literal characters, not the start of a comment, and treating it as one
- * would swallow the rest of the stylesheet -- hiding every later `url()` from
- * the scan, which is the opposite of what this gate is for. An unterminated
- * comment runs to the end of the fragment, as the tokenizer does.
- *
- * Each comment is replaced by a single space rather than deleted. A comment
- * separates tokens, so deleting it would fuse the text either side and
- * manufacture a token the browser never sees: a comment inserted into the
- * middle of the letters of `url(` does not leave a `url(` behind.
- *
- * @param {string} css
- * @returns {string}
- */
-function stripCssComments(css) {
-  let output = '';
-  let cursor = 0;
-  while (cursor < css.length) {
-    const char = css[cursor];
-    if (char === '"' || char === "'") {
-      const close = css.indexOf(char, cursor + 1);
-      const end = close === -1 ? css.length : close + 1;
-      output += css.slice(cursor, end);
-      cursor = end;
-      continue;
-    }
-    if (char === '/' && css[cursor + 1] === '*') {
-      const close = css.indexOf('*/', cursor + 2);
-      cursor = close === -1 ? css.length : close + 2;
-      output += ' ';
-      continue;
-    }
-    output += char;
-    cursor += 1;
-  }
-  return output;
-}
-
-/**
- * Report whether a value points at a resource on another host.
- *
- * Only absolute http(s) and protocol-relative values qualify. A fragment, a
- * relative path and a `data:` URI all resolve without a network request --
- * draw.io embeds raster artwork as `data:` routinely -- and `data:` markup is
- * already the scheme scanner's business, not this one's.
- *
- * @param {string} value - Raw attribute or CSS value.
- * @returns {string|null} The normalized remote target, or null.
- */
-function remoteTarget(value) {
-  const normalized = normalizeUri(value);
-  // The URL parser treats `\` as `/` in the scheme and authority prefix of a
-  // special-scheme URL, and the site is served over https, so every relative
-  // reference resolves against a special-scheme base. `\\host`, `/\host`,
-  // `\/host` and `https:\\host` therefore reach `host` exactly as `//host`
-  // does, while a `//`-only test reads all four as same-origin paths.
-  //
-  // Only the leading run of separators is translated. A single separator
-  // keeps the value on this origin (`\host` is the path `/host`, and
-  // `https:/host` likewise), and an interior backslash is an ordinary path
-  // character -- `./sub\dir/x.png` must stay local, not become a host.
-  const authority = normalized.replace(
-    /^(https?:)?[/\\]{2,}/,
-    (match, scheme) => `${scheme ?? ''}//`,
-  );
-  if (/^https?:\/\//.test(authority) || authority.startsWith('//')) {
-    return authority;
-  }
-  return null;
-}
-
-/** Trim a target for display so one long data-bearing URL cannot flood output. */
-function describeTarget(target) {
-  return target.length > 120 ? `${target.slice(0, 117)}...` : target;
+  return { targets, malformed };
 }
 
 /**
@@ -529,25 +327,52 @@ function describeTarget(target) {
  * @returns {string[]} Human-readable descriptions, empty when nothing is remote.
  */
 export function findRemoteReferences(source) {
+  const { events, errors } = parseXml(String(source));
   const findings = new Set();
 
-  for (const tag of String(source).matchAll(TAG_PATTERN)) {
-    const element = localName(tag[1]).toLowerCase();
-    const attributes = tag[2] || '';
+  for (const error of errors.slice(0, 1)) findings.add(notWellFormed(error));
 
-    for (const match of attributes.matchAll(ATTRIBUTE_PATTERN)) {
-      const name = localName(match[1].toLowerCase());
-      const value = match[2] ?? match[3] ?? match[4];
+  const report = (css, subject) => {
+    const { targets, malformed } = cssTargets(css);
+    for (const target of targets) {
+      findings.add(
+        `references a remote resource in ${subject}: ${describeTarget(target)}`,
+      );
+    }
+    if (malformed) {
+      findings.add(`contains a malformed url() token in ${subject}`);
+    }
+  };
+
+  for (const event of events) {
+    if (event.type !== 'open') continue;
+    const element = localName(event.name);
+
+    for (const [rawName, value] of event.attributes) {
+      const name = localName(rawName);
+      const label = rawName.toLowerCase();
 
       if (
-        (name === 'href' && RESOURCE_ELEMENTS.has(element)) ||
-        name === 'src'
+        (name === 'href' && !NAVIGATION_ELEMENTS.has(element)) ||
+        FETCHED_ATTRIBUTES.has(name)
       ) {
         const target = remoteTarget(value);
         if (target) {
           findings.add(
-            `references a remote resource in <${element}> ${match[1].toLowerCase()}: ${describeTarget(target)}`,
+            `references a remote resource in <${element}> ${label}: ${describeTarget(target)}`,
           );
+        }
+        continue;
+      }
+
+      if (name === SRCSET_ATTRIBUTE) {
+        for (const candidate of value.split(/[\s,]+/)) {
+          const target = remoteTarget(candidate);
+          if (target) {
+            findings.add(
+              `references a remote resource in <${element}> ${label}: ${describeTarget(target)}`,
+            );
+          }
         }
         continue;
       }
@@ -556,153 +381,81 @@ export function findRemoteReferences(source) {
       // (`fill`, `filter`, `mask`, `clip-path`, `marker-*`, ...) take the same
       // `url(...)` syntax as the CSS property of the same name, so
       // `fill="url(https://evil.example/x.svg#g)"` is the identical remote
-      // fetch as `style="fill:url(https://evil.example/x.svg#g)"`. Scanning
-      // only `style` let the presentation-attribute spelling walk past the
-      // gate. A value with no `url(`/`@import` token yields nothing, so this
-      // costs the other attributes nothing.
-      for (const target of cssTargets(value)) {
-        findings.add(
-          name === 'style'
-            ? `references a remote resource in a style attribute: ${describeTarget(target)}`
-            : `references a remote resource in a ${match[1].toLowerCase()} presentation attribute: ${describeTarget(target)}`,
-        );
-      }
-    }
-  }
-
-  for (const block of styleBlockContents(String(source))) {
-    for (const target of cssTargets(block)) {
-      findings.add(
-        `references a remote resource in a <style> block: ${describeTarget(target)}`,
+      // fetch as `style="fill:url(https://evil.example/x.svg#g)"`.
+      report(
+        value,
+        name === 'style'
+          ? 'a style attribute'
+          : `a ${label} presentation attribute`,
       );
     }
   }
 
+  for (const block of styleBlocks(events)) report(block, 'a <style> block');
+
   return [...findings].sort();
 }
 
+function notWellFormed(message) {
+  return `is not well-formed XML (${message}); this scan cannot see what a browser would parse`;
+}
+
 /**
- * Collect the remote targets in a fragment of CSS, from the `url(...)` token,
- * the bare-string `@import` form and the bare-string `image-set()` form.
+ * Report whether `source` carries a DOCTYPE declaration.
  *
- * Comments are removed first, because a browser's tokenizer discards them
- * before any of these three constructs is read.
- * @param {string} css
+ * A document the XML parser rejects falls back to a text test for the
+ * declaration, so a malformed one (an unclosed internal subset, say) is
+ * reported rather than missed. That can over-report a comment that merely
+ * mentions it, which only ever fails closed.
+ *
+ * @param {string} source - SVG file contents.
+ * @returns {boolean}
+ */
+export function hasDoctype(source) {
+  const text = String(source);
+  const { events, errors } = parseXml(text);
+  return (
+    events.some((event) => event.type === 'doctype') ||
+    (errors.length > 0 && /<!DOCTYPE/i.test(text))
+  );
+}
+
+/**
+ * Remove the DOCTYPE declaration from `source`, internal subset included.
+ *
+ * Callers strip the DOCTYPE because it is unnecessary in an SVG image and
+ * breaks some XML consumers. The document is parsed and rebuilt without it, so
+ * the removal cannot leave half a declaration behind or splice neighbouring
+ * text into new markup.
+ *
+ * A document that is not well-formed is deliberately returned unchanged rather
+ * than guessed at. Callers that publish the result must re-check hasDoctype()
+ * and fail closed instead of reporting the strip as done.
+ *
+ * @param {string} source - SVG file contents.
+ * @returns {string}
+ */
+export function stripDoctype(source) {
+  const text = String(source);
+  const { events, errors } = parseXml(text);
+  if (errors.length || !events.some((event) => event.type === 'doctype')) {
+    return text;
+  }
+  return rebuild(text, events, { dropDoctype: true }).source;
+}
+
+/**
+ * Report the findings that make a document unsafe to edit rather than merely
+ * unsafe to publish: the scan itself is blind to them.
+ *
+ * @param {string} source
+ * @param {{ events: object[], errors: string[] }} parsed
  * @returns {string[]}
  */
-function cssTargets(css) {
-  const targets = [];
-  const normalized = stripCssComments(String(css));
-  for (const pattern of [CSS_URL_PATTERN, CSS_IMPORT_PATTERN]) {
-    for (const match of normalized.matchAll(pattern)) {
-      const value = match[1] ?? match[2] ?? match[3];
-      const target = remoteTarget(decodeCssEscapes(value));
-      if (target) targets.push(target);
-    }
-  }
-  for (const value of imageSetArguments(normalized)) {
-    const target = remoteTarget(decodeCssEscapes(value));
-    if (target) targets.push(target);
-  }
-  return targets;
-}
-
-const NAMED_ENTITIES = {
-  colon: ':',
-  tab: '\t',
-  newline: '\n',
-  lf: '\n',
-  cr: '\r',
-  sol: '/',
-  amp: '&',
-};
-
-/**
- * Decode the HTML entity forms an attribute value may use to hide a scheme.
- * @param {string} value
- * @returns {string}
- */
-function decodeEntities(value) {
-  return value
-    .replace(/&#x([0-9a-f]+);?/gi, (match, hex) => {
-      const code = Number.parseInt(hex, 16);
-      return Number.isFinite(code) && code <= 0x10ffff
-        ? String.fromCodePoint(code)
-        : match;
-    })
-    .replace(/&#(\d+);?/g, (match, dec) => {
-      const code = Number.parseInt(dec, 10);
-      return Number.isFinite(code) && code <= 0x10ffff
-        ? String.fromCodePoint(code)
-        : match;
-    })
-    .replace(/&([a-z]+);?/gi, (match, name) => {
-      const replacement = NAMED_ENTITIES[name.toLowerCase()];
-      return replacement ?? match;
-    });
-}
-
-/**
- * Collapse an attribute value to the form a browser's URL parser sees:
- * entities decoded, whitespace and control characters removed, lowercased.
- * @param {string} value
- * @returns {string}
- */
-function normalizeUri(value) {
-  // Decode twice: some generators emit double-encoded entities (&amp;#58;).
-  return (
-    decodeEntities(decodeEntities(value))
-      // eslint-disable-next-line no-control-regex
-      .replace(/[\u0000-\u0020\u007f\u00a0\u2028\u2029]+/g, '')
-      .toLowerCase()
-  );
-}
-
-/**
- * Strip any XML namespace prefix from a qualified name.
- * @param {string} name
- * @returns {string}
- */
-function localName(name) {
-  const colon = name.lastIndexOf(':');
-  return colon === -1 ? name : name.slice(colon + 1);
-}
-
-/**
- * Report whether a normalized attribute value carries a script-executing URI.
- * @param {string} value - Raw attribute value.
- * @returns {string|null} The offending scheme, or null.
- */
-function activeScheme(value) {
-  const normalized = normalizeUri(value);
-  for (const scheme of ACTIVE_SCHEMES) {
-    if (new RegExp(`(?:^|[^a-z0-9+.-])${scheme}:`, 'i').test(normalized)) {
-      return `${scheme}:`;
-    }
-  }
-  // `data:` URIs that carry markup execute script in the same way. Every
-  // media type a browser parses as a *document* belongs here, not just HTML:
-  // `application/xhtml+xml`, `text/xml` and `application/xml` all run
-  // `<script>` in the XHTML namespace, so enumerating only `text/html` and
-  // `image/svg+xml` lets the identical payload through under a sibling type.
-  // Longer alternatives precede their prefixes so the reported scheme is the
-  // full media type rather than a truncation of it.
-  const markup = normalized.match(
-    /(?:^|[^a-z0-9+.-])(data:(?:text\/html|image\/svg\+xml|application\/xhtml\+xml|text\/xml|application\/xml))/,
-  );
-  if (markup) {
-    return `${markup[1]}`;
-  }
-  return null;
-}
-
-/**
- * Describe every piece of active content found in an SVG source string.
- * @param {string} source - SVG file contents.
- * @returns {string[]} Human-readable descriptions, empty when the SVG is inert.
- */
-export function findActiveContent(source) {
-  const findings = [];
+function structuralFindings(source, { events, errors }) {
+  // One finding is enough to reject the file, and a parser that has lost its
+  // place reports a cascade that buries the cause.
+  const findings = errors.slice(0, 1).map(notWellFormed);
 
   // An XML parser expands author-defined general entities before the document
   // tree exists, so a payload moved into a declaration is invisible to every
@@ -712,7 +465,11 @@ export function findActiveContent(source) {
   // implementing entity expansion, and its recursion limits, inside a scanner;
   // failing closed costs nothing, because an SVG image has no reason to define
   // entities at all.
-  if (ENTITY_DECLARATION.test(source)) {
+  if (
+    events.some(
+      (event) => event.type === 'doctype' && /<!ENTITY\s/i.test(event.value),
+    )
+  ) {
     findings.push(
       'contains an entity declaration in an internal DTD subset ' +
         '(the XML parser expands it, so its payload is not visible here)',
@@ -720,77 +477,139 @@ export function findActiveContent(source) {
   }
 
   // A file this module could not read faithfully cannot be vouched for: every
-  // check below ran against a string a browser never sees. Fail closed rather
-  // than certify bytes the scanner did not actually scan.
+  // check ran against a string a browser never sees.
   if (MISDECODED_CHARACTER.test(source)) {
     findings.push(
       'contains NUL or replacement characters ' +
         '(the file is not UTF-8, so this scan did not see what a browser decodes)',
     );
   }
-  const declaredEncoding = String(source).match(XML_DECLARATION_ENCODING);
-  if (declaredEncoding) {
-    const encoding = (declaredEncoding[1] ?? declaredEncoding[2])
-      .trim()
-      .toLowerCase();
-    if (
-      !SAFE_ENCODINGS.has(encoding) &&
-      !SINGLE_BYTE_ASCII_ENCODING.test(encoding)
-    ) {
-      findings.push(
-        `declares a non-UTF-8 encoding (${encoding || 'empty'}) ` +
-          '(an XML parser honoring it reads different bytes than this scan did)',
-      );
+
+  const declaration = events.find((event) => event.type === 'pi');
+  if (declaration?.name.toLowerCase() === 'xml') {
+    const declared = declaration.body.match(
+      /\bencoding\s*=\s*(?:"([^"]*)"|'([^']*)')/i,
+    );
+    if (declared) {
+      const encoding = (declared[1] ?? declared[2]).trim().toLowerCase();
+      if (
+        !SAFE_ENCODINGS.has(encoding) &&
+        !SINGLE_BYTE_ASCII_ENCODING.test(encoding)
+      ) {
+        findings.push(
+          `declares a non-UTF-8 encoding (${encoding || 'empty'}) ` +
+            '(an XML parser honoring it reads different bytes than this scan did)',
+        );
+      }
     }
   }
 
+  return findings;
+}
+
+/**
+ * Classify one element start tag.
+ *
+ * @param {object} event - An `open` event.
+ * @returns {{ element: string|null, animated: boolean, attributes: Array<{ name: string, finding: string|null, removal: string|null, handler: boolean }> }}
+ */
+function classifyTag(event) {
+  const local = localName(event.name);
+  const attributes = event.attributes.map(([rawName, value]) => {
+    const name = rawName.toLowerCase();
+    const attribute = localName(rawName);
+
+    if (/^on[a-z]+$/.test(attribute)) {
+      return { name: attribute, kind: 'handler', removal: `${name} attribute` };
+    }
+    if (DOCUMENT_ATTRIBUTES.has(attribute)) {
+      return {
+        name,
+        kind: 'document',
+        removal: `${name} attribute (embedded document)`,
+      };
+    }
+    const scheme = activeScheme(value);
+    if (scheme) {
+      return {
+        name,
+        kind: 'scheme',
+        scheme,
+        removal: `${name} attribute (${scheme})`,
+      };
+    }
+    return { name, kind: null, removal: null };
+  });
+
+  // `<animate>`/`<set>` can assign a value to `href` at runtime, so an element
+  // that is inert in the source becomes a javascript: link once the animation
+  // begins. The element itself is the finding: its `to`/`values`/`from`
+  // payloads are ordinary attribute values that no scheme scan would flag on
+  // an element that is not itself a link.
+  const animated =
+    (local === 'animate' || local === 'set') &&
+    event.attributes.some(
+      ([rawName, value]) =>
+        localName(rawName) === 'attributename' &&
+        localName(value.trim()) === 'href',
+    );
+
+  return {
+    element: ACTIVE_ELEMENTS.has(local) ? local : null,
+    animated,
+    attributes,
+  };
+}
+
+/**
+ * Describe every piece of active content found in an SVG source string.
+ * @param {string} source - SVG file contents.
+ * @returns {string[]} Human-readable descriptions, empty when the SVG is inert.
+ */
+export function findActiveContent(source) {
+  const text = String(source);
+  const parsed = parseXml(text);
+  const findings = structuralFindings(text, parsed);
+
   const instructions = new Set();
-  for (const match of String(source).matchAll(PROCESSING_INSTRUCTION)) {
-    const target = match[1].toLowerCase();
-    if (target !== 'xml') {
-      instructions.add(target || '(unnamed)');
+  const elements = new Set();
+  const handlers = new Set();
+  const schemes = new Set();
+  const documents = new Set();
+  const animated = new Set();
+
+  for (const event of parsed.events) {
+    if (event.type === 'pi' && event.name.toLowerCase() !== 'xml') {
+      instructions.add(event.name.toLowerCase() || '(unnamed)');
+    }
+    if (event.type !== 'open') continue;
+
+    const tag = classifyTag(event);
+    if (tag.element) elements.add(tag.element);
+    if (tag.animated) animated.add(localName(event.name));
+    for (const attribute of tag.attributes) {
+      if (attribute.kind === 'handler') handlers.add(attribute.name);
+      if (attribute.kind === 'document') documents.add(attribute.name);
+      if (attribute.kind === 'scheme') {
+        schemes.add(`${attribute.name}="${attribute.scheme}..."`);
+      }
     }
   }
+
+  // The XML declaration is the only processing instruction an SVG image
+  // legitimately carries. Anything else is at best a remote fetch and at worst
+  // code: `<?xml-stylesheet href="https://evil.example/x.css"?>` makes the
+  // browser fetch a third-party stylesheet, and a `type="text/xsl"` target
+  // applies an XSLT program to the document.
   for (const target of [...instructions].sort()) {
     findings.push(
       `contains a <?${target}?> processing instruction ` +
         '(can load a remote stylesheet or apply an XSLT program to the image)',
     );
   }
-
-  const element = source.match(ACTIVE_ELEMENT_PATTERN);
-  if (element) {
-    findings.push(`contains a <${element[1].toLowerCase()}> element`);
+  for (const element of elements) {
+    findings.push(`contains a <${element}> element`);
   }
-
-  const handlers = new Set();
-  const schemes = new Set();
-  const documents = new Set();
-  for (const match of source.matchAll(ATTRIBUTE_PATTERN)) {
-    const name = match[1].toLowerCase();
-    const value = match[2] ?? match[3] ?? match[4];
-
-    if (/^on[a-z]+$/.test(name)) {
-      handlers.add(name);
-      continue;
-    }
-
-    if (DOCUMENT_ATTRIBUTES.has(localName(name))) {
-      documents.add(name);
-      continue;
-    }
-
-    const scheme = activeScheme(value);
-    if (scheme) {
-      schemes.add(`${name}="${scheme}..."`);
-    }
-  }
-
-  // Catch unquoted/malformed handler attributes the attribute scanner misses.
-  if (!handlers.size && EVENT_HANDLER_ATTRIBUTE.test(source)) {
-    handlers.add('on*');
-  }
-
   if (handlers.size) {
     findings.push(
       `contains event handler attribute(s): ${[...handlers].sort().join(', ')}`,
@@ -804,12 +623,6 @@ export function findActiveContent(source) {
       `contains an embedded document attribute: ${attribute} (carries markup that executes in this origin)`,
     );
   }
-
-  const animated = new Set(
-    [...source.matchAll(ANIMATED_URI_ELEMENT)].map((match) =>
-      match[1].toLowerCase(),
-    ),
-  );
   for (const element of [...animated].sort()) {
     findings.push(
       `contains a <${element}> element that animates href (can install a script URI at runtime)`,
@@ -819,133 +632,145 @@ export function findActiveContent(source) {
   return findings;
 }
 
-/**
- * Remove active content from an SVG source string.
- *
- * Removes script-bearing elements outright and drops offending attributes
- * while leaving inert markup untouched.
- *
- * The removal runs to a fixed point rather than once. Deleting an element
- * splices the characters on either side of it together, and those characters
- * can form an active element that was not in the input: `<scr<embed/>ipt>`
- * becomes `<script>` once the `<embed>` between the halves of the word is
- * removed. `script` is stripped before `embed`, so a single pass returns that
- * reassembled element intact -- active content manufactured out of input the
- * detector called inert. Every pass strictly shortens the source, so
- * iterating until it stops changing terminates.
- *
- * @param {string} source - SVG file contents.
- * @returns {{ source: string, removed: string[] }}
- * @throws {Error} If active content survives the loop. Callers write this
- *   output to the site origin verbatim, so a source the detector still flags
- *   must never be handed back as sanitized. An entity declaration reaches this
- *   throw by design: nothing here removes a DOCTYPE, and silently repairing a
- *   document whose payload this module cannot read would be the opposite of
- *   what the verification is for. Mis-decoded input (NUL/replacement
- *   characters, a declared non-UTF-8 encoding) throws for the same reason:
- *   there is no safe edit to bytes the scanner could not faithfully read.
- */
-export function stripActiveContent(source) {
-  const removed = [];
-  let output = String(source);
-  let previous;
-  do {
-    previous = output;
-    output = stripOnce(output, removed);
-  } while (output !== previous);
+const escapeText = (value) =>
+  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-  const residual = findActiveContent(output);
-  if (residual.length) {
-    throw new Error(
-      `Could not strip active content from SVG: ${residual.join('; ')}`,
-    );
+const escapeAttribute = (value) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/"/g, '&quot;')
+    .replace(/\t/g, '&#9;')
+    .replace(/\n/g, '&#10;')
+    .replace(/\r/g, '&#13;');
+
+/**
+ * Serialize the parsed document back to XML, minus whatever is being removed.
+ *
+ * Rebuilding from the parse, instead of deleting character ranges from the
+ * source, is what makes removal safe: nothing is ever spliced, so deleting an
+ * element cannot join the text either side of it into a new element, and the
+ * output is well-formed by construction.
+ *
+ * @param {string} source - Original text, for its BOM and trailing newline.
+ * @param {object[]} events - Parse of `source`.
+ * @param {{ dropDoctype?: boolean, strip?: boolean }} options
+ * @returns {{ source: string, removed: string[] }}
+ */
+function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
+  const removed = [];
+  const bom = source.startsWith('\uFEFF') ? '\uFEFF' : '';
+  let output = bom;
+  let skipDepth = null;
+  const selfClosing = [];
+
+  // Top-level nodes (declaration, DOCTYPE, comments, the root) go on their own
+  // lines; the whitespace between them is not content and the parse drops it.
+  const emit = (depth, text) => {
+    if (depth === 0 && output.length > bom.length && !output.endsWith('\n')) {
+      output += '\n';
+    }
+    output += text;
+  };
+
+  for (const event of events) {
+    if (skipDepth !== null) {
+      if (event.type === 'close' && event.depth === skipDepth) skipDepth = null;
+      continue;
+    }
+
+    if (event.type === 'open') {
+      const tag = classifyTag(event);
+      if (strip && (tag.element || tag.animated)) {
+        removed.push(
+          tag.element
+            ? `<${tag.element}> element`
+            : `<${localName(event.name)}> element animating href`,
+        );
+        skipDepth = event.depth;
+        continue;
+      }
+      const attributes = event.attributes
+        .filter((_, index) => {
+          const { removal } = tag.attributes[index];
+          if (strip && removal) {
+            removed.push(removal);
+            return false;
+          }
+          return true;
+        })
+        .map(([name, value]) => ` ${name}="${escapeAttribute(value)}"`)
+        .join('');
+      selfClosing.push(event.selfClosing);
+      emit(
+        event.depth,
+        `<${event.name}${attributes}${event.selfClosing ? '/>' : '>'}`,
+      );
+    } else if (event.type === 'close') {
+      if (!selfClosing.pop()) output += `</${event.name}>`;
+    } else if (event.type === 'text') {
+      // Whitespace outside the root is layout, not content.
+      if (event.depth > 0) output += escapeText(event.value);
+    } else if (event.type === 'cdata') {
+      output += `<![CDATA[${event.value}]]>`;
+    } else if (event.type === 'comment') {
+      emit(event.depth, `<!--${event.value}-->`);
+    } else if (event.type === 'doctype') {
+      if (!dropDoctype) emit(event.depth, `<!DOCTYPE${event.value}>`);
+    } else if (event.type === 'pi') {
+      if (event.name.toLowerCase() === 'xml') {
+        emit(event.depth, `<?xml ${event.body}?>`);
+      } else if (strip) {
+        removed.push(
+          `<?${event.name.toLowerCase() || '(unnamed)'}?> processing instruction`,
+        );
+      } else {
+        emit(event.depth, `<?${event.name} ${event.body}?>`);
+      }
+    }
   }
 
+  if (source.endsWith('\n')) output += '\n';
   return { source: output, removed };
 }
 
 /**
- * One removal pass: every active element, event handler attribute, script URI
- * and href-animating element the patterns can see in `source`.
+ * Remove active content from an SVG source string.
  *
- * @param {string} source - SVG source as it stands at the start of the pass.
- * @param {string[]} removed - Accumulator, appended to in place.
- * @returns {string} The source with this pass's removals applied.
+ * Removes script-bearing elements outright and drops offending attributes
+ * while leaving inert markup untouched. A source with nothing to remove is
+ * returned byte for byte; otherwise the document is rebuilt from its parse
+ * (see {@link rebuild}).
+ *
+ * The result is re-scanned before it is returned. Callers write it to the
+ * site origin verbatim, so a source the detector still flags must never be
+ * handed back as sanitized.
+ *
+ * @param {string} source - SVG file contents.
+ * @returns {{ source: string, removed: string[] }}
+ * @throws {Error} If the document cannot be edited safely or active content
+ *   survives. A document that is not well-formed, declares entities, or is
+ *   mis-decoded throws by design: there is no safe edit to bytes this module
+ *   cannot read the way a browser does, and silently repairing a document
+ *   whose payload it cannot see would be the opposite of what the
+ *   verification is for.
  */
-function stripOnce(source, removed) {
-  let output = source;
+export function stripActiveContent(source) {
+  const text = String(source);
+  const findings = findActiveContent(text);
+  if (!findings.length) return { source: text, removed: [] };
 
-  for (const element of ACTIVE_ELEMENTS) {
-    const paired = new RegExp(
-      `<\\s*${NS_PREFIX}${element}\\b[^>]*>[\\s\\S]*?<\\s*/\\s*${NS_PREFIX}${element}\\s*>`,
-      'gi',
-    );
-    const standalone = new RegExp(
-      `<\\s*/?\\s*${NS_PREFIX}${element}\\b[^>]*>`,
-      'gi',
-    );
-    for (const pattern of [paired, standalone]) {
-      output = output.replace(pattern, () => {
-        removed.push(`<${element}> element`);
-        return '';
-      });
-    }
-  }
-
-  output = output.replace(ANIMATED_URI_ELEMENT, (match, element) => {
-    removed.push(`<${element.toLowerCase()}> element animating href`);
-    return '';
-  });
-
-  // Drop closing tags left orphaned by removing a paired animation element.
-  if (removed.some((entry) => entry.endsWith('animating href'))) {
-    output = output.replace(
-      new RegExp(`<\\s*/\\s*${NS_PREFIX}(?:animate|set)\\s*>`, 'gi'),
-      '',
+  const parsed = parseXml(text);
+  const blocking = structuralFindings(text, parsed);
+  if (blocking.length) {
+    throw new Error(
+      `Could not strip active content from SVG: ${findings.join('; ')}`,
     );
   }
 
-  output = output.replace(PROCESSING_INSTRUCTION, (match, target) => {
-    const name = target.toLowerCase();
-    if (name === 'xml') {
-      return match;
-    }
-    removed.push(`<?${name || '(unnamed)'}?> processing instruction`);
-    return '';
-  });
-
-  output = output.replace(ATTRIBUTE_PATTERN, (match, name, dq, sq, uq) => {
-    const attribute = name.toLowerCase();
-    const value = dq ?? sq ?? uq;
-
-    if (/^on[a-z]+$/.test(attribute)) {
-      removed.push(`${attribute} attribute`);
-      return '';
-    }
-
-    if (DOCUMENT_ATTRIBUTES.has(localName(attribute))) {
-      removed.push(`${attribute} attribute (embedded document)`);
-      return '';
-    }
-
-    const scheme = activeScheme(value);
-    if (scheme) {
-      removed.push(`${attribute} attribute (${scheme})`);
-      return '';
-    }
-
-    return match;
-  });
-
-  // Catch unquoted/malformed handler attributes ATTRIBUTE_PATTERN cannot
-  // represent (a value-less `onload=` or a backtick-delimited value), the
-  // same gap findActiveContent's on* fallback exists to cover. Replacing with
-  // a single space rather than deleting keeps a neighboring attribute from
-  // fusing with the tag name or a preceding attribute.
-  output = output.replace(/\son[a-z]+\s*=\s*(?:`[^`]*`)?/gi, (match) => {
-    removed.push(`${match.trim()} attribute (unquoted/malformed handler)`);
-    return ' ';
-  });
-
-  return output;
+  // Findings and removals both come from classifyTag() over this same parse,
+  // and the output is serialized from the tree, so what is left is exactly the
+  // nodes that produced no finding.
+  const result = rebuild(text, parsed.events, { strip: true });
+  return result;
 }
