@@ -1,8 +1,15 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+
+import {
+  headingSlugs,
+  readDoc,
+  relativeLinks,
+  resolveDocPath,
+} from './helpers-docs-links.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const docsRoot = join(repoRoot, 'docs');
@@ -33,54 +40,6 @@ function walk(dir) {
 const docs = walk(docsRoot)
   .filter((file) => /\.mdx?$/.test(file))
   .sort();
-
-function readDoc(file) {
-  const raw = readFileSync(file, 'utf8');
-  const fence = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  return {
-    raw,
-    frontmatter: fence ? fence[1] : null,
-    body: fence ? raw.slice(fence[0].length) : raw,
-  };
-}
-
-// Mirrors Docusaurus' GitHub-flavoured heading slugs closely enough to catch a
-// renamed or deleted heading, which is all this contract needs to detect.
-function headingSlug(text) {
-  return text
-    .replace(/`/g, '')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .toLowerCase()
-    .replace(/[^a-z0-9 -]/g, '')
-    .trim()
-    .replace(/\s+/g, '-');
-}
-
-function headingSlugs(body) {
-  return [...body.matchAll(/^#{1,6}\s+(.+?)\s*$/gm)].map(([, text]) =>
-    headingSlug(text),
-  );
-}
-
-// Relative markdown links between docs, i.e. the ones Docusaurus resolves on
-// disk. Absolute routes (/foo), external URLs and mailto: are resolved by
-// `onBrokenLinks: 'throw'` at build time and are not this test's contract.
-function relativeLinks(body) {
-  return [...body.matchAll(/\[(?:[^\]]*)\]\(([^)\s]+)\)/g)]
-    .map(([, href]) => href)
-    .filter((href) => !/^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(href));
-}
-
-function resolveDocPath(candidate) {
-  for (const path of [candidate, `${candidate}.md`, `${candidate}.mdx`]) {
-    try {
-      if (statSync(path).isFile()) return path;
-    } catch {
-      // Not a file at this extension; try the next candidate.
-    }
-  }
-  return null;
-}
 
 test('the docs/ tree contains documents to check', () => {
   assert.ok(
