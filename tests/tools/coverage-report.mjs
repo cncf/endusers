@@ -43,7 +43,10 @@
 // --check-source 100 green. --require-source-files closes that by comparing
 // the files on disk against the files the run measured, and failing when any
 // is missing. A ratio floor and a file-set floor are different guarantees;
-// this is the second one.
+// this is the second one. It also fails when a file under those trees was
+// recorded but could not be mapped back onto the text on disk: such a file is
+// absent from every ratio in exactly the same way, and until the gate said so
+// the only trace of it was an informational notice nothing scored.
 //
 // --check-source-regions is also an aggregate, and an aggregate hides where
 // its own slack is spent. The gate is cleared by the whole of scripts/ and
@@ -491,6 +494,21 @@ export function missingSourceFiles(measured, root = repoRoot) {
   return enumerateSourceFiles(root).filter((file) => !seen.has(file));
 }
 
+// Source files that were recorded but whose records could not be attributed
+// back to the text on disk.
+//
+// These are not "missing" -- something ran them -- but they are not measured
+// either: report() builds every ratio from the merged map alone, so an
+// unmapped file leaves the numerator and the denominator together and every
+// percentage gate passes over it in silence. The distinction matters because
+// the two states have different cures: a missing file needs a test, whereas
+// an unmapped one means the loader and the reporter have drifted apart and
+// the measurement is unavailable.
+export function unmappedSourceFiles(unmapped, root = repoRoot) {
+  const recorded = new Set(unmapped);
+  return enumerateSourceFiles(root).filter((file) => recorded.has(file));
+}
+
 // Reproduces the exact transform tests/tools/jsx-hooks.mjs applied when it
 // loaded this file, so the generated text V8 recorded coverage against can be
 // rebuilt outside the test run. Returns null when the file was not JSX, or
@@ -721,14 +739,43 @@ function main() {
     // diagnosis: when a source file was never loaded, every ratio below is
     // computed over a denominator that silently excludes it, so whatever
     // those gates report about it is not an answer.
+    //
+    // The two diagnoses are reported together rather than one short-circuiting
+    // the other: they are different faults with different cures, and a run
+    // that has both should say so once instead of surfacing the second only
+    // after the first is fixed.
+    let fileSetFailed = false;
     if (missing.length > 0) {
       console.error(
         `\n${missing.length} source file(s) were never measured; ` +
           '--require-source-files requires every file under ' +
           `${SOURCE_ROOTS.join('/ and ')}/ to be exercised.`,
       );
-      process.exit(1);
+      fileSetFailed = true;
     }
+    // The companion to the check above, for the other way a source file can
+    // leave every ratio: recorded, but with offsets the reporter could not
+    // attribute back to the file on disk. report() is built from `merged`
+    // alone, so such a file is absent from the "src files" numerator and
+    // denominator alike -- exactly the silence --require-source-files exists
+    // to break -- while still counting as measured for the missing-file check,
+    // which is about files nothing ran at all. Data modules go on being
+    // listed in the notice above without failing anything: only the trees
+    // --require-source-files walks are gated.
+    const unmeasurable = options.requireSourceFiles
+      ? unmappedSourceFiles(unmapped)
+      : [];
+    if (unmeasurable.length > 0) {
+      console.error(
+        `\n${unmeasurable.length} source file(s) were recorded but could not ` +
+          'be mapped onto the text on disk, so they enter no ratio below; ' +
+          '--require-source-files requires every file under ' +
+          `${SOURCE_ROOTS.join('/ and ')}/ to be measurable.`,
+      );
+      for (const file of unmeasurable) console.error(`  ${file}`);
+      fileSetFailed = true;
+    }
+    if (fileSetFailed) process.exit(1);
     if (options.check !== null && totalLinePct + 1e-9 < options.check) {
       console.error(
         `\nLine coverage ${totalLinePct.toFixed(2)}% is below the required ${options.check}%.`,
