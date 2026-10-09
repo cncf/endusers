@@ -70,6 +70,7 @@ function parseArgs(argv) {
     text: null,
     checkSource: null,
     checkSourceRegions: null,
+    checkSourceFileRegions: null,
     requireSourceFiles: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -85,6 +86,11 @@ function parseArgs(argv) {
       options.checkSourceRegions = parsePercent(
         argv[++index],
         '--check-source-regions',
+      );
+    else if (arg === '--check-source-file-regions')
+      options.checkSourceFileRegions = parsePercent(
+        argv[++index],
+        '--check-source-file-regions',
       );
     else if (arg === '--require-source-files')
       options.requireSourceFiles = true;
@@ -901,6 +907,42 @@ export async function main(argv = process.argv.slice(2)) {
     throw new Error(
       `Source region coverage ${sourceRegionPercent.toFixed(2)}% is below the required ${options.checkSourceRegions}%.`,
     );
+  }
+  // --check-source-regions is an aggregate, and an aggregate hides where its
+  // own slack is spent: the gate is cleared by the whole of src/ together, so
+  // the regions one file loses are paid for by every other file that still has
+  // them. At the 95% the CI job asks for, a single small component may sit at
+  // nothing and the job stays green. The companion line gate does not catch
+  // that either, because a lost *region* need not be a lost *line* -- an
+  // unexecuted ternary arm or `??` fallback sits on a line the surrounding
+  // statement still covers. This applies the floor to each source file on its
+  // own, so a regression concentrated in one file fails on that file's name
+  // instead of being averaged away. tests/tools/coverage-report.mjs already
+  // gates the unit run this way; this is the same guarantee for the browser
+  // run.
+  if (options.checkSourceFileRegions !== null) {
+    // No vacuous-pass guard is needed here, unlike the unit reporter's
+    // equivalent: collectE2ECoverage above already refuses a run that
+    // attributed nothing to src/**, so this list can never be empty for the
+    // reason that guard exists to catch.
+    const below = report.sources.filter(
+      (row) =>
+        row.regions > 0 &&
+        row.regionPercent + 1e-9 < options.checkSourceFileRegions,
+    );
+    if (below.length > 0) {
+      throw new Error(
+        `${below.length} source file(s) fall below the required ` +
+          `${options.checkSourceFileRegions}% region coverage per file:\n` +
+          below
+            .map(
+              (row) =>
+                `  ${row.file} ${row.regionPercent.toFixed(2)}% ` +
+                `(${row.coveredRegions}/${row.regions} regions; uncovered at ${row.uncoveredRegions.join(' ')})`,
+            )
+            .join('\n'),
+      );
+    }
   }
   if (options.requireSourceFiles && report.missingSourceFiles.length > 0) {
     throw new Error(
