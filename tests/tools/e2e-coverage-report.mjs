@@ -6,7 +6,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import v8ToIstanbul from 'v8-to-istanbul';
-import { AnyMap, encodedMap } from '@jridgewell/trace-mapping';
+import { AnyMap, decodedMap, encodedMap } from '@jridgewell/trace-mapping';
 
 import { countsForScript, enumerateSourceFiles } from './coverage-report.mjs';
 import {
@@ -499,6 +499,75 @@ async function locateScript(scriptRoots, pathname, url) {
   );
 }
 
+// `normalizeRanges` rewrites a V8 record into the coarsest partition it can:
+// one range per run of equal counts, however far that run reaches. In a bundle
+// that carries several `src/**` modules such a run routinely starts in one
+// module and ends in another, and v8-to-istanbul cannot place it. It picks the
+// original source of the range's *start* and then converts the range's end --
+// a position in a different source -- into that source's coordinates, which
+// lands past its last line, so `sliceRange` returns no lines and the range is
+// dropped without recording a branch anywhere (v8-to-istanbul applyCoverage,
+// `if (!lines.length) return`). Neither the starting module nor the module the
+// run actually ended in is credited, and because `attributedPaths` is built
+// from the branches that were recorded, every source of the script is then
+// skipped by the multi-source guard in `collectE2ECoverage`.
+//
+// Splitting each range at the generated offsets where the source map changes
+// source keeps every sub-range inside one original file, which is the only
+// shape v8-to-istanbul can attribute. A single-source map yields no boundaries
+// and no splits, so 1:1 bundles are byte-identical to before.
+function sourceBoundaryOffsets(map, mappedSource) {
+  const lineStarts = [0];
+  for (let index = 0; index < mappedSource.length; index += 1) {
+    if (mappedSource[index] === '\n') lineStarts.push(index + 1);
+  }
+  const boundaries = new Set();
+  let previousSource = null;
+  for (const [line, segments] of decodedMap(
+    new AnyMap(map),
+  ).mappings.entries()) {
+    for (const segment of segments) {
+      if (segment.length < 4) continue;
+      const source = segment[1];
+      if (previousSource !== null && source !== previousSource) {
+        const lineStart = lineStarts[line];
+        if (lineStart !== undefined) {
+          const offset = Math.min(lineStart + segment[0], mappedSource.length);
+          if (offset > 0) boundaries.add(offset);
+        }
+      }
+      previousSource = source;
+    }
+  }
+  return [...boundaries].sort((a, b) => a - b);
+}
+
+function splitRangeAtBoundaries(range, boundaries) {
+  const cuts = boundaries.filter(
+    (offset) => offset > range.startOffset && offset < range.endOffset,
+  );
+  if (cuts.length === 0) return [range];
+  const parts = [];
+  let start = range.startOffset;
+  for (const cut of cuts) {
+    // The sub-range must end *inside* the source it starts in: v8-to-istanbul
+    // abandons a range whose start and end map to different originals
+    // (source.js `if (start.source !== end.source) return {}`), and the first
+    // offset at a boundary already belongs to the next source. Ending one
+    // offset short keeps the end position on the source side of the cut; that
+    // offset is not lost, because it opens the following sub-range.
+    const end = cut - 1;
+    if (end > start) {
+      parts.push({ ...range, startOffset: start, endOffset: end });
+    }
+    start = cut;
+  }
+  if (range.endOffset > start) {
+    parts.push({ ...range, startOffset: start, endOffset: range.endOffset });
+  }
+  return parts.length === 0 ? [range] : parts;
+}
+
 async function convertScript(scriptCoverage, root, scriptRoots) {
   const pathname = scriptPathname(scriptCoverage.url);
   const located = await locateScript(scriptRoots, pathname, scriptCoverage.url);
@@ -536,13 +605,15 @@ async function convertScript(scriptCoverage, root, scriptRoots) {
     scriptCoverage,
     generatedSource.length,
   );
+  const boundaries = sourceBoundaryOffsets(map, mappedSource);
   for (const fn of normalizedFunctions) {
     fn.ranges = fn.ranges
       .map((range) => ({
         ...range,
         endOffset: Math.min(range.endOffset, mappedSource.length),
       }))
-      .filter((range) => range.startOffset < range.endOffset);
+      .filter((range) => range.startOffset < range.endOffset)
+      .flatMap((range) => splitRangeAtBoundaries(range, boundaries));
   }
   const usableFunctions = normalizedFunctions.filter(
     (fn) => fn.ranges.length > 0,
