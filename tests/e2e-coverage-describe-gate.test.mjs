@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { isCoverageEnabled } from './tools/e2e-coverage.cjs';
 
-// Eleven end-to-end specs hold cases that only the coverage build can satisfy
+// Twelve end-to-end specs hold cases that only the coverage build can satisfy
 // -- they navigate a route that exists only under E2E_COVERAGE=1, or they
 // assert against the fixture overlay that only that build layers in. Each one
 // gates itself by hand:
@@ -58,6 +58,7 @@ const COVERAGE_GATED = [
   'metrics-empty-collections-variant.spec.js',
   'metrics-sparkline.spec.js',
   'radar-reports-variant.spec.js',
+  'reference-architectures-no-revision.spec.js',
 ];
 
 const specNames = readdirSync(specDir)
