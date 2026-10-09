@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
 import {
   mkdirSync,
   mkdtempSync,
@@ -210,6 +211,20 @@ test('reports a broken symlink that carries a page extension', () => {
     ({ pages, irregular }) => {
       assert.deepEqual(pages, []);
       assert.deepEqual(irregular, ['dangling.md']);
+    },
+  );
+});
+
+// Neither a file, a directory, nor a symlink: a FIFO named like a page. The
+// walk cannot read it, so it is reported rather than published unscanned.
+test('reports a page-named entry that is not a regular file as irregular', () => {
+  withDocsDir(
+    (docsDir) => {
+      execFileSync('mkfifo', [join(docsDir, 'pipe.md')]);
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, []);
+      assert.deepEqual(irregular, ['pipe.md']);
     },
   );
 });
