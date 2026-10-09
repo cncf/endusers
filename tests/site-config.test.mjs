@@ -429,6 +429,69 @@ test('the meta CSP names the fetch directives that have no default-src fallback'
   );
 });
 
+// script-src and style-src have to carry 'unsafe-inline' (Docusaurus emits
+// inline bootstrap scripts and inline styles), which is why they were left out
+// of the policy for a long time. Omitting them is strictly worse than setting
+// them: with no default-src to fall back to, an absent directive restricts
+// nothing, so any host may serve a <script src> or a <link rel=stylesheet> on
+// this origin. Pin the host part so the directives cannot be dropped again.
+test('the meta CSP confines script and style loads to this origin', async () => {
+  const production = cspDirectives(
+    await loadConfig({ NODE_ENV: 'production' }),
+  );
+
+  const scriptSources = production.get('script-src');
+  assert.ok(
+    scriptSources,
+    'script-src is missing: without it, and with no default-src, the browser allows a <script src> from any host -- the gap frame-src/media-src/connect-src were added to close',
+  );
+  assert.ok(
+    scriptSources.includes("'self'"),
+    'script-src must name a host source, or it confines nothing',
+  );
+  assert.equal(
+    scriptSources.some((source) => source.startsWith('http')),
+    false,
+    `script-src admits an off-origin host (${scriptSources.join(' ')}): the built site references only same-origin bundles`,
+  );
+  // 'unsafe-eval' is the dev server's webpack devtool requirement, not the
+  // deployed site's: the production bundles contain no eval.
+  assert.equal(
+    scriptSources.includes("'unsafe-eval'"),
+    false,
+    "the production policy must not ship 'unsafe-eval'",
+  );
+
+  const styleSources = production.get('style-src');
+  assert.ok(
+    styleSources,
+    'style-src is missing: without it, and with no default-src, the browser allows a stylesheet from any host',
+  );
+  assert.ok(
+    styleSources.includes("'self'"),
+    'style-src must name a host source, or it confines nothing',
+  );
+  assert.equal(
+    styleSources.some((source) => source.startsWith('http')),
+    false,
+    `style-src admits an off-origin host (${styleSources.join(' ')}): the built site loads one same-origin stylesheet`,
+  );
+});
+
+// The dev server builds with webpack's 'eval-cheap-module-source-map' devtool
+// (@docusaurus/core/lib/webpack/base.js), which wraps every module in eval().
+// The meta tag is served in development too, so a policy without 'unsafe-eval'
+// there breaks `npm start` outright.
+test("the meta CSP allows 'unsafe-eval' outside production only", async () => {
+  const development = cspDirectives(
+    await loadConfig({ NODE_ENV: 'development' }),
+  );
+  assert.ok(
+    development.get('script-src').includes("'unsafe-eval'"),
+    "the dev policy must allow 'unsafe-eval' or the webpack dev server cannot evaluate its modules",
+  );
+});
+
 // The three directives above are only safe to set this tightly because the
 // site ships nothing that needs them widened. If that stops being true the
 // policy has to change with it, so assert the premise rather than trusting it.

@@ -9,6 +9,27 @@ import { themes as prismThemes } from 'prism-react-renderer';
 const siteUrl = process.env.SITE_URL || 'https://endusers.cncf.io';
 const baseUrl = process.env.BASE_URL || '/';
 
+// Script sources the browser may execute.
+//
+// `'unsafe-inline'` is unavoidable: Docusaurus emits inline bootstrap scripts
+// on every page. It is not a reason to omit the directive, though — omitting
+// it leaves *no* restriction at all, so any host may serve a `<script src>`,
+// while `'self' 'unsafe-inline'` still refuses every off-origin script. That
+// is the same asymmetry `frame-src`/`media-src`/`connect-src` were added to
+// close. The production bundles reference only same-origin scripts, so
+// `'self'` costs nothing.
+//
+// `'unsafe-eval'` is added outside production only: the dev server builds with
+// webpack's `eval-cheap-module-source-map` devtool (see
+// @docusaurus/core/lib/webpack/base.js), which wraps every module in `eval()`.
+// The production bundles contain no `eval` at all, so the deployed policy does
+// not carry it.
+const SCRIPT_SOURCES = [
+  "'self'",
+  "'unsafe-inline'",
+  ...(process.env.NODE_ENV === 'production' ? [] : ["'unsafe-eval'"]),
+];
+
 // Remote hosts the browser may load an image from. This mirrors
 // isAllowedImageHost() in scripts/lib/profile-image.mjs, which gates the
 // profile images copied unattended out of cncf/people into
@@ -151,9 +172,19 @@ const config = {
         // data/*.json files supply href and src values rendered by src/components.
         // These directives need no allowance for inline or bundled script, so
         // they hold without constraining Docusaurus hydration or local search.
-        // script-src is deliberately omitted: Docusaurus emits inline bootstrap
-        // scripts, so it could only ship with 'unsafe-inline', which would add no
-        // protection. frame-ancestors is omitted because browsers ignore it when
+        // script-src and style-src ship with 'unsafe-inline' because
+        // Docusaurus emits inline bootstrap scripts and inline styles. That
+        // does not make them pointless: without the directive, and with no
+        // default-src to fall back to, the browser applies *no* restriction,
+        // so any host may serve a `<script src>` or a `<link rel=stylesheet>`
+        // on this origin. 'self' 'unsafe-inline' still refuses every
+        // off-origin script and stylesheet while permitting the inline code
+        // the framework needs -- the same asymmetry frame-src, media-src and
+        // connect-src were added to close. The built site references only
+        // same-origin bundles and one same-origin stylesheet, so neither
+        // directive constrains Docusaurus hydration or local search. See
+        // SCRIPT_SOURCES above for why 'unsafe-eval' is dev-only.
+        // frame-ancestors is omitted because browsers ignore it when
         // delivered via <meta http-equiv>; it needs a real response header.
         // img-src, by contrast, is honoured in a meta policy, and it is the
         // directive that actually backs this project's remote-image host gates
@@ -175,9 +206,9 @@ const config = {
         // media element and no client-side request to a third-party origin
         // (the local search plugin reads its index from this origin), so
         // nothing here constrains Docusaurus hydration or local search.
-        // `style-src`/`font-src` are still omitted: Docusaurus emits inline
-        // styles, so they could only ship with 'unsafe-inline' and would add
-        // no protection, exactly as with script-src.
+        // `font-src` is still omitted: the site loads no remote font, but
+        // nothing in the build asserts that, so the directive is left for a
+        // change that can verify it.
         content: [
           "base-uri 'self'",
           "object-src 'none'",
@@ -185,6 +216,8 @@ const config = {
           "media-src 'none'",
           "connect-src 'self'",
           "form-action 'self'",
+          `script-src ${SCRIPT_SOURCES.join(' ')}`,
+          "style-src 'self' 'unsafe-inline'",
           `img-src 'self' data: ${IMAGE_HOST_SOURCES.join(' ')}`,
         ].join('; '),
       },
