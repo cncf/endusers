@@ -13,7 +13,7 @@
 // scripts/validate-community-people.mjs already documents for its own loop.
 // Both callers enumerate the directory through this module instead.
 
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -68,6 +68,21 @@ export function isReservedPageId(id) {
 const PAGE_EXTENSION = /\.mdx?$/;
 
 /**
+ * Whether a path resolves, through any number of links, to a directory.
+ *
+ * `statSync` follows the link, which is what decides whether Docusaurus's
+ * globbing will descend into it. A broken or unreadable link throws and is
+ * reported as not a directory: it publishes nothing, so it needs no gate.
+ */
+function resolvesToDirectory(path) {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Lists every Markdown page under docs/architectures/, as paths relative to
  * that directory, sorted for stable output.
  *
@@ -76,6 +91,14 @@ const PAGE_EXTENSION = /\.mdx?$/;
  * both false for a symbolic link, so silently ignoring one would publish a
  * symlinked page that no caller ever reads. The caller decides what to do
  * with them; nothing here follows a link.
+ *
+ * That applies to a symlinked *directory* as much as to a symlinked page, and
+ * it cannot be decided from the entry name. `@docusaurus/plugin-content-docs`
+ * globs docs with `Globby(include, { cwd, ignore })` and passes no
+ * `followSymbolicLinks`, which fast-glob defaults to `true`, so every page
+ * beneath a symlinked directory is published at `/architectures/<link>/...`.
+ * A link named without a page extension would otherwise be dropped before the
+ * `isFile()` split is reached, and its pages would be gated by nothing.
  *
  * @param {string} docsDir - Absolute path to docs/architectures.
  * @returns {{ pages: string[], irregular: string[] }}
@@ -90,6 +113,18 @@ export function listArchitecturePages(docsDir) {
       const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
       if (entry.isDirectory()) {
         walk(join(dir, entry.name), relativePath);
+        continue;
+      }
+      if (entry.isSymbolicLink()) {
+        // Reported, never followed. A link carrying a page extension is
+        // published as a page; a link resolving to a directory publishes
+        // every page beneath it. Either way the walk cannot gate it, so it
+        // fails closed here rather than disappearing.
+        if (
+          PAGE_EXTENSION.test(entry.name) ||
+          resolvesToDirectory(join(dir, entry.name))
+        )
+          irregular.push(relativePath);
         continue;
       }
       if (!PAGE_EXTENSION.test(entry.name)) continue;

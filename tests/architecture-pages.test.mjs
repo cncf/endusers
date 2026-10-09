@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
 import {
   mkdirSync,
   mkdtempSync,
@@ -131,6 +132,99 @@ test('reports a symlinked .mdx page as irregular rather than skipping it', () =>
     ({ pages, irregular }) => {
       assert.deepEqual(pages, ['adobe.md']);
       assert.deepEqual(irregular, ['evil.mdx']);
+    },
+  );
+});
+
+// A symlinked *directory* is the same hole one level up, and it cannot be
+// recognised from the entry name: isDirectory() is false for the link, so the
+// walk never recurses, and a link named without a page extension used to be
+// dropped before the isFile() split was reached. Docusaurus still publishes
+// through it — @docusaurus/plugin-content-docs globs docs with
+// Globby(include, { cwd, ignore }) and passes no followSymbolicLinks, which
+// fast-glob defaults to true — so every page beneath the link shipped without
+// ever reaching the active-content scan.
+test('reports a symlinked directory as irregular rather than skipping it', () => {
+  withDocsDir(
+    (docsDir) => {
+      const outside = join(docsDir, '..', 'outside');
+      mkdirSync(outside, { recursive: true });
+      writeFileSync(join(outside, 'evil.md'), '<div onClick={alert(1)} />\n');
+      writeFileSync(join(docsDir, 'adobe.md'), '# Adobe\n');
+      symlinkSync(outside, join(docsDir, 'linked'));
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, ['adobe.md']);
+      assert.deepEqual(irregular, ['linked']);
+    },
+  );
+});
+
+test('does not descend into a symlinked directory', () => {
+  withDocsDir(
+    (docsDir) => {
+      const outside = join(docsDir, '..', 'outside');
+      mkdirSync(outside, { recursive: true });
+      writeFileSync(join(outside, 'evil.md'), '# Evil\n');
+      symlinkSync(outside, join(docsDir, 'linked'));
+    },
+    ({ pages, irregular }) => {
+      assert.equal(pages.includes('linked/evil.md'), false);
+      assert.equal(irregular.includes('linked/evil.md'), false);
+    },
+  );
+});
+
+// A link to something Docusaurus does not route publishes nothing, so
+// reporting it would be a false failure for every contributor.
+test('skips a symlink to a file Docusaurus does not route', () => {
+  withDocsDir(
+    (docsDir) => {
+      writeFileSync(join(docsDir, 'adobe.md'), '# Adobe\n');
+      symlinkSync(join(docsDir, 'adobe.md'), join(docsDir, 'notes.txt'));
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, ['adobe.md']);
+      assert.deepEqual(irregular, []);
+    },
+  );
+});
+
+test('skips a broken symlink that is not a page', () => {
+  withDocsDir(
+    (docsDir) => {
+      writeFileSync(join(docsDir, 'adobe.md'), '# Adobe\n');
+      symlinkSync(join(docsDir, 'gone'), join(docsDir, 'dangling'));
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, ['adobe.md']);
+      assert.deepEqual(irregular, []);
+    },
+  );
+});
+
+test('reports a broken symlink that carries a page extension', () => {
+  withDocsDir(
+    (docsDir) => {
+      symlinkSync(join(docsDir, 'gone'), join(docsDir, 'dangling.md'));
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, []);
+      assert.deepEqual(irregular, ['dangling.md']);
+    },
+  );
+});
+
+// Neither a file, a directory, nor a symlink: a FIFO named like a page. The
+// walk cannot read it, so it is reported rather than published unscanned.
+test('reports a page-named entry that is not a regular file as irregular', () => {
+  withDocsDir(
+    (docsDir) => {
+      execFileSync('mkfifo', [join(docsDir, 'pipe.md')]);
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, []);
+      assert.deepEqual(irregular, ['pipe.md']);
     },
   );
 });
