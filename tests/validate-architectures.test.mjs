@@ -344,3 +344,50 @@ test('rejects a symlinked page rather than skipping it', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /linked\.md: page must be a regular file/);
 });
+
+// The symlinked-page case above is the only one the validator itself pins, and
+// it reaches the irregular loop through the page-extension arm of
+// listArchitecturePages(). The symlinked *directory* arm reaches that same loop
+// through a name carrying no page extension, and nothing at this level asks
+// whether it still does: tests/architecture-pages.test.mjs pins the arm inside
+// the library, but a validator that filtered `irregular` down to page-named
+// entries would keep every one of those tests green while the directory hole
+// reopened end to end.
+//
+// It is worth pinning here rather than only in the library because the whole
+// point of the arm is what Docusaurus does with the link that the walk will
+// not: `@docusaurus/plugin-content-docs` globs with fast-glob's default
+// `followSymbolicLinks: true`, so every page under `linked/` is published at
+// `/architectures/linked/...`. The gate must fail on the link itself, because
+// it is the one thing it can see without following it.
+test('rejects a symlinked directory of pages rather than walking past it', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/elsewhere/evil.md': '# Evil\n\n<div onclick="steal()">x</div>\n',
+    }),
+    { symlinks: { 'docs/architectures/linked': '../elsewhere' } },
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /\[error\] linked: page must be a regular file; a symlinked page, or a symlinked directory of pages, is published but cannot be gated/,
+  );
+  // Reported, never followed: the pages beneath the link are not walked, so
+  // the link itself has to be the finding. A report naming `linked/evil.md`
+  // would mean the gate had descended through a link it refuses to trust.
+  assert.doesNotMatch(result.stderr, /linked\/evil\.md/);
+});
+
+// The complement, and the reason the arm resolves the link instead of
+// rejecting every link it meets: a link to something Docusaurus does not route
+// publishes nothing, so it is still skipped and the run still passes. Without
+// this, a future tightening to "any symlink is an error" would start failing
+// checkouts that ship nothing through the link, and no test would object.
+test('accepts a symlink that resolves to neither a page nor a directory', () => {
+  const result = runScriptWithFixtures(SCRIPT, catalogFixture([validRecord]), {
+    symlinks: { 'docs/architectures/notes.txt': '/etc/hostname' },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /notes\.txt/);
+});
