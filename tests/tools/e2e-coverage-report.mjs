@@ -28,16 +28,23 @@ const SOURCE_MAPPING_URL = /(?:\/\/[#@]\s*sourceMappingURL=)(\S+)/u;
 const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 
 // Residual uncovered regions, recorded so the file's region percentage is not
-// re-investigated every cycle (#1210). The guards in the four istanbul readers
-// below are reached directly by tests/e2e-coverage-report-readers.test.mjs,
-// which is what the test-only export beneath `getRegionCoverage` exists for.
-// What remains after that is unreachable from this module, and each entry is
-// named by function and expression rather than by line so the note does not go
-// stale when the file moves:
+// re-investigated every cycle (#1210, #1253). The guards in the four istanbul
+// readers below are reached directly by
+// tests/e2e-coverage-report-readers.test.mjs, which is what the test-only
+// export beneath `getRegionCoverage` exists for. What remains after that is
+// unreachable from this module, and each entry is named by function and
+// expression rather than by line so the note does not go stale when the file
+// moves:
 //
-//   normalizeSourceMap  `map.resolvedSources ?? ...` -- whether `AnyMap`
-//       populates `resolvedSources` is private behaviour of the transitive
-//       dependency `@jridgewell/trace-mapping`, not something a caller sets.
+//   normalizeSourceMap  `map.resolvedSources ?? flattened.sources ?? []` --
+//       two regions on one chain. `AnyMap` always assigns `resolvedSources`
+//       (`sources.map(resolve)` in `@jridgewell/trace-mapping`), so the left
+//       operand is never nullish and neither fallback runs.
+//   splitRangeAtBoundaries  `parts.length === 0 ? [range] : parts` -- the
+//       function returns early when there are no cuts; otherwise the last cut
+//       `c` satisfies `c < range.endOffset` by the filter above it, `start`
+//       equals `c` when the loop ends, so the final `parts.push` always runs
+//       and `parts` is never empty.
 //   convertScript       `converter.branches ?? {}` and `converter.functions
 //       ?? {}`, and the `.map(([path]) => path)` arm that only runs when one
 //       of those is absent -- `v8-to-istanbul` always defines both after
@@ -52,8 +59,11 @@ const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 //
 // Reachability was established empirically rather than by reading: probe tests
 // were written against each candidate and these are the ones no probe could
-// close. Raise the per-file region floor rather than this list when a probe
-// does land.
+// close. Together they are 10 regions, which caps this file at 97.98% regions;
+// tests/coverage-gate-thresholds.test.mjs records that ceiling beside
+// `--check-harness-file-regions` so the floor is never set above it. Raise the
+// floor rather than this list when a probe does land, and extend this list
+// rather than lower the floor when a new fallback proves unreachable.
 
 class CoverageReportError extends Error {
   constructor(message, { runId = null, runStatus = null } = {}) {
