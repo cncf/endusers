@@ -84,6 +84,7 @@ function pull(overrides = {}) {
 function run({
   landscape = LANDSCAPE_YML,
   architectures = ['acme-platform', 'globex-edge'],
+  architectureSymlinks = {},
   commitDates = [
     '2024-01-10T00:00:00Z',
     '2024-01-20T00:00:00Z',
@@ -98,6 +99,7 @@ function run({
       architecture: architectureRepo(architectures),
     },
     repoCommitDates: { architecture: commitDates },
+    repoSymlinks: { architecture: architectureSymlinks },
     routes: routes ?? [
       { match: FILES_ROUTE, body: [] },
       { match: ISSUE_ROUTE, body: [issue()] },
@@ -234,6 +236,37 @@ test('collect-metrics tolerates a landscape with no projects', () => {
   // median() returns 0 rather than NaN for an empty sample.
   assert.equal(cardValue(data, 'median-submission-age'), 0);
   assert.equal(cardValue(data, 'median-pr-cycle'), 0);
+});
+
+// #1276: Dirent.isDirectory() is false for a symlink, so a symlinked
+// architecture directory upstream fell out of the "Reference architectures"
+// count silently. The count now agrees with import-architectures.mjs, which
+// skips the same entry (#1267), and says so in the log.
+test('collect-metrics skips a symlinked architecture directory and warns', () => {
+  const result = run({
+    architectures: ['acme-platform', 'globex-edge'],
+    architectureSymlinks: {
+      // A link to a sibling that is a real directory, and a dangling one:
+      // neither is a directory to Dirent, and both are now reported.
+      'content/en/architectures/linked': 'acme-platform',
+      'content/en/architectures/dangling': '../../../does-not-exist',
+    },
+  });
+  const data = metricsFrom(result);
+
+  const byId = Object.fromEntries(
+    data.metrics.map((entry) => [entry.id, entry]),
+  );
+  // The two real directories are still counted; only the links are dropped.
+  assert.equal(byId['reference-architectures'].value, 2);
+  assert.match(
+    result.stderr,
+    /Skipping symlink .*content\/en\/architectures\/linked: symlinked architecture directories are not counted/,
+  );
+  assert.match(
+    result.stderr,
+    /Skipping symlink .*content\/en\/architectures\/dangling: symlinked architecture directories are not counted/,
+  );
 });
 
 test('collect-metrics counts only labeled, non-pull-request submissions', () => {

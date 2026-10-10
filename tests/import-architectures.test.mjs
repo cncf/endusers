@@ -791,6 +791,53 @@ test('skips symlinked entries found inside a real images/ directory', () => {
   }
 });
 
+// #1267: the two tests above guard symlinks inside an architecture, but the
+// top-level enumeration of content/en/architectures/ still filtered on
+// Dirent.isDirectory(), which is false for a symlink. A symlinked architecture
+// directory therefore dropped out of the import silently -- and because the
+// run prunes every imported page first, its page was deleted with nothing in
+// the log to say why.
+test('skips a symlinked top-level architecture directory and warns', () => {
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'real-arch',
+        '---\ntitle: Real Arch\norg_name: Real Arch Co\n---\n\nIntro paragraph.\n',
+      ),
+      'outside/index.md':
+        '---\ntitle: Leaked\norg_name: Leaked Co\n---\n\nIntro paragraph.\n',
+    },
+    upstreamSymlinks: {
+      // One link to a directory outside the tree, one to a sibling that is a
+      // real architecture: both are links to Dirent and both are skipped.
+      'content/en/architectures/leaked': '../../../outside',
+      'content/en/architectures/alias': 'real-arch',
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const catalog = run.readJson('data/architectures/catalog.json');
+    assert.deepEqual(
+      catalog.map((record) => record.id),
+      ['real-arch'],
+    );
+    assert.equal(run.exists('docs/architectures/leaked.md'), false);
+    assert.equal(run.exists('docs/architectures/alias.md'), false);
+    assert.match(
+      run.stderr,
+      /Skipping symlink .*content\/en\/architectures\/leaked: symlinks are never imported/,
+    );
+    assert.match(
+      run.stderr,
+      /Skipping symlink .*content\/en\/architectures\/alias: symlinks are never imported/,
+    );
+    assert.match(run.stdout, /Imported 1 architectures/);
+  } finally {
+    run.cleanup();
+  }
+});
+
 test('skips upstream image files that are not a mirrorable image type', () => {
   const run = runImportArchitectures({
     upstream: {

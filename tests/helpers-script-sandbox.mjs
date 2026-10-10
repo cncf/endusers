@@ -114,6 +114,10 @@ exit 0
  * @param {Record<string, string[]>} [options.repoCommitDates] clone target name
  *   -> ISO author dates, one commit each; commits after the first touch
  *   content/en/architectures so path-filtered history is exercised
+ * @param {Record<string, Record<string, string>>} [options.repoSymlinks] clone
+ *   target name -> repo-relative link path -> link target. The `git clone`
+ *   shim copies the fixture with `cp -R`, which preserves symlinks, so these
+ *   reach the script the same way a symlink committed upstream would.
  * @param {Array<{match: string, status?: number, body?: unknown,
  *   headers?: Record<string, string>, networkError?: string}>} [options.routes]
  * @param {string[]} [options.outputs] repo-relative paths to read back afterwards
@@ -127,6 +131,7 @@ export function runScriptInSandbox({
   fixtures = {},
   repos = {},
   repoCommitDates = {},
+  repoSymlinks = {},
   routes = [],
   outputs = [],
   env = {},
@@ -147,6 +152,13 @@ export function runScriptInSandbox({
     for (const [name, tree] of Object.entries(repos)) {
       mkdirSync(join(fixtureRepos, name), { recursive: true });
       writeFiles(join(fixtureRepos, name), tree);
+      for (const [relativePath, linkTarget] of Object.entries(
+        repoSymlinks[name] ?? {},
+      )) {
+        const link = join(fixtureRepos, name, relativePath);
+        mkdirSync(dirname(link), { recursive: true });
+        symlinkSync(linkTarget, link);
+      }
       const dates = repoCommitDates[name];
       if (dates?.length) {
         repoDates[`ENDUSERS_GIT_DATES_${name.replace(/[^A-Za-z0-9]/g, '_')}`] =
