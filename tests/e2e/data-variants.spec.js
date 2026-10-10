@@ -29,6 +29,15 @@
 // and the report unions what each reached -- the two builds compile the same
 // src/** sources, so their scripts fold onto the same lines.
 //
+// What the union credits. *Lines* fold across builds, so the lines inside an
+// arm only this build reaches count as covered. *Regions* fold by span key,
+// and the build that takes a guard arm records no region at the arm's own
+// span (its deviation is the alternative it skipped), so the real build's
+// zero at the arm survives. ReferenceArchitectures:34 and PeopleFreshness:22
+// are therefore still listed as uncovered regions even though this spec
+// drives them; see #1256 and the comment at the union in
+// tests/tools/e2e-coverage-report.mjs. The build still exists for the lines.
+//
 // Each case asserts the real route as well. On its own, an assertion that a
 // variant page omits something passes just as well when the page is empty or
 // broken; pairing it with the real route is what makes the pair evidence that

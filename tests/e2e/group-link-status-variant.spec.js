@@ -36,6 +36,11 @@
 // with tests/e2e/fixtures/data-variant/** layered on, one `docusaurus serve`
 // offers both, and the report unions what each build reached.
 //
+// The union credits the *lines* of the plural arms; the two line-33 *regions*
+// stay listed as uncovered because the build that takes an arm records no
+// region at the arm's own span (#1256). See the comment at the union in
+// tests/tools/e2e-coverage-report.mjs before reading that residual as a gap.
+//
 // The real route is asserted alongside the variant one. On its own, an
 // assertion that the variant page says "repositories" passes just as well
 // when the page failed to build or the route is wrong; pairing it with the

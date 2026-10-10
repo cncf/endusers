@@ -38,6 +38,19 @@ const COVERAGE_JOB = 'e2e-coverage';
 // ratcheted to 91 (#1105), and 95.22% (438/460) when it was ratcheted to 95
 // after #1163 folded the crossing-region source-map drift and #1060 covered
 // the member-directory toolbar arms (#1079).
+//
+// Ceiling, as of main run 38082557106: 97.29% (646/664), 18 regions at zero.
+// Thirteen are defensive fallbacks of the #1253 class. The other five --
+// ReferenceArchitectures:13 and :34, PeopleFreshness:22, GroupLinkStatus:33
+// (x2) -- are guard arms that a sibling fixture build (data-no-revision,
+// data-variant) demonstrably executes, yet the union never credits (#1256,
+// #1236): the build that takes the arm records no deviation at the arm's own
+// span, and isContradictedRegion only admits witnesses from the script that
+// produced the zero. That restriction is deliberate (#1066: a different
+// bundle maps the same skipped arm to a different span), so the five are a
+// documented reporting residual, not a coverage gap. Do not set
+// --check-source-regions above 97 or a per-file floor above 66
+// (PeopleFreshness, 2/3) without first changing the union.
 const FLOORS = {
   '--check-source': 100,
   '--check-source-regions': 95,
