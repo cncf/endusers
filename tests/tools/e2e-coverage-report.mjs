@@ -800,9 +800,20 @@ export async function collectE2ECoverage(
         for (const [line, count] of lineCoverage) {
           target.lines.set(line, Math.max(target.lines.get(line) ?? 0, count));
         }
-        // Regions union across scripts and artifacts exactly as lines do: the
-        // real build and the data-variant build each exercise one arm of a
-        // branch, and only the union sees both arms covered.
+        // Regions union across scripts and artifacts by *key*: the same
+        // original span observed by the real build and a fixture build folds
+        // to one entry at the higher count. That credits an arm only when
+        // some build records a covered region at the arm's own span. A guard
+        // arm a sibling build takes does not produce one: the build that
+        // skips the arm records a zero at the arm's span, while the build
+        // that takes it records its deviation at the *alternative* it
+        // skipped -- a different span, hence a different key -- and nothing
+        // at the arm itself. The zero therefore survives the union, and
+        // isContradictedRegion below cannot retire it either, because its
+        // witnesses are confined to the script that produced the zero
+        // (#1066). Lines do union across builds; regions of this shape do
+        // not. See #1256 and the ceiling recorded in
+        // tests/e2e-coverage-gate.test.mjs.
         for (const [key, region] of regionCoverage) {
           const existing = target.regions.get(key);
           if (!existing || region.count > existing.count) {

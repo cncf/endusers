@@ -33,6 +33,13 @@
 // sources, so their scripts fold onto the same lines. See the preamble of
 // tests/tools/e2e-data-fixtures.cjs for the mechanism.
 //
+// Onto the same *lines*, and only the lines. This build proves line 13's
+// `return null;` executes (lines 15–23 go uncovered in a report rendered over
+// its artifacts alone), but the region at `13:32-13:44` stays at zero in the
+// union: this build records no region at that span, because its deviation is
+// the body it skipped, and the real build's zero there has no same-script
+// witness to retire it (#1256). The line is credited; the region is not.
+//
 // The real route is asserted alongside the no-revision one. On its own, an
 // assertion that a page has no provenance line passes just as well when the
 // page failed to build or the route is wrong; pairing it with the real route
