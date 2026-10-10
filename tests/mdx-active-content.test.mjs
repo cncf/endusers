@@ -419,3 +419,71 @@ test('reports a parse error on the line it occurs', () => {
   assert.equal(finding.line, 1);
   assert.equal(findActiveContent('<img src=x>')[0].line, 1);
 });
+
+// The second half of the invariant stated in scripts/lib/uri-safety.mjs: an
+// imported page is third-party content, and every <img> in one is fetched by
+// a visitor's browser with no user action, so a remote image destination is a
+// beacon for their IP, User-Agent and Referer.
+test('flags a remote image destination', () => {
+  assert.deepEqual(reasons('![p](https://evil.example/p.png)'), [
+    'remote image destination https://evil.example/p.png',
+  ]);
+  assert.deepEqual(reasons('![p](HTTP://Evil.Example/p.png)'), [
+    'remote image destination http://evil.example/p.png',
+  ]);
+  assert.deepEqual(reasons('![p](//evil.example/p.png)'), [
+    'remote image destination //evil.example/p.png',
+  ]);
+});
+
+test('resolves an image reference through its definition', () => {
+  assert.deepEqual(reasons('![p][x]\n\n[x]: https://evil.example/p.png'), [
+    'remote image destination https://evil.example/p.png',
+  ]);
+  // The definition may be written before the reference that uses it.
+  assert.deepEqual(reasons('[x]: https://evil.example/p.png\n\n![p][x]'), [
+    'remote image destination https://evil.example/p.png',
+  ]);
+  // A collapsed reference carries the label as its identifier.
+  assert.deepEqual(reasons('![evil][]\n\n[evil]: https://evil.example/p.png'), [
+    'remote image destination https://evil.example/p.png',
+  ]);
+});
+
+test('leaves an unresolved image reference alone', () => {
+  // Nothing resolves it, so it renders as literal text and loads nothing.
+  assert.deepEqual(reasons('![p][missing]'), []);
+});
+
+test('leaves links, link definitions and local images alone', () => {
+  // rewriteImages() demotes a remote image *to* a remote link, and
+  // docs/architectures/colopl.md carries remote link definitions, so a gate on
+  // either would reject every imported page.
+  assert.deepEqual(reasons('[x](https://good.example/)'), []);
+  assert.deepEqual(reasons('[x][d]\n\n[d]: https://good.example/'), []);
+  assert.deepEqual(reasons('![p](/img/architectures/acme/p.png)'), []);
+  assert.deepEqual(reasons('![p](images/p.png)'), []);
+  assert.deepEqual(reasons('![p](data:image/png;base64,AAAA)'), []);
+});
+
+test('flags a remote logo on the allowed component but not its remote href', () => {
+  const card = (attributes) =>
+    reasons(`<CNCFProjectCard name={"K"} ${attributes} />`);
+  assert.deepEqual(card('logo={"https://evil.example/l.svg"}'), [
+    'remote image destination https://evil.example/l.svg',
+  ]);
+  assert.deepEqual(card('logo="https://evil.example/l.svg"'), [
+    'remote image destination https://evil.example/l.svg',
+  ]);
+  assert.deepEqual(card('logo={"/img/cncf-projects/k.svg"}'), []);
+  assert.deepEqual(card('href={"https://www.cncf.io/projects/k/"}'), []);
+});
+
+test('truncates a long remote image destination in the reason', () => {
+  const url = `https://evil.example/${'a'.repeat(200)}.png`;
+  const [finding] = findActiveContent(`![p](${url})`);
+  assert.equal(
+    finding.reason,
+    `remote image destination ${url.slice(0, 117)}...`,
+  );
+});
