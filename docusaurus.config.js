@@ -215,6 +215,23 @@ const config = {
         // tests/site-config.test.mjs now does, so the directive can be set.
         // The site's fonts are vendored in static/fonts and referenced by
         // root-relative url(), so 'self' constrains nothing it actually does.
+        //
+        // `manifest-src` is the last fetch directive with no fallback of its
+        // own. CSP3 6.8.2 gives its chain as << "manifest-src",
+        // "default-src" >> and nothing else, so with no `default-src` here the
+        // browser fetches an application manifest from any host. `worker-src`
+        // is also unnamed but is not a gap for the same reason: its chain is
+        // << "worker-src", "child-src", "script-src", "default-src" >>, so
+        // `script-src` above already constrains it.
+        //
+        // A `<link rel="manifest">` that named a third-party host would beacon
+        // the visitor's IP, User-Agent and Referer there, and a manifest also
+        // carries `name`, `icons`, `start_url` and `scope`, so an off-origin
+        // one misrepresents the installed-app identity of the site. The link
+        // this config emits above is root-relative (`${baseUrl}manifest.json`,
+        // served from static/manifest.json), so 'self' constrains nothing the
+        // site actually does -- the same premise that made `font-src 'self'`
+        // safe to set.
         content: [
           "base-uri 'self'",
           "object-src 'none'",
@@ -222,6 +239,7 @@ const config = {
           "media-src 'none'",
           "connect-src 'self'",
           "font-src 'self'",
+          "manifest-src 'self'",
           "form-action 'self'",
           `script-src ${SCRIPT_SOURCES.join(' ')}`,
           "style-src 'self' 'unsafe-inline'",
