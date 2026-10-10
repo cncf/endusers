@@ -1,30 +1,51 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { collectError, reportAndExit } from '../scripts/lib/validate-utils.mjs';
 
-// reportAndExit writes to console and may call process.exit(1). Swap all three
-// out so the assertions can inspect what a validator run would have emitted
-// without terminating the test runner.
-function withCapturedConsole(fn) {
-  const original = {
-    warn: console.warn,
-    error: console.error,
-    exit: process.exit,
-  };
-  const warnings = [];
-  const errors = [];
+const MODULE_URL = new URL('../scripts/lib/validate-utils.mjs', import.meta.url)
+  .href;
+
+// reportAndExit writes its report straight to stderr's file descriptor and may
+// call process.exit(1). Swap fs.writeSync and process.exit out so the
+// assertions can inspect what a validator run would have emitted without
+// polluting the test runner's own output or terminating it.
+function withCapturedStderr(fn, { writeSync } = {}) {
+  const originalWriteSync = fs.writeSync;
+  const originalExit = process.exit;
+  const chunks = [];
   const exitCodes = [];
-  console.warn = (message) => warnings.push(String(message));
-  console.error = (message) => errors.push(String(message));
+  fs.writeSync = (fd, buffer, offset) => {
+    assert.equal(fd, process.stderr.fd, 'the report must go to stderr');
+    const written = writeSync
+      ? writeSync(buffer, offset)
+      : buffer.length - offset;
+    chunks.push(buffer.subarray(offset, offset + written).toString('utf8'));
+    return written;
+  };
   process.exit = (code) => exitCodes.push(code);
   try {
     fn();
   } finally {
-    console.warn = original.warn;
-    console.error = original.error;
-    process.exit = original.exit;
+    fs.writeSync = originalWriteSync;
+    process.exit = originalExit;
   }
-  return { warnings, errors, exitCodes };
+
+  // Reassemble the accepted bytes and sort each line into the report it
+  // belongs to; a report starts at its "N warning(s)/error(s)" header.
+  const warnings = [];
+  const errors = [];
+  let target = null;
+  for (const line of chunks.join('').replace(/\n$/, '').split('\n')) {
+    if (line.includes('warning(s) in ')) target = warnings;
+    else if (line.includes('error(s) in ')) target = errors;
+    else if (!target) continue;
+    if (line === '') continue;
+    target.push(target.length === 0 ? `\n${line}` : line);
+  }
+  return { warnings, errors, exitCodes, chunks };
 }
 
 test('collectError appends a structured entry', () => {
@@ -54,7 +75,7 @@ test('collectError keeps entries already present in the array', () => {
 });
 
 test('reportAndExit stays silent and does not exit when there are no errors', () => {
-  const { warnings, errors, exitCodes } = withCapturedConsole(() => {
+  const { warnings, errors, exitCodes } = withCapturedStderr(() => {
     reportAndExit([], 'architecture assets');
   });
   assert.deepEqual(warnings, []);
@@ -67,7 +88,7 @@ test('reportAndExit prints warnings without exiting', () => {
   collectError(collected, 'data/one.json', 'warn', 'missing optional field');
   collectError(collected, 'data/two.json', 'warn', 'deprecated key');
 
-  const { warnings, errors, exitCodes } = withCapturedConsole(() => {
+  const { warnings, errors, exitCodes } = withCapturedStderr(() => {
     reportAndExit(collected, 'architecture assets');
   });
 
@@ -84,7 +105,7 @@ test('reportAndExit prints errors and exits with status 1', () => {
   const collected = [];
   collectError(collected, 'data/metrics.json', 'error', 'unknown metric id');
 
-  const { warnings, errors, exitCodes } = withCapturedConsole(() => {
+  const { warnings, errors, exitCodes } = withCapturedStderr(() => {
     reportAndExit(collected, 'metrics');
   });
 
@@ -99,7 +120,7 @@ test('reportAndExit reports warnings before errors and still exits', () => {
   collectError(collected, 'data/a.json', 'warn', 'soft problem');
   collectError(collected, 'data/b.json', 'error', 'hard problem');
 
-  const { warnings, errors, exitCodes } = withCapturedConsole(() => {
+  const { warnings, errors, exitCodes } = withCapturedStderr(() => {
     reportAndExit(collected, 'awards');
   });
 
@@ -115,7 +136,7 @@ test('reportAndExit ignores entries with an unrecognised severity', () => {
     { path: 'data/c.json', severity: 'info', message: 'just a note' },
   ];
 
-  const { warnings, errors, exitCodes } = withCapturedConsole(() => {
+  const { warnings, errors, exitCodes } = withCapturedStderr(() => {
     reportAndExit(collected, 'architectures');
   });
 
@@ -126,12 +147,174 @@ test('reportAndExit ignores entries with an unrecognised severity', () => {
 
 test('reportAndExit includes the context label supplied by each validator', () => {
   for (const label of ['metrics', 'awards', 'architecture assets']) {
-    const { errors } = withCapturedConsole(() => {
+    const { errors } = withCapturedStderr(() => {
       reportAndExit(
         [{ path: 'x.json', severity: 'error', message: 'boom' }],
         label,
       );
     });
     assert.match(errors[0], new RegExp(`in ${label}:`));
+  }
+});
+
+test('reportAndExit writes each report to stderr in a single call', () => {
+  const { chunks } = withCapturedStderr(() => {
+    reportAndExit(
+      [
+        { path: 'a.json', severity: 'warn', message: 'soft' },
+        { path: 'b.json', severity: 'error', message: 'boom' },
+      ],
+      'metrics',
+    );
+  });
+
+  assert.equal(chunks.length, 2, 'one call per report, warnings first');
+  assert.ok(chunks.every((chunk) => chunk.endsWith('\n')));
+  assert.match(chunks[0], /warning\(s\) in metrics:/);
+  assert.match(chunks[1], /error\(s\) in metrics:/);
+});
+
+test('reportAndExit no longer routes its report through console', () => {
+  // console.error/console.warn are asynchronous on a POSIX pipe, which is what
+  // let process.exit(1) drop the tail of a report.
+  const source = fs
+    .readFileSync(
+      fileURLToPath(
+        new URL('../scripts/lib/validate-utils.mjs', import.meta.url),
+      ),
+      'utf8',
+    )
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  assert.doesNotMatch(source, /console\.(error|warn|log)\(/);
+});
+
+test('reportAndExit resumes a partially accepted write until the report is complete', () => {
+  const collected = [];
+  collectError(collected, 'data/a.json', 'error', 'first');
+  collectError(collected, 'data/b.json', 'error', 'second');
+
+  // A pipe may accept fewer bytes than offered; the remainder must be retried.
+  const { errors, exitCodes, chunks } = withCapturedStderr(
+    () => reportAndExit(collected, 'members'),
+    {
+      writeSync: (buffer, offset) =>
+        Math.max(1, Math.ceil((buffer.length - offset) / 3)),
+    },
+  );
+
+  assert.deepEqual(exitCodes, [1]);
+  assert.ok(chunks.length > 1, 'a short write must be followed by another');
+  assert.match(errors[0], /2 error\(s\) in members:/);
+  assert.deepEqual(errors.slice(1), [
+    '  [error] data/a.json: first',
+    '  [error] data/b.json: second',
+  ]);
+});
+
+test('reportAndExit retries a write that stderr refuses with EAGAIN', () => {
+  let refused = false;
+  const { errors, exitCodes } = withCapturedStderr(
+    () =>
+      reportAndExit(
+        [{ path: 'x.json', severity: 'error', message: 'boom' }],
+        'awards',
+      ),
+    {
+      writeSync: (buffer, offset) => {
+        if (refused) return buffer.length - offset;
+        refused = true;
+        throw Object.assign(new Error('resource temporarily unavailable'), {
+          code: 'EAGAIN',
+        });
+      },
+    },
+  );
+
+  assert.ok(refused, 'the first write must have been refused');
+  assert.deepEqual(exitCodes, [1]);
+  assert.equal(errors.at(-1), '  [error] x.json: boom');
+});
+
+test('reportAndExit propagates a write failure that is not EAGAIN', () => {
+  assert.throws(
+    () =>
+      withCapturedStderr(
+        () =>
+          reportAndExit(
+            [{ path: 'x.json', severity: 'error', message: 'boom' }],
+            'awards',
+          ),
+        {
+          writeSync: () => {
+            throw Object.assign(new Error('bad file descriptor'), {
+              code: 'EBADF',
+            });
+          },
+        },
+      ),
+    /bad file descriptor/,
+  );
+});
+
+test('reportAndExit delivers a long report through a pipe without losing its tail', () => {
+  // Regression: console.error is asynchronous on a POSIX pipe and
+  // process.exit() does not flush it, so the alphabetical tail of a large
+  // validator report could be dropped before the parent read it.
+  const source = `
+    import { reportAndExit } from ${JSON.stringify(MODULE_URL)};
+    const errors = Array.from({ length: 2000 }, (unused, index) => ({
+      path: 'data/member-' + String(index).padStart(4, '0') + '.json',
+      severity: 'error',
+      message: 'logo does not exist under static/',
+    }));
+    reportAndExit(errors, 'members');
+  `;
+  // The child must not inherit this run's coverage directory or test context:
+  // its records would pollute the suite's coverage with an unmappable --eval
+  // module.
+  const env = { ...process.env };
+  delete env.NODE_V8_COVERAGE;
+  delete env.NODE_TEST_CONTEXT;
+  const result = spawnSync(
+    process.execPath,
+    ['--input-type=module', '--eval', source],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env },
+  );
+
+  assert.equal(result.status, 1);
+  const lines = result.stderr.trimEnd().split('\n');
+  assert.match(lines[1], /2000 error\(s\) in members:/);
+  assert.equal(lines.length, 2002, 'every collected error must reach the pipe');
+  assert.equal(
+    lines.at(-1),
+    '  [error] data/member-1999.json: logo does not exist under static/',
+  );
+});
+
+test('every validator that reports errors prints a success line afterwards', () => {
+  // process.exitCode = 1 would be an incorrect fix here: each validator prints
+  // a "Validated N ..." line after reportAndExit(), which must stay
+  // unreachable once errors have been reported.
+  const scripts = fileURLToPath(new URL('../scripts/', import.meta.url));
+  const validators = fs
+    .readdirSync(scripts)
+    .filter((name) => name.startsWith('validate-') && name.endsWith('.mjs'))
+    .map((name) => [name, fs.readFileSync(`${scripts}${name}`, 'utf8')])
+    .filter(([, source]) => source.includes('reportAndExit'));
+
+  assert.ok(validators.length >= 12, 'all shared validators must be scanned');
+  for (const [name, source] of validators) {
+    const call = source.search(/^reportAndExit\(/m);
+    assert.notEqual(
+      call,
+      -1,
+      `${name} must call the shared helper at top level`,
+    );
+    assert.match(
+      source.slice(call),
+      /\nconsole\.log\(/,
+      `${name} prints a success line that reportAndExit must not fall through to`,
+    );
   }
 });
