@@ -507,6 +507,50 @@ for (const [label, value] of [
   });
 }
 
+// `http:` is not the scheme this site is served over, so the parser never
+// treats it as relative: it skips however many separators follow -- including
+// none -- and reads the next component as the host. Each value below loads
+// from evil.example in a browser exactly as `http://evil.example` does, and a
+// browser that auto-upgrades the mixed-content request still sends the
+// visitor's IP, User-Agent and Referer to that host.
+for (const [value, expected] of [
+  ['http:evil.example/b.png', 'http://evil.example/b.png'],
+  ['http:/evil.example/b.png', 'http://evil.example/b.png'],
+  ['http:\\evil.example/b.png', 'http://evil.example/b.png'],
+  ['http:///evil.example/b.png', 'http://evil.example/b.png'],
+  ['HTTP:evil.example/b.png', 'http://evil.example/b.png'],
+]) {
+  test(`detects a slashless http: authority: ${value}`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><image href="${value}"/></svg>`;
+    assert.deepEqual(findRemoteReferences(svg), [
+      `references a remote resource in <image> href: ${expected}`,
+    ]);
+  });
+}
+
+// The same shape under the *site's own* scheme is relative, and a scheme with
+// no host after it is not a URL the parser accepts. Flagging either would
+// fail a diagram that references its own sibling assets.
+for (const [label, value] of [
+  ['an https: value with no separator, which is a sibling path', 'https:a.png'],
+  ['an http: scheme with no host at all', 'http:'],
+  ['an http: scheme followed only by a query', 'http:?q'],
+  ['an http: scheme followed only by a fragment', 'http:#f'],
+]) {
+  test(`does not flag ${label}`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><image href="${value}"/></svg>`;
+    assert.deepEqual(findRemoteReferences(svg), []);
+  });
+}
+
+test('detects a slashless http: authority in a CSS url()', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>rect{fill:url(http:evil.example/b.png)}</style><rect/></svg>';
+  assert.deepEqual(findRemoteReferences(svg), [
+    'references a remote resource in a <style> block: http://evil.example/b.png',
+  ]);
+});
+
 test('detects a remote url() in a <style> block, including @font-face src', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg"><style>@font-face{font-family:x;src:url(https://evil.example/f.woff)}</style><text style="font-family:x">a</text></svg>';
