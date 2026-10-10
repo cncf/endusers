@@ -197,6 +197,47 @@ describeCoverage('drifted upstream data', () => {
     ).toBeVisible();
   });
 
+  // `matchesMembership` answers the contributor filter with
+  //
+  //   status === 'contributor' || status === 'member-and-contributor'
+  //
+  // (src/components/MemberDirectory/utils.js:42-44). The committed
+  // data/members.json holds no `member-and-contributor` organization, so
+  // against the real build the left operand is true for every record the
+  // filter admits and the right one never evaluates -- the dual-role arm is
+  // not merely untested in a browser, it is unreachable. The overlay supplies
+  // the one record that makes it reachable, which is the same reason the case
+  // above exists; this one drives the filter rather than the card label.
+  //
+  // tests/e2e/interactions.spec.js covers the plain `contributor` arm against
+  // the real data, where it runs in the gating "End-to-end tests" job too.
+  test('the contributor filter admits an organization holding both roles', async ({
+    page,
+  }) => {
+    expect(dualRole).toBeTruthy();
+
+    await page.goto('/community/members');
+    const section = page.getByRole('region', {
+      name: 'End User Community organization directory',
+    });
+    const search = section.getByLabel('Search organizations by name');
+    await waitForHydration(search);
+
+    const membership = section.getByLabel('Filter by membership status');
+    await membership.selectOption('contributor');
+    await expect(
+      section.locator('article', { hasText: dualRole.name }),
+    ).toHaveCount(1);
+
+    // The same record must drop out under the filter that does not admit it,
+    // or the assertion above would also pass against a filter that stopped
+    // filtering.
+    await membership.selectOption('unknown');
+    await expect(
+      section.locator('article', { hasText: dualRole.name }),
+    ).toHaveCount(0);
+  });
+
   // ArchitectureCard's eyebrow is `industries.join(' · ') || 'Reference
   // architecture'`. Every entry the catalog ships carries a non-empty
   // industries array, so the fallback has never rendered in a browser. The

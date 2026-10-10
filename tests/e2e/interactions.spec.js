@@ -125,6 +125,50 @@ test.describe('member directory filtering', () => {
       .toBeGreaterThan(0);
   });
 
+  // The toolbar's membership <select> ships three options
+  // (MEMBERSHIP_FILTERS, src/components/MemberDirectory/hooks.js:3-10) and the
+  // case above drives two of them. `contributor` is answered by its own branch
+  // of `matchesMembership`
+  // (src/components/MemberDirectory/utils.js:42-44), and no browser case has
+  // ever selected it: the branch body is a zero region in the end-to-end
+  // report while the unit suite covers it through a fake DOM. A filter arm
+  // that only ever runs against a fake DOM is exactly the shape this file
+  // exists to catch -- the option is rendered and selectable in the shipped
+  // page whether or not its handler survives hydration.
+  //
+  // The counts are asserted as a relation rather than a number because
+  // data/members.json is regenerated from the landscape on a schedule.
+  test('the contributor filter narrows the directory to contributor profiles', async ({
+    page,
+  }) => {
+    await page.goto('/community/members');
+    const section = page.getByRole('region', {
+      name: 'End User Community organization directory',
+    });
+    const search = section.getByLabel('Search organizations by name');
+    await waitForHydration(search);
+
+    const results = section.getByText(/Showing \d+ of \d+ organizations/);
+    const total = totalCount(await results.textContent());
+    const membership = section.getByLabel('Filter by membership status');
+    await membership.selectOption('contributor');
+
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBeGreaterThan(0);
+    expect(shownCount(await results.textContent())).toBeLessThan(total);
+
+    // Every surviving card carries a contributor label, which is what
+    // distinguishes a working filter from one that merely re-rendered: both
+    // labels `matchesMembership` admits here contain "Contributor"
+    // (utils.js:29, utils.js:31).
+    const cards = section.locator('article');
+    await expect(cards.first()).toBeVisible();
+    for (const card of await cards.all()) {
+      await expect(card.getByText(/Contributor/).first()).toBeVisible();
+    }
+  });
+
   test('the directory remains usable without horizontal overflow on mobile', async ({
     page,
   }) => {
