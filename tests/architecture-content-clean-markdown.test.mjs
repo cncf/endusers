@@ -113,6 +113,16 @@ test('a script-capable image destination is reduced to alt text even with an aut
   );
 });
 
+test('a schemed destination that names no host is reduced to alt text', () => {
+  // The HAS_SCHEME arm catches what the two arms above it do not: a scheme
+  // that runs no script and carries no authority, so it is neither a script
+  // payload nor a host to demote. It is not a usable image source either, so
+  // the alt text is all that survives.
+  assert.equal(cleanMarkdown('![x](mailto:a@b.example)', 'demo'), 'x');
+  assert.equal(cleanMarkdown('![x](tel:+15551234)', 'demo'), 'x');
+  assert.equal(cleanMarkdown('![x](data:image/png;base64,AAAA)', 'demo'), 'x');
+});
+
 test('a non-script scheme that names a host is still demoted to a link', () => {
   // The alt-text rule is about script capability, not about being unusual:
   // ftp:// and //host genuinely name a host and keep their existing
