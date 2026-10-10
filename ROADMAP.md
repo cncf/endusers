@@ -12,11 +12,12 @@ metrics, events, and pathways to participate.
 
 ## Launch target
 
-**KubeCon + CloudNativeCon North America 2026 (Nov 9–12, Salt Lake City)** is
-the target announcement window (see issue #104): the largest concentration of
-CNCF end users this year, and every Phase 1 content pillar is exactly what that
-audience looks for. The weekly backwards plan lives in `LAUNCH.md` (PR #108).
-The ownership decision has landed (ADR 0001 is Accepted; issue #99 closed); the
+The launch is gated on readiness, not on a date or event. Earlier revisions
+named a specific conference as the announcement window (issue #104); the dated
+countdown slipped twice (#966, #1271) and was replaced by the ordered, dateless
+milestone checklist in `LAUNCH.md`. Conferences and End User TAB meetings that
+fall near readiness are amplification opportunities, not deadlines. The
+ownership decision has landed (ADR 0001 is Accepted; issue #99 closed); the
 remaining pre-launch dependency is the DNS cutover tracked in issue #46.
 
 ## Guiding principles
@@ -83,10 +84,10 @@ shipped silently. Content completeness alone is not a launch plan.
       unique human contributors since baseline, and good-first-issues claimed —
       each with a live-collected baseline and a 90-day post-launch target.
       Refresh with `npm run collect:launch-metrics`, validate with
-      `npm run validate:launch-metrics`. The committed file is a rehearsal
-      capture; re-run it at (or after) the W-6 pre-launch checkpoint
-      (2026-09-28, see `LAUNCH.md`) so the baseline reflects that checkpoint
-      rather than an earlier snapshot that Phase 1 work has since made stale.
+      `npm run validate:launch-metrics`. The committed file is the milestone-8
+      baseline (captured 2026-10-02 under the `W-6` label the earlier dated plan
+      used); re-run it immediately before launch (see `LAUNCH.md`) so the 90-day
+      comparison starts from the numbers the announcement went out on.
 - [ ] **DNS cutover dependency**: the Phase 2 ownership decision (issue #46,
       ADR 0001) is resolved — the repository has been transferred to the `cncf`
       GitHub org — so cutover to `endusers.cncf.io` itself (Phase 3) is what

@@ -21,8 +21,8 @@
       "issues": []
     },
     {
-      "title": "KubeCon NA 2026 Launch",
-      "description": "Cross-cutting launch milestone for KubeCon + CloudNativeCon North America 2026 (Nov 9–12, Salt Lake City).",
+      "title": "Launch",
+      "description": "Cross-cutting launch milestone: the site is announced when every readiness gate in LAUNCH.md is satisfied, not on a calendar date.",
       "issues": [99, 90, 100, 104]
     }
   ]

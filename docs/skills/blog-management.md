@@ -33,12 +33,17 @@ sync with `blog/authors.yml`.
 
 ## Publishing cadence
 
-Minimum sustainable cadence: **one post per month**. The default recurring post
-is "Month in Metrics" — a short, data-driven recap sourced from the current
-`data/metrics.json` (and, when relevant, new reference architectures, award
-announcements, or event recaps). This keeps the cadence nearly free to sustain
-because it reuses data the site already generates instead of requiring net-new
-reporting.
+Publish when there is material change to report; there is no fixed monthly
+floor. Two posts and a year of silence is a worse signal than a cadence
+statement the blog cannot keep, which is why the earlier "one post per month"
+commitment was dropped (issue #1278) rather than restated.
+
+The default recurring post is "Month in Metrics" — a short, data-driven recap
+sourced from the current `data/metrics.json` (and, when relevant, new reference
+architectures, award announcements, or event recaps). It is nearly free to
+produce because it reuses data the site already generates instead of requiring
+net-new reporting, so when there is something to report it should be the first
+post considered.
 
 To publish a Month in Metrics post:
 
@@ -51,5 +56,5 @@ To publish a Month in Metrics post:
 3. Note what changed since the previous Month in Metrics post (new
    architectures, membership counts, award announcements) rather than repeating
    the same figures unchanged.
-4. If there's no material change to report in a given month, skip the post
-   rather than publish filler — the cadence is a floor, not a quota.
+4. If there is no material change to report, do not publish filler. A gap in the
+   archive is acceptable; a post that says nothing is not.
