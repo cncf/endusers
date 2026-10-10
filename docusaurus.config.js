@@ -206,15 +206,22 @@ const config = {
         // media element and no client-side request to a third-party origin
         // (the local search plugin reads its index from this origin), so
         // nothing here constrains Docusaurus hydration or local search.
-        // `font-src` is still omitted: the site loads no remote font, but
-        // nothing in the build asserts that, so the directive is left for a
-        // change that can verify it.
+        // `font-src` joins them on the same footing. It was the last fetch
+        // directive still unnamed, so the browser would load a font from any
+        // host -- and `style-src` carries 'unsafe-inline', so an inline
+        // `@font-face` that reached a page could name one, beaconing the
+        // visitor's IP, User-Agent and Referer to it. It was left out only
+        // because nothing in the build asserted the premise; the CSS scan in
+        // tests/site-config.test.mjs now does, so the directive can be set.
+        // The site's fonts are vendored in static/fonts and referenced by
+        // root-relative url(), so 'self' constrains nothing it actually does.
         content: [
           "base-uri 'self'",
           "object-src 'none'",
           "frame-src 'none'",
           "media-src 'none'",
           "connect-src 'self'",
+          "font-src 'self'",
           "form-action 'self'",
           `script-src ${SCRIPT_SOURCES.join(' ')}`,
           "style-src 'self' 'unsafe-inline'",

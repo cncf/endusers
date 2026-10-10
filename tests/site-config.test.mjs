@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { join, relative } from 'node:path';
 import { isAllowedImageHost } from '../scripts/lib/profile-image.mjs';
+import { remoteTarget } from '../scripts/lib/uri-safety.mjs';
 
 // docusaurus.config.js is ESM but calls require.resolve() for its plugin list,
 // which Docusaurus supplies through its own loader. Provide the same shim so
@@ -427,6 +428,11 @@ test('the meta CSP names the fetch directives that have no default-src fallback'
     ["'self'"],
     'connect-src is missing or widened: it confines fetch/XHR/WebSocket to this origin so injected content cannot exfiltrate to a third party',
   );
+  assert.deepEqual(
+    directives.get('font-src'),
+    ["'self'"],
+    "font-src is missing or widened: style-src carries 'unsafe-inline', so an inline @font-face that reached a page would fetch a font from any host and beacon the visitor there",
+  );
 });
 
 // script-src and style-src have to carry 'unsafe-inline' (Docusaurus emits
@@ -518,6 +524,41 @@ test('no shipped source needs a wider frame, media or connect source', () => {
     offenders,
     [],
     'a frame, media element or cross-origin request was added; widen the CSP deliberately rather than leaving it to block at runtime',
+  );
+});
+
+// `font-src 'self'` is the premise the config comment asked for a build to
+// assert before the directive could be set: the site's fonts are vendored in
+// static/fonts and named by root-relative url(). A stylesheet that starts
+// naming an off-origin font would be blocked at runtime instead, so fail here
+// with the file that did it rather than leaving it to the browser.
+//
+// Every url() is checked, not only the ones inside @font-face: a shipped
+// stylesheet has no off-origin resource of any kind today, and remoteTarget()
+// is the same classifier the SVG and MDX gates ask, so a protocol-relative or
+// backslash-prefixed authority is judged here exactly as it is there.
+test('no shipped stylesheet names an off-origin font or other remote resource', () => {
+  const walkCss = (dir) =>
+    readdirSync(dir).flatMap((entry) => {
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) return walkCss(full);
+      return full.endsWith('.css') ? [full] : [];
+    });
+
+  const offenders = [];
+  for (const file of walkCss(join(repoRoot, 'src'))) {
+    const body = readFileSync(file, 'utf8');
+    for (const [, raw] of body.matchAll(/url\(\s*(.*?)\s*\)/g)) {
+      const value = raw.replace(/^['"]|['"]$/g, '');
+      if (remoteTarget(value)) {
+        offenders.push(`${relative(repoRoot, file)}: ${value}`);
+      }
+    }
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    "a stylesheet names a remote resource; font-src 'self' (and img-src) will block it, so vendor the asset or widen the CSP deliberately",
   );
 });
 
