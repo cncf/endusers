@@ -87,10 +87,21 @@ try {
   mkdirSync(recordsDir, { recursive: true });
   mkdirSync(assetsDir, { recursive: true });
 
+  // Dirent.isDirectory() is false for a symlink, so a symlinked architecture
+  // directory upstream used to fall out of this list silently: the prune above
+  // had already deleted its page, so the architecture vanished from the site
+  // and the catalog with nothing in the log. Say so, the way walkFiles() does
+  // for every other symlink in the clone (#1267).
   const records = (
     await Promise.all(
       readdirSync(source, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
+        .filter((entry) => {
+          if (!entry.isSymbolicLink()) return entry.isDirectory();
+          console.warn(
+            `Skipping symlink ${join(source, entry.name)}: symlinks are never imported`,
+          );
+          return false;
+        })
         .map((entry) => importArchitecture(entry.name, commit)),
     )
   ).sort((a, b) => a.organization.localeCompare(b.organization));
