@@ -48,12 +48,12 @@ const FLOORS = {
   // entered none of the ratios above, which are all built from
   // isSourceFile(). These are the same three shapes over its own row.
   // Measured on the suite this commit ships: harness files 100.00% lines /
-  // 97.95% regions (3522/3522 lines, 1384/1413 regions), and the lowest
-  // harness file is tests/tools/e2e-coverage-report.mjs at 93.65%, floored
-  // to 93.
+  // 99.19% regions (3890/3890 lines, 1467/1479 regions), and the lowest
+  // harness file is tests/tools/e2e-coverage-report.mjs at 97.57%, floored
+  // to 97. Every other harness file is at 100.00%.
   '--check-harness': 100,
   '--check-harness-regions': 97,
-  '--check-harness-file-regions': 93,
+  '--check-harness-file-regions': 97,
 };
 
 function parseGate(command) {
