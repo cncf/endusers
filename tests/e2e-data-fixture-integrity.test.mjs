@@ -33,6 +33,8 @@ import {
   overlayDirFor,
 } from './tools/e2e-data-fixtures.cjs';
 
+const SPEC_DIR = new URL('e2e/', import.meta.url).pathname;
+
 const REPO_ROOT = new URL('..', import.meta.url).pathname;
 
 /** Every committed overlay in one fixture directory, as absolute paths. */
@@ -42,6 +44,30 @@ function overlaysIn(dir) {
     .sort()
     .map((name) => join(dir, name));
 }
+
+/**
+ * One spec file's source with its comments removed.
+ *
+ * The variant specs name one another's base URLs in their preambles while
+ * opening only their own, so matching the raw text would count a mention as a
+ * visit. The `[^:]` guard keeps `https://` out of the line-comment rule.
+ *
+ * @param {string} specPath absolute path to a spec file
+ * @returns {string} the source with block and line comments blanked out
+ */
+function specCode(specPath) {
+  return readFileSync(specPath, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//gu, ' ')
+    .replace(/(^|[^:])\/\/.*$/gmu, '$1');
+}
+
+/** Escapes a build name for embedding in a route pattern. */
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+
+const SPEC_SOURCES = readdirSync(SPEC_DIR)
+  .filter((name) => name.endsWith('.spec.js'))
+  .sort()
+  .map((name) => [name, specCode(join(SPEC_DIR, name))]);
 
 const FIXTURE_OVERLAYS = overlaysIn(FIXTURE_DIR);
 const BUILD_DIRS = coverageBuildNames().map(overlayDirFor);
@@ -134,6 +160,42 @@ test('every committed overlay describes the source it covers', () => {
       description,
       /(?:src|scripts)\/\S+\.(?:js|mjs|cjs)/,
       `${label(overlayPath)}: the description names no source file, so a reader cannot tell which arm it covers`,
+    );
+  }
+});
+
+// The cost the directory convention does not account for. A build exists
+// because `tests/e2e/fixtures/data-<name>/` exists and nothing else has to be
+// told about it (tests/tools/e2e-data-fixtures.cjs), and each one is a full
+// Docusaurus compile, so the end-to-end coverage job's wall time grows
+// linearly in the number of these directories. The overlay tests above
+// establish that a build's overlays still patch something; what no test asks
+// is whether any browser ever opens the site that was compiled from them.
+//
+// A build no spec visits is served, never requested, and contributes no
+// capture artifact at all, so the union has nothing of its own to add and the
+// arm the overlays hold open goes back to being uncovered -- at the price of a
+// compile on every run. That is the same silent-no-op failure the overlay
+// tests exist for, one level up: the symptom is a slower job and an uncovered
+// arm, never an error.
+//
+// Matched against the spec sources with their comments stripped, because the
+// variant specs describe the base URLs of *other* builds in their preambles:
+// a commented mention is documentation, not a visit.
+test('every declared fixture build is visited by a spec', () => {
+  assert.ok(
+    SPEC_SOURCES.length > 0,
+    `${relative(REPO_ROOT, SPEC_DIR)} holds no spec; this test would assert nothing`,
+  );
+  for (const name of coverageBuildNames()) {
+    const base = `/e2e-coverage-${escapeRegExp(name)}`;
+    const route = new RegExp(`${base}(?![\\w-])`, 'u');
+    const visiting = SPEC_SOURCES.filter(([, code]) => route.test(code)).map(
+      ([spec]) => spec,
+    );
+    assert.ok(
+      visiting.length > 0,
+      `tests/e2e/fixtures/data-${name}/ declares a build that no spec under ${relative(REPO_ROOT, SPEC_DIR)} opens: it is compiled on every coverage run and reaches no browser, so its overlays cover nothing`,
     );
   }
 });
