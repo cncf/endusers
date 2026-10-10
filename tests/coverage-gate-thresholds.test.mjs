@@ -48,9 +48,15 @@ const FLOORS = {
   // entered none of the ratios above, which are all built from
   // isSourceFile(). These are the same three shapes over its own row.
   // Measured on the suite this commit ships: harness files 100.00% lines /
-  // 99.19% regions (3890/3890 lines, 1467/1479 regions), and the lowest
-  // harness file is tests/tools/e2e-coverage-report.mjs at 97.57%, floored
+  // 99.32% regions (3890/3890 lines, 1471/1481 regions), and the lowest
+  // harness file is tests/tools/e2e-coverage-report.mjs at 97.98%, floored
   // to 97. Every other harness file is at 100.00%.
+  //
+  // 97.98% is also that file's ceiling, not a backlog: its 10 uncovered
+  // regions are the defensive fallbacks the note at the top of the file lists
+  // as unreachable (#1253), so no test can lift it. The per-file floor must
+  // stay at or below 97 until that list shrinks; a probe that lands one of
+  // them should raise the floor and shorten the list in the same change.
   '--check-harness': 100,
   '--check-harness-regions': 97,
   '--check-harness-file-regions': 97,
