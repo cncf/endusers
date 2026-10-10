@@ -99,6 +99,34 @@ test('rebases a reference-style local image and drops a non-http scheme', () => 
   assert.equal(cleanMarkdown('![hi](javascript:alert(1))', 'demo'), 'hi');
 });
 
+test('a script-capable image destination is reduced to alt text even with an authority prefix', () => {
+  // REMOTE_DESTINATION matches "javascript://..." exactly as it matches
+  // "https://host/x", so deciding the host question first rewrote the image
+  // into a *link* carrying the same scheme. "//" is a JavaScript line comment
+  // and "%0a" starts a new line, so that link runs alert(1) on click. Only
+  // findActiveContent() stood between it and the published page.
+  assert.equal(cleanMarkdown('![x](javascript://%0aalert(1))', 'demo'), 'x');
+  assert.equal(cleanMarkdown('![x](vbscript://x)', 'demo'), 'x');
+  assert.equal(
+    cleanMarkdown('![x][r]\n\n[r]: javascript://%0aalert(1)', 'demo'),
+    'x\n\n[r]: javascript://%0aalert(1)',
+  );
+});
+
+test('a non-script scheme that names a host is still demoted to a link', () => {
+  // The alt-text rule is about script capability, not about being unusual:
+  // ftp:// and //host genuinely name a host and keep their existing
+  // demotion, which is what stops them being published as a live <img>.
+  assert.equal(
+    cleanMarkdown('![beacon](ftp://evil.example/b.png)', 'demo'),
+    '[beacon](ftp://evil.example/b.png)',
+  );
+  assert.equal(
+    cleanMarkdown('![beacon](//evil.example/b.png)', 'demo'),
+    '[beacon](//evil.example/b.png)',
+  );
+});
+
 test('reduces a remote image inside a link to its alt text', () => {
   assert.equal(
     cleanMarkdown(
