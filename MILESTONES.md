@@ -59,27 +59,29 @@ Tag issues/PRs covering:
 - Cross-linking with contribute.cncf.io and cncf.io
 - Content-issue templates and a public changelog
 
-## Milestone: KubeCon NA 2026 Launch
+## Milestone: Launch
 
-**Description**: Cross-cutting launch milestone for KubeCon + CloudNativeCon
-North America 2026 (Nov 9–12, Salt Lake City).
+**Description**: Cross-cutting launch milestone: the site is announced when
+every readiness gate in LAUNCH.md is satisfied, not on a calendar date.
 
-See `LAUNCH.md` (PR #108) for the full date-backed plan. This milestone tracks
-launch-specific coordination. GitHub supports one milestone per issue, so the
-six content-pillar issues (#74, #75, #76, #77, #79, and #80) remain in Phase 1;
-the launch milestone depends on that phase instead of duplicating those
+See `LAUNCH.md` for the ordered, dateless milestone checklist. This milestone
+tracks launch-specific coordination. GitHub supports one milestone per issue, so
+the six content-pillar issues (#74, #75, #76, #77, #79, and #80) remain in Phase
+1; the launch milestone depends on that phase instead of duplicating those
 assignments.
 
 Tag these issues:
 
 - #99 (ADR 0001 ownership decision — ratify before the announcement so it can
   name the site's permanent home)
-- #90 (launch/promotion strategy: announcement channels, KubeCon timing)
+- #90 (launch/promotion strategy: announcement channels and amplification
+  timing)
 - #100 (success metrics baseline + post-launch targets)
-- #104 (this launch-window finding, tracking the countdown itself)
+- #104 (the original launch-window finding; the dated countdown it opened has
+  since been replaced by the readiness checklist)
 
-Depends on: the Phase 1 milestone and PR #108 (LAUNCH.md), which provides the
-week-by-week countdown this milestone tracks.
+Depends on: the Phase 1 milestone and `LAUNCH.md`, which provides the readiness
+gates this milestone tracks.
 
 ## How to apply this plan
 

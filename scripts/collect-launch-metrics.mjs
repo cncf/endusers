@@ -8,10 +8,12 @@
 // is live GitHub API data, refreshed by re-running this script — the same
 // generated/never-hand-edited pattern as data/metrics.json.
 //
-// Per LAUNCH.md, the pre-launch checkpoint that should be treated as the
-// final launch baseline lands at W-6 (2026-09-28). Re-run this script at (or
-// after) that date and record capturedAt so the baseline reflects the actual
-// checkpoint rather than whatever day someone happened to run it.
+// LAUNCH.md is an undated readiness checklist. The committed baseline was
+// captured at its "success-metrics baseline" milestone; the checkpoint label
+// and targetDate below are retained verbatim because tests and the committed
+// data pin them, and because they name the checkpoint the capture was taken
+// under at the time. Re-run this script immediately before launch and record
+// capturedAt so the 90-day comparison starts from the announcement-day numbers.
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { githubFetch } from './lib/github.mjs';
