@@ -68,7 +68,9 @@ characters, and whitespace obfuscation, so re-spelling a construct does not help
 — remove it.
 
 - **Script-bearing or embedding elements**: `<script>`, `<handler>`,
-  `<listener>`, `<iframe>`, `<embed>`, `<object>`.
+  `<listener>`, `<iframe>`, `<embed>`, `<object>`, `<base>` (re-points every
+  relative reference in the document at a host the submitter chose), `<meta>`
+  (carries an http-equiv refresh).
 - **Event-handler attributes**: any `on*` attribute (`onload`, `onclick`, ...).
 - **Script-executing URI schemes** in any attribute: `javascript:`, `vbscript:`,
   `livescript:`, `mocha:`, and `data:` URIs carrying a markup or script media
