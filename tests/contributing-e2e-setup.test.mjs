@@ -50,6 +50,16 @@ function workflowRunSteps() {
 // naming the real cause. ci.yml never hits that because it always installs the
 // packages -- `--with-deps` on a cache miss, `install-deps` when the cached
 // bundle is restored.
+//
+// Both of those need root. The one documented way to get the packages without
+// it is to unpack the same .debs into a private sysroot (`dpkg-deb -x`) and
+// hand the loader that directory through LD_LIBRARY_PATH, which is the only
+// context in which a bare `npx playwright install chromium` is complete.
+function documentsSystemPackages(source) {
+  if (/npx playwright install-deps\b/.test(source)) return true;
+  return /dpkg-deb -x\b/.test(source) && /LD_LIBRARY_PATH=/.test(source);
+}
+
 test('the docs install Playwright the way ci.yml does, system packages included', () => {
   const workflowInstallsDeps = workflowRunSteps().some(
     (run) =>
@@ -68,10 +78,10 @@ test('the docs install Playwright the way ci.yml does, system packages included'
     // so it must not satisfy the browser-install match on its own.
     const installs = source.match(/npx playwright install(?!-deps)\b[^\n`]*/g);
     if (!installs) continue;
-    const mentionsStandaloneDeps = /npx playwright install-deps\b/.test(source);
+    const packagesDocumented = documentsSystemPackages(source);
     for (const invocation of installs) {
       if (invocation.includes('--with-deps')) continue;
-      if (mentionsStandaloneDeps) continue;
+      if (packagesDocumented) continue;
       incomplete.push(`${doc}: ${invocation.trim()}`);
     }
   }
@@ -81,6 +91,20 @@ test('the docs install Playwright the way ci.yml does, system packages included'
     [],
     `developer docs install the Playwright browser without its system packages, so the documented setup cannot launch it:\n${incomplete.join('\n')}`,
   );
+});
+
+test('a bare browser install is complete only beside a way to get the packages', () => {
+  assert.ok(documentsSystemPackages('npx playwright install-deps chromium'));
+  assert.ok(
+    documentsSystemPackages(
+      'for d in *.deb; do dpkg-deb -x "$d" /tmp/sysroot/fs; done\nexport LD_LIBRARY_PATH=/tmp/sysroot/fs/usr/lib',
+    ),
+  );
+  // Unpacking without pointing the loader at the result launches nothing, and
+  // naming the variable without unpacking anything has nothing to point at.
+  assert.ok(!documentsSystemPackages('dpkg-deb -x pkg.deb /tmp/sysroot/fs'));
+  assert.ok(!documentsSystemPackages('export LD_LIBRARY_PATH=/tmp/sysroot'));
+  assert.ok(!documentsSystemPackages('npx playwright install chromium'));
 });
 
 // `report:e2e:coverage` is a gate, not a readout: the e2e-coverage job hands it
