@@ -540,6 +540,7 @@ export {
   getRegionCoverage,
   isPhantomRegion,
   isContradictedRegion,
+  splitRangeAtBoundaries,
 };
 
 // Captured scripts are resolved against each root in order -- the run's own
@@ -620,6 +621,13 @@ function splitRangeAtBoundaries(range, boundaries) {
     }
     start = cut;
   }
+  // The `parts.length === 0` arm below is unreachable (see the residual note
+  // at the top of this file, #1253): every cut is strictly below
+  // `range.endOffset`, and `start` holds the last of them, so the tail push
+  // always fires. It is kept as the statement of the invariant rather than
+  // deleted, and tests/e2e-coverage-split-range.test.mjs asserts the invariant
+  // directly so a future edit that breaks it fails on its own name instead of
+  // silently turning this arm live.
   if (range.endOffset > start) {
     parts.push({ ...range, startOffset: start, endOffset: range.endOffset });
   }
