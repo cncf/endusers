@@ -433,6 +433,11 @@ test('the meta CSP names the fetch directives that have no default-src fallback'
     ["'self'"],
     "font-src is missing or widened: style-src carries 'unsafe-inline', so an inline @font-face that reached a page would fetch a font from any host and beacon the visitor there",
   );
+  assert.deepEqual(
+    directives.get('manifest-src'),
+    ["'self'"],
+    "manifest-src is missing or widened: CSP3 6.8.2 gives its fallback chain as << manifest-src, default-src >> and nothing else, so with no default-src an off-origin <link rel=manifest> is fetched, beaconing the visitor and misrepresenting the site's installed-app identity",
+  );
 });
 
 // script-src and style-src have to carry 'unsafe-inline' (Docusaurus emits
@@ -562,6 +567,28 @@ test('no shipped stylesheet names an off-origin font or other remote resource', 
   );
 });
 
+// `manifest-src 'self'` rests on the same premise `font-src 'self'` does: the
+// only manifest this site links is its own. The link is emitted from
+// docusaurus.config.js as a root-relative `${baseUrl}manifest.json`, so a
+// change that pointed it at a third-party host would be blocked at runtime
+// rather than caught here. Judge it with remoteTarget(), the same classifier
+// the SVG, MDX and stylesheet gates ask, so a protocol-relative or
+// backslash-prefixed authority is read here exactly as it is there.
+test('every linked web app manifest is served from this origin', () => {
+  const manifests = config.headTags.filter(
+    (tag) => tag.tagName === 'link' && tag.attributes?.rel === 'manifest',
+  );
+  assert.ok(manifests.length, 'no rel="manifest" link tag');
+  const offenders = manifests
+    .map((tag) => tag.attributes.href)
+    .filter((href) => remoteTarget(href));
+  assert.deepEqual(
+    offenders,
+    [],
+    "a manifest is linked from another host; manifest-src 'self' will block it, so serve it from static/ or widen the CSP deliberately",
+  );
+});
+
 test('the meta CSP confines images to the hosts the image gate allows', () => {
   const sources = cspDirectives().get('img-src');
   assert.ok(
@@ -644,5 +671,6 @@ test('the CSP holds under a preview deployment origin', async () => {
   // 'self' is the preview origin under a preview deployment, so local search
   // still reads its index from the host the page was served from.
   assert.deepEqual(directives.get('connect-src'), ["'self'"]);
+  assert.deepEqual(directives.get('manifest-src'), ["'self'"]);
   assert.ok(directives.get('img-src')?.includes("'self'"));
 });
