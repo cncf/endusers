@@ -97,9 +97,7 @@ test('required returns a present value and names the fault in the rest', () => {
 });
 
 test('the analyze job may upload its results to the security tab', () => {
-  const jobs = Object.entries(required(workflow.jobs, 'jobs'));
-  assert.equal(jobs.length, 1, 'codeql.yml declares more than one job');
-  const [jobName, job] = jobs[0];
+  const [jobName, job] = analyzeJob();
   const permissions = required(
     job.permissions,
     `permissions for job ${jobName}`,
@@ -125,18 +123,58 @@ test('init and analyze come from the same codeql-action release', () => {
   );
 });
 
-test('the analysis declares a language set and the category that names it', () => {
+// The languages CodeQL must analyse here. `javascript-typescript` is the site
+// and its scripts; `actions` is the workflow files themselves, which nothing
+// else in this repository reads statically. Dropping either from the matrix
+// silently narrows the scan, so both are pinned by name.
+const REQUIRED_LANGUAGES = ['actions', 'javascript-typescript'];
+
+function analyzeJob() {
+  const jobs = Object.entries(required(workflow.jobs, 'jobs'));
+  assert.equal(jobs.length, 1, 'codeql.yml declares more than one job');
+  return jobs[0];
+}
+
+test('the analysis fans out over every required language', () => {
+  const [jobName, job] = analyzeJob();
+  const strategy = required(job.strategy, `strategy for job ${jobName}`);
+  const languages = required(
+    required(strategy.matrix, `matrix for job ${jobName}`).language,
+    `matrix.language for job ${jobName}`,
+  );
+  assert.ok(
+    Array.isArray(languages),
+    `codeql.yml matrix.language is not a list: ${JSON.stringify(languages)}`,
+  );
+  const missing = REQUIRED_LANGUAGES.filter(
+    (language) => !languages.includes(language),
+  );
+  assert.deepEqual(
+    missing,
+    [],
+    `codeql.yml matrix omits languages the scan must cover: ${missing.join(', ')}`,
+  );
+  // A failure in one language's analysis must not cancel the other's upload.
+  assert.equal(
+    strategy['fail-fast'],
+    false,
+    'codeql.yml matrix does not set fail-fast: false, so one language failing hides the other',
+  );
+});
+
+test('init and analyze read the language from the matrix and name it in the category', () => {
   const languages = required(
     required(codeqlStep('init').with, '`with` block for codeql-action/init')
       .languages,
     'languages for codeql-action/init',
   );
   assert.equal(
-    typeof languages,
-    'string',
-    'codeql-action/init declares no languages',
+    languages,
+    '${{ matrix.language }}',
+    `codeql-action/init languages ${JSON.stringify(
+      languages,
+    )} does not read the matrix, so the fan-out above analyses nothing`,
   );
-  assert.ok(languages.length > 0, 'codeql-action/init languages is empty');
   const category = required(
     codeqlStep('analyze').with,
     '`with` block for codeql-action/analyze',
@@ -146,7 +184,7 @@ test('the analysis declares a language set and the category that names it', () =
     `/language:${languages}`,
     `codeql-action/analyze category ${JSON.stringify(
       category,
-    )} does not name the analysed languages ${JSON.stringify(languages)}`,
+    )} does not name the analysed language ${JSON.stringify(languages)}`,
   );
 });
 
@@ -179,11 +217,14 @@ test('every scanned source extension in the tree is matched by the path filters'
   );
 });
 
-test('a change to the scanner configuration triggers a scan', () => {
+test('a change to any workflow, including the scanner itself, triggers a scan', () => {
+  // `actions` analyses the workflow files, so the filter has to match all of
+  // them rather than only codeql.yml; the glob also covers codeql.yml, so
+  // narrowing the scan still runs it.
   const paths = pathFilters('push');
   assert.ok(
-    paths.includes('.github/workflows/codeql.yml'),
-    'codeql.yml path filters omit codeql.yml, so narrowing the scan does not run it',
+    paths.includes('.github/workflows/**'),
+    'codeql.yml path filters omit .github/workflows/**, so a workflow edit is never analysed and narrowing the scan does not run it',
   );
 });
 
