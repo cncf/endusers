@@ -1,6 +1,6 @@
 // `--check-source-regions` is an aggregate, and an aggregate hides where its
-// own slack is spent. The `e2e-coverage` job asks for 95%, so roughly one
-// region in twenty may be uncovered anywhere across `src/**` -- and nothing
+// own slack is spent. The `e2e-coverage` job asks for 96%, so roughly one
+// region in twenty-five may be uncovered anywhere across `src/**` -- and nothing
 // says those regions have to be spread out. A single component can hold all of
 // the slack and sit far below the floor while the job stays green, which is
 // the same hole `tests/tools/coverage-report.mjs` closed on the unit run with
