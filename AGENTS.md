@@ -51,7 +51,7 @@ or CI will fail the PR.
 - **Unit Tests**: `npm run test:unit:coverage:check` — required "Validate
   repository" CI check on every PR; enforces coverage thresholds (99% lines /
   100% source / 96% regions / 100% source regions), plus separate floors for the
-  `tests/tools/` harness (100% lines / 97% regions, 93% regions per harness
+  `tests/tools/` harness (100% lines / 97% regions, 97% regions per harness
   file). `npm run test:unit` alone skips the coverage gate.
 - **End-to-end Tests**: required "End-to-end tests" CI check on every PR. Needs
   a production build first, then a one-time browser install:
