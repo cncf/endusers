@@ -37,6 +37,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   enumerateSourceFiles,
+  isHarnessFile,
   missingSourceFiles,
 } from './tools/coverage-report.mjs';
 
@@ -189,11 +190,24 @@ test('--require-source-files names an unimported module under tests/tools/', () 
     !named.includes('  scripts/lib/validate-utils.mjs'),
     `a measured file was reported as missing:\n${named.join('\n')}`,
   );
-  // Test files themselves are not enumerated: tests/tools/ is the harness,
-  // and the rest of tests/ is the suite that runs on it.
+  // Test files themselves are not enumerated: tests/tools/ and the shared
+  // tests/helpers*.mjs modules are the harness, and the rest of tests/ is the
+  // suite that runs on it.
   assert.ok(
-    !named.some((line) => /^ {2}tests\/(?!tools\/)/.test(line)),
-    `a test file outside the harness was enumerated:\n${named.join('\n')}`,
+    !named.some((line) => /^ {2}tests\/.*\.test\.mjs$/.test(line)),
+    `a test file was enumerated:\n${named.join('\n')}`,
+  );
+  assert.ok(
+    !named.some(
+      (line) => /^ {2}tests\//.test(line) && !isHarnessFile(line.trim()),
+    ),
+    `a non-harness file under tests/ was enumerated:\n${named.join('\n')}`,
+  );
+  // The helper modules are enumerated for the same reason tests/tools/ is: a
+  // module nothing imports is an absence from the report, not a 0% row.
+  assert.ok(
+    named.includes('  tests/helpers-gh-sandbox.mjs'),
+    `the shared helper modules were not enumerated:\n${named.join('\n')}`,
   );
 });
 

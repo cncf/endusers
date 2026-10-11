@@ -68,8 +68,10 @@
 // the third SOURCE_ROOTS entry, so --require-source-files insists every
 // module in it be measured, and then no ratio gate scored it: the measuring
 // apparatus was required to be present and held to no standard. The
-// --check-harness family is the same three shapes over that tree, reported
-// as a `harness files` row beside `src files`. It stays a separate row
+// --check-harness family is the same three shapes over that tree -- plus the
+// tests/helpers*.mjs modules, which are the same apparatus scattered as files
+// rather than gathered into a tree -- reported as a `harness files` row
+// beside `src files`. It stays a separate row
 // rather than widening `src files` for the reason isSourceFile() gives --
 // the harness is not code this repository ships, and merging the two would
 // let a harness gap be paid for out of src/'s slack.
@@ -105,6 +107,8 @@ const SCRIPT_URL = /\.(js|jsx|mjs)$/;
 // to name. It is the one subtree of tests/ that is enumerated; isSourceFile()
 // still classifies everything under tests/ as non-source, so a harness module
 // counts toward the file-set floor without entering the `src files` ratios.
+// The tests/helpers*.mjs modules are enumerated too, by HARNESS_FILE below
+// rather than by this list, because they are files and not a tree.
 const SOURCE_ROOTS = ['scripts', 'src', join('tests', 'tools')];
 const SOURCE_FILE = /\.(c|m)?jsx?$/;
 
@@ -126,6 +130,25 @@ const SOURCE_FILE = /\.(c|m)?jsx?$/;
 const HARNESS_ROOTS = SOURCE_ROOTS.map((root) =>
   root.split(sep).join('/'),
 ).filter((root) => !isSourceFile(`${root}/`));
+
+// The directory the tests/helpers*.mjs modules sit in, listed one level deep
+// rather than walked: HARNESS_FILE deliberately names files at the root of
+// tests/, and a recursive walk here would pull in the suite's own test files.
+const HARNESS_MODULE_DIR = 'tests';
+
+// Shared harness modules that sit directly in tests/ rather than in a tree of
+// their own. They are the same measuring apparatus as tests/tools/ -- the
+// script and gh sandboxes, the fetch mock, the JSX driver, the JSONC reader --
+// but they are files, which SOURCE_ROOTS cannot express. Enumerated and scored
+// alongside it so a helper nobody imports is a failure rather than an absence:
+// a file with no coverage record is simply missing from the report, not 0%.
+// The .test.mjs exclusion keeps the suite's own test files out -- they are
+// what the harness is measured against, not part of it.
+const HARNESS_FILE = /^tests\/helpers[\w.-]*\.mjs$/;
+
+export function isHarnessModule(file) {
+  return HARNESS_FILE.test(file) && !file.endsWith('.test.mjs');
+}
 
 // A flag takes one numeric percentage argument; the option key it sets on
 // the parsed options object.
@@ -536,19 +559,23 @@ export function isSourceFile(file) {
   return !file.startsWith('tests/');
 }
 
-// The harness modules under SOURCE_ROOTS: measured like source, summarised
-// like neither. isSourceFile() keeps them out of the `src files` ratios, and
-// this keeps them out of nothing -- it is what gives them the row and the
-// floors of their own.
+// The harness modules under SOURCE_ROOTS, plus the tests/helpers*.mjs files:
+// measured like source, summarised like neither. isSourceFile() keeps them out
+// of the `src files` ratios, and this keeps them out of nothing -- it is what
+// gives them the row and the floors of their own.
 export function isHarnessFile(file) {
-  return HARNESS_ROOTS.some((root) => file.startsWith(`${root}/`));
+  return (
+    HARNESS_ROOTS.some((root) => file.startsWith(`${root}/`)) ||
+    isHarnessModule(file)
+  );
 }
 
-// Every module on disk under SOURCE_ROOTS, as repo-relative '/'-joined paths.
-// Walked rather than globbed so the traversal order is the sort order and a
-// directory that does not exist is simply absent instead of throwing -- the
-// caller is asking "what should have been measured", and a repository that
-// has dropped scripts/ entirely has nothing to answer with.
+// Every module on disk under SOURCE_ROOTS, plus the tests/helpers*.mjs harness
+// modules, as repo-relative '/'-joined paths. Walked rather than globbed so
+// the traversal order is the sort order and a directory that does not exist is
+// simply absent instead of throwing -- the caller is asking "what should have
+// been measured", and a repository that has dropped scripts/ entirely has
+// nothing to answer with.
 export function enumerateSourceFiles(root = repoRoot) {
   const found = [];
   const walk = (relDir) => {
@@ -569,7 +596,28 @@ export function enumerateSourceFiles(root = repoRoot) {
     }
   };
   for (const dir of SOURCE_ROOTS) walk(dir);
+  found.push(...enumerateHarnessModules(root));
   return found.sort();
+}
+
+// The tests/helpers*.mjs modules on disk. Listed one level deep for the reason
+// HARNESS_MODULE_DIR gives, and guarded the same way the walk above is: a
+// symlink would report one module under two paths, and only one of them can
+// match a coverage record. A missing tests/ directory is an absence here too,
+// not a throw.
+function enumerateHarnessModules(root) {
+  let entries;
+  try {
+    entries = readdirSync(join(root, HARNESS_MODULE_DIR), {
+      withFileTypes: true,
+    });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((entry) => !entry.isSymbolicLink() && entry.isFile())
+    .map((entry) => `${HARNESS_MODULE_DIR}/${entry.name}`)
+    .filter((relPath) => isHarnessModule(relPath));
 }
 
 // Source files that exist but that this run never recorded.
