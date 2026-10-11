@@ -37,7 +37,7 @@ Before opening a PR, read
 [`CONTRIBUTING.md#making-changes`](CONTRIBUTING.md#making-changes) for the full
 fork/branch/PR process. Two CI-enforced requirements to note up front: the
 "Validate repository" check runs `npm run test:unit:coverage:check` (coverage
-thresholds 99% lines / 100% source / 95% regions / 99% source regions) on every
+thresholds 99% lines / 100% source / 96% regions / 100% source regions) on every
 PR, and every commit must carry a DCO `Signed-off-by` trailer (`git commit -s`)
 or CI will fail the PR.
 
@@ -50,8 +50,8 @@ or CI will fail the PR.
 - **Build**: `npm run build`
 - **Unit Tests**: `npm run test:unit:coverage:check` — required "Validate
   repository" CI check on every PR; enforces coverage thresholds (99% lines /
-  100% source / 95% regions / 99% source regions), plus separate floors for the
-  `tests/tools/` harness (100% lines / 97% regions, 93% regions per harness
+  100% source / 96% regions / 100% source regions), plus separate floors for the
+  `tests/tools/` harness (100% lines / 97% regions, 97% regions per harness
   file). `npm run test:unit` alone skips the coverage gate.
 - **End-to-end Tests**: required "End-to-end tests" CI check on every PR. Needs
   a production build first, then a one-time browser install:
