@@ -231,6 +231,23 @@ function writeFiles(base, tree) {
   }
 }
 
+// The normalisation half of realGitPath, split out so both of its fallbacks can
+// be driven directly.
+//
+// `|| '/usr/bin/git'` is reachable from the outside: an empty PATH makes
+// `command -v git` find nothing and print nothing, which
+// tests/helpers-script-sandbox-fallbacks.test.mjs exercises through
+// runScriptInSandbox. `?? ''` is not. It guards the case spawnSync signals by
+// returning `stdout: null` — the shell itself failing to start — and the call
+// passes `shell: true`, so reaching it would mean making /bin/sh unspawnable
+// for one call in this process. Leaving it inline left the arm as the single
+// uncovered region in this file, which alone held the gate's
+// --check-harness-file-regions floor down; as a function it is reachable by
+// passing the value spawnSync would have produced.
+export function gitPathFromLookup(stdout) {
+  return (stdout ?? '').trim() || '/usr/bin/git';
+}
+
 // Resolved before the shim directory is prepended to PATH so the shim delegates
 // to the real binary instead of recursing into itself.
 function realGitPath() {
@@ -238,5 +255,5 @@ function realGitPath() {
     encoding: 'utf8',
     shell: true,
   });
-  return (found.stdout ?? '').trim() || '/usr/bin/git';
+  return gitPathFromLookup(found.stdout);
 }

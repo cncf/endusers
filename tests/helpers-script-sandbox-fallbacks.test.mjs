@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { runScriptInSandbox } from './helpers-script-sandbox.mjs';
+import {
+  gitPathFromLookup,
+  runScriptInSandbox,
+} from './helpers-script-sandbox.mjs';
 
 // tests/helpers-spawn-fallbacks.test.mjs pins the same contract for the three
 // other sandbox helpers (helpers.mjs, helpers-fetch-mock.mjs,
@@ -136,4 +139,40 @@ test('runScriptInSandbox falls back to /usr/bin/git when no git is on PATH', () 
   assert.equal(result.stdout, '');
   assert.equal(result.stderr, '');
   assert.equal(result.outputs['data/awards.json'], AWARDS_FIXTURE);
+});
+
+// The test above reaches realGitPath's `|| '/usr/bin/git'` the way a caller
+// does, through an empty PATH. Its sibling fallback, the `?? ''` that absorbs
+// a null stdout, has no such route: spawnSync only reports `stdout: null` when
+// the process never started, and realGitPath passes `shell: true`, so the
+// process in question is /bin/sh. Nothing a test can do to this repository
+// makes /bin/sh unspawnable for one call and not for the rest of the file.
+//
+// gitPathFromLookup is that normalisation as a function of the one value
+// spawnSync varies, so the arm is driven by handing it the value spawnSync
+// would have produced rather than by trying to produce it. The cases below
+// pair each fallback with the input that skips it, so a fallback deleted or
+// inverted fails here instead of silently handing the git shim a path it will
+// `exec ""`.
+test('gitPathFromLookup returns the resolved path when the lookup printed one', () => {
+  // What `command -v git` prints on a normal run: an absolute path and a
+  // trailing newline, which must be trimmed and otherwise left alone.
+  assert.equal(gitPathFromLookup('/usr/local/bin/git\n'), '/usr/local/bin/git');
+});
+
+test('gitPathFromLookup falls back when the lookup printed nothing', () => {
+  // `command -v git` found nothing: it exits non-zero and prints an empty
+  // string, which trims to '' and must not be handed to the shim.
+  assert.equal(gitPathFromLookup(''), '/usr/bin/git');
+  assert.equal(gitPathFromLookup('   \n'), '/usr/bin/git');
+});
+
+test('gitPathFromLookup falls back when the lookup never ran', () => {
+  // spawnSync reports a process that never started as `stdout: null` rather
+  // than throwing, and `undefined` is what a caller reading `.stdout` off such
+  // a result sees when the field is absent. Without the `?? ''` both would
+  // throw on `.trim()`, so this is the arm that keeps a failed spawn
+  // indistinguishable from a failed lookup at the shim's edge.
+  assert.equal(gitPathFromLookup(null), '/usr/bin/git');
+  assert.equal(gitPathFromLookup(undefined), '/usr/bin/git');
 });
