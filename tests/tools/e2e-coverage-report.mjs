@@ -45,10 +45,6 @@ const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 //       `c` satisfies `c < range.endOffset` by the filter above it, `start`
 //       equals `c` when the loop ends, so the final `parts.push` always runs
 //       and `parts` is never empty.
-//   convertScript       `converter.branches ?? {}` and `converter.functions
-//       ?? {}`, and the `.map(([path]) => path)` arm that only runs when one
-//       of those is absent -- `v8-to-istanbul` always defines both after
-//       `load()`, so the fallback needs a shape the library does not emit.
 //   collectE2ECoverage  `converted.coverage ?? {}` -- `convertScript` returns
 //       `converter.toIstanbul()` on every path and that never returns nullish;
 //       and `if (lineCoverage.size === 0) continue`, which needs an istanbul
@@ -59,7 +55,10 @@ const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 //
 // Reachability was established empirically rather than by reading: probe tests
 // were written against each candidate and these are the ones no probe could
-// close. Together they are 10 regions, which caps this file at 97.98% regions;
+// close. (The `convertScript` guards that used to sit in this list were
+// removed outright once tests/e2e-coverage-attribution.test.mjs pinned the
+// converter shape they defended against, #1304.) Together they are 7 regions,
+// which caps this file at 98.57% regions;
 // tests/coverage-gate-thresholds.test.mjs records that ceiling beside
 // `--check-harness-file-regions` so the floor is never set above it. Raise the
 // floor rather than this list when a probe does land, and extend this list
