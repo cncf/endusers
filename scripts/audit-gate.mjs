@@ -24,7 +24,9 @@ import { spawnSync } from 'node:child_process';
 // must correspond to a row in SECURITY.md's "Known unpatched dependency
 // advisories" table; remove the entry the moment upstream publishes a fix
 // (for braces: when `npm view braces versions` lists a release above 3.0.3),
-// so the gate starts enforcing it.
+// so the gate starts enforcing it. unusedAllowlistEntries() below fails the
+// gate once an entry stops matching anything in the lockfile, so that removal
+// is prompted rather than left to be noticed.
 export const ALLOWLISTED_ADVISORIES = new Set([
   // braces <= 3.0.3 via micromatch in @docusaurus/utils globbing; build-time
   // only, never shipped to the published site.
@@ -94,6 +96,40 @@ export function classifyAudit(report, allowlist = ALLOWLISTED_ADVISORIES) {
   return { blocked, allowlisted };
 }
 
+// Collects every advisory id the report mentions, at any severity and at any
+// depth of the `via` chains. Severity is deliberately not filtered: an
+// advisory that is rescored from high to moderate is still present in the
+// lockfile, and an allowlist entry covering it is still doing work.
+function reportedAdvisoryIds(report) {
+  const ids = new Set();
+  for (const entry of Object.values(report.vulnerabilities ?? {})) {
+    for (const via of entry.via ?? []) {
+      if (typeof via !== 'string') ids.add(advisoryId(via));
+    }
+  }
+  return ids;
+}
+
+// Reports allowlist entries that no advisory in the report reaches.
+//
+// Every entry here suppresses a high/critical finding on the stated premise
+// that no patched release exists. Nothing re-tests that premise: once the
+// advisory leaves the lockfile -- because upstream published a fix, or the
+// dependency was dropped -- the entry becomes a standing suppression for a
+// problem that is now fixable, and the gate goes on accepting the advisory if
+// a later dependency change reintroduces it. Since nothing but this check
+// would ever notice, an unused entry fails the gate the same way an
+// unidentifiable advisory does, so removing it (and its SECURITY.md row) is
+// forced at the moment the reason for it expires rather than whenever someone
+// next happens to re-read the allowlist.
+export function unusedAllowlistEntries(
+  report,
+  allowlist = ALLOWLISTED_ADVISORIES,
+) {
+  const reported = reportedAdvisoryIds(report);
+  return [...allowlist].filter((id) => !reported.has(id)).sort();
+}
+
 function main() {
   // --package-lock-only audits the lockfile without needing node_modules,
   // which is also what keeps the result identical between a fresh CI
@@ -151,6 +187,23 @@ function main() {
       'Fix the advisory (upgrade or add an override, see SECURITY.md), or — ' +
         'only for an advisory with no patched release — document it in ' +
         'SECURITY.md and allowlist it in scripts/audit-gate.mjs.',
+    );
+    process.exit(1);
+  }
+  // Reported after the blocked check: a live advisory outside the allowlist is
+  // the more urgent signal, and naming a dead exemption first would bury it.
+  const unused = unusedAllowlistEntries(report);
+  if (unused.length > 0) {
+    console.error(
+      'audit-gate: allowlisted advisories no longer present in the lockfile:',
+    );
+    for (const id of unused) console.error(`  ${id}`);
+    console.error(
+      'The advisory is fixed or the dependency is gone, so the allowlist ' +
+        'entry now suppresses nothing and would silently accept the advisory ' +
+        'if it came back. Remove it from ALLOWLISTED_ADVISORIES in ' +
+        "scripts/audit-gate.mjs and drop its row from SECURITY.md's " +
+        '"Known unpatched dependency advisories" table.',
     );
     process.exit(1);
   }
