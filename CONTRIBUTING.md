@@ -177,7 +177,7 @@ enough for a first contribution.
 2. Make your change and run the relevant validation script.
 3. Run `npm run test:unit:coverage:check` — the required "Validate repository"
    check runs this on every PR, and it fails the build if unit-test coverage
-   drops below its thresholds (99% lines / 100% source / 95% regions / 99%
+   drops below its thresholds (99% lines / 100% source / 96% regions / 100%
    source regions). The harness under `tests/tools/` is floored separately (100%
    lines / 97% regions, and 93% regions per harness file): it is measured like
    source but reported in its own `harness files` row, so a gap in the test

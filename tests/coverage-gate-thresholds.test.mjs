@@ -28,22 +28,36 @@ const GATE_SCRIPT = 'test:unit:coverage:check';
 
 // Measured on the suite this commit ships, floored to a whole percent so a
 // rounding difference between runs cannot fail the build:
-//   all files   99.42% lines / 95.07% regions  (48197/48476 lines, 8060/8478 regions)
-//   src files  100.00% lines / 99.96% regions  (8721/8721 lines, 2475/2476 regions)
+//   all files    99.65% lines / 96.12% regions  (57649/57853 lines, 9305/9681 regions)
+//   src files   100.00% lines / 100.00% regions (9135/9135 lines, 2753/2753 regions)
 //
-// Only `--check-regions` has cleared a whole percent since the floors were
-// last set; the other three sit under their next whole percent (99.42, 99.96)
-// or are already at 100, so flooring leaves them where they are.
+// Both figures were taken twice, on node v22.21.1 -- the major ci.yml pins --
+// and on node v26.10.0, and the two runs agree to the region. Region counts
+// are a V8 artifact, so a floor set at exactly 100 is only safe once it has
+// been shown not to move with the runtime; these did not.
+//
+// `--check` sits under its next whole percent (99.65) and `--check-source` is
+// already at 100, so flooring leaves both where they are. The three region
+// floors below have all cleared a whole percent since they were last set.
 const FLOORS = {
   '--check': 99,
   '--check-source': 100,
-  '--check-regions': 95,
-  '--check-source-regions': 99,
+  '--check-regions': 96,
+  // scripts/ and src/ are at 2753/2753: every region executed, with no
+  // uncreditable residual of the kind that keeps the browser gate (#1256) and
+  // the harness per-file gate below their own ceilings. 100 is therefore the
+  // measured floor here rather than an aspiration. A new defensive fallback in
+  // either tree now has to be reached by a test or argued for by lowering this
+  // deliberately -- which is the point: at 99 the gate let 27 source regions
+  // go dark before it noticed.
+  '--check-source-regions': 100,
   // Per-file rather than aggregate, so its floor is set by the worst source
   // file rather than by the whole of scripts/ and src/ together. Measured on
-  // the suite this commit ships, the lowest is
-  // scripts/lib/architecture-content.mjs at 97.78%, floored to 97.
-  '--check-source-file-regions': 97,
+  // the suite this commit ships, every file under both trees is at 100.00%,
+  // so the worst is 100. Kept alongside the aggregate even though an aggregate
+  // of 100 implies it: the per-file check is what names the offending file and
+  // its uncovered regions in the failure message.
+  '--check-source-file-regions': 100,
   // The harness tree (tests/tools/) is walked by --require-source-files and
   // entered none of the ratios above, which are all built from
   // isSourceFile(). These are the same three shapes over its own row.
