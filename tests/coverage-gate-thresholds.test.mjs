@@ -28,8 +28,8 @@ const GATE_SCRIPT = 'test:unit:coverage:check';
 
 // Measured on the suite this commit ships, floored to a whole percent so a
 // rounding difference between runs cannot fail the build:
-//   all files    99.65% lines / 96.12% regions  (57649/57853 lines, 9305/9681 regions)
-//   src files   100.00% lines / 100.00% regions (9135/9135 lines, 2753/2753 regions)
+//   all files    99.65% lines / 96.14% regions  (58948/59153 lines, 9515/9897 regions)
+//   src files   100.00% lines / 100.00% regions (9233/9233 lines, 2777/2777 regions)
 //
 // Both figures were taken twice, on node v22.21.1 -- the major ci.yml pins --
 // and on node v26.10.0, and the two runs agree to the region. Region counts
@@ -43,7 +43,7 @@ const FLOORS = {
   '--check': 99,
   '--check-source': 100,
   '--check-regions': 96,
-  // scripts/ and src/ are at 2753/2753: every region executed, with no
+  // scripts/ and src/ are at 2777/2777: every region executed, with no
   // uncreditable residual of the kind that keeps the browser gate (#1256) and
   // the harness per-file gate below their own ceilings. 100 is therefore the
   // measured floor here rather than an aspiration. A new defensive fallback in
@@ -62,16 +62,25 @@ const FLOORS = {
   // entered none of the ratios above, which are all built from
   // isSourceFile(). These are the same three shapes over its own row.
   // Measured on the suite this commit ships: harness files 100.00% lines /
-  // 99.53% regions (3925/3925 lines, 1467/1474 regions), and the lowest
-  // harness file is tests/tools/e2e-coverage-report.mjs at 98.57%, floored
-  // to 97. Every other harness file is at 100.00%.
+  // 99.57% regions (5336/5336 lines, 1867/1875 regions), now that #1294 has
+  // brought tests/helpers*.mjs into the row. The lowest harness file is
+  // tests/helpers-script-sandbox.mjs at 97.06%, floored to 97; next is
+  // tests/tools/e2e-coverage-report.mjs at 98.57%, and every other harness
+  // file is at 100.00%.
   //
-  // 98.57% is also that file's ceiling, not a backlog: its 7 uncovered
-  // regions are the defensive fallbacks the note at the top of the file lists
-  // as unreachable (#1253; three more were deleted rather than listed in
-  // #1304), so no test can lift it. The per-file floor must stay at or below
-  // 98 until that list shrinks; a probe that lands one of them should raise
-  // the floor and shorten the list in the same change.
+  // 98.57% is e2e-coverage-report.mjs's ceiling, not a backlog: its 7
+  // uncovered regions are the defensive fallbacks the note at the top of the
+  // file lists as unreachable (#1253; three more were deleted rather than
+  // listed in #1304), so no test can lift it. The per-file floor must stay at
+  // or below 97 while helpers-script-sandbox.mjs sits at 97.06, and at or
+  // below 98 until that list shrinks; a probe that lands one of them should
+  // raise the floor and shorten the list in the same change.
+  //
+  // --check-harness-regions is left at 97 against a measured 99.57 on purpose:
+  // #1294 only just rescoped the row, and the helper tree's lowest file is
+  // 0.06 points above the per-file floor, so the aggregate is left with its
+  // slack until that file has been lifted rather than ratcheted into a gate
+  // the next helper edit trips.
   '--check-harness': 100,
   '--check-harness-regions': 97,
   '--check-harness-file-regions': 97,
