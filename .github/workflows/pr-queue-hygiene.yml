@@ -8,6 +8,15 @@ on:
 permissions:
   contents: read
 
+# Serialised repository-wide: the job's state store is a hidden marker
+# comment it reads and then writes non-atomically, so two overlapping runs
+# (a dispatch during the 6-hourly cron) both find no marker and both post
+# one. Not cancelled: a run stopped after it has commented has still
+# written the state the next run reads.
+concurrency:
+  group: pr-queue-hygiene
+  cancel-in-progress: false
+
 jobs:
   hygiene:
     name: Flag stale conflicting PRs

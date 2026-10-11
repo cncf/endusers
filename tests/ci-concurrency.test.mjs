@@ -20,9 +20,15 @@
 // only mentions concurrency in passing as the reason a stuck job is not
 // superseded. tests/workflow-scripts.test.mjs asks which commands a workflow
 // runs. tests/automation-workflow-ordering.test.mjs covers step ordering in the
-// generator workflows, which are not PR-triggered. A new PR-triggered workflow
-// can be added today with no concurrency block at all and the suite stays
-// green.
+// generator workflows, which are not PR-triggered. Without this file a new
+// PR-triggered workflow can be added with no concurrency block at all and the
+// suite stays green.
+//
+// The second contract here is the mirror image, for the generator workflows:
+// a workflow that pushes a pull request branch it names itself must serialise
+// on that branch. Two overlapping runs otherwise both force-push one ref, and
+// with `delete-branch: true` one run's cleanup can delete the ref the other
+// just opened a pull request from. See racingBranchWorkflows below.
 //
 // SERIALISED_WORKFLOWS below follows the retiring-baseline convention used by
 // KNOWN_PERSISTING_CHECKOUTS and KNOWN_UNBOUNDED_JOBS in
@@ -71,6 +77,39 @@ function isPullRequestTriggered(doc) {
 // flight, with the reason. Keyed by file name.
 const SERIALISED_WORKFLOWS = new Map([
   [
+    'import-architectures.yml',
+    'Force-pushes the constant branch automation/import-architectures and ' +
+      'deletes that ref when it stops differing from the base, so the branch ' +
+      'name is the resource two runs contend for and the group has to be as ' +
+      'constant as the branch is. Not PR-triggered, so it is outside the ' +
+      'cancel-in-progress contract below.',
+  ],
+  [
+    'refresh-community-people.yml',
+    'Force-pushes the constant branch automation/refresh-community-people; ' +
+      'same reasoning as import-architectures.yml.',
+  ],
+  [
+    'refresh-radar-reports.yml',
+    'Force-pushes the constant branch automation/refresh-radar-reports; ' +
+      'same reasoning as import-architectures.yml.',
+  ],
+  [
+    'create-milestones.yml',
+    'Snapshots every existing milestone once before its loop, so two ' +
+      'concurrent dispatches both see a title as absent and both try to ' +
+      'create it. Pushes no branch, so the branch-race contract does not ' +
+      'reach it; the constant group is plain serialisation of a ' +
+      'read-then-create step. Not PR-triggered.',
+  ],
+  [
+    'pr-queue-hygiene.yml',
+    'Keeps its state in a hidden marker comment that it reads and then ' +
+      'writes non-atomically, so two overlapping runs both find no marker ' +
+      'and both post one onto a contributor PR. Pushes no branch; the ' +
+      'constant group serialises the comment store. Not PR-triggered.',
+  ],
+  [
     'deploy-gh-pages.yml',
     'Publishes the live site. Cancelling a deploy halfway can leave GitHub ' +
       'Pages serving a partially uploaded artifact, so overlapping runs are ' +
@@ -112,6 +151,45 @@ function isPerPullRequest(expression) {
   return PER_PR_CONTEXTS.some((context) => expression.includes(context));
 }
 
+// `unexplainedConstantGroups` below asks a different question from the per-PR
+// tests: not "does this key vary per pull request" but "does this key vary
+// with the event at all". A workflow triggered by `issues` that keys its group
+// on the issue number is not a repository-wide lane, so it is not what that
+// scan exists to catch, even though it is not per-PR either.
+const EVENT_KEYED_CONTEXTS = [
+  ...PER_PR_CONTEXTS,
+  'github.event.issue.number',
+  'github.event.inputs',
+  'inputs.',
+];
+
+function isPerEvent(expression) {
+  if (typeof expression !== 'string') return false;
+  if (!expression.includes('${{')) return false;
+  return EVENT_KEYED_CONTEXTS.some((context) => expression.includes(context));
+}
+
+// Steps that open or update a pull request by pushing a branch the workflow
+// names itself. The action force-pushes `branch:` to `refs/heads/<branch>` and,
+// with `delete-branch: true`, deletes that same ref once it stops differing
+// from the base, so the branch name is the shared resource two runs contend
+// for.
+const PR_BRANCH_ACTION = 'peter-evans/create-pull-request';
+
+function pullRequestBranches(doc) {
+  const jobs = doc?.jobs;
+  if (typeof jobs !== 'object' || jobs === null) return [];
+  return Object.values(jobs)
+    .flatMap((job) => (Array.isArray(job?.steps) ? job.steps : []))
+    .filter(
+      (step) =>
+        typeof step?.uses === 'string' && step.uses.includes(PR_BRANCH_ACTION),
+    )
+    .map((step) => step?.with?.branch)
+    .filter((branch) => typeof branch === 'string')
+    .map((branch) => branch.replace(/\s+/g, ' ').trim());
+}
+
 // The scanners below take the parsed workflows as an argument rather than
 // closing over the repository's own, so each failure path can be exercised
 // against a fixture. A guard whose failure branch never runs is a guard nobody
@@ -151,8 +229,61 @@ function unexplainedConstantGroups(parsedWorkflows, allowlist) {
   return parsedWorkflows
     .filter(({ name }) => !allowlist.has(name))
     .filter(({ doc }) => groupExpression(doc) !== undefined)
-    .filter(({ doc }) => !isPerPullRequest(groupExpression(doc)))
+    .filter(({ doc }) => !isPerEvent(groupExpression(doc)))
     .map(({ name }) => name)
+    .sort();
+}
+
+// A workflow that pushes a pull request branch must serialise itself on the
+// same key that branch is named with, because that ref is what two overlapping
+// runs would both write.
+//
+// A constant `branch:` with no concurrency group is the sharp case: both runs
+// push `refs/heads/<branch>`, and the loser's `--force-with-lease` fails on
+// stale info, so the run reports a hard failure rather than a refresh. Worse,
+// `delete-branch: true` makes one run's "no diff with base" cleanup a
+// `push --delete --force` of the ref the other run just opened a pull request
+// from. A group keyed more finely than the branch has the same effect: two
+// runs that write one ref land in different lanes. A coarser group is
+// accepted -- it queues more than it has to, but the ref is still held by one
+// run at a time.
+function racingBranchWorkflows(parsedWorkflows) {
+  return parsedWorkflows
+    .flatMap(({ name, doc }) =>
+      pullRequestBranches(doc).map((branch) => ({
+        name,
+        branch,
+        group: groupExpression(doc),
+      })),
+    )
+    .filter(({ branch, group }) => {
+      if (group === undefined) return true;
+      // The group must be no finer than the branch. A coarser group is merely
+      // heavier than it needs to be -- it queues runs that could have
+      // proceeded in parallel, but the ref is still held by one run at a time.
+      // A group that varies with something the branch does not puts two runs
+      // that write the same ref into different lanes, which is the failure
+      // this contract exists to catch.
+      const branchContexts = expressionsIn(branch);
+      return expressionsIn(group).some(
+        (context) => !branchContexts.includes(context),
+      );
+    })
+    .map(
+      ({ name, branch, group }) => `${name}: ${branch} -> ${group ?? 'none'}`,
+    )
+    .sort();
+}
+
+// The `${{ ... }}` bodies of an expression, whitespace-normalised, so a branch
+// and a group can be compared on what they actually vary with rather than on
+// their surrounding text.
+function expressionsIn(text) {
+  if (typeof text !== 'string') return [];
+  // `s` so the match survives the newline Prettier's fold leaves inside a long
+  // expression; the body is whitespace-normalised below either way.
+  return [...text.matchAll(/\$\{\{(.+?)\}\}/gs)]
+    .map((match) => match[1].replace(/\s+/g, ' ').trim())
     .sort();
 }
 
@@ -211,6 +342,25 @@ test('every workflow with a constant concurrency group is recorded as deliberate
     unexplained,
     [],
     `a repository-wide constant group queues unrelated runs behind each other; key it per event or record it in SERIALISED_WORKFLOWS with the reason:\n${unexplained.join('\n')}`,
+  );
+});
+
+test('the pull-request-branch detection is not vacuous', () => {
+  const pushers = workflows.filter(
+    ({ doc }) => pullRequestBranches(doc).length,
+  );
+  assert.ok(
+    pushers.length > 0,
+    `no workflow was found using ${PR_BRANCH_ACTION}, so the branch-race contract below would pass over an empty set`,
+  );
+});
+
+test('every workflow that pushes a PR branch serialises itself on that branch', () => {
+  const offenders = racingBranchWorkflows(workflows);
+  assert.deepEqual(
+    offenders,
+    [],
+    `two overlapping runs would both write the same refs/heads/<branch>: the loser's --force-with-lease fails on stale info, and 'delete-branch: true' can delete the ref the other run just opened a pull request from. Declare a concurrency group keyed exactly as the branch is:\n${offenders.join('\n')}`,
   );
 });
 
@@ -393,4 +543,173 @@ test('an exemption retires once the workflow satisfies both halves of the contra
       },
     }),
   );
+});
+
+test('the branch-race scanner reports each way a group can fail to serialise', () => {
+  const cpr = (branch) => ({
+    jobs: {
+      refresh: {
+        steps: [
+          { uses: 'actions/checkout@v7' },
+          {
+            uses: `${PR_BRANCH_ACTION}@5f6978f`,
+            with: { branch, 'delete-branch': true },
+          },
+        ],
+      },
+    },
+  });
+
+  // Constant branch, no group at all: the sharp case.
+  assert.deepEqual(
+    racingBranchWorkflows(fixture('refresh.yml', cpr('automation/refresh'))),
+    ['refresh.yml: automation/refresh -> none'],
+  );
+
+  // Keyed branch, constant group: one lane for every issue is heavier than it
+  // needs to be, but the ref is still held by one run at a time, so the
+  // contract accepts it.
+  assert.deepEqual(
+    racingBranchWorkflows(
+      fixture('submit.yml', {
+        ...cpr('automation/issue-${{ github.event.issue.number }}'),
+        concurrency: { group: 'submit' },
+      }),
+    ),
+    [],
+  );
+
+  // Keyed branch, group keyed on something the branch does not vary with: two
+  // runs for the same issue land in different lanes and race the one ref.
+  assert.deepEqual(
+    racingBranchWorkflows(
+      fixture('submit.yml', {
+        ...cpr('automation/issue-${{ github.event.issue.number }}'),
+        concurrency: { group: 'submit-${{ github.ref }}' },
+      }),
+    ),
+    [
+      'submit.yml: automation/issue-${{ github.event.issue.number }} -> submit-${{ github.ref }}',
+    ],
+  );
+
+  // Keyed branch, group carrying the same context: compliant.
+  assert.deepEqual(
+    racingBranchWorkflows(
+      fixture('submit.yml', {
+        ...cpr('automation/issue-${{ github.event.issue.number }}'),
+        concurrency: {
+          group: 'submit-${{ github.event.issue.number }}',
+          'cancel-in-progress': false,
+        },
+      }),
+    ),
+    [],
+  );
+
+  // Constant branch with a constant group: compliant.
+  assert.deepEqual(
+    racingBranchWorkflows(
+      fixture('refresh.yml', {
+        ...cpr('automation/refresh'),
+        concurrency: { group: 'automation/refresh' },
+      }),
+    ),
+    [],
+  );
+
+  // A workflow that opens no pull request branch is not this contract's
+  // problem.
+  assert.deepEqual(
+    racingBranchWorkflows(
+      fixture('nightly.yml', { on: { schedule: [] }, jobs: {} }),
+    ),
+    [],
+  );
+});
+
+test('the branch reader finds the action wherever it sits', () => {
+  assert.deepEqual(pullRequestBranches({}), []);
+  assert.deepEqual(pullRequestBranches({ jobs: null }), []);
+  assert.deepEqual(pullRequestBranches({ jobs: { a: {} } }), []);
+  assert.deepEqual(pullRequestBranches({ jobs: { a: { steps: null } } }), []);
+  // A step with no `uses`, and one using a different action.
+  assert.deepEqual(
+    pullRequestBranches({
+      jobs: {
+        a: { steps: [{ run: 'npm ci' }, { uses: 'actions/checkout@v7' }] },
+      },
+    }),
+    [],
+  );
+  // The action pinned by SHA, with the branch folded across lines by Prettier.
+  assert.deepEqual(
+    pullRequestBranches({
+      jobs: {
+        a: {
+          steps: [
+            {
+              uses: `${PR_BRANCH_ACTION}@5f6978f`,
+              with: {
+                branch: 'automation/x-${{ github.event.issue.number\n }}',
+              },
+            },
+          ],
+        },
+      },
+    }),
+    ['automation/x-${{ github.event.issue.number }}'],
+  );
+  // The action present but naming no branch: nothing to serialise on.
+  assert.deepEqual(
+    pullRequestBranches({
+      jobs: { a: { steps: [{ uses: `${PR_BRANCH_ACTION}@v8`, with: {} }] } },
+    }),
+    [],
+  );
+  // Two jobs each pushing a branch.
+  assert.deepEqual(
+    pullRequestBranches({
+      jobs: {
+        a: {
+          steps: [{ uses: `${PR_BRANCH_ACTION}@v8`, with: { branch: 'x' } }],
+        },
+        b: {
+          steps: [{ uses: `${PR_BRANCH_ACTION}@v8`, with: { branch: 'y' } }],
+        },
+      },
+    }),
+    ['x', 'y'],
+  );
+});
+
+test('the expression reader compares what a key varies with, not its text', () => {
+  assert.deepEqual(expressionsIn('automation/refresh'), []);
+  assert.deepEqual(expressionsIn(undefined), []);
+  assert.deepEqual(expressionsIn('x-${{ github.ref }}'), ['github.ref']);
+  // Whitespace and fold differences must not make two equal keys compare
+  // unequal.
+  assert.deepEqual(
+    expressionsIn('x-${{   github.ref\n }}'),
+    expressionsIn('y-${{ github.ref }}'),
+  );
+  // Multiple expressions are compared as a set, so order in the text is
+  // irrelevant.
+  assert.deepEqual(
+    expressionsIn('${{ b }}-${{ a }}'),
+    expressionsIn('${{ a }}/${{ b }}'),
+  );
+});
+
+test('per-event keying is broader than per-PR keying but still demands an expression', () => {
+  assert.ok(isPerEvent('x-${{ github.event.issue.number }}'));
+  assert.ok(isPerEvent('x-${{ github.ref }}'));
+  assert.ok(isPerEvent('x-${{ inputs.target }}'));
+  // Per-PR keys are a subset of per-event keys.
+  assert.ok(isPerEvent('x-${{ github.head_ref }}'));
+  assert.ok(!isPerPullRequest('x-${{ github.event.issue.number }}'));
+  // Text mentioning a context is still one constant key.
+  assert.ok(!isPerEvent('github.event.issue.number'));
+  assert.ok(!isPerEvent('automation/refresh'));
+  assert.ok(!isPerEvent(undefined));
 });

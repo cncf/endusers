@@ -10,6 +10,13 @@ permissions:
   contents: write
   pull-requests: write
 
+# Serialised on the branch this workflow force-pushes; see the note in
+# refresh-radar-reports.yml. workflow_dispatch only, so two runs overlap as
+# soon as the button is pressed twice. Not cancelled, for the same reason.
+concurrency:
+  group: automation/import-architectures
+  cancel-in-progress: false
+
 env:
   NODE_VERSION: '22'
 

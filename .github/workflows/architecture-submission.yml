@@ -14,6 +14,15 @@ permissions:
   pull-requests: write
   issues: write
 
+# Serialised per issue, matching the per-issue branch this workflow pushes:
+# removing and re-applying the label, or two maintainers applying it at once,
+# would otherwise have two runs writing the same
+# refs/heads/automation/architecture-issue-<n>. Keyed per issue rather than
+# repository-wide so two different submissions still proceed in parallel.
+concurrency:
+  group: automation/architecture-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 env:
   NODE_VERSION: '22'
   SUBMISSION_LABEL: architecture-ready
