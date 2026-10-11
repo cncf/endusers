@@ -16,6 +16,12 @@ npm run docus:start
 matching CI. Reach for `npm install <package>` only to add or upgrade a
 dependency, and commit the resulting lockfile change deliberately.
 
+The repository's `.npmrc` sets `ignore-scripts=true`, so neither command runs
+dependency lifecycle scripts. That is deliberate: CI installs this tree in jobs
+that hold a write-scoped `GITHUB_TOKEN`, and no dependency here needs an install
+script to work. If a future dependency genuinely does, say so in the pull
+request rather than dropping the setting.
+
 The dev server runs at `http://localhost:3000`. In the devcontainer:
 
 ```bash
