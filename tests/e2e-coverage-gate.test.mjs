@@ -32,28 +32,39 @@ const REPORT_SCRIPT = 'report:e2e:coverage';
 const COVERAGE_JOB = 'e2e-coverage';
 
 // Measured on the suite this commit ships: the e2e-coverage job renders with
-// `--check-source 100 --check-source-regions 95` and the run clears both; the
-// full suite measured 100.00% source lines and 81.43% source regions when the
-// region gate landed (#1026, #1031), 91.63% source regions when the floor was
-// ratcheted to 91 (#1105), and 95.22% (438/460) when it was ratcheted to 95
-// after #1163 folded the crossing-region source-map drift and #1060 covered
-// the member-directory toolbar arms (#1079).
+// `--check-source 100 --check-source-regions 96 --check-source-file-regions 66`
+// and the run clears all three; the full suite measured 100.00% source lines
+// and 81.43% source regions when the region gate landed (#1026, #1031),
+// 91.63% source regions when the floor was ratcheted to 91 (#1105), 95.22%
+// (438/460) when it was ratcheted to 95 after #1163 folded the
+// crossing-region source-map drift and #1060 covered the member-directory
+// toolbar arms (#1079), and 97.26% (639/657) when it was ratcheted to 96 and
+// the per-file floor was added (#1232).
 //
-// Ceiling, as of main run 38082557106: 97.29% (646/664), 18 regions at zero.
-// Thirteen are defensive fallbacks of the #1253 class. The other five --
-// ReferenceArchitectures:13 and :34, PeopleFreshness:22, GroupLinkStatus:33
-// (x2) -- are guard arms that a sibling fixture build (data-no-revision,
-// data-variant) demonstrably executes, yet the union never credits (#1256,
-// #1236): the build that takes the arm records no deviation at the arm's own
-// span, and isContradictedRegion only admits witnesses from the script that
-// produced the zero. That restriction is deliberate (#1066: a different
-// bundle maps the same skipped arm to a different span), so the five are a
-// documented reporting residual, not a coverage gap. Do not set
-// --check-source-regions above 97 or a per-file floor above 66
-// (PeopleFreshness, 2/3) without first changing the union.
+// Ceiling, as of that 97.26% run: 18 regions at zero. Thirteen are defensive
+// fallbacks of the #1253 class. The other five -- ReferenceArchitectures:13
+// and :34, PeopleFreshness:22, GroupLinkStatus:33 (x2) -- are guard arms that
+// a sibling fixture build (data-no-revision, data-variant) demonstrably
+// executes, yet the union never credits (#1256, #1236): the build that takes
+// the arm records no deviation at the arm's own span, and
+// isContradictedRegion only admits witnesses from the script that produced
+// the zero. That restriction is deliberate (#1066: a different bundle maps
+// the same skipped arm to a different span), so the five are a documented
+// reporting residual, not a coverage gap. Do not set --check-source-regions
+// above 97 or --check-source-file-regions above 66 (PeopleFreshness, 2/3,
+// whose one zero is in that residual) without first changing the union. The
+// aggregate stops at 96 rather than 97 because 97 would leave one region
+// between the floor and the ceiling.
+//
+// The per-file floor is the unit lane's --check-source-file-regions argument
+// one level down: the aggregate lets roughly one region in twenty-five go
+// uncovered anywhere in src/**, and nothing else stops a single file from
+// holding all of that slack. At 66 it is bound by the lowest file, so it is
+// a floor against a file falling, not a target.
 const FLOORS = {
   '--check-source': 100,
-  '--check-source-regions': 95,
+  '--check-source-regions': 96,
+  '--check-source-file-regions': 66,
 };
 
 // Present-or-absent guarantees, which carry no percentage. --require-source-files
@@ -203,10 +214,10 @@ test('a job that never invokes the reporter fails the guard', () => {
 // fixture text it edits is its own line, so it gets its own staleness guard
 // and its own proof the floor can go red.
 function weakenedRegions(replacement) {
-  const original = '            --check-source-regions 95 \\\n';
+  const original = '            --check-source-regions 96 \\\n';
   assert.ok(
     workflowText.includes(original),
-    'fixture is stale: ci.yml no longer renders with --check-source-regions 95',
+    'fixture is stale: ci.yml no longer renders with --check-source-regions 96',
   );
   return workflowText.replace(original, replacement);
 }
@@ -219,7 +230,7 @@ test('a lowered --check-source-regions fails the guard', () => {
           weakenedRegions('            --check-source-regions 50 \\\n'),
         ),
       ),
-    /--check-source-regions is 50, below the 95/,
+    /--check-source-regions is 50, below the 96/,
   );
 });
 
@@ -227,5 +238,38 @@ test('a deleted --check-source-regions fails the guard', () => {
   assert.throws(
     () => check(reporterFlags(weakenedRegions(''))),
     /must pass --check-source-regions/,
+  );
+});
+
+// The per-file floor is the one a reviewer is most likely to wave through a
+// drop in, because it reads as low already; the fixture proves 66 is a floor
+// the guard holds, not a default it tolerates moving.
+function weakenedFileRegions(replacement) {
+  const original = '            --check-source-file-regions 66 \\\n';
+  assert.ok(
+    workflowText.includes(original),
+    'fixture is stale: ci.yml no longer renders with --check-source-file-regions 66',
+  );
+  return workflowText.replace(original, replacement);
+}
+
+test('a lowered --check-source-file-regions fails the guard', () => {
+  assert.throws(
+    () =>
+      check(
+        reporterFlags(
+          weakenedFileRegions(
+            '            --check-source-file-regions 50 \\\n',
+          ),
+        ),
+      ),
+    /--check-source-file-regions is 50, below the 66/,
+  );
+});
+
+test('a deleted --check-source-file-regions fails the guard', () => {
+  assert.throws(
+    () => check(reporterFlags(weakenedFileRegions(''))),
+    /must pass --check-source-file-regions/,
   );
 });

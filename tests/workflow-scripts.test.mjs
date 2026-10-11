@@ -349,13 +349,22 @@ test('browser coverage is isolated in a visible gating job with a source floor',
   // the line gate cannot give. The gate landed at 80, just under the 81.43%
   // a full run of the suite measured at the time, was ratcheted to 91
   // under the 91.63% measured after the 2026-10-07 coverage merges (#1105),
-  // and to 95 under the 95.22% measured after #1163 folded the
-  // crossing-region source-map drift (#1079) -- the same ratchet pattern as
-  // the unit lane's region floors.
+  // to 95 under the 95.22% measured after #1163 folded the crossing-region
+  // source-map drift (#1079), and to 96 under the 97.26% measured when the
+  // per-file floor landed (#1232) -- the same ratchet pattern as the unit
+  // lane's region floors.
   assert.match(
     coverageCommands,
-    /--check-source-regions\s+95\b/,
-    'the e2e coverage report must gate on --check-source-regions 95',
+    /--check-source-regions\s+96\b/,
+    'the e2e coverage report must gate on --check-source-regions 96',
+  );
+  // #1232: the aggregate lets its slack concentrate in one file. The per-file
+  // floor fails on that file's name instead of averaging it away; 66 is bound
+  // by the lowest file (PeopleFreshness, 2/3), not chosen as a target.
+  assert.match(
+    coverageCommands,
+    /--check-source-file-regions\s+66\b/,
+    'the e2e coverage report must gate on --check-source-file-regions 66',
   );
   // #992: the ratio is computed over observed files only, so a src module the
   // bundle drops vanishes from numerator and denominator alike. The file-set
