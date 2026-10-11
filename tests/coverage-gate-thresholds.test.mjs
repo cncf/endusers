@@ -62,28 +62,31 @@ const FLOORS = {
   // entered none of the ratios above, which are all built from
   // isSourceFile(). These are the same three shapes over its own row.
   // Measured on the suite this commit ships: harness files 100.00% lines /
-  // 99.57% regions (5336/5336 lines, 1867/1875 regions), now that #1294 has
-  // brought tests/helpers*.mjs into the row. The lowest harness file is
-  // tests/helpers-script-sandbox.mjs at 97.06%, floored to 97; next is
-  // tests/tools/e2e-coverage-report.mjs at 98.57%, and every other harness
-  // file is at 100.00%.
+  // 99.63% regions (5352/5352 lines, 1870/1877 regions), now that #1294 has
+  // brought tests/helpers*.mjs into the row and tests/helpers-script-sandbox.mjs
+  // has been lifted to 100.00%. The lowest harness file is now
+  // tests/tools/e2e-coverage-report.mjs at 98.57%, floored to 98, and every
+  // other harness file is at 100.00%.
   //
-  // 98.57% is e2e-coverage-report.mjs's ceiling, not a backlog: its 7
+  // 98.57% is e2e-coverage-report.mjs's ceiling, not a backlog: its 6
   // uncovered regions are the defensive fallbacks the note at the top of the
   // file lists as unreachable (#1253; three more were deleted rather than
   // listed in #1304), so no test can lift it. The per-file floor must stay at
-  // or below 97 while helpers-script-sandbox.mjs sits at 97.06, and at or
-  // below 98 until that list shrinks; a probe that lands one of them should
+  // or below 98 until that list shrinks; a probe that lands one of them should
   // raise the floor and shorten the list in the same change.
   //
-  // --check-harness-regions is left at 97 against a measured 99.57 on purpose:
-  // #1294 only just rescoped the row, and the helper tree's lowest file is
-  // 0.06 points above the per-file floor, so the aggregate is left with its
-  // slack until that file has been lifted rather than ratcheted into a gate
-  // the next helper edit trips.
+  // Both harness floors moved up with this commit. They were previously held
+  // at 97 by tests/helpers-script-sandbox.mjs, whose single uncovered region
+  // was realGitPath's `?? ''` arm: spawnSync only reports `stdout: null` for a
+  // process that never started, and that call passes `shell: true`, so no test
+  // could reach it while the expression stayed inline. Splitting the
+  // normalisation out as gitPathFromLookup made it a function of the one value
+  // spawnSync varies, and that file is now at 100.00%. The aggregate was
+  // deliberately left at 97 against a measured 99.57 only "until that file has
+  // been lifted"; it has been, so it follows the measurement up to 99.
   '--check-harness': 100,
-  '--check-harness-regions': 97,
-  '--check-harness-file-regions': 97,
+  '--check-harness-regions': 99,
+  '--check-harness-file-regions': 98,
 };
 
 function parseGate(command) {
