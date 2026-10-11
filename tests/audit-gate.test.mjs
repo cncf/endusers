@@ -25,6 +25,7 @@ import {
   ALLOWLISTED_ADVISORIES,
   advisoryId,
   classifyAudit,
+  unusedAllowlistEntries,
 } from '../scripts/audit-gate.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -184,6 +185,85 @@ test('the allowlist matches the advisories SECURITY.md documents', () => {
   }
 });
 
+// --- unusedAllowlistEntries ---
+
+test('unusedAllowlistEntries reports nothing while the advisory is present', () => {
+  const report = {
+    vulnerabilities: {
+      braces: entry('high', [advisory(BRACES)]),
+      micromatch: entry('high', ['braces']),
+    },
+  };
+  assert.deepEqual(unusedAllowlistEntries(report, new Set([BRACES])), []);
+});
+
+test('unusedAllowlistEntries names an entry the report no longer reaches', () => {
+  const report = {
+    vulnerabilities: { newdep: entry('high', [advisory(NEW_BAD)]) },
+  };
+  assert.deepEqual(unusedAllowlistEntries(report, new Set([BRACES])), [BRACES]);
+});
+
+test('unusedAllowlistEntries names every entry on a report with no findings', () => {
+  assert.deepEqual(
+    unusedAllowlistEntries({ vulnerabilities: {} }, new Set([BRACES, NEW_BAD])),
+    [NEW_BAD, BRACES].sort(),
+  );
+});
+
+test('unusedAllowlistEntries counts an advisory at any severity as present', () => {
+  // An advisory rescored below high is still in the lockfile, so the entry
+  // covering it is still doing work and must not be called stale.
+  const report = {
+    vulnerabilities: {
+      braces: entry('moderate', [advisory(BRACES, 'moderate')]),
+    },
+  };
+  assert.deepEqual(unusedAllowlistEntries(report, new Set([BRACES])), []);
+});
+
+test('unusedAllowlistEntries finds an advisory nested behind a string via', () => {
+  // The advisory object can sit on a package the top-level entry only names
+  // by string; the scan must reach it rather than call the entry stale.
+  const report = {
+    vulnerabilities: {
+      micromatch: entry('high', ['braces']),
+      braces: entry('high', [advisory(BRACES)]),
+    },
+  };
+  assert.deepEqual(unusedAllowlistEntries(report, new Set([BRACES])), []);
+});
+
+test('unusedAllowlistEntries tolerates a report with no vulnerabilities key', () => {
+  assert.deepEqual(unusedAllowlistEntries({}, new Set([BRACES])), [BRACES]);
+});
+
+test('unusedAllowlistEntries tolerates an entry without a via array', () => {
+  // Mirrors the classifyAudit case above: an entry with no `via` reaches no
+  // advisory, so it neither crashes the scan nor keeps an entry alive.
+  const report = {
+    vulnerabilities: {
+      bare: { severity: 'high' },
+      braces: entry('high', [advisory(BRACES)]),
+    },
+  };
+  assert.deepEqual(unusedAllowlistEntries(report, new Set([BRACES, NEW_BAD])), [
+    NEW_BAD,
+  ]);
+});
+
+test('unusedAllowlistEntries defaults to the shipped allowlist', () => {
+  const report = {
+    vulnerabilities: Object.fromEntries(
+      [...ALLOWLISTED_ADVISORIES].map((id, index) => [
+        `pkg-${index}`,
+        entry('high', [advisory(id)]),
+      ]),
+    ),
+  };
+  assert.deepEqual(unusedAllowlistEntries(report), []);
+});
+
 // --- CLI entry, with npm stubbed ---
 
 // Stub placed first on PATH so the script under test never reaches the real
@@ -242,12 +322,20 @@ function runGate({ stdout = '', status = '0', withNpm = true } = {}) {
   }
 }
 
-test('cli: exits 0 on a clean report', () => {
+test('cli: exits 1 on a clean report, because the allowlist is then stale', () => {
+  // A report with no vulnerabilities at all means every allowlisted advisory
+  // has left the lockfile. The suppression is then pointless and, worse,
+  // still live for a future reintroduction, so the gate asks for it to be
+  // removed rather than reporting a green audit over a dead exemption. The
+  // "exits 0 when every finding is allowlisted" test below covers the ok
+  // path, which is what a clean *and* empty allowlist would also produce.
   const result = runGate({
     stdout: JSON.stringify({ vulnerabilities: {} }),
   });
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /audit-gate: ok/);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /no longer present in the lockfile/);
+  assert.match(result.stderr, new RegExp(BRACES));
+  assert.doesNotMatch(result.stdout, /audit-gate: ok/);
 });
 
 test('cli: exits 0 when every finding is allowlisted, despite npm exiting 1', () => {
