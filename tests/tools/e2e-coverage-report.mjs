@@ -682,14 +682,28 @@ async function convertScript(scriptCoverage, root, scriptRoots) {
   }
   converter.applyCoverage(usableFunctions);
   const coverage = converter.toIstanbul();
-  const attributedPaths = new Set([
-    ...Object.entries(converter.branches ?? {})
+  // `converter.branches` is the whole attribution signal, and the two things
+  // this does not also read are not an oversight:
+  //
+  //   * `converter.functions` is permanently `{}` here. v8-to-istanbul writes
+  //     `this.functions[path]` only under `if (block.functionName ...)`
+  //     (lib/v8-to-istanbul.js:167,178), and `normalizeRanges` above rewrites
+  //     every script's record into exactly one block with `functionName: ''`.
+  //     A `functions` arm would therefore contribute no path that `branches`
+  //     has not already contributed.
+  //   * neither needs a `?? {}` guard: both are initialised to `{}` in the
+  //     converter's constructor (lib/v8-to-istanbul.js:36-37) and are never
+  //     reassigned.
+  //
+  // tests/e2e-coverage-attribution.test.mjs pins both facts against the
+  // installed converter, so a release that started naming blocks or stopped
+  // initialising the maps fails there rather than silently dropping a source
+  // from a multi-source bundle.
+  const attributedPaths = new Set(
+    Object.entries(converter.branches)
       .filter(([, ranges]) => ranges.length > 0)
       .map(([path]) => path),
-    ...Object.entries(converter.functions ?? {})
-      .filter(([, ranges]) => ranges.length > 0)
-      .map(([path]) => path),
-  ]);
+  );
   return {
     sourceFiles,
     coverage,
