@@ -5,6 +5,32 @@
  * and exiting with proper status codes across all validator scripts.
  */
 
+import fs from 'node:fs';
+
+/**
+ * Write text to stderr without going through console.
+ *
+ * console.error() is asynchronous when stderr is a pipe (Node, "A note on
+ * process I/O": pipes and sockets are asynchronous on POSIX) and
+ * process.exit() does not wait for pending writes, so the tail of a long
+ * report can be dropped before the parent reads it. Writing to the file
+ * descriptor is synchronous whatever stderr is connected to.
+ *
+ * @param {string} text - Text to write verbatim.
+ */
+function writeStderrSync(text) {
+  const buffer = Buffer.from(text, 'utf8');
+  let offset = 0;
+  while (offset < buffer.length) {
+    try {
+      offset += fs.writeSync(process.stderr.fd, buffer, offset);
+    } catch (error) {
+      // A non-blocking stderr can refuse a write that a later retry accepts.
+      if (error.code !== 'EAGAIN') throw error;
+    }
+  }
+}
+
 /**
  * Collect and format a validation error.
  * @param {Array<Object>} errors - Array to accumulate errors
@@ -25,18 +51,23 @@ export function reportAndExit(errors, contextLabel) {
   const warnings = errors.filter((e) => e.severity === 'warn');
   const failureErrors = errors.filter((e) => e.severity === 'error');
 
+  // Warnings share the synchronous path so that a report carrying both
+  // severities cannot have its warning half dropped by the exit below, and so
+  // the two halves cannot interleave.
   if (warnings.length) {
-    console.warn(`\n${warnings.length} warning(s) in ${contextLabel}:`);
+    const lines = [`\n${warnings.length} warning(s) in ${contextLabel}:`];
     for (const { path, message } of warnings) {
-      console.warn(`  [warn] ${path}: ${message}`);
+      lines.push(`  [warn] ${path}: ${message}`);
     }
+    writeStderrSync(`${lines.join('\n')}\n`);
   }
 
   if (failureErrors.length) {
-    console.error(`\n${failureErrors.length} error(s) in ${contextLabel}:`);
+    const lines = [`\n${failureErrors.length} error(s) in ${contextLabel}:`];
     for (const { path, message } of failureErrors) {
-      console.error(`  [error] ${path}: ${message}`);
+      lines.push(`  [error] ${path}: ${message}`);
     }
+    writeStderrSync(`${lines.join('\n')}\n`);
     process.exit(1);
   }
 }
