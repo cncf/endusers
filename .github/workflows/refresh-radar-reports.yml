@@ -9,6 +9,17 @@ permissions:
   contents: write
   pull-requests: write
 
+# Serialised on the branch this workflow force-pushes. Two overlapping runs
+# (a dispatch during the nightly cron, or a cron that laps a slow run) both
+# write refs/heads/automation/refresh-radar-reports, and the loser's
+# --force-with-lease fails on stale info. Not cancelled: the run in flight
+# may already have pushed the branch, and `delete-branch: true` means a
+# half-finished run can delete the ref the other one's pull request is open
+# from.
+concurrency:
+  group: automation/refresh-radar-reports
+  cancel-in-progress: false
+
 env:
   NODE_VERSION: '22'
 
