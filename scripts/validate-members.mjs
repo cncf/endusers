@@ -417,9 +417,13 @@ if (landscape) {
       message: `membership source ID set mismatch (missing: ${missing.join(', ') || 'none'}; unexpected: ${unexpected.join(', ') || 'none'})`,
     });
   }
+  // collectedAt is the one field of this block the site renders
+  // (DirectoryFreshness), and the generator copies it from the snapshot root
+  // rather than from snapshot.source like the other two.
   if (
     data.sources?.landscape?.revision !== landscape.source?.revision ||
-    data.sources?.landscape?.sourceUrl !== landscape.source?.sourceUrl
+    data.sources?.landscape?.sourceUrl !== landscape.source?.sourceUrl ||
+    data.sources?.landscape?.collectedAt !== landscape.collectedAt
   ) {
     errors.push({
       path: 'members.json.sources.landscape',

@@ -181,13 +181,10 @@ const EXPECTED = new Map([
   [
     'data-variant/members.json',
     {
-      // Recorded as an empty delta because that is what the gate does today,
-      // not because the shape is benign: DirectoryFreshness renders
-      // sources.landscape.collectedAt and validate-members.mjs never reads it,
-      // unlike every sibling validator's document-level timestamp. If that gap
-      // is closed this entry gains the new error, which is the signal.
-      why: 'makes sources.landscape.collectedAt unparseable to degrade the DirectoryFreshness note; validate-members.mjs does not check that field',
-      adds: [],
+      why: 'makes sources.landscape.collectedAt unparseable to degrade the DirectoryFreshness note; validate-members.mjs holds that field to the snapshot like revision and sourceUrl',
+      adds: [
+        'members.json.sources.landscape: landscape provenance must match enduser-landscape.json',
+      ],
     },
   ],
   [
