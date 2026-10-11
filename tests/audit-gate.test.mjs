@@ -238,6 +238,20 @@ test('unusedAllowlistEntries tolerates a report with no vulnerabilities key', ()
   assert.deepEqual(unusedAllowlistEntries({}, new Set([BRACES])), [BRACES]);
 });
 
+test('unusedAllowlistEntries tolerates an entry without a via array', () => {
+  // Mirrors the classifyAudit case above: an entry with no `via` reaches no
+  // advisory, so it neither crashes the scan nor keeps an entry alive.
+  const report = {
+    vulnerabilities: {
+      bare: { severity: 'high' },
+      braces: entry('high', [advisory(BRACES)]),
+    },
+  };
+  assert.deepEqual(unusedAllowlistEntries(report, new Set([BRACES, NEW_BAD])), [
+    NEW_BAD,
+  ]);
+});
+
 test('unusedAllowlistEntries defaults to the shipped allowlist', () => {
   const report = {
     vulnerabilities: Object.fromEntries(
