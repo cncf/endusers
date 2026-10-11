@@ -37,10 +37,12 @@ function member(id, membershipStatus, membershipSources = []) {
   };
 }
 
+const COLLECTED_AT = '2026-10-01T00:00:00.000Z';
+
 function snapshot(sourceIds) {
   return {
     generated: true,
-    collectedAt: '2026-10-01T00:00:00.000Z',
+    collectedAt: COLLECTED_AT,
     source: {
       repository: 'https://github.com/cncf/landscape',
       revision: REVISION,
@@ -54,7 +56,7 @@ function snapshot(sourceIds) {
   };
 }
 
-function run(members, landscape) {
+function run(members, landscape, provenance = {}) {
   return runScriptWithFixtures(SCRIPT, {
     'data/members.json': JSON.stringify({
       description: 'directory',
@@ -64,6 +66,8 @@ function run(members, landscape) {
           repository: 'https://github.com/cncf/landscape',
           revision: REVISION,
           sourceUrl: SOURCE_URL,
+          collectedAt: COLLECTED_AT,
+          ...provenance,
         },
       },
       schema: {},
@@ -170,6 +174,29 @@ test('rejects duplicate, missing, unexpected, and stale landscape provenance', (
   assert.match(result.stderr, /membership source IDs must be unique/);
   assert.match(result.stderr, /membership source ID set mismatch/);
   assert.match(result.stderr, /landscape provenance must match/);
+});
+
+// The generator writes revision, sourceUrl and collectedAt into
+// sources.landscape from one snapshot in one statement, and collectedAt is
+// the only one of the three DirectoryFreshness renders. A members.json that
+// kept the snapshot's revision but a different sync time (a partial
+// regeneration, a merge that took one side) states a date the data does not
+// support, so it is held to the snapshot like the other two.
+test('rejects a collectedAt that differs from the snapshot it claims', () => {
+  const memberSource = source('member-source', 'member');
+  const members = [member('one', 'member', [memberSource])];
+  const landscape = snapshot(['member-source']);
+  for (const collectedAt of [
+    '1999-01-01T00:00:00.000Z',
+    'not a timestamp',
+    null,
+    undefined,
+  ]) {
+    const result = run(members, landscape, { collectedAt });
+    assert.equal(result.status, 1, `collectedAt ${String(collectedAt)}`);
+    assert.match(result.stderr, /landscape provenance must match/);
+  }
+  assert.equal(run(members, landscape).status, 0);
 });
 
 test('requires membership fields for modern landscape-backed output', () => {
