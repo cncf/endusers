@@ -239,6 +239,60 @@ npx playwright install --with-deps chromium   # once per machine: downloads the
 npm run test:e2e
 ```
 
+`--with-deps` runs `apt-get install`, so it needs root. Without the OS packages
+the browser bundle is present but will not launch, and every test fails with
+`browserType.launch: Target page, context or browser has been closed`, which
+names neither the missing library nor the install step. On a machine where you
+are not root (an unprivileged container, a shared dev host), unpack the same
+packages into a private sysroot and point the loader at it instead. The browser
+bundle itself installs fine as an ordinary user:
+
+<!-- cspell:disable -->
+
+```bash
+npx playwright install chromium       # the browser bundle only, no --with-deps
+mkdir -p /tmp/sysroot/apt/{state,cache}/ /tmp/debs
+printf 'Dir::State "/tmp/sysroot/apt/state";\nDir::State::status "/tmp/sysroot/apt/state/status";\nDir::Cache "/tmp/sysroot/apt/cache";\n' > /tmp/sysroot/apt.conf
+touch /tmp/sysroot/apt/state/status
+export APT_CONFIG=/tmp/sysroot/apt.conf
+apt-get update
+cd /tmp/debs && apt-get download \
+  libglib2.0-0t64 libnspr4 libnss3 libdbus-1-3 libatk1.0-0t64 \
+  libatk-bridge2.0-0t64 libatspi2.0-0t64 libx11-6 libxcomposite1 libxdamage1 \
+  libxext6 libxfixes3 libxrandr2 libgbm1 libxcb1 libxkbcommon0 libasound2t64 \
+  libpango-1.0-0 libcairo2 libcups2t64 libexpat1 libudev1 libdrm2 \
+  libwayland-client0 libxrender1 libxau6 libxdmcp6 libxi6 \
+  libavahi-common3 libavahi-client3 libpng16-16t64 libfontconfig1 libfreetype6 \
+  libxcb-render0 libxcb-shm0 libpixman-1-0 libfribidi0 libthai0 libharfbuzz0b \
+  libgraphite2-3 libthai-data libdatrie1 libbrotli1 libbsd0 libmd0
+for d in *.deb; do dpkg-deb -x "$d" /tmp/sysroot/fs; done
+cd - && export LD_LIBRARY_PATH=/tmp/sysroot/fs/usr/lib/x86_64-linux-gnu:/tmp/sysroot/fs/lib/x86_64-linux-gnu
+```
+
+<!-- cspell:enable -->
+
+The first 28 names are the packages Playwright itself installs on Debian and
+Ubuntu plus the four the `chrome-headless-shell` binary needs beyond them; the
+last 17 are what the full `chrome` binary additionally loads, so a headed or
+`channel: 'chromium'` run works too. Both binaries have to resolve, so check
+both. Zero `not found` lines on each is the goal:
+
+```bash
+for b in ~/.cache/ms-playwright/chromium*/*/chrome \
+         ~/.cache/ms-playwright/chromium*/*/chrome-headless-shell; do
+  echo "$b: $(ldd "$b" | grep -c 'not found') missing"
+done
+```
+
+Two things that look like failures and are not: `apt-get download` may print
+`rm: cannot remove '/var/cache/apt/archives/partial/*.deb': Permission denied`
+on a host whose `/var/cache/apt` is root-owned (the download still succeeds and
+exits 0), and the `LD_LIBRARY_PATH` export is per shell, so set it again in a
+new terminal before `npm run test:e2e`. Do not set `XDG_CACHE_HOME` for the run:
+Playwright resolves the downloaded browser under it, and overriding it makes
+every test fail with "Executable doesn't exist at ...". On an `arm64` host
+substitute `aarch64-linux-gnu` for `x86_64-linux-gnu` in the loader path.
+
 The suite starts its own server on `localhost:3000` (override with `E2E_PORT`)
 and serves the static output already built in `build/` via `docusaurus serve` —
 it does not rebuild your changes, so re-run `npm run build:production` after
