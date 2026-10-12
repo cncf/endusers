@@ -129,6 +129,17 @@ Rejected: any other raw HTML/JSX element, and any braced `{expression}` (MDX
 evaluates it as JavaScript). Literal `{` in prose must be escaped or reworded;
 the check fails closed.
 
+The inline-element list above is matched exactly as written, in lower case. MDX
+reads a lower-case tag name as an HTML element and any other casing as a
+_component_ reference, so `<B>` is not the inert `<b>` the list allows — it
+compiles to a lookup of a component named `B` that nothing defines, and the
+build fails while rendering the page. Write these elements in lower case.
+
+A `style` attribute is rejected on every element. React requires `style` to be
+an object rather than a string, so `style="..."` (and `style={"..."}`) fails
+while rendering, and the object form `style={{ ... }}` is a braced expression,
+which is rejected above. Use the stylesheet-backed markup instead.
+
 Image references in page bodies are rewritten during import: relative paths are
 scoped to the architecture's own asset directory, and an image whose destination
 names any host — including protocol-relative `//host/...` — is demoted to a
