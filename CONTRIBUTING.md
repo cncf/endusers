@@ -336,13 +336,15 @@ attribution fail visibly and leave their raw artifacts for review.
 Read the percentages against the Node major CI pins. These are _region_ counts,
 and V8 splits the same expression into a different number of ranges on a
 different runtime, so the denominator moves even though the code, the suite and
-the fixture builds do not. The same commit measures 97.30% source regions on the
+the fixture builds do not. The same commit measures 97.29% source regions on the
 major the job pins and 97.73% on a newer runtime, and per file the gap is wider
-still: `DirectoryFreshness.js` is 9/13 (69.23%) on the pinned major and 9/10
-(90.00%) on v26.10.0. A local render on a newer runtime therefore reports
-headroom the gate does not have, and ratcheting a floor to match it turns the
-required job red. `tests/e2e-coverage-gate.test.mjs` records the major its
-floors were measured on and fails if the job moves off it.
+still: `DirectoryFreshness.js` is 11/15 (73.33%) on the pinned major (node
+22.23.3) and 9/10 (90.00%) on v26.10.0. A local render on a newer runtime
+therefore reports headroom the gate does not have, and ratcheting a floor to
+match it turns the required job red. `tests/e2e-coverage-gate.test.mjs` records
+the major its floors were measured on and fails if the job moves off it. The
+counts also move between patch releases of that major, so a small same-major
+difference is runtime drift, not a code change.
 
 Some component branches render only for data shapes the checked-in `data/*.json`
 never take — an archived End User Group, a person with neither role nor company,
