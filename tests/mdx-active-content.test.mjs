@@ -487,3 +487,39 @@ test('truncates a long remote image destination in the reason', () => {
     `remote image destination ${url.slice(0, 117)}...`,
   );
 });
+
+test('matches the element allowlist case-sensitively, as MDX reads tag names', () => {
+  // MDX reads a lowercase tag name as an HTML element and any other casing as
+  // a component reference, so `<B>` is not the inert `<b>` the allowlist
+  // permits: it compiles to a lookup of a component named `B` that no
+  // provider defines, and Docusaurus throws "Expected component `B` to be
+  // defined" while prerendering. Lowercasing the name before the lookup
+  // vouched for a body the renderer rejects.
+  assert.deepEqual(reasons('<B>bold</B>'), ['disallowed element <B>']);
+  assert.deepEqual(reasons('<Code>x</Code>'), ['disallowed element <Code>']);
+  assert.deepEqual(reasons('<HR />'), ['disallowed element <HR>']);
+  // The genuinely inert lowercase forms stay allowed.
+  assert.deepEqual(reasons('<b>bold</b>'), []);
+  assert.deepEqual(reasons('<code>x</code>'), []);
+  assert.deepEqual(reasons('<hr />'), []);
+});
+
+test('flags a string-valued style attribute, which React refuses to render', () => {
+  // React requires `style` to be an object and throws "The `style` prop
+  // expects a mapping from style properties to values, not a string" when it
+  // is given a string, so both of these fail while Docusaurus prerenders.
+  assert.deepEqual(reasons('<p style="color:red">x</p>'), [
+    'string style attribute',
+  ]);
+  // `style={"..."}` is an expression whose body is a single string literal,
+  // which this module otherwise reads as inert -- it reaches React as a
+  // string just the same.
+  assert.deepEqual(reasons('<p style={"color:red"}>x</p>'), [
+    'string style attribute',
+  ]);
+  // The object form needs a non-literal expression and is already reported as
+  // one, so no style attribute reaches a rendered page by any route.
+  assert.deepEqual(reasons("<p style={{ color: 'red' }}>x</p>"), [
+    'MDX expression',
+  ]);
+});

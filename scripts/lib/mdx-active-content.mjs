@@ -77,6 +77,17 @@ const STRING_LITERAL_EXPRESSION = /^"(?:[^"\\\n]|\\.)*"$/;
 
 const EVENT_HANDLER_ATTRIBUTE = /^on[a-z]+$/i;
 
+/**
+ * React requires `style` to be an object mapping properties to values, and
+ * throws "The `style` prop expects a mapping from style properties to values,
+ * not a string" when it is given a string -- so `style="..."`, and the
+ * equivalent `style={"..."}` this module otherwise reads as an inert string
+ * literal, both fail while Docusaurus prerenders the page. The object form
+ * needs a non-literal expression and is already reported as one. The importer
+ * emits no `style` at all, so nothing legitimate reaches this.
+ */
+const STYLE_ATTRIBUTE = 'style';
+
 /** Link-like nodes whose `url` a browser navigates to or loads. */
 const URL_NODES = new Set(['link', 'definition', 'image']);
 
@@ -171,8 +182,14 @@ export function findActiveContent(markdown) {
       node.type === 'mdxJsxTextElement'
     ) {
       const name = node.name ?? '';
-      const allowed =
-        name === ALLOWED_COMPONENT || ALLOWED_ELEMENTS.has(name.toLowerCase());
+      // Matched case-sensitively. MDX reads a lowercase tag name as an HTML
+      // element and any other casing as a *component* reference, so `<B>` is
+      // not the inert `<b>` this set allows -- it compiles to a lookup of a
+      // component named `B`, which no provider defines, and Docusaurus throws
+      // "Expected component `B` to be defined" while prerendering the page.
+      // Lowercasing the name here vouched for a body the renderer rejects,
+      // which is the same failure this module treats a parse error as.
+      const allowed = name === ALLOWED_COMPONENT || ALLOWED_ELEMENTS.has(name);
       if (!allowed) report(line, `disallowed element <${name}>`);
 
       for (const attribute of node.attributes) {
@@ -189,6 +206,9 @@ export function findActiveContent(markdown) {
           if (value === null) report(line, 'MDX expression');
         }
         if (typeof value === 'string') {
+          if (attribute.name === STYLE_ATTRIBUTE) {
+            report(line, 'string style attribute');
+          }
           if (activeScheme(value)) {
             report(line, 'script-capable URL scheme');
           }
