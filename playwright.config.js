@@ -6,6 +6,10 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  // Turns a coverage run started without E2E_COVERAGE_DIR/E2E_COVERAGE_RUN_ID
+  // into one message instead of the same fixture error once per test. See
+  // tests/tools/e2e-coverage-global-setup.mjs.
+  globalSetup: './tests/tools/e2e-coverage-global-setup.mjs',
   fullyParallel: true,
   // The suite is served by a single `docusaurus serve` process (see webServer
   // below), so worker count is bounded by that one server rather than by CPU.
