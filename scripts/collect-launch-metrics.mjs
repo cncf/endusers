@@ -16,7 +16,11 @@
 // capturedAt so the 90-day comparison starts from the announcement-day numbers.
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { githubFetch } from './lib/github.mjs';
+import {
+  githubAllPages,
+  githubFetch,
+  makeGitHubHeaders,
+} from './lib/github.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const REPO = 'cncf/endusers';
@@ -32,15 +36,16 @@ const TARGET_90_DAY = {
 
 async function main() {
   const token = process.env.GH_TOKEN;
+  const headers = makeGitHubHeaders(token, USER_AGENT);
   const [repo, contributors, goodFirstIssues] = await Promise.all([
     githubFetch(`https://api.github.com/repos/${REPO}`, token, USER_AGENT),
-    githubAll(
+    githubAllPages(
       `https://api.github.com/repos/${REPO}/contributors?per_page=100&anon=false`,
-      token,
+      headers,
     ),
-    githubAll(
+    githubAllPages(
       `https://api.github.com/repos/${REPO}/issues?state=all&labels=good+first+issue&per_page=100`,
-      token,
+      headers,
     ),
   ]);
 
@@ -130,47 +135,6 @@ function signal(id, label, baseline, sourceUrl, collectedAt) {
     sourceUrl,
     collectedAt,
   };
-}
-
-async function githubAll(url, token) {
-  const origin = new URL(url).origin;
-  const results = [];
-  let next = url;
-  while (next) {
-    const response = await fetch(next, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        'User-Agent': USER_AGENT,
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    });
-    if (!response.ok) throw new Error(`GitHub API ${response.status}: ${next}`);
-    results.push(...(await response.json()));
-    const link = response.headers.get('link') || '';
-    const match = link.match(/<([^>]+)>;\s*rel="next"/);
-    next = match ? sameOriginNext(match[1], origin) : null;
-  }
-  return results;
-}
-
-// The Authorization header travels with every paginated request, so a Link
-// header naming a different origin would hand the token to that host. Only
-// continue paginating within the origin the first request was sent to.
-function sameOriginNext(candidate, origin) {
-  let parsed;
-  try {
-    parsed = new URL(candidate, origin);
-  } catch {
-    console.warn(`Ignoring unparseable Link rel="next" target: ${candidate}`);
-    return null;
-  }
-  if (parsed.origin !== origin) {
-    console.warn(
-      `Ignoring cross-origin Link rel="next" target: ${parsed.origin}`,
-    );
-    return null;
-  }
-  return parsed.toString();
 }
 
 main();
