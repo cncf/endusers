@@ -25,7 +25,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
+import { parse, stringify } from 'yaml';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const REPORT_SCRIPT = 'report:e2e:coverage';
@@ -66,6 +66,42 @@ const FLOORS = {
   '--check-source-regions': 96,
   '--check-source-file-regions': 66,
 };
+
+// The Node major the floors above were measured on.
+//
+// Unlike the unit lane's line counts, the e2e *region* counts are a V8
+// artifact that moves with the runtime, and the e2e lane never recorded which
+// runtime its floors came from. The same commit, the same 344-test suite and
+// the same two fixture builds measure differently on the major ci.yml pins
+// and on a newer one:
+//
+//   file                                      node 22.21.1   node 26.10.0
+//   src/components/MemberDirectory/
+//     DirectoryFreshness.js                     9/13 69.23%   9/10 90.00%
+//   src/components/PeopleFreshness/index.js     2/3  66.67%    3/4 75.00%
+//   src/components/CNCFProjectCard/index.js   28/28 100.00%  26/26 100.00%
+//   src files (aggregate)                    649/667 97.30% 647/662 97.73%
+//
+// The covered counts barely move; the *denominator* does, because V8 splits
+// the same expression into a different number of ranges. So the lane's
+// headroom is a property of the runtime: on node 22 the per-file floor of 66
+// is held by PeopleFreshness at 66.67% with two thirds of a point to spare,
+// while the same suite on node 26 reports 75.00% for that file and 90.00%
+// for DirectoryFreshness. A contributor who follows CONTRIBUTING.md's local
+// recipe on a newer Node reads the second column, concludes the floors have
+// 9 points of slack, ratchets them, and turns the required job red.
+//
+// That makes the pinned major part of the floors' meaning, and this constant
+// is what says so. `tests/dev-environment.test.mjs` already proves every
+// workflow and the devcontainer agree on *a* major, but it checks agreement
+// rather than value: a coordinated bump stays green there while silently
+// invalidating the measurement these floors rest on. Asserting the recorded
+// major against the one the e2e-coverage job actually pins turns that bump
+// into a failure that names the re-measurement it requires.
+//
+// When the job's Node major is bumped: re-measure, update the table above and
+// the floors if they moved, and set this constant in the same change.
+const MEASURED_ON_NODE_MAJOR = '22';
 
 // Present-or-absent guarantees, which carry no percentage. --require-source-files
 // is the second, different guarantee the reporter documents: the percentage is a
@@ -144,6 +180,41 @@ function check(flags) {
   }
 }
 
+/**
+ * The Node major the `e2e-coverage` job runs its measurement on.
+ *
+ * Read from the job rather than from the workflow as a whole because it is
+ * that job's runtime, and only that one, that produces the region counts the
+ * floors are set against. A `${{ env.NODE_VERSION }}` indirection is resolved
+ * against the workflow's top-level `env` so the contract survives the
+ * refactor that hoists the version into one place.
+ *
+ * @param {string} text contents of ci.yml
+ * @returns {string|null} the major, or null when the job pins none
+ */
+function setupNodeStep(document) {
+  const steps = document.jobs[COVERAGE_JOB].steps;
+  // `uses` is absent on the job's `run:` steps; stringifying undefined yields
+  // a value that simply does not match, so the find needs no guard of its own.
+  return steps.find((candidate) =>
+    String(candidate.uses).startsWith('actions/setup-node@'),
+  );
+}
+
+function coverageJobNodeMajor(text) {
+  const document = parse(text);
+  const declared = setupNodeStep(document)?.with?.['node-version'];
+  if (declared === undefined) return null;
+  const literal = String(declared);
+  const fromEnv = literal.match(
+    /^\$\{\{\s*env\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}$/,
+  );
+  if (!fromEnv) return literal.split('.')[0];
+  const resolved = document.env?.[fromEnv[1]];
+  if (resolved === undefined) return null;
+  return String(resolved).split('.')[0];
+}
+
 test(`package.json defines the ${REPORT_SCRIPT} script`, () => {
   const command = manifest.scripts?.[REPORT_SCRIPT];
   assert.equal(
@@ -156,6 +227,39 @@ test(`package.json defines the ${REPORT_SCRIPT} script`, () => {
 
 test('the e2e coverage gate in ci.yml clears every floor', () => {
   check(reporterFlags(workflowText));
+});
+
+/**
+ * Asserts the measurement the floors rest on still describes the job.
+ *
+ * Split out of the test so the fixtures below can drive it with a mutated
+ * workflow: a guard nobody has seen go red is indistinguishable from one that
+ * always passes.
+ *
+ * @param {string} text contents of ci.yml
+ */
+function checkRuntime(text) {
+  const pinned = coverageJobNodeMajor(text);
+  assert.ok(
+    pinned,
+    `${COVERAGE_JOB} must pin a Node major on its setup-node step; the floors above ` +
+      'are region counts, and V8 splits the same expression into a different number ' +
+      'of ranges on a different runtime, so an unpinned job measures nothing stable',
+  );
+  assert.equal(
+    pinned,
+    MEASURED_ON_NODE_MAJOR,
+    `${COVERAGE_JOB} now runs on Node ${pinned}, but the floors in this file were ` +
+      `measured on Node ${MEASURED_ON_NODE_MAJOR}. e2e region counts move with the ` +
+      'runtime (DirectoryFreshness is 9/13 on 22 and 9/10 on 26), so the bump has ' +
+      'invalidated them: re-measure with the recipe in CONTRIBUTING.md on the new ' +
+      'major, update the table above and any floor that moved, and set ' +
+      'MEASURED_ON_NODE_MAJOR in the same change',
+  );
+}
+
+test(`the ${COVERAGE_JOB} job still runs on the Node major the floors were measured on`, () => {
+  checkRuntime(workflowText);
 });
 
 // The fixtures below are the proof that the assertions above can fail. Each is
@@ -272,4 +376,68 @@ test('a deleted --check-source-file-regions fails the guard', () => {
     () => check(reporterFlags(weakenedFileRegions(''))),
     /must pass --check-source-file-regions/,
   );
+});
+
+// The same proof for the runtime guard. These fixtures edit the parsed
+// document and re-serialise it rather than patching the YAML text: several
+// jobs pin the same `node-version: 22`, so a textual replace rewrites
+// whichever one happens to come first in the file instead of the one
+// e2e-coverage uses, and would pass while proving nothing.
+function withCoverageJobNode(mutate) {
+  const document = parse(workflowText);
+  const step = setupNodeStep(document);
+  assert.ok(
+    step,
+    `fixture is stale: ${COVERAGE_JOB} has no actions/setup-node step`,
+  );
+  mutate(document, step);
+  return stringify(document);
+}
+
+test('bumping the job Node major fails the runtime guard', () => {
+  const bumped = withCoverageJobNode((_document, step) => {
+    step.with['node-version'] = 24;
+  });
+  assert.equal(coverageJobNodeMajor(bumped), '24', 'fixture is stale');
+  assert.throws(
+    () => checkRuntime(bumped),
+    /now runs on Node 24, but the floors in this file were measured on Node 22/,
+  );
+});
+
+test('an unpinned job Node major fails the runtime guard', () => {
+  const unpinned = withCoverageJobNode((_document, step) => {
+    delete step.with['node-version'];
+  });
+  assert.throws(() => checkRuntime(unpinned), /must pin a Node major/);
+});
+
+test('a NODE_VERSION indirection is resolved against the workflow env', () => {
+  const matching = withCoverageJobNode((document, step) => {
+    document.env = {
+      ...(document.env ?? {}),
+      NODE_VERSION: MEASURED_ON_NODE_MAJOR,
+    };
+    step.with['node-version'] = '${{ env.NODE_VERSION }}';
+  });
+  assert.doesNotThrow(() => checkRuntime(matching));
+
+  const bumped = withCoverageJobNode((document, step) => {
+    document.env = { ...(document.env ?? {}), NODE_VERSION: 24 };
+    step.with['node-version'] = '${{ env.NODE_VERSION }}';
+  });
+  assert.throws(() => checkRuntime(bumped), /now runs on Node 24/);
+});
+
+test('a NODE_VERSION indirection the workflow never defines fails the runtime guard', () => {
+  const dangling = withCoverageJobNode((document, step) => {
+    assert.equal(
+      document.env,
+      undefined,
+      'fixture is stale: ci.yml now declares a top-level env, so this fixture ' +
+        'must clear NODE_VERSION from it rather than rely on there being none',
+    );
+    step.with['node-version'] = '${{ env.NODE_VERSION }}';
+  });
+  assert.throws(() => checkRuntime(dangling), /must pin a Node major/);
 });
