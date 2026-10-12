@@ -11,33 +11,14 @@
 // the PR the refresh workflow opens.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fetchAllPages } from './lib/cncf-wp-api.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const API = 'https://www.cncf.io/wp-json/wp/v2';
 const SOURCE_URL = 'https://www.cncf.io/reports?_sft_lf-report-type=radar';
 const PLACEHOLDER_SUMMARY = 'Summary needed — see the report for details.';
 
-async function fetchAllPages(path) {
-  const results = [];
-  let page = 1;
-  for (;;) {
-    const response = await fetch(
-      `${API}/${path}${path.includes('?') ? '&' : '?'}per_page=100&page=${page}`,
-    );
-    if (!response.ok) {
-      if (response.status === 400 && page > 1) break;
-      throw new Error(`cncf.io API ${response.status}: ${path} (page ${page})`);
-    }
-    const batch = await response.json();
-    results.push(...batch);
-    const totalPages = Number(response.headers.get('x-wp-totalpages') || '1');
-    if (page >= totalPages || !batch.length) break;
-    page += 1;
-  }
-  return results;
-}
-
-const reportTypes = await fetchAllPages('lf-report-type');
+const reportTypes = await fetchAllPages(API, 'lf-report-type');
 const radarType = reportTypes.find((term) => term.slug === 'radar');
 if (!radarType)
   throw new Error(
@@ -56,6 +37,7 @@ if (existsSync(existingPath)) {
 }
 
 const posts = await fetchAllPages(
+  API,
   `lf_report?lf-report-type=${radarType.id}&_fields=id,slug,link,title,date`,
 );
 
