@@ -75,12 +75,25 @@ const FLOORS = {
 // the same two fixture builds measure differently on the major ci.yml pins
 // and on a newer one:
 //
-//   file                                      node 22.21.1   node 26.10.0
+//   file                                      node 22.23.3   node 26.10.0
 //   src/components/MemberDirectory/
-//     DirectoryFreshness.js                     9/13 69.23%   9/10 90.00%
+//     DirectoryFreshness.js                    11/15 73.33%   9/10 90.00%
 //   src/components/PeopleFreshness/index.js     2/3  66.67%    3/4 75.00%
-//   src/components/CNCFProjectCard/index.js   28/28 100.00%  26/26 100.00%
-//   src files (aggregate)                    649/667 97.30% 647/662 97.73%
+//   src/components/CNCFProjectCard/index.js   26/26 100.00%  26/26 100.00%
+//   src files (aggregate)                    645/663 97.29% 647/662 97.73%
+//
+// The pinned-major column is read from the job's own e2e-coverage artifact
+// (run 38282184792, node v22.23.3) rather than reproduced locally, so it is
+// the measurement the gate actually runs against.
+//
+// The denominator also moves *within* the pinned major, which is the one
+// thing the constant below cannot see. The column above first read 9/13,
+// 28/28 and 649/667 on node 22.21.1; ci.yml pins `node-version: 22`, the
+// runner resolved that to v22.23.3, and three of the four rows changed
+// against a tree whose src/** and tests/e2e/fixtures/** were byte-identical.
+// So a same-major difference between a fresh run and this table is the
+// expected reading, not evidence that something regressed -- re-measure and
+// correct the rows rather than moving a floor to meet them.
 //
 // The covered counts barely move; the *denominator* does, because V8 splits
 // the same expression into a different number of ranges. So the lane's
