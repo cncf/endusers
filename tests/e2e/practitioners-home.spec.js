@@ -18,6 +18,8 @@
 // broken-link check reaches once they are inside raw JSX; and the landing
 // page's <ProjectsBorn> passes a custom `title`/`intro` that the isolated unit
 // test never supplies. Each of these fails only in a browser against `build/`.
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // Rendered by ProjectsBorn only when `compact` is false, which is how
@@ -25,6 +27,10 @@ import { test, expect } from '../tools/e2e-coverage.cjs';
 // page carries `projects-born-title-footer` instead, so this id is what keeps
 // the two instances apart.
 const PAGE_SECTION = 'section[aria-labelledby="projects-born-title-section"]';
+
+const projectsBornData = JSON.parse(
+  readFileSync(resolve('data/projects-born.json'), 'utf8'),
+);
 
 // The "Start here" list, in document order. These are written as literal
 // hrefs inside a Markdown list, so they are reachable by Docusaurus' broken
@@ -250,7 +256,7 @@ test.describe('landing page projects-born section', () => {
     const section = page.locator(PAGE_SECTION);
     const links = section.getByRole('link', { name: /Born at / });
 
-    const shipped = await links.count();
+    const shipped = projectsBornData.length;
     expect(shipped).toBeGreaterThan(0);
     await expect(links).toHaveCount(shipped);
 
