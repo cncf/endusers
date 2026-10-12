@@ -24,6 +24,8 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { parse } from 'yaml';
 
+import { stripJsonComments } from './helpers-jsonc.mjs';
+
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const configPath = join(repoRoot, '.github', 'dependabot.yml');
 
@@ -126,6 +128,38 @@ test('the npm ecosystem is configured against the manifest it updates', () => {
   assert.ok(
     existsSync(join(resolveDirectory('/'), 'package.json')),
     'the npm entry points at a directory with no package.json, so it updates nothing',
+  );
+});
+
+test('the devcontainers ecosystem is configured against the config it updates', () => {
+  const entries = entriesFor('devcontainers');
+  assert.equal(
+    entries.length,
+    1,
+    'exactly one devcontainers entry is expected; it is the only thing that ' +
+      'refreshes the exact Feature versions enforced by ' +
+      'tests/dev-environment.test.mjs',
+  );
+  assert.equal(entries[0].directory, '/');
+
+  // Cross-check the premise, the way the github-actions entry above does: the
+  // entry is the pin-refresh mechanism only while the Features are pinned.
+  const devcontainerPath = join(
+    resolveDirectory('/'),
+    '.devcontainer',
+    'devcontainer.json',
+  );
+  assert.ok(
+    existsSync(devcontainerPath),
+    'the devcontainers entry points at a tree with no .devcontainer/devcontainer.json, so it updates nothing',
+  );
+  const features = Object.keys(
+    JSON.parse(stripJsonComments(readFileSync(devcontainerPath, 'utf8')))
+      .features ?? {},
+  );
+  assert.ok(
+    features.length > 0,
+    'expected at least one declared Feature for this entry to keep current',
   );
 });
 

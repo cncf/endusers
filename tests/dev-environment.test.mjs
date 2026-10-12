@@ -95,6 +95,27 @@ test('devcontainer.json parses and pins an image and a container user', () => {
   );
 });
 
+// Features are the devcontainer's third-party code path: each one's
+// install.sh is fetched at image build time and executed as root. A bare id
+// ("node") is the deprecated pre-OCI shorthand the CLI rewrites to
+// `ghcr.io/devcontainers/features/<id>:1`, and a bare registry path with no
+// tag resolves to `:latest` -- both choose whatever upstream published most
+// recently. The workflow actions are SHA-pinned and the npm tree is
+// integrity-pinned, so this asserts the same for the one remaining surface.
+const FEATURE_ID = /^[a-z0-9.-]+(?:\/[a-z0-9._-]+)+:\d+\.\d+\.\d+$/;
+
+test('every devcontainer feature is fully qualified and version-pinned', () => {
+  const devcontainer = JSON.parse(stripJsonComments(devcontainerRaw));
+  const features = Object.keys(devcontainer.features ?? {});
+  assert.ok(features.length > 0, 'devcontainer.json declares no features');
+  const unpinned = features.filter((id) => !FEATURE_ID.test(id));
+  assert.deepEqual(
+    unpinned,
+    [],
+    `devcontainer features must name a registry and an exact x.y.z version, not a bare id or a floating tag:\n${unpinned.join('\n')}`,
+  );
+});
+
 test('every npm script invoked by devcontainer lifecycle commands exists', () => {
   const devcontainer = JSON.parse(stripJsonComments(devcontainerRaw));
   const lifecycleKeys = [
@@ -295,7 +316,7 @@ function devcontainerNodeMajor() {
   const devcontainer = JSON.parse(stripJsonComments(devcontainerRaw));
   const features = devcontainer.features ?? {};
   const nodeKey = Object.keys(features).find((key) =>
-    /(^|\/)node(:\d+)?$/.test(key),
+    /(^|\/)node(:[\d.]+)?$/.test(key),
   );
   assert.ok(nodeKey, 'devcontainer declares no node feature');
   const major = String(features[nodeKey]?.version ?? '').split('.')[0];
