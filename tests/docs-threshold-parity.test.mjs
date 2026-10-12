@@ -47,11 +47,26 @@ function enforcedThresholds(command) {
   };
 }
 
+function enforcedHarnessFloors(command) {
+  const tokens = command.split(/\s+/);
+  const flag = (name) => tokens[tokens.indexOf(name) + 1];
+  return {
+    lines: flag('--check-harness'),
+    regions: flag('--check-harness-regions'),
+    fileRegions: flag('--check-harness-file-regions'),
+  };
+}
+
 // Markdown wraps the phrase across lines, so prose is compared with its
 // whitespace collapsed. The pattern tolerates only whitespace variation —
 // wording and clause order must match exactly, by design.
 const THRESHOLD_PHRASE =
   /(\d+)% lines \/ (\d+)% source \/ (\d+)% regions \/ (\d+)% source regions/g;
+
+// The tests/tools/ harness floors are stated in a separate sentence; same
+// whitespace-only tolerance, plus an optional "and" that the docs vary on.
+const HARNESS_PHRASE =
+  /(\d+)% lines \/ (\d+)% regions, (?:and )?(\d+)% regions per harness file/g;
 
 // Every contributor-facing document that states the unit-coverage thresholds.
 // A doc that starts stating them must be added here; a doc listed here that
@@ -97,6 +112,33 @@ for (const doc of DOCS_STATING_THRESHOLDS) {
           `${enforced.lines}% lines / ${enforced.source}% source / ` +
           `${enforced.regions}% regions / ${enforced.sourceRegions}% source ` +
           `regions; update the doc in the same commit as the ratchet`,
+      );
+    }
+  });
+}
+
+for (const doc of DOCS_STATING_THRESHOLDS) {
+  test(`${doc} states the harness floors the coverage gate enforces`, () => {
+    const enforced = enforcedHarnessFloors(gateCommand);
+    const prose = readFileSync(join(repoRoot, doc), 'utf8').replace(
+      /\s+/g,
+      ' ',
+    );
+    const matches = [...prose.matchAll(HARNESS_PHRASE)];
+    assert.ok(
+      matches.length > 0,
+      `${doc} no longer states the harness floors; either restore the ` +
+        `"N% lines / N% regions, N% regions per harness file" phrase or ` +
+        `remove the file from DOCS_STATING_THRESHOLDS`,
+    );
+    for (const [phrase, lines, regions, fileRegions] of matches) {
+      assert.deepEqual(
+        { lines, regions, fileRegions },
+        enforced,
+        `${doc} documents "${phrase}" but test:unit:coverage:check enforces ` +
+          `${enforced.lines}% lines / ${enforced.regions}% regions, ` +
+          `${enforced.fileRegions}% regions per harness file; update the doc ` +
+          `in the same commit as the ratchet`,
       );
     }
   });

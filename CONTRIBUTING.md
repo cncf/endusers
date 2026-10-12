@@ -185,7 +185,7 @@ enough for a first contribution.
    check runs this on every PR, and it fails the build if unit-test coverage
    drops below its thresholds (99% lines / 100% source / 96% regions / 100%
    source regions). The harness under `tests/tools/` is floored separately (100%
-   lines / 97% regions, and 97% regions per harness file): it is measured like
+   lines / 99% regions, and 98% regions per harness file): it is measured like
    source but reported in its own `harness files` row, so a gap in the test
    apparatus cannot be paid for out of `src/`'s slack. `npm run test:unit` alone
    skips the coverage gate, so a green `test:unit` locally does not guarantee a
