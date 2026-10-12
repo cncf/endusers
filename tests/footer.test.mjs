@@ -2,9 +2,8 @@
 // only component under src/theme/ that no test imports: it does not appear in
 // the `node --test --experimental-test-coverage` report at all, because no
 // test ever loads it. That makes its whole contract unguarded — the six
-// social links, the CNCF wordmark, the embedded ProjectsBorn strip and the
-// copyright line are all assembled from a literal array and a `new Date()`
-// call with nothing asserting the result.
+// social links, the CNCF wordmark and the copyright line are all assembled
+// from a literal array and a `new Date()` call with nothing asserting the result.
 //
 // Footer calls no stateful hooks (only the stubbed `useBaseUrl`), so it can be
 // invoked directly and its returned element tree walked, exactly as
@@ -154,14 +153,12 @@ test('each icon link is keyed, so React can reorder the list', () => {
     assert.ok(anchor.key, 'expected a stable key on each icon link');
   }
 });
-
-test('the ProjectsBorn strip is embedded in its compact form', () => {
+test('the ProjectsBorn component is not rendered in the footer', () => {
   const strip = findByType(Footer(), ProjectsBorn);
-  assert.ok(strip, 'expected the ProjectsBorn strip in the footer');
   assert.equal(
-    strip.props.compact,
-    true,
-    'the footer strip must stay compact; the full form belongs on the page',
+    strip,
+    undefined,
+    'ProjectsBorn must not be rendered in the global footer',
   );
 });
 

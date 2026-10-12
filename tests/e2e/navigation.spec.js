@@ -15,8 +15,9 @@ import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const LINK_ITEMS = [
   { label: 'Practitioners', to: '/' },
+  { label: 'Architectures', to: '/architectures' },
   {
-    label: 'Projects from end users',
+    label: 'Projects from End Users',
     to: '/community#projects-born-at-end-user-organizations',
   },
   { label: 'Metrics', to: '/metrics/' },
@@ -24,11 +25,7 @@ const LINK_ITEMS = [
   { label: 'Blog', to: '/blog' },
 ];
 
-const SIDEBAR_ITEMS = [
-  { label: 'Architectures' },
-  { label: 'Community' },
-  { label: 'Resources' },
-];
+const SIDEBAR_ITEMS = [{ label: 'Community' }, { label: 'Resources' }];
 
 const ALL_LABELS = [...LINK_ITEMS, ...SIDEBAR_ITEMS].map((item) => item.label);
 

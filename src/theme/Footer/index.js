@@ -2,7 +2,6 @@ import React from 'react';
 import styles from './styles.module.css';
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
-import ProjectsBorn from '@site/src/components/ProjectsBorn';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -138,7 +137,6 @@ export default function Footer() {
           ))}
         </div>
       </div>
-      <ProjectsBorn compact />
       <hr className={styles.divider} />
       <div className={styles.bottomRow}>
         © {currentYear} Cloud Native Computing Foundation | Documentation

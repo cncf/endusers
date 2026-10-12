@@ -18,6 +18,8 @@
 // broken-link check reaches once they are inside raw JSX; and the landing
 // page's <ProjectsBorn> passes a custom `title`/`intro` that the isolated unit
 // test never supplies. Each of these fails only in a browser against `build/`.
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // Rendered by ProjectsBorn only when `compact` is false, which is how
@@ -25,6 +27,10 @@ import { test, expect } from '../tools/e2e-coverage.cjs';
 // page carries `projects-born-title-footer` instead, so this id is what keeps
 // the two instances apart.
 const PAGE_SECTION = 'section[aria-labelledby="projects-born-title-section"]';
+
+const projectsBornData = JSON.parse(
+  readFileSync(resolve('data/projects-born.json'), 'utf8'),
+);
 
 // The "Start here" list, in document order. These are written as literal
 // hrefs inside a Markdown list, so they are reachable by Docusaurus' broken
@@ -250,13 +256,7 @@ test.describe('landing page projects-born section', () => {
     const section = page.locator(PAGE_SECTION);
     const links = section.getByRole('link', { name: /Born at / });
 
-    // Both instances render the same data/projects-born.json, so the footer
-    // strip on this very page is the count to hold the section against: it
-    // pins the section to the shipped data without restating it here.
-    const shipped = await page
-      .locator('section[aria-labelledby="projects-born-title-footer"]')
-      .getByRole('link', { name: /Born at / })
-      .count();
+    const shipped = projectsBornData.length;
     expect(shipped).toBeGreaterThan(0);
     await expect(links).toHaveCount(shipped);
 
@@ -271,17 +271,11 @@ test.describe('landing page projects-born section', () => {
     }
   });
 
-  test('is distinct from the compact strip the footer renders', async ({
-    page,
-  }) => {
+  test('the compact strip is not rendered in the footer', async ({ page }) => {
     await page.goto('/');
-
-    // Both instances are on this page. If ProjectsBorn ever computes one id
-    // for both, the sections collide and `aria-labelledby` stops naming them
-    // apart for assistive technology.
     await expect(page.locator(PAGE_SECTION)).toHaveCount(1);
     await expect(
       page.locator('section[aria-labelledby="projects-born-title-footer"]'),
-    ).toHaveCount(1);
+    ).toHaveCount(0);
   });
 });
