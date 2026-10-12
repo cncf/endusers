@@ -75,12 +75,17 @@ const FLOORS = {
 // the same two fixture builds measure differently on the major ci.yml pins
 // and on a newer one:
 //
-//   file                                      node 22.21.1   node 26.10.0
+//   file                                      node 22.23.3   node 26.10.0
 //   src/components/MemberDirectory/
-//     DirectoryFreshness.js                     9/13 69.23%   9/10 90.00%
+//     DirectoryFreshness.js                     11/15 73.33%  9/10 90.00%
 //   src/components/PeopleFreshness/index.js     2/3  66.67%    3/4 75.00%
-//   src/components/CNCFProjectCard/index.js   28/28 100.00%  26/26 100.00%
-//   src files (aggregate)                    649/667 97.30% 647/662 97.73%
+//   src/components/CNCFProjectCard/index.js   26/26 100.00%  26/26 100.00%
+//   src files (aggregate)                    645/663 97.29% 647/662 97.73%
+//
+// The recorded column is patch-sensitive, not just major-sensitive: ci.yml pins
+// `node-version: 22`, so the job resolves the newest 22.x on the day of the
+// run (the same sources measured 9/13 and 649/667 on 22.21.1). MEASURED_ON_NODE_MAJOR cannot detect that, so a
+// same-major difference from this table is runtime drift, not a code change.
 //
 // The covered counts barely move; the *denominator* does, because V8 splits
 // the same expression into a different number of ranges. So the lane's
@@ -251,7 +256,7 @@ function checkRuntime(text) {
     MEASURED_ON_NODE_MAJOR,
     `${COVERAGE_JOB} now runs on Node ${pinned}, but the floors in this file were ` +
       `measured on Node ${MEASURED_ON_NODE_MAJOR}. e2e region counts move with the ` +
-      'runtime (DirectoryFreshness is 9/13 on 22 and 9/10 on 26), so the bump has ' +
+      'runtime (DirectoryFreshness is 11/15 on 22.23.3 and 9/10 on 26), so the bump has ' +
       'invalidated them: re-measure with the recipe in CONTRIBUTING.md on the new ' +
       'major, update the table above and any floor that moved, and set ' +
       'MEASURED_ON_NODE_MAJOR in the same change',
