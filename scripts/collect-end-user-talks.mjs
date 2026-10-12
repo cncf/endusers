@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Refresh the 2026 schedule snapshot with npm run collect:end-user-talks.
 // This is the public JSON API embedded by the official LF schedule, not HTML.
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 
 const sourceUrl =
   'https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/';
@@ -41,14 +41,13 @@ function timeLabel(timestamp) {
 for (const session of sessions) {
   const room = rooms.get(session.roomId);
   const names = session.speakers.map((id) => speakers.get(id));
-  if (
+  const missing =
     !session.title ||
     !session.startsAt ||
     !session.endsAt ||
     !room ||
-    !names.length ||
-    names.some((name) => !name)
-  ) {
+    !names.length;
+  if (missing) {
     throw new Error(
       `Official session ${session.id} has incomplete schedule data`,
     );
@@ -99,10 +98,12 @@ const data = {
   talkCount: sessions.length,
   days: [...days.values()],
 };
-writeFileSync(
-  new URL('../data/kubecon-na-2026-end-user-talks.json', import.meta.url),
-  JSON.stringify(data, null, 2) + '\n',
+const outputPath = new URL(
+  '../data/kubecon-na-2026-end-user-talks.json',
+  import.meta.url,
 );
+mkdirSync(new URL('../data', import.meta.url), { recursive: true });
+writeFileSync(outputPath, JSON.stringify(data, null, 2) + '\n');
 console.log(
   `Collected ${data.talkCount} End User Talks across ${data.days.length} days from ${apiUrl}`,
 );

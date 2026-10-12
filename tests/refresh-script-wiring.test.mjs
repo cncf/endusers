@@ -65,6 +65,12 @@ const REFRESH_NOT_RUN_BY_CI = new Map([
       'needs GH_TOKEN; CONTRIBUTING.md and ROADMAP.md schedule its re-runs ' +
       'against launch milestones, not against a cron.',
   ],
+  [
+    'collect:end-user-talks',
+    'mirrors KubeCon NA 2026 Sessionize schedule on demand; the event schedule ' +
+      'is fixed after conference dates (November 2026), so a maintainer re-runs ' +
+      'it manually if schedule changes occur rather than via cron.',
+  ],
 ]);
 
 // Collects every `run:` string across jobs.*.steps[] of one workflow.

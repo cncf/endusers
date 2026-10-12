@@ -21,6 +21,9 @@ scheduled for the main conference on November 10–12.
 - [KubeCon + CloudNativeCon North America 2026](https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/)
 - [Full schedule](https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/)
 
+> This section is reviewed quarterly and after the conference so it never shows
+> a past event as upcoming. Last verified: 2026-10-12.
+
 #### End user talks
 
 <EndUserTalkSchedule />
