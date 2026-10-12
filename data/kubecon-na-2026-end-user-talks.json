@@ -1,0 +1,781 @@
+{
+  "description": "Generated from the official Sessionize API by npm run collect:end-user-talks. Do not hand-edit.",
+  "sourceUrl": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/",
+  "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
+  "category": "End User Programming / End User Talk",
+  "generatedAt": "2026-10-12T19:41:29.093Z",
+  "timezone": "MST (UTC−7)",
+  "talkCount": 83,
+  "days": [
+    {
+      "date": "2026-11-10",
+      "id": "tuesday-november-10",
+      "label": "Tuesday, November 10",
+      "slots": [
+        {
+          "start": "2026-11-10T11:30:00",
+          "end": "2026-11-10T12:00:00",
+          "startLabel": "11:30 AM",
+          "endLabel": "12:00 PM",
+          "talks": [
+            {
+              "id": "1250350",
+              "title": "Saturated by Design - Maximizing Cluster Allocation in On-Premises Kubernetes",
+              "speakers": "Dakota Sullivan, Isaac Wilson",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250350"
+            },
+            {
+              "id": "1202489",
+              "title": "Securing Rural Colorado with Open Source: Running a Student-Led SOC on Kubernetes",
+              "speakers": "Maciej Wal",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1202489"
+            },
+            {
+              "id": "1246200",
+              "title": "Ask Your Platform: Putting AI to Work Where the Questions Live",
+              "speakers": "Anton Alexander, Scott Adams",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1246200"
+            },
+            {
+              "id": "1249749",
+              "title": "So You Want to Build a Platform? You Probably Already Have One",
+              "speakers": "Juho Syrjänen",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1249749"
+            },
+            {
+              "id": "1227395",
+              "title": "Why We Bet the Data Platform on Kubernetes - And How AI Is Changing How We Operate It",
+              "speakers": "Vara Bonthu, Ying Xiong, Rainie Li, Damon Cortesi, Padma Aradhyula",
+              "room": "Salt Palace | Level 1 | 151",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1227395"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-10T12:20:00",
+          "end": "2026-11-10T12:50:00",
+          "startLabel": "12:20 PM",
+          "endLabel": "12:50 PM",
+          "talks": [
+            {
+              "id": "1249997",
+              "title": "Surviving the Churn: Read Replicas and Controllers for Busy Kubernetes Clusters",
+              "speakers": "Ryan Brewster",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1249997"
+            },
+            {
+              "id": "1251252",
+              "title": "Stop Explaining Kubernetes Like a Kubernetes Engineer",
+              "speakers": "Sofia Sarhiri",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1251252"
+            },
+            {
+              "id": "1250865",
+              "title": "What the Docs Don't Tell You: A Telecom's Year Operating Cache-Aware LLM Inference on Kubernetes",
+              "speakers": "YoungJoon Jeong, Seol Heo",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250865"
+            },
+            {
+              "id": "1246033",
+              "title": "When Infrastructure Breaks in Production: How EarnIn Brought Testing to the Full CNCF Stack",
+              "speakers": "Priya Namasivayam",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1246033"
+            },
+            {
+              "id": "1247300",
+              "title": "Will It Scale? Moving Supply Chain Security from Concept to Production",
+              "speakers": "Chad Swenson, Sagar Kundral",
+              "room": "Salt Palace | Level 1 | 151",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247300"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-10T14:50:00",
+          "end": "2026-11-10T15:20:00",
+          "startLabel": "2:50 PM",
+          "endLabel": "3:20 PM",
+          "talks": [
+            {
+              "id": "1239823",
+              "title": "Tracing at Scale: Running a 16 Billion Spans/Hour Pipeline at Nubank",
+              "speakers": "Felipe Araujo, Kaynan Coelho",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1239823"
+            },
+            {
+              "id": "1250961",
+              "title": "Zero to Maintainer in 45 Days: An AI-Assisted Migration of a CNCF Project's Legacy Frontend",
+              "speakers": "Jeff Spahr",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250961"
+            },
+            {
+              "id": "1205589",
+              "title": "Turning Apple Silicon into Production GPU Nodes for LLM Inference on Kubernetes",
+              "speakers": "Christopher Maher",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1205589"
+            },
+            {
+              "id": "1250487",
+              "title": "The New Scaling Matrix: Balancing In-Place Resizing, VPA, HPA and Automation Solutions",
+              "speakers": "Meghana Kaushal, Dolis Sharma",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250487"
+            },
+            {
+              "id": "1247376",
+              "title": "The Operator Calls Are Coming from Inside the Namespace",
+              "speakers": "Justin OLeary",
+              "room": "Salt Palace | Level 1 | 151",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247376"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-10T15:40:00",
+          "end": "2026-11-10T16:10:00",
+          "startLabel": "3:40 PM",
+          "endLabel": "4:10 PM",
+          "talks": [
+            {
+              "id": "1250770",
+              "title": "The SRE Is Not Dead: What AI Taught Us about Missing Context in Kubernetes Incident Response",
+              "speakers": "Muhammed Yunas Chirayath, Ajmal Ali kannu",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250770"
+            },
+            {
+              "id": "1247526",
+              "title": "Kubernetes Anonymous: Confessions of Kubernetes Cargo Cultists",
+              "speakers": "Taylor Thomas, Brooks Townsend",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247526"
+            },
+            {
+              "id": "1208416",
+              "title": "Transforming Retail with AI: From Automation to Autonomous Decisioning",
+              "speakers": "Arunkumar Amaran",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1208416"
+            },
+            {
+              "id": "1243844",
+              "title": "Welcome to Health Check Hell: CRDs, Statuses and Missing Standards",
+              "speakers": "Regina Voloshin, Dag Bjerre Andersen",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1243844"
+            },
+            {
+              "id": "1244963",
+              "title": "Triaging 1,800 Alerts/Month at $0.33 Each: Verkada's MCP Agent on Nine Production Clusters",
+              "speakers": "Rohan Sood, Adrian Ng",
+              "room": "Salt Palace | Level 1 | 151",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1244963"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-10T16:40:00",
+          "end": "2026-11-10T17:10:00",
+          "startLabel": "4:40 PM",
+          "endLabel": "5:10 PM",
+          "talks": [
+            {
+              "id": "1247858",
+              "title": "The Promises We Keep at Scale: A Contract-Driven Guide to Platform SLOs",
+              "speakers": "Vasudev Bongale, Swati Shridhar Nair",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247858"
+            },
+            {
+              "id": "1249724",
+              "title": "Ground Control to Major Tom: We Need your Public Cloud in our Private Cloud",
+              "speakers": "Andrew Block, Mike Wilson",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1249724"
+            },
+            {
+              "id": "1240912",
+              "title": "Zero-Gap GPU Execution: Building Secure, Pre-Warmed Pod Runtimes for High-Velocity AI Agents",
+              "speakers": "Ankit Goyal, Cong Gu",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1240912"
+            },
+            {
+              "id": "1248218",
+              "title": "Agents on the Platform: Four Perspectives on the Conversation We're Already Having in Private",
+              "speakers": "Kasper Borg Nissen, Juraci Paixão Kröhling, Joseph Sandoval, Jed Salazar, Alexa Griffith",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1248218"
+            },
+            {
+              "id": "1250187",
+              "title": "Zero Downtime CNI Migration at Scale: Canal to Cilium Across Hundreds of Production Clusters",
+              "speakers": "Prathamesh Bhope",
+              "room": "Salt Palace | Level 1 | 151",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250187"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-10T17:30:00",
+          "end": "2026-11-10T18:00:00",
+          "startLabel": "5:30 PM",
+          "endLabel": "6:00 PM",
+          "talks": [
+            {
+              "id": "1248216",
+              "title": "Two-Stage OTel Aggregation: Taming Istio Cardinality at 10k-Pod Scale",
+              "speakers": "Evelyn (Chungyu) Chen",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1248216"
+            },
+            {
+              "id": "1226654",
+              "title": "From Consumers to Contributors: How Growing Open Source Members Transformed Our ML Platform Team",
+              "speakers": "Tolga Tuncoglu, Herik Webb",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1226654"
+            },
+            {
+              "id": "1244695",
+              "title": "When the Agent Lost Its Patience: Securing Cloud-Native AI Workflows Against Identity Leakage",
+              "speakers": "Pablo Fredrikson",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1244695"
+            },
+            {
+              "id": "1250789",
+              "title": "Beyond the Cluster Boundary: Sharing GPUs at Scale",
+              "speakers": "Tim Killian",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250789"
+            },
+            {
+              "id": "1246066",
+              "title": "AI-DDoS: How AI-Generated Contributions Are Breaching OSS Communities, and What We Can Do about It",
+              "speakers": "Zixuan Feng, Anita Sarma",
+              "room": "Salt Palace | Level 1 | 151",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1246066"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-11-11",
+      "id": "wednesday-november-11",
+      "label": "Wednesday, November 11",
+      "slots": [
+        {
+          "start": "2026-11-11T11:00:00",
+          "end": "2026-11-11T11:30:00",
+          "startLabel": "11:00 AM",
+          "endLabel": "11:30 AM",
+          "talks": [
+            {
+              "id": "1250627",
+              "title": "Going Cloud Native in Baseball",
+              "speakers": "Matt Dering, Long Nguyen",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250627"
+            },
+            {
+              "id": "1249181",
+              "title": "Edging Closer to AI Assisted Troubleshooting - AI Assisted Dashboard Analysis",
+              "speakers": "Vijay Samuel, Jing Hu",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1249181"
+            },
+            {
+              "id": "1248310",
+              "title": "Anatomy of an Outage: When Bursty ML Workloads Break the Kubernetes Scheduler",
+              "speakers": "Cellan Hall, Jenny Vega, Karol Szuster",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1248310"
+            },
+            {
+              "id": "1244501",
+              "title": "Inside the Inference Load Balancer: Proxy/Controller Patterns for LLM Serving on Kubernetes",
+              "speakers": "Qianru Lao, Lu Zhang",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1244501"
+            },
+            {
+              "id": "1249601",
+              "title": "Time to Learn New Tricks to Improve Performance on DRA-Managed Devices",
+              "speakers": "Alexander Kanevskiy, Sara Qasmi",
+              "room": "Salt Palace | Level 1 | 151",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1249601"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-11T11:50:00",
+          "end": "2026-11-11T12:20:00",
+          "startLabel": "11:50 AM",
+          "endLabel": "12:20 PM",
+          "talks": [
+            {
+              "id": "1251004",
+              "title": "Hardening Kubernetes for GovCloud: A 3-Year Journey to FedRAMP Moderate Authorization",
+              "speakers": "Artur Beznosyuk, Hanhong Gao",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1251004"
+            },
+            {
+              "id": "1247840",
+              "title": "Ship Faster, Ship Safer: A K8s-Native Canary Pipeline for Critical Cluster Services",
+              "speakers": "Youmin Han, Zhuo Zhi",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247840"
+            },
+            {
+              "id": "1247612",
+              "title": "How Anthropic Almost Melted GKE (And the PRs That Saved It)",
+              "speakers": "Maciek Różacki, Jian Cheung",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247612"
+            },
+            {
+              "id": "1250687",
+              "title": "How Podium Ships 30% of PRs with Autonomous K8s Coding Agents",
+              "speakers": "Drew Bowman",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250687"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-11T13:20:00",
+          "end": "2026-11-11T14:20:00",
+          "startLabel": "1:20 PM",
+          "endLabel": "2:20 PM",
+          "talks": [
+            {
+              "id": "1246812",
+              "title": "Beyond HPA: An Explainable, Agentic Autoscaler for Kubernetes",
+              "speakers": "Alexis Ngoga",
+              "room": "Salt Palace | Level 1 | Halls A-C, Halls 1-5",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1246812"
+            },
+            {
+              "id": "1250944",
+              "title": "Snapshot, Replay, Verify: A KWOK CI Pattern for Kubernetes Platform Operators",
+              "speakers": "Dibyo Mukherjee",
+              "room": "Salt Palace | Level 1 | Halls A-C, Halls 1-5",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250944"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-11T14:20:00",
+          "end": "2026-11-11T14:50:00",
+          "startLabel": "2:20 PM",
+          "endLabel": "2:50 PM",
+          "talks": [
+            {
+              "id": "1247684",
+              "title": "How We Are Enabling Feature Flagging At Scale",
+              "speakers": "Juan Bernal",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247684"
+            },
+            {
+              "id": "1250982",
+              "title": "Progressive Delivery for Trust: How Agents Earn the Right to Merge",
+              "speakers": "Darian DeFalco",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250982"
+            },
+            {
+              "id": "1250728",
+              "title": "Hidden Pod Startup Latency: Container Image Pull",
+              "speakers": "Omer Oz",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250728"
+            },
+            {
+              "id": "1249844",
+              "title": "Kubernetes The Hard Way - Live",
+              "speakers": "Lucy Sweet, Sandeep Kanabar",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1249844"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-11T14:48:00",
+          "end": "2026-11-11T14:53:00",
+          "startLabel": "2:48 PM",
+          "endLabel": "2:53 PM",
+          "talks": [
+            {
+              "id": "1247134",
+              "title": "Kubernetes Secrets Were a Bad Idea. Now What?",
+              "speakers": "Maxime Coquerel",
+              "room": "Hyatt Regency | Level 4 | Regency Ballroom B-D",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247134"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-11T15:02:00",
+          "end": "2026-11-11T15:07:00",
+          "startLabel": "3:02 PM",
+          "endLabel": "3:07 PM",
+          "talks": [
+            {
+              "id": "1250015",
+              "title": "Allocating Kubernetes Idle Per-Instance — Letting Scale Do What Fairness Rules Couldn't",
+              "speakers": "Vinicius Krischke",
+              "room": "Hyatt Regency | Level 4 | Regency Ballroom B-D",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250015"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-11T15:10:00",
+          "end": "2026-11-11T15:40:00",
+          "startLabel": "3:10 PM",
+          "endLabel": "3:40 PM",
+          "talks": [
+            {
+              "id": "1250750",
+              "title": "Millions of Events, One Right Order: Financial Data Processing at Intuit",
+              "speakers": "Yashash Lokesh, Sri Harsha Yayi",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250750"
+            },
+            {
+              "id": "1249894",
+              "title": "Many Clusters, One GPU Pool: Locality-Aware Scheduling and Data Delivery With Kueue and Dragonfly",
+              "speakers": "Yiqing Wang, Adam Buran",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1249894"
+            },
+            {
+              "id": "1250470",
+              "title": "Look Before You Leap: Preventing In-Motion K8s Updates in Fleet Robotics",
+              "speakers": "Tom Ingleby, Rian Bogle",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250470"
+            },
+            {
+              "id": "1229970",
+              "title": "No RAG, No Regrets: Letting an LLM Drive 30 EKS Clusters in Production",
+              "speakers": "Trevor Linton",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1229970"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-11T15:16:00",
+          "end": "2026-11-11T15:21:00",
+          "startLabel": "3:16 PM",
+          "endLabel": "3:21 PM",
+          "talks": [
+            {
+              "id": "1250936",
+              "title": "When Agents Talk to Agents: Scaling A2A on Kubernetes Without Drowning in Connections",
+              "speakers": "Shriya Chaitanya Kamat Tarcar",
+              "room": "Hyatt Regency | Level 4 | Regency Ballroom B-D",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250936"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-11T16:10:00",
+          "end": "2026-11-11T16:40:00",
+          "startLabel": "4:10 PM",
+          "endLabel": "4:40 PM",
+          "talks": [
+            {
+              "id": "1250275",
+              "title": "Observability for LLM Inference on Kubernetes",
+              "speakers": "Oscar Castillo, Jeffry Hernández",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250275"
+            },
+            {
+              "id": "1248120",
+              "title": "RBAC as a Platform Capability: Applying Platform Engineering to Kubernetes Access",
+              "speakers": "Sean Corcoran, Erin Walter",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1248120"
+            },
+            {
+              "id": "1251217",
+              "title": "Binary Version Is Not Behavior: Skip-Level Kubernetes Control Plane Upgrades With KEP-4330",
+              "speakers": "Sameer Marulkar",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1251217"
+            },
+            {
+              "id": "1236394",
+              "title": "Quota Isn't Enough: Topology Aware Scheduling on Modern GPU Clusters",
+              "speakers": "Amy Chen, JJ Jordan",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1236394"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-11T17:00:00",
+          "end": "2026-11-11T17:30:00",
+          "startLabel": "5:00 PM",
+          "endLabel": "5:30 PM",
+          "talks": [
+            {
+              "id": "1250239",
+              "title": "One Workload to Rule Them All: Workload Aware Scheduling for Distributed AI Training on Kubernetes",
+              "speakers": "Andrey Velichkevich",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250239"
+            },
+            {
+              "id": "1247455",
+              "title": "Robust CI as a Safety Net: Moving Fast at Scale with AI-Generated GitOps",
+              "speakers": "Arthur Vardevanyan, Jennifer Weir",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247455"
+            },
+            {
+              "id": "1250522",
+              "title": "Pushing beyond the Breaking Point: Linked Runners and TEEs for Frontier AI",
+              "speakers": "David Porter, Evan Sheng",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250522"
+            },
+            {
+              "id": "1247666",
+              "title": "Running Secure Agents at Scale",
+              "speakers": "Carlos Sanchez",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247666"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-11-12",
+      "id": "thursday-november-12",
+      "label": "Thursday, November 12",
+      "slots": [
+        {
+          "start": "2026-11-12T11:00:00",
+          "end": "2026-11-12T11:30:00",
+          "startLabel": "11:00 AM",
+          "endLabel": "11:30 AM",
+          "talks": [
+            {
+              "id": "1247970",
+              "title": "Managing Network Security in Multi-Tenant Environments with Istio and Cilium",
+              "speakers": "Michael Bolot, Zaira Shaikh",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247970"
+            },
+            {
+              "id": "1230488",
+              "title": "Beyond Dashboards: A Semantic Layer for AI-Driven Observability in Kubernetes",
+              "speakers": "Pronnoy Goswami",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1230488"
+            },
+            {
+              "id": "1248305",
+              "title": "What monday.com's 500+ Engineers and AI Agents Have in Common",
+              "speakers": "David Gohberg, Marek Pelka",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1248305"
+            },
+            {
+              "id": "1247103",
+              "title": "Autoscaling at Scale with KEDA",
+              "speakers": "Ali Aqel",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247103"
+            },
+            {
+              "id": "1250494",
+              "title": "Catching Ghosts in the Machine: Hallucination Detection for Observability Agents",
+              "speakers": "Raj Bhensadadia, Prschita Prschita",
+              "room": "Salt Palace | Level 1 | 151",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250494"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-12T11:50:00",
+          "end": "2026-11-12T12:20:00",
+          "startLabel": "11:50 AM",
+          "endLabel": "12:20 PM",
+          "talks": [
+            {
+              "id": "1250086",
+              "title": "From Bearer Tokens to Mesh-Native mTLS: Modernizing Service Identity at Coinbase",
+              "speakers": "Zachary Schwartz, Yair Temkin",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250086"
+            },
+            {
+              "id": "1247749",
+              "title": "From Packets to Paychecks: eBPF-Based Network Cost Attribution at Scale",
+              "speakers": "Aanchal Khandelwal, Brian Ugie",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247749"
+            },
+            {
+              "id": "1250150",
+              "title": "The Scheduling Stack: Real-World Lessons from Anthropic, Anyscale, Google, and CERN",
+              "speakers": "Wojciech Tyczyński, Robert Nishihara, Ricardo Rocha, Kaslin Fields, Decheng Dai",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250150"
+            },
+            {
+              "id": "1250973",
+              "title": "Follow the GPUs: How a Regulated Fortune 100 Serves Customers When No Single Cloud Has Enough",
+              "speakers": "Michael Kinsley, Yuva Peavler",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250973"
+            },
+            {
+              "id": "1250351",
+              "title": "Running Stateful Analytics on Kubernetes: Lessons from Building a Distributed DuckDB Platform",
+              "speakers": "Seth McCombs, Karim Alibhai",
+              "room": "Salt Palace | Level 1 | 151",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250351"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-12T13:50:00",
+          "end": "2026-11-12T14:20:00",
+          "startLabel": "1:50 PM",
+          "endLabel": "2:20 PM",
+          "talks": [
+            {
+              "id": "1228453",
+              "title": "Anthropic’s Kubernetes Scheduler for Frontier AI: What Worked, What Broke",
+              "speakers": "Decheng Dai",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1228453"
+            },
+            {
+              "id": "1249553",
+              "title": "BurritoBot Said Let's Dance, the Platform Said No",
+              "speakers": "Michael Forrester, Whitney Lee",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1249553"
+            },
+            {
+              "id": "1247326",
+              "title": "Frameworkless ML Serving: Scaling to Thousands of Models with KEDA, Pub/Sub, and Native K8s",
+              "speakers": "Robin Deaconu, Neb Jovanovic",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247326"
+            },
+            {
+              "id": "1249027",
+              "title": "Beyond Stateless vs Stateful: A Unified Workload API for Multi-Cluster Kubernetes",
+              "speakers": "Ronak Nathani",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1249027"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-12T14:40:00",
+          "end": "2026-11-12T15:10:00",
+          "startLabel": "2:40 PM",
+          "endLabel": "3:10 PM",
+          "talks": [
+            {
+              "id": "1238002",
+              "title": "Agents Fail. Workflows Recover. Durable Agent Orchestration with Cadence",
+              "speakers": "Diana Zawadzki, Shijie Sheng",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1238002"
+            },
+            {
+              "id": "1247932",
+              "title": "From Fine-Tuning to Production: Scaling Agentic AI at Shopify via Inference Perf",
+              "speakers": "Ashok Chandrasekar, Navjot Singh",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247932"
+            },
+            {
+              "id": "1237843",
+              "title": "From Black-Box to Auditable AI-Grid: A Deterministic Governance Layer with Hybrid Cloud",
+              "speakers": "Fatih E. Nar, Andrew Hendrickson",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1237843"
+            },
+            {
+              "id": "1251145",
+              "title": "From Platform Catalog to Conversational Agent: Wiring AI Into Your Internal Developer Platform",
+              "speakers": "Eduardo Munari, Fabiano Amaral",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1251145"
+            },
+            {
+              "id": "1250985",
+              "title": "The Local AI Renaissance",
+              "speakers": "Jason Stryker",
+              "room": "Salt Palace | Level 1 | 151",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250985"
+            }
+          ]
+        },
+        {
+          "start": "2026-11-12T15:30:00",
+          "end": "2026-11-12T16:00:00",
+          "startLabel": "3:30 PM",
+          "endLabel": "4:00 PM",
+          "talks": [
+            {
+              "id": "1251249",
+              "title": "Spark on Kubernetes: The Gap Between “It Works” and “It Works Well”",
+              "speakers": "Damon Cortesi",
+              "room": "Salt Palace | Level 1 | Grand Ballroom ACE",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1251249"
+            },
+            {
+              "id": "1247100",
+              "title": "Splitting the Monolith at Cloudera - Building Fault-Tolerant Workflows with Cadence",
+              "speakers": "Soma Koltai, Ender Demirkaya",
+              "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247100"
+            },
+            {
+              "id": "1250888",
+              "title": "From Proxy to Platform: Building a Multi-Tenant AI Gateway",
+              "speakers": "Dibyo Mukherjee, Tushar More",
+              "room": "Salt Palace | Level 1 | Grand Ballroom H",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250888"
+            },
+            {
+              "id": "1251069",
+              "title": "From Vibe to Live: Building for the Real World",
+              "speakers": "Trey Caliva, David Biel",
+              "room": "Salt Palace | Level 1 | Grand Ballroom GI",
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1251069"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
