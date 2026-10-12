@@ -1,0 +1,237 @@
+// Guards that every data-refresh script is either run by a workflow or
+// recorded here as a deliberate omission.
+//
+// tests/workflow-scripts.test.mjs already makes that demand of the
+// `validate:*`/`check:*` gates, and keeps the exceptions in its
+// GATES_NOT_RUN_BY_CI table so an unwired gate is distinguishable from one
+// that was never meant to be wired. Nothing makes the same demand of the
+// scripts on the other side of the contract -- the `collect:*`, `fetch:*`,
+// `import:*` and `generate:*` scripts that write the datasets those gates
+// then validate.
+//
+// tests/automation-workflow-ordering.test.mjs names the same four namespaces,
+// but it only constrains the *order* of steps inside a workflow that already
+// runs one of them. A refresh script no workflow runs at all never appears in
+// any job, so that file has nothing to order and stays green. The result is
+// the quietest failure in the set: the collector stops being scheduled, the
+// dataset stops being refreshed, and its validator keeps passing -- because
+// stale data is still valid data. The site just serves last year's numbers.
+//
+// `collect:case-studies` and `collect:launch-metrics` are in that state on
+// purpose today. That decision currently lives only in prose
+// (scripts/collect-case-studies.mjs, docs/resources/case-studies.md,
+// CONTRIBUTING.md), where no test can tell it apart from an accident. The
+// table below puts it on the record, and the staleness guards force each
+// entry to be deleted as its collector is scheduled.
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parse } from 'yaml';
+
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+const workflowDir = join(repoRoot, '.github', 'workflows');
+
+const scripts =
+  JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')).scripts ??
+  {};
+
+const workflowFiles = readdirSync(workflowDir)
+  .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
+  .sort();
+
+// The namespaces package.json already uses for scripts that write data into
+// the repository, matching GENERATOR_NAMESPACES in
+// tests/automation-workflow-ordering.test.mjs so a new collector is bound by
+// both contracts the moment it is added.
+const REFRESH_NAMESPACES = ['collect:', 'fetch:', 'import:', 'generate:'];
+
+// Refresh scripts no workflow runs, keyed by script name with the reason,
+// following the GATES_NOT_RUN_BY_CI convention in
+// tests/workflow-scripts.test.mjs. Delete an entry when its script joins a
+// workflow; the staleness guards below fail if one is left behind.
+const REFRESH_NOT_RUN_BY_CI = new Map([
+  [
+    'collect:case-studies',
+    'mirrors cncf.io case studies on demand; there is no scheduled workflow ' +
+      'yet, so a maintainer re-runs it manually and commits the refreshed ' +
+      'data/case-studies.json (scripts/collect-case-studies.mjs, ' +
+      'docs/resources/case-studies.md).',
+  ],
+  [
+    'collect:launch-metrics',
+    'records a one-time launch baseline rather than a recurring dataset, and ' +
+      'needs GH_TOKEN; CONTRIBUTING.md and ROADMAP.md schedule its re-runs ' +
+      'against launch milestones, not against a cron.',
+  ],
+]);
+
+// Collects every `run:` string across jobs.*.steps[] of one workflow.
+function runCommands(workflowFile) {
+  const parsed = parse(readFileSync(join(workflowDir, workflowFile), 'utf8'));
+  const commands = [];
+  for (const job of Object.values(parsed?.jobs ?? {})) {
+    for (const step of job?.steps ?? []) {
+      if (typeof step?.run === 'string') commands.push(step.run);
+    }
+  }
+  return commands;
+}
+
+// `npm run foo`, `npm run foo -- --bar`, `npm run -s foo`, `npm -s run foo`.
+function npmRunTargets(command) {
+  const targets = [];
+  const pattern = /\bnpm\s+(?:-\S+\s+)*run\s+(?:-\S+\s+)*((?!-)[\w:*.-]+)/g;
+  for (const match of command.matchAll(pattern)) targets.push(match[1]);
+  return targets;
+}
+
+function directWorkflowTargets() {
+  const targets = new Set();
+  for (const file of workflowFiles) {
+    for (const command of runCommands(file)) {
+      for (const target of npmRunTargets(command)) targets.add(target);
+    }
+  }
+  return targets;
+}
+
+// A workflow that runs `npm run import:architectures` also runs whatever that
+// script's own body runs, and package.json chains refresh scripts that way
+// (`import:architectures` ends in `npm run generate:members`). Reading only
+// the workflow text would report every such script as unwired and push the
+// repository into recording exemptions for scripts CI does in fact run.
+function reachableFromWorkflows() {
+  const reached = directWorkflowTargets();
+  const queue = [...reached];
+  while (queue.length > 0) {
+    const target = queue.pop();
+    const body = scripts[target];
+    if (typeof body !== 'string') continue;
+    for (const next of npmRunTargets(body)) {
+      if (reached.has(next)) continue;
+      reached.add(next);
+      queue.push(next);
+    }
+  }
+  return reached;
+}
+
+function refreshScripts() {
+  return Object.keys(scripts)
+    .filter((name) =>
+      REFRESH_NAMESPACES.some((namespace) => name.startsWith(namespace)),
+    )
+    .sort();
+}
+
+test('every refresh script is run by a workflow or recorded as exempt', () => {
+  const reached = reachableFromWorkflows();
+  const unwired = refreshScripts().filter(
+    (name) => !reached.has(name) && !REFRESH_NOT_RUN_BY_CI.has(name),
+  );
+  assert.deepEqual(
+    unwired,
+    [],
+    'refresh scripts defined in package.json that no workflow runs; either ' +
+      'add a step for them or record the omission in REFRESH_NOT_RUN_BY_CI ' +
+      'with a reason',
+  );
+});
+
+test('every refresh script this suite recognises is a real script', () => {
+  // Pins the guard above to evidence rather than to spelling: if the filter
+  // stopped matching anything, the assertion would pass vacuously.
+  const refresh = refreshScripts();
+  assert.ok(
+    refresh.includes('collect:metrics') &&
+      refresh.includes('fetch:community-people') &&
+      refresh.includes('import:architectures'),
+    `expected the known refresh scripts to be recognised, got ${refresh.join(', ')}`,
+  );
+});
+
+test('the scheduled collectors are detected as wired', () => {
+  // The other half of the vacuity check: a detector that reached nothing would
+  // satisfy the staleness guards while reporting every script as unwired.
+  const reached = reachableFromWorkflows();
+  for (const name of [
+    'collect:metrics',
+    'collect:radar-reports',
+    'fetch:community-people',
+    'collect:enduser-members',
+    'import:architectures',
+  ]) {
+    assert.ok(reached.has(name), `expected a workflow to run ${name}`);
+  }
+});
+
+test('a refresh script chained from another counts as wired', () => {
+  // `generate:members` appears in no workflow: import-architectures.yml runs
+  // `import:architectures`, whose package.json body runs it. Without the
+  // transitive step this suite would demand an exemption for a script CI runs
+  // on every architecture import.
+  assert.ok(
+    !directWorkflowTargets().has('generate:members'),
+    'generate:members is expected to be reached only through another script; ' +
+      'if a workflow now runs it directly, this guard no longer proves that ' +
+      'chained scripts are followed and should be re-pointed',
+  );
+  assert.ok(
+    reachableFromWorkflows().has('generate:members'),
+    'generate:members is chained from import:architectures in package.json ' +
+      'and must be followed there',
+  );
+});
+
+test('every recorded exemption still names a defined script', () => {
+  const stale = [...REFRESH_NOT_RUN_BY_CI.keys()].filter(
+    (name) => !(name in scripts),
+  );
+  assert.deepEqual(
+    stale,
+    [],
+    'REFRESH_NOT_RUN_BY_CI names scripts package.json no longer defines',
+  );
+});
+
+test('every recorded exemption carries a reason', () => {
+  const unexplained = [...REFRESH_NOT_RUN_BY_CI.entries()]
+    .filter(([, reason]) => typeof reason !== 'string' || reason.trim() === '')
+    .map(([name]) => name);
+  assert.deepEqual(
+    unexplained,
+    [],
+    'exemptions recorded without saying why the script is not run in CI',
+  );
+});
+
+test('every recorded exemption names a refresh script', () => {
+  // An exemption for something outside the four namespaces would never be
+  // consulted by the guard above, so it would sit here reading as a decision
+  // that is not actually in force.
+  const outside = [...REFRESH_NOT_RUN_BY_CI.keys()].filter(
+    (name) => !refreshScripts().includes(name),
+  );
+  assert.deepEqual(
+    outside,
+    [],
+    'REFRESH_NOT_RUN_BY_CI names scripts outside the refresh namespaces',
+  );
+});
+
+test('no recorded exemption names a script a workflow already runs', () => {
+  // An exemption that is no longer true reads as a standing decision not to
+  // schedule something CI does in fact run, and would silently absorb a later
+  // removal of that step.
+  const reached = reachableFromWorkflows();
+  const contradicted = [...REFRESH_NOT_RUN_BY_CI.keys()].filter((name) =>
+    reached.has(name),
+  );
+  assert.deepEqual(
+    contradicted,
+    [],
+    'REFRESH_NOT_RUN_BY_CI records scripts a workflow runs; delete the entry',
+  );
+});
