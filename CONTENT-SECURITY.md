@@ -133,12 +133,12 @@ The inline-element list above is matched exactly as written, in lower case. MDX
 reads a lower-case tag name as an HTML element and any other casing as a
 _component_ reference, so `<B>` is not the inert `<b>` the list allows — it
 compiles to a lookup of a component named `B` that nothing defines, and the
-build fails while prerendering the page. Write these elements in lower case.
+build fails while rendering the page. Write these elements in lower case.
 
 A `style` attribute is rejected on every element. React requires `style` to be
 an object rather than a string, so `style="..."` (and `style={"..."}`) fails
-while prerendering, and the object form `style={{ ... }}` is a braced
-expression, which is rejected above. Use the stylesheet-backed markup instead.
+while rendering, and the object form `style={{ ... }}` is a braced expression,
+which is rejected above. Use the stylesheet-backed markup instead.
 
 Image references in page bodies are rewritten during import: relative paths are
 scoped to the architecture's own asset directory, and an image whose destination
