@@ -89,7 +89,7 @@
     "@docusaurus/preset-classic": "3.10.2",
     "@mdx-js/react": "^3.1.1",
     "clsx": "^2.1.1",
-    "css-tree": "^2.3.1",
+    "css-tree": "^3.2.1",
     "docusaurus-plugin-search-local": "^2.1.2",
     "mdast-util-from-markdown": "^2.1.0",
     "mdast-util-gfm": "^3.1.0",
