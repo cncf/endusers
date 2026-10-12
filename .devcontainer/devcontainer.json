@@ -46,7 +46,7 @@
   // devcontainer.json image, so a digest there would freeze the base out of
   // upstream security rebuilds with nothing to refresh it.
   "features": {
-    "ghcr.io/devcontainers/features/node:1.7.1": {
+    "ghcr.io/devcontainers/features/node:2.1.1": {
       "version": "22"
     },
     "ghcr.io/devcontainers/features/github-cli:1.1.3": {}
