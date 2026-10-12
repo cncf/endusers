@@ -139,9 +139,18 @@ const EXPECTED = new Map([
     },
   ],
   [
+    'data-no-revision/members.json',
+    {
+      why: "clears sources.landscape.sourceUrl to reach DirectoryFreshness's plain-text 'cncf/landscape' arm; validate-members.mjs holds that field to the pinned landscape snapshot",
+      adds: [
+        'members.json.sources.landscape: landscape provenance must match enduser-landscape.json',
+      ],
+    },
+  ],
+  [
     'data-no-revision/metrics.json',
     {
-      why: 'clears sources.architectures.revision to reach the absent-revision guard in ReferenceArchitectures; the gate requires that revision',
+      why: "clears sources.architectures.revision to reach the absent-revision guard in ReferenceArchitectures, and sources.architectures.repository to reach DirectoryFreshness's plain-text 'cncf/architecture' arm; the gate requires that revision",
       adds: ['metrics.json: source revisions are required'],
     },
   ],
