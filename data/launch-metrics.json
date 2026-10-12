@@ -1,7 +1,7 @@
 {
   "generated": true,
-  "generatedAt": "2026-09-21T18:59:10.436Z",
-  "capturedAt": "2026-09-21T18:59:10.436Z",
+  "generatedAt": "2026-10-02T16:32:39.180Z",
+  "capturedAt": "2026-10-02T16:32:39.180Z",
   "checkpoint": {
     "label": "W-6 pre-launch checkpoint (LAUNCH.md)",
     "targetDate": "2026-09-28",
@@ -15,7 +15,7 @@
       "baseline": 0,
       "target90Day": 50,
       "sourceUrl": "https://github.com/cncf/endusers/stargazers",
-      "collectedAt": "2026-09-21T18:59:10.436Z"
+      "collectedAt": "2026-10-02T16:32:39.180Z"
     },
     {
       "id": "github-watchers",
@@ -23,7 +23,7 @@
       "baseline": 0,
       "target90Day": 10,
       "sourceUrl": "https://github.com/cncf/endusers/watchers",
-      "collectedAt": "2026-09-21T18:59:10.436Z"
+      "collectedAt": "2026-10-02T16:32:39.180Z"
     },
     {
       "id": "github-forks",
@@ -31,7 +31,7 @@
       "baseline": 2,
       "target90Day": 5,
       "sourceUrl": "https://github.com/cncf/endusers/forks",
-      "collectedAt": "2026-09-21T18:59:10.436Z"
+      "collectedAt": "2026-10-02T16:32:39.180Z"
     },
     {
       "id": "new-contributors-since-baseline",
@@ -39,7 +39,7 @@
       "baseline": 0,
       "target90Day": 5,
       "sourceUrl": "https://github.com/cncf/endusers/graphs/contributors",
-      "collectedAt": "2026-09-21T18:59:10.436Z",
+      "collectedAt": "2026-10-02T16:32:39.180Z",
       "note": "Baseline is 0 by definition (a delta metric). priorContributorLogins is the snapshot of existing human contributor logins at capture time; the 90-day re-measurement counts human contributor logins present then but absent from this list.",
       "priorContributorLogins": [
         "AmyJuneH",
@@ -94,7 +94,7 @@
       "baseline": 0,
       "target90Day": 3,
       "sourceUrl": "https://github.com/cncf/endusers/issues?q=is%3Aissue+label%3A%22good+first+issue%22",
-      "collectedAt": "2026-09-21T18:59:10.436Z"
+      "collectedAt": "2026-10-02T16:32:39.180Z"
     }
   ]
 }

@@ -62,9 +62,11 @@ The TAB-led
 describes how to submit a real-world architecture for peer and TAB review.
 Browse the [architecture catalog](/architectures/).
 
-Submissions can begin with a
-[GitHub issue using the reference architecture template](https://github.com/cncf/tab/issues/new?template=reference-architecture.yml),
-or with the
+Submissions can begin with the
+[in-repo reference architecture template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml),
+or through the
+[CNCF TAB issue template](https://github.com/cncf/tab/issues/new?template=reference-architecture.yml)
+and
 [pull request template](https://github.com/cncf/tab/blob/main/operations/templates/template-reference-architecture.md)
 when the material is ready.
 

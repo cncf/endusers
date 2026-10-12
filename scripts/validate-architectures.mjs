@@ -6,6 +6,7 @@ import { reportAndExit } from './lib/validate-utils.mjs';
 import { findActiveContent } from './lib/mdx-active-content.mjs';
 import {
   REPO_AUTHORED_PAGES,
+  isReservedPageId,
   listArchitecturePages,
   pageCatalogId,
 } from './lib/architecture-pages.mjs';
@@ -64,6 +65,14 @@ for (const record of records) {
       message:
         'id must be a lowercase slug matching /^[a-z0-9][a-z0-9-]*$/; it is used as a route segment and as a filesystem path component',
     });
+  if (isReservedPageId(record.id))
+    errors.push({
+      path: record.id,
+      severity: 'error',
+      message:
+        'id is reserved for a repo-authored page; a record claiming it overwrites docs/architectures/' +
+        `${record.id}.md, which the active-content scan below skips — so the imported body would publish unscanned`,
+    });
   if (ids.has(record.id))
     errors.push({
       path: record.id,
@@ -113,10 +122,13 @@ for (const page of irregular)
     path: page,
     severity: 'error',
     message:
-      'page must be a regular file; a symlinked page is published but cannot be gated',
+      'page must be a regular file; a symlinked page, or a symlinked directory of pages, is published but cannot be gated',
   });
 
 for (const page of pages) {
+  // Safe only because no imported record can claim a repo-authored id: the
+  // reserved-id check above rejects the catalog record an importer writes
+  // alongside the page, so nothing imported ever reaches this `continue`.
   if (REPO_AUTHORED_PAGES.has(page)) continue;
 
   const catalogId = pageCatalogId(page);

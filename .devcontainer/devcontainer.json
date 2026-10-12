@@ -28,10 +28,27 @@
   "containerUser": "vscode",
   "postCreateCommand": "npm ci",
   "waitFor": "postCreateCommand", // otherwise automated jest tests fail
+  // Feature ids are fully qualified and pinned to an exact published version.
+  // A bare id such as "node" is the deprecated pre-OCI shorthand: the CLI
+  // silently rewrites it to "ghcr.io/devcontainers/features/<id>:1" (a
+  // hardcoded back-compat major tag), warns, and fails outright when a tool
+  // passes --skip-feature-auto-mapping. A feature's install.sh runs as root
+  // while the container is built, so an unpinned id is third-party root code
+  // chosen at build time -- the same exposure the SHA pins in
+  // .github/workflows/** and the integrity hashes in package-lock.json close.
+  // The versions below are the ones the shorthand already resolved to
+  // (ghcr.io/devcontainers/features/node:1 and github-cli:1 carry these exact
+  // manifest digests), so this pins today's bytes rather than moving them.
+  // Dependabot's "devcontainers" ecosystem keeps them current; see
+  // .github/dependabot.yml.
+  //
+  // "image" above stays on a tag deliberately: no Dependabot updater covers a
+  // devcontainer.json image, so a digest there would freeze the base out of
+  // upstream security rebuilds with nothing to refresh it.
   "features": {
-    "node": {
+    "ghcr.io/devcontainers/features/node:2.1.1": {
       "version": "22"
     },
-    "github-cli": "latest"
+    "ghcr.io/devcontainers/features/github-cli:1.1.3": {}
   }
 }

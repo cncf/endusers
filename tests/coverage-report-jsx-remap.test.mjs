@@ -230,3 +230,86 @@ test('countsFromLineVerdict leaves a non-executable line unattributed', () => {
   });
   assert.deepEqual([...counts], [-1, -1, -1]);
 });
+
+test('decodeMappings skips an empty field in a generated line', () => {
+  // The source map v3 grammar permits an empty field between two commas;
+  // `mappings()` above cannot emit one, so this pins the raw form. Decoding
+  // it as a segment would consume `undefined` in the VLQ reader and push a
+  // segment with a NaN generated column, silently shifting every later
+  // segment on the line.
+  const encoded = ['AAAA', '', 'CACC'].join(',');
+  assert.deepEqual(decodeMappings(encoded), [
+    [
+      { genColumn: 0, sourceLine: 0, sourceColumn: 0 },
+      { genColumn: 1, sourceLine: 1, sourceColumn: 1 },
+    ],
+  ]);
+});
+
+test('decodeMappings skips a segment that carries no source position', () => {
+  // A one-field segment is a generated column with no source file, line or
+  // column behind it -- the compiler emitted that text from nothing. It must
+  // not contribute a segment, and it must not consume the source line and
+  // column deltas belonging to the segment after it.
+  const encoded = ['AAAA', 'C', 'CACA'].join(',');
+  assert.deepEqual(decodeMappings(encoded), [
+    [
+      { genColumn: 0, sourceLine: 0, sourceColumn: 0 },
+      { genColumn: 2, sourceLine: 1, sourceColumn: 0 },
+    ],
+  ]);
+});
+
+test('remapJsxLineCoverage scores the final generated line when the code has no trailing newline', () => {
+  // swc does not always terminate its output with a newline. The last
+  // generated line then has no following line start to bound it, and the
+  // remap has to fall back to the end of the text -- otherwise the line is
+  // measured over an empty range, reads as non-executable, and its original
+  // line silently disappears from the report.
+  const generatedCode = 'const a = 1;\nconst b = 2;';
+  const counts = countsForScript(
+    {
+      functions: [
+        {
+          ranges: [
+            { startOffset: 0, endOffset: generatedCode.length, count: 1 },
+            { startOffset: 13, endOffset: generatedCode.length, count: 0 },
+          ],
+        },
+      ],
+    },
+    generatedCode.length,
+  );
+  const map = { mappings: mappings([[[0, 0, 0]], [[0, 1, 0]]]) };
+  const verdict = remapJsxLineCoverage(generatedCode, counts, map);
+  assert.deepEqual(verdict.executable, [true, true]);
+  assert.deepEqual(verdict.covered, [true, false]);
+});
+
+test('remapJsxLineCoverage ignores a generated offset that no range recorded', () => {
+  // countsForScript() leaves -1 at every offset outside V8's ranges, which
+  // means "not executable here" rather than "executed zero times". Counting
+  // it as executable would report an original line as uncovered on the
+  // strength of text V8 never measured.
+  const generatedCode = 'ab;\ncd;\n';
+  const counts = countsForScript(
+    {
+      // The outermost range starts at offset 4, so the whole of generated
+      // line 0 is unrecorded while line 1 ran.
+      functions: [
+        {
+          ranges: [
+            { startOffset: 4, endOffset: generatedCode.length, count: 1 },
+          ],
+        },
+      ],
+    },
+    generatedCode.length,
+  );
+  assert.equal(counts[0], -1);
+  const map = { mappings: mappings([[[0, 0, 0]], [[0, 1, 0]]]) };
+  const verdict = remapJsxLineCoverage(generatedCode, counts, map);
+  assert.equal(verdict.executable[0], false);
+  assert.equal(verdict.executable[1], true);
+  assert.equal(verdict.covered[1], true);
+});

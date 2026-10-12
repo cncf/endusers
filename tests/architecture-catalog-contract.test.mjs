@@ -21,6 +21,17 @@ const assetsRoot = join(repoRoot, 'static/img/architectures');
 
 const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
 
+// Two import paths feed the catalog with different provenance shapes.
+// scripts/import-architectures.mjs pins each record to an upstream
+// cncf/architecture commit (`sourceCommit` + a commit-pinned `sourceUrl`).
+// scripts/import-architecture-issue.mjs turns a submission issue into a
+// record whose source IS the issue (`sourceIssue` + the issue URL); there is
+// no upstream commit to pin, so the commit-pinning assertions below apply
+// only to records without `sourceIssue`.
+function isIssueSourced(record) {
+  return typeof record?.sourceIssue === 'number';
+}
+
 const REQUIRED_STRING_FIELDS = [
   'id',
   'title',
@@ -64,7 +75,10 @@ test('catalog.json is a non-empty array of uniquely identified records', () => {
 
 test('every catalog record carries the fields the site renders', () => {
   for (const record of catalog) {
-    for (const field of REQUIRED_STRING_FIELDS) {
+    const requiredStrings = isIssueSourced(record)
+      ? REQUIRED_STRING_FIELDS.filter((field) => field !== 'sourceCommit')
+      : REQUIRED_STRING_FIELDS;
+    for (const field of requiredStrings) {
       assert.equal(
         typeof record[field],
         'string',
@@ -99,6 +113,7 @@ test('every catalog record carries the fields the site renders', () => {
 
 test('provenance pins an upstream commit that the source URL points at', () => {
   for (const record of catalog) {
+    if (isIssueSourced(record)) continue;
     assert.match(
       record.sourceCommit,
       /^[0-9a-f]{40}$/,
@@ -111,6 +126,21 @@ test('provenance pins an upstream commit that the source URL points at', () => {
     assert.ok(
       record.sourceUrl.includes(record.sourceCommit),
       `${record.id}: sourceUrl must be pinned to sourceCommit`,
+    );
+  }
+});
+
+test('issue-submitted records cite the submission issue as their source', () => {
+  for (const record of catalog) {
+    if (!isIssueSourced(record)) continue;
+    assert.ok(
+      Number.isInteger(record.sourceIssue) && record.sourceIssue > 0,
+      `${record.id}: sourceIssue must be a positive issue number`,
+    );
+    assert.equal(
+      record.sourceUrl,
+      `https://github.com/cncf/endusers/issues/${record.sourceIssue}`,
+      `${record.id}: issue-submitted record sourceUrl must be its submission issue`,
     );
   }
 });
@@ -184,10 +214,17 @@ test('doc frontmatter reuses the record title and labels the sidebar', () => {
 test('each doc page attributes the revision its record was imported from', () => {
   for (const record of catalog) {
     const body = readFileSync(docPath(record.id), 'utf8');
-    assert.ok(
-      body.includes(record.sourceCommit),
-      `${record.id}: doc page does not cite sourceCommit ${record.sourceCommit}`,
-    );
+    if (isIssueSourced(record)) {
+      assert.ok(
+        body.includes(`issues/${record.sourceIssue}`),
+        `${record.id}: doc page does not cite submission issue #${record.sourceIssue}`,
+      );
+    } else {
+      assert.ok(
+        body.includes(record.sourceCommit),
+        `${record.id}: doc page does not cite sourceCommit ${record.sourceCommit}`,
+      );
+    }
     assert.match(
       body,
       /creativecommons\.org\/licenses\/by\/4\.0\//,

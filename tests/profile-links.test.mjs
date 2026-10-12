@@ -79,34 +79,23 @@ test('profileUrl returns null for a missing handle', () => {
   assert.equal(profileUrl(undefined, 'twitter'), null);
 });
 
-// profileUrl resolves its base through `PROFILE_BASES[type] ?? PROFILE_BASES.twitter`.
-// Every call site in src/components/CommunityPeople/index.js passes one of the
-// three known literals, so the `??` fallback arm had never been evaluated by
-// the suite and the branch showed as uncovered.
-test('profileUrl falls back to the twitter base for an unrecognised type', () => {
-  assert.equal(
-    profileUrl('castrojo', 'mastodon'),
-    'https://twitter.com/castrojo',
-  );
-  assert.equal(profileUrl('castrojo'), 'https://twitter.com/castrojo');
-  assert.equal(profileUrl('castrojo', null), 'https://twitter.com/castrojo');
-});
-
-test('the unrecognised-type fallback still percent-encodes the handle', () => {
-  assert.equal(
-    profileUrl('../../attacker', 'mastodon'),
-    'https://twitter.com/..%2F..%2Fattacker',
-  );
+// profileUrl resolves its base through a null-prototype lookup and returns
+// null for anything that is not one of the three known networks: a silent
+// fallback base would link the handle to the wrong site.
+test('profileUrl returns null for an unrecognised type', () => {
+  assert.equal(profileUrl('castrojo', 'mastodon'), null);
+  assert.equal(profileUrl('castrojo'), null);
+  assert.equal(profileUrl('castrojo', null), null);
 });
 
 // PROFILE_BASES is a null-prototype map precisely so a `type` naming an
-// Object.prototype member (e.g. 'constructor') misses and falls back to the
-// twitter base instead of resolving to an inherited value (#504).
+// Object.prototype member (e.g. 'constructor') misses and is rejected
+// instead of resolving to an inherited value (#504).
 test('profileUrl treats an inherited Object.prototype key as unrecognised', () => {
   for (const inherited of ['constructor', 'toString', 'valueOf']) {
     assert.equal(
       profileUrl('castrojo', inherited),
-      'https://twitter.com/castrojo',
+      null,
       `type="${inherited}" must not resolve through Object.prototype`,
     );
   }

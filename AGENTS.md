@@ -37,7 +37,7 @@ Before opening a PR, read
 [`CONTRIBUTING.md#making-changes`](CONTRIBUTING.md#making-changes) for the full
 fork/branch/PR process. Two CI-enforced requirements to note up front: the
 "Validate repository" check runs `npm run test:unit:coverage:check` (coverage
-thresholds 97% lines / 99% source / 93% regions / 97% source regions) on every
+thresholds 99% lines / 100% source / 96% regions / 100% source regions) on every
 PR, and every commit must carry a DCO `Signed-off-by` trailer (`git commit -s`)
 or CI will fail the PR.
 
@@ -49,12 +49,13 @@ or CI will fail the PR.
 - **Start Dev Server**: `npm run docus:start`
 - **Build**: `npm run build`
 - **Unit Tests**: `npm run test:unit:coverage:check` — required "Validate
-  repository" CI check on every PR; enforces coverage thresholds (97% lines /
-  99% source / 93% regions / 97% source regions). `npm run test:unit` alone
-  skips the coverage gate.
+  repository" CI check on every PR; enforces coverage thresholds (99% lines /
+  100% source / 96% regions / 100% source regions), plus separate floors for the
+  `tests/tools/` harness (100% lines / 99% regions, 98% regions per harness
+  file). `npm run test:unit` alone skips the coverage gate.
 - **End-to-end Tests**: required "End-to-end tests" CI check on every PR. Needs
   a production build first, then a one-time browser install:
-  `npm run build:production && npx playwright install chromium && npm run test:e2e`.
+  `npm run build:production && npx playwright install --with-deps chromium && npm run test:e2e`.
   Specs live in `tests/e2e/`; the suite serves `build/` on `localhost:3000`
   (override with `E2E_PORT`) and does not rebuild it for you.
 - **Data Changes**: Data files under `/data/` have their own validators; see the
@@ -75,9 +76,9 @@ or CI will fail the PR.
 - **Lazy Loading**: Use the `docs/skills/` manifest to discover detailed
   instructions for specific tasks (e.g., blog posts, documentation updates).
 - **Structure**: Maintain Docusaurus file layout and sidebar configurations
-  (`sidebars.js`). Single-page sections (practitioners, events, metrics)
-  intentionally have no sidebar; multi-page sections (architectures, community
-  which includes awards and members, resources) do.
+  (`sidebars.js`). Single-page sections (practitioners, events, metrics) and
+  reference architectures intentionally have no sidebar; multi-page sections
+  (community which includes awards and members, resources) do.
 - **Facts**: Verify CNCF facts (award winners, TAB scope, architecture counts)
   against authoritative sources: cncf/tab, cncf/architecture, cncf/landscape,
   and cncf.io announcements. Never assert numbers without a source.

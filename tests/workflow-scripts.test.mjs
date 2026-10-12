@@ -56,6 +56,31 @@ test('every workflow parses as YAML and declares at least one job', () => {
   }
 });
 
+// GitHub silently drops a job-level `if:` that references a context it
+// doesn't expose there rather than failing loudly: `env` (populated only once
+// a job's steps start running) isn't among them, so `jobs.<id>.if` referencing
+// it never evaluates truthy and the job never runs, on any trigger. This bit
+// #813: an `architecture-ready` label never started the submission job.
+// https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
+function envContextJobs(parsed) {
+  return Object.entries(parsed?.jobs ?? {})
+    .filter(([, job]) => typeof job?.if === 'string' && /\benv\./.test(job.if))
+    .map(([jobName]) => jobName);
+}
+
+test('no job-level `if:` references the env context', () => {
+  const offenders = workflowFiles.flatMap((file) =>
+    envContextJobs(parse(readFileSync(join(workflowDir, file), 'utf8'))).map(
+      (jobName) => `${file}:${jobName}`,
+    ),
+  );
+  assert.deepEqual(
+    offenders,
+    [],
+    'job-level `if:` cannot see the env context; inline the literal instead',
+  );
+});
+
 test('every `npm run` in a workflow names a defined package.json script', () => {
   const missing = [];
   for (const file of workflowFiles) {
@@ -82,32 +107,120 @@ test('every `npm run` inside a package.json script names a defined script', () =
   assert.deepEqual(missing, [], 'undefined scripts invoked by other scripts');
 });
 
-test('every `node scripts/...` target in package.json exists on disk', () => {
-  const missing = [];
-  for (const [name, body] of Object.entries(scripts)) {
-    for (const match of body.matchAll(/\bnode\s+(scripts\/[\w./-]+)/g)) {
-      if (!existsSync(join(repoRoot, match[1]))) {
-        missing.push(`${name} -> ${match[1]}`);
-      }
+// `node scripts/...` and `-c .dotfile` references, paired with the script that
+// names them. Collecting references separately from resolving them is what
+// lets the reporting arm below be driven by a test: the repository is expected
+// to resolve every reference, so a guard that only ever scans the real tree
+// never executes the branch that reports a broken one.
+function scriptFileRefs(scriptBodies) {
+  return referencesMatching(scriptBodies, /\bnode\s+(scripts\/[\w./-]+)/g);
+}
+
+function linterConfigRefs(scriptBodies) {
+  return referencesMatching(
+    scriptBodies,
+    /(?:^|\s)(?:-c|--config)\s+(\.[\w.-]+)/g,
+  );
+}
+
+function referencesMatching(scriptBodies, pattern) {
+  const refs = [];
+  for (const [name, body] of Object.entries(scriptBodies)) {
+    for (const match of body.matchAll(pattern)) {
+      refs.push({ name, path: match[1] });
     }
   }
-  assert.deepEqual(missing, [], 'package.json scripts point at missing files');
+  return refs;
+}
+
+function unresolved(refs, exists) {
+  return refs
+    .filter(({ path }) => !exists(path))
+    .map(({ name, path }) => `${name} -> ${path}`);
+}
+
+const onDisk = (path) => existsSync(join(repoRoot, path));
+
+test('every `node scripts/...` target in package.json exists on disk', () => {
+  assert.deepEqual(
+    unresolved(scriptFileRefs(scripts), onDisk),
+    [],
+    'package.json scripts point at missing files',
+  );
 });
 
 test('every config file passed to a linter in package.json exists', () => {
   // A missing dotfile here makes `npm run check` fail on a fresh clone while
   // every unit test still passes, because no test runs the linters.
-  const missing = [];
-  for (const [name, body] of Object.entries(scripts)) {
-    for (const match of body.matchAll(
-      /(?:^|\s)(?:-c|--config)\s+(\.[\w.-]+)/g,
-    )) {
-      if (!existsSync(join(repoRoot, match[1]))) {
-        missing.push(`${name} -> ${match[1]}`);
-      }
-    }
-  }
-  assert.deepEqual(missing, [], 'linter config files referenced but absent');
+  assert.deepEqual(
+    unresolved(linterConfigRefs(scripts), onDisk),
+    [],
+    'linter config files referenced but absent',
+  );
+});
+
+// The three guards above pass by finding nothing, so on a healthy repository
+// their reporting arms never execute and nothing proves they would fire. Each
+// case below drives one detector with a synthetic input carrying the exact
+// defect it exists to catch, and with a clean one, so a detector that silently
+// stopped matching fails here instead of passing everywhere.
+test('the env-context guard names the job whose `if:` reads env', () => {
+  // The shape of #813: a job gated on a label it reads through `env`, which
+  // GitHub does not expose to `jobs.<id>.if`.
+  const broken = parse(`
+jobs:
+  import:
+    if: contains(github.event.pull_request.labels.*.name, env.READY_LABEL)
+    runs-on: ubuntu-24.04
+  unrelated:
+    runs-on: ubuntu-24.04
+`);
+  assert.deepEqual(envContextJobs(broken), ['import']);
+
+  const fixed = parse(`
+jobs:
+  import:
+    if: contains(github.event.pull_request.labels.*.name, 'architecture-ready')
+    runs-on: ubuntu-24.04
+`);
+  assert.deepEqual(envContextJobs(fixed), []);
+  assert.deepEqual(envContextJobs({}), []);
+});
+
+test('the reference guards report a reference that resolves to nothing', () => {
+  const synthetic = {
+    'collect:metrics': 'node scripts/collect-metrics.mjs',
+    'check:spelling': 'npx cspell --no-progress -c .cspell.yml docs *.md',
+    build: 'BUILD_ENV=dev npm run _build',
+  };
+
+  assert.deepEqual(scriptFileRefs(synthetic), [
+    { name: 'collect:metrics', path: 'scripts/collect-metrics.mjs' },
+  ]);
+  assert.deepEqual(linterConfigRefs(synthetic), [
+    { name: 'check:spelling', path: '.cspell.yml' },
+  ]);
+
+  // Nothing on disk: every reference is reported, with the script that made it.
+  assert.deepEqual(
+    unresolved(scriptFileRefs(synthetic), () => false),
+    ['collect:metrics -> scripts/collect-metrics.mjs'],
+  );
+  assert.deepEqual(
+    unresolved(linterConfigRefs(synthetic), () => false),
+    ['check:spelling -> .cspell.yml'],
+  );
+
+  // Everything on disk: the same inputs report nothing, so the arm above is
+  // the resolver answering rather than the scanner matching indiscriminately.
+  assert.deepEqual(
+    unresolved(scriptFileRefs(synthetic), () => true),
+    [],
+  );
+  assert.deepEqual(
+    unresolved(linterConfigRefs(synthetic), () => true),
+    [],
+  );
 });
 
 test('every scripts/*.mjs entry point is reachable from a package.json script', () => {
@@ -202,6 +315,83 @@ test('the Playwright end-to-end suite runs in some workflow', () => {
   assert.ok(runsIt, 'no workflow runs `npm run test:e2e`');
 });
 
+test('browser coverage is isolated in a visible gating job with a source floor', () => {
+  const workflow = parse(readFileSync(join(workflowDir, 'ci.yml'), 'utf8'));
+  const required = workflow.jobs?.e2e;
+  const coverage = workflow.jobs?.['e2e-coverage'];
+  assert.ok(required, 'required e2e job is missing');
+  assert.ok(coverage, 'e2e coverage job is missing');
+  // #990: the reporter supports --check-source, but an unwired threshold and a
+  // continue-on-error job meant browser coverage was measured and never
+  // enforced. The job must fail the run, and the report command must carry
+  // the floor, or the gate is a summary nobody has to read.
+  assert.equal(
+    coverage['continue-on-error'],
+    undefined,
+    'e2e-coverage must gate the run; see ci-gating-jobs.test.mjs',
+  );
+
+  const coverageCommands = (coverage.steps ?? [])
+    .map((step) => step.run)
+    .filter((run) => typeof run === 'string')
+    .join('\n');
+  assert.match(coverageCommands, /npm run build:e2e:coverage/);
+  assert.match(coverageCommands, /npm run test:e2e:coverage/);
+  assert.match(coverageCommands, /npm run report:e2e:coverage/);
+  assert.match(
+    coverageCommands,
+    /--check-source\s+100\b/,
+    'the e2e coverage report must gate on --check-source 100',
+  );
+  // #1026: the line map folds every statement on a line to one bit, so an
+  // uncovered ternary arm or short-circuit that shares a line with covered
+  // code is invisible to --check-source. The region floor is the granularity
+  // the line gate cannot give. The gate landed at 80, just under the 81.43%
+  // a full run of the suite measured at the time, was ratcheted to 91
+  // under the 91.63% measured after the 2026-10-07 coverage merges (#1105),
+  // to 95 under the 95.22% measured after #1163 folded the crossing-region
+  // source-map drift (#1079), and to 96 under the 97.26% measured when the
+  // per-file floor landed (#1232) -- the same ratchet pattern as the unit
+  // lane's region floors.
+  assert.match(
+    coverageCommands,
+    /--check-source-regions\s+96\b/,
+    'the e2e coverage report must gate on --check-source-regions 96',
+  );
+  // #1232: the aggregate lets its slack concentrate in one file. The per-file
+  // floor fails on that file's name instead of averaging it away; 66 is bound
+  // by the lowest file (PeopleFreshness, 2/3), not chosen as a target.
+  assert.match(
+    coverageCommands,
+    /--check-source-file-regions\s+66\b/,
+    'the e2e coverage report must gate on --check-source-file-regions 66',
+  );
+  // #992: the ratio is computed over observed files only, so a src module the
+  // bundle drops vanishes from numerator and denominator alike. The file-set
+  // gate is the guarantee the percentage cannot give.
+  assert.match(
+    coverageCommands,
+    /--require-source-files\b/,
+    'the e2e coverage report must fail on a src file the run never measured',
+  );
+
+  const requiredCoverageEnv = (required.steps ?? []).some(
+    (step) => step.env?.E2E_COVERAGE !== undefined,
+  );
+  assert.equal(
+    requiredCoverageEnv,
+    false,
+    'required e2e job must keep default coverage disabled',
+  );
+
+  const deploy = readFileSync(join(workflowDir, 'deploy-gh-pages.yml'), 'utf8');
+  assert.doesNotMatch(
+    deploy,
+    /\bE2E_COVERAGE\b/,
+    'deployment must not opt into browser source maps',
+  );
+});
+
 // The `validate:*` and `check:*` scripts are the repository's gates: one set
 // rejects data that would ship to the site, the other rejects the repository
 // itself. Defining a gate is only half the wiring. Unless a workflow runs it,
@@ -215,11 +405,6 @@ test('the Playwright end-to-end suite runs in some workflow', () => {
 // out of a workflow is distinguishable from one that was never meant to be in
 // one.
 const GATES_NOT_RUN_BY_CI = new Map([
-  [
-    'check:links',
-    'markdown-link-check resolves every outbound URL against the live ' +
-      'internet, so a third-party outage would fail unrelated pull requests.',
-  ],
   [
     'check:community-group-links',
     'calls the GitHub API and requires GH_TOKEN; it also rewrites ' +

@@ -1,9 +1,9 @@
 .freshnessNote {
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
   font-size: 0.85rem;
   margin: -0.5rem 0 1.5rem;
 }
 
 .warning {
-  color: var(--ifm-color-warning-dark);
+  color: var(--cncf-warning-text);
 }

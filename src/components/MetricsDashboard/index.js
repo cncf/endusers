@@ -154,9 +154,7 @@ export default function MetricsDashboard() {
                   r="4"
                   fill="var(--ifm-color-primary)"
                 >
-                  <title>
-                    {point.date}: {point.value}
-                  </title>
+                  <title>{`${point.date}: ${point.value}`}</title>
                 </circle>
               ))}
             </svg>

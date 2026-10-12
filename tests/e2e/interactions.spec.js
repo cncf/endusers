@@ -8,7 +8,7 @@
 // throws, a mismatched server render that bails out) leaves every unit test
 // green while the shipped page renders a dead toolbar. Only a browser against
 // `build/` can catch that.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // React attaches its fiber to the DOM node it hydrates, so the presence of a
 // `__react*` property is the signal that the element's handlers are live.
@@ -41,12 +41,12 @@ test.describe('member directory filtering', () => {
   }) => {
     await page.goto('/community/members');
     const section = page.getByRole('region', {
-      name: 'End User Community member directory',
+      name: 'End User Community organization directory',
     });
-    const search = section.getByLabel('Search members by name');
+    const search = section.getByLabel('Search organizations by name');
     await waitForHydration(search);
 
-    const results = section.getByText(/Showing \d+ of \d+ members/);
+    const results = section.getByText(/Showing \d+ of \d+ organizations/);
     const before = await results.textContent();
     const total = totalCount(before);
     expect(total).toBeGreaterThan(1);
@@ -76,29 +76,143 @@ test.describe('member directory filtering', () => {
   }) => {
     await page.goto('/community/members');
     const section = page.getByRole('region', {
-      name: 'End User Community member directory',
+      name: 'End User Community organization directory',
     });
-    const search = section.getByLabel('Search members by name');
+    const search = section.getByLabel('Search organizations by name');
     await waitForHydration(search);
 
     await search.fill('zzz-no-such-member-zzz');
 
     await expect(
-      section.getByRole('heading', { name: 'No members match' }),
+      section.getByRole('heading', { name: 'No organizations match' }),
     ).toBeVisible();
     await expect(section.locator('article')).toHaveCount(0);
 
     // The empty state carries its own escape hatch, distinct from the
     // toolbar's clear button.
     await section
-      .getByRole('heading', { name: 'No members match' })
+      .getByRole('heading', { name: 'No organizations match' })
       .locator('..')
       .getByRole('button', { name: 'Clear filters' })
       .click();
 
     await expect(section.locator('article').first()).toBeVisible();
   });
+
+  test('membership filtering keeps explicit roles separate from unknown profiles', async ({
+    page,
+  }) => {
+    await page.goto('/community/members');
+    const section = page.getByRole('region', {
+      name: 'End User Community organization directory',
+    });
+    const search = section.getByLabel('Search organizations by name');
+    await waitForHydration(search);
+
+    const results = section.getByText(/Showing \d+ of \d+ organizations/);
+    const total = totalCount(await results.textContent());
+    const membership = section.getByLabel('Filter by membership status');
+    await membership.selectOption('member');
+
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBeGreaterThan(0);
+    expect(shownCount(await results.textContent())).toBeLessThan(total);
+
+    await membership.selectOption('unknown');
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBeGreaterThan(0);
+  });
+
+  // The toolbar's membership <select> ships three options
+  // (MEMBERSHIP_FILTERS, src/components/MemberDirectory/hooks.js:3-10) and the
+  // case above drives two of them. `contributor` is answered by its own branch
+  // of `matchesMembership`
+  // (src/components/MemberDirectory/utils.js:42-44), and no browser case has
+  // ever selected it: the branch body is a zero region in the end-to-end
+  // report while the unit suite covers it through a fake DOM. A filter arm
+  // that only ever runs against a fake DOM is exactly the shape this file
+  // exists to catch -- the option is rendered and selectable in the shipped
+  // page whether or not its handler survives hydration.
+  //
+  // The counts are asserted as a relation rather than a number because
+  // data/members.json is regenerated from the landscape on a schedule.
+  test('the contributor filter narrows the directory to contributor profiles', async ({
+    page,
+  }) => {
+    await page.goto('/community/members');
+    const section = page.getByRole('region', {
+      name: 'End User Community organization directory',
+    });
+    const search = section.getByLabel('Search organizations by name');
+    await waitForHydration(search);
+
+    const results = section.getByText(/Showing \d+ of \d+ organizations/);
+    const total = totalCount(await results.textContent());
+    const membership = section.getByLabel('Filter by membership status');
+    await membership.selectOption('contributor');
+
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBeGreaterThan(0);
+    expect(shownCount(await results.textContent())).toBeLessThan(total);
+
+    // Every surviving card carries a contributor label, which is what
+    // distinguishes a working filter from one that merely re-rendered: both
+    // labels `matchesMembership` admits here contain "Contributor"
+    // (utils.js:29, utils.js:31).
+    const cards = section.locator('article');
+    await expect(cards.first()).toBeVisible();
+    for (const card of await cards.all()) {
+      await expect(card.getByText(/Contributor/).first()).toBeVisible();
+    }
+  });
+
+  test('the directory remains usable without horizontal overflow on mobile', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 414, height: 896 });
+    await page.goto('/community/members');
+    const section = page.getByRole('region', {
+      name: 'End User Community organization directory',
+    });
+    const search = section.getByLabel('Search organizations by name');
+    await waitForHydration(search);
+    await expect(
+      section.getByLabel('Filter by membership status'),
+    ).toBeVisible();
+    await expect(
+      section.getByRole('button', { name: /Open .+ profile/ }).first(),
+    ).toBeVisible();
+  });
 });
+
+for (const colorScheme of ['light', 'dark']) {
+  test(`corporate logo plates stay readable in ${colorScheme}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/community/members');
+    const trigger = page.getByRole('button', {
+      name: 'Open BlackRock profile',
+    });
+    const card = trigger.locator('..');
+    await expect(card).toBeVisible();
+    await expect(card.locator('div[class*="logoWrapper"]')).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+
+    await waitForHydration(trigger);
+    await trigger.click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.locator('div[class*="logoStage"]')).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+  });
+}
 
 test.describe('member profile dialog', () => {
   test('opens focused on close, traps Tab, and restores focus on Escape', async ({
@@ -106,7 +220,7 @@ test.describe('member profile dialog', () => {
   }) => {
     await page.goto('/community/members');
     const section = page.getByRole('region', {
-      name: 'End User Community member directory',
+      name: 'End User Community organization directory',
     });
     const trigger = section
       .getByRole('button', { name: /^Open .+ profile$/ })
@@ -144,10 +258,54 @@ test.describe('member profile dialog', () => {
     await expect(page.getByRole('button', { name: triggerName })).toBeFocused();
   });
 
+  test('Shift+Tab from the close button wraps to the last focusable', async ({
+    page,
+  }) => {
+    await page.goto('/community/members');
+    const section = page.getByRole('region', {
+      name: 'End User Community organization directory',
+    });
+    const trigger = section
+      .getByRole('button', { name: /^Open .+ profile$/ })
+      .first();
+    await waitForHydration(trigger);
+    await trigger.click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    // useFocusTrap focuses the close button on mount, and the close button is
+    // the first element matched by the trap's 'button, a[href]' query, so a
+    // backward Tab from here is what drives the shiftKey wrap branch.
+    const close = dialog.getByRole('button', { name: /^Close .+ profile$/ });
+    await expect(close).toBeFocused();
+
+    // The wrap is only observable when the dialog has somewhere else to send
+    // focus; the first card's profile carries attribution links besides close.
+    const focusables = dialog.locator('button, a[href]');
+    expect(await focusables.count()).toBeGreaterThan(1);
+
+    await page.keyboard.press('Shift+Tab');
+
+    // Focus lands on the dialog's last focusable rather than escaping backward
+    // to the page behind it.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const node = document.querySelector('[role="dialog"]');
+          const items = node?.querySelectorAll('button, a[href]');
+          return Boolean(
+            items?.length && document.activeElement === items[items.length - 1],
+          );
+        }),
+      )
+      .toBe(true);
+  });
+
   test('clicking the backdrop closes the dialog', async ({ page }) => {
     await page.goto('/community/members');
     const section = page.getByRole('region', {
-      name: 'End User Community member directory',
+      name: 'End User Community organization directory',
     });
     const trigger = section
       .getByRole('button', { name: /^Open .+ profile$/ })
@@ -201,4 +359,91 @@ test.describe('reference architecture filters', () => {
       .toBe(total);
     await expect(organization).toHaveValue('');
   });
+
+  test('a query that matches nothing shows the empty state', async ({
+    page,
+  }) => {
+    await page.goto('/architectures');
+    const search = page.getByLabel(
+      'Search architectures by organization or title',
+    );
+    await waitForHydration(search);
+
+    const results = page.getByText(/Showing \d+ of \d+ architectures/);
+    const total = totalCount(await results.textContent());
+    expect(total).toBeGreaterThan(0);
+
+    await search.fill('zzz-no-such-architecture-zzz');
+
+    const heading = page.getByRole('heading', {
+      name: 'No architectures match',
+    });
+    await expect(heading).toBeVisible();
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBe(0);
+
+    // The empty state carries its own escape hatch, distinct from the
+    // toolbar's clear button, so scope the click to the empty-state block.
+    await heading
+      .locator('..')
+      .getByRole('button', { name: 'Clear filters' })
+      .click();
+
+    await expect(heading).toHaveCount(0);
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBe(total);
+    await expect(search).toHaveValue('');
+  });
+
+  // The organization test above is the only facet a browser has ever driven,
+  // so filterArchitectures' industry and project guards and the two selects'
+  // onChange handlers are reached by the unit suite's fake DOM alone. Those
+  // are three separate select elements wired to three separate state setters,
+  // and nothing about one working implies the others do: a mismatched `id`,
+  // an option list built from the wrong field, or a handler bound to the
+  // wrong setter leaves the shipped toolbar inert on that facet while the
+  // organization test stays green.
+  for (const label of ['Filter by industry', 'Filter by CNCF project']) {
+    test(`${label.toLowerCase()} narrows the catalog and clears back`, async ({
+      page,
+    }) => {
+      await page.goto('/architectures');
+      const search = page.getByLabel(
+        'Search architectures by organization or title',
+      );
+      await waitForHydration(search);
+
+      const results = page.getByText(/Showing \d+ of \d+ architectures/);
+      const total = totalCount(await results.textContent());
+      expect(total).toBeGreaterThan(0);
+
+      const select = page.getByLabel(label);
+      await expect(select).toHaveValue('');
+      // Index 0 is the "All ..." placeholder, so the first real facet value
+      // is index 1. The option list is derived from the catalog, so a value
+      // here is also a value at least one architecture carries.
+      const value = await select.locator('option').nth(1).getAttribute('value');
+      expect(value).toBeTruthy();
+      await select.selectOption(value);
+
+      // At least one architecture carries the value, and the catalog is wider
+      // than any single facet value, so the guard has to return false for some
+      // entries and true for others: a count strictly between 1 and the total.
+      await expect
+        .poll(async () => shownCount(await results.textContent()))
+        .toBeGreaterThan(0);
+      expect(shownCount(await results.textContent())).toBeLessThan(total);
+
+      const clear = page.getByRole('button', { name: 'Clear filters' });
+      await expect(clear).toBeVisible();
+      await clear.click();
+
+      await expect
+        .poll(async () => shownCount(await results.textContent()))
+        .toBe(total);
+      await expect(select).toHaveValue('');
+    });
+  }
 });

@@ -1,0 +1,326 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { runScriptWithFixtures } from './helpers.mjs';
+
+const SCRIPT = 'validate-members.mjs';
+const REVISION = 'bc9d1b5c87904d9430fc3377938f38192bab3ad0';
+const SOURCE_URL = `https://github.com/cncf/landscape/blob/${REVISION}/landscape.yml`;
+
+function source(sourceId, role) {
+  return {
+    sourceId,
+    role,
+    sourceName: `${role} organization (${role})`,
+    category: 'CNCF Members',
+    subcategory:
+      role === 'contributor' ? 'End User Supporter and Contributor' : 'Gold',
+    homepageUrl: 'https://example.test/',
+    joined: '2026-01-01',
+    localLogo: null,
+    sourceUrl: SOURCE_URL,
+  };
+}
+
+function member(id, membershipStatus, membershipSources = []) {
+  return {
+    id,
+    name: id,
+    slug: id,
+    logo: null,
+    industries: [],
+    projects: [],
+    architectures: [],
+    awards: [],
+    sourceAttribution: [],
+    membershipStatus,
+    membershipSources,
+  };
+}
+
+const COLLECTED_AT = '2026-10-01T00:00:00.000Z';
+
+function snapshot(sourceIds) {
+  return {
+    generated: true,
+    collectedAt: COLLECTED_AT,
+    source: {
+      repository: 'https://github.com/cncf/landscape',
+      revision: REVISION,
+      file: 'landscape.yml',
+      sourceUrl: SOURCE_URL,
+    },
+    records: sourceIds.map((sourceId) => ({
+      sourceId,
+      included: true,
+    })),
+  };
+}
+
+function run(members, landscape, provenance = {}) {
+  return runScriptWithFixtures(SCRIPT, {
+    'data/members.json': JSON.stringify({
+      description: 'directory',
+      generatedFrom: ['data/enduser-landscape.json'],
+      sources: {
+        landscape: {
+          repository: 'https://github.com/cncf/landscape',
+          revision: REVISION,
+          sourceUrl: SOURCE_URL,
+          collectedAt: COLLECTED_AT,
+          ...provenance,
+        },
+      },
+      schema: {},
+      members,
+    }),
+    'data/enduser-landscape.json': JSON.stringify(landscape),
+  });
+}
+
+test('accepts every explicit membership status', () => {
+  const memberSource = source('member-source', 'member');
+  const contributorSource = source('contributor-source', 'contributor');
+  const combinedMemberSource = source('combined-member-source', 'member');
+  const combinedContributorSource = source(
+    'combined-contributor-source',
+    'contributor',
+  );
+  const result = run(
+    [
+      member('member-org', 'member', [memberSource]),
+      member('contributor-org', 'contributor', [contributorSource]),
+      member('combined-org', 'member-and-contributor', [
+        combinedMemberSource,
+        combinedContributorSource,
+      ]),
+      member('unknown-org', 'unknown'),
+    ],
+    snapshot([
+      'member-source',
+      'contributor-source',
+      'combined-member-source',
+      'combined-contributor-source',
+    ]),
+  );
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('rejects malformed membership fields and sources', () => {
+  const badSource = {
+    sourceId: '',
+    role: 'supporter',
+    sourceName: '',
+    category: '',
+    subcategory: '',
+    sourceUrl: 'http://example.test/',
+    localLogo: 'https://evil.example/logo.svg',
+  };
+  const result = run(
+    [
+      member('bad-status', 'not-a-status'),
+      {
+        ...member('bad-array', 'member'),
+        membershipSources: 'not-an-array',
+      },
+      member('bad-source', 'member', [badSource]),
+    ],
+    snapshot([]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /membershipStatus must be one of/);
+  assert.match(result.stderr, /membershipSources must be an array/);
+  assert.match(result.stderr, /sourceId must be a non-empty string/);
+  assert.match(result.stderr, /role must be member or contributor/);
+  assert.match(result.stderr, /must use https/);
+  assert.match(result.stderr, /logo must be a site-local path/);
+});
+
+test('rejects status and source-role mismatches', () => {
+  const memberSource = source('member-source', 'member');
+  const contributorSource = source('contributor-source', 'contributor');
+  const result = run(
+    [
+      member('unknown-with-source', 'unknown', [memberSource]),
+      member('member-with-contributor', 'member', [contributorSource]),
+      member('contributor-with-member', 'contributor', [memberSource]),
+      member('combined-with-member', 'member-and-contributor', [memberSource]),
+    ],
+    snapshot(['member-source', 'contributor-source']),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /unknown membership must not carry/);
+  assert.match(result.stderr, /member status must carry only member/);
+  assert.match(result.stderr, /contributor status must carry only contributor/);
+  assert.match(result.stderr, /member-and-contributor status must carry both/);
+});
+
+test('rejects duplicate, missing, unexpected, and stale landscape provenance', () => {
+  const memberSource = source('member-source', 'member');
+  const result = run(
+    [
+      member('one', 'member', [memberSource]),
+      member('two', 'member', [memberSource]),
+      member('unexpected', 'member', [source('unexpected-source', 'member')]),
+    ],
+    {
+      ...snapshot(['member-source', 'missing-source']),
+      source: {
+        ...snapshot([]).source,
+        revision: '0000000000000000000000000000000000000000',
+      },
+    },
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /membership source IDs must be unique/);
+  assert.match(result.stderr, /membership source ID set mismatch/);
+  assert.match(result.stderr, /landscape provenance must match/);
+});
+
+// The generator writes revision, sourceUrl and collectedAt into
+// sources.landscape from one snapshot in one statement, and collectedAt is
+// the only one of the three DirectoryFreshness renders. A members.json that
+// kept the snapshot's revision but a different sync time (a partial
+// regeneration, a merge that took one side) states a date the data does not
+// support, so it is held to the snapshot like the other two.
+test('rejects a collectedAt that differs from the snapshot it claims', () => {
+  const memberSource = source('member-source', 'member');
+  const members = [member('one', 'member', [memberSource])];
+  const landscape = snapshot(['member-source']);
+  for (const collectedAt of [
+    '1999-01-01T00:00:00.000Z',
+    'not a timestamp',
+    null,
+    undefined,
+  ]) {
+    const result = run(members, landscape, { collectedAt });
+    assert.equal(result.status, 1, `collectedAt ${String(collectedAt)}`);
+    assert.match(result.stderr, /landscape provenance must match/);
+  }
+  assert.equal(run(members, landscape).status, 0);
+});
+
+test('requires membership fields for modern landscape-backed output', () => {
+  const legacyShape = member('legacy-shape', 'unknown');
+  delete legacyShape.membershipStatus;
+  delete legacyShape.membershipSources;
+  const result = run([legacyShape], snapshot([]));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /landscape-backed output requires membershipStatus and membershipSources/,
+  );
+});
+
+// The guard above is a two-arm `||`, so deleting both fields only ever
+// evaluates the first arm. A half-migrated record that kept membershipStatus
+// but lost membershipSources reaches the second arm instead, and is the shape
+// a partial generator change would actually produce.
+test('requires membership fields when only membershipSources is missing', () => {
+  const partialShape = member('partial-shape', 'unknown');
+  delete partialShape.membershipSources;
+  const result = run([partialShape], snapshot([]));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /landscape-backed output requires membershipStatus and membershipSources/,
+  );
+  // membershipStatus survived, so the per-field checks still run and report
+  // the absent array rather than stopping at the shape error.
+  assert.match(result.stderr, /membershipSources must be an array/);
+  assert.doesNotMatch(result.stderr, /membershipStatus must be one of/);
+});
+
+test('compares membership source metadata with the pinned snapshot', () => {
+  const memberSource = source('member-source', 'contributor');
+  memberSource.sourceUrl = 'https://wrong.example/source';
+  const landscapeRecord = {
+    sourceId: 'member-source',
+    included: true,
+    sourceRole: 'member',
+    sourceName: 'Pinned Organization (member)',
+    category: 'CNCF Members',
+    subcategory: 'Gold',
+    homepageUrl: 'https://pinned.example/',
+    joined: '2026-02-01',
+    localLogo: '/img/end-user-members/pinned.svg',
+  };
+  const landscape = {
+    ...snapshot(['member-source']),
+    records: [landscapeRecord],
+  };
+  const result = run(
+    [member('pinned-org', 'member', [memberSource])],
+    landscape,
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /role does not match/);
+  assert.match(result.stderr, /sourceName does not match/);
+  assert.match(result.stderr, /homepageUrl does not match/);
+  assert.match(result.stderr, /joined does not match/);
+  assert.match(result.stderr, /localLogo does not match/);
+  assert.match(result.stderr, /sourceUrl does not match landscape provenance/);
+});
+
+test('handles a snapshot without a records array', () => {
+  const landscape = snapshot([]);
+  delete landscape.records;
+  const result = run([member('unknown-org', 'unknown')], landscape);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+// The ID-set mismatch message renders each side independently, so the empty
+// side has to read "none" rather than collapsing to an empty gap in the
+// sentence. The missing-only direction is exercised above; this covers the
+// unexpected-only direction, where a member carries a source the landscape
+// snapshot does not include at all.
+test('names the empty side of an unexpected-only ID set mismatch', () => {
+  const result = run(
+    [member('ghost-org', 'member', [source('ghost', 'member')])],
+    snapshot([]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /membership source ID set mismatch \(missing: none; unexpected: ghost\)/,
+  );
+});
+
+test('names the empty side of a missing-only ID set mismatch', () => {
+  const result = run(
+    [member('member-org', 'member', [source('member-source', 'member')])],
+    snapshot(['member-source', 'absent-source']),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /membership source ID set mismatch \(missing: absent-source; unexpected: none\)/,
+  );
+});
+
+test('reports a null member entry instead of crashing when a landscape snapshot is present', () => {
+  const result = run([null], snapshot([]));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /landscape-backed output requires membershipStatus and membershipSources/,
+  );
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
+// The requires-both check reads its two field tests through a short-circuited
+// `||`: a member with neither field never evaluates the membershipSources
+// side, and the committed data always carries both. Pin the one shape that
+// drives that second test — membershipStatus present, membershipSources
+// absent — so the half-migrated record is reported rather than accepted.
+test('rejects a landscape-backed member with membershipStatus but no membershipSources', () => {
+  const partial = member('status-only', 'member', [
+    source('member-source', 'member'),
+  ]);
+  delete partial.membershipSources;
+  const result = run([partial], snapshot(['member-source']));
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /landscape-backed output requires membershipStatus and membershipSources/,
+  );
+});

@@ -1,25 +1,23 @@
 {
   "files.exclude": {
-    ".docker/": true,
-    "**/.vscode": true,
-    "**/node_modules": true,
-    "vendor": true,
-    "/resources": true,
-    "/themes/docsy": true
+    "**/node_modules": true
   },
   "files.watcherExclude": {
-    "**/.git": true,
-    "node_modules": true,
-    "vendor": true,
     "**/.DS_Store": true,
+    "**/.docusaurus": true,
+    "**/.git": true,
     "**/node_modules": true,
-    "/resources": true,
-    "/themes/docsy": true
+    "build": true,
+    "coverage": true,
+    "playwright-report": true,
+    "test-results": true
   },
   "search.exclude": {
+    "**/.docusaurus": true,
     "**/node_modules": true,
-    "**/vendor": true,
-    "/resources": true,
-    "/themes/docsy": true
+    "build": true,
+    "coverage": true,
+    "playwright-report": true,
+    "test-results": true
   }
 }

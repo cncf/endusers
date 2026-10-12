@@ -47,6 +47,58 @@ test('artworkPath rejects hosts and repositories outside cncf/artwork', () => {
   }
 });
 
+test('artworkPath refuses a commit SHA ref, which the fork network makes unsafe', () => {
+  // raw.githubusercontent.com serves any commit in cncf/artwork's fork network
+  // through the upstream path, so a SHA from a fork (or a fork's pull request)
+  // returns bytes that were never in cncf/artwork. Verified against a live
+  // fork pull-request head: the upstream path with that SHA answered 200 for a
+  // file that 404s on cncf/artwork's own main.
+  for (const url of [
+    'https://raw.githubusercontent.com/cncf/artwork/ca9edf3d04bcb095ee0341469a13dc0587ddbd98/projects/sdc/horizontal/black/sdc-horizontal-black.svg',
+    'https://github.com/cncf/artwork/raw/ca9edf3d04bcb095ee0341469a13dc0587ddbd98/projects/sdc/horizontal/black/sdc-horizontal-black.svg',
+  ]) {
+    assert.equal(artworkPath(url), null, url);
+  }
+});
+
+test('artworkPath refuses refs other than the upstream branches', () => {
+  // A fork's branch name is unreachable through the upstream path, but the ref
+  // allow-list stays closed rather than relying on that: anything that is not
+  // an upstream branch name is dropped.
+  for (const url of [
+    'https://raw.githubusercontent.com/cncf/artwork/add-sdc-logo/projects/helm/icon/color/helm-icon-color.svg',
+    'https://raw.githubusercontent.com/cncf/artwork/v1.0.0/projects/helm/icon/color/helm-icon-color.svg',
+    'https://github.com/cncf/artwork/raw/refs/projects/helm/icon/color/helm-icon-color.svg',
+  ]) {
+    assert.equal(artworkPath(url), null, url);
+  }
+});
+
+test('artworkPath refuses cleartext http artwork URLs', () => {
+  // mirrorArtworkUrls() fetches the matched URL verbatim and publishes the
+  // response from static/, so a cleartext fetch hands an on-path attacker the
+  // bytes served at the site origin. Answering the plaintext request directly
+  // skips the redirect to https that would otherwise protect it.
+  for (const url of [
+    'http://raw.githubusercontent.com/cncf/artwork/main/projects/helm/icon/color/helm-icon-color.svg',
+    'http://github.com/cncf/artwork/raw/main/projects/helm/icon/color/helm-icon-color.svg',
+    'http://raw.githubusercontent.com/cncf/artwork/master/projects/flux/icon/color/flux-icon-color.png',
+  ]) {
+    assert.equal(artworkPath(url), null, url);
+    assert.equal(projectAsset(url), null, url);
+    assert.deepEqual(artworkUrls(`![logo](${url})`), [], url);
+  }
+});
+
+test('artworkPath accepts the master branch as well as main', () => {
+  assert.equal(
+    artworkPath(
+      'https://raw.githubusercontent.com/cncf/artwork/master/projects/helm/icon/color/helm-icon-color.svg',
+    ),
+    'projects/helm/icon/color/helm-icon-color.svg',
+  );
+});
+
 test('artworkPath rejects traversal segments', () => {
   assert.equal(
     artworkPath(

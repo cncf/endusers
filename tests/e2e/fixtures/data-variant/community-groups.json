@@ -1,0 +1,17 @@
+{
+  "description": "Appends a second drifted group and makes checkedAt unparseable, so GroupLinkStatus renders the plural arms of its drift warning (src/components/GroupLinkStatus/index.js lines 32-33) and takes formatDate's Number.isNaN guard at line 7. The ordinary coverage overlay appends exactly one archived group, so that build renders the singular grammar and the verification line; both arms are only reachable in one Playwright run because the variant build is served beside the real one. The appended group drifts through reachable:false rather than archived:true so the filter's second operand decides it, as a link-check run that cannot reach the repository produces.",
+  "set": {
+    "checkedAt": "not a timestamp"
+  },
+  "append": {
+    "groups": [
+      {
+        "slug": "e2e-coverage-unreachable",
+        "name": "Second Coverage Fixture User Group",
+        "repository": "https://github.com/cncf/endusers",
+        "archived": false,
+        "reachable": false
+      }
+    ]
+  }
+}

@@ -273,7 +273,10 @@ const NARROW = ['--', 'tests/validate-utils.test.mjs'];
 test('the reporter exits 0 and prints a total when coverage clears --check', () => {
   const result = runReporter(['--check', '100', ...NARROW]);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /^all files\s+\|\s+100\.00 \|\s+100\.00 \|$/m);
+  assert.match(
+    result.stdout,
+    /^all files\s+\|\s+100\.00 \|\s+100\.00 \| \d+\/\d+ lines \| \d+\/\d+ regions$/m,
+  );
   assert.match(result.stdout, /scripts\/lib\/validate-utils\.mjs/);
 });
 
@@ -301,7 +304,10 @@ test('--check rejects a missing threshold', () => {
 test('the reporter exits 0 and prints a total when region coverage clears --check-regions', () => {
   const result = runReporter(['--check-regions', '100', ...NARROW]);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /^all files\s+\|\s+100\.00 \|\s+100\.00 \|$/m);
+  assert.match(
+    result.stdout,
+    /^all files\s+\|\s+100\.00 \|\s+100\.00 \| \d+\/\d+ lines \| \d+\/\d+ regions$/m,
+  );
 });
 
 test('the reporter fails the run when region coverage is below --check-regions', () => {
@@ -364,13 +370,13 @@ test('the reporter prints a src-files subtotal separate from the all-files total
   const result = runReporter(['--check', '100', ...NARROW]);
   assert.equal(result.status, 0, result.stderr);
   const src = result.stdout.match(
-    /^src files\s+\|\s+\S+ \|\s+\S+ \|\s+(\d+)\/(\d+) lines$/m,
+    /^src files\s+\|\s+\S+ \|\s+\S+ \|\s+(\d+)\/(\d+) lines \| \d+\/\d+ regions$/m,
   );
   assert.ok(src, `no src subtotal in:\n${result.stdout}`);
   // The run always records the test file it executed, so the src subtotal is
   // a strict subset of the total rather than the same number relabelled.
   const all = result.stdout.match(
-    /^all files\s+\|\s+100\.00 \|\s+100\.00 \|$/m,
+    /^all files\s+\|\s+100\.00 \|\s+100\.00 \| \d+\/\d+ lines \| \d+\/\d+ regions$/m,
   );
   assert.ok(all, `no all-files total in:\n${result.stdout}`);
   assert.ok(Number(src[2]) > 0);

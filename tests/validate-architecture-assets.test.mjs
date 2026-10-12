@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
 import { runScriptWithFixtures } from './helpers.mjs';
 
 const SCRIPT = 'validate-architecture-assets.mjs';
@@ -128,6 +130,19 @@ test('rejects SVG containing a script element', () => {
   assert.match(result.stderr, /active content: contains a <script> element/);
 });
 
+test('rejects SVG containing a script element under an uppercase .SVG extension', () => {
+  // The extension allow-list lowercases before matching, so `.SVG` is accepted
+  // as an SVG asset. The scan dispatch has to agree, or the file is published
+  // to the site origin with no active-content scan at all.
+  const svg = VALID_SVG.replace(
+    '<rect width="100" height="100"/>',
+    '<script>alert(1)</script>',
+  );
+  const result = runScriptWithFixtures(SCRIPT, svgFixture(svg, 'diagram.SVG'));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /active content: contains a <script> element/);
+});
+
 test('rejects SVG containing an event handler attribute', () => {
   const svg = VALID_SVG.replace('<rect ', '<rect onload="alert(1)" ');
   const result = runScriptWithFixtures(SCRIPT, svgFixture(svg));
@@ -188,6 +203,21 @@ test('--fix removes a DOCTYPE declaration instead of reporting it', () => {
   assert.match(result.stdout, /removed DOCTYPE/);
 });
 
+test('--fix fails closed on a DOCTYPE it cannot remove', () => {
+  // An unclosed internal subset matches neither stripDoctype() alternative, so
+  // the declaration survives the strip. Reporting "removed DOCTYPE" here would
+  // certify a fix that never happened.
+  const svg = `<!DOCTYPE svg [\n${VALID_SVG}`;
+  const result = runFix(svg);
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /DOCTYPE declaration that could not be removed automatically/,
+  );
+  assert.doesNotMatch(result.stdout, /removed DOCTYPE/);
+  assert.equal(result.files[ASSET], svg);
+});
+
 test('--fix adds a viewBox derived from width and height', () => {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect/></svg>';
@@ -223,6 +253,20 @@ test('--fix strips draw.io mxfile metadata that would otherwise warn', () => {
   assert.doesNotMatch(result.files[ASSET], /mxfile/);
   assert.doesNotMatch(result.stderr, /mxfile/);
   assert.match(result.stdout, /stripped draw\.io mxfile metadata/);
+});
+
+// The mxfile strip deletes text, and deleting text can join two fragments that
+// were inert while separated. The scans run before that edit, so the bytes
+// written have to be re-checked or an auto-fix publishes a live script.
+test('--fix refuses to write an mxfile strip that splices a <script> together', () => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+    '<sc content="&lt;mxfile host=x"ript>alert(1)</script></svg>';
+  const result = runFix(svg);
+  assert.notEqual(result.status, 0, result.stdout);
+  assert.match(result.stderr, /auto-fix produced active content/);
+  assert.match(result.stderr, /<script> element/);
+  assert.equal(result.files[ASSET], svg);
 });
 
 test('--fix does not suppress a missing xmlns, and leaves the file alone', () => {
@@ -346,6 +390,25 @@ test('--fix writes a repaired mirrored asset back to disk', () => {
   assert.match(result.stdout, /removed DOCTYPE/);
 });
 
+test('--fix fails closed on a mirrored-asset DOCTYPE it cannot remove', () => {
+  // Mirrored artwork is written at an early return with no post-strip rescan,
+  // so an unverified "removed DOCTYPE" on this path would publish the bytes
+  // with no later gate catching the surviving declaration.
+  const icon = 'static/img/cncf-projects/helm-helm-icon-color.svg';
+  const svg = `<!DOCTYPE svg [\n${VALID_SVG}`;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    { [icon]: svg },
+    { args: ['--fix'], readBack: [icon] },
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /DOCTYPE declaration that could not be removed automatically/,
+  );
+  assert.equal(result.files[icon], svg);
+});
+
 test('warns on an asset larger than 2 MB but still passes', () => {
   // The size gate is advisory: oversized diagrams slow the site down but are
   // not a correctness failure, so the run must warn and still exit 0.
@@ -455,13 +518,68 @@ test('rejects a new static/ subdirectory that is neither gated nor exempted', ()
   );
 });
 
-test('accepts the exempted static/fonts directory without gating its contents', () => {
+test('accepts a font file in the exempted static/fonts directory', () => {
   const result = runScriptWithFixtures(SCRIPT, {
     'static/fonts/some-font.woff2': 'not really a font',
     'static/img/architectures/example/diagram.svg': VALID_SVG,
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Validated 1 architecture asset/);
+});
+
+// An exemption narrows the gate to the font allow-list; it does not remove it.
+// static/fonts is published at the site origin like every other static/
+// directory, so a file the browser executes as markup must not reach it.
+
+test('rejects a script-bearing SVG hidden in the exempted static/fonts directory', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/fonts/poc.svg':
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/fonts\/poc\.svg: \.svg is not an allowed asset type/,
+  );
+});
+
+test('rejects an HTML file in the exempted static/fonts directory', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/fonts/poc.html': '<html><script>alert(1)</script></html>',
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/fonts\/poc\.html: \.html is not an allowed asset type/,
+  );
+});
+
+test('rejects a symlink inside the exempted static/fonts directory', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    {
+      'static/fonts/some-font.woff2': 'not really a font',
+      'static/img/architectures/example/diagram.svg': VALID_SVG,
+    },
+    { symlinks: { 'static/fonts/link.woff': 'some-font.woff2' } },
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /static\/fonts\/link\.woff: is a symbolic link/);
+});
+
+test('gates a nested subdirectory of the exempted static/fonts directory', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/fonts/nested/poc.svg':
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/fonts\/nested\/poc\.svg: \.svg is not an allowed asset type/,
+  );
 });
 
 test('rejects a symlink standing in for a top-level static/ directory', () => {
@@ -481,4 +599,120 @@ test('does not flag static/ subdirectories the gate already walks', () => {
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Validated 2 architecture asset/);
+});
+
+// Dynamic static/ file discovery — a file sitting directly in static/ has no
+// enclosing directory for assetDirs to gate, but it is served from the site
+// origin exactly like one inside a gated subdirectory.
+
+test('rejects a markup file sitting directly in static/', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/pwn.html': '<html><script>alert(1)</script></html>',
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/pwn\.html: \.html is not an allowed asset type/,
+  );
+});
+
+test('scans an SVG sitting directly in static/ for active content', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/pwn.svg':
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><script>alert(1)</script></svg>',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /static\/pwn\.svg: active content/);
+});
+
+test('accepts the exempted non-asset files in the static/ root', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/.nojekyll': '',
+    'static/manifest.json': '{"name":"site"}',
+    'static/robots.txt': 'User-agent: *',
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('accepts an allowed image sitting directly in static/', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/logo.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+// A static/ entry that is neither a symlink, a directory, nor a regular file
+// — a FIFO, a socket, a device node — falls past all three guards in
+// checkForUngatedStaticEntries. The gate skips it deliberately: there is no
+// file content to hold to the extension allow-list, and handing the path to
+// validateAsset would block the run forever on a readFileSync of a FIFO with
+// no writer. Nothing pinned that, so a future guard reordering could turn the
+// skip into a hang or a spurious error with the suite still green.
+//
+// mkfifo is the only portable way to make such an entry; the test is skipped
+// where coreutils is absent rather than branching inside the test body, which
+// would leave a permanently uncovered region behind.
+const MKFIFO_MISSING = spawnSync('mkfifo', ['--version']).status !== 0;
+
+test(
+  'skips a static/ entry that is not a regular file',
+  { skip: MKFIFO_MISSING },
+  () => {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      { 'static/img/architectures/example/diagram.svg': VALID_SVG },
+      {
+        setup: (work) => {
+          const fifo = join(work, 'static', 'pipe');
+          assert.equal(spawnSync('mkfifo', [fifo]).status, 0);
+        },
+      },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Validated 1 architecture asset/);
+    assert.doesNotMatch(result.stderr, /pipe/);
+  },
+);
+
+test('rejects a subdirectory of the shallow static/img walk', () => {
+  // static/img is walked with recurse: false because it holds site chrome
+  // sitting directly in the directory. A shallow walk covers only those
+  // files, so every subdirectory below it must be an asset root with its own
+  // assetDirs entry; one that is not would otherwise ship to the site origin
+  // with no gate at all.
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'static/img/illustrations/nested.svg': '<svg><rect/></svg>',
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /static\/img\/illustrations: is a subdirectory of a shallowly walked asset directory and is not covered by the asset security gate/,
+  );
+});
+
+test('rejects markup in a subdirectory of the shallow static/img walk', () => {
+  // The extension allow-list is the only thing that keeps a .html off the
+  // site origin, and it never ran below static/img: the file was published
+  // verbatim with the validator, the unit suite and the build all green.
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'static/img/blog/pwn.html': '<html><script>alert(1)</script></html>',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /static\/img\/blog: is a subdirectory/);
+});
+
+test('does not flag the static/img subdirectories that are asset roots', () => {
+  // The three real subdirectories each have their own assetDirs entry, so
+  // they are returned by assetRootPaths before the new subdirectory check.
+  const result = runScriptWithFixtures(SCRIPT, {
+    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'static/img/cncf-projects/helm-helm-icon-color.svg': VALID_SVG,
+    'static/img/awards/example.svg': VALID_SVG,
+    'static/img/cncf_logo_white.svg': VALID_SVG,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 4 architecture asset/);
 });

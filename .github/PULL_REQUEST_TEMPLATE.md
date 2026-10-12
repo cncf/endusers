@@ -10,6 +10,7 @@ Closes #
 
 ## Checklist
 
-- [ ] Content speaks to end users (see [CONTRIBUTING.md](../CONTRIBUTING.md))
+- [ ] Content speaks to end users (see
+      [CONTRIBUTING.md](https://github.com/cncf/endusers/blob/main/CONTRIBUTING.md))
 - [ ] Commits are DCO-signed (`git commit -s`)
 - [ ] Site builds without new warnings

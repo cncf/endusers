@@ -14,10 +14,19 @@
 // back to its repo-relative origin, merges the runs, and reports line
 // coverage against the real source files.
 //
+// The table carries two gap columns. "uncovered lines" names the lines no
+// recorded range executed; "uncovered regions" names the start line of every
+// uncovered region, which includes sub-line gaps the line column cannot show.
+//
 // Usage:
 //   node tests/tools/coverage-report.mjs [--check <minLinePercent>]
 //     [--check-regions <minRegionPercent>] [--check-source <minLinePercent>]
-//     [--check-source-regions <minRegionPercent>] [-- <node --test args>]
+//     [--check-source-regions <minRegionPercent>]
+//     [--check-source-file-regions <minRegionPercent>] [--require-source-files]
+//     [--check-harness <minLinePercent>]
+//     [--check-harness-regions <minRegionPercent>]
+//     [--check-harness-file-regions <minRegionPercent>]
+//     [-- <node --test args>]
 //
 // The test files are themselves part of the recorded coverage, and they
 // outweigh the code they exercise several times over. An all-files threshold
@@ -27,6 +36,45 @@
 // --check-source-regions apply a threshold to the shipped sources alone
 // (everything outside tests/), which is the number that actually falls when
 // a test file is dropped or a source path stops being exercised.
+//
+// Those four thresholds are all ratios over the files the run happened to
+// observe, which leaves one kind of regression invisible to every one of
+// them. A file under scripts/, src/ or tests/tools/ that no test imports is
+// recorded nowhere, so it never becomes a row: its lines are absent from the
+// numerator and the denominator alike and `src files` does not move. Adding
+// a brand-new source file with an untaken branch therefore keeps
+// --check-source 100 green. --require-source-files closes that by comparing
+// the files on disk against the files the run measured, and failing when any
+// is missing. A ratio floor and a file-set floor are different guarantees;
+// this is the second one. It also fails when a file under those trees was
+// recorded but could not be mapped back onto the text on disk: such a file is
+// absent from every ratio in exactly the same way, and until the gate said so
+// the only trace of it was an informational notice nothing scored.
+//
+// --check-source-regions is also an aggregate, and an aggregate hides where
+// its own slack is spent. The gate is cleared by the whole of scripts/ and
+// src/ together, so the regions one file loses are paid for by every other
+// file that still has them: at 2545/2547 source regions a floor of 99% leaves
+// 23 regions of slack, and a single file may take all of them. The companion
+// line gate does not catch that, because a lost *region* need not be a lost
+// *line* -- an unexecuted `??` fallback or ternary arm sits on a line the
+// surrounding statement still covers, so the file stays at 100% lines while
+// its region percentage falls. --check-source-file-regions applies the floor
+// to each source file on its own, so a regression concentrated in one file
+// fails on that file's name instead of being averaged away.
+//
+// All five of those score `scripts/` and `src/` alone, because they are built
+// from isSourceFile(), which drops everything under tests/. tests/tools/ is
+// the third SOURCE_ROOTS entry, so --require-source-files insists every
+// module in it be measured, and then no ratio gate scored it: the measuring
+// apparatus was required to be present and held to no standard. The
+// --check-harness family is the same three shapes over that tree -- plus the
+// tests/helpers*.mjs modules, which are the same apparatus scattered as files
+// rather than gathered into a tree -- reported as a `harness files` row
+// beside `src files`. It stays a separate row
+// rather than widening `src files` for the reason isSourceFile() gives --
+// the harness is not code this repository ships, and merging the two would
+// let a harness gap be paid for out of src/'s slack.
 
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -43,6 +91,65 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const MIRRORED_DIRS = ['scripts', 'src', 'tests'];
 const SCRIPT_URL = /\.(js|jsx|mjs)$/;
 
+// The directories --require-source-files enumerates. Deliberately narrower
+// than isSourceFile()'s "outside tests/": that predicate classifies a path
+// that was already recorded, whereas this list is walked on disk and so has
+// to name exactly the trees whose every module is expected to be exercised.
+// Root-level configuration (docusaurus.config.js, playwright.config.js,
+// sidebars.js) is measured today but is not enumerated here -- it is not a
+// tree, and a guess about which root files "ought to" be covered would be a
+// rule this reporter cannot state.
+//
+// tests/tools/ is enumerated for the same reason scripts/ and src/ are: it is
+// a tree, not a scattering of root-level configuration, and every module in
+// it is part of the harness the suite runs on. A tool nobody imports is the
+// measuring apparatus going unmeasured, which is the failure this flag exists
+// to name. It is the one subtree of tests/ that is enumerated; isSourceFile()
+// still classifies everything under tests/ as non-source, so a harness module
+// counts toward the file-set floor without entering the `src files` ratios.
+// The tests/helpers*.mjs modules are enumerated too, by HARNESS_FILE below
+// rather than by this list, because they are files and not a tree.
+const SOURCE_ROOTS = ['scripts', 'src', join('tests', 'tools')];
+const SOURCE_FILE = /\.(c|m)?jsx?$/;
+
+// The SOURCE_ROOTS entries that --require-source-files walks but
+// isSourceFile() classifies as non-source: the harness tree. Derived from
+// SOURCE_ROOTS rather than restated so the row below and the file-set floor
+// can never come to name different directories.
+//
+// Without a row of its own the harness is required to be measured and then
+// scored by nothing: --check-source and its companions are built from
+// isSourceFile(), which drops everything under tests/, and the only floor
+// left over it is --check-regions, an all-files aggregate the suite's own
+// test files dominate. The harness is where the coverage reporters, the
+// Playwright coverage fixture, the data-overlay loader and the JSX/DOM
+// harness live, so a gap there is a gap in the instrument every other gate
+// reads. It is still summarised separately rather than folded into
+// `src files`, for the reason isSourceFile() gives: it is not code this
+// repository ships, and its ratios answer a different question.
+const HARNESS_ROOTS = SOURCE_ROOTS.map((root) =>
+  root.split(sep).join('/'),
+).filter((root) => !isSourceFile(`${root}/`));
+
+// The directory the tests/helpers*.mjs modules sit in, listed one level deep
+// rather than walked: HARNESS_FILE deliberately names files at the root of
+// tests/, and a recursive walk here would pull in the suite's own test files.
+const HARNESS_MODULE_DIR = 'tests';
+
+// Shared harness modules that sit directly in tests/ rather than in a tree of
+// their own. They are the same measuring apparatus as tests/tools/ -- the
+// script and gh sandboxes, the fetch mock, the JSX driver, the JSONC reader --
+// but they are files, which SOURCE_ROOTS cannot express. Enumerated and scored
+// alongside it so a helper nobody imports is a failure rather than an absence:
+// a file with no coverage record is simply missing from the report, not 0%.
+// The .test.mjs exclusion keeps the suite's own test files out -- they are
+// what the harness is measured against, not part of it.
+const HARNESS_FILE = /^tests\/helpers[\w.-]*\.mjs$/;
+
+export function isHarnessModule(file) {
+  return HARNESS_FILE.test(file) && !file.endsWith('.test.mjs');
+}
+
 // A flag takes one numeric percentage argument; the option key it sets on
 // the parsed options object.
 const PERCENT_FLAGS = {
@@ -50,6 +157,10 @@ const PERCENT_FLAGS = {
   '--check-regions': 'checkRegions',
   '--check-source': 'checkSource',
   '--check-source-regions': 'checkSourceRegions',
+  '--check-source-file-regions': 'checkSourceFileRegions',
+  '--check-harness': 'checkHarness',
+  '--check-harness-regions': 'checkHarnessRegions',
+  '--check-harness-file-regions': 'checkHarnessFileRegions',
 };
 
 function parseArgs(argv) {
@@ -58,6 +169,11 @@ function parseArgs(argv) {
     checkRegions: null,
     checkSource: null,
     checkSourceRegions: null,
+    checkSourceFileRegions: null,
+    checkHarness: null,
+    checkHarnessRegions: null,
+    checkHarnessFileRegions: null,
+    requireSourceFiles: false,
     testArgs: [],
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -70,6 +186,8 @@ function parseArgs(argv) {
       }
       options[key] = value;
       i += 1;
+    } else if (arg === '--require-source-files') {
+      options.requireSourceFiles = true;
     } else if (arg === '--') {
       options.testArgs.push(...argv.slice(i + 1));
       break;
@@ -364,13 +482,18 @@ export function summarizeRegions(source, counts) {
   return total;
 }
 
-function formatRanges(lines) {
+// `lines` must be ascending. Repeats are collapsed: two uncovered regions can
+// start on the same line (`a ?? b ?? c`), and summarizeRegions records one
+// entry for each, but the reader only needs the line named once.
+export function formatRanges(lines) {
   const out = [];
   let start = null;
   let previous = null;
   for (const line of lines) {
     if (start === null) {
       start = line;
+    } else if (line === previous) {
+      continue;
     } else if (line !== previous + 1) {
       out.push(start === previous ? `${start}` : `${start}-${previous}`);
       start = line;
@@ -387,11 +510,140 @@ function percent(covered, total) {
   return total === 0 ? 100 : (covered / total) * 100;
 }
 
+// `src files` and `harness files` are the same arithmetic over two disjoint
+// sets of rows, and the gates that read them are the same three shapes. They
+// share an accumulator so a change to one row cannot quietly stop applying to
+// the other.
+function newTotals() {
+  return {
+    executable: 0,
+    covered: 0,
+    regions: 0,
+    regionsCovered: 0,
+    fileRegions: [],
+  };
+}
+
+function addRow(totals, row) {
+  totals.executable += row.lines.executable;
+  totals.covered += row.lines.covered;
+  totals.regions += row.regions.regions;
+  totals.regionsCovered += row.regions.covered;
+  // Files with no regions at all are left out: percent() reports 100%
+  // for a 0/0 fraction, so including them would add rows that can never
+  // fail the per-file floor and never say anything either.
+  if (row.regions.regions > 0) {
+    totals.fileRegions.push({
+      file: row.file,
+      percent: percent(row.regions.covered, row.regions.regions),
+      covered: row.regions.covered,
+      regions: row.regions.regions,
+      uncovered: row.regions.uncovered,
+    });
+  }
+}
+
+function summaryRow(label, totals, width) {
+  const linePct = percent(totals.covered, totals.executable);
+  const regionPct = percent(totals.regionsCovered, totals.regions);
+  console.log(
+    `${label.padEnd(width)} | ${linePct.toFixed(2).padStart(6)} | ${regionPct.toFixed(2).padStart(8)} | ${totals.covered}/${totals.executable} lines | ${totals.regionsCovered}/${totals.regions} regions`,
+  );
+  return { linePct, regionPct };
+}
+
 // Coverage records exist for the test files too. They are not the code this
 // repository ships, so they are summarised separately rather than folded
 // into totals the suite's own near-complete self-coverage would dominate.
 export function isSourceFile(file) {
   return !file.startsWith('tests/');
+}
+
+// The harness modules under SOURCE_ROOTS, plus the tests/helpers*.mjs files:
+// measured like source, summarised like neither. isSourceFile() keeps them out
+// of the `src files` ratios, and this keeps them out of nothing -- it is what
+// gives them the row and the floors of their own.
+export function isHarnessFile(file) {
+  return (
+    HARNESS_ROOTS.some((root) => file.startsWith(`${root}/`)) ||
+    isHarnessModule(file)
+  );
+}
+
+// Every module on disk under SOURCE_ROOTS, plus the tests/helpers*.mjs harness
+// modules, as repo-relative '/'-joined paths. Walked rather than globbed so
+// the traversal order is the sort order and a directory that does not exist is
+// simply absent instead of throwing -- the caller is asking "what should have
+// been measured", and a repository that has dropped scripts/ entirely has
+// nothing to answer with.
+export function enumerateSourceFiles(root = repoRoot) {
+  const found = [];
+  const walk = (relDir) => {
+    let entries;
+    try {
+      entries = readdirSync(join(root, relDir), { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const relPath = `${relDir}/${entry.name}`;
+      // Symlinked trees would report the same module under two paths, and
+      // only one of them can match a coverage record.
+      if (entry.isSymbolicLink()) continue;
+      if (entry.isDirectory()) walk(relPath);
+      else if (entry.isFile() && SOURCE_FILE.test(entry.name))
+        found.push(relPath);
+    }
+  };
+  for (const dir of SOURCE_ROOTS) walk(dir);
+  found.push(...enumerateHarnessModules(root));
+  return found.sort();
+}
+
+// The tests/helpers*.mjs modules on disk. Listed one level deep for the reason
+// HARNESS_MODULE_DIR gives, and guarded the same way the walk above is: a
+// symlink would report one module under two paths, and only one of them can
+// match a coverage record. A missing tests/ directory is an absence here too,
+// not a throw.
+function enumerateHarnessModules(root) {
+  let entries;
+  try {
+    entries = readdirSync(join(root, HARNESS_MODULE_DIR), {
+      withFileTypes: true,
+    });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((entry) => !entry.isSymbolicLink() && entry.isFile())
+    .map((entry) => `${HARNESS_MODULE_DIR}/${entry.name}`)
+    .filter((relPath) => isHarnessModule(relPath));
+}
+
+// Source files that exist but that this run never recorded.
+//
+// `unmapped` counts as measured: those files were executed, and the reporter
+// could only not attribute the offsets back to the text on disk. Folding them
+// into the missing set would turn every JSX component into a permanent
+// failure of a check that is about files nothing ran at all.
+export function missingSourceFiles(measured, root = repoRoot) {
+  const seen = new Set(measured);
+  return enumerateSourceFiles(root).filter((file) => !seen.has(file));
+}
+
+// Source files that were recorded but whose records could not be attributed
+// back to the text on disk.
+//
+// These are not "missing" -- something ran them -- but they are not measured
+// either: report() builds every ratio from the merged map alone, so an
+// unmapped file leaves the numerator and the denominator together and every
+// percentage gate passes over it in silence. The distinction matters because
+// the two states have different cures: a missing file needs a test, whereas
+// an unmapped one means the loader and the reporter have drifted apart and
+// the measurement is unavailable.
+export function unmappedSourceFiles(unmapped, root = repoRoot) {
+  const recorded = new Set(unmapped);
+  return enumerateSourceFiles(root).filter((file) => recorded.has(file));
 }
 
 // Reproduces the exact transform tests/tools/jsx-hooks.mjs applied when it
@@ -476,7 +728,7 @@ export function collect(coverageDir, root = repoRoot) {
   return { merged, unmapped };
 }
 
-function report(merged) {
+export function report(merged) {
   const rows = [...merged.entries()]
     .map(([file, { source, counts }]) => ({
       file,
@@ -486,7 +738,13 @@ function report(merged) {
     .sort((a, b) => a.file.localeCompare(b.file));
 
   const width = Math.max(4, ...rows.map((row) => row.file.length));
-  const header = `${'file'.padEnd(width)} | line % | region % | uncovered lines`;
+  // The region column is what makes a `--check-source-regions` failure
+  // actionable. A sub-line gap -- an unexecuted `??` fallback or ternary arm --
+  // leaves its line fully covered, so a file can sit at 100% lines with a
+  // region percentage below the gate and nothing in the "uncovered lines"
+  // column to point at. Naming the start line of each uncovered region is the
+  // only thing in this report that locates such a gap.
+  const header = `${'file'.padEnd(width)} | line % | region % | uncovered lines | uncovered regions`;
   console.log(header);
   console.log('-'.repeat(header.length));
 
@@ -494,21 +752,15 @@ function report(merged) {
   let covered = 0;
   let regions = 0;
   let regionsCovered = 0;
-  let sourceExecutable = 0;
-  let sourceCovered = 0;
-  let sourceRegions = 0;
-  let sourceRegionsCovered = 0;
+  const source = newTotals();
+  const harness = newTotals();
   for (const row of rows) {
     executable += row.lines.executable;
     covered += row.lines.covered;
     regions += row.regions.regions;
     regionsCovered += row.regions.covered;
-    if (isSourceFile(row.file)) {
-      sourceExecutable += row.lines.executable;
-      sourceCovered += row.lines.covered;
-      sourceRegions += row.regions.regions;
-      sourceRegionsCovered += row.regions.covered;
-    }
+    if (isSourceFile(row.file)) addRow(source, row);
+    else if (isHarnessFile(row.file)) addRow(harness, row);
     const linePct = percent(row.lines.covered, row.lines.executable)
       .toFixed(2)
       .padStart(6);
@@ -516,27 +768,38 @@ function report(merged) {
       .toFixed(2)
       .padStart(8);
     console.log(
-      `${row.file.padEnd(width)} | ${linePct} | ${regionPct} | ${formatRanges(row.lines.uncovered)}`,
+      `${row.file.padEnd(width)} | ${linePct} | ${regionPct} | ${formatRanges(row.lines.uncovered)} | ${formatRanges(row.regions.uncovered)}`,
     );
   }
   console.log('-'.repeat(header.length));
-  const sourceLinePct = percent(sourceCovered, sourceExecutable);
-  const sourceRegionPct = percent(sourceRegionsCovered, sourceRegions);
-  console.log(
-    `${'src files'.padEnd(width)} | ${sourceLinePct.toFixed(2).padStart(6)} | ${sourceRegionPct.toFixed(2).padStart(8)} | ${sourceCovered}/${sourceExecutable} lines`,
+  const { linePct: sourceLinePct, regionPct: sourceRegionPct } = summaryRow(
+    'src files',
+    source,
+    width,
+  );
+  const { linePct: harnessLinePct, regionPct: harnessRegionPct } = summaryRow(
+    'harness files',
+    harness,
+    width,
   );
   const totalLinePct = percent(covered, executable);
   const totalRegionPct = percent(regionsCovered, regions);
   console.log(
-    `${'all files'.padEnd(width)} | ${totalLinePct.toFixed(2).padStart(6)} | ${totalRegionPct.toFixed(2).padStart(8)} |`,
+    `${'all files'.padEnd(width)} | ${totalLinePct.toFixed(2).padStart(6)} | ${totalRegionPct.toFixed(2).padStart(8)} | ${covered}/${executable} lines | ${regionsCovered}/${regions} regions`,
   );
   return {
     totalLinePct,
     totalRegionPct,
     sourceLinePct,
     sourceRegionPct,
-    sourceExecutable,
-    sourceRegions,
+    sourceExecutable: source.executable,
+    sourceRegions: source.regions,
+    sourceFileRegions: source.fileRegions,
+    harnessLinePct,
+    harnessRegionPct,
+    harnessExecutable: harness.executable,
+    harnessRegions: harness.regions,
+    harnessFileRegions: harness.fileRegions,
   };
 }
 
@@ -566,7 +829,31 @@ function main() {
       sourceRegionPct,
       sourceExecutable,
       sourceRegions,
+      sourceFileRegions,
+      harnessLinePct,
+      harnessRegionPct,
+      harnessExecutable,
+      harnessRegions,
+      harnessFileRegions,
     } = report(merged);
+    const missing = options.requireSourceFiles
+      ? missingSourceFiles([...merged.keys(), ...unmapped])
+      : [];
+    // Printed before the "Not reported" notice so that notice stays the last
+    // thing on stdout, which is where tests/coverage-report-cli.test.mjs
+    // reads it from. Computed only under the flag: an ad-hoc run over a
+    // single test file leaves almost every source file unmeasured by
+    // construction, and listing all of them would bury the table.
+    if (missing.length > 0) {
+      console.log(
+        `\nNever measured (${missing.length}): these files exist under ` +
+          `${SOURCE_ROOTS.join('/ or ')}/ but no\n` +
+          'coverage record named them, so they are absent from the "src files"\n' +
+          'numerator and denominator alike and the percentage gates below pass\n' +
+          'over them in silence.',
+      );
+      for (const file of missing) console.log(`  ${file}`);
+    }
     if (unmapped.size > 0) {
       console.log(
         `\nNot reported (${unmapped.size}): every coverage record for these\n` +
@@ -581,6 +868,47 @@ function main() {
       console.error('\nTests failed; coverage above is reported for context.');
       process.exit(result.status ?? 1);
     }
+    // Checked ahead of the percentage gates because it is the more specific
+    // diagnosis: when a source file was never loaded, every ratio below is
+    // computed over a denominator that silently excludes it, so whatever
+    // those gates report about it is not an answer.
+    //
+    // The two diagnoses are reported together rather than one short-circuiting
+    // the other: they are different faults with different cures, and a run
+    // that has both should say so once instead of surfacing the second only
+    // after the first is fixed.
+    let fileSetFailed = false;
+    if (missing.length > 0) {
+      console.error(
+        `\n${missing.length} source file(s) were never measured; ` +
+          '--require-source-files requires every file under ' +
+          `${SOURCE_ROOTS.join('/ and ')}/ to be exercised.`,
+      );
+      fileSetFailed = true;
+    }
+    // The companion to the check above, for the other way a source file can
+    // leave every ratio: recorded, but with offsets the reporter could not
+    // attribute back to the file on disk. report() is built from `merged`
+    // alone, so such a file is absent from the "src files" numerator and
+    // denominator alike -- exactly the silence --require-source-files exists
+    // to break -- while still counting as measured for the missing-file check,
+    // which is about files nothing ran at all. Data modules go on being
+    // listed in the notice above without failing anything: only the trees
+    // --require-source-files walks are gated.
+    const unmeasurable = options.requireSourceFiles
+      ? unmappedSourceFiles(unmapped)
+      : [];
+    if (unmeasurable.length > 0) {
+      console.error(
+        `\n${unmeasurable.length} source file(s) were recorded but could not ` +
+          'be mapped onto the text on disk, so they enter no ratio below; ' +
+          '--require-source-files requires every file under ' +
+          `${SOURCE_ROOTS.join('/ and ')}/ to be measurable.`,
+      );
+      for (const file of unmeasurable) console.error(`  ${file}`);
+      fileSetFailed = true;
+    }
+    if (fileSetFailed) process.exit(1);
     if (options.check !== null && totalLinePct + 1e-9 < options.check) {
       console.error(
         `\nLine coverage ${totalLinePct.toFixed(2)}% is below the required ${options.check}%.`,
@@ -628,6 +956,93 @@ function main() {
         `\nSource region coverage ${sourceRegionPct.toFixed(2)}% is below the required ${options.checkSourceRegions}%.`,
       );
       process.exit(1);
+    }
+    if (options.checkSourceFileRegions !== null) {
+      // Same vacuous-pass guard as --check-source-regions: with no source
+      // rows carrying regions there is nothing for a per-file floor to
+      // measure, and an empty list of offenders is not a pass.
+      if (sourceFileRegions.length === 0) {
+        console.error(
+          '\n--check-source-file-regions was requested, but no source file outside tests/ recorded any region.',
+        );
+        process.exit(1);
+      }
+      const below = sourceFileRegions.filter(
+        (entry) => entry.percent + 1e-9 < options.checkSourceFileRegions,
+      );
+      if (below.length > 0) {
+        console.error(
+          `\n${below.length} source file(s) fall below the required ` +
+            `${options.checkSourceFileRegions}% region coverage per file:`,
+        );
+        for (const entry of below) {
+          console.error(
+            `  ${entry.file} ${entry.percent.toFixed(2)}% ` +
+              `(${entry.covered}/${entry.regions} regions; uncovered at ${formatRanges(entry.uncovered)})`,
+          );
+        }
+        process.exit(1);
+      }
+    }
+    // The harness gates are the source gates applied to the other half of
+    // SOURCE_ROOTS. They are separate thresholds rather than a widened
+    // `src files` because the two trees answer different questions and sit
+    // at different percentages: folding tests/tools/ into the shipped-source
+    // ratios would let a harness gap be paid for out of src/'s slack, which
+    // is the averaging --check-source-file-regions already exists to stop.
+    if (options.checkHarness !== null && harnessExecutable === 0) {
+      console.error(
+        `\n--check-harness was requested, but no harness lines under ${HARNESS_ROOTS.join('/ or ')}/ were recorded.`,
+      );
+      process.exit(1);
+    }
+    if (
+      options.checkHarness !== null &&
+      harnessLinePct + 1e-9 < options.checkHarness
+    ) {
+      console.error(
+        `\nHarness line coverage ${harnessLinePct.toFixed(2)}% is below the required ${options.checkHarness}%.`,
+      );
+      process.exit(1);
+    }
+    if (options.checkHarnessRegions !== null && harnessRegions === 0) {
+      console.error(
+        `\n--check-harness-regions was requested, but no harness regions under ${HARNESS_ROOTS.join('/ or ')}/ were recorded.`,
+      );
+      process.exit(1);
+    }
+    if (
+      options.checkHarnessRegions !== null &&
+      harnessRegionPct + 1e-9 < options.checkHarnessRegions
+    ) {
+      console.error(
+        `\nHarness region coverage ${harnessRegionPct.toFixed(2)}% is below the required ${options.checkHarnessRegions}%.`,
+      );
+      process.exit(1);
+    }
+    if (options.checkHarnessFileRegions !== null) {
+      if (harnessFileRegions.length === 0) {
+        console.error(
+          `\n--check-harness-file-regions was requested, but no harness file under ${HARNESS_ROOTS.join('/ or ')}/ recorded any region.`,
+        );
+        process.exit(1);
+      }
+      const below = harnessFileRegions.filter(
+        (entry) => entry.percent + 1e-9 < options.checkHarnessFileRegions,
+      );
+      if (below.length > 0) {
+        console.error(
+          `\n${below.length} harness file(s) fall below the required ` +
+            `${options.checkHarnessFileRegions}% region coverage per file:`,
+        );
+        for (const entry of below) {
+          console.error(
+            `  ${entry.file} ${entry.percent.toFixed(2)}% ` +
+              `(${entry.covered}/${entry.regions} regions; uncovered at ${formatRanges(entry.uncovered)})`,
+          );
+        }
+        process.exit(1);
+      }
     }
   } finally {
     rmSync(coverageDir, { recursive: true, force: true });

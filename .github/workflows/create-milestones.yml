@@ -13,9 +13,18 @@ permissions:
   issues: write
   pull-requests: write
 
+# Serialised repository-wide: the step snapshots every existing milestone
+# once, before the loop, so two concurrent dispatches both see a title as
+# absent and both try to create it. Not cancelled: a run stopped partway
+# through has already created milestones and assigned issues.
+concurrency:
+  group: create-milestones
+  cancel-in-progress: false
+
 jobs:
   create-milestones:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

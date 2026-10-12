@@ -9,6 +9,27 @@ import { themes as prismThemes } from 'prism-react-renderer';
 const siteUrl = process.env.SITE_URL || 'https://endusers.cncf.io';
 const baseUrl = process.env.BASE_URL || '/';
 
+// Script sources the browser may execute.
+//
+// `'unsafe-inline'` is unavoidable: Docusaurus emits inline bootstrap scripts
+// on every page. It is not a reason to omit the directive, though — omitting
+// it leaves *no* restriction at all, so any host may serve a `<script src>`,
+// while `'self' 'unsafe-inline'` still refuses every off-origin script. That
+// is the same asymmetry `frame-src`/`media-src`/`connect-src` were added to
+// close. The production bundles reference only same-origin scripts, so
+// `'self'` costs nothing.
+//
+// `'unsafe-eval'` is added outside production only: the dev server builds with
+// webpack's `eval-cheap-module-source-map` devtool (see
+// @docusaurus/core/lib/webpack/base.js), which wraps every module in `eval()`.
+// The production bundles contain no `eval` at all, so the deployed policy does
+// not carry it.
+const SCRIPT_SOURCES = [
+  "'self'",
+  "'unsafe-inline'",
+  ...(process.env.NODE_ENV === 'production' ? [] : ["'unsafe-eval'"]),
+];
+
 // Remote hosts the browser may load an image from. This mirrors
 // isAllowedImageHost() in scripts/lib/profile-image.mjs, which gates the
 // profile images copied unattended out of cncf/people into
@@ -29,6 +50,77 @@ const IMAGE_HOST_SOURCES = [
   'https://cncf.io',
   'https://*.cncf.io',
 ];
+
+function endusersE2ESourceMaps() {
+  return {
+    name: 'endusers-e2e-source-maps',
+    configureWebpack(config, isServer) {
+      if (isServer) return {};
+      return { devtool: 'source-map' };
+    },
+  };
+}
+
+// Applies the committed data overlays in tests/e2e/fixtures/data/** to the
+// site's data/*.json imports. Some component branches render only for data
+// shapes the checked-in files never take (an archived user group, an awards
+// file with no verification date), so no browser test can reach them against
+// production data. Overlaying only in the coverage build keeps
+// `npm run build:production`, the gating end-to-end job and the deployed site
+// on the real data. See tests/tools/e2e-data-fixtures.cjs.
+function endusersE2EDataFixtures() {
+  return {
+    name: 'endusers-e2e-data-fixtures',
+    configureWebpack(config) {
+      // Both paths are derived from the site directory the bundler was handed
+      // rather than from this file's own location: Docusaurus evaluates this
+      // config through its own loader, so a relative require here resolves
+      // against whatever module did the evaluating.
+      const { join } = require('path');
+      const siteDir = config.resolve.alias['@site'];
+      return {
+        module: {
+          rules: [
+            {
+              test: /\.json$/,
+              include: join(siteDir, 'data'),
+              type: 'json',
+              use: [join(siteDir, 'tests/tools/e2e-data-fixture-loader.cjs')],
+            },
+          ],
+        },
+      };
+    },
+  };
+}
+
+const E2E_COVERAGE = process.env.E2E_COVERAGE === '1';
+const E2E_SOURCE_MAP_PLUGIN = E2E_COVERAGE ? endusersE2ESourceMaps : null;
+const E2E_DATA_FIXTURE_PLUGIN = E2E_COVERAGE ? endusersE2EDataFixtures : null;
+
+// The data overlays above reach components that read data/*.json. They cannot
+// reach a component whose props come from generated MDX: the architecture
+// pages under docs/architectures/ are committed files produced by
+// `npm run import:architectures`, not documents assembled at build time, so a
+// prop shape absent from every one of them is absent from every build.
+//
+// This second docs instance serves tests/e2e/fixtures/docs/** under its own
+// route so such a shape can exist without touching published content. Like the
+// data overlays it is registered only when E2E_COVERAGE=1, so
+// `npm run build:production`, the gating "End-to-end tests" job and the
+// deployed site never compile or link these pages.
+const E2E_FIXTURE_DOCS_ROUTE = 'e2e-coverage-fixtures';
+const E2E_FIXTURE_DOCS_PLUGIN = E2E_COVERAGE
+  ? [
+      require.resolve('@docusaurus/plugin-content-docs'),
+      {
+        id: 'e2e-coverage-fixtures',
+        path: 'tests/e2e/fixtures/docs',
+        routeBasePath: E2E_FIXTURE_DOCS_ROUTE,
+        sidebarPath: false,
+      },
+    ]
+  : null;
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -80,19 +172,77 @@ const config = {
         // data/*.json files supply href and src values rendered by src/components.
         // These directives need no allowance for inline or bundled script, so
         // they hold without constraining Docusaurus hydration or local search.
-        // script-src is deliberately omitted: Docusaurus emits inline bootstrap
-        // scripts, so it could only ship with 'unsafe-inline', which would add no
-        // protection. frame-ancestors is omitted because browsers ignore it when
+        // script-src and style-src ship with 'unsafe-inline' because
+        // Docusaurus emits inline bootstrap scripts and inline styles. That
+        // does not make them pointless: without the directive, and with no
+        // default-src to fall back to, the browser applies *no* restriction,
+        // so any host may serve a `<script src>` or a `<link rel=stylesheet>`
+        // on this origin. 'self' 'unsafe-inline' still refuses every
+        // off-origin script and stylesheet while permitting the inline code
+        // the framework needs -- the same asymmetry frame-src, media-src and
+        // connect-src were added to close. The built site references only
+        // same-origin bundles and one same-origin stylesheet, so neither
+        // directive constrains Docusaurus hydration or local search. See
+        // SCRIPT_SOURCES above for why 'unsafe-eval' is dev-only.
+        // frame-ancestors is omitted because browsers ignore it when
         // delivered via <meta http-equiv>; it needs a real response header.
         // img-src, by contrast, is honoured in a meta policy, and it is the
         // directive that actually backs this project's remote-image host gates
         // (scripts/lib/profile-image.mjs, scripts/lib/project-assets.mjs, the
         // SVG remote-reference check in scripts/lib/svg-active-content.mjs).
         // `data:` is required: Infima inlines small SVG icons as data URIs.
+        //
+        // There is no `default-src` here, so every fetch directive that is not
+        // named below is unrestricted rather than inheriting a fallback. That
+        // left `<iframe>`, media elements and outbound `fetch()` open to any
+        // host while `<object>`/`<embed>` were closed by `object-src 'none'` —
+        // an asymmetry, since an iframe is the more capable of the two. The
+        // three directives below close it, on the same defence-in-depth
+        // footing as `img-src`: the element allowlist in
+        // scripts/lib/mdx-active-content.mjs already refuses `<iframe>`,
+        // `<video>` and `<audio>` in imported bodies, and these hold if that
+        // gate is bypassed, regressed, or skipped by a page added without one.
+        // Each is set to what the site actually uses: it ships no frame, no
+        // media element and no client-side request to a third-party origin
+        // (the local search plugin reads its index from this origin), so
+        // nothing here constrains Docusaurus hydration or local search.
+        // `font-src` joins them on the same footing. It was the last fetch
+        // directive still unnamed, so the browser would load a font from any
+        // host -- and `style-src` carries 'unsafe-inline', so an inline
+        // `@font-face` that reached a page could name one, beaconing the
+        // visitor's IP, User-Agent and Referer to it. It was left out only
+        // because nothing in the build asserted the premise; the CSS scan in
+        // tests/site-config.test.mjs now does, so the directive can be set.
+        // The site's fonts are vendored in static/fonts and referenced by
+        // root-relative url(), so 'self' constrains nothing it actually does.
+        //
+        // `manifest-src` is the last fetch directive with no fallback of its
+        // own. CSP3 6.8.2 gives its chain as << "manifest-src",
+        // "default-src" >> and nothing else, so with no `default-src` here the
+        // browser fetches an application manifest from any host. `worker-src`
+        // is also unnamed but is not a gap for the same reason: its chain is
+        // << "worker-src", "child-src", "script-src", "default-src" >>, so
+        // `script-src` above already constrains it.
+        //
+        // A `<link rel="manifest">` that named a third-party host would beacon
+        // the visitor's IP, User-Agent and Referer there, and a manifest also
+        // carries `name`, `icons`, `start_url` and `scope`, so an off-origin
+        // one misrepresents the installed-app identity of the site. The link
+        // this config emits above is root-relative (`${baseUrl}manifest.json`,
+        // served from static/manifest.json), so 'self' constrains nothing the
+        // site actually does -- the same premise that made `font-src 'self'`
+        // safe to set.
         content: [
           "base-uri 'self'",
           "object-src 'none'",
+          "frame-src 'none'",
+          "media-src 'none'",
+          "connect-src 'self'",
+          "font-src 'self'",
+          "manifest-src 'self'",
           "form-action 'self'",
+          `script-src ${SCRIPT_SOURCES.join(' ')}`,
+          "style-src 'self' 'unsafe-inline'",
           `img-src 'self' data: ${IMAGE_HOST_SOURCES.join(' ')}`,
         ].join('; '),
       },
@@ -220,10 +370,9 @@ const config = {
             activeBaseRegex: '^/$',
           },
           {
-            type: 'docSidebar',
-            sidebarId: 'architecturesSidebar',
-            position: 'left',
+            to: '/architectures',
             label: 'Architectures',
+            position: 'left',
           },
           {
             type: 'docSidebar',
@@ -233,7 +382,7 @@ const config = {
           },
           {
             to: '/community#projects-born-at-end-user-organizations',
-            label: 'Projects from end users',
+            label: 'Projects from End Users',
             position: 'left',
           },
 
@@ -267,6 +416,9 @@ const config = {
       },
     }),
   plugins: [
+    E2E_SOURCE_MAP_PLUGIN,
+    E2E_DATA_FIXTURE_PLUGIN,
+    E2E_FIXTURE_DOCS_PLUGIN,
     [
       require.resolve('docusaurus-plugin-search-local'),
       /** @type {import('docusaurus-plugin-search-local').PluginOptions} */
@@ -278,7 +430,7 @@ const config = {
         docsRouteBasePath: '/',
       }),
     ],
-  ],
+  ].filter(Boolean),
 };
 
 export default config;

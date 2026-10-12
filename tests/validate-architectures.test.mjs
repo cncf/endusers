@@ -254,6 +254,39 @@ test('scans a catalog-less page for MDX expressions', () => {
   );
 });
 
+// Docusaurus's docs plugin publishes .mdx from the same default `include` as
+// .md, so a page that only differs by extension must reach the same gate. It
+// did not: listArchitecturePages() matched '.md' alone, leaving an .mdx page
+// published with unscanned active content.
+test('scans an .mdx page for active content', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/architectures/orphan.mdx':
+        '# Orphan\n\n<iframe src="https://evil.example"></iframe>\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /orphan\.mdx:3: active content in imported page \(disallowed element <iframe>\)/,
+  );
+});
+
+test('scans an .mdx page for MDX expressions', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/architectures/orphan.mdx': '# Orphan\n\nvalue: {String(1)}\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /orphan\.mdx:3: active content in imported page \(MDX expression\)/,
+  );
+});
+
 // index.md is hand-authored, not imported: it renders layout elements and
 // imports a component, all of which the imported-content gate is right to
 // reject in an imported body. Scanning it would turn CI red on repo content.
@@ -267,6 +300,23 @@ test('exempts the hand-authored index page from the imported-content gate', () =
   );
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Validated 1 architecture records/);
+});
+
+// A record whose id is `index` overwrites the hand-authored page above, and
+// the exemption then publishes that imported body without scanning it. Both
+// importers derive the id from text they do not control (a submission issue's
+// "Organization or Team Name" answer, an upstream directory name), so the
+// record has to be rejected for the exemption to stay safe.
+test('rejects a catalog record that claims a repo-authored page id', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([{ ...validRecord, id: 'index', assets: [] }], {
+      'docs/architectures/index.md':
+        '# Index\n\n<iframe src="https://evil.example/beacon"></iframe>\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\[error\] index: id is reserved/);
 });
 
 // A nested page is published at its own route and can never match a catalog
@@ -293,4 +343,51 @@ test('rejects a symlinked page rather than skipping it', () => {
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /linked\.md: page must be a regular file/);
+});
+
+// The symlinked-page case above is the only one the validator itself pins, and
+// it reaches the irregular loop through the page-extension arm of
+// listArchitecturePages(). The symlinked *directory* arm reaches that same loop
+// through a name carrying no page extension, and nothing at this level asks
+// whether it still does: tests/architecture-pages.test.mjs pins the arm inside
+// the library, but a validator that filtered `irregular` down to page-named
+// entries would keep every one of those tests green while the directory hole
+// reopened end to end.
+//
+// It is worth pinning here rather than only in the library because the whole
+// point of the arm is what Docusaurus does with the link that the walk will
+// not: `@docusaurus/plugin-content-docs` globs with fast-glob's default
+// `followSymbolicLinks: true`, so every page under `linked/` is published at
+// `/architectures/linked/...`. The gate must fail on the link itself, because
+// it is the one thing it can see without following it.
+test('rejects a symlinked directory of pages rather than walking past it', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([validRecord], {
+      'docs/elsewhere/evil.md': '# Evil\n\n<div onclick="steal()">x</div>\n',
+    }),
+    { symlinks: { 'docs/architectures/linked': '../elsewhere' } },
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /\[error\] linked: page must be a regular file; a symlinked page, or a symlinked directory of pages, is published but cannot be gated/,
+  );
+  // Reported, never followed: the pages beneath the link are not walked, so
+  // the link itself has to be the finding. A report naming `linked/evil.md`
+  // would mean the gate had descended through a link it refuses to trust.
+  assert.doesNotMatch(result.stderr, /linked\/evil\.md/);
+});
+
+// The complement, and the reason the arm resolves the link instead of
+// rejecting every link it meets: a link to something Docusaurus does not route
+// publishes nothing, so it is still skipped and the run still passes. Without
+// this, a future tightening to "any symlink is an error" would start failing
+// checkouts that ship nothing through the link, and no test would object.
+test('accepts a symlink that resolves to neither a page nor a directory', () => {
+  const result = runScriptWithFixtures(SCRIPT, catalogFixture([validRecord]), {
+    symlinks: { 'docs/architectures/notes.txt': '/etc/hostname' },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /notes\.txt/);
 });

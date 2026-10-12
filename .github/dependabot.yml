@@ -21,6 +21,23 @@ updates:
         patterns:
           - '*'
 
+  # Dev container Features are pinned to exact versions in
+  # .devcontainer/devcontainer.json, and a Feature's install.sh runs as root at
+  # image build time. Pins with nothing refreshing them go stale, so this entry
+  # is what moves them onto upstream fixes. Dependabot does not ship security
+  # updates for this ecosystem, only version updates, which is the whole reason
+  # the cadence below is declared rather than left implicit.
+  - package-ecosystem: 'devcontainers'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 5
+    labels:
+      - 'dependencies'
+    commit-message:
+      prefix: 'chore(deps)'
+
   # Security updates arrive without this entry; it adds the version-update
   # cadence so routine drift lands in small batches. Grouped and capped to
   # keep the review queue shallow.

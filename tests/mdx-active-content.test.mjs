@@ -26,10 +26,13 @@ test('flags script elements, event handlers and script-capable URLs', () => {
   assert.deepEqual(reasons('<iframe src="https://evil.test"></iframe>'), [
     'disallowed element <iframe>',
   ]);
-  assert.deepEqual(reasons('<img src=x onerror=alert(1)>'), [
+  assert.deepEqual(reasons('<img src="x" onerror="alert(1)" />'), [
     'disallowed element <img>',
     'event handler attribute',
   ]);
+  // Unquoted attribute values are not valid MDX, so the compiler rejects them
+  // and so does the gate.
+  assert.match(reasons('<img src=x onerror=alert(1)>')[0], /^MDX parse error/);
   assert.deepEqual(reasons('[click](javascript:alert(1))'), [
     'script-capable URL scheme',
   ]);
@@ -60,8 +63,11 @@ test('flags script-capable schemes hidden behind character references', () => {
   assert.deepEqual(reasons('[click](java&amp;#115;cript:alert(1))'), [
     'script-capable URL scheme',
   ]);
-  // A control character a URL parser would ignore.
-  assert.deepEqual(reasons('[click](java\tscript:alert(1))'), [
+  // A raw tab ends a link destination, so this is plain text, not a link.
+  assert.deepEqual(reasons('[click](java\tscript:alert(1))'), []);
+  // The same control character reached through a reference is inside the
+  // destination, and a URL parser ignores it.
+  assert.deepEqual(reasons('[click](java&#9;script:alert(1))'), [
     'script-capable URL scheme',
   ]);
 });
@@ -157,32 +163,18 @@ test('does not treat a backtick fence with a backtick in its info string as a fe
   );
 });
 
-test('does not treat a four-space or tab indented fence opener as a fence', () => {
-  // Regression for #689: CommonMark allows a fence opener to be preceded by
-  // up to three spaces of indentation. A line indented four or more spaces,
-  // or by a tab, forms no fence at all -- it is an indented code block, a
-  // single-line construct. Reading it as a fence opener anyway would blank
-  // every line after it up to the next fence-shaped line, hiding the live
-  // script the real MDX compiler renders past it.
+test('follows the MDX parser on indented fences, which have no indented-code fallback', () => {
+  // MDX turns indented code off, so the parser is the authority on whether an
+  // indented fence opens a block. The scan reports whatever it leaves live and
+  // ignores whatever it parses as code, with no fence rules of its own.
+  const live = ['```js', '<script>alert(1)</script>', '    ```', '```'];
+  assert.deepEqual(reasons(live.join('\n')), []);
   assert.deepEqual(
-    reasons(['    ```js', '<script>alert(1)</script>', '```'].join('\n')),
+    reasons(['<script>alert(1)</script>', '    ```js'].join('\n')),
     ['disallowed element <script>'],
   );
-  assert.deepEqual(
-    reasons(['\t```js', '<script>alert(1)</script>', '```'].join('\n')),
-    ['disallowed element <script>'],
-  );
-  // Up to three spaces of indentation is still a genuine fence.
   assert.deepEqual(
     reasons(['   ```js', '<script>alert(1)</script>', '```'].join('\n')),
-    [],
-  );
-  // A closing fence indented four or more spaces does not close the block
-  // either -- the real closer is the line after it.
-  assert.deepEqual(
-    reasons(
-      ['```js', '<script>alert(1)</script>', '    ```', '```'].join('\n'),
-    ),
     [],
   );
 });
@@ -324,4 +316,210 @@ test('does not flag braces inside code, which MDX does not evaluate', () => {
     reasons(['```json', '{ "replicas": 3 }', '```'].join('\n')),
     [],
   );
+});
+
+test('flags live content wedged between two multi-line code spans', () => {
+  // A CommonMark inline code span pairs backticks across a single newline, so
+  // `` `a\nb` `` and `` `c\nd` `` are two spans and the text between them is
+  // live. A line-bounded scan instead paired `` b` `` with `` `c `` on the
+  // middle line and blanked the payload with it. Each active form must be
+  // reported, not hidden.
+  assert.deepEqual(
+    reasons('`a\nb` <iframe src="https://evil.test"></iframe> `c\nd`'),
+    ['disallowed element <iframe>'],
+  );
+  assert.deepEqual(reasons('`a\nb` {fetch("https://evil.test")} `c\nd`'), [
+    'MDX expression',
+  ]);
+  assert.deepEqual(reasons('`a\nb` [x](javascript:alert(1)) `c\nd`'), [
+    'script-capable URL scheme',
+  ]);
+});
+
+test('does not let a code span swallow a live paragraph across a blank line', () => {
+  // Inline parsing stops at a paragraph boundary, so the opening backtick
+  // before the blank line cannot close after it: the iframe is its own live
+  // paragraph and must be reported rather than blanked as span content.
+  assert.deepEqual(
+    reasons('`a\n\n<iframe src="https://evil.test"></iframe>\n\nb`'),
+    ['disallowed element <iframe>'],
+  );
+});
+
+test('still treats a genuine multi-line code span as inert', () => {
+  assert.deepEqual(reasons('`a\nb` and then `c\nd` as prose.'), []);
+});
+
+test('does not let a code span swallow live content across a block boundary', () => {
+  // An unclosed backtick at the end of one block cannot pair with a backtick
+  // in the next, so each payload below is live. MDX has no HTML blocks, so a
+  // line starting with `<` does not end the paragraph and that one is a real
+  // code span, which the parser (rather than a hand-written rule) decides.
+  for (const interrupt of ['- ', '# ', '1. ', '> ']) {
+    assert.deepEqual(
+      reasons(
+        `text \`\n${interrupt}<iframe src="https://evil.test"></iframe> \``,
+      ),
+      ['disallowed element <iframe>'],
+      interrupt,
+    );
+  }
+  assert.deepEqual(
+    reasons('text `\n---\n<iframe src="https://evil.test"></iframe> `'),
+    ['disallowed element <iframe>'],
+  );
+  assert.deepEqual(
+    reasons('text `\n<iframe src="https://evil.test"></iframe> `'),
+    [],
+  );
+});
+
+test('still pairs a code span across a lazy paragraph continuation', () => {
+  // A plain continuation line starts no block, so the span really does close
+  // on it and its contents stay inert -- the stop must not fire here.
+  // (micromark renders `a `x\n  plain y` b` as a single <code> span.)
+  assert.deepEqual(reasons('a `x\n  plain y` b'), []);
+  assert.deepEqual(reasons('- item `x\n  plain y` b'), []);
+});
+
+test('rejects text MDX cannot compile instead of certifying it', () => {
+  assert.match(reasons('<div>unclosed')[0], /^MDX parse error/);
+  assert.equal(findActiveContent('<div>unclosed')[0].line, 1);
+});
+
+test('flags script schemes in definitions, images and JSX attributes', () => {
+  assert.deepEqual(reasons('[x]: javascript:alert(1)\n\n[x]'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('![x](javascript:alert(1))'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('<b title="javascript:alert(1)">x</b>'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('<b title={"javascript:alert(1)"}>x</b>'), [
+    'script-capable URL scheme',
+  ]);
+  assert.deepEqual(reasons('<b {...props}>x</b>'), ['MDX expression']);
+  assert.deepEqual(reasons('<b onClick="x">x</b>'), [
+    'event handler attribute',
+  ]);
+  assert.deepEqual(reasons('<b title={"a" + "b"}>x</b>'), ['MDX expression']);
+  assert.deepEqual(reasons('<b title={"a\\nb"}>x</b>'), []);
+});
+
+test('reports a fragment and an invalid string-literal expression', () => {
+  assert.deepEqual(reasons('<>x</>'), ['disallowed element <>']);
+  assert.deepEqual(reasons('<b title={"\\q"}>x</b>'), ['MDX expression']);
+});
+
+test('reports a parse error on the line it occurs', () => {
+  const [finding] = findActiveContent('fine\n\n<div>\n');
+  assert.match(finding.reason, /^MDX parse error/);
+  assert.equal(finding.line, 1);
+  assert.equal(findActiveContent('<img src=x>')[0].line, 1);
+});
+
+// The second half of the invariant stated in scripts/lib/uri-safety.mjs: an
+// imported page is third-party content, and every <img> in one is fetched by
+// a visitor's browser with no user action, so a remote image destination is a
+// beacon for their IP, User-Agent and Referer.
+test('flags a remote image destination', () => {
+  assert.deepEqual(reasons('![p](https://evil.example/p.png)'), [
+    'remote image destination https://evil.example/p.png',
+  ]);
+  assert.deepEqual(reasons('![p](HTTP://Evil.Example/p.png)'), [
+    'remote image destination http://evil.example/p.png',
+  ]);
+  assert.deepEqual(reasons('![p](//evil.example/p.png)'), [
+    'remote image destination //evil.example/p.png',
+  ]);
+});
+
+test('resolves an image reference through its definition', () => {
+  assert.deepEqual(reasons('![p][x]\n\n[x]: https://evil.example/p.png'), [
+    'remote image destination https://evil.example/p.png',
+  ]);
+  // The definition may be written before the reference that uses it.
+  assert.deepEqual(reasons('[x]: https://evil.example/p.png\n\n![p][x]'), [
+    'remote image destination https://evil.example/p.png',
+  ]);
+  // A collapsed reference carries the label as its identifier.
+  assert.deepEqual(reasons('![evil][]\n\n[evil]: https://evil.example/p.png'), [
+    'remote image destination https://evil.example/p.png',
+  ]);
+});
+
+test('leaves an unresolved image reference alone', () => {
+  // Nothing resolves it, so it renders as literal text and loads nothing.
+  assert.deepEqual(reasons('![p][missing]'), []);
+});
+
+test('leaves links, link definitions and local images alone', () => {
+  // rewriteImages() demotes a remote image *to* a remote link, and
+  // docs/architectures/colopl.md carries remote link definitions, so a gate on
+  // either would reject every imported page.
+  assert.deepEqual(reasons('[x](https://good.example/)'), []);
+  assert.deepEqual(reasons('[x][d]\n\n[d]: https://good.example/'), []);
+  assert.deepEqual(reasons('![p](/img/architectures/acme/p.png)'), []);
+  assert.deepEqual(reasons('![p](images/p.png)'), []);
+  assert.deepEqual(reasons('![p](data:image/png;base64,AAAA)'), []);
+});
+
+test('flags a remote logo on the allowed component but not its remote href', () => {
+  const card = (attributes) =>
+    reasons(`<CNCFProjectCard name={"K"} ${attributes} />`);
+  assert.deepEqual(card('logo={"https://evil.example/l.svg"}'), [
+    'remote image destination https://evil.example/l.svg',
+  ]);
+  assert.deepEqual(card('logo="https://evil.example/l.svg"'), [
+    'remote image destination https://evil.example/l.svg',
+  ]);
+  assert.deepEqual(card('logo={"/img/cncf-projects/k.svg"}'), []);
+  assert.deepEqual(card('href={"https://www.cncf.io/projects/k/"}'), []);
+});
+
+test('truncates a long remote image destination in the reason', () => {
+  const url = `https://evil.example/${'a'.repeat(200)}.png`;
+  const [finding] = findActiveContent(`![p](${url})`);
+  assert.equal(
+    finding.reason,
+    `remote image destination ${url.slice(0, 117)}...`,
+  );
+});
+
+test('matches the element allowlist case-sensitively, as MDX reads tag names', () => {
+  // MDX reads a lowercase tag name as an HTML element and any other casing as
+  // a component reference, so `<B>` is not the inert `<b>` the allowlist
+  // permits: it compiles to a lookup of a component named `B` that no
+  // provider defines, and Docusaurus throws "Expected component `B` to be
+  // defined" while prerendering. Lowercasing the name before the lookup
+  // vouched for a body the renderer rejects.
+  assert.deepEqual(reasons('<B>bold</B>'), ['disallowed element <B>']);
+  assert.deepEqual(reasons('<Code>x</Code>'), ['disallowed element <Code>']);
+  assert.deepEqual(reasons('<HR />'), ['disallowed element <HR>']);
+  // The genuinely inert lowercase forms stay allowed.
+  assert.deepEqual(reasons('<b>bold</b>'), []);
+  assert.deepEqual(reasons('<code>x</code>'), []);
+  assert.deepEqual(reasons('<hr />'), []);
+});
+
+test('flags a string-valued style attribute, which React refuses to render', () => {
+  // React requires `style` to be an object and throws "The `style` prop
+  // expects a mapping from style properties to values, not a string" when it
+  // is given a string, so both of these fail while Docusaurus prerenders.
+  assert.deepEqual(reasons('<p style="color:red">x</p>'), [
+    'string style attribute',
+  ]);
+  // `style={"..."}` is an expression whose body is a single string literal,
+  // which this module otherwise reads as inert -- it reaches React as a
+  // string just the same.
+  assert.deepEqual(reasons('<p style={"color:red"}>x</p>'), [
+    'string style attribute',
+  ]);
+  // The object form needs a non-literal expression and is already reported as
+  // one, so no style attribute reaches a rendered page by any route.
+  assert.deepEqual(reasons("<p style={{ color: 'red' }}>x</p>"), [
+    'MDX expression',
+  ]);
 });

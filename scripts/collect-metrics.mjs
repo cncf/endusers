@@ -52,10 +52,21 @@ try {
       }
     }
   }
-  const architectures = readdirSync(
-    join(architectureDir, 'content/en/architectures'),
-    { withFileTypes: true },
-  ).filter((entry) => entry.isDirectory());
+  // Dirent.isDirectory() is false for a symlink, so a symlinked architecture
+  // directory upstream would drop out of the published count with no trace.
+  // import-architectures.mjs skips the same entry for the same reason and
+  // warns; the count has to agree with the import, so skip it here too and
+  // leave the drop visible in the workflow log (#1276).
+  const architecturesRoot = join(architectureDir, 'content/en/architectures');
+  const architectures = readdirSync(architecturesRoot, {
+    withFileTypes: true,
+  }).filter((entry) => {
+    if (!entry.isSymbolicLink()) return entry.isDirectory();
+    console.warn(
+      `Skipping symlink ${join(architecturesRoot, entry.name)}: symlinked architecture directories are not counted`,
+    );
+    return false;
+  });
   const architectureTimeline = architectureTimelineData(architectureHistory);
   const memberHistory = memberTimeline(landscapeDir);
   const lifecycle = await collectLifecycleMetrics();

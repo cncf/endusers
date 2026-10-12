@@ -19,6 +19,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -28,7 +29,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -76,6 +77,12 @@ jobs:
       - name: Validate projects-born data
         run: npm run validate:projects-born
 
+      - name: Validate End User landscape data
+        run: npm run validate:enduser-members
+
+      - name: Validate members data
+        run: npm run validate:members
+
       # Build for the GitHub Pages project URL. When the custom domain in
       # static/CNAME is verified and active, update these values to
       # SITE_URL=https://endusers.cncf.io and BASE_URL=/ so canonical and
@@ -99,6 +106,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     needs: build
     permissions:
       pages: write

@@ -16,11 +16,28 @@ npm run docus:start
 matching CI. Reach for `npm install <package>` only to add or upgrade a
 dependency, and commit the resulting lockfile change deliberately.
 
+The repository's `.npmrc` sets `ignore-scripts=true`, so neither command runs
+dependency lifecycle scripts. That is deliberate: CI installs this tree in jobs
+that hold a write-scoped `GITHUB_TOKEN`, and no dependency here needs an install
+script to work. If a future dependency genuinely does, say so in the pull
+request rather than dropping the setting.
+
 The dev server runs at `http://localhost:3000`. In the devcontainer:
 
 ```bash
 npm run docusaurus start -- --host 0.0.0.0 --port 3000 --poll 10000
 ```
+
+Two `package.json` scripts deserve a note because nothing else references them:
+
+- `build:preview` is an alias of `build:production` kept for preview-style
+  deploys of the production build; the two run the identical command, and the
+  deploy workflow uses `build:production`.
+- `update:pkgs` (`npx npm-check-updates -u`) is a maintainer-only bulk-refresh
+  tool that rewrites every semver range in `package.json` at once. It is not the
+  routine upgrade path — that remains per-package `npm install <package>` and
+  Dependabot — and any output it produces still lands as a deliberately reviewed
+  lockfile commit.
 
 ### Justfile shortcuts
 
@@ -28,13 +45,17 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
 `Justfile` provides shortcuts that wrap the npm scripts above:
 
 - `just serve` — start the dev server bound to all interfaces.
-- `just import` — import reference architectures and run `import:architectures`,
+- `just import` — refresh end-user member data from `cncf/landscape`
+  (`collect:enduser-members`, `validate:enduser-members` — this step clones
+  `cncf/landscape` from GitHub, so it needs network access) and then import
+  reference architectures and run `import:architectures`,
   `validate:architectures`, and `validate:architecture-assets`.
 - `just build` — run the data validators (`validate:architectures`,
   `validate:architecture-assets`, `validate:metrics`, `validate:awards`,
   `validate:community-people`, `validate:community-groups`,
-  `validate:launch-metrics`, `validate:case-studies`, `validate:radar-reports`)
-  followed by `build`.
+  `validate:launch-metrics`, `validate:case-studies`, `validate:radar-reports`,
+  `validate:projects-born`, `validate:button-contrast`,
+  `validate:enduser-members`, `validate:members`) followed by `build`.
 
 These recipes are a superset of the validation steps the "Deploy to GitHub
 Pages" and "Import reference architectures" workflows run, but they are **not**
@@ -42,8 +63,10 @@ the same checks the "Validate repository" and "Lint repository" PR gates run,
 and a green `just build`/`just import` locally does **not** imply a green PR
 check. Before opening a PR, also run `npm run test:unit:coverage:check` and the
 local check scripts that match "Lint repository": `npm run check:format`,
-`npm run check:spelling`, and `npm run check:markdown`. `npm run check` also
-runs these three, but it additionally runs `check:links` (network-dependent) and
+`npm run check:spelling`, and `npm run check:markdown`. The "Validate
+repository" gate additionally runs `npm run check:audit` (dependency advisory
+allowlist) — see step 5 below. `npm run check` also runs the lint trio, but it
+additionally runs `check:audit`, `check:links` (network-dependent) and
 `check:community-group-links` (needs `GH_TOKEN` and rewrites
 `data/community-groups.json`) — see step 5 below before running the full
 `npm run check`. `just` is optional — the npm scripts remain the canonical
@@ -61,17 +84,17 @@ in mind for every page.
 Most pages are generated from data files. Contribute by editing the data, not by
 hand-building pages:
 
-| Page                            | Data source                                                                                 | Validation                          |
-| ------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `/community/awards`             | `data/awards.json`                                                                          | `npm run validate:awards`           |
-| `/metrics`                      | `data/metrics.json` (generated)                                                             | `npm run validate:metrics`          |
-| `/architectures`                | `data/architectures/records/*.json`                                                         | `npm run validate:architectures`    |
-| `/community/members`            | `data/members.json` (generated from `data/awards.json` + `data/architectures/catalog.json`) | `npm run generate:members`          |
-| Community people lightboxes     | `data/community-roster.json` (curated) → refreshed into `data/community-people.json`        | `npm run validate:community-people` |
-| `docs/community/` user groups   | `data/community-groups.json` (generated)                                                    | `npm run validate:community-groups` |
-| ProjectsBorn (`/practitioners`) | `data/projects-born.json`                                                                   | `npm run validate:projects-born`    |
-| `/resources/case-studies`       | `data/case-studies.json` (generated by `npm run collect:case-studies`)                      | `npm run validate:case-studies`     |
-| `/resources/radar-reports`      | `data/radar-reports.json` (generated by `npm run collect:radar-reports`)                    | `npm run validate:radar-reports`    |
+| Page                            | Data source                                                                                                                                                                   | Validation                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `/community/awards`             | `data/awards.json`                                                                                                                                                            | `npm run validate:awards`                                         |
+| `/metrics`                      | `data/metrics.json` (generated)                                                                                                                                               | `npm run validate:metrics`                                        |
+| `/architectures`                | `data/architectures/records/*.json`                                                                                                                                           | `npm run validate:architectures`                                  |
+| `/community/members`            | `data/enduser-landscape.json` (pinned CNCF landscape snapshot) + `data/members.json` (generated from the snapshot, `data/awards.json`, and `data/architectures/catalog.json`) | `npm run validate:enduser-members` and `npm run validate:members` |
+| Community people lightboxes     | `data/community-roster.json` (curated) → refreshed into `data/community-people.json`                                                                                          | `npm run validate:community-people`                               |
+| `docs/community/` user groups   | `data/community-groups.json` (generated)                                                                                                                                      | `npm run validate:community-groups`                               |
+| ProjectsBorn (`/practitioners`) | `data/projects-born.json`                                                                                                                                                     | `npm run validate:projects-born`                                  |
+| `/resources/case-studies`       | `data/case-studies.json` (generated by `npm run collect:case-studies`)                                                                                                        | `npm run validate:case-studies`                                   |
+| `/resources/radar-reports`      | `data/radar-reports.json` (generated by `npm run collect:radar-reports`)                                                                                                      | `npm run validate:radar-reports`                                  |
 
 Rules:
 
@@ -87,7 +110,11 @@ Rules:
 - Verify award entries against the linked cncf.io announcement before adding.
 - Reference architectures are imported from
   [cncf/architecture](https://github.com/cncf/architecture) — fix content
-  upstream, then re-import.
+  upstream, then re-import. Imported pages and SVG diagrams must pass the
+  content-security validators (`validate:architectures`,
+  `validate:architecture-assets`); the rules they enforce — and how to fix an
+  `active content` or `remote reference` failure — are documented in
+  [CONTENT-SECURITY.md](CONTENT-SECURITY.md).
 - Verify CNCF facts (award winners, TAB scope, architecture counts) against
   authoritative sources. Never assert numbers without a source.
 - Radar report `summary` fields in `data/radar-reports.json` are hand-written
@@ -96,7 +123,11 @@ Rules:
   script's generated fields.
 - **Adding or editing an award winner requires re-running
   `npm run generate:members`** so `/community/members` stays in sync with
-  `data/awards.json`.
+  `data/awards.json`. The generator validates its output; refresh the
+  authoritative organization roster with `npm run collect:enduser-members` and
+  validate the snapshot with `npm run validate:enduser-members` before
+  generation; `npm run validate:members` also runs explicitly before CI and
+  deployment builds, alongside the existing unit smoke validation.
 - **Never edit `data/community-people.json` by hand.** Add or fix a person in
   `data/community-roster.json`, then refresh with
   `npm run fetch:community-people`. This enriches roster entries with bio,
@@ -124,9 +155,9 @@ publishing cadence.
 - GitHub Flavored Markdown for all content.
 - No emojis in content, code, or commit messages.
 - Maintain the Docusaurus layout and `sidebars.js` configuration. Single-page
-  sections (practitioners, events, metrics) intentionally have no sidebar;
-  multi-page sections (architectures, community which includes awards and
-  members, resources) do.
+  sections (practitioners, events, metrics) and reference architectures
+  intentionally have no sidebar; multi-page sections (community which includes
+  awards and members, resources) do.
 
 ## Good first issues
 
@@ -152,9 +183,13 @@ enough for a first contribution.
 2. Make your change and run the relevant validation script.
 3. Run `npm run test:unit:coverage:check` — the required "Validate repository"
    check runs this on every PR, and it fails the build if unit-test coverage
-   drops below its thresholds (97% lines / 99% source / 93% regions / 97% source
-   regions). `npm run test:unit` alone skips the coverage gate, so a green
-   `test:unit` locally does not guarantee a green PR check.
+   drops below its thresholds (99% lines / 100% source / 96% regions / 100%
+   source regions). The harness under `tests/tools/` is floored separately (100%
+   lines / 99% regions, and 98% regions per harness file): it is measured like
+   source but reported in its own `harness files` row, so a gap in the test
+   apparatus cannot be paid for out of `src/`'s slack. `npm run test:unit` alone
+   skips the coverage gate, so a green `test:unit` locally does not guarantee a
+   green PR check.
 4. Verify with `npm run build` before opening a PR. If your change touches
    pages, components, or navigation, also run the end-to-end suite — see
    [End-to-end tests](#end-to-end-tests) below.
@@ -167,9 +202,20 @@ enough for a first contribution.
    - `check:markdown` — fix the reported issue, or add an inline disable comment
      per the rules in `.markdownlint.yaml` if the rule doesn't apply.
 
-   `npm run check` runs these three plus two more scripts that "Lint repository"
-   does **not** enforce, so treat it as a superset rather than a drop-in for the
-   CI check:
+   The "Validate repository" check also runs `npm run check:audit` on every PR,
+   which fails differently from the lint trio:
+   - `check:audit` — fails the build on any high/critical dependency advisory
+     not in the allowlist (see "Known unpatched dependency advisories" in
+     [`SECURITY.md`](SECURITY.md)). The advisory database updates daily, so a
+     branch that was green yesterday can fail with no code change. Do **not**
+     run `npm audit fix --force`; flag the failure for maintainers, who own the
+     allowlist in `scripts/audit-gate.mjs`.
+
+   `npm run check` runs the lint trio plus three more scripts that the PR gates
+   enforce separately ("Validate repository") or not at all, so treat it as a
+   superset rather than a drop-in for the CI checks:
+   - `check:audit` — see above; part of "Validate repository", not "Lint
+     repository".
    - `check:links` — runs `markdown-link-check` over every root-level `*.md`
      file; it needs network access and can fail for reasons unrelated to your
      change (a linked site being temporarily down, for example).
@@ -194,14 +240,167 @@ that `npm run test:e2e` does not handle for you:
 ```bash
 npm run build:production      # required first: the suite serves build/, it
                                # does not build it
-npx playwright install chromium   # once per machine: downloads the browser
+npx playwright install --with-deps chromium   # once per machine: downloads the
+                               # browser and the OS packages it needs to launch
 npm run test:e2e
 ```
+
+`--with-deps` runs `apt-get install`, so it needs root. Without the OS packages
+the browser bundle is present but will not launch, and every test fails with
+`browserType.launch: Target page, context or browser has been closed`, which
+names neither the missing library nor the install step. On a machine where you
+are not root (an unprivileged container, a shared dev host), unpack the same
+packages into a private sysroot and point the loader at it instead. The browser
+bundle itself installs fine as an ordinary user:
+
+<!-- cspell:disable -->
+
+```bash
+npx playwright install chromium       # the browser bundle only, no --with-deps
+mkdir -p /tmp/sysroot/apt/{state,cache}/ /tmp/debs
+printf 'Dir::State "/tmp/sysroot/apt/state";\nDir::State::status "/tmp/sysroot/apt/state/status";\nDir::Cache "/tmp/sysroot/apt/cache";\n' > /tmp/sysroot/apt.conf
+touch /tmp/sysroot/apt/state/status
+export APT_CONFIG=/tmp/sysroot/apt.conf
+apt-get update
+cd /tmp/debs && apt-get download \
+  libglib2.0-0t64 libnspr4 libnss3 libdbus-1-3 libatk1.0-0t64 \
+  libatk-bridge2.0-0t64 libatspi2.0-0t64 libx11-6 libxcomposite1 libxdamage1 \
+  libxext6 libxfixes3 libxrandr2 libgbm1 libxcb1 libxkbcommon0 libasound2t64 \
+  libpango-1.0-0 libcairo2 libcups2t64 libexpat1 libudev1 libdrm2 \
+  libwayland-client0 libxrender1 libxau6 libxdmcp6 libxi6 \
+  libavahi-common3 libavahi-client3 libpng16-16t64 libfontconfig1 libfreetype6 \
+  libxcb-render0 libxcb-shm0 libpixman-1-0 libfribidi0 libthai0 libharfbuzz0b \
+  libgraphite2-3 libthai-data libdatrie1 libbrotli1 libbsd0 libmd0
+for d in *.deb; do dpkg-deb -x "$d" /tmp/sysroot/fs; done
+cd - && export LD_LIBRARY_PATH=/tmp/sysroot/fs/usr/lib/x86_64-linux-gnu:/tmp/sysroot/fs/lib/x86_64-linux-gnu
+```
+
+<!-- cspell:enable -->
+
+The first 28 names are the packages Playwright itself installs on Debian and
+Ubuntu plus the four the `chrome-headless-shell` binary needs beyond them; the
+last 17 are what the full `chrome` binary additionally loads, so a headed or
+`channel: 'chromium'` run works too. Both binaries have to resolve, so check
+both. Zero `not found` lines on each is the goal:
+
+```bash
+for b in ~/.cache/ms-playwright/chromium*/*/chrome \
+         ~/.cache/ms-playwright/chromium*/*/chrome-headless-shell; do
+  echo "$b: $(ldd "$b" | grep -c 'not found') missing"
+done
+```
+
+Two things that look like failures and are not: `apt-get download` may print
+`rm: cannot remove '/var/cache/apt/archives/partial/*.deb': Permission denied`
+on a host whose `/var/cache/apt` is root-owned (the download still succeeds and
+exits 0), and the `LD_LIBRARY_PATH` export is per shell, so set it again in a
+new terminal before `npm run test:e2e`. Do not set `XDG_CACHE_HOME` for the run:
+Playwright resolves the downloaded browser under it, and overriding it makes
+every test fail with "Executable doesn't exist at ...". On an `arm64` host
+substitute `aarch64-linux-gnu` for `x86_64-linux-gnu` in the loader path.
 
 The suite starts its own server on `localhost:3000` (override with `E2E_PORT`)
 and serves the static output already built in `build/` via `docusaurus serve` —
 it does not rebuild your changes, so re-run `npm run build:production` after
 each edit before re-running the suite.
+
+Browser source coverage is opt-in and is not part of the required e2e command.
+Use a fresh run directory for each capture so artifacts from an earlier run
+cannot be mixed into the report:
+
+```bash
+RUN_ID="local-$(date +%s)"
+RUN_DIR="coverage/e2e/$RUN_ID"
+node tests/tools/e2e-coverage-run.mjs init --dir "$RUN_DIR" --run-id "$RUN_ID"
+E2E_COVERAGE_DIR="$RUN_DIR" E2E_COVERAGE_RUN_ID="$RUN_ID" \
+  npm run build:e2e:coverage
+E2E_COVERAGE_DIR="$RUN_DIR" E2E_COVERAGE_RUN_ID="$RUN_ID" \
+  npm run test:e2e:coverage
+node tests/tools/e2e-coverage-run.mjs seal \
+  --dir "$RUN_DIR" --status passed
+npm run report:e2e:coverage -- \
+  --input "$RUN_DIR" --build build \
+  --check-source 100 --check-source-regions 96 \
+  --check-source-file-regions 66 \
+  --require-source-files \
+  --json "coverage/e2e/$RUN_ID-report.json" \
+  --text "coverage/e2e/$RUN_ID-report.txt"
+```
+
+The report is source-mapped back to `src/**`. The thresholds above are the ones
+the `e2e-coverage` job in `.github/workflows/ci.yml` enforces, so a local render
+that omits them passes where CI fails; `tests/e2e-coverage-gate.test.mjs` holds
+floors under them. Invalid maps, stale manifests, and empty aggregate
+attribution fail visibly and leave their raw artifacts for review.
+
+Read the percentages against the Node major CI pins. These are _region_ counts,
+and V8 splits the same expression into a different number of ranges on a
+different runtime, so the denominator moves even though the code, the suite and
+the fixture builds do not. The same commit measures 97.29% source regions on the
+major the job pins and 97.73% on a newer runtime, and per file the gap is wider
+still: `DirectoryFreshness.js` is 11/15 (73.33%) on the pinned major (node
+22.23.3) and 9/10 (90.00%) on v26.10.0. A local render on a newer runtime
+therefore reports headroom the gate does not have, and ratcheting a floor to
+match it turns the required job red. `tests/e2e-coverage-gate.test.mjs` records
+the major its floors were measured on and fails if the job moves off it. The
+counts also move between patch releases of that major, so a small same-major
+difference is runtime drift, not a code change.
+
+Some component branches render only for data shapes the checked-in `data/*.json`
+never take — an archived End User Group, a person with neither role nor company,
+an organization holding both membership roles. The components read those files
+at build time, so no browser test can reach those branches against the shipped
+data. `npm run build:e2e:coverage` therefore applies the overlays committed
+under `tests/e2e/fixtures/data/`, which add the missing records to the data the
+coverage build compiles. Each overlay states only its delta, and every path it
+names must still exist in the real file, so a regenerated data file fails the
+build rather than quietly taking the coverage with it. See
+[`tests/tools/e2e-data-fixtures.cjs`](tests/tools/e2e-data-fixtures.cjs) for the
+format, and `tests/e2e/data-fixtures.spec.js` for the specs that drive the
+branches. A spec that asserts against a data file should read it through
+`loadSiteData()` so it describes the build it is running against.
+
+An overlay in `tests/e2e/fixtures/data/` only helps where the missing shape is
+an _additional_ record. A branch that turns on a document-level field — an
+awards file with no verification date, an architectures source with no resolved
+revision — cannot be reached that way: clearing the field swaps which arm the
+one page renders rather than adding a case, trading covered lines for the arm it
+displaces. Those branches get a build of their own. Every directory named
+`tests/e2e/fixtures/data-<name>/` declares one: `npm run build:e2e:coverage`
+compiles it into `build/e2e-coverage-<name>` with those overlays layered on top
+of `tests/e2e/fixtures/data/`, under base URL `/e2e-coverage-<name>/`. One
+`docusaurus serve` offers every site at once, so a single Playwright run visits
+the real page and each fixture build, and the report unions what each reached —
+the builds compile the same `src/**` sources, so their scripts fold onto the
+same lines.
+
+Adding a build is adding a directory; nothing else has to be told about it. Pair
+the new route with the real one in the spec — on its own, an assertion that a
+page omits something passes just as well when the page is broken. Each build is
+a full Docusaurus compile, so the coverage job's wall time grows linearly in the
+number of these directories: add one when the shape it needs provably conflicts
+with every existing build, not as the first reach for a branch an additive
+overlay could cover instead. `tests/e2e/data-variants.spec.js` and
+`tests/e2e/reference-architectures-no-revision.spec.js` are worked examples.
+
+Data overlays reach only components that read `data/*.json`. A branch whose
+props arrive through generated MDX — the architecture pages under
+`docs/architectures/` are committed output of `npm run import:architectures`, so
+a prop shape absent from every imported page is absent from every build — needs
+the second mechanism: MDX fixture pages committed under
+`tests/e2e/fixtures/docs/`. When `E2E_COVERAGE=1`, `docusaurus.config.js`
+registers an extra docs-plugin instance that serves them at the
+`/e2e-coverage-fixtures/` route, where a spec can render the component with
+exactly the props the real corpus never supplies. See
+`tests/e2e/cncf-project-card.spec.js` for a worked example. Like the data
+overlays, nothing outside `E2E_COVERAGE=1` registers the instance, so these
+pages never reach a production build or the deployed site.
+
+`npm run build:production`, the gating end-to-end job and the deployed site are
+unaffected: nothing outside `E2E_COVERAGE=1` registers the overlay. The coverage
+build opts out of the bundler's persistent cache for the same reason — the cache
+is keyed on neither the loader nor `E2E_COVERAGE`, so sharing it would replay
+overlaid data into the next production build in the same working tree.
 
 ## Agent contributors
 

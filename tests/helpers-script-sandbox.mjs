@@ -114,6 +114,10 @@ exit 0
  * @param {Record<string, string[]>} [options.repoCommitDates] clone target name
  *   -> ISO author dates, one commit each; commits after the first touch
  *   content/en/architectures so path-filtered history is exercised
+ * @param {Record<string, Record<string, string>>} [options.repoSymlinks] clone
+ *   target name -> repo-relative link path -> link target. The `git clone`
+ *   shim copies the fixture with `cp -R`, which preserves symlinks, so these
+ *   reach the script the same way a symlink committed upstream would.
  * @param {Array<{match: string, status?: number, body?: unknown,
  *   headers?: Record<string, string>, networkError?: string}>} [options.routes]
  * @param {string[]} [options.outputs] repo-relative paths to read back afterwards
@@ -127,6 +131,7 @@ export function runScriptInSandbox({
   fixtures = {},
   repos = {},
   repoCommitDates = {},
+  repoSymlinks = {},
   routes = [],
   outputs = [],
   env = {},
@@ -147,6 +152,13 @@ export function runScriptInSandbox({
     for (const [name, tree] of Object.entries(repos)) {
       mkdirSync(join(fixtureRepos, name), { recursive: true });
       writeFiles(join(fixtureRepos, name), tree);
+      for (const [relativePath, linkTarget] of Object.entries(
+        repoSymlinks[name] ?? {},
+      )) {
+        const link = join(fixtureRepos, name, relativePath);
+        mkdirSync(dirname(link), { recursive: true });
+        symlinkSync(linkTarget, link);
+      }
       const dates = repoCommitDates[name];
       if (dates?.length) {
         repoDates[`ENDUSERS_GIT_DATES_${name.replace(/[^A-Za-z0-9]/g, '_')}`] =
@@ -219,6 +231,23 @@ function writeFiles(base, tree) {
   }
 }
 
+// The normalisation half of realGitPath, split out so both of its fallbacks can
+// be driven directly.
+//
+// `|| '/usr/bin/git'` is reachable from the outside: an empty PATH makes
+// `command -v git` find nothing and print nothing, which
+// tests/helpers-script-sandbox-fallbacks.test.mjs exercises through
+// runScriptInSandbox. `?? ''` is not. It guards the case spawnSync signals by
+// returning `stdout: null` — the shell itself failing to start — and the call
+// passes `shell: true`, so reaching it would mean making /bin/sh unspawnable
+// for one call in this process. Leaving it inline left the arm as the single
+// uncovered region in this file, which alone held the gate's
+// --check-harness-file-regions floor down; as a function it is reachable by
+// passing the value spawnSync would have produced.
+export function gitPathFromLookup(stdout) {
+  return (stdout ?? '').trim() || '/usr/bin/git';
+}
+
 // Resolved before the shim directory is prepended to PATH so the shim delegates
 // to the real binary instead of recursing into itself.
 function realGitPath() {
@@ -226,5 +255,5 @@ function realGitPath() {
     encoding: 'utf8',
     shell: true,
   });
-  return (found.stdout ?? '').trim() || '/usr/bin/git';
+  return gitPathFromLookup(found.stdout);
 }

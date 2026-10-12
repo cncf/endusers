@@ -91,42 +91,6 @@
   margin: 1.5rem 0 0;
 }
 
-.compact {
-  border-top: 1px solid #444;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-}
-
-.compact .heading h2 {
-  color: #fff;
-  font-size: 1.1rem;
-}
-
-.compact .projects {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.85rem;
-}
-
-.compact .project {
-  background: transparent;
-  border: 1px solid #555;
-  border-top: 2px solid #93eaff;
-  min-height: 0;
-  padding: 0.65rem 0.8rem;
-}
-
-.compact .projectName {
-  color: #fff;
-  font-size: 1rem;
-}
-
-.compact .projectOrigin,
-.compact .projectLink {
-  color: #93eaff;
-}
-
 @media (max-width: 996px) {
   .projects {
     grid-template-columns: repeat(3, minmax(0, 1fr));

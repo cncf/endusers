@@ -18,7 +18,7 @@
 // navigate to /, /architectures, /blog, /blog/tags, /community,
 // /community/awards, /community/members, /metrics, /resources/case-studies
 // and /resources/radar-reports.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // Kept in step with LEGACY_STUBS in tests/legacy-url-stubs.test.mjs. Restated
 // here rather than imported because these are the routes as a *visitor*

@@ -4,20 +4,44 @@
  *
  * Architecture documentation is imported verbatim from a third-party
  * repository, and Docusaurus treats `.md` as MDX, so raw HTML/JSX in an
- * imported body is rendered into the published site rather than escaped.  This
+ * imported body is rendered into the published site rather than escaped. This
  * helper reports the constructs that can execute or load remote code so a
  * validator can fail the build before such a body ships.
  *
- * MDX evaluates a braced expression as JavaScript, so `{fetch(...)}` in an
- * imported body is live code and not prose; every `{` is therefore a finding
- * unless it is one of the inert string-literal attributes the importer emits
- * itself.  The check is deliberately fail-closed: literal braces in upstream
- * prose are reported rather than assumed harmless.
+ * The body is parsed with the grammar Docusaurus compiles pages with (MDX plus
+ * GFM) and the resulting tree is inspected, rather than the text being
+ * pattern-matched. What counts as code, which backticks pair, where a JSX tag
+ * ends and how a link destination is decoded are therefore decided by the same
+ * parser the site uses, not by an approximation of it. Text the parser rejects
+ * is a finding: Docusaurus cannot compile it either, and a scan that cannot
+ * read a document cannot vouch for it.
  *
- * Scheme detection normalizes each line before testing it, because CommonMark
- * decodes character references in a link destination: `java&#115;cript:` is a
- * live `javascript:` href by the time the page renders.
+ * MDX evaluates a braced expression as JavaScript, so any expression node is a
+ * finding unless it is one of the inert string-literal attributes the importer
+ * emits itself.
+ *
+ * The scan answers the second of the two questions `uri-safety.mjs` states
+ * both gates must answer -- does the value make a visitor's browser contact
+ * another host -- only for destinations the browser fetches with no user
+ * action, which on this surface means images. An imported page is written
+ * verbatim from a repository this project does not control, so a remote `<img>`
+ * in one is a third-party beacon that sees every visitor's IP, User-Agent and
+ * Referer on page load. `rewriteImages()` already demotes such a destination at
+ * import time, but that is a gate on what is *imported*; this is the gate on
+ * what is *published*, and it has to hold when a page reaches `docs/` without
+ * passing the importer.
+ *
+ * Ordinary links are deliberately left alone. A link is followed only when a
+ * reader clicks it, and `rewriteImages()` demotes a remote image *to* a remote
+ * link, so rejecting them would reject every imported page.
  */
+
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { mdxjs } from 'micromark-extension-mdxjs';
+import { mdxFromMarkdown } from 'mdast-util-mdx';
+import { gfm } from 'micromark-extension-gfm';
+import { gfmFromMarkdown } from 'mdast-util-gfm';
+import { activeScheme, describeTarget, remoteTarget } from './uri-safety.mjs';
 
 /** Inert inline elements that carry no script, network or layout capability. */
 const ALLOWED_ELEMENTS = new Set([
@@ -45,234 +69,65 @@ const ALLOWED_IMPORT =
 /**
  * The one expression form the importer itself emits: an attribute whose value
  * is a single JSON string literal, as produced by `jsxAttribute`
- * (`scripts/lib/jsx-attributes.mjs`).  The pattern requires the closing brace
- * to follow the closing quote immediately, so the braces can enclose nothing
- * but the literal -- `{"a" + fetch(x)}` does not match.  An expression whose
- * entire body is a string literal evaluates to that string and has no call,
- * member access or identifier reference available to it, so it is inert
- * wherever it appears.
+ * (`scripts/lib/jsx-attributes.mjs`). An expression whose entire body is a
+ * string literal evaluates to that string and has no call, member access or
+ * identifier reference available to it, so it is inert wherever it appears.
  */
-const ALLOWED_ATTRIBUTE_EXPRESSION =
-  /(?<=\s)[A-Za-z_$][A-Za-z0-9_$-]*=\{"(?:[^"\\]|\\.)*"\}/g;
+const STRING_LITERAL_EXPRESSION = /^"(?:[^"\\\n]|\\.)*"$/;
+
+const EVENT_HANDLER_ATTRIBUTE = /^on[a-z]+$/i;
 
 /**
- * Any remaining `{` opens an MDX expression, which is evaluated JavaScript.
+ * React requires `style` to be an object mapping properties to values, and
+ * throws "The `style` prop expects a mapping from style properties to values,
+ * not a string" when it is given a string -- so `style="..."`, and the
+ * equivalent `style={"..."}` this module otherwise reads as an inert string
+ * literal, both fail while Docusaurus prerenders the page. The object form
+ * needs a non-literal expression and is already reported as one. The importer
+ * emits no `style` at all, so nothing legitimate reaches this.
  */
-const EXPRESSION_PATTERN = /\{/;
+const STYLE_ATTRIBUTE = 'style';
 
-const ELEMENT_PATTERN = /<\/?([A-Za-z][A-Za-z0-9._-]*)/g;
-const EVENT_HANDLER_PATTERN = /\bon[a-z]{3,}\s*=/gi;
-const DANGEROUS_URL_PATTERN = /(?:javascript|vbscript):|data:text\/html/gi;
-const ESM_PATTERN = /^\s*(?:import|export)\s/;
+/** Link-like nodes whose `url` a browser navigates to or loads. */
+const URL_NODES = new Set(['link', 'definition', 'image']);
 
-/** The character references a scheme can hide a character behind by name. */
-const NAMED_ENTITIES = {
-  colon: ':',
-  tab: '\t',
-  newline: '\n',
-  lf: '\n',
-  sol: '/',
-  amp: '&',
+/**
+ * The only attribute of the only allowed component that reaches an `<img src>`.
+ *
+ * `CNCFProjectCard` renders `logo` through `useBaseUrl()`, which returns a
+ * value carrying a protocol unchanged, so an absolute URL there is loaded
+ * off-origin exactly as a Markdown image destination is. `href` on the same
+ * card is remote by contract (`https://www.cncf.io/projects/...`) and is
+ * followed only on a click, so attributes are checked by name rather than as a
+ * class.
+ */
+const REMOTE_IMAGE_ATTRIBUTES = new Set(['logo']);
+
+const parserOptions = {
+  extensions: [mdxjs(), gfm()],
+  mdastExtensions: [mdxFromMarkdown(), gfmFromMarkdown()],
 };
 
 /**
- * Decode the HTML character references a scheme may hide behind.  MDX is
- * CommonMark, which decodes references in a link destination, so
- * `[x](java&#115;cript:alert(1))` is a live `javascript:` href by the time it
- * renders and a raw substring test never sees it.
+ * The value an inert string-literal expression evaluates to, or null when the
+ * expression is anything else.
  *
- * @param {string} value
- * @returns {string}
+ * @param {string} expression
+ * @returns {string | null}
  */
-function decodeEntities(value) {
-  return value
-    .replace(/&#x([0-9a-f]+);?/gi, (match, hex) => {
-      const code = Number.parseInt(hex, 16);
-      return Number.isFinite(code) && code <= 0x10ffff
-        ? String.fromCodePoint(code)
-        : match;
-    })
-    .replace(/&#(\d+);?/g, (match, dec) => {
-      const code = Number.parseInt(dec, 10);
-      return Number.isFinite(code) && code <= 0x10ffff
-        ? String.fromCodePoint(code)
-        : match;
-    })
-    .replace(
-      /&([a-z]+);?/gi,
-      (match, name) => NAMED_ENTITIES[name.toLowerCase()] ?? match,
-    );
-}
-
-/**
- * Collapse a line to the form a browser's URL parser sees.  Control characters
- * (tab included) go because a URL parser ignores them; the space character is
- * deliberately kept, since a browser does not read `java script:` as a scheme
- * and removing it would flag ordinary prose.
- *
- * @param {string} line
- * @returns {string}
- */
-function normalizeSchemes(line) {
-  // Decode twice: some generators emit double-encoded references (&amp;#58;).
-  // eslint-disable-next-line no-control-regex
-  return decodeEntities(decodeEntities(line)).replace(
-    // eslint-disable-next-line no-control-regex
-    /[\u0000-\u001f\u007f]+/g,
-    '',
-  );
-}
-
-/**
- * Replaces fenced code blocks and inline code spans with blank padding.  MDX
- * does not evaluate either, and keeping the line count and line lengths
- * stable lets findings report accurate line numbers.
- *
- * Both passes are written to agree with the CommonMark/MDX parser Docusaurus
- * actually compiles the body with, rather than approximating it with a
- * single regular expression -- see #611 for the exploit a mismatch allowed.
- *
- * @param {string} markdown
- * @returns {string}
- */
-function blankCodeSpans(markdown) {
-  return blankInlineSpans(blankFences(markdown));
-}
-
-/**
- * Blank fenced code blocks by walking lines and tracking fence state, rather
- * than matching the whole block with one lazy regex. A closing fence must use
- * the same character as the opener, be at least as long, and carry nothing
- * but trailing whitespace after it; a fence that is never closed runs to EOF.
- *
- * Both the opener and closer must be indented no more than three spaces
- * (CommonMark). A line indented four or more spaces, or by a tab (which
- * advances to the next four-column stop), forms no fence at all -- it is an
- * indented code block instead, a single-line construct that does not absorb
- * the lines after it. Matching it as a fence opener would blank every
- * subsequent line up to the next fence-shaped line unscanned, hiding live
- * content the real MDX compiler renders (see #689).
- *
- * @param {string} markdown
- * @returns {string}
- */
-function blankFences(markdown) {
-  const lines = markdown.split('\n');
-  const output = [];
-  let fenceChar = null;
-  let fenceLength = 0;
-
-  for (const line of lines) {
-    if (fenceChar) {
-      output.push(' '.repeat(line.length));
-      const closer = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
-      if (
-        closer &&
-        closer[1][0] === fenceChar &&
-        closer[1].length >= fenceLength
-      ) {
-        fenceChar = null;
-        fenceLength = 0;
-      }
-      continue;
-    }
-
-    const opener = line.match(/^ {0,3}(`{3,}|~{3,})([^\n]*)$/);
-    // A backtick fence's info string may not contain a backtick (CommonMark);
-    // a line like "```<script>x</script>`" therefore opens no fence at all --
-    // it is a paragraph, and the element in it is live. Treating it as a
-    // fence would blank it (and everything after it) unscanned, which is a
-    // bypass, not a false positive. A tilde fence has no such restriction.
-    if (opener && !(opener[1][0] === '`' && opener[2].includes('`'))) {
-      fenceChar = opener[1][0];
-      fenceLength = opener[1].length;
-      output.push(' '.repeat(line.length));
-      continue;
-    }
-
-    output.push(line);
+function literalValue(expression) {
+  const trimmed = expression.trim();
+  if (!STRING_LITERAL_EXPRESSION.test(trimmed)) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
   }
-
-  return output.join('\n');
 }
 
-/**
- * Blank inline code spans by scanning for a backtick run and searching the
- * rest of its line for a closing run of *exactly* the same length -- the
- * CommonMark rule a single `` `+...`+ `` regex cannot express, because it
- * accepts mismatched run lengths and forms a span that does not exist. The
- * search is deliberately bounded to the current line: a code span that wraps
- * a newline is left scannable, which errs toward reporting rather than
- * hiding content.
- *
- * @param {string} text
- * @returns {string}
- */
-function blankInlineSpans(text) {
-  let result = '';
-  let i = 0;
-
-  while (i < text.length) {
-    const ch = text[i];
-
-    if (ch !== '`') {
-      result += ch;
-      i += 1;
-      continue;
-    }
-
-    let openEnd = i;
-    while (text[openEnd] === '`') openEnd += 1;
-    const openLength = openEnd - i;
-
-    let k = openEnd;
-    let closeStart = -1;
-    let closeEnd = -1;
-    while (k < text.length && text[k] !== '\n') {
-      if (text[k] === '`') {
-        let runEnd = k;
-        while (text[runEnd] === '`') runEnd += 1;
-        if (runEnd - k === openLength) {
-          closeStart = k;
-          closeEnd = runEnd;
-          break;
-        }
-        k = runEnd;
-        continue;
-      }
-      k += 1;
-    }
-
-    if (closeStart === -1) {
-      // No closing run of matching length on this line: not a code span, so
-      // emit the opening backticks as literal text and keep scanning from
-      // just past them.
-      result += text.slice(i, openEnd);
-      i = openEnd;
-      continue;
-    }
-
-    result += ' '.repeat(closeEnd - i);
-    i = closeEnd;
-  }
-
-  return result;
-}
-
-/**
- * Neutralize the braces of the importer's own attribute expressions so the
- * expression scan does not flag generated markup.  Only the `{` and `}`
- * characters are replaced, by a space each: the quoted value between them is
- * left in place so the scheme, handler and element scans still read it, and
- * the line keeps its length so findings keep accurate line numbers.
- *
- * @param {string} text
- * @returns {string}
- */
-function blankAllowedExpressions(text) {
-  return text.replace(ALLOWED_ATTRIBUTE_EXPRESSION, (match) =>
-    match.replace(/[{}]/g, ' '),
-  );
+function eachNode(node, visitor) {
+  visitor(node);
+  for (const child of node.children ?? []) eachNode(child, visitor);
 }
 
 /**
@@ -283,61 +138,102 @@ function blankAllowedExpressions(text) {
  *   per finding, ordered by line.
  */
 export function findActiveContent(markdown) {
+  const text = String(markdown ?? '');
+  const lines = text.split('\n');
   const findings = [];
-  const scannable = blankAllowedExpressions(
-    blankCodeSpans(String(markdown ?? '')),
-  );
-  const lines = scannable.split('\n');
-
-  lines.forEach((line, index) => {
-    const number = index + 1;
-    const snippet = line.trim().slice(0, 120);
-
-    for (const match of line.matchAll(ELEMENT_PATTERN)) {
-      const name = match[1];
-      const isAllowed =
-        name === ALLOWED_COMPONENT || ALLOWED_ELEMENTS.has(name.toLowerCase());
-      if (!isAllowed)
-        findings.push({
-          line: number,
-          reason: `disallowed element <${name}>`,
-          snippet,
-        });
-    }
-
-    if (EVENT_HANDLER_PATTERN.test(line))
-      findings.push({
-        line: number,
-        reason: 'event handler attribute',
-        snippet,
-      });
-    EVENT_HANDLER_PATTERN.lastIndex = 0;
-
-    const dangerous = [line, normalizeSchemes(line)].some((candidate) => {
-      DANGEROUS_URL_PATTERN.lastIndex = 0;
-      return DANGEROUS_URL_PATTERN.test(candidate);
+  const report = (line, reason) =>
+    findings.push({
+      line,
+      reason,
+      snippet: lines[line - 1].trim().slice(0, 120),
     });
-    DANGEROUS_URL_PATTERN.lastIndex = 0;
-    if (dangerous)
-      findings.push({
-        line: number,
-        reason: 'script-capable URL scheme',
-        snippet,
-      });
 
-    if (ESM_PATTERN.test(line) && line.trim() !== ALLOWED_IMPORT)
-      findings.push({
-        line: number,
-        reason: 'unexpected ESM statement',
-        snippet,
-      });
+  let tree;
+  try {
+    tree = fromMarkdown(text, parserOptions);
+  } catch (error) {
+    report(error.line ?? 1, `MDX parse error (${error.reason})`);
+    return findings;
+  }
 
-    if (EXPRESSION_PATTERN.test(line))
-      findings.push({
-        line: number,
-        reason: 'MDX expression',
-        snippet,
-      });
+  // Collected before the scan: a definition may be written after the
+  // reference that uses it, and an `imageReference` carries only an
+  // identifier. The definition node itself is never reported as remote --
+  // `linkReference` resolves through the same map, and an imported page
+  // legitimately carries remote link definitions.
+  const definitions = new Map();
+  eachNode(tree, (node) => {
+    if (node.type === 'definition') definitions.set(node.identifier, node.url);
+  });
+
+  // Every caller passes a string: an image node's `url`, a definition `url`
+  // resolved from the map, or an attribute value already narrowed to a string.
+  const reportRemoteImage = (line, url) => {
+    const target = remoteTarget(url);
+    if (target)
+      report(line, `remote image destination ${describeTarget(target)}`);
+  };
+
+  eachNode(tree, (node) => {
+    const line = node.position.start.line;
+
+    if (
+      node.type === 'mdxJsxFlowElement' ||
+      node.type === 'mdxJsxTextElement'
+    ) {
+      const name = node.name ?? '';
+      // Matched case-sensitively. MDX reads a lowercase tag name as an HTML
+      // element and any other casing as a *component* reference, so `<B>` is
+      // not the inert `<b>` this set allows -- it compiles to a lookup of a
+      // component named `B`, which no provider defines, and Docusaurus throws
+      // "Expected component `B` to be defined" while prerendering the page.
+      // Lowercasing the name here vouched for a body the renderer rejects,
+      // which is the same failure this module treats a parse error as.
+      const allowed = name === ALLOWED_COMPONENT || ALLOWED_ELEMENTS.has(name);
+      if (!allowed) report(line, `disallowed element <${name}>`);
+
+      for (const attribute of node.attributes) {
+        if (attribute.type === 'mdxJsxExpressionAttribute') {
+          report(line, 'MDX expression');
+          continue;
+        }
+        if (EVENT_HANDLER_ATTRIBUTE.test(attribute.name)) {
+          report(line, 'event handler attribute');
+        }
+        let value = attribute.value;
+        if (value && typeof value === 'object') {
+          value = literalValue(value.value);
+          if (value === null) report(line, 'MDX expression');
+        }
+        if (typeof value === 'string') {
+          if (attribute.name === STYLE_ATTRIBUTE) {
+            report(line, 'string style attribute');
+          }
+          if (activeScheme(value)) {
+            report(line, 'script-capable URL scheme');
+          }
+          if (REMOTE_IMAGE_ATTRIBUTES.has(attribute.name)) {
+            reportRemoteImage(line, value);
+          }
+        }
+      }
+    } else if (
+      node.type === 'mdxFlowExpression' ||
+      node.type === 'mdxTextExpression'
+    ) {
+      report(line, 'MDX expression');
+    } else if (node.type === 'mdxjsEsm') {
+      if (node.value.trim() !== ALLOWED_IMPORT) {
+        report(line, 'unexpected ESM statement');
+      }
+    } else if (node.type === 'imageReference') {
+      const url = definitions.get(node.identifier);
+      // An unresolved reference renders as literal text and loads nothing.
+      if (url !== undefined) reportRemoteImage(line, url);
+    } else if (URL_NODES.has(node.type)) {
+      if (activeScheme(node.url)) report(line, 'script-capable URL scheme');
+      if (node.type === 'image') reportRemoteImage(line, node.url);
+    }
   });
 
   const seen = new Set();

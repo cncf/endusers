@@ -8,10 +8,20 @@ on:
 permissions:
   contents: read
 
+# Serialised repository-wide: the job's state store is a hidden marker
+# comment it reads and then writes non-atomically, so two overlapping runs
+# (a dispatch during the 6-hourly cron) both find no marker and both post
+# one. Not cancelled: a run stopped after it has commented has still
+# written the state the next run reads.
+concurrency:
+  group: pr-queue-hygiene
+  cancel-in-progress: false
+
 jobs:
   hygiene:
     name: Flag stale conflicting PRs
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: write
@@ -22,7 +32,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm

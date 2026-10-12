@@ -3,33 +3,72 @@ name: CodeQL
 on:
   push:
     branches: [main]
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.mjs'
+      - '**/*.cjs'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - package.json
+      - package-lock.json
+      - '.github/workflows/**'
   pull_request:
     branches: [main]
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.mjs'
+      - '**/*.cjs'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - package.json
+      - package-lock.json
+      - '.github/workflows/**'
   schedule:
     - cron: '31 7 * * 1'
 
 permissions:
   contents: read
 
+# Not a required status check, so it is safe to skip entirely (rather than
+# just cancel) when a PR touches neither JavaScript/TypeScript source nor a
+# workflow: an unmatched path means the workflow never starts, and nothing
+# here gates the merge queue on it. The weekly schedule run still scans the
+# full tree regardless of what changed most recently.
+concurrency:
+  group: codeql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
-    name: Analyze JavaScript
+    name: Analyze ${{ matrix.language }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
       security-events: write
       actions: read
+    strategy:
+      # One language failing must not hide the other language's results.
+      fail-fast: false
+      matrix:
+        # `actions` analyses the workflow files themselves: script injection
+        # through ${{ github.event.* }} in `run:` blocks, over-broad
+        # GITHUB_TOKEN permissions, un-pinned third-party actions. Nothing else
+        # in this repository reads the workflows statically.
+        language: ['javascript-typescript', 'actions']
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
-          languages: javascript-typescript
+          languages: ${{ matrix.language }}
           build-mode: none
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
-          category: '/language:javascript-typescript'
+          category: '/language:${{ matrix.language }}'

@@ -2,18 +2,12 @@ import React from 'react';
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import { initials, formatCount } from './utils';
+import { initials, formatCount, membershipLabel } from './utils';
 import styles from './styles.module.css';
 
 export function MemberProfile({ member, onClose, triggerRef }) {
   const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
   const logoUrl = useBaseUrl(member.logo || '');
-
-  const hasDetails =
-    member.industries.length > 0 ||
-    member.projects.length > 0 ||
-    member.architectures.length > 0 ||
-    member.awards.length > 0;
 
   return (
     <div
@@ -47,7 +41,9 @@ export function MemberProfile({ member, onClose, triggerRef }) {
             )}
           </div>
           <div className={styles.profileHeading}>
-            <p className={styles.profileKicker}>End User Community member</p>
+            <p className={styles.profileKicker}>
+              {membershipLabel(member.membershipStatus)}
+            </p>
             <h2 id="member-profile-name">{member.name}</h2>
             <p className={styles.profileMeta}>
               {member.architectures.length > 0 && (
@@ -153,12 +149,6 @@ export function MemberProfile({ member, onClose, triggerRef }) {
                 ))}
               </ul>
             </div>
-          )}
-          {!hasDetails && (
-            <p className={styles.bioMuted}>
-              Public details for {member.name} are limited to award
-              announcements. Visit the source links below to learn more.
-            </p>
           )}
           <div className={styles.profileSection}>
             <h3>Sources</h3>

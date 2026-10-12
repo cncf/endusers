@@ -550,3 +550,129 @@ test('pluralises the fallback count when more than one handle is unmatched', () 
   parseOutput(result);
   assert.match(result.stdout, /\(2 fallbacks\)/);
 });
+
+// A cncf/people record is self-asserted by its own subject, so the `github`
+// field is untrusted. Indexing it with a substring test for "github.com/" let
+// one contributor key their record to another contributor's handle and have
+// their own bio, website and social links published under that person's name.
+test('ignores a cncf/people github field on a lookalike host', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({
+        tab: [{ name: 'Ada Lovelace', github: 'ada' }],
+      }),
+    },
+    records: [
+      {
+        name: 'Impostor',
+        bio: 'Spoofed biography',
+        website: 'https://attacker.example',
+        github: 'https://notgithub.com/ada',
+      },
+    ],
+  });
+
+  const person = parseOutput(result).people.tab[0];
+  assert.equal(person.bio, '');
+  assert.equal(person.blog, '');
+  assert.match(result.stdout, /\(1 fallback\)/);
+});
+
+test('ignores a github.com mention in a query or fragment', () => {
+  for (const github of [
+    'https://attacker.example/?u=github.com/ada',
+    'https://attacker.example/#github.com/ada',
+    'https://attacker.example/github.com/ada',
+    'https://github.com@attacker.example/ada',
+  ]) {
+    const result = run({
+      fixtures: {
+        [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+      },
+      records: [{ name: 'Impostor', bio: 'Spoofed', github }],
+    });
+
+    assert.equal(
+      parseOutput(result).people.tab[0].bio,
+      '',
+      `expected ${github} not to claim the handle "ada"`,
+    );
+  }
+});
+
+test('still matches genuine github.com profile URLs', () => {
+  for (const github of [
+    'https://github.com/ada',
+    'https://github.com/ada/',
+    'http://github.com/ada',
+    'https://www.github.com/ada',
+    'https://github.com/ada?tab=repositories',
+  ]) {
+    const result = run({
+      fixtures: {
+        [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+      },
+      records: [{ name: 'Ada Lovelace', bio: 'Computing pioneer', github }],
+    });
+
+    assert.equal(
+      parseOutput(result).people.tab[0].bio,
+      'Computing pioneer',
+      `expected ${github} to match the handle "ada"`,
+    );
+  }
+});
+
+test('ignores a github field that is not a parseable URL or not http(s)', () => {
+  for (const github of ['github.com/ada', 'ftp://github.com/ada']) {
+    const result = run({
+      fixtures: {
+        [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+      },
+      records: [{ name: 'Impostor', bio: 'Spoofed', github }],
+    });
+
+    assert.equal(
+      parseOutput(result).people.tab[0].bio,
+      '',
+      `expected ${github} not to claim the handle "ada"`,
+    );
+  }
+});
+
+test('decodes a percent-encoded handle segment', () => {
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+    },
+    records: [
+      {
+        name: 'Ada Lovelace',
+        bio: 'Computing pioneer',
+        github: 'https://github.com/ad%61',
+      },
+    ],
+  });
+
+  assert.equal(parseOutput(result).people.tab[0].bio, 'Computing pioneer');
+});
+
+test('falls back to the raw segment when percent-decoding throws', () => {
+  // Roster handles are validated, so an undecodable segment can never match
+  // one; the fallback just has to index the record under the raw text instead
+  // of crashing the run.
+  const result = run({
+    fixtures: {
+      [ROSTER]: roster({ tab: [{ name: 'Ada Lovelace', github: 'ada' }] }),
+    },
+    records: [
+      {
+        name: 'Impostor',
+        bio: 'Spoofed',
+        github: 'https://github.com/%E0%A4%A',
+      },
+    ],
+  });
+
+  assert.equal(parseOutput(result).people.tab[0].bio, '');
+});

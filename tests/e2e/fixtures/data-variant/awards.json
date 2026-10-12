@@ -1,0 +1,6 @@
+{
+  "description": "Clears the document-level verifiedAt so AwardsTimeline renders the ': null' arm of its verifiedDate ternary (src/components/AwardsTimeline/index.js line 80) and omits the provenance paragraph. verifiedAt is one field on the one file the one awards page reads, so clearing it in the ordinary coverage build would swap which arm is reachable rather than add a case -- it belongs to the variant build, which is served alongside the real one.",
+  "set": {
+    "verifiedAt": null
+  }
+}

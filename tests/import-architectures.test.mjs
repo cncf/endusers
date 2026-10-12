@@ -332,6 +332,85 @@ Intro paragraph.
   }
 });
 
+test('refuses to mirror an artwork SVG that references a remote resource', () => {
+  const logoUrl =
+    'https://raw.githubusercontent.com/cncf/artwork/main/projects/envoy/icon/color/envoy-icon-color.svg';
+  // stripActiveContent() finds nothing to remove here: an <image href> is not
+  // script-capable. Published from static/ at the site origin it would still
+  // beacon every visitor to evil.example, so the mirror must refuse it.
+  const run = runImportArchitectures({
+    upstream: architecture(
+      'beacon',
+      `---
+title: Beacon
+org_name: Beacon Co
+---
+
+Intro paragraph.
+
+{{< card header="Envoy" >}}
+![Envoy](${logoUrl})
+{{< /card >}}
+`,
+    ),
+    fetchResponses: {
+      [logoUrl]: {
+        status: 200,
+        body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><image href="https://evil.example/beacon.png" width="1" height="1"/></svg>',
+      },
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stderr, /remote resource references/);
+    assert.equal(
+      run.exists('static/img/cncf-projects/envoy-envoy-icon-color.svg'),
+      false,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('mirrors an artwork SVG with no remote references', () => {
+  const logoUrl =
+    'https://raw.githubusercontent.com/cncf/artwork/main/projects/envoy/icon/color/envoy-icon-color.svg';
+  const run = runImportArchitectures({
+    upstream: architecture(
+      'local-only',
+      `---
+title: Local Only
+org_name: Local Only Co
+---
+
+Intro paragraph.
+
+{{< card header="Envoy" >}}
+![Envoy](${logoUrl})
+{{< /card >}}
+`,
+    ),
+    fetchResponses: {
+      [logoUrl]: {
+        status: 200,
+        body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1"/></svg>',
+      },
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.doesNotMatch(run.stderr, /Could not mirror CNCF project asset/);
+    assert.match(
+      run.read('static/img/cncf-projects/envoy-envoy-icon-color.svg'),
+      /<rect width="1" height="1"\/>/,
+    );
+  } finally {
+    run.cleanup();
+  }
+});
+
 test('copies architecture images and rewrites relative image links', () => {
   const run = runImportArchitectures({
     upstream: {
@@ -413,7 +492,7 @@ Intro paragraph.
 
 test('sanitizes imported SVG assets', () => {
   const svg = `<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" content="&lt;mxfile&gt;"><rect /></svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" content="&lt;mxfile&gt;"><rect/></svg>`;
   const run = runImportArchitectures({
     upstream: {
       ...architecture(
@@ -437,7 +516,7 @@ test('sanitizes imported SVG assets', () => {
 
 test('leaves SVGs untouched when a viewBox is already present', () => {
   const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><rect /></svg>';
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><rect/></svg>';
   const run = runImportArchitectures({
     upstream: {
       ...architecture(
@@ -712,6 +791,53 @@ test('skips symlinked entries found inside a real images/ directory', () => {
   }
 });
 
+// #1267: the two tests above guard symlinks inside an architecture, but the
+// top-level enumeration of content/en/architectures/ still filtered on
+// Dirent.isDirectory(), which is false for a symlink. A symlinked architecture
+// directory therefore dropped out of the import silently -- and because the
+// run prunes every imported page first, its page was deleted with nothing in
+// the log to say why.
+test('skips a symlinked top-level architecture directory and warns', () => {
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'real-arch',
+        '---\ntitle: Real Arch\norg_name: Real Arch Co\n---\n\nIntro paragraph.\n',
+      ),
+      'outside/index.md':
+        '---\ntitle: Leaked\norg_name: Leaked Co\n---\n\nIntro paragraph.\n',
+    },
+    upstreamSymlinks: {
+      // One link to a directory outside the tree, one to a sibling that is a
+      // real architecture: both are links to Dirent and both are skipped.
+      'content/en/architectures/leaked': '../../../outside',
+      'content/en/architectures/alias': 'real-arch',
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const catalog = run.readJson('data/architectures/catalog.json');
+    assert.deepEqual(
+      catalog.map((record) => record.id),
+      ['real-arch'],
+    );
+    assert.equal(run.exists('docs/architectures/leaked.md'), false);
+    assert.equal(run.exists('docs/architectures/alias.md'), false);
+    assert.match(
+      run.stderr,
+      /Skipping symlink .*content\/en\/architectures\/leaked: symlinks are never imported/,
+    );
+    assert.match(
+      run.stderr,
+      /Skipping symlink .*content\/en\/architectures\/alias: symlinks are never imported/,
+    );
+    assert.match(run.stdout, /Imported 1 architectures/);
+  } finally {
+    run.cleanup();
+  }
+});
+
 test('skips upstream image files that are not a mirrorable image type', () => {
   const run = runImportArchitectures({
     upstream: {
@@ -793,7 +919,7 @@ test('strips active content from an imported SVG asset and reports it', () => {
     assert.doesNotMatch(sanitized, /onload/i);
     assert.doesNotMatch(sanitized, /javascript:/i);
     // The inert markup around the active content survives the strip.
-    assert.match(sanitized, /<rect \/>/);
+    assert.match(sanitized, /<rect\/>/);
 
     // The warning names the file and every distinct thing removed from it, so
     // the import log is enough to triage what upstream shipped.
@@ -815,6 +941,112 @@ test('strips active content from an imported SVG asset and reports it', () => {
     // A sanitized asset is still an asset: it stays listed on the record.
     const record = run.readJson('data/architectures/records/active.json');
     assert.deepEqual(record.assets, ['/img/architectures/active/diagram.svg']);
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('fails the import when a DOCTYPE splits a tag name', () => {
+  // A DOCTYPE inside a tag name is not well-formed XML; the import rejects it
+  // instead of deleting the DOCTYPE and splicing "<sc" onto "ript>".
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'splice',
+        '---\ntitle: Splice\norg_name: Splice Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/splice/images/diagram.svg':
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+        '<sc<!DOCTYPE d>ript>alert(1)</script></svg>',
+    },
+  });
+
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /is not well-formed XML/);
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('fails the import when a DOCTYPE subset is unclosed', () => {
+  // An unclosed internal subset is not well-formed XML, and a lenient parse
+  // would certify whatever markup it hides.
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'doctype',
+        '---\ntitle: Doctype\norg_name: Doctype Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/doctype/images/diagram.svg':
+        '<!DOCTYPE svg [\n' +
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect/></svg>',
+    },
+  });
+
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /Unterminated DOCTYPE/);
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('fails the import when stripping the editable-metadata attribute leaves unparseable SVG', () => {
+  // The `content` attribute removal is a text edit. On this document it eats
+  // the quote that closes `b`, so the written bytes would not be well-formed;
+  // the final rescan has to catch it.
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'meta',
+        '---\ntitle: Meta\norg_name: Meta Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/meta/images/diagram.svg':
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+        '<g b=" content=\'" c="x"/></svg>',
+    },
+  });
+
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /Active content reappeared after cleanup/);
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('strips active content from an imported SVG asset under an uppercase .SVG extension', () => {
+  // MIRRORABLE_ASSET_EXTENSIONS is matched against a lowercased extension, so
+  // an upstream `diagram.SVG` is copied in as an SVG. The sanitizer has to
+  // agree on case, or the file is mirrored to the site origin with its active
+  // content intact.
+  const run = runImportArchitectures({
+    upstream: {
+      ...architecture(
+        'active-upper',
+        '---\ntitle: Active Upper\norg_name: Active Upper Co\n---\n\nIntro paragraph.\n',
+      ),
+      'content/en/architectures/active-upper/images/diagram.SVG':
+        ACTIVE_CONTENT_SVG,
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+
+    const sanitized = run.read(
+      'static/img/architectures/active-upper/diagram.SVG',
+    );
+    assert.doesNotMatch(sanitized, /<script/i);
+    assert.doesNotMatch(sanitized, /onload/i);
+    assert.doesNotMatch(sanitized, /javascript:/i);
+    assert.match(sanitized, /<rect\/>/);
+
+    assert.match(
+      run.stderr,
+      /Removed active content from img\/architectures\/active-upper\/diagram\.SVG: /,
+    );
   } finally {
     run.cleanup();
   }
@@ -854,7 +1086,7 @@ Intro paragraph.
     assert.doesNotMatch(mirrored, /<script/i);
     assert.doesNotMatch(mirrored, /onload/i);
     assert.doesNotMatch(mirrored, /javascript:/i);
-    assert.match(mirrored, /<rect \/>/);
+    assert.match(mirrored, /<rect\/>/);
 
     assert.match(
       run.stderr,
@@ -918,6 +1150,44 @@ Intro paragraph.
       run.read('docs/architectures/mirror-raster.md'),
       /logo=\{"\/img\/cncf-projects\/flux-flux-icon-color\.png"\}/,
     );
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('keeps repo-authored architecture pages when pruning imported ones', () => {
+  const indexPage = `---
+title: Reference architectures
+---
+
+Hand-written landing page for the architecture catalog.
+`;
+
+  const run = runImportArchitectures({
+    upstream: architecture(
+      'acme',
+      `---
+title: Acme
+org_name: Acme Corp
+---
+
+Acme runs Kubernetes.
+`,
+    ),
+    // docs/architectures/index.md is authored in this repo, not imported, and
+    // a stale page from a previous import sits beside it. The prune must
+    // delete only the imported one.
+    repoFiles: {
+      'docs/architectures/index.md': indexPage,
+      'docs/architectures/removed-upstream.md': '# gone from upstream\n',
+    },
+  });
+
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    assert.equal(run.read('docs/architectures/index.md'), indexPage);
+    assert.equal(run.exists('docs/architectures/removed-upstream.md'), false);
+    assert.equal(run.exists('docs/architectures/acme.md'), true);
   } finally {
     run.cleanup();
   }

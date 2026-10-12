@@ -22,10 +22,72 @@
 // from public CNCF repositories, so its data can change with no source change
 // at all. These cases therefore assert shape and invariants against
 // data/metrics.json rather than against any particular published number.
-import { test, expect } from '@playwright/test';
+import { newCoverageContext, test, expect } from '../tools/e2e-coverage.cjs';
 import metricsData from '../../data/metrics.json';
 
 const METRICS_PATH = '/metrics';
+
+test('chart point titles exist before JavaScript runs', async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await newCoverageContext(browser, {
+    javaScriptEnabled: false,
+    baseURL,
+  });
+  try {
+    const page = await context.newPage();
+    const response = await page.goto(METRICS_PATH);
+    expect(response?.ok()).toBe(true);
+    let points = 0;
+    for (const [id, series] of Object.entries(metricsData.series || {})) {
+      const titles = page.locator(
+        `section[aria-labelledby="${id}-title"] svg circle > title`,
+      );
+      await expect(titles).toHaveCount(series.values.length);
+      for (const [index, point] of series.values.entries()) {
+        await expect(titles.nth(index)).toHaveText(
+          `${point.date}: ${point.value}`,
+        );
+        points += 1;
+      }
+    }
+    expect(points).toBeGreaterThan(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test('hydration preserves chart titles without React errors', async ({
+  page,
+}) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  await page.goto(METRICS_PATH);
+  let points = 0;
+  for (const [id, series] of Object.entries(metricsData.series || {})) {
+    const titles = page.locator(
+      `section[aria-labelledby="${id}-title"] svg circle > title`,
+    );
+    await expect(titles).toHaveCount(series.values.length);
+    for (const [index, point] of series.values.entries()) {
+      await expect(titles.nth(index)).toHaveText(
+        `${point.date}: ${point.value}`,
+      );
+      points += 1;
+    }
+  }
+  expect(points).toBeGreaterThan(0);
+  const disclosure = page.locator('details').filter({
+    has: page.getByText('What is not yet measurable', { exact: true }),
+  });
+  await disclosure.locator('summary').click();
+  await expect(disclosure).toHaveAttribute('open', '');
+  expect(errors).toEqual([]);
+});
 
 test.describe('metrics dashboard headline cards', () => {
   test('renders one outbound card per headline metric', async ({ page }) => {

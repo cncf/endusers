@@ -9,18 +9,25 @@
  * scripts.
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { lstatSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse as yamlParse } from 'yaml';
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { gfm } from 'micromark-extension-gfm';
+import { gfmFromMarkdown } from 'mdast-util-gfm';
 import {
   artworkMirrorPath,
   artworkPath,
   artworkUrls,
   projectAsset,
 } from './project-assets.mjs';
-import { stripActiveContent } from './svg-active-content.mjs';
+import {
+  findRemoteReferences,
+  stripActiveContent,
+} from './svg-active-content.mjs';
 import { isCncfProjectHref } from './project-card-links.mjs';
 import { jsxElement } from './jsx-attributes.mjs';
+import { activeScheme } from './uri-safety.mjs';
 
 /**
  * Splits a `---\n...\n---` YAML frontmatter block from the Markdown body that
@@ -83,24 +90,120 @@ export function renderProjectCards(body, id) {
 }
 
 /**
- * Strips remaining Hugo/Docsy shortcodes, rewrites image references to their
- * local `/img/architectures/<id>/...` or mirrored artwork path, and collapses
- * blank-line runs. `id` scopes relative image paths (`images/foo.png`) to the
- * architecture's own asset directory.
+ * A Markdown destination that carries its own authority: either an absolute
+ * `scheme://host/...` or a protocol-relative `//host/...`, which inherits the
+ * page's scheme and loads off-site exactly like an absolute one.
+ */
+const REMOTE_DESTINATION = /^(?:[a-z][a-z0-9+.-]*:)?\/\//i;
+
+/** Any URI scheme; a scheme-less destination is a path on this site. */
+const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
+const markdownGrammar = {
+  extensions: [gfm()],
+  mdastExtensions: [gfmFromMarkdown()],
+};
+
+function escapeLabel(text) {
+  return text.replace(/[\\[\]]/g, '\\$&');
+}
+
+function destination(url) {
+  return /[\s()<>]/.test(url)
+    ? `<${url.replace(/[<>]/g, encodeURIComponent)}>`
+    : url;
+}
+
+/**
+ * Applies the image policy to every image in a parsed document.
+ *
+ * Images are found in the parse tree, not by pattern, so the reference style
+ * (`![alt][ref]` with `[ref]: url` elsewhere), nested brackets and titles are
+ * all seen as the parser sees them. Each image is replaced by exactly the
+ * source range it occupies.
+ *
+ * - A script-capable destination is reduced to its alt text, and that test
+ *   comes first. `javascript://%0aalert(1)` names no host, but it matches
+ *   REMOTE_DESTINATION exactly as `https://host/x` does, so deciding the host
+ *   question first demotes it to a *link* carrying the same scheme — `//` is a
+ *   JavaScript line comment, so that link runs on click. Whether a value runs
+ *   script is activeScheme()'s question (scripts/lib/uri-safety.mjs), the same
+ *   source of truth the SVG and MDX gates ask, and it is asked here in the
+ *   same order they ask it.
+ * - A destination that names a host (REMOTE_DESTINATION, which includes
+ *   protocol-relative and any-case schemes) is mirrored when projectAsset()
+ *   resolves it and otherwise demoted to a plain link, or to its alt text
+ *   inside an existing link. A published `<img>` is fetched by every visitor's
+ *   browser, so a third-party host would see their IP, User-Agent and Referer.
+ * - Any other scheme (`data:`, `ftp:`, ...) is reduced to its alt text.
+ * - A relative path is rebased onto `/img/architectures/<id>/`.
+ */
+function rewriteImages(body, id) {
+  const tree = fromMarkdown(body, markdownGrammar);
+  const definitions = new Map();
+  const images = [];
+
+  const walk = (node, inLink) => {
+    if (node.type === 'definition') definitions.set(node.identifier, node.url);
+    if (node.type === 'image' || node.type === 'imageReference') {
+      images.push({ node, inLink });
+    }
+    const nested =
+      inLink || node.type === 'link' || node.type === 'linkReference';
+    for (const child of node.children ?? []) walk(child, nested);
+  };
+  walk(tree, false);
+
+  const edits = [];
+  for (const { node, inLink } of images) {
+    const url =
+      node.type === 'image' ? node.url : definitions.get(node.identifier);
+    const { alt } = node;
+    let replacement;
+
+    if (activeScheme(url)) {
+      replacement = escapeLabel(alt);
+    } else if (REMOTE_DESTINATION.test(url)) {
+      const asset = projectAsset(url);
+      if (asset) replacement = `![${escapeLabel(alt)}](${asset})`;
+      else if (inLink) replacement = escapeLabel(alt);
+      else replacement = `[${escapeLabel(alt)}](${destination(url)})`;
+    } else if (HAS_SCHEME.test(url)) {
+      replacement = escapeLabel(alt);
+    } else if (url.startsWith('/')) {
+      if (node.type === 'image') continue;
+      replacement = `![${escapeLabel(alt)}](${destination(url)})`;
+    } else {
+      const rest = url.replace(/^\.\//, '').replace(/^images\//, '');
+      replacement = `![${escapeLabel(alt)}](${destination(`/img/architectures/${id}/${rest}`)})`;
+    }
+    edits.push({
+      start: node.position.start.offset,
+      end: node.position.end.offset,
+      replacement,
+    });
+  }
+
+  let output = body;
+  for (const edit of edits.sort((x, y) => y.start - x.start)) {
+    output =
+      output.slice(0, edit.start) + edit.replacement + output.slice(edit.end);
+  }
+  return output;
+}
+
+/**
+ * Strips remaining Hugo/Docsy shortcodes, applies the image policy described
+ * on {@link rewriteImages}, and collapses blank-line runs. `id` scopes
+ * relative image paths (`images/foo.png`) to the architecture's own asset
+ * directory.
  */
 export function cleanMarkdown(body, id) {
-  return body
-    .replace(/{{<[\s\S]*?>}}/g, '')
-    .replace(/{{<\/?[^>]+>}}/g, '')
-    .replace(/!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g, (_, alt, url) => {
-      const asset = projectAsset(url);
-      return asset ? `![${alt}](${asset})` : `[${alt}](${url})`;
-    })
+  return rewriteImages(
+    body.replace(/{{<[\s\S]*?>}}/g, '').replace(/{{<\/?[^>]+>}}/g, ''),
+    id,
+  )
     .replace(/\[\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\]/g, '[$1]($2)')
-    .replace(
-      /!\[([^\]]*)\]\((?!(?:https?:)?\/\/)(?:\.\/)?(?:images\/)?([^/][^\)]*)\)/g,
-      `![$1](/img/architectures/${id}/$2)`,
-    )
     .replace(/<>/g, '&lt;&gt;')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -141,6 +244,20 @@ export async function mirrorArtworkUrls(root, urls) {
     if (!relativeDestination) continue;
     const destination = join(root, relativeDestination);
     mkdirSync(join(destination, '..'), { recursive: true });
+    // writeFileSync() follows a symlink at the destination, so a link sitting
+    // on a mirror path would redirect these third-party bytes to its target,
+    // outside static/img/cncf-projects. Those bytes then never reach the tree
+    // validate-architecture-assets.mjs scans, so the post-hoc asset gate could
+    // not see what was written even in principle. Gate the write here the way
+    // mirrorLandscapeLogo() does, for the same reason the remote-reference
+    // check below is applied before the write rather than after it.
+    const existing = lstatSync(destination, { throwIfNoEntry: false });
+    if (existing?.isSymbolicLink() || (existing && !existing.isFile())) {
+      console.warn(
+        `Could not mirror CNCF project asset: ${path}: destination is not a regular file`,
+      );
+      continue;
+    }
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -156,12 +273,27 @@ export async function mirrorArtworkUrls(root, urls) {
             ].join(', ')}`,
           );
         }
+        // stripActiveContent() reports script-capable content, not remote
+        // resource references, so an href or a CSS url() pointing at a
+        // third-party host survives it untouched. A mirrored asset is
+        // published from static/ at the site origin, so writing one would
+        // beacon every visitor's IP, User-Agent and Referer to that host --
+        // the exact hot-linking the mirror exists to prevent. Gate the write
+        // the way mirrorLandscapeLogo() does, rather than relying on
+        // validate-architecture-assets to catch it after the bytes are on
+        // disk.
+        const remote = findRemoteReferences(source);
+        if (remote.length) {
+          throw new Error(`remote resource references: ${remote.join('; ')}`);
+        }
         writeFileSync(destination, source, 'utf8');
       } else {
         writeFileSync(destination, fetched);
       }
-    } catch {
-      console.warn(`Could not mirror CNCF project asset: ${path}`);
+    } catch (error) {
+      console.warn(
+        `Could not mirror CNCF project asset: ${path}: ${error.message}`,
+      );
     }
   }
 }

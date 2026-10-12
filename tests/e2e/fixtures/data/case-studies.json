@@ -1,0 +1,27 @@
+{
+  "description": "Adds two case studies carrying no publishedAt so sortByPublishedAtDesc takes the \"|| ''\" arms on both sides of its comparator (src/components/CaseStudies/index.js line 25) and their rows render the empty arm of the date cell (line 204). Every checked-in study has a publishedAt, so those arms are unreachable from the shipped data. Two records rather than one because a single undated study only ever lands on one side of a comparison against the dated ones; with two, the pair is also compared with each other and both fallbacks run. These are extra records rather than a cleared field, so the studies already on the page keep rendering exactly as they did and the arms are added rather than swapped.",
+  "append": {
+    "caseStudies": [
+      {
+        "id": 900001,
+        "title": "Coverage Fixture Org: a case study with no publication date",
+        "organization": "Coverage Fixture Org",
+        "slug": "coverage-fixture-org",
+        "url": "https://www.cncf.io/case-studies/",
+        "projects": ["Kubernetes"],
+        "industries": ["Coverage Fixture Industry"],
+        "countries": ["Coverage Fixture Country"]
+      },
+      {
+        "id": 900002,
+        "title": "Coverage Fixture Collective: a second case study with no publication date",
+        "organization": "Coverage Fixture Collective",
+        "slug": "coverage-fixture-collective",
+        "url": "https://www.cncf.io/case-studies/",
+        "projects": ["Kubernetes"],
+        "industries": ["Coverage Fixture Industry"],
+        "countries": ["Coverage Fixture Country"]
+      }
+    ]
+  }
+}

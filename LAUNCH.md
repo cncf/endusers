@@ -1,19 +1,23 @@
-# Launch plan: endusers.cncf.io — KubeCon NA 2026
+# Launch plan: endusers.cncf.io
 
-This document is the date-backed launch plan called for by issues #90 (no
-launch/promotion strategy), #100 (no success metrics), and #104 (KubeCon NA 2026
-launch window). It converts those findings into a single countdown.
+This document is the launch plan called for by issues #90 (no launch/promotion
+strategy), #100 (no success metrics), and #104 (launch window). It converts
+those findings into a single ordered checklist.
 
-**Launch event**: KubeCon + CloudNativeCon North America 2026, November 9–12,
-Salt Lake City. **This plan was drafted on 2026-08-08, 13 weeks out from the
-launch Monday of 2026-11-09.** See the timeline table below for the current
-week-by-week status — it uses explicit dates and does not go stale.
+The launch is **not tied to a calendar date or a specific event**. An earlier
+revision of this plan was a week-by-week countdown to a conference; the
+countdown slipped twice (#966, #1271) and the dates drifted from the work, so
+the plan now tracks readiness rather than time. The site launches when every
+gate below is satisfied, and the announcement goes out through the agreed
+channels at that point. Where a conference or End User TAB meeting falls close
+to readiness, use it for amplification; do not hold or rush the launch to meet
+one.
 
 ## Goals
 
-1. Announce the site to the CNCF End User Community during KubeCon week with
-   every content pillar (architectures, metrics, awards, community, events,
-   blog) current as of launch day.
+1. Announce the site to the CNCF End User Community with every content pillar
+   (architectures, metrics, awards, community, events, blog) current as of
+   launch day.
 2. Convert launch attention into durable contribution: good-first-issues
    labeled, CONTRIBUTING path verified by a non-author, maintainer bus
    factor > 1.
@@ -27,36 +31,43 @@ week-by-week status — it uses explicit dates and does not go stale.
 - DNS cutover to endusers.cncf.io itself (Phase 3; follows the ownership
   decision — nice to have for launch, not required to announce).
 - Paid promotion, swag, or a booth presence.
+- A fixed launch date. Readiness, not the calendar, decides.
 
-## Timeline (weeks are Mondays)
+## Milestones (in order)
 
-| Week | Date       | Milestone                                                                                                                     |
-| ---- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| W-13 | 2026-08-11 | Merge LICENSE (#40) and close Phase 0; create the four GitHub milestones (#78) so every launch task is tagged                 |
-| W-12 | 2026-08-17 | ADR 0001 ownership decision made (#46/#99) — this gates the announcement target and DNS work                                  |
-| W-11 | 2026-08-24 | Metrics refresh workflow landed (#74); events page lists KubeCon NA 2026 co-located end-user events (#75)                     |
-| W-10 | 2026-08-31 | Awards list verified complete against cncf.io announcements (#77)                                                             |
-| W-9  | 2026-09-07 | Architectures freshness indicator on-page (#80); community/TAB staleness signal (#79)                                         |
-| W-8  | 2026-09-14 | Good-first-issue curation done (#98); CONTRIBUTING walk-through by someone who didn't write it                                |
-| W-7  | 2026-09-21 | Blog cadence resumes: first post-welcome article (#76) — end-user story or architecture deep-dive                             |
-| W-6  | 2026-09-28 | Success-metrics baseline captured (see below) and dashboard/tracking issue live (#100)                                        |
-| W-5  | 2026-10-05 | Launch blog post drafted; announcement channels confirmed (CNCF blog/Twitter amplification, end-user Slack, TAB mailing list) |
-| W-4  | 2026-10-12 | Full content freeze rehearsal: every generated-data workflow runs green end-to-end                                            |
-| W-3  | 2026-10-19 | Launch blog post reviewed; DNS cutover executed if ownership decision landed on a CNCF org (Phase 3)                          |
-| W-2  | 2026-10-26 | Dry-run announcement to end-user community Slack; collect last-mile fixes                                                     |
-| W-1  | 2026-11-02 | Final content refresh; all Phase 1 issues closed or explicitly deferred                                                       |
-| W-0  | 2026-11-09 | **Launch during KubeCon NA week**: publish launch post, amplify on agreed channels, open feedback issue template              |
+Each row is a gate. Work the list top to bottom; a row is done when its linked
+issues are closed and the check described in it has been performed, not when the
+date someone once guessed for it has passed.
+
+| #   | Milestone                                                                                                                                                                                 | Status                                                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Merge LICENSE (#40) and close Phase 0; create the GitHub milestones (#78) so every launch task is tagged                                                                                  | Done                                                                                                                                    |
+| 2   | ADR 0001 ownership decision made (#46/#99) — this gates the announcement target and DNS work                                                                                              | Done (Accepted; repository transferred to the `cncf` org)                                                                               |
+| 3   | Metrics refresh workflow landed (#74); events page lists upcoming end-user events (#75)                                                                                                   | Done                                                                                                                                    |
+| 4   | Awards list verified complete against cncf.io announcements (#77)                                                                                                                         | Done                                                                                                                                    |
+| 5   | Architectures freshness indicator on-page (#80); community/TAB staleness signal (#79)                                                                                                     | Done                                                                                                                                    |
+| 6   | Good-first-issue curation done (#98); CONTRIBUTING walk-through by someone who didn't write it                                                                                            | Done                                                                                                                                    |
+| 7   | Blog has at least one post beyond the welcome post (#76), and `docs/skills/blog-management.md` describes a cadence the blog actually meets                                                | Done (`blog/2026-08-08-month-in-metrics-august-2026.md`; cadence restated in #1278)                                                     |
+| 8   | Success-metrics baseline captured in `data/launch-metrics.json` and tracking issue live (#100)                                                                                            | Done (captured 2026-10-02; the file's `checkpoint.label` still carries the `W-6` name from the dated plan, which is where it was taken) |
+| 9   | Launch blog post drafted; announcement channels confirmed (CNCF blog/social amplification, end-user Slack, TAB mailing list)                                                              | Open (#1313). Draft lands as `blog/YYYY-MM-DD-*.md` per `docs/skills/blog-management.md`                                                |
+| 10  | Full content freeze rehearsal: every generated-data workflow runs green end-to-end (see the readiness gate below)                                                                         | In progress; see the pipeline table                                                                                                     |
+| 11  | Launch blog post reviewed (the draft from #1313); DNS cutover executed (Phase 3, #46)                                                                                                     | Open                                                                                                                                    |
+| 12  | Dry-run announcement to end-user community Slack; collect last-mile fixes                                                                                                                 | Open                                                                                                                                    |
+| 13  | Final content refresh; all Phase 1 issues closed or explicitly deferred                                                                                                                   | Open                                                                                                                                    |
+| 14  | **Launch**: publish the launch post, amplify on the agreed channels, open the feedback issue template. If a conference or TAB meeting is near, time the amplification to it, not the gate | Open                                                                                                                                    |
 
 ## Success metrics (baseline + post-launch targets)
 
 Five of the signals below are machine-collected in `data/launch-metrics.json`
 (issue #100) rather than hand-tracked here, so they can't go stale the way a
 one-time table does: refresh with `npm run collect:launch-metrics`, validate
-with `npm run validate:launch-metrics`. Re-run the collector at (or after) the
-W-6 checkpoint (2026-09-28) so the committed baseline reflects that checkpoint —
-see the file's own `checkpoint` field for the current status. The two signals
-without a GitHub API source (blog cadence, cncf.io referral) are tracked here as
-prose and checked manually.
+with `npm run validate:launch-metrics`. The committed baseline was captured at
+milestone 8 (2026-10-02); the file's own `checkpoint` field records that capture
+under the `W-6` label the dated plan used at the time. Re-run the collector
+immediately before launch (milestone 13) so the 90-day comparison starts from
+the numbers the announcement actually went out on. The two signals without a
+GitHub API source (blog cadence, cncf.io referral) are tracked here as prose and
+checked manually.
 
 | Signal                                       | Baseline                       | 90-day post-launch target                                 | Source                     |
 | -------------------------------------------- | ------------------------------ | --------------------------------------------------------- | -------------------------- |
@@ -73,15 +84,19 @@ prose and checked manually.
 The site's differentiator over static CNCF documentation is _living,
 self-refreshing_ community data. Launching with red scheduled pipelines means
 shipping stale content on day one — the exact failure this automation exists to
-prevent. Before the W-0 launch date, all scheduled content-refresh workflows
-must be green for **2 consecutive scheduled runs**:
+prevent. Before launch (milestone 14), all scheduled content-refresh workflows
+must be green for **2 consecutive scheduled runs**. The default-branch
+deployment is listed as a separate operational prerequisite. Statuses below were
+first verified against `main` workflow runs on **2026-10-01 UTC**; rows
+re-verified since then carry their own later verification date:
 
-| Pipeline                                                                                     | Schedule                        | Status as of 2026-09-24                                                              | Tracking                                            |
-| -------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| Import reference architectures (`import-architectures.yml`)                                  | on-demand (`workflow_dispatch`) | green (2026-09-24 run)                                                               | #121 (closed; reopen a new issue if this regresses) |
-| Refresh community profiles (`refresh-community-people.yml`)                                  | weekly                          | red (last scheduled run 2026-09-21 failed at the build step on HTML minifier errors) | #568                                                |
-| Metrics refresh (`collect:metrics` + `validate:metrics` steps of `import-architectures.yml`) | on-demand (`workflow_dispatch`) | green (2026-09-24 run)                                                               | #121 (closed; reopen a new issue if this regresses) |
-| Refresh radar reports (`refresh-radar-reports.yml`)                                          | daily                           | green (2026-09-24, 2026-09-25 runs)                                                  | #605 (closed; reopen a new issue if this regresses) |
+| Pipeline                                                                                                                                                                                                                  | Schedule                        | Status (verified 2026-10-01 UTC unless a row notes a later date)                                                                                                                                                                                                              | Tracking                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Default-branch deployment ([`deploy-gh-pages.yml`](https://github.com/cncf/endusers/blob/5c81e81cce24cbd0b6b38762129f699c861b716a/.github/workflows/deploy-gh-pages.yml))                                                 | Every push to `main`            | Green: [2026-09-30 00:58:40 UTC](https://github.com/cncf/endusers/actions/runs/36652882418) and [2026-10-01 02:45:00 UTC](https://github.com/cncf/endusers/actions/runs/36807285977); both build and deploy jobs succeeded                                                    | Operational prerequisite                            |
+| Import reference architectures ([`import-architectures.yml`](https://github.com/cncf/endusers/blob/5c81e81cce24cbd0b6b38762129f699c861b716a/.github/workflows/import-architectures.yml))                                  | On-demand (`workflow_dispatch`) | Last successful run: [2026-09-28 02:46:46 UTC](https://github.com/cncf/endusers/actions/runs/36371126622); no post-migration `workflow_dispatch` run is recorded                                                                                                              | #121 (closed; reopen a new issue if this regresses) |
+| Refresh community profiles ([`refresh-community-people.yml`](https://github.com/cncf/endusers/blob/5c81e81cce24cbd0b6b38762129f699c861b716a/.github/workflows/refresh-community-people.yml))                              | Weekly                          | Green — gate satisfied (2 of 2 consecutive scheduled runs: [2026-09-28 02:55:29 UTC](https://github.com/cncf/endusers/actions/runs/36371675678) and [2026-10-05 02:59:13 UTC](https://github.com/cncf/endusers/actions/runs/37257547433); verified 2026-10-07 UTC)            | #568 (closed; reopen a new issue if this regresses) |
+| Metrics refresh (`collect:metrics` + `validate:metrics` steps of [`import-architectures.yml`](https://github.com/cncf/endusers/blob/5c81e81cce24cbd0b6b38762129f699c861b716a/.github/workflows/import-architectures.yml)) | On-demand (`workflow_dispatch`) | `collect:metrics`, `validate:metrics`, and import steps succeeded in the [2026-09-28 02:46:46 UTC run](https://github.com/cncf/endusers/actions/runs/36371126622); no post-migration `workflow_dispatch` run is recorded                                                      | #121 (closed; reopen a new issue if this regresses) |
+| Refresh radar reports ([`refresh-radar-reports.yml`](https://github.com/cncf/endusers/blob/5c81e81cce24cbd0b6b38762129f699c861b716a/.github/workflows/refresh-radar-reports.yml))                                         | Daily                           | Green on [2026-09-28 03:04:01 UTC](https://github.com/cncf/endusers/actions/runs/36372220678), [2026-09-29 03:00:48 UTC](https://github.com/cncf/endusers/actions/runs/36515236309), and [2026-09-30 03:01:56 UTC](https://github.com/cncf/endusers/actions/runs/36662555166) | #605 (closed; reopen a new issue if this regresses) |
 
 `import-architectures.yml` moved from a daily cron to on-demand only
 (`workflow_dispatch`); a maintainer or contributor now triggers an import run
@@ -94,20 +109,25 @@ A dedicated `refresh-metrics.yml` workflow was proposed in PR #125 and declined
 (#74); metrics refresh instead runs as steps inside `import-architectures.yml`,
 so it shares that workflow's tracking issue and readiness signal.
 
-Issue #121 and its predecessor for the refresh-community-people GITHUB_TOKEN
+Issue #121 and its predecessor for the refresh-community-people `GITHUB_TOKEN`
 permission error (#122, duplicate of #519) are closed, but closing a tracking
-issue does not by itself mean the pipeline is green: the "Status as of" column
-above must be checked against the workflow's actual run history
+issue does not by itself mean the pipeline is green: the status column above
+must be checked against the workflow's actual run history
 (`gh run list --workflow <name>`) before treating a row as resolved. The
-refresh-community-people pipeline's current live blocker is #568 (the
-`create-pull-request` step omits `signoff: true`, so its automated PRs fail the
-DCO check); once #568 is fixed, re-verify against the run history in case the
-build-step HTML minifier failure persists as a separate issue.
+2026-09-28 community-profile run and the architecture/metrics run both report
+`contents: write` and `pull-requests: write` in their effective `GITHUB_TOKEN`
+permissions and complete their `create-pull-request` steps. Issue #568 (missing
+`signoff: true` on `create-pull-request` steps) was closed and the
+[2026-09-28 scheduled run](https://github.com/cncf/endusers/actions/runs/36371675678)
+succeeded, as did the
+[2026-10-05 scheduled run](https://github.com/cncf/endusers/actions/runs/37257547433);
+with two consecutive green scheduled runs the gate is satisfied for this
+pipeline.
 
-If any pipeline is still red at W-1, treat it the same as any other Phase 1
-blocker under "Full content freeze rehearsal" (W-4): either land the fix or
-explicitly defer the affected content pillar in the launch post rather than
-presenting it as current.
+If any pipeline is still red at the final content refresh (milestone 13), treat
+it the same as any other Phase 1 blocker under "Full content freeze rehearsal"
+(milestone 10): either land the fix or explicitly defer the affected content
+pillar in the launch post rather than presenting it as current.
 
 ## Dependencies and risks
 
@@ -115,14 +135,19 @@ presenting it as current.
   has been transferred to the `cncf` GitHub org. What remains on the critical
   path is executing the DNS cutover to `endusers.cncf.io` itself (Phase 3, issue
   #46), not the decision.
-- **Merge throughput** (#58): the plan assumes the human merge gate keeps its
-  current burst cadence; the W-13 and W-12 items are all merge-gated, not
-  work-gated.
+- **Merge throughput** (#58): the remaining milestones are merge-gated, not
+  work-gated; the plan assumes the human merge gate keeps its current burst
+  cadence.
 - **Content freshness workflows** (#74, #75, #79, #80) have landed — remaining
   risk is regression before launch, not initial rollout.
+- **Date drift**: this plan is intentionally undated. If a launch date is ever
+  reintroduced, attach it to a milestone row in a PR labeled `roadmap` and keep
+  it in exactly one place so it cannot disagree with itself.
 
 ## How to use this file
 
-Track execution against the table above in the matching issues; when a week
-slips, update the table in a PR labeled `roadmap` rather than letting the plan
-drift. After KubeCon, replace this file with a launch retrospective.
+Track execution against the milestone table in the matching issues. When a
+milestone's status changes, update the row in a PR labeled `roadmap` rather than
+letting the plan drift. After launch, replace this file with a launch
+retrospective that compares `data/launch-metrics.json` against its 90-day
+targets.

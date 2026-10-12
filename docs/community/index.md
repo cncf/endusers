@@ -13,22 +13,25 @@ resources that help end users learn from one another and shape CNCF priorities.
 
 <div className="action-row">
   <a href="https://www.cncf.io/enduser/" className="secondary">Bring your organization in</a>
-  <a href="https://lists.cncf.io/g/cncf-enduser" className="secondary">Request mailing list access</a>
+  <a href="https://lists.cncf.io/g/cncf-enduser/join" className="secondary">Request mailing list access</a>
 </div>
 
-The [End User mailing list](https://lists.cncf.io/g/cncf-enduser) and the
-`#enduser` channel in [CNCF Slack](https://slack.cncf.io/) are private,
-application-gated spaces for the End User Community, so end user organizations
-can have candid peer discussions while still building in the open.
+The [End User mailing list](https://lists.cncf.io/g/cncf-enduser/join) and the
+`#enduser` channel in CNCF Slack are private, application-gated spaces for the
+End User Community, so end user organizations can have candid peer discussions
+while still building in the open.
 
-- **Request access:** Request to join the
-  [End User mailing list](https://lists.cncf.io/g/cncf-enduser) and the private
-  `#enduser` channel in [CNCF Slack](https://slack.cncf.io/).
+- **Request access:** Request
+  [mailing-list membership](https://lists.cncf.io/g/cncf-enduser/join) or
+  [apply to the End User Contributor Program](https://www.cncf.io/end-user-contributor-application/)
+  for access to End User-only discussion forums.
 - **Bring your organization in:** Learn about
   [joining the CNCF End User Community](https://www.cncf.io/enduser/).
 - **Find a peer group:** Browse the [User Groups](/community/user-groups) and
   [Technical Community Groups](/community/technical-community-groups).
-- **Share an architecture:** Follow the
+- **Share an architecture:** Submit using the
+  [in-repo submission template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml)
+  or follow the
   [Reference Architecture Submission Process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
 - **Explore adoption data:** Visit the
   [CNCF Technology Radar](https://radar.cncf.io/) and the
@@ -43,7 +46,7 @@ held accountable.
 
 ## Community meeting and communication channels
 
-- [CNCF End User mailing list](https://lists.cncf.io/g/cncf-enduser)
+- [CNCF End User mailing list](https://lists.cncf.io/g/cncf-enduser/join)
 - [CNCF Slack](https://slack.cncf.io/), including the `#tab` and `#enduser`
   channels
 - [CNCF community platform](https://community.cncf.io/)
@@ -68,9 +71,11 @@ The TAB-led
 describes how to submit a real-world architecture for peer and TAB review.
 Browse the [architecture catalog](/architectures/).
 
-Submissions can begin with a
-[GitHub issue using the reference architecture template](https://github.com/cncf/tab/issues/new?template=reference-architecture.yml),
-or with the
+Submissions can begin with the
+[in-repo reference architecture template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml),
+or through the
+[CNCF TAB issue template](https://github.com/cncf/tab/issues/new?template=reference-architecture.yml)
+and
 [pull request template](https://github.com/cncf/tab/blob/main/operations/templates/template-reference-architecture.md)
 when the material is ready.
 
@@ -79,9 +84,11 @@ when the material is ready.
 You do not need to be a maintainer to contribute to the End User Community.
 Start small and move up as your time and interest allow.
 
-1. **Listen and connect** — Join `#enduser` on
-   [CNCF Slack](https://slack.cncf.io/) and subscribe to the
-   [End User mailing list](https://lists.cncf.io/g/cncf-enduser).
+1. **Listen and connect** — Request
+   [mailing-list membership](https://lists.cncf.io/g/cncf-enduser/join) or
+   [apply to the End User Contributor Program](https://www.cncf.io/end-user-contributor-application/)
+   for access to End User-only discussion forums, including the private
+   `#enduser` channel.
 2. **Show up** — Attend the public [TAB meeting](https://zoom.us/j/96509520391)
    or a [User Group](/community/user-groups) or
    [Technical Community Group](/community/technical-community-groups) call.
@@ -90,7 +97,9 @@ Start small and move up as your time and interest allow.
    experience.
 4. **Contribute a reference architecture** — Document a real-world design
    through the
-   [reference architecture submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
+   [in-repo submission template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml)
+   or the
+   [TAB submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
 5. **Help shape direction** — Join a User Group, a Technical Community Group, or
    the TAB to advise on priorities and represent end user needs.
 

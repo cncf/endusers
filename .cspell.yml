@@ -19,20 +19,22 @@ words:
   - Agones
   - FESTIBATTLE
   - Findy
+  - GHSA
   - cutover
   - linuxfoundation
+  - livescript
+  - mxfile
+  - pkgs
   - reprioritizations
   - retag
+  - srcdoc
+  - vbscript
   - endusers
-  - Docusaurus
   - docusaurus
-  - Kubestellar
   - kubestellar
   - KubeCon
   - CloudNativeCon
   - cncf
-  - CNCF
-  - Cartografos
   - cartografos
   - Swisscom
   - Flipkart
@@ -48,12 +50,10 @@ words:
   - sidebars
   - cspell
   - markdownlint
-  - Prettier
   - prettier
   - AUSF
   - Aditya
   - Alertmanager
-  - Bootc
   - bootc
   - bootstrappable
   - CNIP
@@ -69,16 +69,12 @@ words:
   - Karthik
   - Katib
   - Khushi
-  - Kserve
   - kserve
   - Kubebuilder
-  - Kubeflow
   - kubeflow
   - Kubermatic
-  - Kubevirt
   - kubevirt
   - Kueue
-  - Kyverno
   - kyverno
   - MGMT
   - MPLS
@@ -86,7 +82,6 @@ words:
   - NSSF
   - NUMA
   - ONNX
-  - Organisation
   - organisation
   - organised
   - PAGT
@@ -94,17 +89,13 @@ words:
   - RDMA
   - Redirector
   - Relocator
-  - Rollouts
   - rollouts
   - Romande
-  - Runbooks
   - runbooks
   - SDLC
   - SLURM
-  - SNSSAI
   - snssai
   - Satchitanand
-  - Telco
   - telco
   - Tiwari
   - Traefik

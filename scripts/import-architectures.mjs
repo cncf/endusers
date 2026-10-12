@@ -14,7 +14,11 @@ import { execFileSync } from 'node:child_process';
 import { basename, extname, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { stripActiveContent } from './lib/svg-active-content.mjs';
+import {
+  findActiveContent,
+  stripActiveContent,
+  stripDoctype,
+} from './lib/svg-active-content.mjs';
 import {
   REPO_AUTHORED_PAGES,
   listArchitecturePages,
@@ -83,10 +87,21 @@ try {
   mkdirSync(recordsDir, { recursive: true });
   mkdirSync(assetsDir, { recursive: true });
 
+  // Dirent.isDirectory() is false for a symlink, so a symlinked architecture
+  // directory upstream used to fall out of this list silently: the prune above
+  // had already deleted its page, so the architecture vanished from the site
+  // and the catalog with nothing in the log. Say so, the way walkFiles() does
+  // for every other symlink in the clone (#1267).
   const records = (
     await Promise.all(
       readdirSync(source, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
+        .filter((entry) => {
+          if (!entry.isSymbolicLink()) return entry.isDirectory();
+          console.warn(
+            `Skipping symlink ${join(source, entry.name)}: symlinks are never imported`,
+          );
+          return false;
+        })
         .map((entry) => importArchitecture(entry.name, commit)),
     )
   ).sort((a, b) => a.organization.localeCompare(b.organization));
@@ -151,7 +166,9 @@ async function importArchitecture(id, commit) {
   // from disk afterward rather than trusting the copy-time list.
   const archAssetsDir = join(assetsDir, id);
   const svgsBefore = isRealDirectory(archAssetsDir)
-    ? walkFiles(archAssetsDir).filter((file) => file.endsWith('.svg'))
+    ? walkFiles(archAssetsDir).filter((file) =>
+        file.toLowerCase().endsWith('.svg'),
+      )
     : [];
   sanitizeArchitectureAssets(archAssetsDir);
   record.assets = isRealDirectory(archAssetsDir)
@@ -215,7 +232,11 @@ function walkFiles(dir) {
 function sanitizeArchitectureAssets(dir) {
   if (!isRealDirectory(dir)) return;
   for (const file of walkFiles(dir)) {
-    if (!file.endsWith('.svg')) continue;
+    // Case-insensitive, matching the lowercased MIRRORABLE_ASSET_EXTENSIONS
+    // test that copied the file in: an upstream `diagram.SVG` is mirrored, so
+    // a case-sensitive test here would mirror it without ever stripping its
+    // active content.
+    if (!file.toLowerCase().endsWith('.svg')) continue;
     const original = readFileSync(file, 'utf8');
     let source = original;
 
@@ -231,8 +252,10 @@ function sanitizeArchitectureAssets(dir) {
       );
     }
 
-    // Remove DOCTYPE declarations that can break XML consumers.
-    source = source.replace(/<!DOCTYPE\s[^>]*>\s*/gi, '');
+    // Remove DOCTYPE declarations that can break XML consumers. A document
+    // with an unclosed or otherwise malformed one was already rejected by
+    // stripActiveContent(), so nothing is left to guess at here.
+    source = stripDoctype(source);
 
     // Strip draw.io/Excalidraw editable metadata to reduce bloat.
     source = source.replace(/\scontent\s*=\s*["'][^"']*["']/gi, '');
@@ -249,6 +272,17 @@ function sanitizeArchitectureAssets(dir) {
           `<svg viewBox="0 0 ${width} ${height}"`,
         );
       }
+    }
+
+    // stripActiveContent() verifies the string it returns, but the
+    // content-attribute removal above is a text edit, which can leave a
+    // document that no longer parses. Verify the bytes that are actually
+    // written rather than the ones that were checked earlier.
+    const residual = findActiveContent(source);
+    if (residual.length) {
+      throw new Error(
+        `Active content reappeared after cleanup in ${relative(join(root, 'static'), file)}: ${residual.join('; ')}`,
+      );
     }
 
     if (source !== original) {

@@ -30,10 +30,40 @@ const existingPeople = existing.people ?? {};
 
 // Extracts the bare handle from a cncf/people github field, which is a full
 // profile URL (e.g. "https://github.com/octocat") rather than a handle.
+//
+// The handle decides which upstream record is published under which roster
+// entry, and every cncf/people record is self-asserted by its own subject, so
+// the host has to be decided by parsing rather than by matching text. A
+// substring test for "github.com/" is satisfied by any URL that merely
+// mentions it — in a path, query or fragment, or on a lookalike host such as
+// "https://notgithub.com/<handle>" — which lets one contributor claim another
+// contributor's handle and have their own bio, website and social links
+// published under that person's name.
 function handleFromUrl(url) {
   if (!url) return null;
-  const match = /github\.com\/([^/?#]+)/i.exec(url);
-  return match ? match[1] : null;
+
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+  // Userinfo lets "https://github.com@evil.example/victim" read as GitHub.
+  if (parsed.username || parsed.password) return null;
+
+  const host = parsed.hostname.toLowerCase();
+  if (host !== 'github.com' && host !== 'www.github.com') return null;
+
+  const segment = parsed.pathname.split('/').filter(Boolean)[0];
+  if (!segment) return null;
+
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
 }
 
 // cncf/people stores linkedin/twitter as full profile URLs too; pull the last

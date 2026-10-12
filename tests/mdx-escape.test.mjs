@@ -1,0 +1,371 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { compile } from '@mdx-js/mdx';
+import { mdxFromMarkdown } from 'mdast-util-mdx';
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { mdxjs } from 'micromark-extension-mdxjs';
+import { escapeMdx, unescapeMdx } from '../scripts/lib/mdx-escape.mjs';
+
+// Pages under docs/ compile as MDX (@docusaurus/core 3 defaults
+// markdown.format to 'mdx' and docusaurus.config.js sets no override), so
+// prose taken from a submission form reaches a JavaScript compiler. These
+// tests pin which constructs escapeMdx() must neutralize and, just as
+// importantly, which ones it must leave alone.
+
+const ACTIVE_MDX_TYPES = new Set([
+  'mdxjsEsm',
+  'mdxFlowExpression',
+  'mdxTextExpression',
+  'mdxJsxFlowElement',
+  'mdxJsxTextElement',
+]);
+
+function walk(node, visitor) {
+  visitor(node);
+  for (const child of node.children ?? []) walk(child, visitor);
+}
+
+async function assertCompilesAsText(escaped, ...expectedText) {
+  const tree = fromMarkdown(escaped, {
+    extensions: [mdxjs()],
+    mdastExtensions: [mdxFromMarkdown()],
+  });
+  const active = [];
+  const text = [];
+  walk(tree, (node) => {
+    if (ACTIVE_MDX_TYPES.has(node.type)) active.push(node.type);
+    if (node.type === 'text') text.push(node.value);
+  });
+  assert.deepEqual(active, [], 'escaped prose still contains active MDX');
+  for (const fragment of expectedText)
+    assert.ok(
+      text.join('').includes(fragment),
+      `expected text node content to include ${fragment}`,
+    );
+  await assert.doesNotReject(
+    () => compile(escaped, { development: false }),
+    'escaped prose must compile as MDX',
+  );
+}
+
+test('neutralizes a brace expression', () => {
+  assert.equal(escapeMdx('Prose. {2 + 2}'), 'Prose. &#123;2 + 2&#125;');
+});
+
+test('neutralizes a JSX element carrying an event handler', () => {
+  assert.equal(
+    escapeMdx('<span onClick={() => alert(1)}>click</span>'),
+    '&lt;span onClick=&#123;() => alert(1)&#125;>click&lt;/span>',
+  );
+});
+
+test('neutralizes an MDX comment', () => {
+  assert.equal(escapeMdx('{/* hi */}'), '&#123;/* hi */&#125;');
+});
+
+test('neutralizes a block-initial export statement', () => {
+  assert.equal(
+    escapeMdx('para\n\nexport const pwn = 1;\n\npara'),
+    'para\n\n&#101;xport const pwn = 1;\n\npara',
+  );
+});
+
+test('neutralizes a block-initial import statement', () => {
+  assert.equal(
+    escapeMdx('para\n\nimport fs from "node:fs";'),
+    'para\n\n&#105;mport fs from "node:fs";',
+  );
+});
+
+test('neutralizes an import indented less than a code block', () => {
+  assert.equal(
+    escapeMdx('   import fs from "x";'),
+    '   &#105;mport fs from "x";',
+  );
+});
+
+test('leaves an import indented into a code block alone', () => {
+  // Four spaces is an indented code block, which MDX does not evaluate.
+  assert.equal(escapeMdx('    import fs from "x";'), '    import fs from "x";');
+});
+
+test('does not escape import/export as an ordinary word mid-line', () => {
+  assert.equal(
+    escapeMdx('We export metrics and import traces.'),
+    'We export metrics and import traces.',
+  );
+});
+
+test('leaves braces inside a fenced code block verbatim', () => {
+  const source = 'intro\n\n```js\nconst a = { b: 1 };\n```\n\noutro';
+  assert.equal(escapeMdx(source), source);
+});
+
+test('leaves braces inside a tilde-fenced block verbatim', () => {
+  const source = '~~~yaml\nresources: { limits: {} }\n~~~';
+  assert.equal(escapeMdx(source), source);
+});
+
+test('leaves a longer closing fence working and resumes escaping after it', () => {
+  assert.equal(
+    escapeMdx('````\n{a}\n````\n{b}'),
+    '````\n{a}\n````\n&#123;b&#125;',
+  );
+});
+
+test('does not let a shorter inner fence close an outer fence', () => {
+  const source = '````\n```\n{a}\n```\n````';
+  assert.equal(escapeMdx(source), source);
+});
+
+test('treats an unterminated fence as code through the end of the text', () => {
+  const source = 'intro\n\n```js\nconst a = {b: 1};\nexport const c = 2;';
+  assert.equal(escapeMdx(source), source);
+});
+
+test('leaves braces inside an inline code span verbatim', () => {
+  assert.equal(
+    escapeMdx('set `{"a": 1}` then {bad}'),
+    'set `{"a": 1}` then &#123;bad&#125;',
+  );
+});
+
+test('matches inline code spans by backtick run length', () => {
+  assert.equal(escapeMdx('``a ` {b}`` {c}'), '``a ` {b}`` &#123;c&#125;');
+});
+
+test('escapes an unmatched backtick run as ordinary text', () => {
+  assert.equal(escapeMdx('`unclosed {a}'), '`unclosed &#123;a&#125;');
+});
+
+test('escapes an http autolink that MDX would reject as JSX', async () => {
+  const source = 'See <https://example.com/a?b=1> for more';
+  const escaped = escapeMdx(source);
+  assert.equal(escaped, 'See &lt;https://example.com/a?b=1> for more');
+  await assertCompilesAsText(escaped, source);
+});
+
+test('escapes an email autolink that MDX would reject as JSX', async () => {
+  const escaped = escapeMdx('<team@example.com>');
+  assert.equal(escaped, '&lt;team@example.com>');
+  await assertCompilesAsText(escaped, '<team@example.com>');
+});
+
+test('escapes a namespaced tag that MDX would compile as a live element', async () => {
+  const escaped = escapeMdx('<hive:probe/>');
+  assert.equal(escaped, '&lt;hive:probe/>');
+  await assertCompilesAsText(escaped, '<hive:probe/>');
+});
+
+test('escapes a less-than that is not an autolink', () => {
+  assert.equal(escapeMdx('latency < 5ms'), 'latency &lt; 5ms');
+});
+
+test('escapes the empty JSX fragment', () => {
+  assert.equal(escapeMdx('<></>'), '&lt;>&lt;/>');
+});
+
+test('escapes prose while preserving MDX code blocks and inline code', async () => {
+  const source = [
+    'See <https://example.com> and `<hive:probe/>`.',
+    '',
+    '```html',
+    '<hive:probe/>',
+    '```',
+    '',
+    'Email: <team@example.com>.',
+  ].join('\n');
+  const escaped = escapeMdx(source);
+  assert.equal(
+    escaped,
+    [
+      'See &lt;https://example.com> and `<hive:probe/>`.',
+      '',
+      '```html',
+      '<hive:probe/>',
+      '```',
+      '',
+      'Email: &lt;team@example.com>.',
+    ].join('\n'),
+  );
+  await assertCompilesAsText(
+    escaped,
+    'See <https://example.com> and ',
+    'Email: <team@example.com>.',
+  );
+});
+
+test('leaves ordinary Markdown untouched', () => {
+  const source =
+    '## Heading\n\nSome **bold** text with a [link](https://example.com) and\nan image ![alt](https://example.com/a.png).\n\n- one\n- two';
+  assert.equal(escapeMdx(source), source);
+});
+
+test('returns an empty string for non-string or empty input', () => {
+  assert.equal(escapeMdx(undefined), '');
+  assert.equal(escapeMdx(null), '');
+  assert.equal(escapeMdx(''), '');
+  assert.equal(escapeMdx(42), '');
+});
+
+test('unescapeMdx round-trips every character reference escapeMdx adds', () => {
+  const source =
+    'a {b} <c> <https://example.com> <team@example.com> <hive:probe/> export import latency < 5';
+  assert.equal(unescapeMdx(escapeMdx(source)), source);
+});
+
+test('unescapeMdx leaves unrelated text alone', () => {
+  assert.equal(unescapeMdx('plain &amp; simple'), 'plain &amp; simple');
+  assert.equal(unescapeMdx(undefined), '');
+});
+
+// unescapeMdx() reverses the escaping by scanning for a fixed alternation of
+// character references and looking each one up in the ESCAPES table. The two
+// lists are written out separately, so they can drift: an alternative added to
+// the regex without a matching table entry makes unescapeMdx() fall through and
+// emit the raw reference, which then shows through literally wherever the
+// unescaped text is rendered as a plain text node. Nothing in the behavioural
+// tests above can see that drift, because a reference with no table entry is
+// one escapeMdx() never produces. Pin the two lists against each other
+// directly, against the source rather than the exports, since neither list is
+// reachable from outside the module.
+const mdxEscapeSource = readFileSync(
+  new URL('../scripts/lib/mdx-escape.mjs', import.meta.url),
+  'utf8',
+);
+
+function escapeTableKeys() {
+  const table = mdxEscapeSource.match(
+    /const ESCAPES = new Map\(\[(?<body>[\s\S]*?)\]\);/u,
+  );
+  assert.ok(table, 'expected an ESCAPES Map literal in mdx-escape.mjs');
+  return [...table.groups.body.matchAll(/\[\s*'(?<entity>[^']+)'\s*,/gu)].map(
+    (entry) => entry.groups.entity,
+  );
+}
+
+function unescapeRegexAlternatives() {
+  const call = mdxEscapeSource.match(
+    /return text\.replace\(\s*\/(?<pattern>[^/\n]+)\/g,/u,
+  );
+  assert.ok(
+    call,
+    'expected a text.replace() with a literal regex in unescapeMdx',
+  );
+  return call.groups.pattern.split('|');
+}
+
+test('every character reference unescapeMdx matches has an ESCAPES entry', () => {
+  const keys = escapeTableKeys();
+  assert.ok(keys.length > 0, 'expected a non-empty ESCAPES table');
+  assert.deepEqual(
+    unescapeRegexAlternatives().filter((alt) => !keys.includes(alt)),
+    [],
+    'unescapeMdx matches a character reference that ESCAPES cannot decode',
+  );
+});
+
+test('every ESCAPES entry is reachable from the unescapeMdx regex', () => {
+  const alternatives = unescapeRegexAlternatives();
+  assert.deepEqual(
+    escapeTableKeys().filter((key) => !alternatives.includes(key)),
+    [],
+    'ESCAPES decodes a character reference unescapeMdx never matches',
+  );
+});
+
+test('unescapeMdx decodes every entry in the ESCAPES table', () => {
+  for (const entity of escapeTableKeys()) {
+    assert.notEqual(
+      unescapeMdx(`before ${entity} after`),
+      `before ${entity} after`,
+      `unescapeMdx left ${entity} undecoded`,
+    );
+  }
+});
+
+// A fence opener that CommonMark rejects, or that only a particular block
+// context makes real, used to be decided by a line scan in this module. Every
+// place that scan disagreed with the compiler was a hole: text handed back
+// unescaped as "code" still reached the MDX compiler as live prose. These
+// pin the disagreements that were exploitable.
+
+test('escapes prose after a backtick fence whose info string holds a backtick', () => {
+  // CommonMark forbids a backtick in the info string of a backtick fence, so
+  // this opens no code block and everything after it stays live prose.
+  const escaped = escapeMdx('```info`string\n<div onClick={alert(1)}>x</div>');
+  assert.match(escaped, /&lt;div onClick=&#123;alert\(1\)&#125;>x&lt;\/div>/);
+  assert.doesNotMatch(escaped, /<div/);
+});
+
+test('escapes prose after a tab-indented fence inside a list item', () => {
+  const escaped = escapeMdx('- ~\n\t````\n<b onClick={alert(1)}>x</b>');
+  assert.doesNotMatch(escaped, /<b onClick=\{/);
+});
+
+test('escapes prose following an indented fence that a later fence closes', () => {
+  const escaped = escapeMdx('    ````\n````\n<b onClick={alert(1)}>x</b>');
+  assert.doesNotMatch(escaped, /<b onClick=\{/);
+});
+
+test('falls back to escaping everything when code detection would leave live MDX', () => {
+  // The fallback escapes the whole text, code spans included, rather than
+  // trusting a code range that still lets an expression through.
+  const escaped = escapeMdx('```x`y\n{alert(1)}');
+  assert.equal(escaped, '```x`y\n&#123;alert(1)&#125;');
+});
+
+test('fallback also escapes namespaced tags', async () => {
+  const escaped = escapeMdx('```x`y\n<hive:probe/>');
+  assert.equal(escaped, '```x`y\n&lt;hive:probe/>');
+  await assertCompilesAsText(escaped, '<hive:probe/>');
+});
+
+test('leaves a fenced block with a normal info string verbatim', () => {
+  const source = 'a\n\n```js title="x"\nconst a = { b: 1 };\n```\n\nb';
+  assert.equal(escapeMdx(source), source);
+});
+
+test('escapes an indented block, which MDX does not treat as code', () => {
+  // MDX turns CommonMark's indented code blocks off, so an indented line is
+  // prose and its braces are a live expression.
+  assert.equal(
+    escapeMdx('intro\n\n    const a = { b: 1 };\n\noutro'),
+    'intro\n\n    const a = &#123; b: 1 &#125;;\n\noutro',
+  );
+});
+
+test('escapes text MDX cannot parse, falling back to CommonMark code ranges', () => {
+  // An unclosed expression makes MDX's own grammar throw, so code ranges come
+  // from CommonMark instead and the result is still fully escaped.
+  assert.equal(escapeMdx('a { b'), 'a &#123; b');
+});
+
+test('keeps a code span verbatim in text MDX cannot parse', () => {
+  assert.equal(escapeMdx('`{a}` and { b'), '`{a}` and &#123; b');
+});
+
+// escapeMdx() verifies its own code-preserving result and throws it away when
+// anything MDX would execute survived. Reaching that check requires a text
+// whose code ranges came from CommonMark — MDX's grammar threw, so codeRanges()
+// fell back — and where CommonMark classified as code a span MDX compiles as
+// JSX. CommonMark's indented code block is exactly that disagreement: MDX turns
+// indented code off, so a four-space-indented element is live there and inert
+// here. Without the verification step the preserved span would be handed back
+// unescaped and compiled.
+
+test('re-escapes everything when a CommonMark code range hides a live element', async () => {
+  // The unclosed <Foo> makes MDX's grammar throw, so the code ranges come from
+  // CommonMark, which calls the indented <Bar /> a code block. MDX does not,
+  // so preserving that span verbatim would ship a live element.
+  const escaped = escapeMdx('<Foo>\n\n    <Bar />\n');
+  assert.equal(escaped, '&lt;Foo>\n\n    &lt;Bar />\n');
+  await assertCompilesAsText(escaped, '<Bar />');
+});
+
+test('re-escapes everything when a CommonMark code range hides a live expression', async () => {
+  const escaped = escapeMdx('<Foo>\n\n    {1 + 1}\n');
+  assert.equal(escaped, '&lt;Foo>\n\n    &#123;1 + 1&#125;\n');
+  await assertCompilesAsText(escaped, '{1 + 1}');
+});

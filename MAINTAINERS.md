@@ -60,3 +60,18 @@ making that maintainer a merge deadlock:
 - `hold`, `on-hold`, and `do-not-merge` labels remain binding. Hive-specific
   hold instructions apply only when a hold is present or the work is
   Hive-assigned, not to all repository work by default.
+
+## Processing reference architecture submissions
+
+Community reference architectures can be submitted directly via the
+[in-repo submission issue template](.github/ISSUE_TEMPLATE/reference-architecture.yml).
+
+When a submission is opened:
+
+1. Maintainers review the issue content for completeness, clarity, and relevance
+   to end users.
+2. When the submission is ready for publication, apply the `architecture-ready`
+   label to the issue.
+3. The `architecture-submission.yml` workflow triggers automatically, generating
+   the Markdown document in `docs/architectures/` and updating the catalog via
+   `scripts/import-architecture-issue.mjs`, and opens a pull request for review.

@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { join, relative } from 'node:path';
 import { isAllowedImageHost } from '../scripts/lib/profile-image.mjs';
+import { remoteTarget } from '../scripts/lib/uri-safety.mjs';
 
 // docusaurus.config.js is ESM but calls require.resolve() for its plugin list,
 // which Docusaurus supplies through its own loader. Provide the same shim so
@@ -269,6 +270,95 @@ test('local search indexes docs at the route docs are actually served on', () =>
   );
 });
 
+test('e2e coverage source maps are opt-in and client-only', async () => {
+  const normal = await loadConfig({ E2E_COVERAGE: undefined });
+  assert.equal(
+    normal.plugins.some(
+      (plugin) =>
+        typeof plugin === 'function' && plugin.name === 'endusersE2ESourceMaps',
+    ),
+    false,
+  );
+
+  const coverage = await loadConfig({ E2E_COVERAGE: '1' });
+  const factory = coverage.plugins.find(
+    (plugin) =>
+      typeof plugin === 'function' && plugin.name === 'endusersE2ESourceMaps',
+  );
+  assert.equal(typeof factory, 'function');
+  const plugin = factory();
+  assert.deepEqual(plugin.configureWebpack({}, false), {
+    devtool: 'source-map',
+  });
+  assert.deepEqual(plugin.configureWebpack({}, true), {});
+});
+
+test('the e2e data fixtures are opt-in and scoped to the site data directory', async () => {
+  // The overlay rewrites data/*.json at build time (see
+  // tests/tools/e2e-data-fixtures.cjs). Registering it outside the coverage
+  // build would put fixture records into what the site ships, and widening
+  // the rule past data/ would hand every other JSON import to the loader.
+  const normal = await loadConfig({ E2E_COVERAGE: undefined });
+  assert.equal(
+    normal.plugins.some(
+      (plugin) =>
+        typeof plugin === 'function' &&
+        plugin.name === 'endusersE2EDataFixtures',
+    ),
+    false,
+  );
+
+  const coverage = await loadConfig({ E2E_COVERAGE: '1' });
+  const factory = coverage.plugins.find(
+    (plugin) =>
+      typeof plugin === 'function' && plugin.name === 'endusersE2EDataFixtures',
+  );
+  assert.equal(typeof factory, 'function');
+
+  const siteDir = '/srv/site';
+  const [rule] = factory().configureWebpack({
+    resolve: { alias: { '@site': siteDir } },
+  }).module.rules;
+  assert.equal(rule.include, `${siteDir}/data`);
+  assert.equal(rule.type, 'json');
+  assert.ok(rule.test.test('members.json'));
+  assert.equal(rule.test.test('members.jsonc'), false);
+  assert.equal(
+    rule.use[0],
+    `${siteDir}/tests/tools/e2e-data-fixture-loader.cjs`,
+  );
+});
+
+test('the e2e fixture docs instance is opt-in and scoped to the fixture directory', async () => {
+  // The fixture page renders a <CNCFProjectCard> prop shape no generated
+  // architecture page produces (tests/e2e/cncf-project-card.spec.js).
+  // Registering the instance outside the coverage build would publish a test
+  // fixture as a real page; pointing it anywhere but the fixture directory
+  // would publish whatever else it found.
+  const normal = await loadConfig({ E2E_COVERAGE: undefined });
+  assert.equal(
+    normal.plugins.some(
+      (plugin) =>
+        Array.isArray(plugin) && plugin[1]?.id === 'e2e-coverage-fixtures',
+    ),
+    false,
+  );
+
+  const coverage = await loadConfig({ E2E_COVERAGE: '1' });
+  const instance = coverage.plugins.find(
+    (plugin) =>
+      Array.isArray(plugin) && plugin[1]?.id === 'e2e-coverage-fixtures',
+  );
+  assert.ok(instance, 'no e2e fixture docs instance in the coverage config');
+  const [modulePath, options] = instance;
+  assert.match(modulePath, /plugin-content-docs/);
+  assert.equal(options.path, 'tests/e2e/fixtures/docs');
+  assert.equal(options.routeBasePath, 'e2e-coverage-fixtures');
+  // A sidebar would pull the fixture into the docs navigation it is served
+  // beside; false is what keeps it reachable only by its own route.
+  assert.equal(options.sidebarPath, false);
+});
+
 // The meta Content-Security-Policy is the browser-side backstop for content
 // this site does not author. Nothing asserted it until now, so it could be
 // weakened or deleted without a single test failing.
@@ -310,6 +400,193 @@ test('the meta CSP keeps its non-script hardening directives', () => {
   assert.deepEqual(directives.get('base-uri'), ["'self'"]);
   assert.deepEqual(directives.get('object-src'), ["'none'"]);
   assert.deepEqual(directives.get('form-action'), ["'self'"]);
+});
+
+// Without a `default-src`, an unnamed fetch directive is not restricted by the
+// named ones -- it is simply absent, and the browser allows any host. These
+// three were missing while `object-src 'none'` was present, which left the
+// more capable `<iframe>` open in a policy that closed `<object>`.
+test('the meta CSP names the fetch directives that have no default-src fallback', () => {
+  const directives = cspDirectives();
+  assert.equal(
+    directives.has('default-src'),
+    false,
+    'this assertion set assumes no default-src: if one is added, every directive below inherits it and these tests must be revisited',
+  );
+  assert.deepEqual(
+    directives.get('frame-src'),
+    ["'none'"],
+    "frame-src is missing or widened: an <iframe> that slipped the element allowlist in scripts/lib/mdx-active-content.mjs would load any host, framed inside this origin's page",
+  );
+  assert.deepEqual(
+    directives.get('media-src'),
+    ["'none'"],
+    'media-src is missing or widened: a <video>/<audio> src that slipped a gate would beacon the visitor to any host',
+  );
+  assert.deepEqual(
+    directives.get('connect-src'),
+    ["'self'"],
+    'connect-src is missing or widened: it confines fetch/XHR/WebSocket to this origin so injected content cannot exfiltrate to a third party',
+  );
+  assert.deepEqual(
+    directives.get('font-src'),
+    ["'self'"],
+    "font-src is missing or widened: style-src carries 'unsafe-inline', so an inline @font-face that reached a page would fetch a font from any host and beacon the visitor there",
+  );
+  assert.deepEqual(
+    directives.get('manifest-src'),
+    ["'self'"],
+    "manifest-src is missing or widened: CSP3 6.8.2 gives its fallback chain as << manifest-src, default-src >> and nothing else, so with no default-src an off-origin <link rel=manifest> is fetched, beaconing the visitor and misrepresenting the site's installed-app identity",
+  );
+});
+
+// script-src and style-src have to carry 'unsafe-inline' (Docusaurus emits
+// inline bootstrap scripts and inline styles), which is why they were left out
+// of the policy for a long time. Omitting them is strictly worse than setting
+// them: with no default-src to fall back to, an absent directive restricts
+// nothing, so any host may serve a <script src> or a <link rel=stylesheet> on
+// this origin. Pin the host part so the directives cannot be dropped again.
+test('the meta CSP confines script and style loads to this origin', async () => {
+  const production = cspDirectives(
+    await loadConfig({ NODE_ENV: 'production' }),
+  );
+
+  const scriptSources = production.get('script-src');
+  assert.ok(
+    scriptSources,
+    'script-src is missing: without it, and with no default-src, the browser allows a <script src> from any host -- the gap frame-src/media-src/connect-src were added to close',
+  );
+  assert.ok(
+    scriptSources.includes("'self'"),
+    'script-src must name a host source, or it confines nothing',
+  );
+  assert.equal(
+    scriptSources.some((source) => source.startsWith('http')),
+    false,
+    `script-src admits an off-origin host (${scriptSources.join(' ')}): the built site references only same-origin bundles`,
+  );
+  // 'unsafe-eval' is the dev server's webpack devtool requirement, not the
+  // deployed site's: the production bundles contain no eval.
+  assert.equal(
+    scriptSources.includes("'unsafe-eval'"),
+    false,
+    "the production policy must not ship 'unsafe-eval'",
+  );
+
+  const styleSources = production.get('style-src');
+  assert.ok(
+    styleSources,
+    'style-src is missing: without it, and with no default-src, the browser allows a stylesheet from any host',
+  );
+  assert.ok(
+    styleSources.includes("'self'"),
+    'style-src must name a host source, or it confines nothing',
+  );
+  assert.equal(
+    styleSources.some((source) => source.startsWith('http')),
+    false,
+    `style-src admits an off-origin host (${styleSources.join(' ')}): the built site loads one same-origin stylesheet`,
+  );
+});
+
+// The dev server builds with webpack's 'eval-cheap-module-source-map' devtool
+// (@docusaurus/core/lib/webpack/base.js), which wraps every module in eval().
+// The meta tag is served in development too, so a policy without 'unsafe-eval'
+// there breaks `npm start` outright.
+test("the meta CSP allows 'unsafe-eval' outside production only", async () => {
+  const development = cspDirectives(
+    await loadConfig({ NODE_ENV: 'development' }),
+  );
+  assert.ok(
+    development.get('script-src').includes("'unsafe-eval'"),
+    "the dev policy must allow 'unsafe-eval' or the webpack dev server cannot evaluate its modules",
+  );
+});
+
+// The three directives above are only safe to set this tightly because the
+// site ships nothing that needs them widened. If that stops being true the
+// policy has to change with it, so assert the premise rather than trusting it.
+test('no shipped source needs a wider frame, media or connect source', () => {
+  const walkAll = (dir) =>
+    readdirSync(dir).flatMap((entry) => {
+      const full = join(dir, entry);
+      return statSync(full).isDirectory() ? walkAll(full) : [full];
+    });
+  const offenders = [];
+  for (const dir of ['src', 'docs', 'blog', 'data']) {
+    const root = join(repoRoot, dir);
+    if (!existsSync(root)) continue;
+    for (const file of walkAll(root)) {
+      if (!/\.(js|jsx|mjs|md|mdx|json)$/.test(file)) continue;
+      const body = readFileSync(file, 'utf8');
+      const match = body.match(
+        /<iframe|<video[\s>]|<audio[\s>]|XMLHttpRequest|new WebSocket|new EventSource/i,
+      );
+      if (match) offenders.push(`${relative(repoRoot, file)}: ${match[0]}`);
+    }
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    'a frame, media element or cross-origin request was added; widen the CSP deliberately rather than leaving it to block at runtime',
+  );
+});
+
+// `font-src 'self'` is the premise the config comment asked for a build to
+// assert before the directive could be set: the site's fonts are vendored in
+// static/fonts and named by root-relative url(). A stylesheet that starts
+// naming an off-origin font would be blocked at runtime instead, so fail here
+// with the file that did it rather than leaving it to the browser.
+//
+// Every url() is checked, not only the ones inside @font-face: a shipped
+// stylesheet has no off-origin resource of any kind today, and remoteTarget()
+// is the same classifier the SVG and MDX gates ask, so a protocol-relative or
+// backslash-prefixed authority is judged here exactly as it is there.
+test('no shipped stylesheet names an off-origin font or other remote resource', () => {
+  const walkCss = (dir) =>
+    readdirSync(dir).flatMap((entry) => {
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) return walkCss(full);
+      return full.endsWith('.css') ? [full] : [];
+    });
+
+  const offenders = [];
+  for (const file of walkCss(join(repoRoot, 'src'))) {
+    const body = readFileSync(file, 'utf8');
+    for (const [, raw] of body.matchAll(/url\(\s*(.*?)\s*\)/g)) {
+      const value = raw.replace(/^['"]|['"]$/g, '');
+      if (remoteTarget(value)) {
+        offenders.push(`${relative(repoRoot, file)}: ${value}`);
+      }
+    }
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    "a stylesheet names a remote resource; font-src 'self' (and img-src) will block it, so vendor the asset or widen the CSP deliberately",
+  );
+});
+
+// `manifest-src 'self'` rests on the same premise `font-src 'self'` does: the
+// only manifest this site links is its own. The link is emitted from
+// docusaurus.config.js as a root-relative `${baseUrl}manifest.json`, so a
+// change that pointed it at a third-party host would be blocked at runtime
+// rather than caught here. Judge it with remoteTarget(), the same classifier
+// the SVG, MDX and stylesheet gates ask, so a protocol-relative or
+// backslash-prefixed authority is read here exactly as it is there.
+test('every linked web app manifest is served from this origin', () => {
+  const manifests = config.headTags.filter(
+    (tag) => tag.tagName === 'link' && tag.attributes?.rel === 'manifest',
+  );
+  assert.ok(manifests.length, 'no rel="manifest" link tag');
+  const offenders = manifests
+    .map((tag) => tag.attributes.href)
+    .filter((href) => remoteTarget(href));
+  assert.deepEqual(
+    offenders,
+    [],
+    "a manifest is linked from another host; manifest-src 'self' will block it, so serve it from static/ or widen the CSP deliberately",
+  );
 });
 
 test('the meta CSP confines images to the hosts the image gate allows', () => {
@@ -389,5 +666,11 @@ test('the CSP holds under a preview deployment origin', async () => {
   });
   const directives = cspDirectives(preview);
   assert.deepEqual(directives.get('object-src'), ["'none'"]);
+  assert.deepEqual(directives.get('frame-src'), ["'none'"]);
+  assert.deepEqual(directives.get('media-src'), ["'none'"]);
+  // 'self' is the preview origin under a preview deployment, so local search
+  // still reads its index from the host the page was served from.
+  assert.deepEqual(directives.get('connect-src'), ["'self'"]);
+  assert.deepEqual(directives.get('manifest-src'), ["'self'"]);
   assert.ok(directives.get('img-src')?.includes("'self'"));
 });

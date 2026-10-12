@@ -26,5 +26,6 @@ import MetricsDashboard from '@site/src/components/MetricsDashboard';
   </figcaption>
 </figure>
 
-Metrics are generated during the scheduled site refresh. Values unavailable from
-authoritative sources are omitted rather than estimated.
+Metrics are refreshed on demand from public CNCF sources via the "Import
+reference architectures" workflow and validated before each site build. Values
+unavailable from authoritative sources are omitted rather than estimated.

@@ -13,7 +13,7 @@
 // docsRouteBasePath (["docs"]) does not match the site's docs
 // routeBasePath ("/"), so only blog routes are indexed. Tightening this file
 // to assert docs coverage belongs with that configuration fix, not here.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tools/e2e-coverage.cjs';
 
 // A term that appears across the docs the site is built around. Asserting on a
 // term rather than a count keeps this stable as content grows.

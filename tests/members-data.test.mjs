@@ -11,6 +11,7 @@ function readJson(relativePath) {
 
 const membersData = readJson('data/members.json');
 const awardsData = readJson('data/awards.json');
+const landscapeData = readJson('data/enduser-landscape.json');
 const members = membersData.members;
 
 // src/components/MemberDirectory/index.js dereferences these without guards
@@ -61,11 +62,20 @@ test('members.json exposes the generated envelope', () => {
     'generatedFrom must list the inputs the file is derived from',
   );
   assert.deepEqual(membersData.generatedFrom, [
+    'data/enduser-landscape.json',
     'data/architectures/catalog.json',
     'data/awards.json',
   ]);
   assert.equal(typeof membersData.schema, 'object');
   assert.ok(membersData.schema !== null);
+  assert.equal(
+    membersData.sources.landscape.revision,
+    landscapeData.source.revision,
+  );
+  assert.equal(
+    membersData.sources.landscape.sourceUrl,
+    landscapeData.source.sourceUrl,
+  );
 });
 
 test('members is a non-empty array', () => {
@@ -90,6 +100,77 @@ test('every member carries the arrays MemberDirectory renders', () => {
       assert.ok(
         Array.isArray(member[field]),
         `${member.id}.${field} must be an array so MemberDirectory can render it`,
+      );
+    }
+  }
+});
+
+test('landscape source IDs are represented exactly once', () => {
+  const selected = landscapeData.records
+    .filter((record) => record.included)
+    .map((record) => record.sourceId)
+    .sort();
+  const represented = members.flatMap((member) =>
+    member.membershipSources.map((source) => source.sourceId),
+  );
+  assert.equal(
+    new Set(represented).size,
+    represented.length,
+    'membership source IDs must be unique',
+  );
+  assert.deepEqual(represented.sort(), selected);
+});
+
+test('historical profile IDs remain present and unknown when no role source exists', () => {
+  const historicalIds = [
+    'adobe',
+    'allianz',
+    'ant-group',
+    'apple',
+    'bloomberg',
+    'cern',
+    'colopl',
+    'didi',
+    'flipkart',
+    'intuit',
+    'jd-com',
+    'mercedes-benz-tech-innovation',
+    'michelin',
+    'sncf',
+    'spotify',
+    'swisscom',
+    'zalando',
+    'zeiss',
+  ];
+  const byId = new Map(members.map((member) => [member.id, member]));
+  for (const id of historicalIds) {
+    assert.ok(byId.has(id), `historical profile ${id} was removed`);
+  }
+  for (const member of members.filter((entry) =>
+    historicalIds.includes(entry.id),
+  )) {
+    if (member.membershipSources.length === 0) {
+      assert.equal(member.membershipStatus, 'unknown');
+    }
+  }
+});
+
+test('selected records carry explicit role provenance and supporters stay audit-only', () => {
+  for (const record of landscapeData.records) {
+    if (record.sourceRole === 'supporter') {
+      assert.equal(record.included, false);
+      assert.equal(record.classificationReason, 'legacy-supporter-audit-only');
+    }
+  }
+  for (const member of members) {
+    if (member.membershipStatus === 'unknown') {
+      assert.deepEqual(member.membershipSources, []);
+    } else {
+      assert.ok(member.membershipSources.length > 0);
+      assert.ok(
+        member.membershipSources.every((source) =>
+          ['member', 'contributor'].includes(source.role),
+        ),
       );
     }
   }

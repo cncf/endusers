@@ -2,14 +2,18 @@
 // imported pages.
 //
 // Docusaurus routes docs/ by filesystem, not by data/architectures/catalog.json,
-// so every .md in this directory is published whether or not a catalog record
-// names it. Driving either the import pruner or the active-content gate from
+// so every page in this directory is published whether or not a catalog record
+// names it. The docs plugin's default `include` globs both .md and .mdx, so an
+// .mdx page is published exactly like a .md one and has to be enumerated here
+// too; listing only .md left an .mdx page unscanned by the active-content gate
+// and unpruned by the importer.
+// Driving either the import pruner or the active-content gate from
 // the catalog (or from the upstream checkout) therefore leaves any file the
 // two disagree about published and unguarded — the failure mode
 // scripts/validate-community-people.mjs already documents for its own loop.
 // Both callers enumerate the directory through this module instead.
 
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -23,6 +27,62 @@ import { join } from 'node:path';
 export const REPO_AUTHORED_PAGES = new Set(['index.md']);
 
 /**
+ * Catalog ids an imported record may not claim.
+ *
+ * Both importers write their page to `docs/architectures/<id>.md`, and the id
+ * is derived from submitter- or upstream-controlled text (the "Organization or
+ * Team Name" answer on a submission issue, or an upstream directory name). An
+ * id that slugifies to a repo-authored page name therefore overwrites that
+ * hand-authored page with imported content — and because the active-content
+ * gate in scripts/validate-architectures.mjs deliberately skips
+ * REPO_AUTHORED_PAGES, the overwritten page ships without ever being scanned
+ * for the MDX expressions, event handlers and script-capable URL schemes that
+ * gate exists to reject.
+ *
+ * The exemption is only safe while nothing imported can land on an exempt
+ * path, so the ids are reserved here and rejected by the validator.
+ */
+export const RESERVED_PAGE_IDS = new Set(
+  [...REPO_AUTHORED_PAGES].map((page) => page.replace(/\.mdx?$/, '')),
+);
+
+/**
+ * Whether a catalog id would resolve to a repo-authored page.
+ *
+ * Ids are lowercase slugs by contract (validate-architectures.mjs enforces
+ * `/^[a-z0-9][a-z0-9-]*$/`), but this lowercases before comparing so a record
+ * that failed that check cannot also slip past this one.
+ *
+ * @param {unknown} id
+ * @returns {boolean}
+ */
+export function isReservedPageId(id) {
+  return typeof id === 'string' && RESERVED_PAGE_IDS.has(id.toLowerCase());
+}
+
+/**
+ * Page extensions Docusaurus publishes from docs/. Mirrors the docs plugin's
+ * default `include`, which globs both `.md` and `.mdx`; a file this does not
+ * match is not routed, so it needs neither gating nor pruning.
+ */
+const PAGE_EXTENSION = /\.mdx?$/;
+
+/**
+ * Whether a path resolves, through any number of links, to a directory.
+ *
+ * `statSync` follows the link, which is what decides whether Docusaurus's
+ * globbing will descend into it. A broken or unreadable link throws and is
+ * reported as not a directory: it publishes nothing, so it needs no gate.
+ */
+function resolvesToDirectory(path) {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Lists every Markdown page under docs/architectures/, as paths relative to
  * that directory, sorted for stable output.
  *
@@ -31,6 +91,14 @@ export const REPO_AUTHORED_PAGES = new Set(['index.md']);
  * both false for a symbolic link, so silently ignoring one would publish a
  * symlinked page that no caller ever reads. The caller decides what to do
  * with them; nothing here follows a link.
+ *
+ * That applies to a symlinked *directory* as much as to a symlinked page, and
+ * it cannot be decided from the entry name. `@docusaurus/plugin-content-docs`
+ * globs docs with `Globby(include, { cwd, ignore })` and passes no
+ * `followSymbolicLinks`, which fast-glob defaults to `true`, so every page
+ * beneath a symlinked directory is published at `/architectures/<link>/...`.
+ * A link named without a page extension would otherwise be dropped before the
+ * `isFile()` split is reached, and its pages would be gated by nothing.
  *
  * @param {string} docsDir - Absolute path to docs/architectures.
  * @returns {{ pages: string[], irregular: string[] }}
@@ -47,7 +115,19 @@ export function listArchitecturePages(docsDir) {
         walk(join(dir, entry.name), relativePath);
         continue;
       }
-      if (!entry.name.endsWith('.md')) continue;
+      if (entry.isSymbolicLink()) {
+        // Reported, never followed. A link carrying a page extension is
+        // published as a page; a link resolving to a directory publishes
+        // every page beneath it. Either way the walk cannot gate it, so it
+        // fails closed here rather than disappearing.
+        if (
+          PAGE_EXTENSION.test(entry.name) ||
+          resolvesToDirectory(join(dir, entry.name))
+        )
+          irregular.push(relativePath);
+        continue;
+      }
+      if (!PAGE_EXTENSION.test(entry.name)) continue;
       if (entry.isFile()) pages.push(relativePath);
       else irregular.push(relativePath);
     }
@@ -59,12 +139,14 @@ export function listArchitecturePages(docsDir) {
 
 /**
  * The catalog id a page path corresponds to, or null when the path is not a
- * top-level `<id>.md`. Nested paths have no catalog record by construction.
+ * top-level `<id>.md`/`<id>.mdx`. Nested paths have no catalog record by
+ * construction.
  *
  * @param {string} relativePath
  * @returns {string|null}
  */
 export function pageCatalogId(relativePath) {
   if (relativePath.includes('/')) return null;
-  return relativePath.endsWith('.md') ? relativePath.slice(0, -3) : null;
+  const extension = relativePath.match(PAGE_EXTENSION);
+  return extension ? relativePath.slice(0, -extension[0].length) : null;
 }

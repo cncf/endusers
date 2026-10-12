@@ -18,6 +18,12 @@ body:
         architectures](https://github.com/cncf/endusers/tree/main/docs/architectures)
         for examples of the level of detail we're looking for.
 
+        Diagrams and page content must pass automated content-security
+        validation; the rules (no script-bearing SVG constructs, no
+        third-party fetches, cncf/artwork logo URLs only) and remediation
+        steps are documented in
+        [CONTENT-SECURITY.md](https://github.com/cncf/endusers/blob/main/CONTENT-SECURITY.md).
+
   - type: input
     id: org_name
     attributes:

@@ -35,6 +35,20 @@ globalThis.fetch = async (url) => {
 `;
 
 /**
+ * The inherited environment minus the Actions variables this script reads.
+ * Both are set for real when the unit suite runs inside GitHub Actions: an
+ * ambient GITHUB_EVENT_PATH would mask the "no issue JSON" error path, and an
+ * ambient GITHUB_OUTPUT would make the sandbox append `id=` to the live
+ * workflow's output file. Tests that want either one pass it explicitly.
+ */
+function scrubbedEnv() {
+  const env = { ...process.env };
+  delete env.GITHUB_EVENT_PATH;
+  delete env.GITHUB_OUTPUT;
+  return env;
+}
+
+/**
  * Runs scripts/import-architecture-issue.mjs against a fixture issue payload.
  *
  * @param {object} options
@@ -45,7 +59,14 @@ globalThis.fetch = async (url) => {
  * @param {Record<string, unknown>} [options.catalog] Pre-existing
  *   data/architectures/catalog.json content.
  * @param {string[]} [options.args] Extra CLI arguments.
+ * @param {boolean} [options.passIssueJson] Pass `--issue-json <path>`. Set
+ *   false to exercise the GITHUB_EVENT_PATH fallback the workflow relies on,
+ *   or the error raised when neither source is present.
+ * @param {Record<string, string>} [options.env] Extra environment variables.
+ *   `{issuePath}` in a value is replaced with the fixture payload's path, so a
+ *   caller can point GITHUB_EVENT_PATH at it without knowing the temp dir.
  * @returns {{status: number, stdout: string, stderr: string, work: string,
+ *   issuePath: string,
  *   read: (relativePath: string) => string, readJson: (relativePath: string) => unknown,
  *   exists: (relativePath: string) => boolean, cleanup: () => void}}
  */
@@ -54,6 +75,8 @@ export function runImportArchitectureIssue({
   fetchResponses = {},
   catalog,
   args = [],
+  passIssueJson = true,
+  env = {},
 }) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-import-issue-'));
 
@@ -95,8 +118,7 @@ export function runImportArchitectureIssue({
       '--import',
       join(work, 'stub-fetch.mjs'),
       'scripts/import-architecture-issue.mjs',
-      '--issue-json',
-      issuePath,
+      ...(passIssueJson ? ['--issue-json', issuePath] : []),
       ...args,
     ],
     {
@@ -104,8 +126,14 @@ export function runImportArchitectureIssue({
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
-        ...process.env,
+        ...scrubbedEnv(),
         FAKE_FETCH: fetchFixture,
+        ...Object.fromEntries(
+          Object.entries(env).map(([key, value]) => [
+            key,
+            String(value).replace('{issuePath}', issuePath),
+          ]),
+        ),
       },
     },
   );
@@ -115,6 +143,7 @@ export function runImportArchitectureIssue({
     stdout: result.stdout ?? '',
     stderr: result.stderr ?? '',
     work,
+    issuePath,
     read: (relativePath) => readFileSync(join(work, relativePath), 'utf8'),
     readJson: (relativePath) =>
       JSON.parse(readFileSync(join(work, relativePath), 'utf8')),

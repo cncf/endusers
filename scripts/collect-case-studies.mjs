@@ -11,6 +11,7 @@
 // from the post title, which is just the organization name.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fetchAllPages } from './lib/cncf-wp-api.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const API = 'https://www.cncf.io/wp-json/wp/v2';
@@ -23,28 +24,8 @@ if (existsSync(existingPath)) {
   existingCaseStudies = existing.caseStudies || [];
 }
 
-async function fetchAllPages(path) {
-  const results = [];
-  let page = 1;
-  for (;;) {
-    const response = await fetch(
-      `${API}/${path}${path.includes('?') ? '&' : '?'}per_page=100&page=${page}`,
-    );
-    if (!response.ok) {
-      if (response.status === 400 && page > 1) break; // past the last page
-      throw new Error(`cncf.io API ${response.status}: ${path} (page ${page})`);
-    }
-    const batch = await response.json();
-    results.push(...batch);
-    const totalPages = Number(response.headers.get('x-wp-totalpages') || '1');
-    if (page >= totalPages || !batch.length) break;
-    page += 1;
-  }
-  return results;
-}
-
 async function fetchTermNames(taxonomy) {
-  const terms = await fetchAllPages(taxonomy);
+  const terms = await fetchAllPages(API, taxonomy);
   return new Map(terms.map((term) => [term.id, term.name]));
 }
 
@@ -69,6 +50,7 @@ const [projects, industries, countries, caseStudyPosts] = await Promise.all([
   fetchTermNames('lf-industry'),
   fetchTermNames('lf-country'),
   fetchAllPages(
+    API,
     'lf_case_study?_fields=id,slug,link,title,date,meta,lf-project,lf-industry,lf-country',
   ),
 ]);
