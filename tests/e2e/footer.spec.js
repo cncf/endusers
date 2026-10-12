@@ -112,28 +112,12 @@ test('the "All CNCF Sites" button links out of the site', async ({ page }) => {
   await expect(button).toHaveAttribute('href', /^https:\/\/www\.cncf\.io\//);
 });
 
-test('the compact projects-born strip hydrates from the shipped data', async ({
+test('the compact projects-born strip is not in the footer', async ({
   page,
 }) => {
   await page.goto(ROUTES[1]);
-
-  // The compact variant is addressed by its own heading id, which is what
-  // distinguishes it from the in-page section on /community.
   const strip = footerOf(page).locator(
     'section[aria-labelledby="projects-born-title-footer"]',
   );
-  await expect(strip).toBeVisible();
-
-  const projects = strip.getByRole('link', { name: /Born at / });
-  const count = await projects.count();
-  expect(count).toBeGreaterThan(0);
-
-  for (let i = 0; i < count; i += 1) {
-    await expect(projects.nth(i)).toHaveAttribute('href', /^https?:\/\//);
-  }
-
-  // The compact variant must stay compact: the long description and the
-  // closing TAB note belong to the in-page section only, and leaking them
-  // into the footer on every route is the regression this guards.
-  await expect(strip.locator('p')).toHaveCount(0);
+  await expect(strip).toHaveCount(0);
 });

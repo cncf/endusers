@@ -370,10 +370,9 @@ const config = {
             activeBaseRegex: '^/$',
           },
           {
-            type: 'docSidebar',
-            sidebarId: 'architecturesSidebar',
-            position: 'left',
+            to: '/architectures',
             label: 'Architectures',
+            position: 'left',
           },
           {
             type: 'docSidebar',
@@ -383,7 +382,7 @@ const config = {
           },
           {
             to: '/community#projects-born-at-end-user-organizations',
-            label: 'Projects from end users',
+            label: 'Projects from End Users',
             position: 'left',
           },
 

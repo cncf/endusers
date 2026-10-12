@@ -1,7 +1,6 @@
-// src/components/ProjectsBorn/index.js renders two visually different things
-// from one component: the full section embedded by docs/community/index.md and
-// docs/practitioners/index.md, and the `compact` strip that src/theme/Footer
-// puts on *every* page of the site.
+// src/components/ProjectsBorn/index.js renders the full section embedded by
+// docs/community/index.md and docs/practitioners/index.md, as well as an optional
+// `compact` strip.
 //
 // Only the full form had ever been executed, and only incidentally — as a
 // fixture inside tests/jsx-hooks.test.mjs, which asserts that the `@site` alias
