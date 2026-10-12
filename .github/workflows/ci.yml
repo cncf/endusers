@@ -51,6 +51,7 @@ jobs:
         with:
           name: coverage-summary
           path: coverage-summary.txt
+          retention-days: 90
       - name: Validate metrics data
         run: npm run validate:metrics
       - name: Validate architectures data
@@ -288,4 +289,4 @@ jobs:
           name: e2e-coverage
           path: coverage/e2e/
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 90
