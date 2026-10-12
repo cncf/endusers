@@ -15,6 +15,10 @@ import { join, relative, resolve } from 'node:path';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
+// The file name the flaky reporter writes, asserted against the output
+// directory the config declares rather than hard-coded as a whole path.
+const FLAKY_REPORT_BASENAME = 'flaky-specs.json';
+
 // playwright.config.js reads process.env at module scope, so every branch has
 // to be observed through a fresh import under the env it depends on.
 async function loadConfig(env = {}) {
@@ -63,8 +67,56 @@ test('tightens CI-only guards when CI is set', async () => {
   const config = await loadConfig({ ...cleanEnv, CI: '1' });
   assert.equal(config.forbidOnly, true);
   assert.equal(config.retries, 1);
-  assert.equal(config.reporter, 'github');
   assert.equal(config.webServer.reuseExistingServer, false);
+});
+
+// `retries: 1` above is what makes a flaky spec exit the job green, so the
+// evidence of it has to come from somewhere. 'github' annotates the run and
+// nothing else; the reporter beside it writes the named record (see the
+// preamble of tests/tools/flaky-reporter.mjs). Asserted as a pair because
+// dropping either one is a silent loss: without 'github' the failures stop
+// being annotated, and without the second entry a flake goes unrecorded.
+test('keeps the GitHub annotations and the flaky record in CI', async () => {
+  const config = await loadConfig({ ...cleanEnv, CI: '1' });
+  assert.ok(
+    Array.isArray(config.reporter),
+    'CI reporter must be a list so annotations and the flaky record coexist',
+  );
+  assert.deepEqual(
+    config.reporter.map(([name]) => name),
+    ['github', './tests/tools/flaky-reporter.mjs'],
+  );
+});
+
+// The report is only collected because ci.yml's "Upload Playwright traces"
+// step already uploads Playwright's output directory
+// (tests/ci-playwright-trace-evidence.test.mjs). A path outside it would be
+// written on every flaky run and never leave the runner, so the record would
+// look present here and be unreachable in practice.
+test('writes the flaky record inside the uploaded output directory', async () => {
+  const config = await loadConfig({ ...cleanEnv, CI: '1' });
+  const entry = config.reporter.find(
+    ([name]) => name === './tests/tools/flaky-reporter.mjs',
+  );
+  const outputDir = config.outputDir ?? 'test-results';
+  assert.equal(
+    entry[1].outputFile,
+    `${outputDir}/${FLAKY_REPORT_BASENAME}`,
+    'the flaky report must land inside Playwright\u2019s output directory',
+  );
+});
+
+// The reporter is referenced by path, so a rename or a move leaves a config
+// that only fails when CI next runs the suite.
+test('registers a flaky reporter module that exists on disk', async () => {
+  const config = await loadConfig({ ...cleanEnv, CI: '1' });
+  const [modulePath] = config.reporter[1];
+  assert.ok(
+    existsSync(join(repoRoot, modulePath)),
+    `${modulePath} is registered as a reporter but does not exist`,
+  );
+  const module = await import(`../${modulePath}`);
+  assert.equal(typeof module.default, 'function');
 });
 
 test('treats an empty CI value as not running in CI', async () => {
