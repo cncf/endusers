@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
-import { reportAndExit } from './lib/validate-utils.mjs';
+import {
+  checkUrl as checkUrlImpl,
+  reportAndExit,
+} from './lib/validate-utils.mjs';
 
 // data/projects-born.json is hand-maintained, and src/components/ProjectsBorn
 // renders every entry's `url` as an <a href>. That component is mounted in
@@ -11,9 +14,8 @@ import { reportAndExit } from './lib/validate-utils.mjs';
 // which left a maintainer skimming a JSON diff as the sole gate. A scheme
 // prefix test would not be one either: /^https:\/\// accepts
 // "https://www.cncf.io@evil.example/", whose visible prefix and real host
-// disagree, and accepts unparseable values such as "https://". Parse the URL
-// instead, the same standard checkHttpsUrl() in validate-awards.mjs and
-// checkUrl() in validate-metrics.mjs already apply.
+// disagree, and accepts unparseable values such as "https://". checkUrl() in
+// ./lib/validate-utils.mjs is the shared gate for this check.
 //
 // No host allow-list: these are legitimately third-party project sites
 // (envoyproxy.io, jaegertracing.io, backstage.io), unlike the cncf.io feeds
@@ -22,43 +24,10 @@ import { reportAndExit } from './lib/validate-utils.mjs';
 const REQUIRED_TEXT_FIELDS = ['name', 'origin', 'description'];
 
 function checkUrl(errors, path, value) {
-  if (typeof value !== 'string' || !value.trim()) {
-    errors.push({
-      path,
-      severity: 'error',
-      message: 'url must be a non-empty string',
-    });
-    return;
-  }
-
-  let parsed;
-  try {
-    parsed = new URL(value.trim());
-  } catch {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `url must be an absolute https URL: ${JSON.stringify(value)}`,
-    });
-    return;
-  }
-
-  if (parsed.protocol !== 'https:') {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `url must use https, got ${parsed.protocol}`,
-    });
-    return;
-  }
-
-  if (parsed.username || parsed.password) {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `url must not carry a userinfo component, which only disguises the real host (${parsed.hostname})`,
-    });
-  }
+  checkUrlImpl(errors, path, 'url', value, {
+    requireNonEmptyString: true,
+    unparsedMessage: `url must be an absolute https URL: ${JSON.stringify(value)}`,
+  });
 }
 
 const data = JSON.parse(

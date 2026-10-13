@@ -3,7 +3,11 @@ import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { collectError, reportAndExit } from '../scripts/lib/validate-utils.mjs';
+import {
+  checkUrl,
+  collectError,
+  reportAndExit,
+} from '../scripts/lib/validate-utils.mjs';
 
 const MODULE_URL = new URL('../scripts/lib/validate-utils.mjs', import.meta.url)
   .href;
@@ -47,6 +51,146 @@ function withCapturedStderr(fn, { writeSync } = {}) {
   }
   return { warnings, errors, exitCodes, chunks };
 }
+
+test('checkUrl accepts a valid https URL and pushes no error', () => {
+  const errors = [];
+  checkUrl(errors, 'data/awards.json', 'announcementUrl', 'https://cncf.io/x');
+  assert.deepEqual(errors, []);
+});
+
+test('checkUrl rejects an unparseable value with the default message', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', 'not a url');
+  assert.deepEqual(errors, [
+    {
+      path: 'path',
+      severity: 'error',
+      message: 'field must be an absolute https URL',
+    },
+  ]);
+});
+
+test('checkUrl uses a custom unparsedMessage when supplied', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'url', 'not a url', {
+    unparsedMessage: `url must be an absolute https URL: ${JSON.stringify('not a url')}`,
+  });
+  assert.equal(
+    errors[0].message,
+    'url must be an absolute https URL: "not a url"',
+  );
+});
+
+test('checkUrl allowEmpty treats null, undefined, and the empty string as valid', () => {
+  for (const value of [null, undefined, '']) {
+    const errors = [];
+    checkUrl(errors, 'path', 'field', value, { allowEmpty: true });
+    assert.deepEqual(
+      errors,
+      [],
+      `value ${JSON.stringify(value)} must be accepted`,
+    );
+  }
+});
+
+test('checkUrl without allowEmpty rejects an empty value as unparseable', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', '');
+  assert.equal(errors.length, 1);
+  assert.match(errors[0].message, /must be an absolute https URL/);
+});
+
+test('checkUrl requireNonEmptyString rejects a non-string value', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', null, { requireNonEmptyString: true });
+  assert.deepEqual(errors, [
+    {
+      path: 'path',
+      severity: 'error',
+      message: 'field must be a non-empty string',
+    },
+  ]);
+});
+
+test('checkUrl requireNonEmptyString rejects a blank string', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', '   ', { requireNonEmptyString: true });
+  assert.match(errors[0].message, /must be a non-empty string/);
+});
+
+test('checkUrl requireNonEmptyString trims the value before parsing', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', '  https://cncf.io/x  ', {
+    requireNonEmptyString: true,
+  });
+  assert.deepEqual(errors, []);
+});
+
+test('checkUrl rejects a protocol outside the allowed set', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', 'http://cncf.io');
+  assert.deepEqual(errors, [
+    {
+      path: 'path',
+      severity: 'error',
+      message: 'field must use https, got http:',
+    },
+  ]);
+});
+
+test('checkUrl joins multiple allowed protocols with "or" in the rejection message', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', 'javascript:alert(1)', {
+    protocols: ['http:', 'https:'],
+  });
+  assert.equal(
+    errors[0].message,
+    'field must use http or https, got javascript:',
+  );
+});
+
+test('checkUrl accepts any protocol in a multi-protocol allow-list', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', 'http://cncf.io', {
+    protocols: ['http:', 'https:'],
+  });
+  assert.deepEqual(errors, []);
+});
+
+test('checkUrl rejects a userinfo component that disguises the real host', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', 'https://cncf.io@evil.example/');
+  assert.deepEqual(errors, [
+    {
+      path: 'path',
+      severity: 'error',
+      message:
+        'field must not carry a userinfo component, which only disguises the real host (evil.example)',
+    },
+  ]);
+});
+
+test('checkUrl allows a host on the allow-list', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', 'https://docs.cncf.io/x', {
+    allowedHostSuffixes: ['cncf.io'],
+  });
+  assert.deepEqual(errors, []);
+});
+
+test('checkUrl rejects a host outside the allow-list', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', 'https://evil.example/x', {
+    allowedHostSuffixes: ['cncf.io', 'github.com'],
+  });
+  assert.deepEqual(errors, [
+    {
+      path: 'path',
+      severity: 'error',
+      message: 'field must be on cncf.io or github.com, got evil.example',
+    },
+  ]);
+});
 
 test('collectError appends a structured entry', () => {
   const errors = [];

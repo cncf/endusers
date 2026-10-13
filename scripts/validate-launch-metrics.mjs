@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
-import { reportAndExit } from './lib/validate-utils.mjs';
+import {
+  checkUrl as checkUrlImpl,
+  reportAndExit,
+} from './lib/validate-utils.mjs';
 const data = JSON.parse(
   readFileSync(new URL('../data/launch-metrics.json', import.meta.url)),
 );
@@ -9,35 +12,13 @@ const errors = [];
 // Launch signal provenance URLs are rendered as <a href>, so they are resolved
 // through the URL parser rather than a prefix test. The protocol check alone
 // is not enough: "https://www.cncf.io@evil.example/" parses with protocol
-// "https:" while resolving to evil.example. Mirrors checkHttpsUrl() in
-// validate-awards.mjs.
+// "https:" while resolving to evil.example. checkUrl() in
+// ./lib/validate-utils.mjs is the shared gate for this check.
 function checkUrl(path, field, value) {
-  if (value === undefined || value === null || value === '') return;
-  let parsed;
-  try {
-    parsed = new URL(value);
-  } catch {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `${field} must be an absolute URL`,
-    });
-    return;
-  }
-  if (parsed.protocol !== 'https:') {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `${field} must use https, got ${parsed.protocol}`,
-    });
-    return;
-  }
-  if (parsed.username || parsed.password)
-    errors.push({
-      path,
-      severity: 'error',
-      message: `${field} must not carry a userinfo component, which only disguises the real host (${parsed.hostname})`,
-    });
+  checkUrlImpl(errors, path, field, value, {
+    allowEmpty: true,
+    unparsedMessage: `${field} must be an absolute URL`,
+  });
 }
 
 function checkNonNegativeInteger(path, field, value) {

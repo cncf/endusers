@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { existsSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { reportAndExit } from './lib/validate-utils.mjs';
+import { checkUrl, reportAndExit } from './lib/validate-utils.mjs';
 
 const staticRoot = fileURLToPath(new URL('../static/', import.meta.url));
 const awardsLogoRoot = join(staticRoot, 'img', 'awards') + sep;
@@ -16,37 +16,10 @@ const errors = [];
 // directory, so they are resolved through the URL parser rather than a string
 // prefix test: `/^https:\/\//` accepts "https://cncf.io@evil.example", whose
 // visible prefix and real host disagree, and accepts unparseable values such
-// as "https://". Mirrors checkUrl() in validate-launch-metrics.mjs,
-// checkUrl() in validate-metrics.mjs, isHttpsUrl() in
-// validate-architectures.mjs and websiteUrl() in src/lib/profile-links.mjs.
-function checkHttpsUrl(path, field, value) {
-  let parsed;
-  try {
-    parsed = new URL(value);
-  } catch {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `${field} must be an absolute https URL`,
-    });
-    return;
-  }
-  if (parsed.protocol !== 'https:') {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `${field} must use https, got ${parsed.protocol}`,
-    });
-    return;
-  }
-  if (parsed.username || parsed.password) {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `${field} must not carry a userinfo component, which only disguises the real host (${parsed.hostname})`,
-    });
-  }
-}
+// as "https://". checkUrl() in ./lib/validate-utils.mjs is the shared gate;
+// isHttpsUrl() in validate-architectures.mjs and websiteUrl() in
+// src/lib/profile-links.mjs serve different callers (a boolean predicate and
+// a runtime client-side normalizer) and are not folded in here.
 
 if (Number.isNaN(Date.parse(data.verifiedAt)))
   errors.push({
@@ -62,7 +35,7 @@ if (!data.verifiedAgainst)
     message:
       'verifiedAgainst must be an https URL to the canonical award history source',
   });
-else checkHttpsUrl('awards.json', 'verifiedAgainst', data.verifiedAgainst);
+else checkUrl(errors, 'awards.json', 'verifiedAgainst', data.verifiedAgainst);
 if (!Array.isArray(data.awards) || !data.awards.length)
   errors.push({
     path: 'awards.json',
@@ -99,7 +72,7 @@ for (const entry of Array.isArray(data.awards) ? data.awards : []) {
       message: 'entry needs an announcementUrl or talkUrl',
     });
   for (const field of ['announcementUrl', 'caseStudyUrl', 'talkUrl']) {
-    if (entry[field]) checkHttpsUrl(id, field, entry[field]);
+    if (entry[field]) checkUrl(errors, id, field, entry[field]);
   }
   if (entry.logo) {
     if (typeof entry.logo !== 'string') {
