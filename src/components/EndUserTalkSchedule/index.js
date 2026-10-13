@@ -1,5 +1,5 @@
 import React from 'react';
-import schedule from '@site/data/kubecon-na-2026-end-user-talks.json';
+import schedule from '@site/data/end-user-talks.json';
 import styles from './styles.module.css';
 
 const verifiedDate = new Date(schedule.generatedAt).toLocaleDateString(

@@ -4,7 +4,7 @@ import test from 'node:test';
 
 import { checkUrl } from '../scripts/lib/validate-utils.mjs';
 
-// data/kubecon-na-2026-end-user-talks.json is the only committed dataset under
+// data/end-user-talks.json is the only committed dataset under
 // data/ with no gate of its own: there is no scripts/validate-*.mjs for it in
 // the ci.yml validate job, and the two tests that read it are rendering
 // contracts rather than data contracts.
@@ -30,10 +30,7 @@ import { checkUrl } from '../scripts/lib/validate-utils.mjs';
 // expectations from the same file, so it stays green on a re-pointed URL.
 
 const schedule = JSON.parse(
-  readFileSync(
-    new URL('../data/kubecon-na-2026-end-user-talks.json', import.meta.url),
-    'utf8',
-  ),
+  readFileSync(new URL('../data/end-user-talks.json', import.meta.url), 'utf8'),
 );
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;

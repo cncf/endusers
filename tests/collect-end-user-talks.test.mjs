@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { runScriptInSandbox } from './helpers-script-sandbox.mjs';
 
-const OUTPUT = 'data/kubecon-na-2026-end-user-talks.json';
+const OUTPUT = 'data/end-user-talks.json';
 
 function sessionizeFixture() {
   return {

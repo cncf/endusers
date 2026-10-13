@@ -98,10 +98,7 @@ const data = {
   talkCount: sessions.length,
   days: [...days.values()],
 };
-const outputPath = new URL(
-  '../data/kubecon-na-2026-end-user-talks.json',
-  import.meta.url,
-);
+const outputPath = new URL('../data/end-user-talks.json', import.meta.url);
 mkdirSync(new URL('../data', import.meta.url), { recursive: true });
 writeFileSync(outputPath, JSON.stringify(data, null, 2) + '\n');
 console.log(

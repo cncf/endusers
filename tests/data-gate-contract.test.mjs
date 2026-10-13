@@ -10,7 +10,7 @@
 //
 // What nothing checks today is the case neither kind covers: a dataset that
 // lands with *no* reader at all. That is not hypothetical. Until #1383,
-// data/kubecon-na-2026-end-user-talks.json was exactly that, and the header of
+// data/end-user-talks.json was exactly that, and the header of
 // tests/end-user-talks-data.test.mjs still records it as "the only committed
 // dataset under data/ with no gate of its own". It shipped, was rendered on
 // /events, and nothing in the suite objected -- because nothing in the suite

@@ -29,7 +29,7 @@
 //     Those hrefs are asserted here as rendered attributes only — never
 //     requested — so this spec makes no third-party traffic from CI.
 //
-// Every expectation is derived from data/kubecon-na-2026-end-user-talks.json
+// Every expectation is derived from data/end-user-talks.json
 // rather than hardcoded, the way awards.spec.js drives itself from
 // data/awards.json: re-running `npm run collect:end-user-talks` is covered on
 // arrival instead of needing this spec rewritten.
@@ -40,7 +40,7 @@ const EVENTS_PATH = '/events/';
 
 // Read through loadSiteData so this spec describes whichever build it is
 // running against, as CONTRIBUTING.md asks of specs that assert on data files.
-const schedule = loadSiteData('kubecon-na-2026-end-user-talks.json');
+const schedule = loadSiteData('end-user-talks.json');
 const days = schedule.days ?? [];
 const talks = days.flatMap((day) =>
   (day.slots ?? []).flatMap((slot) => slot.talks ?? []),
