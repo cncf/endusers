@@ -135,6 +135,23 @@ test('the footer links to the changelog and the content-issue form', async ({
   await expect(report).toHaveAttribute('rel', /noreferrer/);
 });
 
+test('the footer signposts contributors to contribute.cncf.io', async ({
+  page,
+}) => {
+  await page.goto(ROUTES[0]);
+
+  // Audience boundary (#1407, ADR 0004): a visitor who landed on the end-user
+  // site looking to contribute to a project gets the pointer on every page.
+  const signpost = footerOf(page).getByRole('link', {
+    name: 'Contribute to a project',
+  });
+  await expect(signpost).toBeVisible();
+  await expect(signpost).toHaveAttribute('href', 'https://contribute.cncf.io/');
+  await expect(signpost).toHaveAttribute('target', '_blank');
+  await expect(signpost).toHaveAttribute('rel', /noopener/);
+  await expect(signpost).toHaveAttribute('rel', /noreferrer/);
+});
+
 test('the changelog page renders', async ({ page }) => {
   const response = await page.goto('/community/changelog');
   expect(response?.status()).toBeLessThan(400);

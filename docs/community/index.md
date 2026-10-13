@@ -112,6 +112,9 @@ import ProjectsBorn from '@site/src/components/ProjectsBorn';
 ## Related CNCF resources
 
 - [CNCF End User Community](https://www.cncf.io/enduser/)
+- [CNCF contributor portal](https://contribute.cncf.io/) — contributing code,
+  docs, or reviews to a CNCF project (a contributor audience, distinct from the
+  adopter audience this site serves; see ADR 0004)
 - [CNCF TAB repository](https://github.com/cncf/tab)
 - [CNCF architecture repository](https://github.com/cncf/architecture)
 - [CNCF End User Technology Radar](https://radar.cncf.io/)

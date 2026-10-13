@@ -118,10 +118,15 @@ Goal: endusers.cncf.io becomes the authoritative end-user destination.
 
 - [ ] DNS cutover to endusers.cncf.io (depends on Phase 2 ownership decision)
 - [ ] Cross-linking with contribute.cncf.io and cncf.io (clear audience
-      boundaries) (#1407). Audience boundary decided: ADR 0004. Outbound links
-      and inbound-link requests remain open.
-- [ ] Public feedback loop: content-issue templates and a visible changelog
-      (#1408)
+      boundaries) (#1407). Audience boundary decided: ADR 0004. Outbound
+      signposts shipped (site footer, architecture submission flow, community
+      resources). Inbound-link requests against contribute.cncf.io and cncf.io
+      remain open.
+- [x] Public feedback loop: content-issue templates and a visible changelog
+      (#1408). Shipped: the `content-issue.yml` report form and a changelog
+      generated at build time (`adr/0003-public-changelog-mechanism.md`), both
+      linked from the site footer. The deployed changelog renders its fallback
+      page until the deploy checkout fetches full history (#1409).
 
 ## Non-goals
 

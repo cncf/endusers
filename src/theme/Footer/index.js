@@ -149,6 +149,14 @@ export default function Footer() {
           >
             Report a content issue
           </a>
+          {' | '}
+          <a
+            href="https://contribute.cncf.io/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Contribute to a project
+          </a>
         </p>
         © {currentYear} Cloud Native Computing Foundation | Documentation
         Distributed under CC BY 4.0
