@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
-import { collectError, reportAndExit } from './lib/validate-utils.mjs';
+import {
+  collectError,
+  isSafeUrl,
+  reportAndExit,
+} from './lib/validate-utils.mjs';
 
 const data = JSON.parse(
   readFileSync(new URL('../data/community-groups.json', import.meta.url)),
@@ -11,21 +15,14 @@ const errors = [];
 // component change away from an <a href>. A bare `new URL()` parse accepts
 // "javascript:alert(1)", "data:text/html,...", cleartext http, and a
 // userinfo-spoofed authority such as "https://github.com@evil.example/x",
-// whose visible prefix and real host disagree. Mirrors publishableUrl() in
-// validate-case-studies.mjs and isCncfProjectHref() in
+// whose visible prefix and real host disagree. isSafeUrl() in
+// ./lib/validate-utils.mjs is the shared gate; it also backs publishableUrl()
+// in validate-case-studies.mjs and isCncfProjectHref() in
 // lib/project-card-links.mjs. github.com is the only host
 // check-community-group-links.mjs ever writes.
 function publishableRepositoryUrl(value) {
-  if (typeof value !== 'string' || !value.trim()) return false;
-  let url;
-  try {
-    url = new URL(value.trim());
-  } catch {
-    return false;
-  }
-  if (url.protocol !== 'https:') return false;
-  if (url.username || url.password) return false;
-  return url.hostname.toLowerCase() === 'github.com';
+  const url = isSafeUrl(value);
+  return Boolean(url) && url.hostname.toLowerCase() === 'github.com';
 }
 
 if (Number.isNaN(Date.parse(data.checkedAt))) {

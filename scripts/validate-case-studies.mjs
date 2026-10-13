@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
-import { reportAndExit } from './lib/validate-utils.mjs';
+import { isSafeUrl, reportAndExit } from './lib/validate-utils.mjs';
 
 // data/case-studies.json is regenerated from the cncf.io WordPress REST API by
 // scripts/collect-case-studies.mjs, which copies each post's `link` through
@@ -8,26 +8,17 @@ import { reportAndExit } from './lib/validate-utils.mjs';
 // <a href> under a CNCF organization name. A scheme prefix test is not a gate:
 // it accepts any host, and it accepts a userinfo component
 // ("https://www.cncf.io@evil.example/") that resolves to a hostile host while
-// reading as CNCF to a maintainer skimming a generated JSON diff. Parse the URL
-// and hold the host to an allow-list, the same standard
+// reading as CNCF to a maintainer skimming a generated JSON diff. isSafeUrl()
+// in ./lib/validate-utils.mjs is the shared gate; it parses the URL and holds
+// the host to an allow-list, the same standard
 // scripts/lib/profile-image.mjs already applies to profile images.
 const ALLOWED_HOST_SUFFIXES = ['cncf.io'];
 
 function publishableUrl(value) {
   if (typeof value !== 'string') return null;
-  let url;
-  try {
-    url = new URL(value.trim());
-  } catch {
-    return null;
-  }
-  if (url.protocol !== 'https:') return null;
-  if (url.username || url.password) return null;
-  const host = url.hostname.toLowerCase();
-  const allowed = ALLOWED_HOST_SUFFIXES.some(
-    (domain) => host === domain || host.endsWith(`.${domain}`),
-  );
-  return allowed ? url : null;
+  return isSafeUrl(value.trim(), {
+    allowedHostSuffixes: ALLOWED_HOST_SUFFIXES,
+  });
 }
 
 const data = JSON.parse(
