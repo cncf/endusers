@@ -193,10 +193,10 @@ test('the pull request template is present and non-empty', () => {
 // is on rather than against the repository, so the link 404s. An absolute URL
 // is the only form that works in both views.
 //
-// Nothing else in the repository would notice. `npm run check:links` is
-// `for f in *.md` (package.json, `_check:links-md`), so it iterates root-level
-// markdown and never descends into .github/; `npm run check:markdown` lints
-// style, not resolution.
+// Nothing else in the repository would notice. `npm run check:links` reads
+// its file list from `_list:check:md` (package.json), which excludes every
+// dot-directory and so never descends into .github/; `npm run check:markdown`
+// lints style, not resolution.
 //
 // This asserts link *form*, not link *liveness*. Resolving targets over the
 // network is exactly why `check:links` runs on a schedule
