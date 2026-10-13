@@ -16,9 +16,7 @@ const { default: EndUserTalkSchedule } = await importSource(
 
 const schedule = JSON.parse(
   readFileSync(
-    fileURLToPath(
-      new URL('../data/kubecon-na-2026-end-user-talks.json', import.meta.url),
-    ),
+    fileURLToPath(new URL('../data/end-user-talks.json', import.meta.url)),
     'utf8',
   ),
 );
