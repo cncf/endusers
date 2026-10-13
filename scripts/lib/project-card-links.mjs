@@ -6,6 +6,8 @@
 // any host that merely mentions that text in a path, query or fragment, so the
 // destination must be decided by parsing the URL rather than by matching text.
 
+import { isSafeUrl } from './validate-utils.mjs';
+
 /**
  * True only for an https URL whose host is cncf.io (or a subdomain of it) and
  * whose path is under /projects/.
@@ -14,21 +16,12 @@
  * @returns {boolean}
  */
 export function isCncfProjectHref(value) {
-  if (typeof value !== 'string') return false;
-
-  let url;
-  try {
-    url = new URL(value);
-  } catch {
-    return false;
-  }
-
-  if (url.protocol !== 'https:') return false;
-  // Userinfo lets "https://www.cncf.io@evil.example/projects/x" read as CNCF.
-  if (url.username || url.password) return false;
-
-  const host = url.hostname.toLowerCase();
-  if (host !== 'cncf.io' && !host.endsWith('.cncf.io')) return false;
+  // isSafeUrl() in ./validate-utils.mjs holds the scheme/userinfo/host checks
+  // in one place; the /projects/ path-prefix requirement is specific to this
+  // call site. Userinfo would otherwise let
+  // "https://www.cncf.io@evil.example/projects/x" read as CNCF.
+  const url = isSafeUrl(value, { allowedHostSuffixes: ['cncf.io'] });
+  if (!url) return false;
 
   return url.pathname === '/projects' || url.pathname.startsWith('/projects/');
 }

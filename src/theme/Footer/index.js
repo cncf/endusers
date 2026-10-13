@@ -139,6 +139,17 @@ export default function Footer() {
       </div>
       <hr className={styles.divider} />
       <div className={styles.bottomRow}>
+        <p className={styles.feedbackLinks}>
+          <Link to={useBaseUrl('/community/changelog')}>Changelog</Link>
+          {' | '}
+          <a
+            href="https://github.com/cncf/endusers/issues/new?template=content-issue.yml"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Report a content issue
+          </a>
+        </p>
         © {currentYear} Cloud Native Computing Foundation | Documentation
         Distributed under CC BY 4.0
       </div>

@@ -62,10 +62,38 @@ test('the wordmark anchor points at cncf.io and severs window.opener', () => {
 
 test('the "All CNCF Sites" button links out through Docusaurus <Link>', () => {
   const links = findAllByType(Footer(), Link);
-  assert.equal(links.length, 1, 'expected exactly one <Link> in the footer');
-  const [link] = links;
-  assert.match(textOf(link), /All CNCF Sites/);
-  assert.equal(link.props.to, 'https://www.cncf.io/all-cncf/');
+  const button = links.find((link) => /All CNCF Sites/.test(textOf(link)));
+  assert.ok(button, 'expected an "All CNCF Sites" <Link> in the footer');
+  assert.equal(button.props.to, 'https://www.cncf.io/all-cncf/');
+});
+
+// The public feedback loop: the footer is the one piece of chrome on every
+// page, so it carries the "what changed" page and the content-issue report
+// form where a visitor can find them without knowing the repository exists.
+test('the footer links to the changelog through Docusaurus <Link>', () => {
+  const links = findAllByType(Footer(), Link);
+  const changelog = links.find((link) => textOf(link) === 'Changelog');
+  assert.ok(changelog, 'expected a "Changelog" <Link> in the footer');
+  // The stubbed useBaseUrl returns its input unchanged; in the shipped build
+  // this resolves under the deployed baseUrl.
+  assert.equal(changelog.props.to, '/community/changelog');
+});
+
+test('the footer links to the content-issue form, guarded against tabnabbing', () => {
+  const report = findAllByType(Footer(), 'a').find(
+    (anchor) => textOf(anchor) === 'Report a content issue',
+  );
+  assert.ok(report, 'expected a "Report a content issue" anchor');
+  assert.equal(
+    report.props.href,
+    'https://github.com/cncf/endusers/issues/new?template=content-issue.yml',
+  );
+  // The preselected template is the contract
+  // tests/issue-template-contract.test.mjs pins from the other side; a
+  // rename in either place must fail one of the two suites.
+  assert.equal(report.props.target, '_blank');
+  assert.match(report.props.rel, /\bnoopener\b/);
+  assert.match(report.props.rel, /\bnoreferrer\b/);
 });
 
 test('every social channel is rendered as its own icon link', () => {

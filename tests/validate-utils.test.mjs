@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   checkUrl,
   collectError,
+  isSafeUrl,
   reportAndExit,
 } from '../scripts/lib/validate-utils.mjs';
 
@@ -460,5 +461,24 @@ test('every validator that reports errors prints a success line afterwards', () 
       /\nconsole\.log\(/,
       `${name} prints a success line that reportAndExit must not fall through to`,
     );
+  }
+});
+
+test('isSafeUrl returns the parsed URL for a safe value', () => {
+  const parsed = isSafeUrl('https://www.cncf.io/projects/', {
+    allowedHostSuffixes: ['cncf.io'],
+  });
+  assert.equal(parsed.pathname, '/projects/');
+});
+
+test('isSafeUrl returns null for a failing scheme, userinfo, host, or parse', () => {
+  const options = { allowedHostSuffixes: ['cncf.io'] };
+  for (const value of [
+    'http://cncf.io/',
+    'https://cncf.io@evil.example/',
+    'https://evil.example/',
+    'not a url',
+  ]) {
+    assert.equal(isSafeUrl(value, options), null, value);
   }
 });

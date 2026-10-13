@@ -112,6 +112,35 @@ test('the "All CNCF Sites" button links out of the site', async ({ page }) => {
   await expect(button).toHaveAttribute('href', /^https:\/\/www\.cncf\.io\//);
 });
 
+test('the footer links to the changelog and the content-issue form', async ({
+  page,
+}) => {
+  await page.goto(ROUTES[0]);
+
+  // The public feedback loop (#1408): both links sit in the site footer so a
+  // visitor can reach them without knowing the repository exists.
+  const footer = footerOf(page);
+  const changelog = footer.getByRole('link', { name: 'Changelog' });
+  await expect(changelog).toBeVisible();
+  await expect(changelog).toHaveAttribute('href', /\/community\/changelog\/?$/);
+
+  const report = footer.getByRole('link', { name: 'Report a content issue' });
+  await expect(report).toBeVisible();
+  await expect(report).toHaveAttribute(
+    'href',
+    'https://github.com/cncf/endusers/issues/new?template=content-issue.yml',
+  );
+  await expect(report).toHaveAttribute('target', '_blank');
+  await expect(report).toHaveAttribute('rel', /noopener/);
+  await expect(report).toHaveAttribute('rel', /noreferrer/);
+});
+
+test('the changelog page renders', async ({ page }) => {
+  const response = await page.goto('/community/changelog');
+  expect(response?.status()).toBeLessThan(400);
+  await expect(page.getByRole('heading', { name: 'Changelog' })).toBeVisible();
+});
+
 test('the compact projects-born strip is not in the footer', async ({
   page,
 }) => {

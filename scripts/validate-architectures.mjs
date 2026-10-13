@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { reportAndExit } from './lib/validate-utils.mjs';
+import { isSafeUrl, reportAndExit } from './lib/validate-utils.mjs';
 import { findActiveContent } from './lib/mdx-active-content.mjs';
 import {
   REPO_AUTHORED_PAGES,
@@ -25,17 +25,12 @@ if (!existsSync(catalogPath))
 
 // The catalog is regenerated from the third-party cncf/architecture repository,
 // so every field that reaches an href or an <img src> is treated as untrusted.
-// Userinfo is rejected along with a non-https scheme:
+// isSafeUrl() in ./lib/validate-utils.mjs is the shared gate: it rejects
+// userinfo along with a non-https scheme, since
 // "https://www.cncf.io@evil.example/x" parses with protocol "https:" while
 // resolving to evil.example, so its visible prefix and its real host disagree.
 function isHttpsUrl(value) {
-  if (typeof value !== 'string') return false;
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' && !url.username && !url.password;
-  } catch {
-    return false;
-  }
+  return typeof value === 'string' && Boolean(isSafeUrl(value));
 }
 
 // Resolve first, then assert containment: '..' segments are normalised away by

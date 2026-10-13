@@ -7,6 +7,13 @@
 // committed unedited by the scheduled refresh workflow. Everything here is
 // therefore treated as untrusted input and resolved through the URL parser
 // rather than through string tests.
+//
+// websiteUrl() below duplicates the scheme/userinfo portion of isSafeUrl() in
+// scripts/lib/validate-utils.mjs (see endusers#1388) rather than importing it:
+// this module is bundled into the browser by src/components/CommunityPeople,
+// while validate-utils.mjs pulls in `node:fs` for its error-reporting half, so
+// importing it here would put a Node-only module in the client bundle. A
+// shared core would need its own fs-free module; out of scope for #1388.
 
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:']);
 
