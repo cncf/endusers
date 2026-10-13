@@ -140,6 +140,34 @@ export function checkUrl(errors, path, field, value, options = {}) {
 }
 
 /**
+ * Boolean/predicate form of checkUrl(), for the call sites that filter or
+ * branch on a URL's safety rather than collecting an error report (a `find()`
+ * predicate, or a validator whose message names other fields too and so
+ * cannot just forward checkUrl()'s own message).
+ *
+ * Delegates to checkUrl() against a throwaway errors array so the protocol/
+ * userinfo/host-suffix rules live in exactly one place; re-parses on success
+ * to hand back the URL object (callers such as isCncfProjectHref() need
+ * `.pathname`), which is only reachable once checkUrl() has already found the
+ * value parseable.
+ *
+ * @param {unknown} value - Candidate URL.
+ * @param {Object} [options] - Same options as checkUrl() (`protocols`,
+ *   `allowedHostSuffixes`), other than the message-related ones.
+ * @returns {URL|null} the parsed URL when it passes every check, else null.
+ */
+export function isSafeUrl(value, options = {}) {
+  const errors = [];
+  checkUrl(errors, '', '', value, options);
+  if (errors.length) return null;
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Report collected errors and exit if any errors exist.
  * @param {Array<Object>} errors - Array of error objects with { path, severity, message }
  * @param {string} contextLabel - Label for output context (e.g., "architecture assets")
