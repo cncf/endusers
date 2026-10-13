@@ -156,7 +156,9 @@ test('the per-file floor fails a run the aggregate region gate passes', () => {
     // The driver leaves scripts/lib/validate-utils.mjs at 50% regions, which
     // clears --check-source-regions 50 and fails the per-file floor. Both
     // gates read the same run, so the difference is the granularity and
-    // nothing else.
+    // nothing else. validate-utils.mjs re-exports checkUrl/isSafeUrl from
+    // the fs-free scripts/lib/url-safety.mjs, so importing it loads both
+    // modules and both land under the floor.
     const result = runReporter([
       '--check-source-regions',
       '50',
@@ -168,7 +170,7 @@ test('the per-file floor fails a run the aggregate region gate passes', () => {
     assert.equal(result.status, 1);
     assert.match(
       result.stderr,
-      /1 source file\(s\) fall below the required 100% region coverage per file:/,
+      /2 source file\(s\) fall below the required 100% region coverage per file:/,
     );
     assert.doesNotMatch(result.stderr, /Source region coverage .* is below/);
   });
