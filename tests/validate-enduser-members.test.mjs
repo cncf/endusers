@@ -253,7 +253,7 @@ test('reports malformed source, role, URL, date, and asset fields together', () 
   assert.match(result.stderr, /source\.sourceUrl.*pinned landscape revision/);
   assert.match(result.stderr, /selection\.member.*non-empty/);
   assert.match(result.stderr, /unsupported role/);
-  assert.match(result.stderr, /must use http: or https:/);
+  assert.match(result.stderr, /homepageUrl must use http or https, got ftp:/);
   assert.match(result.stderr, /must be null or a parseable date/);
   assert.match(result.stderr, /must be a safe supported image filename/);
   assert.match(result.stderr, /must be an absolute site-local path/);
@@ -289,7 +289,10 @@ test('rejects an invalid source revision before checking its pin', () => {
     result.stderr,
     /source\.revision: must be a full lowercase commit SHA/,
   );
-  assert.match(result.stderr, /source\.sourceUrl: must use https/);
+  assert.match(
+    result.stderr,
+    /source\.sourceUrl: sourceUrl must use https, got http:/,
+  );
 });
 
 test('rejects non-array records and non-string source names', () => {
