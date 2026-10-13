@@ -147,6 +147,48 @@ test('the blog-post form exists and collects title, content and author', () => {
   }
 });
 
+// The content-issue form is the public feedback loop the site footer points
+// at: a reader who finds stale or wrong content lands on it from the "Report
+// a content issue" link. The fields asserted here are the ones a fix needs —
+// the page, the problem, and (optionally) the contradicting source and
+// suggested wording — so renaming one quietly breaks every report that
+// arrives through it.
+test('the content-issue form collects the fields a fix needs', () => {
+  const contentIssue = templates.find(
+    ({ name }) => name === 'content-issue.yml',
+  );
+  assert.ok(contentIssue, `${TEMPLATE_DIR}content-issue.yml is missing`);
+  const fields = new Map(
+    contentIssue.form.body
+      .filter((element) => element.type !== 'markdown')
+      .map((element) => [element.id, element]),
+  );
+  for (const required of ['page_url', 'problem_type', 'description']) {
+    const field = fields.get(required);
+    assert.ok(
+      field,
+      `${contentIssue.path}: expected a "${required}" field, got ${[...fields.keys()].join(', ')}`,
+    );
+    assert.equal(
+      field.validations?.required,
+      true,
+      `${contentIssue.path}: "${required}" must be required`,
+    );
+  }
+  assert.equal(
+    fields.get('problem_type')?.type,
+    'dropdown',
+    `${contentIssue.path}: problem_type must be a dropdown`,
+  );
+  // The footer link preselects this template, so the template must keep the
+  // label maintainers triage on.
+  assert.deepEqual(
+    contentIssue.form.labels,
+    ['documentation'],
+    `${contentIssue.path}: expected labels: [documentation]`,
+  );
+});
+
 // A dropdown option that does not resolve in blog/authors.yml becomes a post
 // frontmatter author key Docusaurus cannot resolve, which fails `npm run
 // build`. This asserts only the option -> authors.yml direction; the field

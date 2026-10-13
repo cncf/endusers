@@ -6,7 +6,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "_build": "npm run docus:build",
+    "_build": "npm run generate:changelog && npm run docus:build",
     "_check:format:any": "npx prettier --check --ignore-path ''",
     "_check:format:delta": "npm run _check:format:any -- $(npm run -s _list:git:delta)",
     "_check:format": "npx prettier --check .",
@@ -42,6 +42,7 @@
     "import:architecture-issue": "node scripts/import-architecture-issue.mjs",
     "fetch:community-people": "node scripts/fetch-community-people.mjs",
     "check:community-group-links": "node scripts/check-community-group-links.mjs",
+    "generate:changelog": "node scripts/generate-changelog.mjs",
     "generate:members": "node scripts/generate-members.mjs && node scripts/validate-members.mjs",
     "validate:architectures": "node scripts/validate-architectures.mjs",
     "validate:architecture-assets": "node scripts/validate-architecture-assets.mjs",
