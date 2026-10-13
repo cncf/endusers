@@ -36,3 +36,48 @@ export async function githubFetch(url, token, userAgent) {
   if (!response.ok) throw new Error(`GitHub API ${response.status}: ${url}`);
   return response.json();
 }
+
+/**
+ * Follows GitHub API `Link: rel="next"` pagination and returns the
+ * concatenated JSON array across all pages. Throws on any non-2xx status.
+ *
+ * The Authorization header travels with every paginated request, so a Link
+ * header naming a different origin would hand the token to that host. Only
+ * continue paginating within the origin the first request was sent to.
+ *
+ * @param {string} url - First page URL.
+ * @param {Record<string, string>} headers - Request headers, typically from
+ *   {@link makeGitHubHeaders}.
+ * @returns {Promise<unknown[]>}
+ */
+export async function githubAllPages(url, headers) {
+  const origin = new URL(url).origin;
+  const results = [];
+  let next = url;
+  while (next) {
+    const response = await fetch(next, { headers });
+    if (!response.ok) throw new Error(`GitHub API ${response.status}: ${next}`);
+    results.push(...(await response.json()));
+    const link = response.headers.get('link') || '';
+    const match = link.match(/<([^>]+)>;\s*rel="next"/);
+    next = match ? sameOriginNext(match[1], origin) : null;
+  }
+  return results;
+}
+
+function sameOriginNext(candidate, origin) {
+  let parsed;
+  try {
+    parsed = new URL(candidate, origin);
+  } catch {
+    console.warn(`Ignoring unparseable Link rel="next" target: ${candidate}`);
+    return null;
+  }
+  if (parsed.origin !== origin) {
+    console.warn(
+      `Ignoring cross-origin Link rel="next" target: ${parsed.origin}`,
+    );
+    return null;
+  }
+  return parsed.toString();
+}

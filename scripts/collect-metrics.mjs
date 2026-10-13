@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
-import { makeGitHubHeaders } from './lib/github.mjs';
+import { githubAllPages, makeGitHubHeaders } from './lib/github.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const work = mkdtempSync(join(tmpdir(), 'cncf-metrics-'));
@@ -196,11 +196,11 @@ async function collectLifecycleMetrics() {
     'cncf-endusers-metrics',
   );
   const [issues, pulls] = await Promise.all([
-    githubAll(
+    githubAllPages(
       'https://api.github.com/repos/cncf/tab/issues?state=all&per_page=100',
       headers,
     ),
-    githubAll(
+    githubAllPages(
       'https://api.github.com/repos/cncf/architecture/pulls?state=all&per_page=100',
       headers,
     ),
@@ -214,7 +214,7 @@ async function collectLifecycleMetrics() {
   for (const pull of pulls) {
     let files = [];
     try {
-      files = await githubAll(
+      files = await githubAllPages(
         `https://api.github.com/repos/cncf/architecture/pulls/${pull.number}/files?per_page=100`,
         headers,
       );
@@ -306,40 +306,6 @@ async function collectLifecycleMetrics() {
       },
     ],
   };
-}
-async function githubAll(url, headers) {
-  const origin = new URL(url).origin;
-  const results = [];
-  let next = url;
-  while (next) {
-    const response = await fetch(next, { headers });
-    if (!response.ok) throw new Error(`GitHub API ${response.status}: ${next}`);
-    results.push(...(await response.json()));
-    const link = response.headers.get('link') || '';
-    const match = link.match(/<([^>]+)>;\s*rel="next"/);
-    next = match ? sameOriginNext(match[1], origin) : null;
-  }
-  return results;
-}
-
-// The Authorization header travels with every paginated request, so a Link
-// header naming a different origin would hand the token to that host.  Only
-// continue paginating within the origin the first request was sent to.
-function sameOriginNext(candidate, origin) {
-  let parsed;
-  try {
-    parsed = new URL(candidate, origin);
-  } catch {
-    console.warn(`Ignoring unparseable Link rel="next" target: ${candidate}`);
-    return null;
-  }
-  if (parsed.origin !== origin) {
-    console.warn(
-      `Ignoring cross-origin Link rel="next" target: ${parsed.origin}`,
-    );
-    return null;
-  }
-  return parsed.toString();
 }
 function median(values) {
   if (!values.length) return 0;
