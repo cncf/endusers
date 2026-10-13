@@ -1,16 +1,7 @@
 import React from 'react';
 import peopleData from '@site/data/community-people.json';
+import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
-
-function formatDate(isoDate) {
-  const parsed = new Date(isoDate);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
 
 /**
  * Freshness signal for the TAB/staff profile lightboxes, sourced from
