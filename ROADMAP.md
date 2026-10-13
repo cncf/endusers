@@ -118,9 +118,9 @@ Goal: endusers.cncf.io becomes the authoritative end-user destination.
 
 - [ ] DNS cutover to endusers.cncf.io (depends on Phase 2 ownership decision)
 - [ ] Cross-linking with contribute.cncf.io and cncf.io (clear audience
-      boundaries) (#1390)
+      boundaries) (#1407)
 - [ ] Public feedback loop: content-issue templates and a visible changelog
-      (#1391)
+      (#1408)
 
 ## Non-goals
 
