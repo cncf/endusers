@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
-import { reportAndExit } from './lib/validate-utils.mjs';
+import {
+  checkUrl as checkUrlImpl,
+  reportAndExit,
+} from './lib/validate-utils.mjs';
 const data = JSON.parse(
   readFileSync(new URL('../data/metrics.json', import.meta.url)),
 );
@@ -14,7 +17,8 @@ const errors = [];
 // The protocol test alone is not enough: "https://www.cncf.io@evil.example/"
 // parses with protocol "https:" while resolving to evil.example, so it reads
 // as CNCF to a human reviewing a generated diff and resolves elsewhere in a
-// browser. Mirrors checkHttpsUrl() in validate-awards.mjs.
+// browser. checkUrl() in ./lib/validate-utils.mjs is the shared gate for this
+// check.
 //
 // The scheme and userinfo tests are still not a gate on their own: every one of
 // these URLs is rendered under hard-coded anchor text ("cncf/architecture",
@@ -27,44 +31,11 @@ const errors = [];
 const ALLOWED_HOST_SUFFIXES = ['cncf.io', 'github.com'];
 
 function checkUrl(path, field, value) {
-  if (value === undefined || value === null || value === '') return;
-  let parsed;
-  try {
-    parsed = new URL(value);
-  } catch {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `${field} must be an absolute URL`,
-    });
-    return;
-  }
-  if (parsed.protocol !== 'https:') {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `${field} must use https, got ${parsed.protocol}`,
-    });
-    return;
-  }
-  if (parsed.username || parsed.password) {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `${field} must not carry a userinfo component, which only disguises the real host (${parsed.hostname})`,
-    });
-    return;
-  }
-  const host = parsed.hostname.toLowerCase();
-  const allowed = ALLOWED_HOST_SUFFIXES.some(
-    (domain) => host === domain || host.endsWith(`.${domain}`),
-  );
-  if (!allowed)
-    errors.push({
-      path,
-      severity: 'error',
-      message: `${field} must be on ${ALLOWED_HOST_SUFFIXES.join(' or ')}, got ${parsed.hostname}`,
-    });
+  checkUrlImpl(errors, path, field, value, {
+    allowEmpty: true,
+    unparsedMessage: `${field} must be an absolute URL`,
+    allowedHostSuffixes: ALLOWED_HOST_SUFFIXES,
+  });
 }
 
 if (!data.generated)
