@@ -142,7 +142,8 @@ Rules:
   the `GROUPS` list in `scripts/check-community-group-links.mjs`, then refresh
   with `npm run check:community-group-links` (needs `GH_TOKEN`), which records
   each group's archived/reachable status. Validate with
-  `npm run validate:community-groups`.
+  `npm run validate:community-groups`. The weekly "Refresh community profiles"
+  workflow re-runs both and opens a pull request with the result.
 - **Never edit `data/kubecon-na-2026-end-user-talks.json` by hand.** It mirrors
   the official KubeCon + CloudNativeCon North America 2026 schedule from the
   public Sessionize API. A maintainer refreshes it on demand with

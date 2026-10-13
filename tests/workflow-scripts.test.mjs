@@ -404,14 +404,7 @@ test('browser coverage is isolated in a visible gating job with a source floor',
 // record. Every omission is listed here with its reason, so a gate that fell
 // out of a workflow is distinguishable from one that was never meant to be in
 // one.
-const GATES_NOT_RUN_BY_CI = new Map([
-  [
-    'check:community-group-links',
-    'calls the GitHub API and requires GH_TOKEN; it also rewrites ' +
-      'data/community-groups.json, which is a refresh job rather than a check ' +
-      'a pull request can pass or fail.',
-  ],
-]);
+const GATES_NOT_RUN_BY_CI = new Map([]);
 
 function gateScripts() {
   return Object.keys(scripts)
