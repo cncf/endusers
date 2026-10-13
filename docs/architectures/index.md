@@ -60,6 +60,10 @@ Ready to share yours? Submit directly using the
 or follow the CNCF TAB
 [reference architecture submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
 
+Sharing a production architecture is an end user contribution. To contribute
+code, documentation, or reviews to a CNCF project itself, start at
+[contribute.cncf.io](https://contribute.cncf.io/), the contributor portal.
+
 ## The catalog
 
 import ReferenceArchitectures from

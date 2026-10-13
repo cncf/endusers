@@ -96,6 +96,20 @@ test('the footer links to the content-issue form, guarded against tabnabbing', (
   assert.match(report.props.rel, /\bnoreferrer\b/);
 });
 
+// Audience signposting (#1407, ADR 0004): a reader who landed here looking to
+// contribute to a CNCF project gets a site-wide pointer to the contributor
+// portal from the one piece of chrome on every page.
+test('the footer signposts contributors to contribute.cncf.io', () => {
+  const signpost = findAllByType(Footer(), 'a').find(
+    (anchor) => textOf(anchor) === 'Contribute to a project',
+  );
+  assert.ok(signpost, 'expected a "Contribute to a project" anchor');
+  assert.equal(signpost.props.href, 'https://contribute.cncf.io/');
+  assert.equal(signpost.props.target, '_blank');
+  assert.match(signpost.props.rel, /\bnoopener\b/);
+  assert.match(signpost.props.rel, /\bnoreferrer\b/);
+});
+
 test('every social channel is rendered as its own icon link', () => {
   const anchors = socialAnchors(Footer());
   const names = anchors.map((anchor) => anchor.props.title);

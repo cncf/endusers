@@ -118,8 +118,10 @@ Goal: endusers.cncf.io becomes the authoritative end-user destination.
 
 - [ ] DNS cutover to endusers.cncf.io (depends on Phase 2 ownership decision)
 - [ ] Cross-linking with contribute.cncf.io and cncf.io (clear audience
-      boundaries) (#1407). Audience boundary decided: ADR 0004. Outbound links
-      and inbound-link requests remain open.
+      boundaries) (#1407). Audience boundary decided: ADR 0004. Outbound
+      signposts shipped (site footer, architecture submission flow, community
+      resources). Inbound-link requests against contribute.cncf.io and cncf.io
+      remain open.
 - [ ] Public feedback loop: content-issue templates and a visible changelog
       (#1408)
 
