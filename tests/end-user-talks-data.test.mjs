@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
+import { checkUrl } from '../scripts/lib/validate-utils.mjs';
+
 // data/kubecon-na-2026-end-user-talks.json is the only committed dataset under
 // data/ with no gate of its own: there is no scripts/validate-*.mjs for it in
 // the ci.yml validate job, and the two tests that read it are rendering
@@ -19,8 +21,13 @@ import test from 'node:test';
 // that a snapshot which cannot have come out of the collector fails here
 // rather than rendering a wrong /events page.
 //
-// Deliberately not asserted: anything about `talk.url`'s scheme, host or
-// shape. That is #1375's ground.
+// The URL assertions at the end are the other half of that gate. The
+// component renders `sourceUrl`, `apiUrl` and every `talk.url` straight out
+// of this file under anchor text that never shows the destination, and the
+// sibling feeds (validate-metrics, validate-case-studies,
+// validate-radar-reports) all hold such hrefs to an https host allow-list via
+// the shared checkUrl(). The rendering test cannot supply that: it derives its
+// expectations from the same file, so it stays green on a re-pointed URL.
 
 const schedule = JSON.parse(
   readFileSync(
@@ -231,4 +238,76 @@ test('each talk carries the text the card renders', () => {
 test('talk ids are unique across the snapshot', () => {
   const ids = talks.map(({ talk }) => talk.id);
   assert.equal(new Set(ids).size, ids.length, 'a talk id appears twice');
+});
+
+// The two hosts scripts/collect-end-user-talks.mjs builds its output from:
+// `sourceUrl` and every `talk.url` deep-link into the Linux Foundation event
+// schedule, `apiUrl` is the Sessionize endpoint the corpus is generated from.
+const SCHEDULE_HOST = 'events.linuxfoundation.org';
+const API_HOST = 'sessionize.com';
+
+function urlErrors(field, value, host) {
+  const errors = [];
+  checkUrl(errors, 'end-user-talks', field, value, {
+    requireNonEmptyString: true,
+    allowedHostSuffixes: [host],
+  });
+  return errors.map((error) => error.message);
+}
+
+test('the provenance links resolve to their own documented hosts', () => {
+  assert.deepEqual(
+    urlErrors('sourceUrl', schedule.sourceUrl, SCHEDULE_HOST),
+    [],
+  );
+  assert.deepEqual(urlErrors('apiUrl', schedule.apiUrl, API_HOST), []);
+});
+
+// A talk's title says nothing about where its link goes, so a hostile host, a
+// userinfo component that disguises one, or a path elsewhere on the real host
+// all read as fine in a JSON diff. Hold every link to the schedule page the
+// collector deep-links into.
+test('every talk link is a deep link into the official schedule page', () => {
+  const schedulePath = new URL(schedule.sourceUrl).pathname;
+  for (const { talk, where } of talks) {
+    assert.deepEqual(
+      urlErrors('url', talk.url, SCHEDULE_HOST),
+      [],
+      `${where}: ${JSON.stringify(talk.url)}`,
+    );
+    assert.equal(
+      new URL(talk.url).pathname,
+      schedulePath,
+      `${where}: url must stay on the schedule page ${schedulePath}`,
+    );
+  }
+});
+
+// Pins the gate to evidence: the forms a re-pointed corpus would take must
+// each produce an error, or the loops above pass while asserting nothing.
+test('the talk link gate rejects the forms a re-pointed corpus would use', () => {
+  assert.deepEqual(
+    urlErrors(
+      'url',
+      `https://${SCHEDULE_HOST}/program/schedule/?id=1`,
+      SCHEDULE_HOST,
+    ),
+    [],
+  );
+  for (const bad of [
+    undefined,
+    'not a url',
+    '/program/schedule/?id=1',
+    `http://${SCHEDULE_HOST}/program/schedule/`,
+    `javascript:alert(1)//${SCHEDULE_HOST}`,
+    `https://${SCHEDULE_HOST}@evil.example/program/schedule/?id=1`,
+    `https://${SCHEDULE_HOST}.evil.example/program/schedule/`,
+    'https://evil.example/program/schedule/?id=1',
+  ]) {
+    assert.notEqual(
+      urlErrors('url', bad, SCHEDULE_HOST).length,
+      0,
+      `expected ${JSON.stringify(bad)} to be rejected`,
+    );
+  }
 });
