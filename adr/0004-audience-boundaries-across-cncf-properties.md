@@ -1,8 +1,8 @@
 # ADR 0004: Audience boundaries across endusers.cncf.io, contribute.cncf.io, and cncf.io
 
-## Status
-
-Proposed
+- **Status**: Proposed
+- **Date**: 2026-10-13
+- **Tracking issue**: [#1407](https://github.com/cncf/endusers/issues/1407)
 
 ## Context
 
