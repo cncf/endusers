@@ -8,14 +8,16 @@
 // therefore treated as untrusted input and resolved through the URL parser
 // rather than through string tests.
 //
-// websiteUrl() below duplicates the scheme/userinfo portion of isSafeUrl() in
-// scripts/lib/validate-utils.mjs (see endusers#1388) rather than importing it:
-// this module is bundled into the browser by src/components/CommunityPeople,
-// while validate-utils.mjs pulls in `node:fs` for its error-reporting half, so
-// importing it here would put a Node-only module in the client bundle. A
-// shared core would need its own fs-free module; out of scope for #1388.
+// websiteUrl() below resolves through isSafeUrl() from
+// scripts/lib/url-safety.mjs (see endusers#1388): that module is the fs-free
+// core of scripts/lib/validate-utils.mjs, kept free of `node:*` imports
+// precisely so this module can share it — this file is bundled into the
+// browser by src/components/CommunityPeople, and a Node-only import anywhere
+// in its graph breaks the client build.
 
-const ALLOWED_PROTOCOLS = new Set(['http:', 'https:']);
+import { isSafeUrl } from '../../scripts/lib/url-safety.mjs';
+
+const ALLOWED_PROTOCOLS = ['http:', 'https:'];
 
 // Null prototype: a lookup keyed by untrusted `type` must miss for anything
 // that is not one of the three known networks, including inherited
@@ -59,20 +61,9 @@ export function websiteUrl(value) {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
-
-  let url;
-  try {
-    url = new URL(candidate);
-  } catch {
-    return null;
-  }
-
-  if (!ALLOWED_PROTOCOLS.has(url.protocol)) return null;
-  // A userinfo component is only ever used here to disguise the real host.
-  if (url.username || url.password) return null;
-
-  return url.href;
+  const url = isSafeUrl(trimmed, {
+    protocols: ALLOWED_PROTOCOLS,
+    defaultScheme: 'https:',
+  });
+  return url ? url.href : null;
 }

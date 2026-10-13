@@ -482,3 +482,34 @@ test('isSafeUrl returns null for a failing scheme, userinfo, host, or parse', ()
     assert.equal(isSafeUrl(value, options), null, value);
   }
 });
+
+test('isSafeUrl resolves a bare host against options.defaultScheme', () => {
+  const parsed = isSafeUrl('example.test/blog', { defaultScheme: 'https:' });
+  assert.equal(parsed.href, 'https://example.test/blog');
+});
+
+test('isSafeUrl applies defaultScheme only to values without a scheme', () => {
+  const options = { defaultScheme: 'https:' };
+  assert.equal(
+    isSafeUrl('http://example.test/', { ...options, protocols: ['http:'] })
+      .href,
+    'http://example.test/',
+  );
+  // A scheme the protocol check rejects is not rescued by the default.
+  assert.equal(isSafeUrl('javascript:alert(1)', options), null);
+  // A userinfo authority smuggled into a bare host is still rejected.
+  assert.equal(isSafeUrl('www.cncf.io@evil.example/login', options), null);
+  // Non-strings pass through untouched and still fail to parse.
+  assert.equal(isSafeUrl(42, options), null);
+});
+
+test('checkUrl reports the parse failure message for a schemeless value without defaultScheme', () => {
+  const errors = [];
+  checkUrl(errors, 'p', 'site', 'example.test');
+  assert.equal(errors.length, 1);
+  assert.match(errors[0].message, /must be an absolute https URL/);
+
+  const coerced = [];
+  checkUrl(coerced, 'p', 'site', 'example.test', { defaultScheme: 'https:' });
+  assert.deepEqual(coerced, []);
+});
