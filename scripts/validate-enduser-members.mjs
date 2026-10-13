@@ -2,7 +2,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { reportAndExit } from './lib/validate-utils.mjs';
+import {
+  checkUrl as checkUrlImpl,
+  reportAndExit,
+} from './lib/validate-utils.mjs';
 import {
   END_USER_SUPPORTER_SUBCATEGORY,
   LANDSCAPE_CATEGORY,
@@ -39,25 +42,16 @@ function nonEmpty(path, value) {
   return true;
 }
 
-function checkUrl(path, value, protocols = ['http:', 'https:']) {
+// Thin wrapper over the shared URL-safety gate in ./lib/validate-utils.mjs:
+// null/undefined stay valid here (absent homepageUrl/sourceUrl is allowed),
+// everything else — protocol allow-list, userinfo rejection, parse failure —
+// is the shared helper's wording so future hardening reaches this validator.
+function checkUrl(path, field, value, protocols = ['http:', 'https:']) {
   if (value === null || value === undefined) return;
-  if (typeof value !== 'string' || !value.trim()) {
-    error(path, 'must be null or a non-empty URL');
-    return;
-  }
-  let parsed;
-  try {
-    parsed = new URL(value);
-  } catch {
-    error(path, 'must be a parseable URL');
-    return;
-  }
-  if (!protocols.includes(parsed.protocol)) {
-    error(path, `must use ${protocols.join(' or ')}`);
-  }
-  if (parsed.username || parsed.password) {
-    error(path, 'must not carry userinfo');
-  }
+  checkUrlImpl(errors, path, field, value, {
+    protocols,
+    requireNonEmptyString: true,
+  });
 }
 
 function localAsset(path, value) {
@@ -116,7 +110,7 @@ if (!source || typeof source !== 'object') {
   ) {
     error('source.sourceUrl', 'must point to the pinned landscape revision');
   }
-  checkUrl('source.sourceUrl', source.sourceUrl, ['https:']);
+  checkUrl('source.sourceUrl', 'sourceUrl', source.sourceUrl, ['https:']);
 }
 
 for (const field of ['member', 'contributor', 'supporter']) {
@@ -197,7 +191,7 @@ for (const [index, record] of records.entries()) {
     error(path, 'supporter records must be audit-only');
   }
 
-  checkUrl(`${path}.homepageUrl`, record?.homepageUrl);
+  checkUrl(`${path}.homepageUrl`, 'homepageUrl', record?.homepageUrl);
   if (record?.joined !== null && record?.joined !== undefined) {
     if (
       typeof record.joined !== 'string' ||
