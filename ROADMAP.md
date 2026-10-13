@@ -122,8 +122,11 @@ Goal: endusers.cncf.io becomes the authoritative end-user destination.
       signposts shipped (site footer, architecture submission flow, community
       resources). Inbound-link requests against contribute.cncf.io and cncf.io
       remain open.
-- [ ] Public feedback loop: content-issue templates and a visible changelog
-      (#1408)
+- [x] Public feedback loop: content-issue templates and a visible changelog
+      (#1408). Shipped: the `content-issue.yml` report form and a changelog
+      generated at build time (`adr/0003-public-changelog-mechanism.md`), both
+      linked from the site footer. The deployed changelog renders its fallback
+      page until the deploy checkout fetches full history (#1409).
 
 ## Non-goals
 
