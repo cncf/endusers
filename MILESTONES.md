@@ -56,8 +56,8 @@ destination.
 Tag issues/PRs covering:
 
 - DNS cutover to endusers.cncf.io
-- Cross-linking with contribute.cncf.io and cncf.io
-- Content-issue templates and a public changelog
+- #1407 (cross-linking with contribute.cncf.io and cncf.io)
+- #1408 (content-issue templates and a public changelog)
 
 ## Milestone: Launch
 

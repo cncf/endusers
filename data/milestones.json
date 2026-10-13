@@ -18,7 +18,7 @@
     {
       "title": "Phase 3 — Ecosystem integration",
       "description": "endusers.cncf.io becomes the authoritative end-user destination.",
-      "issues": []
+      "issues": [1407, 1408]
     },
     {
       "title": "Launch",
