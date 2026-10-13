@@ -120,12 +120,12 @@ for (const section of new Set([
   }
 }
 
-// Stale-refresh TODO(#122): refresh-community-people.yml cannot open its PR
-// while GitHub Actions is blocked from creating PRs in this repo (#122), so
-// fetchedAt is frozen and will only get staler until that repo-level setting
-// is flipped by an admin. Warn (not error) until then so this gate does not
-// turn every deploy red for a pipeline this repo cannot currently fix; flip
-// STALENESS_SEVERITY back to 'error' once #122 is resolved.
+// Stale-refresh: refresh-community-people.yml has been healthy since the
+// #122 PR-creation blocker closed, so fetchedAt only goes stale when the
+// weekly pipeline itself breaks -- which its own PR trail already makes
+// visible. Warn (not error) so a data-refresh outage does not turn every
+// deploy red for a problem a pull request cannot fix; restoring 'error'
+// severity is a maintainer call, not a default.
 const STALENESS_SEVERITY = 'warn';
 const STALENESS_DAYS = 45;
 const ageDays = (Date.now() - new Date(data.fetchedAt).getTime()) / 86_400_000;
