@@ -159,12 +159,7 @@ export function checkUrl(errors, path, field, value, options = {}) {
 export function isSafeUrl(value, options = {}) {
   const errors = [];
   checkUrl(errors, '', '', value, options);
-  if (errors.length) return null;
-  try {
-    return new URL(value);
-  } catch {
-    return null;
-  }
+  return errors.length ? null : new URL(value);
 }
 
 /**
