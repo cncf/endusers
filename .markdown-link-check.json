@@ -8,9 +8,23 @@
     },
     {
       "pattern": "^https://endusers\\.cncf\\.io"
+    },
+    {
+      "pattern": "^/"
+    },
+    {
+      "pattern": "^#"
+    },
+    {
+      "pattern": "^\\{"
     }
   ],
-  "replacementPatterns": [],
+  "replacementPatterns": [
+    {
+      "pattern": "%22%7D$",
+      "replacement": ""
+    }
+  ],
   "httpHeaders": [
     {
       "urls": ["https://github.com", "https://raw.githubusercontent.com"],
