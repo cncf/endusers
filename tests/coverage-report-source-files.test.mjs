@@ -101,16 +101,21 @@ test('enumerateSourceFiles walks scripts/, src/ and tests/tools/ for modules onl
     // measuring apparatus going unmeasured.
     'tests/tools/five.mjs': '',
     'tests/tools/nested/six.cjs': '',
+    // The repo-root config modules are enumerated as well. isSourceFile()
+    // already scores them, so omitting them here would let a root config stop
+    // being imported without --require-source-files noticing.
+    'docusaurus.config.js': '',
     // Not modules: the reporter cannot hold a coverage record for them.
     'src/css/custom.css': '',
     'src/pages/about.md': '',
+    'README.md': '',
     // Outside the enumerated trees: the rest of tests/ is the suite itself,
     // not the harness it runs on.
     'tests/five.test.mjs': '',
-    'docusaurus.config.js': '',
   });
   try {
     assert.deepEqual(enumerateSourceFiles(root), [
+      'docusaurus.config.js',
       'scripts/lib/nested/three.cjs',
       'scripts/lib/two.js',
       'scripts/one.mjs',
@@ -121,6 +126,58 @@ test('enumerateSourceFiles walks scripts/, src/ and tests/tools/ for modules onl
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('enumerateSourceFiles lists root config modules but not the trees beside them', () => {
+  // The root is listed one level deep rather than walked: a recursive walk
+  // from '.' would descend into node_modules/ and build/, where tens of
+  // thousands of modules nothing in this repository ships would each become a
+  // file --require-source-files demands a coverage record for.
+  const root = fixtureRoot({
+    'docusaurus.config.js': '',
+    'playwright.config.js': '',
+    'sidebars.js': '',
+    'node_modules/pkg/index.js': '',
+    'build/assets/bundle.js': '',
+  });
+  try {
+    assert.deepEqual(enumerateSourceFiles(root), [
+      'docusaurus.config.js',
+      'playwright.config.js',
+      'sidebars.js',
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('enumerateSourceFiles skips a symlinked root config module', () => {
+  // Same hazard the tree walk guards: a symlink would report one module under
+  // two paths, and only one of them can match a coverage record, so the gate
+  // would fail permanently on a file that is fully covered under its real
+  // name.
+  const root = fixtureRoot({ 'docusaurus.config.js': '' });
+  symlinkSync(
+    join(root, 'docusaurus.config.js'),
+    join(root, 'docusaurus.alias.js'),
+  );
+  try {
+    assert.deepEqual(enumerateSourceFiles(root), ['docusaurus.config.js']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('enumerateSourceFiles answers a root that does not exist with nothing', () => {
+  // The caller is asking "what should have been measured". A root that is not
+  // there has nothing to answer with, and each of the three enumerations --
+  // the SOURCE_ROOTS walk, the harness modules and the root config modules --
+  // has to treat that as an absence rather than throwing, or the reporter
+  // dies before it can print the gate it was run to evaluate.
+  assert.deepEqual(
+    enumerateSourceFiles(join(tmpdir(), 'endusers-no-such-root')),
+    [],
+  );
 });
 
 test('enumerateSourceFiles skips symlinks and a missing root', () => {

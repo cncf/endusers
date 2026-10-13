@@ -150,6 +150,15 @@ export function isHarnessModule(file) {
   return HARNESS_FILE.test(file) && !file.endsWith('.test.mjs');
 }
 
+// How the --require-source-files diagnostics name the set enumerateSourceFiles()
+// returns. Written once rather than at each use so the messages cannot come to
+// describe a different set than the walk produces: naming only the SOURCE_ROOTS
+// trees sends a reader whose unmeasured file is sidebars.js looking under
+// directories it was never going to be in.
+const SOURCE_SET_LABEL =
+  `${SOURCE_ROOTS.join('/, ')}/, the repository-root config modules ` +
+  `and ${HARNESS_MODULE_DIR}/helpers*.mjs`;
+
 // A flag takes one numeric percentage argument; the option key it sets on
 // the parsed options object.
 const PERCENT_FLAGS = {
@@ -571,11 +580,11 @@ export function isHarnessFile(file) {
 }
 
 // Every module on disk under SOURCE_ROOTS, plus the tests/helpers*.mjs harness
-// modules, as repo-relative '/'-joined paths. Walked rather than globbed so
-// the traversal order is the sort order and a directory that does not exist is
-// simply absent instead of throwing -- the caller is asking "what should have
-// been measured", and a repository that has dropped scripts/ entirely has
-// nothing to answer with.
+// modules and the repo-root config modules, as repo-relative '/'-joined paths.
+// Walked rather than globbed so the traversal order is the sort order and a
+// directory that does not exist is simply absent instead of throwing -- the
+// caller is asking "what should have been measured", and a repository that has
+// dropped scripts/ entirely has nothing to answer with.
 export function enumerateSourceFiles(root = repoRoot) {
   const found = [];
   const walk = (relDir) => {
@@ -597,6 +606,7 @@ export function enumerateSourceFiles(root = repoRoot) {
   };
   for (const dir of SOURCE_ROOTS) walk(dir);
   found.push(...enumerateHarnessModules(root));
+  found.push(...enumerateRootModules(root));
   return found.sort();
 }
 
@@ -618,6 +628,40 @@ function enumerateHarnessModules(root) {
     .filter((entry) => !entry.isSymbolicLink() && entry.isFile())
     .map((entry) => `${HARNESS_MODULE_DIR}/${entry.name}`)
     .filter((relPath) => isHarnessModule(relPath));
+}
+
+// The config modules at the repository root: docusaurus.config.js,
+// playwright.config.js, sidebars.js. SOURCE_ROOTS cannot express them -- they
+// are files rather than a tree, and walking '.' would descend into
+// node_modules/ and build/ -- so they are listed one level deep for the reason
+// HARNESS_MODULE_DIR gives, and guarded against symlinks the same way.
+//
+// They are enumerated because isSourceFile() already admits them: the moment a
+// coverage record exists they are folded into the `src files` ratios and
+// scored by --check-source and --check-source-regions. Leaving them out of
+// this walk let the two halves of the gate disagree. A root config that no
+// test imported any more contributed neither numerator nor denominator, so
+// every percentage stayed where it was while the module went unmeasured, and
+// --require-source-files -- which exists precisely to catch a file nothing ran
+// at all -- could not name a file it never listed. docusaurus.config.js
+// carries the CSP image-host allowlist and the two plugins that give the e2e
+// coverage run its source maps and data overlays, so that silence would cost
+// the e2e gate its attribution rather than merely a row in this report.
+function enumerateRootModules(root) {
+  let entries;
+  try {
+    entries = readdirSync(root, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter(
+      (entry) =>
+        !entry.isSymbolicLink() &&
+        entry.isFile() &&
+        SOURCE_FILE.test(entry.name),
+    )
+    .map((entry) => entry.name);
 }
 
 // Source files that exist but that this run never recorded.
@@ -847,7 +891,7 @@ function main() {
     if (missing.length > 0) {
       console.log(
         `\nNever measured (${missing.length}): these files exist under ` +
-          `${SOURCE_ROOTS.join('/ or ')}/ but no\n` +
+          `${SOURCE_SET_LABEL} but no\n` +
           'coverage record named them, so they are absent from the "src files"\n' +
           'numerator and denominator alike and the percentage gates below pass\n' +
           'over them in silence.',
@@ -882,7 +926,7 @@ function main() {
       console.error(
         `\n${missing.length} source file(s) were never measured; ` +
           '--require-source-files requires every file under ' +
-          `${SOURCE_ROOTS.join('/ and ')}/ to be exercised.`,
+          `${SOURCE_SET_LABEL} to be exercised.`,
       );
       fileSetFailed = true;
     }
@@ -903,7 +947,7 @@ function main() {
         `\n${unmeasurable.length} source file(s) were recorded but could not ` +
           'be mapped onto the text on disk, so they enter no ratio below; ' +
           '--require-source-files requires every file under ' +
-          `${SOURCE_ROOTS.join('/ and ')}/ to be measurable.`,
+          `${SOURCE_SET_LABEL} to be measurable.`,
       );
       for (const file of unmeasurable) console.error(`  ${file}`);
       fileSetFailed = true;
