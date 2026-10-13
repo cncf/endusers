@@ -216,9 +216,10 @@ enough for a first contribution.
    superset rather than a drop-in for the CI checks:
    - `check:audit` — see above; part of "Validate repository", not "Lint
      repository".
-   - `check:links` — runs `markdown-link-check` over every root-level `*.md`
-     file; it needs network access and can fail for reasons unrelated to your
-     change (a linked site being temporarily down, for example).
+   - `check:links` — runs `markdown-link-check` over every `*.md` file in the
+     repository, including `docs/` and `blog/`; it needs network access and can
+     fail for reasons unrelated to your change (a linked site being temporarily
+     down, for example).
    - `check:community-group-links` — needs `GH_TOKEN` set to avoid the
      unauthenticated GitHub rate limit, and unconditionally rewrites
      `data/community-groups.json` with a fresh `checkedAt` timestamp. Only
