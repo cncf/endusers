@@ -9,10 +9,11 @@ agent fleet can currently write to (see `AGENTS.md`).
 Each ADR captures the context, options considered, and the decision made (or
 still pending) so future contributors understand why, not just what.
 
-| ADR                                               | Title                                                | Status   |
-| ------------------------------------------------- | ---------------------------------------------------- | -------- |
-| [0001](./0001-site-ownership-and-cutover-path.md) | Site ownership and cutover path for endusers.cncf.io | Accepted |
-| [0002](./0002-peoplehub-fleet-status.md)          | peoplehub fleet status — pause agent work            | Accepted |
+| ADR                                                          | Title                                                                        | Status   |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------- | -------- |
+| [0001](./0001-site-ownership-and-cutover-path.md)            | Site ownership and cutover path for endusers.cncf.io                         | Accepted |
+| [0002](./0002-peoplehub-fleet-status.md)                     | peoplehub fleet status — pause agent work                                    | Accepted |
+| [0004](./0004-audience-boundaries-across-cncf-properties.md) | Audience boundaries across endusers.cncf.io, contribute.cncf.io, and cncf.io | Proposed |
 
 Supporting material is not part of the numbered ADR sequence and is not assigned
 an ADR number, but is listed here for discoverability:
