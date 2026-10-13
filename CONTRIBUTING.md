@@ -159,6 +159,32 @@ See [`docs/skills/blog-management.md`](docs/skills/blog-management.md) for post
 format, front matter (`blog/authors.yml`/`blog/tags.yml` keys), and the
 publishing cadence.
 
+## Reporting content problems and the changelog
+
+Visitors who find incorrect, outdated, or missing content can report it with the
+[content issue form](https://github.com/cncf/endusers/issues/new?template=content-issue.yml)
+(`.github/ISSUE_TEMPLATE/content-issue.yml`), which is linked from the site
+footer. Reports land with the `documentation` label.
+
+The site publishes its own changelog at
+[`/community/changelog`](https://endusers.cncf.io/community/changelog), also
+linked from the footer. It is generated from git history on every build by
+`scripts/generate-changelog.mjs` (`npm run generate:changelog`), which renders
+the reader-visible Conventional Commits types (`feat`, `fix`, `docs`, `perf`)
+from `git log --first-parent` into `docs/community/changelog.md`. The decision
+and its alternatives are recorded in
+[`adr/0003-public-changelog-mechanism.md`](adr/0003-public-changelog-mechanism.md).
+Two consequences worth knowing:
+
+- The generated page is gitignored; never commit it. `npm run build` and the
+  deploy job regenerate it, so it cannot drift. `npm run docus:start` does not
+  run the generator — run `npm run generate:changelog` once if you want the page
+  in the dev server.
+- Commit subjects become the public changelog text, so write pull request titles
+  as if they were headings. A build with no full git history (a shallow
+  checkout, for example) renders a fallback page linking GitHub's live merged-PR
+  and commit views instead of failing.
+
 ## Style rules
 
 - GitHub Flavored Markdown for all content.

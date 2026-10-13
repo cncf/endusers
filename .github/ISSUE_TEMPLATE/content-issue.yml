@@ -1,0 +1,74 @@
+name: Content Issue Report
+description:
+  Report incorrect, outdated, or missing content on the CNCF End User Community
+  site
+title: '[Content Issue]: '
+labels: ['documentation']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping keep the CNCF End User Community site accurate!
+        This form is for reporting problems with existing content or content
+        that should exist but does not. To contribute new content instead, use
+        the [blog post](https://github.com/cncf/endusers/issues/new?template=blog-post.yml)
+        or [reference architecture](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml)
+        submission forms.
+
+  - type: input
+    id: page_url
+    attributes:
+      label: Page URL
+      description:
+        The full URL of the page with the problem. If the content is missing
+        entirely, link the page where you expected to find it.
+      placeholder: e.g., https://endusers.cncf.io/community/awards/
+    validations:
+      required: true
+
+  - type: dropdown
+    id: problem_type
+    attributes:
+      label: What kind of problem is it?
+      options:
+        - Incorrect content
+        - Outdated content
+        - Missing content
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What is wrong?
+      description:
+        Describe what the page says and why it is wrong, out of date, or what is
+        missing. Quote the affected text where you can.
+      placeholder:
+        e.g., The page says the Telecom User Group meets on Tuesdays, but the
+        calendar shows Thursdays.
+    validations:
+      required: true
+
+  - type: input
+    id: source
+    attributes:
+      label: Authoritative source
+      description:
+        Optional — a link to the source that contradicts the page (a CNCF
+        announcement, project documentation, an event page). A source lets a
+        maintainer verify and fix the report without further research.
+      placeholder: e.g., https://www.cncf.io/announcements/...
+    validations:
+      required: false
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording
+      description:
+        Optional — the replacement text you would like to see, or a sketch of
+        the missing content.
+    validations:
+      required: false
