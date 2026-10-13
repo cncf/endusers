@@ -65,6 +65,20 @@ for (const { slug, name, repo } of GROUPS) {
   groups.push({ slug, name, repository, archived, reachable });
 }
 
+// A run where every check came back inconclusive (token rejected, network
+// down, API outage) has verified nothing: writing the report anyway would
+// stamp a fresh checkedAt on stale knowledge, and both the freshness UI and
+// validate-community-groups.mjs read that timestamp as a successful
+// verification. Refuse to write so the previous report — and its honest,
+// aging checkedAt — survives. Partial failure is still recorded.
+const inconclusive = groups.filter((group) => group.reachable === null);
+if (inconclusive.length === groups.length) {
+  console.error(
+    `All ${groups.length} End User Group checks were inconclusive; leaving the existing report untouched.`,
+  );
+  process.exit(1);
+}
+
 writeFileSync(
   output,
   JSON.stringify({ checkedAt: new Date().toISOString(), groups }, null, 2) +
