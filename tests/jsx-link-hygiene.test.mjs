@@ -6,12 +6,18 @@ import { fileURLToPath } from 'node:url';
 
 // Every JSX source under src/ is compiled by Docusaurus and shipped to the
 // browser without any lint pass: the repository declares no eslint config, so
-// `eslint-plugin-jsx-a11y` and `react/jsx-no-target-blank` never run. The three
+// `eslint-plugin-jsx-a11y` and `react/jsx-no-target-blank` never run. The four
 // invariants below are therefore unguarded end to end.
 //
 //  - `target="_blank"` without `rel="noopener"`/`rel="noreferrer"` hands the
 //    opened page a live `window.opener` handle back to this site (reverse
 //    tabnabbing). Current browsers imply `noopener`, older ones do not.
+//  - An anchor that leaves this origin without `rel="noreferrer"` sends a
+//    `Referer` naming this site to the third-party host. The rule above
+//    cannot carry this one: it is keyed on a literal `target="_blank"` and
+//    so skips every same-tab external link, which is how the off-origin
+//    anchors in ProjectsBorn and EndUserTalkSchedule went uncovered while
+//    the other data-driven components all set `rel="noreferrer"`.
 //  - An `<img>` with no `alt` attribute at all makes a screen reader announce
 //    the file name. `alt=""` is the correct, deliberate marking for decorative
 //    images and is accepted here; a missing attribute is not.
@@ -90,6 +96,26 @@ function hasAttribute(tag, name) {
   return new RegExp(`\\s${name}\\s*=`).test(tag);
 }
 
+// Decides whether an anchor's href can leave this origin, which is what makes
+// a missing `rel` observable by a third party. Both forms an href takes in
+// this repository are classified:
+//
+//  - a string literal, which is off-origin exactly when it is absolute; a
+//    `#fragment` or site-relative `/path` never leaves the origin;
+//  - an expression, whose value is not statically known and so is treated as
+//    off-origin unless it visibly begins with `#`, the in-page anchor form
+//    (``href={`#${day.id}`}``).
+//
+// Treating the unknown case as off-origin is what makes the check fail
+// closed: a new data-driven href is covered the moment it is written. An
+// anchor carrying no href at all would also classify as off-origin, which is
+// harmless here because the vacuity test above already rejects one.
+function leavesOrigin(tag) {
+  const literal = stringAttribute(tag, 'href');
+  if (literal !== null) return /^[a-z][a-z0-9+.-]*:|^\/\//i.test(literal);
+  return !/\shref\s*=\s*\{\s*(['"`])#/.test(tag);
+}
+
 const sources = walk(srcDir).map((file) => ({
   file,
   path: relative(root, file),
@@ -139,6 +165,25 @@ test('every target="_blank" anchor sets rel to noopener or noreferrer', () => {
       tokens.includes('noopener') || tokens.includes('noreferrer'),
       `${path}: <a target="_blank" rel="${rel}"> must include noopener or ` +
         'noreferrer to sever window.opener',
+    );
+  }
+});
+
+test('every anchor that leaves this origin sets rel="noreferrer"', () => {
+  const offOrigin = anchors.filter(({ tag }) => leavesOrigin(tag));
+  // Guards against a classifier that silently stops matching: the repository
+  // renders many off-origin anchors from data/*.json.
+  assert.ok(
+    offOrigin.length >= 10,
+    `expected many off-origin anchors, classified ${offOrigin.length}`,
+  );
+  for (const { path, tag } of offOrigin) {
+    const rel = stringAttribute(tag, 'rel');
+    assert.ok(
+      rel !== null && rel.split(/\s+/).includes('noreferrer'),
+      `${path}: <a> leaves this origin without rel="noreferrer", so the ` +
+        'browser sends a Referer naming this site to the third-party host: ' +
+        JSON.stringify(tag),
     );
   }
 });

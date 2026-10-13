@@ -29,9 +29,16 @@ export default function EndUserTalkSchedule() {
         ))}
       </nav>
       <p className={styles.source}>
-        Source: <a href={schedule.apiUrl}>official Sessionize API</a> · Verified{' '}
-        {verifiedDate}. Times, rooms, and speakers may change; check the{' '}
-        <a href={schedule.sourceUrl}>live official schedule</a> for updates.
+        Source:{' '}
+        <a href={schedule.apiUrl} rel="noreferrer">
+          official Sessionize API
+        </a>{' '}
+        · Verified {verifiedDate}. Times, rooms, and speakers may change; check
+        the{' '}
+        <a href={schedule.sourceUrl} rel="noreferrer">
+          live official schedule
+        </a>{' '}
+        for updates.
       </p>
       {schedule.days.map((day) => (
         <section key={day.date} className={styles.day} aria-labelledby={day.id}>
@@ -55,7 +62,9 @@ export default function EndUserTalkSchedule() {
                   <li key={talk.id} className={styles.card}>
                     <div className={styles.content}>
                       <h6 className={styles.title}>
-                        <a href={talk.url}>{talk.title}</a>
+                        <a href={talk.url} rel="noreferrer">
+                          {talk.title}
+                        </a>
                       </h6>
                       <p className={styles.speakers}>{talk.speakers}</p>
                     </div>

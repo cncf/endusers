@@ -17,7 +17,12 @@ export default function ProjectsBorn({
       </div>
       <div className={styles.projects}>
         {projects.map((project) => (
-          <a key={project.name} className={styles.project} href={project.url}>
+          <a
+            key={project.name}
+            className={styles.project}
+            href={project.url}
+            rel="noreferrer"
+          >
             <span className={styles.projectName}>{project.name}</span>
             <span className={styles.projectOrigin}>
               Born at {project.origin}
@@ -33,8 +38,10 @@ export default function ProjectsBorn({
       </div>
       <p className={styles.footerNote}>
         Running something your peers would benefit from?{' '}
-        <a href="https://github.com/cncf/tab">Talk to the End User TAB</a> about
-        sharing projects and architectures.
+        <a href="https://github.com/cncf/tab" rel="noreferrer">
+          Talk to the End User TAB
+        </a>{' '}
+        about sharing projects and architectures.
       </p>
     </section>
   );
