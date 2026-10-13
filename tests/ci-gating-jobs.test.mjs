@@ -1,13 +1,24 @@
 // Guards the one property that makes every other gate in this repository
 // worth running: that a failing gate actually fails its job.
 //
-// `.github/workflows/ci.yml` is the only `pull_request`-triggered workflow, so
-// its `validate`, `lint`, `e2e` and `e2e-coverage` jobs are the entire
-// pre-merge gate. Adding
+// `.github/workflows/ci.yml` carries the repository gate: its `validate`,
+// `lint`, `e2e` and `e2e-coverage` jobs are what every pull request has to
+// clear. Adding
 // `continue-on-error: true` to any of them leaves every step running and every
 // step reporting, and makes the job report success regardless. The same line on
 // the `Run unit tests with coverage` step discards the unit suite and all four
 // coverage thresholds on its own.
+//
+// ci.yml is not, however, the only workflow triggered by `pull_request`:
+// `.github/workflows/codeql.yml` declares one too, path-filtered to the
+// JS/TS sources and the workflow definitions. The scanners below have always
+// read every file under `.github/workflows/`, so that job has always been in
+// scope -- but this header and
+// tests/validator-smoke-coverage.test.mjs both used to assert ci.yml's
+// exclusivity in prose, and prose cannot go red. `PULL_REQUEST_WORKFLOWS`
+// below replaces the claim with a recorded set that a new trigger fails
+// against, so the premise this file reasons from is checked rather than
+// remembered.
 //
 // Nothing else in the suite sees that. tests/coverage-gate-thresholds.test.mjs
 // pins the threshold values and that ci.yml runs the gate command; both survive
@@ -39,6 +50,27 @@ const NON_GATING_JOBS = new Map([]);
 // that deleting one fails as loudly as disarming one.
 const REQUIRED_CI_JOBS = ['validate', 'lint', 'e2e', 'e2e-coverage'];
 
+// `<workflow>` → what that workflow contributes to the pull_request gate.
+//
+// Recorded rather than asserted in prose, for the reason the header gives: the
+// comment that said ci.yml was the only `pull_request` trigger outlived
+// codeql.yml gaining one, and no test could have noticed. A workflow that
+// starts or stops running on pull requests now fails the comparison below
+// until it is recorded here with what it gates, which is the same bargain
+// NON_GATING_JOBS strikes for `continue-on-error`.
+const PULL_REQUEST_WORKFLOWS = new Map([
+  [
+    'ci.yml',
+    'The repository gate: the validate, lint, e2e and e2e-coverage jobs ' +
+      'named in REQUIRED_CI_JOBS.',
+  ],
+  [
+    'codeql.yml',
+    'CodeQL analysis, path-filtered to the JS/TS sources, the package ' +
+      'manifests and the workflow definitions.',
+  ],
+]);
+
 const workflowFiles = readdirSync(workflowDir)
   .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
   .sort();
@@ -59,10 +91,30 @@ function optsOutOfFailure(value) {
   return String(value).trim().toLowerCase() !== 'false';
 }
 
-// The three scanners below take the parsed workflows as an argument rather
+// The scanners below take the parsed workflows as an argument rather
 // than closing over the repository's own, so the violation each one exists to
 // report can be exercised against a fixture. A guard whose failure path never
 // runs is a guard nobody has checked.
+
+// `on:` is three shapes in the schema -- a mapping, a bare string, or a
+// sequence -- and a fourth by accident: YAML 1.1 reads the unquoted key `on`
+// as the boolean `true`, so a parser that follows it files the whole block
+// under `true` instead. All four are read here because which one a workflow
+// happens to use is not the contract being guarded.
+function triggerNames(workflow) {
+  const on = workflow?.on ?? workflow?.true;
+  if (typeof on === 'string') return [on];
+  if (Array.isArray(on)) return on.filter((name) => typeof name === 'string');
+  return Object.keys(on ?? {});
+}
+
+function pullRequestWorkflows(parsedWorkflows) {
+  return [...parsedWorkflows]
+    .filter(([, workflow]) => triggerNames(workflow).includes('pull_request'))
+    .map(([file]) => file)
+    .sort();
+}
+
 function jobEntries(parsedWorkflows) {
   const entries = [];
   for (const [file, workflow] of parsedWorkflows) {
@@ -120,15 +172,38 @@ test('every workflow parses and ci.yml still defines its gating jobs', () => {
   );
 
   const ci = workflows.get('ci.yml');
-  assert.ok(ci, 'ci.yml is missing; it is the only pull_request gate');
+  assert.ok(ci, 'ci.yml is missing; it carries the repository gate');
   assert.deepEqual(
-    Object.keys(ci.on ?? ci.true ?? {}).includes('pull_request'),
+    triggerNames(ci).includes('pull_request'),
     true,
     'ci.yml must stay triggered by pull_request',
   );
 
   const missing = REQUIRED_CI_JOBS.filter((name) => !ci.jobs?.[name]);
   assert.deepEqual(missing, [], 'gating jobs removed from ci.yml');
+});
+
+test('every pull_request-triggered workflow is recorded as part of the gate', () => {
+  assert.deepEqual(
+    pullRequestWorkflows(workflows),
+    [...PULL_REQUEST_WORKFLOWS.keys()].sort(),
+    'the set of workflows triggered by pull_request no longer matches ' +
+      'PULL_REQUEST_WORKFLOWS; record the new one with what it gates, or ' +
+      'delete the entry for the one that stopped running on pull requests',
+  );
+});
+
+test('every recorded pull_request workflow exists and says what it gates', () => {
+  for (const [file, reason] of PULL_REQUEST_WORKFLOWS) {
+    assert.ok(
+      workflows.has(file),
+      `PULL_REQUEST_WORKFLOWS names ${file}, which is not under .github/workflows`,
+    );
+    assert.ok(
+      typeof reason === 'string' && reason.length > 0,
+      `PULL_REQUEST_WORKFLOWS entry ${file} must record what it contributes`,
+    );
+  }
 });
 
 test('only allowlisted jobs opt out of failing', () => {
@@ -190,6 +265,53 @@ test('optsOutOfFailure reads an absent, pinned-off and expression value', () => 
   assert.equal(optsOutOfFailure(' FALSE '), false);
   assert.equal(optsOutOfFailure(true), true);
   assert.equal(optsOutOfFailure("${{ github.event_name == 'push' }}"), true);
+});
+
+test('triggerNames reads every shape `on:` can parse to', () => {
+  // A mapping, which is what every workflow in this repository uses.
+  assert.deepEqual(triggerNames({ on: { pull_request: null, push: null } }), [
+    'pull_request',
+    'push',
+  ]);
+  // A bare string and a sequence: both legal, and both would read as zero
+  // triggers under an Object.keys() that assumed a mapping.
+  assert.deepEqual(triggerNames({ on: 'pull_request' }), ['pull_request']);
+  assert.deepEqual(triggerNames({ on: ['push', 'pull_request'] }), [
+    'push',
+    'pull_request',
+  ]);
+  assert.deepEqual(triggerNames({ on: ['push', 7] }), ['push']);
+  // YAML 1.1 turns the unquoted key `on` into the boolean true.
+  assert.deepEqual(triggerNames({ true: { pull_request: null } }), [
+    'pull_request',
+  ]);
+  // A workflow with no triggers at all must not throw.
+  assert.deepEqual(triggerNames({}), []);
+  assert.deepEqual(triggerNames(undefined), []);
+});
+
+test('pullRequestWorkflows reports a trigger gained and one lost', () => {
+  const triggered = new Map([
+    ['ci.yml', { on: { pull_request: null } }],
+    ['nightly.yml', { on: { schedule: [] } }],
+  ]);
+  assert.deepEqual(pullRequestWorkflows(triggered), ['ci.yml']);
+
+  // The case this guard exists for: a second workflow quietly starts running
+  // on pull requests, as codeql.yml did.
+  assert.deepEqual(
+    pullRequestWorkflows(
+      new Map([...triggered, ['codeql.yml', { on: { pull_request: null } }]]),
+    ),
+    ['ci.yml', 'codeql.yml'],
+  );
+
+  // And the other direction, which leaves a recorded entry describing a gate
+  // that no longer runs.
+  assert.deepEqual(
+    pullRequestWorkflows(new Map([['ci.yml', { on: { push: null } }]])),
+    [],
+  );
 });
 
 test('optedOutJobs reports a job that gained continue-on-error', () => {

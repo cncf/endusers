@@ -2,19 +2,25 @@
 // (scripts/validate-*.mjs) and the hand-maintained READ_ONLY_VALIDATORS list
 // in tests/validators-smoke.test.mjs.
 //
-// That list is load-bearing well beyond the unit suite. The only
-// pull_request-triggered workflow, .github/workflows/ci.yml, runs
-// `npm run test:unit` and `npm run build:production` — it never invokes
-// `npm run validate:*` directly. The four data validators reach the PR gate
-// solely because validators-smoke.test.mjs executes them against the real
-// repository data. A validator that is added to scripts/ but forgotten in
-// that array therefore never runs on any pull request; its first failure
-// surfaces post-merge, on the push-to-main deploy, where it blocks the
-// deployment of an already-merged change.
+// That list is load-bearing well beyond the unit suite. It is what makes the
+// read-only validators run against the *real* repository data on every pull
+// request: `.github/workflows/ci.yml` runs `npm run test:unit:coverage:check`
+// (ci.yml:40), which executes this suite, and a validator missing from the
+// array is executed by nothing in it.
 //
-// Nothing else in the suite models that relationship: the array is a literal
-// list of strings, so adding scripts/validate-foo.mjs leaves every existing
-// test green.
+// The validators also reach the PR gate a second way. ci.yml's `validate` job
+// runs each `npm run validate:*` gate as a step of its own (ci.yml:55-79), and
+// tests/workflow-scripts.test.mjs's "every validate:*/check:* gate is run by a
+// workflow or recorded as exempt" is what keeps that list complete. The two
+// paths guard different omissions and neither subsumes the other: a validator
+// added to scripts/ with no package.json script is caught by
+// tests/workflow-scripts.test.mjs's entry-point check, one with a script but
+// no workflow step by its gate check, and one wired into both but left out of
+// READ_ONLY_VALIDATORS here -- which is the omission this file exists for.
+//
+// Nothing else in the suite models that last relationship: the array is a
+// literal list of strings, so adding scripts/validate-foo.mjs leaves every
+// existing test green.
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
