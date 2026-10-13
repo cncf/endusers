@@ -191,3 +191,23 @@ test('coerces a truthy non-boolean archived field to a boolean', () => {
   // strict boolean, never whatever the API happened to send.
   assert.equal(bySlug(output, 'public-sector').archived, true);
 });
+
+test('refuses to overwrite the report when every check is inconclusive', () => {
+  const result = run([
+    { match: PUBLIC_SECTOR, networkError: 'socket hang up' },
+    { match: TELECOM, status: 500, body: {} },
+  ]);
+
+  assert.equal(
+    result.status,
+    1,
+    `expected the script to fail:\n${result.stdout}`,
+  );
+  assert.match(
+    result.stderr,
+    /All 2 End User Group checks were inconclusive; leaving the existing report untouched\./,
+  );
+  // The pre-existing report must survive with its honest stale checkedAt:
+  // rewriting it would date-stamp a verification that never happened.
+  assert.equal(result.outputs[OUTPUT], STALE_REPORT);
+});
