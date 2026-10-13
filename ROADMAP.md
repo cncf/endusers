@@ -106,7 +106,7 @@ Goal: the project can outlive any single maintainer.
 - [x] MAINTAINERS.md with an explicit process for adding maintainers (#55)
 - [x] Governance note describing review/merge expectations, including
       agent-automation policy (GOVERNANCE.md, #60)
-- [ ] Good-first-issue curation to recruit human contributors
+- [x] Good-first-issue curation to recruit human contributors (#98)
 - [x] Decide the long-term home of the site (issue #46, ADR 0001): ADR 0001 is
       Accepted — the repository has been transferred to the `cncf` GitHub org.
       The remaining DNS cutover to `endusers.cncf.io` is tracked separately in
@@ -118,8 +118,9 @@ Goal: endusers.cncf.io becomes the authoritative end-user destination.
 
 - [ ] DNS cutover to endusers.cncf.io (depends on Phase 2 ownership decision)
 - [ ] Cross-linking with contribute.cncf.io and cncf.io (clear audience
-      boundaries)
+      boundaries) (#1390)
 - [ ] Public feedback loop: content-issue templates and a visible changelog
+      (#1391)
 
 ## Non-goals
 
