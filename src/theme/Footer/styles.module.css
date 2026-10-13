@@ -91,10 +91,10 @@
 }
 
 .feedbackLinks a {
-  color: #fff;
+  color: #fff !important;
   text-decoration: underline;
 }
 
 .feedbackLinks a:hover {
-  color: #d62293;
+  color: #d62293 !important;
 }
