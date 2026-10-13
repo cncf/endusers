@@ -589,6 +589,58 @@ test('every linked web app manifest is served from this origin', () => {
   );
 });
 
+// The document Referrer Policy is the disclosure counterpart to `img-src`
+// above: `img-src` decides which hosts the browser may contact, this decides
+// what those hosts learn when it does. It is asserted here rather than left to
+// the browser default because the default, strict-origin-when-cross-origin,
+// still sends the origin.
+//
+// It cannot be replaced by `rel="noreferrer"` on anchors: the requests at
+// issue are `<img src>` subresources that fire on page load, and `rel` has no
+// effect on them. It also cannot be delivered as a response header, because
+// the site is served by GitHub Pages.
+const REFERRER_POLICIES_WITHOUT_CROSS_ORIGIN_LEAK = new Set([
+  'no-referrer',
+  'same-origin',
+]);
+
+function referrerMeta(from = config) {
+  return from.headTags.find(
+    (tag) => tag.tagName === 'meta' && tag.attributes?.name === 'referrer',
+  );
+}
+
+test('the document sets a Referrer Policy that leaks nothing cross-origin', () => {
+  const meta = referrerMeta();
+  assert.ok(
+    meta,
+    'no <meta name="referrer"> head tag: the browser default, strict-origin-when-cross-origin, attaches this site\'s origin to every off-origin request, and GitHub Pages cannot send a Referrer-Policy header instead',
+  );
+  const policy = meta.attributes.content;
+  assert.ok(
+    REFERRER_POLICIES_WITHOUT_CROSS_ORIGIN_LEAK.has(policy),
+    `referrer policy "${policy}" discloses this site's origin cross-origin; use one of ${[
+      ...REFERRER_POLICIES_WITHOUT_CROSS_ORIGIN_LEAK,
+    ].join(', ')}`,
+  );
+});
+
+// The premise the policy rests on: the site really does ship image references
+// to other origins, which load without any user action. If that ever stops
+// being true the directive costs nothing, but while it holds, this is the
+// exposure the policy exists to close -- and it is the half that the
+// per-anchor rel attribute cannot reach.
+test('the policy is doing work: shipped data still references off-origin images', () => {
+  const people = JSON.parse(
+    readFileSync(join(repoRoot, 'data/community-people.json'), 'utf8'),
+  );
+  const images = JSON.stringify(people).match(/https?:\/\/[^"\\]+/g) ?? [];
+  assert.ok(
+    images.some((url) => remoteTarget(url)),
+    'data/community-people.json names no off-origin resource; re-check whether the referrer policy above still describes what the site loads',
+  );
+});
+
 test('the meta CSP confines images to the hosts the image gate allows', () => {
   const sources = cspDirectives().get('img-src');
   assert.ok(

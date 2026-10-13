@@ -166,6 +166,37 @@ const config = {
     {
       tagName: 'meta',
       attributes: {
+        name: 'referrer',
+        // Without this the browser applies its default,
+        // strict-origin-when-cross-origin, which still attaches a cross-origin
+        // `Referer` naming this site's origin to every off-origin request.
+        //
+        // The requests that matter here are subresources, not navigations:
+        // data/community-people.json supplies image URLs on
+        // raw.githubusercontent.com and avatars.githubusercontent.com that
+        // src/components/CommunityPeople renders as plain `<img src>`, so they
+        // fire on page load with no user action. `rel="noreferrer"` is an
+        // anchor-only control and cannot reach them; a document policy is the
+        // only mechanism this site has, since GitHub Pages serves static files
+        // and cannot add a `Referrer-Policy` response header.
+        //
+        // This is the disclosure half of the same exposure `img-src` below
+        // addresses. `img-src` decides which hosts may be contacted at all;
+        // it says nothing about what is revealed to the hosts it admits.
+        //
+        // `same-origin` rather than `no-referrer`: every off-origin request
+        // the built site makes is an image on a host named in
+        // IMAGE_HOST_SOURCES, none of which need a referrer, while
+        // same-origin navigation and the local search plugin keep the full
+        // referrer they have today. Unlike `frame-ancestors`, which browsers
+        // ignore in a meta tag, `name="referrer"` is an HTML metadata name
+        // rather than a CSP directive and is honoured when delivered this way.
+        content: 'same-origin',
+      },
+    },
+    {
+      tagName: 'meta',
+      attributes: {
         'http-equiv': 'Content-Security-Policy',
         // Defence in depth for content this site does not author: architecture
         // MDX and image assets are mirrored from cncf/architecture, and several
