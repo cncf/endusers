@@ -216,7 +216,7 @@ Container orchestration for the fleet.
   }
 });
 
-test('falls back to a derived project href when no cncf.io link is present', () => {
+test('a card with no cncf.io link renders without an href', () => {
   const run = runImportArchitectures({
     upstream: architecture(
       'fallback',
@@ -237,10 +237,11 @@ A build tool.
   try {
     assert.equal(run.status, 0, run.stderr);
     const page = run.read('docs/architectures/fallback.md');
-    assert.match(
-      page,
-      /href=\{"https:\/\/www\.cncf\.io\/projects\/cloud-native-buildpacks\/"\}/,
-    );
+    // A slug derived from the card header is a guess that 404s for
+    // multi-word names and for projects with no cncf.io page at all, so no
+    // href is fabricated (#1448).
+    assert.match(page, /<CNCFProjectCard name=\{"Cloud Native Buildpacks"\}/);
+    assert.doesNotMatch(page, /href=/);
     assert.doesNotMatch(page, /logo=/);
     assert.doesNotMatch(page, /since=/);
   } finally {

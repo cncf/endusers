@@ -26,7 +26,6 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isCncfProjectHref } from './lib/project-card-links.mjs';
 import { jsxElement } from './lib/jsx-attributes.mjs';
 import { artworkPath, projectAsset } from './lib/project-assets.mjs';
 import { escapeMdx, unescapeMdx } from './lib/mdx-escape.mjs';
@@ -249,16 +248,15 @@ function renderProjectsSection(projects) {
   if (!projects.length) return '';
   const cards = projects
     .map((project) => {
-      const href = `https://www.cncf.io/projects/${project.name
-        .toLowerCase()
-        .replace(/\s+/g, '-')}/`;
+      // The issue table carries no link field, so there is no verified href:
+      // a slug derived from the name is a guess that 404s for any project
+      // without a cncf.io page, and the card renders without a link (#1448).
       const logo =
         project.logo && artworkPath(project.logo)
           ? projectAsset(project.logo)
           : null;
       return jsxElement('CNCFProjectCard', {
         name: project.name,
-        href: isCncfProjectHref(href) ? href : null,
         logo,
         since: project.since || undefined,
         version: project.version || undefined,

@@ -90,23 +90,24 @@ test('renderProjectCards builds a card from a Hugo card shortcode', () => {
 
 test('a non-CNCF link in a card never becomes the card href', () => {
   // The link inside the shortcode is third-party text. isCncfProjectHref()
-  // rejects a host that merely mentions cncf.io in its path, and the href
-  // then falls back to the slug derived from the card header -- so a hostile
-  // destination cannot be published as the card's own link.
+  // rejects a host that merely mentions cncf.io in its path, and the card
+  // then carries no href at all -- a hostile destination cannot be published
+  // as the card's own link, and no guessed slug is fabricated (#1448).
   const rendered = renderProjectCards(
     card('Ev', '[x](https://evil.example/cncf.io/projects/k/)'),
     'demo',
   );
   assert.ok(!rendered.includes('evil.example'), rendered);
-  assert.match(rendered, /href=\{"https:\/\/www\.cncf\.io\/projects\/ev\/"\}/);
+  assert.ok(!rendered.includes('href='), rendered);
 });
 
-test('a card with no link falls back to a slug of its header', () => {
+test('a card with no link renders without an href', () => {
+  // Deriving a cncf.io/projects slug from the header guesses a URL that 404s
+  // for multi-word names and for projects with no cncf.io page at all, so the
+  // card links nowhere (#1448).
   assert.equal(
     renderProjectCards(card('Wide Thing', 'Just prose.'), 'demo'),
-    '<CNCFProjectCard name={"Wide Thing"} ' +
-      'href={"https://www.cncf.io/projects/wide-thing/"} ' +
-      'description={"Just prose."} />',
+    '<CNCFProjectCard name={"Wide Thing"} ' + 'description={"Just prose."} />',
   );
 });
 
@@ -120,7 +121,7 @@ test('card text containing a quote cannot end the attribute it is in', () => {
   );
   assert.equal(
     rendered,
-    '<CNCFProjectCard name={"Q"} href={"https://www.cncf.io/projects/q/"} ' +
+    '<CNCFProjectCard name={"Q"} ' +
       'description={"Desc with \\" quote and <tag>."} />',
   );
 });

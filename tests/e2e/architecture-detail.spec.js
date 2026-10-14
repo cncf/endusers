@@ -68,14 +68,26 @@ test.describe('reference architecture detail pages', () => {
       await expect(attribution).toContainText(record.sourceCommit);
       await expect(attribution).toContainText('CC BY 4.0');
 
-      // Each declared project is rendered by <CNCFProjectCard> as a link to
-      // cncf.io/projects/...; the counts are exactly one-to-one today, so a
-      // card that fails to hydrate is visible as a shortfall.
+      // Each declared project is rendered by <CNCFProjectCard>. A card links
+      // to cncf.io/projects/... only when the upstream source carried that
+      // link; the importer no longer guesses one from the name (#1448), so
+      // the rest render as href-less anchors. Both counts are read from the
+      // imported page so that a card that fails to hydrate, or a fabricated
+      // link that creeps back in, is visible as a mismatch.
       const projects = record.projects ?? [];
       if (projects.length > 0) {
+        const source = readFileSync(
+          resolve(`docs/architectures/${record.id}.md`),
+          'utf8',
+        );
+        const linked = (source.match(/<CNCFProjectCard\b[^>]*\bhref=/g) ?? [])
+          .length;
         await expect(
           page.locator('article a[href*="cncf.io/projects/"]'),
-        ).toHaveCount(projects.length);
+        ).toHaveCount(linked);
+        await expect(page.locator('article a:not([href])')).toHaveCount(
+          projects.length - linked,
+        );
       }
 
       // Diagrams are lazily loaded, so an image below the fold reports

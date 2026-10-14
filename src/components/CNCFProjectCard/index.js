@@ -22,9 +22,11 @@ export default function CNCFProjectCard({
           )}
         </span>
         <span className={styles.name}>{name}</span>
-        <span className={styles.arrow} aria-hidden="true">
-          ↗
-        </span>
+        {href && (
+          <span className={styles.arrow} aria-hidden="true">
+            ↗
+          </span>
+        )}
       </div>
       {(since || version) && (
         <div className={styles.meta}>

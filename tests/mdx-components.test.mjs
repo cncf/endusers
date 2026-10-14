@@ -163,9 +163,10 @@ test('every CNCFProjectCard usage supplies the props the component dereferences'
   assert.ok(usages.length > 0, 'no <CNCFProjectCard> usage found');
   const incomplete = [];
   for (const usage of usages) {
-    // name is dereferenced unconditionally (name.slice) and href is the card's
-    // only navigation target, so neither has a usable default.
-    for (const required of ['name', 'href']) {
+    // name is dereferenced unconditionally (name.slice), so it has no usable
+    // default. href is optional: a project with no cncf.io page renders a
+    // linkless card rather than a guessed URL that 404s (#1448).
+    for (const required of ['name']) {
       if (!usage.props.has(required)) {
         incomplete.push(`${usage.file}: missing ${required}`);
       }
