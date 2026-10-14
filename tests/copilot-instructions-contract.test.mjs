@@ -1,14 +1,12 @@
 // Guards .github/copilot-instructions.md, which no other test reads.
 //
-// Nothing else in the repository looks at it. `_list:check:md` (package.json)
-// builds its file list with `-not -path '*/.?*'`, so neither
-// `npm run check:links` nor `npm run check:markdown` descends into .github/;
-// `npm run check:spelling` reads `docs` and root-level `*.md` only. Its two
-// siblings under .github/ already carry their own guards for exactly that
-// reason -- .github/dependabot.yml in tests/dependabot-contract.test.mjs, and
-// the issue forms plus .github/PULL_REQUEST_TEMPLATE.md in
-// tests/issue-template-contract.test.mjs, which records the dot-directory
-// exclusion in its own comments.
+// The markdown gates (`npm run check:markdown`, `check:links`,
+// `check:spelling`) now read .github/*.md too, but they check style, link
+// liveness and spelling -- not whether the names the document cites still
+// exist. Its two siblings under .github/ carry guards of the same kind:
+// .github/dependabot.yml in tests/dependabot-contract.test.mjs, and the issue
+// forms plus .github/PULL_REQUEST_TEMPLATE.md in
+// tests/issue-template-contract.test.mjs.
 //
 // The file is worth guarding because it is not prose about intent: it names
 // package.json scripts, committed datasets, and a collector script by path,
