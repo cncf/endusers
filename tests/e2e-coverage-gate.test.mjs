@@ -41,20 +41,59 @@ const COVERAGE_JOB = 'e2e-coverage';
 // toolbar arms (#1079), and 97.26% (639/657) when it was ratcheted to 96 and
 // the per-file floor was added (#1232).
 //
-// Ceiling, as of that 97.26% run: 18 regions at zero. Thirteen are defensive
-// fallbacks of the #1253 class. The other five -- ReferenceArchitectures:13
-// and :34, PeopleFreshness:13, GroupLinkStatus:33 (x2) -- are guard arms that
-// a sibling fixture build (data-no-revision, data-variant) demonstrably
-// executes, yet the union never credits (#1256, #1236): the build that takes
-// the arm records no deviation at the arm's own span, and
-// isContradictedRegion only admits witnesses from the script that produced
-// the zero. That restriction is deliberate (#1066: a different bundle maps
-// the same skipped arm to a different span), so the five are a documented
-// reporting residual, not a coverage gap. Do not set --check-source-regions
-// above 97 or --check-source-file-regions above 66 (PeopleFreshness, 2/3,
-// whose one zero is in that residual) without first changing the union. The
-// aggregate stops at 96 rather than 97 because 97 would leave one region
-// between the floor and the ceiling.
+// Ceiling, measured on the current tree (651/671, 97.02%): 20 regions at
+// zero. Eleven are defensive fallbacks of the #1253 class:
+// src/components/CaseStudies/index.js:47,
+// src/components/CommunityPeople/index.js:134,
+// src/components/GroupLinkStatus/index.js:14,
+// src/components/MemberDirectory/DirectoryFreshness.js:19,
+// src/components/MemberDirectory/DirectoryFreshness.js:30,
+// src/components/MemberDirectory/DirectoryFreshness.js:44,
+// src/components/MemberDirectory/DirectoryFreshness.js:49,
+// src/components/MetricsDashboard/index.js:65,
+// src/components/MetricsDashboard/index.js:85,
+// src/components/RadarReports/index.js:7 and
+// src/components/hooks/useFocusTrap.js:35. Five are guard arms that a
+// sibling fixture build (data-no-revision, data-variant) demonstrably
+// executes, yet the union never credits (#1256, #1236):
+// src/components/ReferenceArchitectures/index.js:14,
+// src/components/ReferenceArchitectures/index.js:35,
+// src/components/PeopleFreshness/index.js:13 and
+// src/components/GroupLinkStatus/index.js:24 (x2). The build that takes the
+// arm records no deviation at the arm's own span, and isContradictedRegion
+// only admits witnesses from the script that produced the zero. That
+// restriction is deliberate (#1066: a different bundle maps the same skipped
+// arm to a different span), so the five are a documented reporting residual,
+// not a coverage gap. Every citation above is path-qualified so
+// tests/source-line-citations.test.mjs can see it; the previous revision of
+// this note cited bare `GroupLinkStatus:33`-style lines, which that guard
+// deliberately cannot resolve, and #1439 moved every one of them with
+// nothing going red.
+//
+// The remaining four zeros are:
+//
+//   src/components/shared/MirrorSyncStatus.js:20 -- the same residual
+//     class. #1439 folded CaseStudies' and RadarReports' separate
+//     !generatedAt guards into this shared one, which is why the fallback
+//     count above is eleven where this note used to say thirteen: two zeros
+//     (CaseStudies' and RadarReports' own guards) became one.
+//   src/components/shared/MirrorSyncStatus.js:22 -- NOT a residual. The
+//     !syncDate arm is reachable only with a generatedAt that is truthy and
+//     unparseable, and no fixture build produces that shape (both overlays
+//     set the field to null, which returns at
+//     src/components/shared/MirrorSyncStatus.js:20 first). Unit-covered by
+//     tests/case-studies-sync-status.test.mjs, browser-uncovered.
+//   src/lib/profile-links.mjs:68 (x2) -- undiagnosed. Both arms of
+//     websiteUrl()'s closing return went to zero when #1414/#1420 rewrote it
+//     onto isSafeUrl(); whether that is lost browser coverage or another
+//     attribution artifact is tracked in #1469, and this entry is the open
+//     question that issue resolves one way or the other.
+//
+// Do not set --check-source-regions above 96 or
+// --check-source-file-regions above 66 (PeopleFreshness, 2/3, whose one zero
+// is in that residual) without first changing the union. The aggregate stops
+// at 96 rather than 97 because 97 would demand 651 of 671 exactly -- a gate
+// with no slack at all.
 //
 // The per-file floor is the unit lane's --check-source-file-regions argument
 // one level down: the aggregate lets roughly one region in twenty-five go
