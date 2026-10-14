@@ -1,5 +1,5 @@
 {
-  "description": "Adds one archived group so GroupLinkStatus renders its drift warning. Both real groups are archived:false / reachable:true, so the warning arm (src/components/GroupLinkStatus/index.js lines 30-39) is unreachable from the checked-in data.",
+  "description": "Adds one archived group so GroupLinkStatus renders its drift warning. Both real groups are archived:false / reachable:true, so the warning arm (src/components/GroupLinkStatus/index.js lines 20-27) is unreachable from the checked-in data.",
   "append": {
     "groups": [
       {

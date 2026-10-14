@@ -4,10 +4,10 @@
 // DirectoryFreshness renders one sentence per scheduled data file, each behind
 // its own formatDate() result (src/components/MemberDirectory/DirectoryFreshness.js
 // lines 16-18). formatDate() returns null for anything Date cannot parse
-// (src/components/shared/formatDate.js line 12), and three regions of that
+// (src/components/shared/formatDate.js line 13), and three regions of that
 // code only run when one of the three results is null:
 //
-//   * formatDate.js line 12 -- the Number.isNaN guard itself;
+//   * formatDate.js line 13 -- the Number.isNaN guard itself;
 //   * DirectoryFreshness line 19 -- `!landscapeDate && !architecturesDate &&
 //     !awardsDate`, whose second and third operands are never evaluated while
 //     the first date is truthy;
@@ -56,7 +56,7 @@ const variantAwards = loadSiteData('awards.json', VARIANT_ENV);
 // formatDate()'s own test: `null` is not unparseable. `new Date(null)` is the
 // Unix epoch, not an Invalid Date, so Number.isNaN(getTime()) is false and the
 // sentence renders with an epoch date rather than being dropped
-// (src/components/shared/formatDate.js lines 10-18).
+// (src/components/shared/formatDate.js lines 11-19).
 const formatsToADate = (value) => !Number.isNaN(new Date(value).getTime());
 
 const MEMBERSHIP_SENTENCE = /Directory membership data last synced from/;

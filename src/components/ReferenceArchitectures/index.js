@@ -6,6 +6,7 @@ import metrics from '@site/data/metrics.json';
 import ArchitectureFilters, {
   useArchitectureFilters,
 } from '@site/src/components/ArchitectureFilters';
+import { initials } from '../shared/initials';
 import styles from './styles.module.css';
 
 function SyncStatus() {
@@ -34,15 +35,6 @@ function SyncStatus() {
       {syncDate ? ` on ${syncDate}` : ''}.
     </p>
   );
-}
-
-function initials(name) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
 }
 
 function ArchitectureCard({ architecture }) {

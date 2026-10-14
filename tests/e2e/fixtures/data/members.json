@@ -1,5 +1,5 @@
 {
-  "description": "Adds one organization holding both roles so MemberCard renders membershipLabel('member-and-contributor') (src/components/MemberDirectory/utils.js line 31). The status is valid per MEMBERSHIP_STATUSES in scripts/validate-members.mjs, but no real member has it: the live split is member / contributor / unknown only.",
+  "description": "Adds one organization holding both roles so MemberCard renders membershipLabel('member-and-contributor') (src/components/MemberDirectory/utils.js line 15). The status is valid per MEMBERSHIP_STATUSES in scripts/validate-members.mjs, but no real member has it: the live split is member / contributor / unknown only.",
   "append": {
     "members": [
       {
