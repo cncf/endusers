@@ -49,10 +49,16 @@ Two consequences matter when a submission is rejected:
 
 ### Residual risks and compensating controls
 
-- The site's Content-Security-Policy is delivered as a `<meta>` tag, which
-  browsers do not apply to a file opened directly (for example a `.svg` URL).
-  The parser-based gates above are therefore the primary control, and the CSP is
-  defense in depth.
+- The site's fetch directives (`img-src`, `script-src` and the rest) are
+  delivered as a `<meta>` tag, which browsers do not apply to a file opened
+  directly (for example a `.svg` URL). The parser-based gates above are
+  therefore the primary control, and the CSP is defense in depth. The controls
+  that need a real response header -- `frame-ancestors` with `X-Frame-Options`
+  against clickjacking, `X-Content-Type-Options: nosniff`, and `Referrer-Policy`
+  for non-HTML responses -- are sent by the `[[headers]]` block in
+  `netlify.toml` and pinned by `tests/netlify-publish-contract.test.mjs`; the
+  fetch directives are kept out of that block so the policy has one source of
+  truth.
 - A parser can still disagree with a browser on exotic input. The gates fail
   closed on anything the parser rejects, and every historical bypass is kept as
   a regression fixture in `tests/svg-active-content.test.mjs` and
