@@ -28,15 +28,15 @@ const GATE_SCRIPT = 'test:unit:coverage:check';
 
 // Measured on the suite this commit ships, floored to a whole percent so a
 // rounding difference between runs cannot fail the build:
-//   all files    99.65% lines / 96.14% regions  (58948/59153 lines, 9515/9897 regions)
-//   src files   100.00% lines / 100.00% regions (9233/9233 lines, 2777/2777 regions)
+//   all files    99.67% lines / 96.14% regions  (65688/65903 lines, 10511/10933 regions)
+//   src files   100.00% lines / 100.00% regions (9650/9650 lines, 2792/2792 regions)
 //
-// Both figures were taken twice, on node v22.21.1 -- the major ci.yml pins --
+// Both figures were taken twice, on node v22.23.3 -- the major ci.yml pins --
 // and on node v26.10.0, and the two runs agree to the region. Region counts
 // are a V8 artifact, so a floor set at exactly 100 is only safe once it has
 // been shown not to move with the runtime; these did not.
 //
-// `--check` sits under its next whole percent (99.65) and `--check-source` is
+// `--check` sits under its next whole percent (99.67) and `--check-source` is
 // already at 100, so flooring leaves both where they are. The three region
 // floors below have all cleared a whole percent since they were last set.
 const FLOORS = {
@@ -62,18 +62,21 @@ const FLOORS = {
   // entered none of the ratios above, which are all built from
   // isSourceFile(). These are the same three shapes over its own row.
   // Measured on the suite this commit ships: harness files 100.00% lines /
-  // 99.63% regions (5352/5352 lines, 1870/1877 regions), now that #1294 has
+  // 99.64% regions (5717/5717 lines, 1947/1954 regions), now that #1294 has
   // brought tests/helpers*.mjs into the row and tests/helpers-script-sandbox.mjs
   // has been lifted to 100.00%. The lowest harness file is now
   // tests/tools/e2e-coverage-report.mjs at 98.57%, floored to 98, and every
   // other harness file is at 100.00%.
   //
-  // 98.57% is e2e-coverage-report.mjs's ceiling, not a backlog: its 6
-  // uncovered regions are the defensive fallbacks the note at the top of the
-  // file lists as unreachable (#1253; three more were deleted rather than
-  // listed in #1304), so no test can lift it. The per-file floor must stay at
-  // or below 98 until that list shrinks; a probe that lands one of them should
-  // raise the floor and shorten the list in the same change.
+  // 98.57% is e2e-coverage-report.mjs's ceiling, not a backlog: its uncovered
+  // regions are the defensive fallbacks the note at the top of the file lists
+  // as unreachable (#1253; three more were deleted rather than listed in
+  // #1304), so no test can lift it. The per-file floor must stay at or below
+  // 98 until that list shrinks; a probe that lands one of them should raise
+  // the floor and shorten the list in the same change. That relationship is
+  // asserted below against the note itself rather than left to this prose,
+  // which had already drifted from it: this comment said "6 uncovered
+  // regions" where the note said 7.
   //
   // Both harness floors moved up with this commit. They were previously held
   // at 97 by tests/helpers-script-sandbox.mjs, whose single uncovered region
@@ -97,6 +100,66 @@ function parseGate(command) {
   }
   return flags;
 }
+
+// The `--check-harness-file-regions` floor is the only one in this file that
+// is not set by the suite's measurement but by another file's *claim*: the
+// residual note at the top of tests/tools/e2e-coverage-report.mjs enumerates
+// the fallbacks no probe could close, totals them, and states the percentage
+// they cap that file at. The comment above read that total back by hand and
+// went stale -- it said 6 while the note said 7 -- which is the same
+// drift-by-omission tests/docs-threshold-parity.test.mjs closes between the
+// gate and the contributor docs. Reading it instead of restating it is what
+// keeps the two in step.
+// Matched across the comment's own line wrapping: the note is prose in a `//`
+// block, so any word boundary in it may carry a newline and a `// ` prefix.
+const RESIDUAL_NOTE = new RegExp(
+  [
+    'Together',
+    'they',
+    'are',
+    '(\\d+)',
+    'regions,',
+    'which',
+    'caps',
+    'this',
+    'file',
+    'at',
+    '(\\d+(?:\\.\\d+)?)%',
+    'regions',
+  ].join('(?:\\s*\\n\\s*//)?\\s+'),
+  'u',
+);
+const RESIDUAL_FILE = 'tests/tools/e2e-coverage-report.mjs';
+
+function residualCeiling() {
+  const source = readFileSync(`${repoRoot}${RESIDUAL_FILE}`, 'utf8');
+  const match = RESIDUAL_NOTE.exec(source);
+  assert.ok(
+    match,
+    `${RESIDUAL_FILE} must keep its residual note in the form "Together they are ` +
+      'N regions, which caps this file at P% regions"; the --check-harness-file-regions ' +
+      'floor below is argued from that sentence, so a rewrite that drops it leaves the ' +
+      'floor with nothing behind it',
+  );
+  return { regions: Number(match[1]), ceiling: Number(match[2]) };
+}
+
+test(`${RESIDUAL_FILE} still caps the harness per-file floor where this file says`, () => {
+  const { regions, ceiling } = residualCeiling();
+  assert.ok(
+    regions > 0,
+    `${RESIDUAL_FILE} now lists no residual regions, so it is no longer the lowest ` +
+      'harness file; re-measure the harness row and raise --check-harness-file-regions',
+  );
+  const floor = FLOORS['--check-harness-file-regions'];
+  assert.ok(
+    floor <= Math.floor(ceiling),
+    `--check-harness-file-regions is floored at ${floor}, above the ${ceiling}% ceiling ` +
+      `${RESIDUAL_FILE} documents for its ${regions} unreachable regions; the gate can ` +
+      'only be raised past that by closing one of them and shortening the note in the ' +
+      'same change',
+  );
+});
 
 const gateCommand = manifest.scripts?.[GATE_SCRIPT];
 
