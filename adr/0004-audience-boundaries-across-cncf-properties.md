@@ -55,8 +55,8 @@ Consequences for this repository:
 
 ## Out of scope
 
-- The DNS cutover to endusers.cncf.io (tracked separately in issue #46 and ADR
-  0001).
+- The DNS cutover to endusers.cncf.io (tracked in the open issue #1433; see also
+  ADR 0001 and the closed ownership issue #46).
 - Implementing the outbound links identified above and filing the matching
   inbound-link requests against contribute.cncf.io / cncf.io — issue #1407's
   remaining two deliverables, left for separate follow-up work once this

@@ -9,9 +9,15 @@ needs a maintainer with access to those repositories; this repository's agents
 cannot file them. Target pages are suggestions, to be confirmed against each
 site's current structure before filing.
 
-Tracking issue: [#1434](https://github.com/cncf/endusers/issues/1434). When a
-request is filed, record its link in the Status column and tick the ROADMAP.md
-cross-linking item once all are filed.
+Do not file these requests until the DNS cutover to `endusers.cncf.io` has
+completed ([#1433](https://github.com/cncf/endusers/issues/1433)): the domain
+does not resolve yet — the site deploys to GitHub Pages in the interim — so a
+request filed today would ask for links to a non-resolving URL.
+
+Origin issue: [#1434](https://github.com/cncf/endusers/issues/1434) (closed once
+these drafts shipped). Live status is the Status column below: when a request is
+filed, record its link there and tick the ROADMAP.md cross-linking item once all
+are filed.
 
 | #   | Target property    | Suggested page                                | Requested link and anchor text                                                                   | Why (ADR 0004)                                                    | Status |
 | --- | ------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------ |
