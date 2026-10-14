@@ -13,8 +13,9 @@
 // tests/e2e/interactions.spec.js, but that spec drives the MemberDirectory's
 // MemberProfile dialog on /community/members — a different component. The CI
 // e2e coverage report therefore showed src/components/CommunityPeople/index.js
-// at 33.80% line coverage, with PersonDialog (lines 7-92) and the
-// `open && <PersonDialog .../>` arm of PersonCard (lines 123-130) never
+// at 33.80% line coverage, with PersonDialog (declared at
+// src/components/CommunityPeople/index.js:7) and the `open && <PersonDialog .../>` arm of PersonCard
+// (src/components/CommunityPeople/index.js:122-128) never
 // executed in a browser at all.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

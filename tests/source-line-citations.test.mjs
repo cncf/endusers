@@ -33,6 +33,17 @@
 // This cannot pin *meaning* -- a citation that lands on the wrong statement
 // still reads as code -- so it is a floor, not a proof. It catches the drift
 // that a refactor causes mechanically, which is the drift that happens.
+//
+// It also cannot pin what it cannot parse. The e2e lane wrote a second
+// spelling for years -- a bare `line 13` or `at lines 32-33` with the file
+// named a sentence earlier -- and CITATION deliberately does not match it.
+// That left six stale citations across four fixtures and specs with every
+// check green (#1439 moved ReferenceArchitectures' guard from 13 to 14 and
+// folded CaseStudies' and RadarReports' SyncStatus into the shared
+// MirrorSyncStatus; #1414/#1420 rewrote websiteUrl() onto isSafeUrl()). So the
+// second check below refuses the bare spelling under tests/e2e/, where a
+// `line N` is always a claim about src/** or scripts/**: every such mention
+// has to carry its path, which is what puts it under the first check.
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -52,6 +63,24 @@ const CITED_ROOTS = ['src/', 'scripts/'];
 // file, and inventing one would make this guard fail on prose it cannot check.
 const CITATION =
   /((?:src|scripts)\/[A-Za-z0-9._/-]+\.(?:js|mjs|cjs|jsx))(?::(\d+)(?:-(\d+))?|\s+lines?\s+(\d+)(?:-(\d+))?)/g;
+
+// A `line N` / `lines N-M` whose preceding token is not a source filename.
+// Only the token immediately before the word is inspected: "index.js:7" is
+// the colon spelling and never reaches here, and "index.js line 7" is the
+// qualified word spelling, so anything else in that position is a bare cite.
+const LINE_WORD = /\blines?\s+\d+(?:-\d+)?/g;
+const QUALIFIED_BEFORE =
+  /(?:src|scripts)\/[A-Za-z0-9._/-]+\.(?:js|mjs|cjs|jsx)\s*$/;
+
+export function bareLineCitations(text) {
+  const found = [];
+  for (const match of text.matchAll(LINE_WORD)) {
+    if (!QUALIFIED_BEFORE.test(text.slice(0, match.index))) {
+      found.push(match[0]);
+    }
+  }
+  return found;
+}
 
 export function parseCitations(text) {
   const found = [];
@@ -125,6 +154,31 @@ test('every src/ and scripts/ line the test tree cites still carries code', () =
   assert.ok(
     counted >= 20,
     `expected the test tree to cite ${CITED_ROOTS.join(' and ')} lines, found ${counted}`,
+  );
+});
+
+// Scoped to tests/e2e/: elsewhere under tests/, "line 3" is a position in a
+// synthetic source map or ignore file, not a claim about the production tree.
+test('every line the e2e lane cites in prose names its file', () => {
+  const bare = [];
+  for (const file of walk(join(repoRoot, 'tests', 'e2e'))) {
+    const origin = relative(repoRoot, file);
+    for (const mention of bareLineCitations(readFileSync(file, 'utf8'))) {
+      bare.push(`${origin}: "${mention}" names no src/ or scripts/ file`);
+    }
+  }
+  assert.deepEqual(bare, [], `bare line citations:\n${bare.join('\n')}`);
+});
+
+test('a bare line citation is reported, and a qualified one is not', () => {
+  assert.deepEqual(
+    bareLineCitations(
+      'the guard at src/components/X/index.js line 14, ' +
+        'the arm at src/lib/y.mjs lines 2-4, ' +
+        'and the colon form src/lib/y.mjs:9, ' +
+        'but also the fallback at line 76 and the anchors at lines 26-30',
+    ),
+    ['line 76', 'lines 26-30'],
   );
 });
 

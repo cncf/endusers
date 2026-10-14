@@ -16,7 +16,9 @@
 //   44      'cncf/architecture'
 //   45    )}
 //
-// The right-hand arms at lines 30 and 44 are ordinary shapes rather than
+// The right-hand arms at src/components/MemberDirectory/DirectoryFreshness.js:30
+// and src/components/MemberDirectory/DirectoryFreshness.js:44 are ordinary
+// shapes rather than
 // defensive dead code: data/members.json's sources.landscape is copied from
 // the pinned landscape snapshot by scripts/generate-members.mjs, and
 // data/metrics.json's sources.architectures is written by
@@ -32,8 +34,9 @@
 // -- a parseable timestamp -- while its URL is absent, and that pair conflicts
 // with both existing builds:
 //
-//   * the ordinary coverage build is where the anchors at lines 26 and 40 are
-//     measured from, so clearing the URLs there would trade those arms for
+//   * the ordinary coverage build is where the anchors at
+//     src/components/MemberDirectory/DirectoryFreshness.js:26 and
+//     src/components/MemberDirectory/DirectoryFreshness.js:40 are measured from, so clearing the URLs there would trade those arms for
 //     these rather than add a case;
 //   * tests/e2e/fixtures/data-variant/ makes sources.landscape.collectedAt
 //     unparseable and clears metrics.generatedAt, so on that page neither

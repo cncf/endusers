@@ -28,7 +28,8 @@
 //
 // Each case therefore presses its indifferent key from the last focusable
 // element rather than from the close button the trap focuses on mount, which is
-// the only position from which the removal of line 33 is observable. Focus is
+// the only position from which the removal of
+// src/components/hooks/useFocusTrap.js:33 is observable. Focus is
 // read back as an index into the same `button, a[href]` list the trap queries,
 // so the assertion is "focus did not move", not "some element is focused".
 // Escape afterwards shows the listener was still attached and still listening,
@@ -122,15 +123,17 @@ test.describe('focus trap ignores keys that are neither Tab nor Escape', () => {
       expect(await focusedIndex(page)).toBe(0);
 
       // One backward Tab wraps to the last focusable -- the only position from
-      // which a key falling through line 33 would move focus.
+      // which a key falling through src/components/hooks/useFocusTrap.js:33
+      // would move focus.
       await page.keyboard.press('Shift+Tab');
       await expect.poll(() => focusedIndex(page)).toBe(count - 1);
 
       for (const key of INDIFFERENT_KEYS) {
         await page.keyboard.press(key);
         // Still the last focusable: the listener returned without touching
-        // focus. Were line 33 absent, `!shiftKey && activeElement === last`
-        // would hold and focus would be back at index 0.
+        // focus. Were src/components/hooks/useFocusTrap.js:33 absent,
+        // `!shiftKey && activeElement === last` would hold and focus would be
+        // back at index 0.
         expect(await focusedIndex(page)).toBe(count - 1);
         await expect(dialog).toBeVisible();
       }

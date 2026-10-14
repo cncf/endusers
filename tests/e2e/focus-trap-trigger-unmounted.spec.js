@@ -11,13 +11,14 @@
 //
 // Every existing lightbox spec closes the dialog with Escape, the close button
 // or a backdrop click, and in all three the trigger is still mounted, so
-// `triggerRef.current` is truthy and the `previousFocus` operand at line 51 is
-// never evaluated. The e2e coverage report on `main` names line 51 as an
+// `triggerRef.current` is truthy and the `previousFocus` operand at
+// src/components/hooks/useFocusTrap.js:51 is never evaluated. The e2e coverage
+// report on `main` names src/components/hooks/useFocusTrap.js:51 as an
 // uncovered region while the unit suite reports the file at 100% regions.
 //
 // There is a browser path that nulls the ref: both lightboxes are rendered by
-// the card that triggers them (`src/components/MemberDirectory/MemberCard.js`
-// lines 72-78), so filtering that card out of the directory unmounts the
+// the card that triggers them
+// (src/components/MemberDirectory/MemberCard.js:72-78), so filtering that card out of the directory unmounts the
 // trigger and the dialog in the same commit. React detaches refs during the
 // mutation phase and runs passive-effect cleanups afterwards, so the cleanup
 // above observes `triggerRef.current === null` and falls through to
@@ -33,7 +34,8 @@
 //     throws a TypeError in the middle of the commit, which React escalates
 //     into an unmount of the surrounding tree. The page is left broken while
 //     the visitor is mid-keystroke.
-//   * The throw also happens *before* line 49 would have run on a reordered
+//   * The throw also happens *before* src/components/hooks/useFocusTrap.js:49
+//     would have run on a reordered
 //     cleanup, which is the body scroll lock. A visitor left with
 //     `body { overflow: hidden }` and no dialog cannot scroll the page at all.
 //
@@ -101,7 +103,8 @@ test('closing a member profile by filtering its card away leaves the page usable
 
   // Real key events, so React's onChange drives the filter exactly as it does
   // for a visitor. The trap's listener ignores keys that are neither Tab nor
-  // Escape (line 33), so the typing itself cannot close the dialog.
+  // Escape (src/components/hooks/useFocusTrap.js:33), so the typing itself
+  // cannot close the dialog.
   await page.keyboard.type(NO_MATCH_QUERY);
 
   // The card carrying the dialog is filtered out, so the dialog unmounts with

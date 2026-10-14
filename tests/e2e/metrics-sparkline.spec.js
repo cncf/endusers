@@ -29,7 +29,7 @@
 // Keeping it out of the variant build is what lets
 // tests/e2e/metrics-empty-collections-variant.spec.js clear
 // `referenceArchitectureLifecycle.trends` there for the `|| {}` fallback at
-// line 76, which no build could reach while the append had to stay.
+// src/components/MetricsDashboard/index.js:76, which no build could reach while the append had to stay.
 //
 // All three arms are asserted together rather than the single-point one alone.
 // An assertion that one sparkline centres its point passes just as well when
