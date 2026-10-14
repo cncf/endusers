@@ -22,7 +22,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse, stringify } from 'yaml';
@@ -43,7 +43,7 @@ const COVERAGE_JOB = 'e2e-coverage';
 //
 // Ceiling, as of that 97.26% run: 18 regions at zero. Thirteen are defensive
 // fallbacks of the #1253 class. The other five -- ReferenceArchitectures:13
-// and :34, PeopleFreshness:22, GroupLinkStatus:33 (x2) -- are guard arms that
+// and :34, PeopleFreshness:13, GroupLinkStatus:33 (x2) -- are guard arms that
 // a sibling fixture build (data-no-revision, data-variant) demonstrably
 // executes, yet the union never credits (#1256, #1236): the build that takes
 // the arm records no deviation at the arm's own span, and
@@ -71,30 +71,32 @@ const FLOORS = {
 //
 // Unlike the unit lane's line counts, the e2e *region* counts are a V8
 // artifact that moves with the runtime, and the e2e lane never recorded which
-// runtime its floors came from. The same commit, the same 344-test suite and
+// runtime its floors came from. The same commit, the same suite (the 40 spec
+// files MEASURED_AT_SPEC_COUNT records, 356 tests under E2E_COVERAGE=1) and
 // the same two fixture builds measure differently on the major ci.yml pins
 // and on a newer one:
 //
-//   file                                      node 22.23.3   node 26.10.0
+//   file                                      node 22.21.1   node 26.10.0
 //   src/components/MemberDirectory/
-//     DirectoryFreshness.js                     11/15 73.33%  9/10 90.00%
-//   src/components/PeopleFreshness/index.js     2/3  66.67%    3/4 75.00%
+//     DirectoryFreshness.js                     11/15 73.33% 11/12 91.67%
+//   src/components/PeopleFreshness/index.js     2/3  66.67%    2/3  66.67%
 //   src/components/CNCFProjectCard/index.js   26/26 100.00%  26/26 100.00%
-//   src files (aggregate)                    645/663 97.29% 647/662 97.73%
+//   src files (aggregate)                    651/671 97.02% 650/667 97.45%
 //
 // The recorded column is patch-sensitive, not just major-sensitive: ci.yml pins
 // `node-version: 22`, so the job resolves the newest 22.x on the day of the
-// run (the same sources measured 9/13 and 649/667 on 22.21.1). MEASURED_ON_NODE_MAJOR cannot detect that, so a
-// same-major difference from this table is runtime drift, not a code change.
+// run. MEASURED_ON_NODE_MAJOR cannot detect that, so a same-major difference
+// from this table is runtime drift, not a code change.
 //
 // The covered counts barely move; the *denominator* does, because V8 splits
 // the same expression into a different number of ranges. So the lane's
-// headroom is a property of the runtime: on node 22 the per-file floor of 66
-// is held by PeopleFreshness at 66.67% with two thirds of a point to spare,
-// while the same suite on node 26 reports 75.00% for that file and 90.00%
-// for DirectoryFreshness. A contributor who follows CONTRIBUTING.md's local
-// recipe on a newer Node reads the second column, concludes the floors have
-// 9 points of slack, ratchets them, and turns the required job red.
+// headroom is a property of the runtime: on node 22 the aggregate is 651/671,
+// which is the 97.02% that leaves --check-source-regions 96 its only workable
+// value -- 97 would demand 651 of 671 exactly, a gate with no slack at all.
+// The same suite on node 26 reports 97.45%, which reads like three regions of
+// room. A contributor who follows CONTRIBUTING.md's local recipe on a newer
+// Node reads the second column, concludes the aggregate floor can be
+// ratcheted, and turns the required job red on the next denominator wobble.
 //
 // That makes the pinned major part of the floors' meaning, and this constant
 // is what says so. `tests/dev-environment.test.mjs` already proves every
@@ -107,6 +109,30 @@ const FLOORS = {
 // When the job's Node major is bumped: re-measure, update the table above and
 // the floors if they moved, and set this constant in the same change.
 const MEASURED_ON_NODE_MAJOR = '22';
+
+// The number of tests/e2e/*.spec.js files the table above was measured against.
+//
+// MEASURED_ON_NODE_MAJOR covers one of the two inputs that move those numbers.
+// The other is the suite itself: every region in the table is credited by some
+// spec executing it, so adding or deleting a spec re-measures the lane whether
+// or not anyone re-runs the recipe. Nothing noticed that. The table this
+// constant was introduced alongside still described a 344-test suite after the
+// suite had grown to 356, and so reported a node-22 aggregate of 645/663
+// against an actual 651/671 -- stale in the direction that matters, because a
+// contributor re-deriving the lane's headroom from it is reading numbers no
+// run produces any more.
+//
+// A spec count is the cheapest hermetic proxy for that: it needs no browser,
+// no build and no coverage run, and it moves exactly when the suite does.
+// It is deliberately a proxy and not a test count -- enumerating tests means
+// running Playwright's loader, which this file cannot do. Editing a spec's
+// body without adding a file slips past it; adding or removing one does not.
+//
+// When this goes red the suite has changed shape since the table was written.
+// Re-measure with the recipe in CONTRIBUTING.md on Node MEASURED_ON_NODE_MAJOR,
+// update the table and any floor that moved, and set this constant in the same
+// change.
+const MEASURED_AT_SPEC_COUNT = 40;
 
 // Present-or-absent guarantees, which carry no percentage. --require-source-files
 // is the second, different guarantee the reporter documents: the percentage is a
@@ -265,6 +291,52 @@ function checkRuntime(text) {
 
 test(`the ${COVERAGE_JOB} job still runs on the Node major the floors were measured on`, () => {
   checkRuntime(workflowText);
+});
+
+/**
+ * Asserts the suite the table above was measured against is the suite on disk.
+ *
+ * Takes the spec list as an argument rather than reading the directory itself
+ * so the fixture below can drive it with a count the repository does not have:
+ * a guard nobody has seen go red is indistinguishable from one that always
+ * passes.
+ *
+ * @param {string[]} specs tests/e2e spec file names
+ */
+function checkSuiteShape(specs) {
+  assert.equal(
+    specs.length,
+    MEASURED_AT_SPEC_COUNT,
+    `tests/e2e now holds ${specs.length} spec files, but the measurement table in ` +
+      `this file was taken against ${MEASURED_AT_SPEC_COUNT}. Every region count it ` +
+      'records is credited by some spec running, so the suite changing shape ' +
+      're-measures the lane: re-run the recipe in CONTRIBUTING.md on Node ' +
+      `${MEASURED_ON_NODE_MAJOR}, update the table and any floor that moved, and set ` +
+      'MEASURED_AT_SPEC_COUNT in the same change',
+  );
+}
+
+const e2eSpecs = readdirSync(join(repoRoot, 'tests', 'e2e')).filter((name) =>
+  name.endsWith('.spec.js'),
+);
+
+test('the measurement table still describes the suite on disk', () => {
+  assert.ok(
+    e2eSpecs.length > 0,
+    'no tests/e2e spec files found; the suite-shape guard is asserting nothing',
+  );
+  checkSuiteShape(e2eSpecs);
+});
+
+test('the suite-shape guard fails when a spec is added or removed', () => {
+  assert.throws(
+    () => checkSuiteShape([...e2eSpecs, 'invented.spec.js']),
+    /measurement table in this file was taken against/,
+  );
+  assert.throws(
+    () => checkSuiteShape(e2eSpecs.slice(1)),
+    /measurement table in this file was taken against/,
+  );
 });
 
 // The fixtures below are the proof that the assertions above can fail. Each is
