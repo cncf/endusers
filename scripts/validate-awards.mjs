@@ -5,6 +5,7 @@ import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   CNCF_HOST_SUFFIXES,
+  checkNonEmptyArray,
   checkUrl,
   reportAndExit,
 } from './lib/validate-utils.mjs';
@@ -55,12 +56,7 @@ else
   checkUrl(errors, 'awards.json', 'verifiedAgainst', data.verifiedAgainst, {
     allowedHostSuffixes: CNCF_HOST_SUFFIXES,
   });
-if (!Array.isArray(data.awards) || !data.awards.length)
-  errors.push({
-    path: 'awards.json',
-    severity: 'error',
-    message: 'awards must be a non-empty array',
-  });
+checkNonEmptyArray(errors, 'awards.json', 'awards', data.awards);
 let lastYear = Infinity;
 for (const entry of Array.isArray(data.awards) ? data.awards : []) {
   const id = `${entry.year}/${entry.slug}`;

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
+  checkNonEmptyArray,
   collectError,
   isSafeUrl,
   reportAndExit,
@@ -41,14 +42,7 @@ if (Number.isNaN(Date.parse(data.checkedAt))) {
   );
 }
 
-if (!Array.isArray(data.groups) || data.groups.length === 0) {
-  collectError(
-    errors,
-    'community-groups.json',
-    'error',
-    'groups must be a non-empty array',
-  );
-}
+checkNonEmptyArray(errors, 'community-groups.json', 'groups', data.groups);
 
 const slugs = new Set();
 for (const group of Array.isArray(data.groups) ? data.groups : []) {

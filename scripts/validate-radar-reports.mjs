@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
+  checkNonEmptyArray,
   publishableCncfUrl,
   reportAndExit,
   CNCF_HOST_SUFFIXES,
@@ -35,12 +36,12 @@ if (!data.sourceUrl || !publishableCncfUrl(data.sourceUrl))
     severity: 'error',
     message: `sourceUrl must be an https URL, with no userinfo, on ${CNCF_HOST_SUFFIXES.join(' or ')}`,
   });
-if (!Array.isArray(data.radarReports) || !data.radarReports.length)
-  errors.push({
-    path: 'radar-reports.json',
-    severity: 'error',
-    message: 'radarReports must be a non-empty array',
-  });
+checkNonEmptyArray(
+  errors,
+  'radar-reports.json',
+  'radarReports',
+  data.radarReports,
+);
 
 const ids = new Set();
 for (const entry of Array.isArray(data.radarReports) ? data.radarReports : []) {

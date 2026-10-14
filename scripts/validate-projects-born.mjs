@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
+  checkNonEmptyArray,
   checkUrl as checkUrlImpl,
   reportAndExit,
 } from './lib/validate-utils.mjs';
@@ -35,13 +36,7 @@ const data = JSON.parse(
 );
 const errors = [];
 
-if (!Array.isArray(data) || !data.length) {
-  errors.push({
-    path: 'projects-born.json',
-    severity: 'error',
-    message: 'projects-born.json must be a non-empty array',
-  });
-}
+checkNonEmptyArray(errors, 'projects-born.json', 'projects-born.json', data);
 
 const names = new Set();
 for (const entry of Array.isArray(data) ? data : []) {

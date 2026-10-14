@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
+  checkNonEmptyArray,
   publishableCncfUrl,
   reportAndExit,
   CNCF_HOST_SUFFIXES,
@@ -34,12 +35,12 @@ if (!data.sourceUrl || !publishableCncfUrl(data.sourceUrl))
     severity: 'error',
     message: `sourceUrl must be an https URL, with no userinfo, on ${CNCF_HOST_SUFFIXES.join(' or ')}`,
   });
-if (!Array.isArray(data.caseStudies) || !data.caseStudies.length)
-  errors.push({
-    path: 'case-studies.json',
-    severity: 'error',
-    message: 'caseStudies must be a non-empty array',
-  });
+checkNonEmptyArray(
+  errors,
+  'case-studies.json',
+  'caseStudies',
+  data.caseStudies,
+);
 
 const ids = new Set();
 const urls = new Set();

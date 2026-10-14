@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+  checkNonEmptyArray,
   checkUrl,
   collectError,
   isSafeUrl,
@@ -534,5 +535,27 @@ test('publishableCncfUrl returns null for non-strings and off-list or spoofed ho
     'http://www.cncf.io/',
   ]) {
     assert.equal(publishableCncfUrl(value), null, String(value));
+  }
+});
+
+test('checkNonEmptyArray accepts a non-empty array and pushes no error', () => {
+  const errors = [];
+  const ok = checkNonEmptyArray(errors, 'data/awards.json', 'awards', [1]);
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+});
+
+test('checkNonEmptyArray reports an empty array, a non-array and a missing value', () => {
+  for (const value of [[], 'not-an-array', undefined, null]) {
+    const errors = [];
+    const ok = checkNonEmptyArray(errors, 'data/awards.json', 'awards', value);
+    assert.equal(ok, false, String(value));
+    assert.deepEqual(errors, [
+      {
+        path: 'data/awards.json',
+        severity: 'error',
+        message: 'awards must be a non-empty array',
+      },
+    ]);
   }
 });
