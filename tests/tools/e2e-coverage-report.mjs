@@ -41,19 +41,13 @@ const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 // expression rather than by line so the note does not go stale when the file
 // moves:
 //
-//   normalizeSourceMap  `map.resolvedSources ?? flattened.sources ?? []` --
-//       two regions on one chain. `AnyMap` always assigns `resolvedSources`
-//       (`sources.map(resolve)` in `@jridgewell/trace-mapping`), so the left
-//       operand is never nullish and neither fallback runs.
 //   splitRangeAtBoundaries  `parts.length === 0 ? [range] : parts` -- the
 //       function returns early when there are no cuts; otherwise the last cut
 //       `c` satisfies `c < range.endOffset` by the filter above it, `start`
 //       equals `c` when the loop ends, so the final `parts.push` always runs
 //       and `parts` is never empty.
-//   collectE2ECoverage  `converted.coverage ?? {}` -- `convertScript` returns
-//       `converter.toIstanbul()` on every path and that never returns nullish;
-//       and `if (lineCoverage.size === 0) continue`, which needs an istanbul
-//       object carrying branches but no statements at all.
+//   collectE2ECoverage  `if (lineCoverage.size === 0) continue`, which needs
+//       an istanbul object carrying branches but no statements at all.
 //   main                `error.message ?? String(error)` and `error.stack ??
 //       error` -- both need `main()` to reject with a non-`Error`, and nothing
 //       in its call graph throws one.
@@ -62,12 +56,20 @@ const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 // were written against each candidate and these are the ones no probe could
 // close. (The `convertScript` guards that used to sit in this list were
 // removed outright once tests/e2e-coverage-attribution.test.mjs pinned the
-// converter shape they defended against, #1304.) Together they are 7 regions,
-// which caps this file at 98.57% regions;
-// tests/coverage-gate-thresholds.test.mjs records that ceiling beside
-// `--check-harness-file-regions` so the floor is never set above it. Raise the
-// floor rather than this list when a probe does land, and extend this list
-// rather than lower the floor when a new fallback proves unreachable.
+// converter shape they defended against, #1304. `normalizeSourceMap`'s
+// `?? flattened.sources ?? []` and `collectE2ECoverage`'s `converted.coverage
+// ?? {}` left the list the same way: tests/e2e-coverage-nullish-guards.test.mjs
+// pins `AnyMap(...).resolvedSources` as always an array and `toIstanbul()` as
+// always an object, so the guards were deleted rather than carried as
+// permanently-dead regions.) Together they are 4 regions, which caps this file
+// at 99.16% regions; tests/coverage-gate-thresholds.test.mjs records that
+// ceiling beside `--check-harness-file-regions` so the floor is never set
+// above it. The denominator behind that percentage is V8's, so it drifts a
+// little with the Node major -- 4/476 was measured on Node 26 while CI pins
+// Node 22 -- which is why the floor sits a whole point below the ceiling
+// rather than against it. Raise the floor rather than this list when a probe
+// does land, and extend this list rather than lower the floor when a new
+// fallback proves unreachable.
 
 class CoverageReportError extends Error {
   constructor(message, { runId = null, runStatus = null } = {}) {
@@ -236,7 +238,17 @@ function splitSourceMapComment(source) {
 async function normalizeSourceMap(rawMap, mapPath, root) {
   const map = new AnyMap(rawMap, pathToFileURL(mapPath).href);
   const flattened = encodedMap(map);
-  const references = map.resolvedSources ?? flattened.sources ?? [];
+  // `AnyMap` always exposes `resolvedSources` as an array -- for an ordinary
+  // map, an index map, a map with no sources at all, and a map whose entries
+  // are null. The `?? flattened.sources ?? []` arms this used to carry could
+  // therefore never run, and the two spellings are not interchangeable: for an
+  // index map `flattened.sources` holds resolved `file://` URLs while a flat
+  // map's holds the raw references, so a fallback that did fire would have
+  // handed the loop below a different shape than the arm above it.
+  // tests/e2e-coverage-nullish-guards.test.mjs pins the premise against the
+  // installed @jridgewell/trace-mapping, the same way
+  // tests/e2e-coverage-attribution.test.mjs pins the converter's.
+  const references = map.resolvedSources;
   const sourcesContent = [];
   const normalizedSources = [];
   const sourceFiles = [];
@@ -795,9 +807,14 @@ export async function collectE2ECoverage(
       for (const sourceFile of converted.sourceFiles) {
         unmapped.add(sourceFile.relative);
       }
-      for (const [path, coverageData] of Object.entries(
-        converted.coverage ?? {},
-      )) {
+      // `convertScript` has two returns and both set `coverage` to
+      // `converter.toIstanbul()`, which v8-to-istanbul builds from its own
+      // `covBranch`/`covLine` maps and returns as an object whether or not
+      // `applyCoverage` ran. The `?? {}` this used to carry was therefore
+      // dead, for the same reason the `?? {}` guards on `converter.branches`
+      // and `converter.functions` were (see `convertScript` above).
+      // tests/e2e-coverage-nullish-guards.test.mjs pins it.
+      for (const [path, coverageData] of Object.entries(converted.coverage)) {
         const relativePath = repoRelative(root, path);
         if (!relativePath?.startsWith('src/')) continue;
         if (
