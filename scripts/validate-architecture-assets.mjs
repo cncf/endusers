@@ -9,6 +9,7 @@ import {
 import { extname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectError, reportAndExit } from './lib/validate-utils.mjs';
+import { MIRRORABLE_ASSET_EXTENSIONS as ALLOWED_ASSET_EXTENSIONS } from './lib/asset-extensions.mjs';
 import {
   findActiveContent,
   findRemoteReferences,
@@ -17,19 +18,6 @@ import {
 } from './lib/svg-active-content.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-
-// Mirrors MIRRORABLE_ASSET_EXTENSIONS in scripts/import-architectures.mjs.
-// static/ is published verbatim at the site origin, so a file the browser
-// executes as markup or script must never be present here.
-const ALLOWED_ASSET_EXTENSIONS = new Set([
-  '.avif',
-  '.gif',
-  '.jpeg',
-  '.jpg',
-  '.png',
-  '.svg',
-  '.webp',
-]);
 
 // static/img additionally serves the legacy favicon.ico. ICO is a raster
 // container that no browser parses as markup or script, so it is safe at the

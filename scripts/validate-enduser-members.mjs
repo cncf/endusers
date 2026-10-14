@@ -10,6 +10,7 @@ import {
   END_USER_SUPPORTER_SUBCATEGORY,
   LANDSCAPE_CATEGORY,
 } from './lib/enduser-landscape.mjs';
+import { MIRRORABLE_ASSET_EXTENSIONS as allowedImageExtensions } from './lib/asset-extensions.mjs';
 
 const staticRoot = fileURLToPath(new URL('../static/', import.meta.url));
 const assetManifestPath = fileURLToPath(
@@ -20,15 +21,6 @@ const snapshot = JSON.parse(
 );
 const errors = [];
 const allowedRoles = new Set(['member', 'contributor', 'supporter']);
-const allowedImageExtensions = new Set([
-  '.avif',
-  '.gif',
-  '.jpeg',
-  '.jpg',
-  '.png',
-  '.svg',
-  '.webp',
-]);
 
 function error(path, message) {
   errors.push({ path, severity: 'error', message });

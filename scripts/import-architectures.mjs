@@ -32,6 +32,7 @@ import {
   splitFrontmatter,
 } from './lib/architecture-content.mjs';
 import { artworkUrls } from './lib/project-assets.mjs';
+import { MIRRORABLE_ASSET_EXTENSIONS } from './lib/asset-extensions.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
@@ -39,20 +40,6 @@ const source = join(upstream, 'content/en/architectures');
 const recordsDir = join(root, 'data/architectures/records');
 const docsDir = join(root, 'docs/architectures');
 const assetsDir = join(root, 'static/img/architectures');
-
-// Only these file types are mirrored into static/, which Docusaurus publishes
-// verbatim at the site origin. Upstream controls these filenames, so anything
-// the browser would execute as markup or script (.html, .xhtml, .js, .svgz)
-// must never be copied: it would run in the site's own origin.
-const MIRRORABLE_ASSET_EXTENSIONS = new Set([
-  '.avif',
-  '.gif',
-  '.jpeg',
-  '.jpg',
-  '.png',
-  '.svg',
-  '.webp',
-]);
 
 try {
   execFileSync(

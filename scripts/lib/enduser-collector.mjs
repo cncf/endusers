@@ -21,16 +21,8 @@ import {
   classifyLandscapeDocument,
   END_USER_SUPPORTER_SUBCATEGORY,
 } from './enduser-landscape.mjs';
+import { MIRRORABLE_ASSET_EXTENSIONS as MIRRORABLE_EXTENSIONS } from './asset-extensions.mjs';
 
-const MIRRORABLE_EXTENSIONS = new Set([
-  '.avif',
-  '.gif',
-  '.jpeg',
-  '.jpg',
-  '.png',
-  '.svg',
-  '.webp',
-]);
 const LOCAL_LOGO_PREFIX = '/img/end-user-members/';
 
 function logoDestination(content, filename) {

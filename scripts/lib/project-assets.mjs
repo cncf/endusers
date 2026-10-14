@@ -8,19 +8,7 @@
  * that cannot be resolved to such a path fails closed and is dropped.
  */
 
-// Mirrors ALLOWED_ASSET_EXTENSIONS in scripts/validate-architecture-assets.mjs.
-// Mirrored artwork is published verbatim from static/, so any extension the
-// browser would execute as markup or script must fail closed here: the URL is
-// never mirrored and the card renders its fallback badge instead.
-const MIRRORABLE_ARTWORK_EXTENSIONS = new Set([
-  '.avif',
-  '.gif',
-  '.jpeg',
-  '.jpg',
-  '.png',
-  '.svg',
-  '.webp',
-]);
+import { MIRRORABLE_ASSET_EXTENSIONS as MIRRORABLE_ARTWORK_EXTENSIONS } from './asset-extensions.mjs';
 
 /**
  * Refs accepted in an artwork URL.
