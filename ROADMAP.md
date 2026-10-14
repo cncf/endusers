@@ -117,8 +117,9 @@ Goal: the project can outlive any single maintainer.
 Goal: endusers.cncf.io becomes the authoritative end-user destination.
 
 - [ ] DNS cutover to endusers.cncf.io (depends on Phase 2 ownership decision;
-      tracked in #1433, blocked on the external DNS record — see #1433 for the
-      three remaining ADR 0001 step-3 actions)
+      tracked in #1433, blocked on the external DNS record — the remaining ADR
+      0001 step-3 action is adding the custom domain to the Netlify site and
+      pointing DNS at it; see ADR 0005)
 - [ ] Cross-linking with contribute.cncf.io and cncf.io (clear audience
       boundaries) (#1407). Audience boundary decided: ADR 0004. Outbound
       signposts shipped (site footer, architecture submission flow, community

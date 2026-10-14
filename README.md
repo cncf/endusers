@@ -59,26 +59,24 @@ npm run docusaurus start -- --host 0.0.0.0 --port 3000 --poll 10000
 
 ## Deployment
 
-The site currently deploys to GitHub Pages at
-[cncf.github.io/endusers](https://cncf.github.io/endusers/). The build process
-is configured with:
+The site deploys on [Netlify](https://www.netlify.com/) from `netlify.toml`,
+which is the only place build settings live. Every push to `main` publishes to
+[endusers.netlify.app](https://endusers.netlify.app/) and every pull request
+gets a deploy preview. The build command, `npm run build:netlify`, runs every
+`validate:*` gate before `build:production`, so a data regression fails the
+deploy instead of publishing.
 
-- `SITE_URL: 'https://cncf.github.io'` (temporary override; see below)
-- `BASE_URL: '/endusers/'` (temporary override; see below)
+The canonical URL is derived from Netlify's `URL` variable (or
+`DEPLOY_PRIME_URL` for previews and branch deploys), so no repository change is
+needed when the custom domain is added: `BASE_URL` stays `/`, and once
+[endusers.cncf.io](https://endusers.cncf.io/) is added as the Netlify custom
+domain and DNS points at Netlify, the site's canonical links follow. Set
+`SITE_URL` explicitly only to override that for a local build.
 
-(These are set in `.github/workflows/deploy-gh-pages.yml` and will be updated
-when a custom domain is active.)
-
-The long-term target is [endusers.cncf.io](https://endusers.cncf.io/), which is
-currently a pending DNS cutover. When that domain is verified and active, the
-workflow will update the configuration to:
-
-- `url: 'https://endusers.cncf.io'`
-- `baseUrl: '/'`
-
-See [ADR 0001](./adr/0001-site-ownership-and-cutover-path.md) and
-[issue #46](https://github.com/cncf/endusers/issues/46) for the ownership and
-cutover plan.
+See [ADR 0005](./adr/0005-host-the-site-on-netlify.md) for the hosting decision,
+and [ADR 0001](./adr/0001-site-ownership-and-cutover-path.md) and
+[issue #1433](https://github.com/cncf/endusers/issues/1433) for the ownership
+and DNS cutover plan.
 
 ## Metrics data
 

@@ -41,8 +41,9 @@ community, events) are taking shape, but its long-term ownership is still
 undecided. The repo currently:
 
 - lives in a personal GitHub account, not a CNCF-owned org
-- deploys to GitHub Pages at castrojo.github.io/endusers, not the
-  endusers.cncf.io domain
+- deploys to a hosting-provider URL (castrojo.github.io/endusers when this
+  draft was written; endusers.netlify.app today), not the endusers.cncf.io
+  domain
 - is otherwise built entirely from authoritative CNCF sources (cncf/tab,
   cncf/architecture, cncf/landscape)
 

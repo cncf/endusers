@@ -627,7 +627,6 @@ test('scans an SVG sitting directly in static/ for active content', () => {
 
 test('accepts the exempted non-asset files in the static/ root', () => {
   const result = runScriptWithFixtures(SCRIPT, {
-    'static/.nojekyll': '',
     'static/manifest.json': '{"name":"site"}',
     'static/robots.txt': 'User-agent: *',
     'static/img/architectures/example/diagram.svg': VALID_SVG,

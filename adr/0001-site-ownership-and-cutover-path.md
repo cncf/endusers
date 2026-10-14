@@ -5,7 +5,9 @@
   GitHub org, which is the fact GitHub's own repository metadata now confirms.
   This ADR is not aware of a separate, minuted CNCF TOC/TAB vote; if one exists,
   link it here. The remaining DNS cutover to `endusers.cncf.io` is still open —
-  see "Consequences" below.
+  see "Consequences" below. Amended 2026-10-14: hosting moved from GitHub Pages
+  to Netlify ([ADR 0005](./0005-host-the-site-on-netlify.md)), which changes
+  what step 3 below involves; the restated step is authoritative.
 - **Date**: 2026-08-08
 - **Tracking issue**: [#46](https://github.com/cncf/endusers/issues/46)
 
@@ -98,9 +100,11 @@ follow-up PR.
    is retained for historical context on the options considered.
 2. Land the prerequisites shared by every option regardless of outcome: LICENSE
    (done: #32 / PR #40) and a governance/MAINTAINERS note (#47).
-3. Execute the DNS cutover to `endusers.cncf.io` (add `static/CNAME`, verify the
-   custom domain in GitHub Pages settings, and switch the deploy workflow's
-   `SITE_URL`/`BASE_URL`), then update `ROADMAP.md` Phase 3 accordingly.
+3. Execute the DNS cutover to `endusers.cncf.io`: add it as the custom domain on
+   the Netlify site and point DNS at Netlify. The canonical URL follows
+   Netlify's `URL` variable, so no `static/CNAME` or workflow `SITE_URL`/
+   `BASE_URL` change is involved (see ADR 0005). Then update `ROADMAP.md` Phase
+   3 accordingly.
 
 ## Consequences
 

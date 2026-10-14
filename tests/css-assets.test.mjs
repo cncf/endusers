@@ -27,7 +27,7 @@ test('the scan finds url() references in custom.css to check', () => {
 });
 
 test('every url() reference in custom.css resolves to a real file under static/, case-exactly', () => {
-  // GitHub Pages serves from a case-sensitive filesystem; a reference whose
+  // Production serves from a case-sensitive filesystem; a reference whose
   // case differs from the file on disk resolves on a case-insensitive
   // developer machine and 404s in production, so this walks each path
   // segment against readdirSync rather than relying on statSync alone.

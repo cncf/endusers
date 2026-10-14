@@ -15,7 +15,7 @@ still pending) so future contributors understand why, not just what.
 | [0002](./0002-peoplehub-fleet-status.md)                     | peoplehub fleet status — pause agent work                                    | Accepted |
 | [0003](./0003-public-changelog-mechanism.md)                 | Public changelog generated from git history at build time                    | Accepted |
 | [0004](./0004-audience-boundaries-across-cncf-properties.md) | Audience boundaries across endusers.cncf.io, contribute.cncf.io, and cncf.io | Accepted |
-| [0005](./0005-host-the-site-on-netlify.md)                   | Host the site on Netlify instead of GitHub Pages                             | Proposed |
+| [0005](./0005-host-the-site-on-netlify.md)                   | Host the site on Netlify instead of GitHub Pages                             | Accepted |
 
 Supporting material is not part of the numbered ADR sequence and is not assigned
 an ADR number, but is listed here for discoverability:

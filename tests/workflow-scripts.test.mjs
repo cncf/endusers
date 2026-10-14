@@ -404,7 +404,15 @@ test('browser coverage is isolated in a visible gating job with a source floor',
 // record. Every omission is listed here with its reason, so a gate that fell
 // out of a workflow is distinguishable from one that was never meant to be in
 // one.
-const GATES_NOT_RUN_BY_CI = new Map([]);
+const GATES_NOT_RUN_BY_CI = new Map([
+  [
+    'validate:all',
+    'The aggregate the Netlify build runs (netlify.toml -> build:netlify -> ' +
+      'scripts/netlify-build.mjs), not a gate of its own; every validator it ' +
+      'chains is run individually by ci.yml, and ' +
+      'tests/netlify-publish-contract.test.mjs pins that parity.',
+  ],
+]);
 
 function gateScripts() {
   return Object.keys(scripts)

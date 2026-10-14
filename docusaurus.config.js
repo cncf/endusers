@@ -137,7 +137,8 @@ const config = {
 
   // Set the production url of your site here.
   // Override with SITE_URL/BASE_URL for non-production deployments such as
-  // GitHub Pages previews (e.g. SITE_URL=https://cncf.github.io BASE_URL=/endusers/).
+  // subpath previews (e.g. SITE_URL=https://example.github.io BASE_URL=/endusers/).
+  // On Netlify, scripts/netlify-build.mjs derives SITE_URL from the deploy context.
   url: siteUrl,
   baseUrl,
 
@@ -177,8 +178,8 @@ const config = {
         // src/components/CommunityPeople renders as plain `<img src>`, so they
         // fire on page load with no user action. `rel="noreferrer"` is an
         // anchor-only control and cannot reach them; a document policy is the
-        // only mechanism this site has, since GitHub Pages serves static files
-        // and cannot add a `Referrer-Policy` response header.
+        // mechanism this site uses, so the policy travels with the HTML rather
+        // than depending on a hosting-provider response header.
         //
         // This is the disclosure half of the same exposure `img-src` below
         // addresses. `img-src` decides which hosts may be contacted at all;

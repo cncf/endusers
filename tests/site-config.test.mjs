@@ -597,8 +597,9 @@ test('every linked web app manifest is served from this origin', () => {
 //
 // It cannot be replaced by `rel="noreferrer"` on anchors: the requests at
 // issue are `<img src>` subresources that fire on page load, and `rel` has no
-// effect on them. It also cannot be delivered as a response header, because
-// the site is served by GitHub Pages.
+// effect on them. A response header would need host-specific configuration;
+// the meta tag keeps the policy inside the build, so it holds on any static
+// host.
 const REFERRER_POLICIES_WITHOUT_CROSS_ORIGIN_LEAK = new Set([
   'no-referrer',
   'same-origin',
@@ -614,7 +615,7 @@ test('the document sets a Referrer Policy that leaks nothing cross-origin', () =
   const meta = referrerMeta();
   assert.ok(
     meta,
-    'no <meta name="referrer"> head tag: the browser default, strict-origin-when-cross-origin, attaches this site\'s origin to every off-origin request, and GitHub Pages cannot send a Referrer-Policy header instead',
+    'no <meta name="referrer"> head tag: the browser default, strict-origin-when-cross-origin, attaches this site\'s origin to every off-origin request, and the build carries no Referrer-Policy header of its own',
   );
   const policy = meta.attributes.content;
   assert.ok(
@@ -712,9 +713,11 @@ test('every profile image the site ships is admitted by the CSP', () => {
 });
 
 test('the CSP holds under a preview deployment origin', async () => {
+  // Netlify deploy previews are served from a per-deploy host at the root
+  // (scripts/netlify-build.mjs feeds it in as SITE_URL).
   const preview = await loadConfig({
-    SITE_URL: 'https://cncf.github.io',
-    BASE_URL: '/endusers/',
+    SITE_URL: 'https://deploy-preview-1--endusers.netlify.app',
+    BASE_URL: '/',
   });
   const directives = cspDirectives(preview);
   assert.deepEqual(directives.get('object-src'), ["'none'"]);

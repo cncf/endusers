@@ -111,7 +111,7 @@ export function findEmptyAssets(references, staticRoot) {
   return empty;
 }
 
-// GitHub Pages serves from a case-sensitive filesystem. A reference whose case
+// Production serves from a case-sensitive filesystem. A reference whose case
 // differs from the file on disk resolves locally on macOS and 404s in
 // production, so statSync() alone is not enough.
 export function findCaseMismatches(references, staticRoot) {

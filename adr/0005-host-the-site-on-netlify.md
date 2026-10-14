@@ -1,6 +1,6 @@
 # ADR 0005: Host the site on Netlify instead of GitHub Pages
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Date**: 2026-10-14
 - **Tracking issue**: [#1433](https://github.com/cncf/endusers/issues/1433) (DNS
   cutover; this ADR changes what the cutover points at)
