@@ -290,3 +290,16 @@ jobs:
           path: coverage/e2e/
           if-no-files-found: warn
           retention-days: 90
+      - name: Upload Playwright traces
+        # The describeCoverage blocks (E2E_COVERAGE=1) run in this job and
+        # nowhere else, so a flake in one of them cannot be diagnosed from the
+        # gating e2e job's traces (#1412). Same contract as that job's upload:
+        # survives a green run so a pass-on-retry keeps its first attempt, and
+        # stays quiet when no spec failed.
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-traces-coverage
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
