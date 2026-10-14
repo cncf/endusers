@@ -19,6 +19,7 @@
 // ./helpers-component-data.mjs instead.
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
 import React from 'react';
@@ -285,6 +286,31 @@ test('formatDate renders a long en-US date and rejects a bad timestamp', () => {
   // `new Date(null)` is the epoch rather than an invalid date, so an explicit
   // JSON null is formatted rather than rejected. Recorded, not endorsed.
   assert.equal(formatDate(null), 'January 1, 1970');
+});
+
+// The unit gate runs under TZ=UTC, where a local-zone and a UTC rendering
+// agree, so this one has to leave the process. data/radar-reports.json and
+// data/case-studies.json carry date-only `publishedAt` values, which parse as
+// UTC midnight; the site is built once in UTC and hydrated in the visitor's
+// browser, so a local-zone rendering shows September 29 to everyone west of
+// UTC and disagrees with the server-rendered text.
+test('formatDate renders the same calendar day in every zone', () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      "import { formatDate } from './src/components/shared/formatDate.js';" +
+        "process.stdout.write(formatDate('2026-09-30'));",
+    ],
+    {
+      cwd: new URL('..', import.meta.url),
+      env: { ...process.env, TZ: 'America/Los_Angeles' },
+      encoding: 'utf8',
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, 'September 30, 2026');
 });
 
 test('membership labels and filters distinguish every status', () => {

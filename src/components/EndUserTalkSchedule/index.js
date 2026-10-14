@@ -1,16 +1,9 @@
 import React from 'react';
 import schedule from '@site/data/end-user-talks.json';
+import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
 
-const verifiedDate = new Date(schedule.generatedAt).toLocaleDateString(
-  'en-US',
-  {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC',
-  },
-);
+const verifiedDate = formatDate(schedule.generatedAt);
 
 export default function EndUserTalkSchedule() {
   return (

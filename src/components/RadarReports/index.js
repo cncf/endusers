@@ -1,6 +1,7 @@
 import React from 'react';
 import data from '@site/data/radar-reports.json';
 import MirrorSyncStatus from '../shared/MirrorSyncStatus';
+import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
 
 export default function RadarReports() {
@@ -22,13 +23,7 @@ export default function RadarReports() {
               </a>
             </h3>
             {report.publishedAt && (
-              <p className={styles.date}>
-                {new Date(report.publishedAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </p>
+              <p className={styles.date}>{formatDate(report.publishedAt)}</p>
             )}
             <p className={styles.summary}>{report.summary}</p>
           </li>

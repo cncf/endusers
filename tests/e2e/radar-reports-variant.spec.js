@@ -4,11 +4,11 @@
 // The component reads data/radar-reports.json at module scope and branches on
 // two document-level fields:
 //
-//   src/components/RadarReports/index.js:10-11 hands `data.generatedAt` to
+//   src/components/RadarReports/index.js:11-12 hands `data.generatedAt` to
 //     the shared MirrorSyncStatus, whose `if (!generatedAt) return null;` at
 //     src/components/shared/MirrorSyncStatus.js:20 renders no provenance line
 //     when the corpus carries no generatedAt;
-//   src/components/RadarReports/index.js:7
+//   src/components/RadarReports/index.js:8
 //     `const radarReports = data.radarReports || [];` — the `|| []` fallback
 //     supplies the list the page maps over when the corpus carries no
 //     radarReports array at all.
