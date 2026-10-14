@@ -43,7 +43,7 @@ const COVERAGE_JOB = 'e2e-coverage';
 //
 // Ceiling, as of that 97.26% run: 18 regions at zero. Thirteen are defensive
 // fallbacks of the #1253 class. The other five -- ReferenceArchitectures:13
-// and :34, PeopleFreshness:22, GroupLinkStatus:33 (x2) -- are guard arms that
+// and :34, PeopleFreshness:13, GroupLinkStatus:33 (x2) -- are guard arms that
 // a sibling fixture build (data-no-revision, data-variant) demonstrably
 // executes, yet the union never credits (#1256, #1236): the build that takes
 // the arm records no deviation at the arm's own span, and
