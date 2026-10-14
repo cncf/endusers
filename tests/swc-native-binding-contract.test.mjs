@@ -6,7 +6,7 @@
 // when its native binding does not load, ~65 JSX-importing tests fail at once
 // and the "Validate repository" job dies before asserting anything about this
 // repository. The same binding is what builds the site, so the failure reaches
-// `deploy-gh-pages.yml` too.
+// the Netlify deploy build too.
 //
 // That is not hypothetical. Incident #1426 is exactly this failure, and it has
 // taken down main's deploy (run 38420644367) as well as all four ci.yml jobs on

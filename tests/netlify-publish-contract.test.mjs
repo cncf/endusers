@@ -1,7 +1,7 @@
 // Pins the publish contract of netlify.toml (ADR 0005).
 //
 // Netlify builds and publishes the site from main, so netlify.toml is the
-// publish lane the way .github/workflows/deploy-gh-pages.yml was. The same
+// publish lane the way the retired deploy-gh-pages.yml workflow was. The same
 // reasoning applies: automation pull requests are authored by github.token,
 // which never starts ci.yml (#755), so the Netlify build is the only gate
 // their data passes before it publishes. The validator set is asserted as

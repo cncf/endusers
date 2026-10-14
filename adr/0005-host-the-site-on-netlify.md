@@ -217,8 +217,14 @@ counts toward line coverage.
    with `<link rel="canonical">` and `og:url` pointing at itself; a throwaway
    branch with a deliberately invalid data fixture produces a failed deploy
    preview, proving the gate.
-3. **PR 2** deletes `deploy-gh-pages.yml` and its remaining test entries. After
-   it merges, GitHub Pages is disabled via the API and #1433 is updated.
+3. **PR 2** deletes `deploy-gh-pages.yml` and its remaining test entries, and
+   drops the GitHub Pages `SITE_URL`/`BASE_URL` overrides from `ci.yml`'s build
+   step. After it merges, GitHub Pages is disabled via the API and #1433 is
+   updated.
+
+Status: step 1 shipped in #1485; step 2 verified on 2026-10-14 (production
+deploy canonical to `https://endusers.netlify.app/`, gate proven by #1488's
+failed preview); step 3 is this ADR's final change set.
 
 ## Consequences
 

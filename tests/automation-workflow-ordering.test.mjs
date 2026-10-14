@@ -138,8 +138,10 @@ function commitsGeneratedOutput(file) {
   );
 }
 
-// The workflow that publishes the site. Detected by the deploy actions it
-// uses, for the same reason.
+// A workflow that publishes the site through GitHub Pages. Detected by the
+// deploy actions it uses, for the same reason. Since ADR 0005 the site is
+// published by Netlify from netlify.toml, so no workflow matches; the detector
+// stays so a reintroduced Pages deploy is held to the validator gate.
 function publishesSite(file) {
   return actionsUsedBy(file).some(
     (uses) =>
@@ -326,11 +328,8 @@ test('the generator and validator detection is not vacuous', () => {
   assert.equal(validatorFor('generate:members'), 'validate:members');
 });
 
-test('members validation runs before both production builds', () => {
-  for (const [file, jobName] of [
-    ['ci.yml', 'validate'],
-    ['deploy-gh-pages.yml', 'build'],
-  ]) {
+test('members validation runs before the ci.yml production build', () => {
+  for (const [file, jobName] of [['ci.yml', 'validate']]) {
     const targets = orderedTargets(parseWorkflow(file).jobs[jobName]);
     const members = targets.indexOf('validate:members');
     const build = targets.findIndex(
@@ -367,9 +366,7 @@ test('members validation runs before the Netlify build', () => {
 test('the workflows this contract applies to are actually detected', () => {
   // The rules are scoped by what a workflow does, so a detector that silently
   // matched nothing would narrow the contract to the empty set.
-  assert.deepEqual(workflowFiles.filter(publishesSite), [
-    'deploy-gh-pages.yml',
-  ]);
+  assert.deepEqual(workflowFiles.filter(publishesSite), []);
   assert.deepEqual(workflowFiles.filter(commitsGeneratedOutput), [
     'architecture-submission.yml',
     'import-architectures.yml',

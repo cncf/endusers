@@ -109,14 +109,6 @@ const SERIALISED_WORKFLOWS = new Map([
       'and both post one onto a contributor PR. Pushes no branch; the ' +
       'constant group serialises the comment store. Not PR-triggered.',
   ],
-  [
-    'deploy-gh-pages.yml',
-    'Publishes the live site. Cancelling a deploy halfway can leave GitHub ' +
-      'Pages serving a partially uploaded artifact, so overlapping runs are ' +
-      'queued behind the constant "pages" group rather than cancelled. Not ' +
-      'PR-triggered, so it is outside the cancel-in-progress contract below ' +
-      'and only needs the constant-group exemption.',
-  ],
 ]);
 
 // A group is per-PR if it varies with the event. `${{ ... }}` referencing any
