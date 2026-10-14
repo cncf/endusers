@@ -105,12 +105,18 @@ test('a missing generatedAt renders no banner rather than "Invalid Date"', async
 });
 
 test('an explicit null generatedAt renders no banner rather than the epoch', async () => {
-  // tests/e2e/fixtures/data-variant/case-studies.json clears the field to
-  // JSON null, and `new Date(null)` is 1970-01-01, not an invalid date.
+  // `new Date(null)` is 1970-01-01, not an invalid date, so this arm has to be
+  // the falsy guard at src/components/shared/MirrorSyncStatus.js:20 rather
+  // than formatDate's NaN check. tests/e2e/fixtures/data-variant/radar-reports.json
+  // clears its field to JSON null, which is the browser's witness for it.
   assert.equal(await renderWith({ caseStudies: [], generatedAt: null }), null);
 });
 
 test('an unparseable generatedAt renders no banner rather than "Invalid Date"', async () => {
+  // The other arm, at src/components/shared/MirrorSyncStatus.js:22:
+  // truthy, so the guard above lets it through, and unparseable, so formatDate
+  // returns null. tests/e2e/fixtures/data-variant/case-studies.json carries
+  // exactly this shape so a browser build reaches it too.
   assert.equal(
     await renderWith({ caseStudies: [], generatedAt: 'not a timestamp' }),
     null,

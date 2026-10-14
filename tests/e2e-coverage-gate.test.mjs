@@ -76,13 +76,24 @@ const COVERAGE_JOB = 'e2e-coverage';
 //     class. #1439 folded CaseStudies' and RadarReports' separate
 //     !generatedAt guards into this shared one, which is why the fallback
 //     count above is eleven where this note used to say thirteen: two zeros
-//     (CaseStudies' and RadarReports' own guards) became one.
-//   src/components/shared/MirrorSyncStatus.js:22 -- NOT a residual. The
-//     !syncDate arm is reachable only with a generatedAt that is truthy and
-//     unparseable, and no fixture build produces that shape (both overlays
-//     set the field to null, which returns at
-//     src/components/shared/MirrorSyncStatus.js:20 first). Unit-covered by
-//     tests/case-studies-sync-status.test.mjs, browser-uncovered.
+//     (CaseStudies' and RadarReports' own guards) became one. Its browser
+//     witness is now tests/e2e/fixtures/data-variant/radar-reports.json
+//     alone: that overlay still clears the field to JSON null, and the
+//     case-studies overlay beside it no longer does (see the entry below).
+//   src/components/shared/MirrorSyncStatus.js:22 -- was NOT a residual, and
+//     is one now. The !syncDate arm is reachable only with a generatedAt
+//     that is truthy and unparseable; until this note was edited no fixture
+//     build produced that shape -- both overlays set the field to null,
+//     which returns at src/components/shared/MirrorSyncStatus.js:20 first --
+//     so it was unit-covered by tests/case-studies-sync-status.test.mjs and
+//     reached by no browser at all.
+//     tests/e2e/fixtures/data-variant/case-studies.json now carries an
+//     unparseable string instead of null, and
+//     tests/e2e/case-studies-variant.spec.js asserts the variant page drops
+//     the provenance line without rendering "Invalid Date". The arm is
+//     therefore browser-executed; whether the union credits it is the #1066
+//     question the other zeros in this list turn on, and nothing here
+//     changes that.
 //   src/lib/profile-links.mjs:68 (x2) -- a residual of the same family,
 //     diagnosed in #1469; not lost browser coverage. #1414/#1420 rewrote
 //     websiteUrl() onto isSafeUrl(), so the closing

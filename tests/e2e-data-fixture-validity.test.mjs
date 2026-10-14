@@ -166,7 +166,7 @@ const EXPECTED = new Map([
   [
     'data-variant/case-studies.json',
     {
-      why: 'clears generatedAt and empties caseStudies to reach the empty-corpus arms',
+      why: 'makes generatedAt unparseable and empties caseStudies to reach the unparseable-timestamp and empty-corpus arms',
       adds: [
         'case-studies.json: caseStudies must be a non-empty array',
         'case-studies.json: generatedAt must be a parseable date',
