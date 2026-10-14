@@ -3,7 +3,11 @@ import { readFileSync } from 'node:fs';
 import { existsSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkUrl, reportAndExit } from './lib/validate-utils.mjs';
+import {
+  CNCF_HOST_SUFFIXES,
+  checkUrl,
+  reportAndExit,
+} from './lib/validate-utils.mjs';
 
 const staticRoot = fileURLToPath(new URL('../static/', import.meta.url));
 const awardsLogoRoot = join(staticRoot, 'img', 'awards') + sep;
@@ -20,6 +24,18 @@ const errors = [];
 // isHttpsUrl() in validate-architectures.mjs and websiteUrl() in
 // src/lib/profile-links.mjs serve different callers (a boolean predicate and
 // a runtime client-side normalizer) and are not folded in here.
+//
+// Beyond parsing, every rendered link is held to a host allow-list, the same
+// standard scripts/validate-case-studies.mjs and validate-radar-reports.mjs
+// apply to the cncf.io feeds they mirror. Winners are verified against their
+// cncf.io announcement (AGENTS.md), so announcementUrl and caseStudyUrl must
+// resolve on a CNCF host; talkUrl may also point at the recording's YouTube
+// host. verifiedAgainst names the award history source, a CNCF property.
+const LINK_HOST_SUFFIXES = {
+  announcementUrl: CNCF_HOST_SUFFIXES,
+  caseStudyUrl: CNCF_HOST_SUFFIXES,
+  talkUrl: [...CNCF_HOST_SUFFIXES, 'youtube.com', 'youtu.be'],
+};
 
 if (Number.isNaN(Date.parse(data.verifiedAt)))
   errors.push({
@@ -35,7 +51,10 @@ if (!data.verifiedAgainst)
     message:
       'verifiedAgainst must be an https URL to the canonical award history source',
   });
-else checkUrl(errors, 'awards.json', 'verifiedAgainst', data.verifiedAgainst);
+else
+  checkUrl(errors, 'awards.json', 'verifiedAgainst', data.verifiedAgainst, {
+    allowedHostSuffixes: CNCF_HOST_SUFFIXES,
+  });
 if (!Array.isArray(data.awards) || !data.awards.length)
   errors.push({
     path: 'awards.json',
@@ -71,8 +90,11 @@ for (const entry of Array.isArray(data.awards) ? data.awards : []) {
       severity: 'error',
       message: 'entry needs an announcementUrl or talkUrl',
     });
-  for (const field of ['announcementUrl', 'caseStudyUrl', 'talkUrl']) {
-    if (entry[field]) checkUrl(errors, id, field, entry[field]);
+  for (const [field, allowedHostSuffixes] of Object.entries(
+    LINK_HOST_SUFFIXES,
+  )) {
+    if (entry[field])
+      checkUrl(errors, id, field, entry[field], { allowedHostSuffixes });
   }
   if (entry.logo) {
     if (typeof entry.logo !== 'string') {

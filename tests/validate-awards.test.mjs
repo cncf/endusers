@@ -184,6 +184,49 @@ test('rejects a javascript: URL in an optional link field', () => {
   assert.match(result.stderr, /caseStudyUrl must use https, got javascript:/);
 });
 
+// The link fields render as <a href> on /community/awards. Parsing alone
+// admits any https host; the allow-list holds announcements and case studies
+// to cncf.io (where winners are verified) and talks to cncf.io or YouTube.
+test('rejects a link field whose host is outside the allow-list', () => {
+  for (const [field, url] of [
+    ['announcementUrl', 'https://www.cncf.io.evil.example/announcements/x'],
+    ['caseStudyUrl', 'https://evil.example/case-studies/acme'],
+    ['talkUrl', 'https://vimeo.example/9'],
+  ]) {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      awardsFixture([{ ...validEntry, [field]: url }]),
+    );
+    assert.equal(result.status, 1, `${field}: ${url} was accepted`);
+    assert.match(result.stderr, new RegExp(field));
+  }
+});
+
+test('accepts link fields on cncf.io subdomains and a YouTube talk', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([
+      {
+        ...validEntry,
+        caseStudyUrl: 'https://www.cncf.io/case-studies/acme/',
+        talkUrl: 'https://youtu.be/9GIQyQjs36o',
+      },
+    ]),
+  );
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('rejects a verifiedAgainst outside the CNCF hosts', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([validEntry], {
+      verifiedAgainst: 'https://evil.example/community/awards/',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /verifiedAgainst/);
+});
+
 test('rejects entries with neither announcementUrl nor talkUrl', () => {
   const { announcementUrl, ...withoutUrl } = validEntry;
   const result = runScriptWithFixtures(SCRIPT, awardsFixture([withoutUrl]));
@@ -195,7 +238,7 @@ test('accepts a talkUrl in place of an announcementUrl', () => {
   const { announcementUrl, ...rest } = validEntry;
   const result = runScriptWithFixtures(
     SCRIPT,
-    awardsFixture([{ ...rest, talkUrl: 'https://youtube.com/watch?v=1' }]),
+    awardsFixture([{ ...rest, talkUrl: 'https://www.youtube.com/watch?v=1' }]),
   );
   assert.equal(result.status, 0, result.stderr);
 });
