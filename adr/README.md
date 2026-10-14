@@ -22,3 +22,4 @@ an ADR number, but is listed here for discoverability:
 | Document                                                                           | Supports | Purpose                                                                 |
 | ---------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------- |
 | [stakeholder-outreach-draft-for-0001.md](./stakeholder-outreach-draft-for-0001.md) | 0001     | Ready-to-send outreach draft for ADR 0001's stakeholder discussion step |
+| [inbound-link-requests-for-0004.md](./inbound-link-requests-for-0004.md)           | 0004     | Ready-to-file inbound-link requests for contribute.cncf.io and cncf.io  |
