@@ -64,6 +64,10 @@ const scriptsDir = join(repoRoot, 'scripts');
 // because it is the one place the machinery is supposed to live.
 const SHARED_MODULE = 'scripts/lib/cncf-wp-api.mjs';
 const SHARED_EXPORT = 'fetchAllPages';
+// The second thing the module owns: decoding the HTML entities WordPress
+// leaves in `title.rendered`. Both collectors carried a byte-identical copy
+// until it moved here; the rule below keeps it from growing back.
+const SHARED_DECODER = 'decodeEntities';
 
 // The call sites that exist today. Asserted as a floor, not an exact set: a
 // new collector reaching the same API is caught by the `wp-json` rule without
@@ -150,6 +154,25 @@ export function duplicatePaginationQueries(files) {
     .map(({ path }) => path);
 }
 
+/**
+ * WordPress call sites that declare their own entity decoder. Narrowed to
+ * files naming `wp-json` because scripts/lib/uri-safety.mjs legitimately
+ * exports a differently-specified `decodeEntities` for scheme detection.
+ */
+export function duplicateEntityDecoders(files) {
+  const declares = new RegExp(
+    `(?:function\\s+${SHARED_DECODER}\\b|(?:const|let|var)\\s+${SHARED_DECODER}\\s*=)`,
+  );
+  return files
+    .filter(
+      ({ path, source }) =>
+        path !== SHARED_MODULE &&
+        /wp-json/.test(source) &&
+        declares.test(source),
+    )
+    .map(({ path }) => path);
+}
+
 test('the shared module exports the page-walking helper', async () => {
   const module = await import(new URL(`../${SHARED_MODULE}`, import.meta.url));
   assert.equal(
@@ -157,6 +180,19 @@ test('the shared module exports the page-walking helper', async () => {
     'function',
     `${SHARED_MODULE} must export ${SHARED_EXPORT}(); the call-site rules below are about which module owns the page walk, and they mean nothing if this one does not.`,
   );
+});
+
+test('the shared module exports the entity decoder and decodes what WordPress emits', async () => {
+  const module = await import(new URL(`../${SHARED_MODULE}`, import.meta.url));
+  const decode = module[SHARED_DECODER];
+  assert.equal(typeof decode, 'function');
+  // The forms observed in real cncf.io titles: a named ampersand, its
+  // numeric twin, and the typographic apostrophe and dashes.
+  assert.equal(
+    decode('CI&#038;CD &amp; GitOps&#8217;s &#8211; &#8212;'),
+    'CI&CD & GitOps\u2019s \u2013 \u2014',
+  );
+  assert.equal(decode('plain title'), 'plain title');
 });
 
 test('the known cncf.io WordPress collectors are still call sites', () => {
@@ -196,6 +232,15 @@ test('no script outside the shared module builds the paginated query itself', ()
   );
 });
 
+test('no WordPress call site declares its own entity decoder', () => {
+  const offenders = duplicateEntityDecoders(scriptFiles);
+  assert.deepEqual(
+    offenders,
+    [],
+    `${SHARED_DECODER} is declared outside ${SHARED_MODULE} in:\n${offenders.join('\n')}`,
+  );
+});
+
 // Fixtures. Each drives one rule red on the exact weakening it exists to
 // catch, so a green run above is evidence the rule was applied rather than
 // evidence it found nothing to look at.
@@ -213,6 +258,14 @@ async function fetchAllPages(api, path) {
     page += 1;
   }
   return results;
+}
+`;
+
+const INLINED_DECODER = `
+import { fetchAllPages } from './lib/cncf-wp-api.mjs';
+const API = 'https://www.cncf.io/wp-json/wp/v2';
+function decodeEntities(text) {
+  return text.replace(/&amp;/g, '&');
 }
 `;
 
@@ -254,6 +307,26 @@ test('fixture: the shared module itself is exempt from all four rules', () => {
   assert.deepEqual(callSitesNotUsingSharedHelper(files), []);
   assert.deepEqual(duplicateHelperDeclarations(files), []);
   assert.deepEqual(duplicatePaginationQueries(files), []);
+});
+
+test('fixture: a call site with its own entity decoder is caught; uri-safety is not', () => {
+  assert.deepEqual(
+    duplicateEntityDecoders([
+      { path: 'scripts/collect-made-up.mjs', source: INLINED_DECODER },
+    ]),
+    ['scripts/collect-made-up.mjs'],
+  );
+  assert.deepEqual(
+    duplicateEntityDecoders([
+      { path: 'scripts/collect-made-up.mjs', source: USES_HELPER },
+      { path: SHARED_MODULE, source: INLINED_DECODER },
+      {
+        path: 'scripts/lib/uri-safety.mjs',
+        source: `export function decodeEntities(value) { return value; }\n`,
+      },
+    ]),
+    [],
+  );
 });
 
 test('fixture: a const-assigned copy is caught, not just a function declaration', () => {

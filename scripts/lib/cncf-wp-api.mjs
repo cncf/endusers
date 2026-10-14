@@ -1,7 +1,8 @@
-// Shared pagination helper for scripts/ reading the public cncf.io WordPress
-// REST API (https://www.cncf.io/wp-json/wp/v2). Centralizes the page-walking
-// and "past the last page" 400 handling so the two call sites (case studies,
-// radar reports) can't drift out of sync on retry/pagination semantics.
+// Shared helpers for scripts/ reading the public cncf.io WordPress REST API
+// (https://www.cncf.io/wp-json/wp/v2). Centralizes the page-walking, the
+// "past the last page" 400 handling, and the decoding of the HTML entities
+// WordPress leaves in `title.rendered`, so the two call sites (case studies,
+// radar reports) can't drift out of sync on any of them.
 
 /**
  * Fetches every page of a cncf.io WordPress REST API collection endpoint and
@@ -33,4 +34,23 @@ export async function fetchAllPages(api, path) {
     page += 1;
   }
   return results;
+}
+
+/**
+ * Decodes the HTML character references WordPress leaves in rendered text
+ * such as `title.rendered` (`&amp;`, `&#038;`, `&#8217;`), returning plain
+ * text suitable for a JSON data file.
+ *
+ * This is a presentation decoder for trusted upstream text, not the
+ * security-oriented `decodeEntities` in scripts/lib/uri-safety.mjs, which
+ * also resolves hexadecimal and named references and tolerates a missing
+ * semicolon because it exists to defeat scheme-hiding.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function decodeEntities(text) {
+  return text
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&amp;/g, '&');
 }

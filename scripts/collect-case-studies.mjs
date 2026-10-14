@@ -11,7 +11,7 @@
 // from the post title, which is just the organization name.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fetchAllPages } from './lib/cncf-wp-api.mjs';
+import { decodeEntities, fetchAllPages } from './lib/cncf-wp-api.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const API = 'https://www.cncf.io/wp-json/wp/v2';
@@ -34,15 +34,6 @@ function namesFor(ids, termMap) {
     .map((id) => termMap.get(id))
     .filter(Boolean)
     .sort();
-}
-
-function decodeEntities(text) {
-  return text
-    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
-    .replace(/&amp;/g, '&')
-    .replace(/&#8217;/g, '\u2019')
-    .replace(/&#8211;/g, '\u2013')
-    .replace(/&#8212;/g, '\u2014');
 }
 
 const [projects, industries, countries, caseStudyPosts] = await Promise.all([
