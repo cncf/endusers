@@ -83,11 +83,25 @@ const COVERAGE_JOB = 'e2e-coverage';
 //     set the field to null, which returns at
 //     src/components/shared/MirrorSyncStatus.js:20 first). Unit-covered by
 //     tests/case-studies-sync-status.test.mjs, browser-uncovered.
-//   src/lib/profile-links.mjs:68 (x2) -- undiagnosed. Both arms of
-//     websiteUrl()'s closing return went to zero when #1414/#1420 rewrote it
-//     onto isSafeUrl(); whether that is lost browser coverage or another
-//     attribution artifact is tracked in #1469, and this entry is the open
-//     question that issue resolves one way or the other.
+//   src/lib/profile-links.mjs:68 (x2) -- a residual of the same family,
+//     diagnosed in #1469; not lost browser coverage. #1414/#1420 rewrote
+//     websiteUrl() onto isSafeUrl(), so the closing
+//     `return url ? url.href : null` is now a ternary whose two arms share
+//     one line. In the bundle that holds the community-people dialog the
+//     CommunityPeople fixture persons drive both arms: one page records
+//     the then-arm at zero (the fixture whose blog does not parse) and
+//     another the else-arm at zero (the valid and bare-host blogs), and
+//     V8 emits no range for the arm each page does take, because it runs
+//     at its enclosing code's count. Each arm is therefore covered only by
+//     absence, and the absence inference in isContradictedRegion rejects a
+//     witness when any zero touches the region's lines; on a one-line
+//     ternary the sibling arm's zero always does. The two arms
+//     disqualify each other, so both stay at zero in the union.
+//     Reproduced on the full 356-test suite: 13/15, 86.67%, uncovered
+//     regions [68, 68]. The file's other 13 regions, including every
+//     branch of isSafeUrl's caller above line 68, are covered. Narrowing
+//     that exclusion to the zero's own span is a change to the union and
+//     is not made here; until then this is a reporting residual.
 //
 // Do not set --check-source-regions above 96 or
 // --check-source-file-regions above 66 (PeopleFreshness, 2/3, whose one zero
