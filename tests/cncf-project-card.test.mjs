@@ -124,3 +124,14 @@ test('the decorative arrow is hidden from assistive technology', () => {
     if (textOf(arrow) === '↗') assert.equal(arrow.props['aria-hidden'], 'true');
   }
 });
+
+test('a card without an href renders no link and no arrow', () => {
+  // Projects with no cncf.io page get no href (#1448): the arrow would
+  // promise navigation the card cannot deliver.
+  const tree = render({ href: undefined });
+  assert.equal(tree.props.href, undefined);
+  const arrows = [...findAllByType(tree, 'span')].filter((span) =>
+    textOf(span).includes('↗'),
+  );
+  assert.equal(arrows.length, 0, 'the ↗ affordance requires a live href');
+});

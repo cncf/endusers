@@ -96,7 +96,7 @@ test('imports a labeled issue into catalog, record and docs page', () => {
     assert.match(page, /## Relevant CNCF projects/);
     assert.match(
       page,
-      /<CNCFProjectCard name=\{"Kubernetes"\} href=\{"https:\/\/www\.cncf\.io\/projects\/kubernetes\/"\} since=\{"2019"\} version=\{"1\.30"\} description=\{"Core platform\."\} \/>/,
+      /<CNCFProjectCard name=\{"Kubernetes"\} since=\{"2019"\} version=\{"1\.30"\} description=\{"Core platform\."\} \/>/,
     );
     assert.match(page, /## Describe your organisation/);
     assert.match(page, /Acme Corp builds widgets\./);

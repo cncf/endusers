@@ -60,9 +60,11 @@ export function renderProjectCards(body, id) {
       const links = [...content.matchAll(/\]\((https?:\/\/[^)]+)\)/g)].map(
         (match) => match[1],
       );
-      const href =
-        links.find(isCncfProjectHref) ||
-        `https://www.cncf.io/projects/${name.toLowerCase().replace(/\s+/g, '-')}/`;
+      // No cncf.io link in the source card means no href: a slug derived
+      // from the header is a guess — wrong for multi-word names, and a
+      // guaranteed 404 for projects with no cncf.io page at all (#1448).
+      // The issue-based importer already nulls the same way.
+      const href = links.find(isCncfProjectHref) || null;
       const logo = (content.match(/!\[[^\]]*\]\((https?:\/\/[^)]+)\)/) ||
         [])[1];
       const since = (content.match(/\*\*Using since:\*\*\s*([^\n]+)/) ||

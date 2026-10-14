@@ -25,11 +25,11 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
   <CNCFProjectCard name={"Kyverno"} href={"https://www.cncf.io/projects/kyverno/"} logo={"/img/cncf-projects/kyverno-kyverno-icon-color.svg"} description={"Kyverno offers policy as code with support for YAML and CEL based policies. Used as a key component for policy enforcement and mutating workloads according to those policies, adding required settings to expose storage systems, set resources based on GPUs, etc."} />
 
-  <CNCFProjectCard name={"Kueue"} href={"https://www.cncf.io/projects/kueue/"} description={"Kueue is a kubernetes-native system offering advanced scheduling capabilities and quota management. Used to provide job queues and quotas, gang scheduling, fair sharing, among other capabilities."} />
+  <CNCFProjectCard name={"Kueue"} description={"Kueue is a kubernetes-native system offering advanced scheduling capabilities and quota management. Used to provide job queues and quotas, gang scheduling, fair sharing, among other capabilities."} />
 
   <CNCFProjectCard name={"Prometheus"} href={"https://www.cncf.io/projects/prometheus/"} logo={"/img/cncf-projects/prometheus-prometheus-icon-color.svg"} description={"Prometheus gathers the metrics and insights from all components in the cluster. Used for system and service metrics as well as providing individual workload performance insights on cpu, memory, power and other areas."} />
 
-  <CNCFProjectCard name={"stargz-snapshotter"} href={"https://www.cncf.io/projects/stargz-snapshotter/"} logo={"/img/cncf-projects/containerd-containerd-icon-color.svg"} description={"stargz-snapshotter provides lazy pulling of container images. Used to handle efficient job start and execution with image sizes of over 100GB in some cases."} />
+  <CNCFProjectCard name={"stargz-snapshotter"} logo={"/img/cncf-projects/containerd-containerd-icon-color.svg"} description={"stargz-snapshotter provides lazy pulling of container images. Used to handle efficient job start and execution with image sizes of over 100GB in some cases."} />
 
 Some additional projects outside the CNCF are essential to this deployment.
 * [MLFlow](https://mlflow.org/), a project under the Linux Foundation used for model management and versioning
