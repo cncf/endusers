@@ -198,7 +198,10 @@ test('rejects a link field whose host is outside the allow-list', () => {
       awardsFixture([{ ...validEntry, [field]: url }]),
     );
     assert.equal(result.status, 1, `${field}: ${url} was accepted`);
-    assert.match(result.stderr, new RegExp(field));
+    assert.ok(
+      result.stderr.includes(field),
+      `${field}: error did not name the field: ${result.stderr}`,
+    );
   }
 });
 
