@@ -383,13 +383,6 @@ test('browser coverage is isolated in a visible gating job with a source floor',
     false,
     'required e2e job must keep default coverage disabled',
   );
-
-  const deploy = readFileSync(join(workflowDir, 'deploy-gh-pages.yml'), 'utf8');
-  assert.doesNotMatch(
-    deploy,
-    /\bE2E_COVERAGE\b/,
-    'deployment must not opt into browser source maps',
-  );
 });
 
 // The `validate:*` and `check:*` scripts are the repository's gates: one set

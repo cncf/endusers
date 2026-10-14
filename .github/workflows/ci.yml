@@ -80,9 +80,6 @@ jobs:
         run: npm run validate:members
       - name: Build production site
         run: npm run build:production
-        env:
-          SITE_URL: https://cncf.github.io
-          BASE_URL: /endusers/
 
   lint:
     name: Lint repository

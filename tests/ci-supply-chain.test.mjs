@@ -161,8 +161,8 @@ test('the persist-credentials baseline retires itself', () => {
 // these workflows run are network-bound -- markdown-link-check walks every link
 // in every root Markdown file, and the scheduled jobs call the GitHub API -- so
 // an unreachable host makes a step hang rather than fail, and the job then holds
-// a runner for six hours. Only deploy-gh-pages declares a concurrency group, so
-// the next run does not supersede a stuck one either.
+// a runner for six hours. No scheduled workflow declares a concurrency group,
+// so the next run does not supersede a stuck one either.
 //
 // KNOWN_UNBOUNDED_JOBS is a retiring baseline, not an allowance: it recorded
 // the jobs unbounded as of #743, and the companion test below fails once an
