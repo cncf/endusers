@@ -7,6 +7,7 @@ import {
   checkUrl,
   collectError,
   isSafeUrl,
+  publishableCncfUrl,
   reportAndExit,
 } from '../scripts/lib/validate-utils.mjs';
 
@@ -512,4 +513,26 @@ test('checkUrl reports the parse failure message for a schemeless value without 
   const coerced = [];
   checkUrl(coerced, 'p', 'site', 'example.test', { defaultScheme: 'https:' });
   assert.deepEqual(coerced, []);
+});
+
+// The predicate the case-studies and radar-reports validators share for the
+// cncf.io links they publish: a trimmed https URL on a CNCF host, or null.
+test('publishableCncfUrl accepts a trimmed https URL on a CNCF host', () => {
+  assert.equal(
+    publishableCncfUrl(' https://www.cncf.io/reports/x/ ').href,
+    'https://www.cncf.io/reports/x/',
+  );
+});
+
+test('publishableCncfUrl returns null for non-strings and off-list or spoofed hosts', () => {
+  for (const value of [
+    undefined,
+    42,
+    'https://evil.example/',
+    'https://www.cncf.io.evil.example/',
+    'https://www.cncf.io@evil.example/',
+    'http://www.cncf.io/',
+  ]) {
+    assert.equal(publishableCncfUrl(value), null, String(value));
+  }
 });

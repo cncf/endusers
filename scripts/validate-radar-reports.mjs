@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
-  isSafeUrl,
+  publishableCncfUrl,
   reportAndExit,
   CNCF_HOST_SUFFIXES,
 } from './lib/validate-utils.mjs';
@@ -13,17 +13,10 @@ import {
 // "cncf.io/reports", so its real destination is never visible. A scheme prefix
 // test is not a gate: it accepts any host, and it accepts a userinfo component
 // ("https://www.cncf.io@evil.example/") that resolves to a hostile host while
-// reading as CNCF to a maintainer skimming a generated JSON diff. isSafeUrl()
+// reading as CNCF to a maintainer skimming a generated JSON diff. publishableCncfUrl()
 // in ./lib/validate-utils.mjs is the shared gate; it parses the URL and holds
 // the host to an allow-list, the same standard
 // scripts/validate-case-studies.mjs already applies to the sibling feed.
-
-function publishableUrl(value) {
-  if (typeof value !== 'string') return null;
-  return isSafeUrl(value.trim(), {
-    allowedHostSuffixes: CNCF_HOST_SUFFIXES,
-  });
-}
 
 const data = JSON.parse(
   readFileSync(new URL('../data/radar-reports.json', import.meta.url)),
@@ -36,7 +29,7 @@ if (Number.isNaN(Date.parse(data.generatedAt)))
     severity: 'error',
     message: 'generatedAt must be a parseable date',
   });
-if (!data.sourceUrl || !publishableUrl(data.sourceUrl))
+if (!data.sourceUrl || !publishableCncfUrl(data.sourceUrl))
   errors.push({
     path: 'radar-reports.json',
     severity: 'error',
@@ -65,7 +58,7 @@ for (const entry of Array.isArray(data.radarReports) ? data.radarReports : []) {
       severity: 'error',
       message: 'missing title',
     });
-  if (!entry.url || !publishableUrl(entry.url))
+  if (!entry.url || !publishableCncfUrl(entry.url))
     errors.push({
       path: String(id),
       severity: 'error',

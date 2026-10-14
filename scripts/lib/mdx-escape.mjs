@@ -31,6 +31,7 @@ import { mdxjs } from 'micromark-extension-mdxjs';
 import { mdxFromMarkdown } from 'mdast-util-mdx';
 import { gfm } from 'micromark-extension-gfm';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
+import { eachNode } from './mdast-walk.mjs';
 
 const ESCAPES = new Map([
   ['&#123;', '{'],
@@ -92,11 +93,6 @@ function parseWith(text, grammar) {
   } catch {
     return fromMarkdown(text, grammar.plain());
   }
-}
-
-function eachNode(node, visitor) {
-  visitor(node);
-  for (const child of node.children ?? []) eachNode(child, visitor);
 }
 
 /** The code-node offset ranges in one parsed tree, merged and in order. */
