@@ -51,7 +51,7 @@ date someone once guessed for it has passed.
 | 8   | Success-metrics baseline captured in `data/launch-metrics.json` and tracking issue live (#100)                                                                                            | Done (captured 2026-10-02; the file's `checkpoint.label` still carries the `W-6` name from the dated plan, which is where it was taken) |
 | 9   | Launch blog post drafted; announcement channels confirmed (CNCF blog/social amplification, end-user Slack, TAB mailing list)                                                              | Open (#1313). Draft lands as `blog/YYYY-MM-DD-*.md` per `docs/skills/blog-management.md`                                                |
 | 10  | Full content freeze rehearsal: every generated-data workflow runs green end-to-end (see the readiness gate below)                                                                         | In progress; see the pipeline table                                                                                                     |
-| 11  | Launch blog post reviewed (the draft from #1313); DNS cutover executed (Phase 3, #46)                                                                                                     | Open                                                                                                                                    |
+| 11  | Launch blog post reviewed (the draft from #1313); DNS cutover executed (Phase 3, #1433)                                                                                                   | Open                                                                                                                                    |
 | 12  | Dry-run announcement to end-user community Slack; collect last-mile fixes                                                                                                                 | Open                                                                                                                                    |
 | 13  | Final content refresh; all Phase 1 issues closed or explicitly deferred                                                                                                                   | Open                                                                                                                                    |
 | 14  | **Launch**: publish the launch post, amplify on the agreed channels, open the feedback issue template. If a conference or TAB meeting is near, time the amplification to it, not the gate | Open                                                                                                                                    |
@@ -134,7 +134,7 @@ pillar in the launch post rather than presenting it as current.
 - **Ownership decision (ADR 0001)** is resolved — Accepted, and the repository
   has been transferred to the `cncf` GitHub org. What remains on the critical
   path is executing the DNS cutover to `endusers.cncf.io` itself (Phase 3, issue
-  #46), not the decision.
+  #1433), not the decision.
 - **Merge throughput** (#58): the remaining milestones are merge-gated, not
   work-gated; the plan assumes the human merge gate keeps its current burst
   cadence.

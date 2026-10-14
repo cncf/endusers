@@ -18,7 +18,7 @@ countdown slipped twice (#966, #1271) and was replaced by the ordered, dateless
 milestone checklist in `LAUNCH.md`. Conferences and End User TAB meetings that
 fall near readiness are amplification opportunities, not deadlines. The
 ownership decision has landed (ADR 0001 is Accepted; issue #99 closed); the
-remaining pre-launch dependency is the DNS cutover tracked in issue #46.
+remaining pre-launch dependency is the DNS cutover tracked in issue #1433.
 
 ## Guiding principles
 
@@ -116,7 +116,9 @@ Goal: the project can outlive any single maintainer.
 
 Goal: endusers.cncf.io becomes the authoritative end-user destination.
 
-- [ ] DNS cutover to endusers.cncf.io (depends on Phase 2 ownership decision)
+- [ ] DNS cutover to endusers.cncf.io (depends on Phase 2 ownership decision;
+      tracked in #1433, blocked on the external DNS record — see #1433 for the
+      three remaining ADR 0001 step-3 actions)
 - [ ] Cross-linking with contribute.cncf.io and cncf.io (clear audience
       boundaries) (#1407). Audience boundary decided: ADR 0004. Outbound
       signposts shipped (site footer, architecture submission flow, community
