@@ -2,16 +2,19 @@
 // timestamp does not parse.
 //
 // DirectoryFreshness renders one sentence per refreshed data file, each behind
-// its own formatDate() result (src/components/MemberDirectory/DirectoryFreshness.js
-// lines 16-18). formatDate() returns null for anything Date cannot parse
-// (src/components/shared/formatDate.js line 13), and three regions of that
+// its own formatDate() result
+// (src/components/MemberDirectory/DirectoryFreshness.js:16-18).
+// formatDate() returns null for anything Date cannot parse
+// (src/components/shared/formatDate.js:13), and three regions of that
 // code only run when one of the three results is null:
 //
-//   * formatDate.js line 13 -- the Number.isNaN guard itself;
-//   * DirectoryFreshness line 19 -- `!landscapeDate && !architecturesDate &&
+//   * src/components/shared/formatDate.js:13 -- the Number.isNaN guard itself;
+//   * src/components/MemberDirectory/DirectoryFreshness.js:19 --
+//     `!landscapeDate && !architecturesDate &&
 //     !awardsDate`, whose second and third operands are never evaluated while
 //     the first date is truthy;
-//   * DirectoryFreshness line 49 -- `(landscapeDate || architecturesDate)`,
+//   * src/components/MemberDirectory/DirectoryFreshness.js:49 --
+//     `(landscapeDate || architecturesDate)`,
 //     whose right operand is never evaluated for the same reason.
 //
 // data/members.json always carries a parseable sources.landscape.collectedAt,

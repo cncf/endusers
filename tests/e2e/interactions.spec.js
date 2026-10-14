@@ -162,7 +162,8 @@ test.describe('member directory filtering', () => {
     // Every surviving card carries a contributor label, which is what
     // distinguishes a working filter from one that merely re-rendered: both
     // labels `matchesMembership` admits here contain "Contributor"
-    // (utils.js:13, utils.js:15).
+    // (src/components/MemberDirectory/utils.js:13,
+    // src/components/MemberDirectory/utils.js:15).
     const cards = section.locator('article');
     await expect(cards.first()).toBeVisible();
     for (const card of await cards.all()) {

@@ -19,8 +19,9 @@
 // renders its provenance paragraph only when data/awards.json carries a
 // verifiedAt, and the ': null' arm beside it only when it does not; the same
 // shape holds for ReferenceArchitectures' SyncStatus, whose sync-date ternary
-// reads data/metrics.json's generatedAt (src/components/ReferenceArchitectures/
-// index.js line 23). Each is a single document-level field on the one file one
+// reads data/metrics.json's generatedAt, taking its ': null' arm at
+// src/components/ReferenceArchitectures/index.js:24. Each is a single
+// document-level field on the one file one
 // page reads, so an overlay that clears it does not add a case -- it swaps
 // which arm is reachable, covering one line at the cost of the many that
 // render the populated text (measured: thirteen for AwardsTimeline, five for
