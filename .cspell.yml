@@ -38,6 +38,18 @@ words:
   - cartografos
   - Swisscom
   - Flipkart
+  # blog/authors.yml names and handles (blog/ joined the spell check in #1452)
+  - Aniszczyk
+  - caniszczyk
+  - Dvoretskyi
+  - idvoretskyi
+  - Ihor
+  - jeefy
+  - Killen
+  - Krook
+  - mrbobbytabl
+  - mrbobbytables
+  - Sica
   - Zeiss
   - Adobe
   - Allianz
