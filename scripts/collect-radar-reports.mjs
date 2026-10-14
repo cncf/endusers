@@ -11,7 +11,7 @@
 // the PR the refresh workflow opens.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fetchAllPages } from './lib/cncf-wp-api.mjs';
+import { decodeEntities, fetchAllPages } from './lib/cncf-wp-api.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const API = 'https://www.cncf.io/wp-json/wp/v2';
@@ -40,15 +40,6 @@ const posts = await fetchAllPages(
   API,
   `lf_report?lf-report-type=${radarType.id}&_fields=id,slug,link,title,date`,
 );
-
-function decodeEntities(text) {
-  return text
-    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
-    .replace(/&amp;/g, '&')
-    .replace(/&#8217;/g, '\u2019')
-    .replace(/&#8211;/g, '\u2013')
-    .replace(/&#8212;/g, '\u2014');
-}
 
 const radarReports = posts
   .map((post) => ({
