@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD041 -- PR templates open with a section, not a title -->
+
 ## Summary
 
 <!-- What does this PR change and why? Link the issue it addresses. -->

@@ -22,11 +22,11 @@ contribute.cncf.io.
 
 Verify CNCF facts against authoritative sources before publishing:
 
-- End User TAB scope, process, and membership: https://github.com/cncf/tab
-- Reference architectures: https://github.com/cncf/architecture
-- Landscape and project data: https://github.com/cncf/landscape
+- End User TAB scope, process, and membership: <https://github.com/cncf/tab>
+- Reference architectures: <https://github.com/cncf/architecture>
+- Landscape and project data: <https://github.com/cncf/landscape>
 - Award winners: cncf.io announcement posts
-- Case studies: https://www.cncf.io/case-studies/
+- Case studies: <https://www.cncf.io/case-studies/>
 
 Never assert counts or winner lists from memory.
 

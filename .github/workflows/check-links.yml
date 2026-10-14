@@ -1,5 +1,6 @@
 # Runs `npm run check:links` (markdown-link-check over every *.md file that
-# `_list:check:md` enumerates: root-level docs plus docs/ and blog/) on a
+# `_list:check:md` enumerates: root-level docs plus docs/, blog/, adr/ and
+# .github/) on a
 # weekly schedule and on demand.
 #
 # This gate deliberately does not run on pull requests: it resolves every
