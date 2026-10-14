@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { execFileSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -16,6 +15,7 @@ import {
   publishLandscapeSnapshot,
 } from './lib/enduser-collector.mjs';
 import { ensureOwnedAssetManifest } from './lib/enduser-assets.mjs';
+import { cloneShallow, revParseHead } from './lib/git-source.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const work = mkdtempSync(join(root, '.enduser-landscape-'));
@@ -30,22 +30,8 @@ const previousSnapshot = existsSync(output)
   : null;
 
 try {
-  execFileSync(
-    'git',
-    [
-      'clone',
-      '--depth',
-      '1',
-      'https://github.com/cncf/landscape.git',
-      landscapeRoot,
-    ],
-    { stdio: 'inherit' },
-  );
-  const revision = execFileSync(
-    'git',
-    ['-C', landscapeRoot, 'rev-parse', 'HEAD'],
-    { encoding: 'utf8' },
-  ).trim();
+  cloneShallow('https://github.com/cncf/landscape.git', landscapeRoot);
+  const revision = revParseHead(landscapeRoot);
   if (!/^[0-9a-f]{40}$/.test(revision)) {
     throw new Error(
       `landscape clone returned an invalid revision: ${revision}`,
