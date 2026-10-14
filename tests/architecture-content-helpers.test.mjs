@@ -107,8 +107,7 @@ test('a card with no link renders without an href', () => {
   // card links nowhere (#1448).
   assert.equal(
     renderProjectCards(card('Wide Thing', 'Just prose.'), 'demo'),
-    '<CNCFProjectCard name={"Wide Thing"} ' +
-      'description={"Just prose."} />',
+    '<CNCFProjectCard name={"Wide Thing"} ' + 'description={"Just prose."} />',
   );
 });
 
