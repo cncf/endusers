@@ -40,15 +40,16 @@ const reports = data.radarReports || [];
 const LONG_DATE = { year: 'numeric', month: 'long', day: 'numeric' };
 
 /**
- * `<SyncStatus />` is a nested component element, so the walker yields it
- * without descending into its output. Invoking it renders that subtree.
+ * `<MirrorSyncStatus />` (src/components/shared) is a nested component
+ * element, so the walker yields it without descending into its output.
+ * Invoking it with the props RadarReports passed renders that subtree.
  */
 function renderSyncStatus(tree) {
   const element = [...walkElements(tree)].find(
     (node) =>
-      typeof node.type === 'function' && node.type.name === 'SyncStatus',
+      typeof node.type === 'function' && node.type.name === 'MirrorSyncStatus',
   );
-  assert.ok(element, 'expected the component to render a <SyncStatus />');
+  assert.ok(element, 'expected the component to render a <MirrorSyncStatus />');
   return element.type(element.props);
 }
 

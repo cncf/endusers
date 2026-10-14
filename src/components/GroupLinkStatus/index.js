@@ -1,16 +1,7 @@
 import React from 'react';
 import groupsData from '@site/data/community-groups.json';
+import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
-
-function formatDate(isoDate) {
-  const parsed = new Date(isoDate);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
 
 /**
  * Freshness + drift signal for the End User Group cards, sourced from

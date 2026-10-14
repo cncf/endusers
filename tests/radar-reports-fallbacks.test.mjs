@@ -30,13 +30,13 @@ const REPORT = {
   publishedAt: '2024-01-15T00:00:00.000Z',
 };
 
-/** Renders the nested <SyncStatus /> element, or null when it returns null. */
+/** Renders the nested shared <MirrorSyncStatus /> element, or null when it returns null. */
 function renderSyncStatus(tree) {
   const element = [...walkElements(tree)].find(
     (node) =>
-      typeof node.type === 'function' && node.type.name === 'SyncStatus',
+      typeof node.type === 'function' && node.type.name === 'MirrorSyncStatus',
   );
-  assert.ok(element, 'expected the component to render a <SyncStatus />');
+  assert.ok(element, 'expected the component to render a <MirrorSyncStatus />');
   return element.type(element.props);
 }
 

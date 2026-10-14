@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import data from '@site/data/case-studies.json';
+import MirrorSyncStatus from '../shared/MirrorSyncStatus';
 import styles from './styles.module.css';
 
 function useCaseStudyFilterOptions(caseStudies) {
@@ -42,24 +43,6 @@ function filterCaseStudies(caseStudies, { query, project, industry, country }) {
   });
 }
 
-function SyncStatus() {
-  if (!data.generatedAt) return null;
-  const syncDate = new Date(data.generatedAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-  return (
-    <p className={styles.syncStatus}>
-      Mirrored from{' '}
-      <a href={data.sourceUrl} target="_blank" rel="noreferrer">
-        cncf.io/case-studies
-      </a>{' '}
-      on {syncDate}.
-    </p>
-  );
-}
-
 export default function CaseStudies() {
   const caseStudies = data.caseStudies || [];
   const options = useCaseStudyFilterOptions(caseStudies);
@@ -85,7 +68,12 @@ export default function CaseStudies() {
 
   return (
     <section aria-label="CNCF case studies">
-      <SyncStatus />
+      <MirrorSyncStatus
+        generatedAt={data.generatedAt}
+        sourceUrl={data.sourceUrl}
+        label="cncf.io/case-studies"
+        className={styles.syncStatus}
+      />
       <div className={styles.toolbar}>
         <label htmlFor="case-study-search" className={styles.visuallyHidden}>
           Search case studies by organization

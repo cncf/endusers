@@ -1,30 +1,18 @@
 import React from 'react';
 import data from '@site/data/radar-reports.json';
+import MirrorSyncStatus from '../shared/MirrorSyncStatus';
 import styles from './styles.module.css';
-
-function SyncStatus() {
-  if (!data.generatedAt) return null;
-  const syncDate = new Date(data.generatedAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-  return (
-    <p className={styles.syncStatus}>
-      Mirrored from{' '}
-      <a href={data.sourceUrl} target="_blank" rel="noreferrer">
-        cncf.io/reports
-      </a>{' '}
-      on {syncDate}.
-    </p>
-  );
-}
 
 export default function RadarReports() {
   const radarReports = data.radarReports || [];
   return (
     <section aria-label="CNCF Technology Radar reports">
-      <SyncStatus />
+      <MirrorSyncStatus
+        generatedAt={data.generatedAt}
+        sourceUrl={data.sourceUrl}
+        label="cncf.io/reports"
+        className={styles.syncStatus}
+      />
       <ul className={styles.list}>
         {radarReports.map((report) => (
           <li key={report.id} className={styles.item}>

@@ -1,10 +1,11 @@
-// Render contract for the SyncStatus banner of src/components/CaseStudies/index.js.
+// Render contract for the sync-status banner of src/components/CaseStudies/index.js.
 //
-// SyncStatus is the line that tells a visitor when data/case-studies.json was
-// last mirrored from cncf.io and links back to the upstream index. It is a
-// module-private component rendered as `<SyncStatus />`, so nothing calls it
-// unless a test walks the element tree CaseStudies returns and invokes the
-// element's own type — which is why tests/case-studies.test.mjs, which asserts
+// The banner is the line that tells a visitor when data/case-studies.json was
+// last mirrored from cncf.io and links back to the upstream index. It is the
+// shared `MirrorSyncStatus` component (src/components/shared), rendered as a
+// nested element, so nothing calls it unless a test walks the element tree
+// CaseStudies returns and invokes the element's own type with the props
+// CaseStudies passed — which is why tests/case-studies.test.mjs, which asserts
 // on the rendered table, leaves it entirely unexecuted.
 //
 // Both of its arms matter and neither had coverage: a broken attribution link
@@ -28,7 +29,7 @@ const { default: CaseStudies } = await importSource(
 const { default: caseStudyData } = await importSource('data/case-studies.json');
 
 /**
- * Renders CaseStudies and returns what its private SyncStatus child renders.
+ * Renders CaseStudies and returns what its MirrorSyncStatus child renders.
  *
  * @param {Function} Component the CaseStudies component to render
  * @returns {any} the SyncStatus element tree, or null when it renders nothing
@@ -36,10 +37,10 @@ const { default: caseStudyData } = await importSource('data/case-studies.json');
 function renderSyncStatus(Component) {
   const { result } = renderHook(() => Component());
   const element = [...walkElements(result)].find(
-    (candidate) => candidate.type?.name === 'SyncStatus',
+    (candidate) => candidate.type?.name === 'MirrorSyncStatus',
   );
-  assert.ok(element, 'CaseStudies no longer renders a SyncStatus child');
-  return element.type();
+  assert.ok(element, 'CaseStudies no longer renders a MirrorSyncStatus child');
+  return element.type(element.props);
 }
 
 async function renderWith(data) {
@@ -101,4 +102,11 @@ test('a known generatedAt is rendered as a long-form US date', async () => {
 
 test('a missing generatedAt renders no banner rather than "Invalid Date"', async () => {
   assert.equal(await renderWith({ caseStudies: [] }), null);
+});
+
+test('an unparseable generatedAt renders no banner rather than "Invalid Date"', async () => {
+  assert.equal(
+    await renderWith({ caseStudies: [], generatedAt: 'not a timestamp' }),
+    null,
+  );
 });
