@@ -94,6 +94,32 @@ function endusersE2EDataFixtures() {
   };
 }
 
+// Writes robots.txt into the build from the resolved site URL, so the
+// `Sitemap:` line (which must be absolute) follows `url`/`baseUrl` instead of
+// being a committed string. The static copy it replaces advertised the
+// retired GitHub Pages origin for the whole life of the Netlify site, and
+// nothing could have caught that: on Netlify the origin is a deploy-time
+// value (scripts/netlify-build.mjs), and it changes again at the
+// endusers.cncf.io cutover (#1433). Writing it in postBuild means that
+// cutover is a build, not a repository change.
+function endusersRobotsTxt() {
+  return {
+    name: 'endusers-robots-txt',
+    async postBuild({ siteConfig, outDir }) {
+      const { writeFileSync } = require('fs');
+      const { join } = require('path');
+      const sitemapUrl = new URL(
+        `${siteConfig.baseUrl}sitemap.xml`,
+        siteConfig.url,
+      ).href;
+      writeFileSync(
+        join(outDir, 'robots.txt'),
+        `User-agent: *\nAllow: /\n\nSitemap: ${sitemapUrl}\n`,
+      );
+    },
+  };
+}
+
 const E2E_COVERAGE = process.env.E2E_COVERAGE === '1';
 const E2E_SOURCE_MAP_PLUGIN = E2E_COVERAGE ? endusersE2ESourceMaps : null;
 const E2E_DATA_FIXTURE_PLUGIN = E2E_COVERAGE ? endusersE2EDataFixtures : null;
@@ -448,6 +474,7 @@ const config = {
       },
     }),
   plugins: [
+    endusersRobotsTxt,
     E2E_SOURCE_MAP_PLUGIN,
     E2E_DATA_FIXTURE_PLUGIN,
     E2E_FIXTURE_DOCS_PLUGIN,
