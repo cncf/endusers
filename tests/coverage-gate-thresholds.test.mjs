@@ -62,21 +62,26 @@ const FLOORS = {
   // entered none of the ratios above, which are all built from
   // isSourceFile(). These are the same three shapes over its own row.
   // Measured on the suite this commit ships: harness files 100.00% lines /
-  // 99.64% regions (5717/5717 lines, 1947/1954 regions), now that #1294 has
-  // brought tests/helpers*.mjs into the row and tests/helpers-script-sandbox.mjs
-  // has been lifted to 100.00%. The lowest harness file is now
-  // tests/tools/e2e-coverage-report.mjs at 98.57%, floored to 98, and every
-  // other harness file is at 100.00%.
+  // 99.79% regions (5742/5742 lines, 1938/1942 regions), taken twice -- on
+  // node v22.23.3, the major ci.yml pins, and on node v26.10.0 -- with the two
+  // runs agreeing to the region. tests/tools/e2e-coverage-report.mjs is the
+  // only harness file below 100.00%; every other one is at 100.00%.
   //
-  // 98.57% is e2e-coverage-report.mjs's ceiling, not a backlog: its uncovered
+  // That file's percentage is its ceiling, not a backlog: its uncovered
   // regions are the defensive fallbacks the note at the top of the file lists
   // as unreachable (#1253; three more were deleted rather than listed in
   // #1304), so no test can lift it. The per-file floor must stay at or below
-  // 98 until that list shrinks; a probe that lands one of them should raise
-  // the floor and shorten the list in the same change. That relationship is
-  // asserted below against the note itself rather than left to this prose,
-  // which had already drifted from it: this comment said "6 uncovered
-  // regions" where the note said 7.
+  // that ceiling until the list shrinks; a probe that lands one of them should
+  // raise the floor and shorten the list in the same change.
+  //
+  // The ceiling itself is deliberately not written out here. It is asserted
+  // below against the note instead, because every attempt to restate it in
+  // this comment has gone stale while the note moved on: the comment said "6
+  // uncovered regions" where the note said 7, and it later said the file was
+  // capped at 98.57% -- the 7-region figure -- after #1304 had deleted three
+  // of them and the note had been rewritten to 4 regions. A second test below
+  // now fails on that shape directly, so the next restatement cannot drift
+  // silently either.
   //
   // Both harness floors moved up with this commit. They were previously held
   // at 97 by tests/helpers-script-sandbox.mjs, whose single uncovered region
@@ -159,6 +164,33 @@ test(`${RESIDUAL_FILE} still caps the harness per-file floor where this file say
       'only be raised past that by closing one of them and shortening the note in the ' +
       'same change',
   );
+});
+
+// Any percentage this file attributes to the residual file by hand, with the
+// `//` wrapping removed so a figure split across two comment lines is still
+// read as one number. The assertion above pins the *floor* against the note;
+// this pattern is what pins the *prose* against it, which is the half that
+// kept drifting: an out-of-date ceiling restated here reads as the measured
+// truth, and the argument for the floor is then made from a number no longer
+// in evidence anywhere.
+const RESTATED_CEILING =
+  /e2e-coverage-report\.mjs(?:\s+is)?[^.%]{0,120}?at\s+(\d+(?:\.\d+)?)%/gu;
+
+test(`this file never restates a ${RESIDUAL_FILE} ceiling the note disagrees with`, () => {
+  const { ceiling } = residualCeiling();
+  const unwrapped = readFileSync(
+    fileURLToPath(import.meta.url),
+    'utf8',
+  ).replace(/\n\s*\/\/\s*/gu, ' ');
+  for (const match of unwrapped.matchAll(RESTATED_CEILING)) {
+    assert.equal(
+      Number(match[1]),
+      ceiling,
+      `this file says ${RESIDUAL_FILE} is capped at ${match[1]}%, but that file's own ` +
+        `residual note says ${ceiling}%; restate the note or, better, cite it rather ` +
+        'than copying the figure, which is how the previous two restatements went stale',
+    );
+  }
 });
 
 const gateCommand = manifest.scripts?.[GATE_SCRIPT];
