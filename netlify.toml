@@ -15,3 +15,34 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+# Security response headers. These are the half of the site's policy that a
+# `<meta http-equiv>` tag cannot carry, and they only became expressible when
+# the site moved off GitHub Pages, which serves static files and cannot add a
+# response header (ADR 0005). docusaurus.config.js keeps the fetch directives
+# -- img-src, script-src and the rest -- because those ARE honoured in a meta
+# policy and are built there from the host allowlists they share with
+# scripts/lib/. Nothing is duplicated between the two: each directive is
+# delivered by the one mechanism that honours it.
+[[headers]]
+  for = "/*"
+
+  [headers.values]
+    # Browsers ignore frame-ancestors in a meta policy, so until now nothing
+    # stopped another origin framing a page of this site. 'self' refuses every
+    # cross-origin frame -- the whole clickjacking vector, since the site ships
+    # no frame of its own -- while leaving a same-origin embed available.
+    Content-Security-Policy = "frame-ancestors 'self'"
+    # The pre-CSP spelling of the same rule, for browsers that predate
+    # frame-ancestors support. Browsers that honour both ignore this one.
+    X-Frame-Options = "SAMEORIGIN"
+    # The site serves mirrored third-party assets (docs/architectures/ images
+    # from cncf/architecture) and generated data/*.json. nosniff holds a
+    # response to its declared Content-Type, so a file that passed the
+    # validators as one type cannot be re-interpreted as another.
+    X-Content-Type-Options = "nosniff"
+    # Same policy as the `name="referrer"` meta tag in docusaurus.config.js,
+    # restated as a response header so it also covers responses that carry no
+    # HTML metadata -- a .svg or .json opened directly, where the meta tag is
+    # not present to be read.
+    Referrer-Policy = "same-origin"

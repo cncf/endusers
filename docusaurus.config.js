@@ -243,7 +243,8 @@ const config = {
         // directive constrains Docusaurus hydration or local search. See
         // SCRIPT_SOURCES above for why 'unsafe-eval' is dev-only.
         // frame-ancestors is omitted because browsers ignore it when
-        // delivered via <meta http-equiv>; it needs a real response header.
+        // delivered via <meta http-equiv>; it is delivered as a real response
+        // header instead, from the `[[headers]]` block in netlify.toml.
         // img-src, by contrast, is honoured in a meta policy, and it is the
         // directive that actually backs this project's remote-image host gates
         // (scripts/lib/profile-image.mjs, scripts/lib/project-assets.mjs, the

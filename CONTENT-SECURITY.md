@@ -52,7 +52,10 @@ Two consequences matter when a submission is rejected:
 - The site's Content-Security-Policy is delivered as a `<meta>` tag, which
   browsers do not apply to a file opened directly (for example a `.svg` URL).
   The parser-based gates above are therefore the primary control, and the CSP is
-  defense in depth.
+  defense in depth. The response headers in `netlify.toml` do reach such a file
+  — `X-Content-Type-Options: nosniff` holds it to its declared type and
+  `Referrer-Policy` still applies — but they carry no fetch directives, so a
+  directly opened asset is not covered by `img-src` and the rest.
 - A parser can still disagree with a browser on exotic input. The gates fail
   closed on anything the parser rejects, and every historical bypass is kept as
   a regression fixture in `tests/svg-active-content.test.mjs` and

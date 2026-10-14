@@ -18,9 +18,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { parse as parseToml } from 'smol-toml';
 import { parse as parseYaml } from 'yaml';
+
+// docusaurus.config.js calls require.resolve() for its plugin list, which
+// Docusaurus supplies through its own loader; the same shim site-config
+// tests use lets this file import the config to assert header parity.
+globalThis.require ??= createRequire(import.meta.url);
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
@@ -107,4 +113,86 @@ test('validate:all stops at the first failing validator', () => {
   for (const step of steps) {
     assert.match(step, /^npm run validate:[a-z-]+$/, step);
   }
+});
+
+// Security response headers (netlify.toml `[[headers]]`).
+//
+// These exist because the site is no longer on GitHub Pages, which could not
+// set a response header at all. The split they encode is the thing worth
+// pinning: a directive browsers honour in a <meta> policy stays in
+// docusaurus.config.js, where it is built from the host allowlists it shares
+// with scripts/lib; a directive browsers ignore there -- frame-ancestors --
+// lives here. If the header ever grows a fetch directive, the site has two
+// sources of truth for the same policy and they will drift, so that is
+// asserted against rather than left to review.
+
+const { default: siteConfig } = await import('../docusaurus.config.js');
+
+function siteHeaders() {
+  const rule = (netlify.headers ?? []).find((entry) => entry.for === '/*');
+  assert.ok(rule, 'netlify.toml declares no [[headers]] rule covering "/*"');
+  return rule.values ?? {};
+}
+
+function cspDirectives(policy) {
+  return new Map(
+    policy
+      .split(';')
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const [name, ...values] = part.split(/\s+/);
+        return [name.toLowerCase(), values];
+      }),
+  );
+}
+
+test('the response policy refuses cross-origin framing', () => {
+  const directives = cspDirectives(
+    siteHeaders()['Content-Security-Policy'] ?? '',
+  );
+  const frameAncestors = directives.get('frame-ancestors');
+  assert.ok(
+    frameAncestors,
+    'no frame-ancestors in the response policy: browsers ignore the directive in the <meta> policy docusaurus.config.js ships, so without it here any origin may frame this site',
+  );
+  assert.ok(
+    !frameAncestors.includes('*') && !frameAncestors.includes("'unsafe-none'"),
+    `frame-ancestors ${frameAncestors.join(' ')} admits cross-origin framing`,
+  );
+});
+
+test('the response policy carries only what a meta policy cannot', () => {
+  const directives = cspDirectives(
+    siteHeaders()['Content-Security-Policy'] ?? '',
+  );
+  const extra = [...directives.keys()].filter(
+    (name) => name !== 'frame-ancestors',
+  );
+  assert.deepEqual(
+    extra,
+    [],
+    'the fetch directives are built in docusaurus.config.js from the host allowlists in scripts/lib; restating one here makes two sources of truth for one policy',
+  );
+});
+
+test('X-Frame-Options agrees with frame-ancestors', () => {
+  // A browser old enough to need this header is old enough to ignore
+  // frame-ancestors, so the two must not say different things.
+  assert.equal(siteHeaders()['X-Frame-Options'], 'SAMEORIGIN');
+});
+
+test('responses are held to their declared content type', () => {
+  assert.equal(siteHeaders()['X-Content-Type-Options'], 'nosniff');
+});
+
+test('the Referrer-Policy header matches the meta policy it extends', () => {
+  // The header exists to reach responses that carry no HTML metadata (a .svg
+  // or .json opened directly). Two spellings of one policy, so parity is
+  // asserted rather than the value restated.
+  const meta = siteConfig.headTags.find(
+    (tag) => tag.tagName === 'meta' && tag.attributes?.name === 'referrer',
+  );
+  assert.ok(meta, 'docusaurus.config.js ships no <meta name="referrer">');
+  assert.equal(siteHeaders()['Referrer-Policy'], meta.attributes.content);
 });

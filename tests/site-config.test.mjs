@@ -665,7 +665,7 @@ test('the document sets a Referrer Policy that leaks nothing cross-origin', () =
   const meta = referrerMeta();
   assert.ok(
     meta,
-    'no <meta name="referrer"> head tag: the browser default, strict-origin-when-cross-origin, attaches this site\'s origin to every off-origin request, and the build carries no Referrer-Policy header of its own',
+    'no <meta name="referrer"> head tag: the browser default, strict-origin-when-cross-origin, attaches this site\'s origin to every off-origin request, and the Referrer-Policy header in netlify.toml is pinned to match this tag rather than to replace it',
   );
   const policy = meta.attributes.content;
   assert.ok(
