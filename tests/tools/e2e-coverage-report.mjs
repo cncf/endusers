@@ -882,13 +882,22 @@ export async function collectE2ECoverage(
       const coveredRegions = regionValues.filter(
         (region) => region.count > 0,
       ).length;
-      const uncoveredRegions = [
-        ...new Set(
-          regionValues
-            .filter((region) => region.count <= 0)
-            .map((region) => region.line),
-        ),
-      ].sort((a, b) => a - b);
+      // One entry per uncovered region, not per distinct line: V8 routinely
+      // splits a single line into several ranges, so a line can hold more
+      // than one zero. Deduplicating by line dropped those extras from the
+      // list while `regions - coveredRegions` still counted them, which left
+      // the report internally inconsistent -- at main eff33b5 the summary
+      // reported 18 uncovered regions across src/** while the per-file lists
+      // named 17 lines, because GroupLinkStatus/index.js is 15/18 yet listed
+      // only lines 23 and 33. A reader working the list could not see the
+      // third zero at all, and the e2e gate's own prose had to annotate it
+      // "GroupLinkStatus:33 (x2)" by hand. Repeating the line keeps
+      // `uncoveredRegions.length` equal to `regions - coveredRegions`, which
+      // is the invariant anyone reading the two numbers together assumes.
+      const uncoveredRegions = regionValues
+        .filter((region) => region.count <= 0)
+        .map((region) => region.line)
+        .sort((a, b) => a - b);
       return {
         file,
         executableLines,

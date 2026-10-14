@@ -791,7 +791,9 @@ test('a witness with any zero touching the region lines does not contradict it',
     });
     assert.equal(report.status, 'ok');
     const [entry] = report.sources;
-    assert.deepEqual(entry.uncoveredRegions, [1]);
+    // One entry per surviving zero, both on line 1: the list and the count
+    // below are two views of the same two regions.
+    assert.deepEqual(entry.uncoveredRegions, [1, 1]);
     assert.equal(entry.regions - entry.coveredRegions, 2);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
