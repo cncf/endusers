@@ -33,6 +33,7 @@ import {
 } from './lib/architecture-content.mjs';
 import { artworkUrls } from './lib/project-assets.mjs';
 import { MIRRORABLE_ASSET_EXTENSIONS } from './lib/asset-extensions.mjs';
+import { cloneShallow, revParseHead } from './lib/git-source.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const upstream = mkdtempSync(join(tmpdir(), 'cncf-architecture-'));
@@ -42,20 +43,8 @@ const docsDir = join(root, 'docs/architectures');
 const assetsDir = join(root, 'static/img/architectures');
 
 try {
-  execFileSync(
-    'git',
-    [
-      'clone',
-      '--depth',
-      '1',
-      'https://github.com/cncf/architecture.git',
-      upstream,
-    ],
-    { stdio: 'inherit' },
-  );
-  const commit = execFileSync('git', ['-C', upstream, 'rev-parse', 'HEAD'], {
-    encoding: 'utf8',
-  }).trim();
+  cloneShallow('https://github.com/cncf/architecture.git', upstream);
+  const commit = revParseHead(upstream);
   rmSync(recordsDir, { recursive: true, force: true });
   rmSync(join(root, 'docs/architectures/reports'), {
     recursive: true,

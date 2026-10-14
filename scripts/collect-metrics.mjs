@@ -13,16 +13,17 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import { githubAllPages, makeGitHubHeaders } from './lib/github.mjs';
+import { cloneShallow, revParseHead } from './lib/git-source.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const work = mkdtempSync(join(tmpdir(), 'cncf-metrics-'));
 const landscapeDir = join(work, 'landscape');
 const architectureDir = join(work, 'architecture');
 try {
-  clone('https://github.com/cncf/landscape.git', landscapeDir);
-  clone('https://github.com/cncf/architecture.git', architectureDir);
-  const landscapeCommit = git(landscapeDir, 'rev-parse', 'HEAD');
-  const architectureCommit = git(architectureDir, 'rev-parse', 'HEAD');
+  cloneShallow('https://github.com/cncf/landscape.git', landscapeDir);
+  cloneShallow('https://github.com/cncf/architecture.git', architectureDir);
+  const landscapeCommit = revParseHead(landscapeDir);
+  const architectureCommit = revParseHead(architectureDir);
   const architectureHistory = architectureDir;
   execFileSync('git', ['-C', architectureHistory, 'fetch', '--unshallow'], {
     stdio: 'ignore',
@@ -163,14 +164,6 @@ try {
   console.log(`Collected ${data.metrics.length} metrics at ${generatedAt}`);
 } finally {
   rmSync(work, { recursive: true, force: true });
-}
-function clone(url, destination) {
-  execFileSync('git', ['clone', '--depth', '1', url, destination], {
-    stdio: 'inherit',
-  });
-}
-function git(dir, ...args) {
-  return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8' }).trim();
 }
 function metric(id, label, value, source, href, collectedAt, note) {
   return { id, label, value, source, sourceUrl: href, collectedAt, note };
