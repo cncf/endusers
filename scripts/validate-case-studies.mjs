@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
-import { isSafeUrl, reportAndExit } from './lib/validate-utils.mjs';
+import {
+  isSafeUrl,
+  reportAndExit,
+  CNCF_HOST_SUFFIXES,
+} from './lib/validate-utils.mjs';
 
 // data/case-studies.json is regenerated from the cncf.io WordPress REST API by
 // scripts/collect-case-studies.mjs, which copies each post's `link` through
@@ -12,12 +16,11 @@ import { isSafeUrl, reportAndExit } from './lib/validate-utils.mjs';
 // in ./lib/validate-utils.mjs is the shared gate; it parses the URL and holds
 // the host to an allow-list, the same standard
 // scripts/lib/profile-image.mjs already applies to profile images.
-const ALLOWED_HOST_SUFFIXES = ['cncf.io'];
 
 function publishableUrl(value) {
   if (typeof value !== 'string') return null;
   return isSafeUrl(value.trim(), {
-    allowedHostSuffixes: ALLOWED_HOST_SUFFIXES,
+    allowedHostSuffixes: CNCF_HOST_SUFFIXES,
   });
 }
 
@@ -36,7 +39,7 @@ if (!data.sourceUrl || !publishableUrl(data.sourceUrl))
   errors.push({
     path: 'case-studies.json',
     severity: 'error',
-    message: `sourceUrl must be an https URL, with no userinfo, on ${ALLOWED_HOST_SUFFIXES.join(' or ')}`,
+    message: `sourceUrl must be an https URL, with no userinfo, on ${CNCF_HOST_SUFFIXES.join(' or ')}`,
   });
 if (!Array.isArray(data.caseStudies) || !data.caseStudies.length)
   errors.push({
@@ -78,7 +81,7 @@ for (const entry of Array.isArray(data.caseStudies) ? data.caseStudies : []) {
     errors.push({
       path: String(id),
       severity: 'error',
-      message: `url must be an https URL, with no userinfo, on ${ALLOWED_HOST_SUFFIXES.join(' or ')}: ${JSON.stringify(entry.url)}`,
+      message: `url must be an https URL, with no userinfo, on ${CNCF_HOST_SUFFIXES.join(' or ')}: ${JSON.stringify(entry.url)}`,
     });
   urls.add(entry.url);
   if (!Array.isArray(entry.projects))

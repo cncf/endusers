@@ -12,7 +12,7 @@
 
 import fs from 'node:fs';
 
-export { checkUrl, isSafeUrl } from './url-safety.mjs';
+export { checkUrl, isSafeUrl, CNCF_HOST_SUFFIXES } from './url-safety.mjs';
 
 /**
  * Write text to stderr without going through console.
