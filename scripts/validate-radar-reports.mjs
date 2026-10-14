@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
-import { isSafeUrl, reportAndExit } from './lib/validate-utils.mjs';
+import {
+  isSafeUrl,
+  reportAndExit,
+  CNCF_HOST_SUFFIXES,
+} from './lib/validate-utils.mjs';
 
 // data/radar-reports.json is regenerated from the cncf.io WordPress REST API by
 // scripts/collect-radar-reports.mjs, which copies each post's `link` through
@@ -13,12 +17,11 @@ import { isSafeUrl, reportAndExit } from './lib/validate-utils.mjs';
 // in ./lib/validate-utils.mjs is the shared gate; it parses the URL and holds
 // the host to an allow-list, the same standard
 // scripts/validate-case-studies.mjs already applies to the sibling feed.
-const ALLOWED_HOST_SUFFIXES = ['cncf.io'];
 
 function publishableUrl(value) {
   if (typeof value !== 'string') return null;
   return isSafeUrl(value.trim(), {
-    allowedHostSuffixes: ALLOWED_HOST_SUFFIXES,
+    allowedHostSuffixes: CNCF_HOST_SUFFIXES,
   });
 }
 
@@ -37,7 +40,7 @@ if (!data.sourceUrl || !publishableUrl(data.sourceUrl))
   errors.push({
     path: 'radar-reports.json',
     severity: 'error',
-    message: `sourceUrl must be an https URL, with no userinfo, on ${ALLOWED_HOST_SUFFIXES.join(' or ')}`,
+    message: `sourceUrl must be an https URL, with no userinfo, on ${CNCF_HOST_SUFFIXES.join(' or ')}`,
   });
 if (!Array.isArray(data.radarReports) || !data.radarReports.length)
   errors.push({
@@ -66,7 +69,7 @@ for (const entry of Array.isArray(data.radarReports) ? data.radarReports : []) {
     errors.push({
       path: String(id),
       severity: 'error',
-      message: `url must be an https URL, with no userinfo, on ${ALLOWED_HOST_SUFFIXES.join(' or ')}: ${JSON.stringify(entry.url)}`,
+      message: `url must be an https URL, with no userinfo, on ${CNCF_HOST_SUFFIXES.join(' or ')}: ${JSON.stringify(entry.url)}`,
     });
   if (!entry.summary)
     errors.push({

@@ -10,6 +10,8 @@
 // src/lib/profile-links.mjs and scripts/lib/project-card-links.mjs); images
 // are held to the same standard here.
 
+import { CNCF_HOST_SUFFIXES } from './url-safety.mjs';
+
 const ALLOWED_HOSTS = new Set([
   'raw.githubusercontent.com',
   'avatars.githubusercontent.com',
@@ -17,8 +19,9 @@ const ALLOWED_HOSTS = new Set([
   'www.github.com',
 ]);
 
-// Hosts allowed together with their subdomains.
-const ALLOWED_DOMAIN_SUFFIXES = ['cncf.io'];
+// Hosts allowed together with their subdomains: the shared CNCF allow-list,
+// so an image host is accepted on exactly the terms a link host is.
+const ALLOWED_DOMAIN_SUFFIXES = CNCF_HOST_SUFFIXES;
 
 export function isAllowedImageHost(hostname) {
   const host = String(hostname || '').toLowerCase();

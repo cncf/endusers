@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import {
   checkUrl as checkUrlImpl,
   reportAndExit,
+  CNCF_HOST_SUFFIXES,
 } from './lib/validate-utils.mjs';
 const data = JSON.parse(
   readFileSync(new URL('../data/metrics.json', import.meta.url)),
@@ -24,11 +25,11 @@ const errors = [];
 // these URLs is rendered under hard-coded anchor text ("cncf/architecture",
 // "Source ↗"), so a plain https URL on a host that is not CNCF's publishes as a
 // CNCF-labelled link to an unrelated origin. Hold the host to an allow-list,
-// the same standard ALLOWED_HOST_SUFFIXES applies in
-// scripts/validate-case-studies.mjs and scripts/validate-radar-reports.mjs.
+// the same CNCF_HOST_SUFFIXES base scripts/validate-case-studies.mjs and
+// scripts/validate-radar-reports.mjs import from scripts/lib/url-safety.mjs.
 // github.com is allowed because sources.*.repository, sources.*.sourceUrl and
 // several metric sourceUrl values legitimately point at github.com/cncf/...
-const ALLOWED_HOST_SUFFIXES = ['cncf.io', 'github.com'];
+const ALLOWED_HOST_SUFFIXES = [...CNCF_HOST_SUFFIXES, 'github.com'];
 
 function checkUrl(path, field, value) {
   checkUrlImpl(errors, path, field, value, {

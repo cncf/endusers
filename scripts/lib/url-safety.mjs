@@ -22,6 +22,17 @@
 const SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
 
 /**
+ * Base host allow-list for CNCF-sourced URLs, shared by every validator that
+ * restricts a field to `checkUrl`'s `allowedHostSuffixes` option.
+ * scripts/validate-case-studies.mjs and scripts/validate-radar-reports.mjs
+ * use this list directly; scripts/validate-metrics.mjs extends it with
+ * `github.com` for fields that legitimately point at a CNCF GitHub
+ * repository. Before this export, each of the three carried its own copy
+ * kept in sync only by a cross-reference comment.
+ */
+export const CNCF_HOST_SUFFIXES = ['cncf.io'];
+
+/**
  * Prefix `value` with `defaultScheme` when it has no scheme of its own, so a
  * bare host such as "example.test" resolves against https instead of being
  * concatenated — concatenation lets a value such as
