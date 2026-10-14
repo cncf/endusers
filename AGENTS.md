@@ -1,10 +1,12 @@
 # Agent Entry Point: CNCF End User Community Repository
 
 This repository hosts the source for the CNCF End User Community site, currently
-deployed to <https://cncf.github.io/endusers/> (endusers.cncf.io is a pending
-DNS cutover; see [ADR 0001](./adr/0001-site-ownership-and-cutover-path.md) and
-issue #46). It serves practitioners, architects, and organizations running cloud
-native technologies in production.
+deployed on Netlify at <https://endusers.netlify.app/> (endusers.cncf.io is a
+pending DNS cutover; see
+[ADR 0001](./adr/0001-site-ownership-and-cutover-path.md),
+[ADR 0005](./adr/0005-host-the-site-on-netlify.md) and issue #1433). It serves
+practitioners, architects, and organizations running cloud native technologies
+in production.
 
 ## Navigation
 

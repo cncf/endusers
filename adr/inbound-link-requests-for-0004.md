@@ -11,8 +11,8 @@ site's current structure before filing.
 
 Do not file these requests until the DNS cutover to `endusers.cncf.io` has
 completed ([#1433](https://github.com/cncf/endusers/issues/1433)): the domain
-does not resolve yet — the site deploys to GitHub Pages in the interim — so a
-request filed today would ask for links to a non-resolving URL.
+does not resolve yet — the site is served from `endusers.netlify.app` in the
+interim — so a request filed today would ask for links to a non-resolving URL.
 
 Origin issue: [#1434](https://github.com/cncf/endusers/issues/1434) (closed once
 these drafts shipped). Live status is the Status column below: when a request is

@@ -54,7 +54,7 @@ const FONT_EXTENSIONS = new Set(['.ttf', '.woff', '.woff2']);
 // Files sitting directly in the static/
 // root have no enclosing directory for this list to gate, so
 // checkForUngatedStaticEntries gates each one individually: the known non-asset
-// files (robots.txt, manifest.json, .nojekyll) are named in exemptTopLevelFiles
+// files (robots.txt, manifest.json) are named in exemptTopLevelFiles
 // and every other one is held to the site-chrome extension allow-list.
 const assetDirs = [
   { dir: join(root, 'static/img/architectures'), quality: true },
@@ -111,7 +111,6 @@ const exemptTopLevelDirs = new Map([
 // that is not an asset at all is named here with the reason a reviewer needs to
 // approve a new exemption.
 const exemptTopLevelFiles = new Map([
-  ['.nojekyll', 'empty marker read by GitHub Pages; carries no content'],
   ['manifest.json', 'web app manifest; JSON data, never parsed as markup'],
   ['robots.txt', 'crawler directives; plain text, never parsed as markup'],
 ]);

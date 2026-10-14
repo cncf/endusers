@@ -22,6 +22,7 @@
     "_list:git:delta": "git diff --name-only --diff-filter=ACMR | grep -E '\\.(js|md|scss|yml|yaml)$'",
     "build:preview": "npm run _build",
     "build:production": "npm run _build",
+    "build:netlify": "node scripts/netlify-build.mjs",
     "build": "BUILD_ENV=dev npm run _build",
     "check:audit": "node scripts/audit-gate.mjs",
     "check:format": "npm run _check:format || (echo '[help] Run: npm run fix:format'; exit 1)",
@@ -69,6 +70,7 @@
     "validate:community-people": "node scripts/validate-community-people.mjs",
     "validate:community-groups": "node scripts/validate-community-groups.mjs",
     "validate:projects-born": "node scripts/validate-projects-born.mjs",
+    "validate:all": "npm run validate:metrics && npm run validate:architectures && npm run validate:architecture-assets && npm run validate:awards && npm run validate:community-people && npm run validate:community-groups && npm run validate:launch-metrics && npm run validate:case-studies && npm run validate:radar-reports && npm run validate:projects-born && npm run validate:button-contrast && npm run validate:enduser-members && npm run validate:members",
     "pr-queue-hygiene": "node scripts/pr-queue-hygiene.mjs",
     "test:unit": "TZ=UTC node --test",
     "test:unit:coverage": "TZ=UTC node tests/tools/coverage-report.mjs",
@@ -119,6 +121,7 @@
     "markdownlint-cli": "^0.49.1",
     "npm-check-updates": "^23.1.1",
     "prettier": "^3.9.10",
+    "smol-toml": "^1.9.1",
     "typescript": "~7.0.2",
     "v8-to-istanbul": "^9.3.0",
     "yaml": "^2.9.1"

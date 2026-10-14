@@ -35,7 +35,7 @@ function hasScheme(value) {
   return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value) || value.startsWith('//');
 }
 
-// Docusaurus copies static/ into build/ verbatim, and GitHub Pages serves from
+// Docusaurus copies static/ into build/ verbatim, and production serves from
 // a case-sensitive filesystem. existsSync() on a case-insensitive development
 // machine happily resolves /favicons/Favicon.svg, so each segment is compared
 // against the real directory entry instead.

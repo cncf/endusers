@@ -1,0 +1,17 @@
+# Build settings for the Netlify site `endusers` (ADR 0005). This file is the
+# single source of truth; the Netlify UI build settings defer to it.
+#
+# build:netlify runs every validate:* target ci.yml runs, then the production
+# build. Automation pull requests are authored by github.token and never start
+# ci.yml (#755), so this build is the only gate their data passes before it
+# publishes: a failed validator fails the deploy and the previous deploy stays
+# live. SITE_URL is derived per deploy context by scripts/netlify-build.mjs
+# (production: URL; previews: DEPLOY_PRIME_URL), so canonical and Open Graph
+# URLs follow the host without a config change at the DNS cutover.
+
+[build]
+  command = "npm run build:netlify"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "22"

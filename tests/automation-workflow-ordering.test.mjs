@@ -148,9 +148,11 @@ function publishesSite(file) {
   );
 }
 
+// validate:all is the aggregate the Netlify build runs, not a gate of its own;
+// tests/netlify-publish-contract.test.mjs pins that it names every gate here.
 function validatorGates() {
   return Object.keys(scripts)
-    .filter((name) => name.startsWith('validate:'))
+    .filter((name) => name.startsWith('validate:') && name !== 'validate:all')
     .sort();
 }
 
@@ -340,6 +342,26 @@ test('members validation runs before both production builds', () => {
       `${file}:${jobName} must validate members before building`,
     );
   }
+});
+
+test('members validation runs before the Netlify build', () => {
+  // netlify.toml runs build:netlify, whose step list lives in
+  // scripts/netlify-build.mjs rather than in a workflow; validate:all is the
+  // validator set and build:production the build, so the same ordering holds
+  // across the two scripts.
+  const buildTargets = npmRunTargets(scripts['build:netlify'] ?? '');
+  assert.deepEqual(buildTargets, [], 'build:netlify delegates to a script');
+  assert.equal(scripts['build:netlify'], 'node scripts/netlify-build.mjs');
+
+  const validators = npmRunTargets(scripts['validate:all'] ?? '');
+  assert.ok(
+    validators.includes('validate:members'),
+    'validate:all omits validate:members',
+  );
+  assert.ok(
+    !validators.some((target) => target.startsWith('build')),
+    'validate:all must not build; build:production follows it in the script',
+  );
 });
 
 test('the workflows this contract applies to are actually detected', () => {
