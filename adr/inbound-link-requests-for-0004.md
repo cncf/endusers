@@ -9,9 +9,16 @@ needs a maintainer with access to those repositories; this repository's agents
 cannot file them. Target pages are suggestions, to be confirmed against each
 site's current structure before filing.
 
-Tracking issue: [#1434](https://github.com/cncf/endusers/issues/1434). When a
-request is filed, record its link in the Status column and tick the ROADMAP.md
-cross-linking item once all are filed.
+**Hold until the DNS cutover.** endusers.cncf.io does not resolve yet (the site
+is deployed at <https://cncf.github.io/endusers/> pending the cutover tracked in
+[#1433](https://github.com/cncf/endusers/issues/1433)). Do not file these
+requests until #1433 is complete, or they would ask for links to a non-resolving
+domain.
+
+Origin issue (closed): [#1434](https://github.com/cncf/endusers/issues/1434);
+live status is the Status column below. When a request is filed, record its link
+in the Status column and tick the ROADMAP.md cross-linking item once all are
+filed.
 
 | #   | Target property    | Suggested page                                | Requested link and anchor text                                                                   | Why (ADR 0004)                                                    | Status |
 | --- | ------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------ |
@@ -33,5 +40,5 @@ adopters and operators of cloud native technologies. Per its audience-boundary
 decision (ADR 0004), <why>. Could <page> link to <URL> with the anchor text
 "<anchor>"? The reverse links already exist from the End User site.
 
-Context: https://github.com/cncf/endusers/issues/1434
+Context: https://github.com/cncf/endusers/issues/1434 (origin issue)
 ```
