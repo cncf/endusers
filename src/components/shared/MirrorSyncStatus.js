@@ -7,8 +7,9 @@ import { formatDate } from './formatDate';
  * (`CaseStudies`, `RadarReports`) so the attribution link hygiene and the
  * missing/invalid `generatedAt` handling stay in one place.
  *
- * Renders nothing when `generatedAt` is absent or does not parse, so an
- * incomplete mirror never ships an "Invalid Date".
+ * Renders nothing when `generatedAt` is absent, `null` or does not parse, so
+ * an incomplete mirror never ships an "Invalid Date" -- or the epoch, which
+ * is what `new Date(null)` would otherwise format to.
  */
 export default function MirrorSyncStatus({
   generatedAt,
@@ -16,6 +17,7 @@ export default function MirrorSyncStatus({
   label,
   className,
 }) {
+  if (!generatedAt) return null;
   const syncDate = formatDate(generatedAt);
   if (!syncDate) return null;
   return (

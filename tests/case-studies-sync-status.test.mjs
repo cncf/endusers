@@ -104,6 +104,12 @@ test('a missing generatedAt renders no banner rather than "Invalid Date"', async
   assert.equal(await renderWith({ caseStudies: [] }), null);
 });
 
+test('an explicit null generatedAt renders no banner rather than the epoch', async () => {
+  // tests/e2e/fixtures/data-variant/case-studies.json clears the field to
+  // JSON null, and `new Date(null)` is 1970-01-01, not an invalid date.
+  assert.equal(await renderWith({ caseStudies: [], generatedAt: null }), null);
+});
+
 test('an unparseable generatedAt renders no banner rather than "Invalid Date"', async () => {
   assert.equal(
     await renderWith({ caseStudies: [], generatedAt: 'not a timestamp' }),
