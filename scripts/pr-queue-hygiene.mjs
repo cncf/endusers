@@ -48,8 +48,8 @@ import { execFileSync } from 'node:child_process';
 
 const REPO = process.env.REPO || process.env.GITHUB_REPOSITORY;
 const DRY_RUN = process.env.DRY_RUN === '1';
-const STALE_HOURS = 48;
-const LABEL = 'needs-rebase-or-close';
+export const STALE_HOURS = 48;
+export const LABEL = 'needs-rebase-or-close';
 export const HOLD_LABELS = new Set(['hold', 'on-hold', 'do-not-merge']);
 export const MARKER_PREFIX = '<!-- pr-queue-hygiene:first-conflict-observed:';
 const MARKER_RE = /<!-- pr-queue-hygiene:first-conflict-observed:(.+?) -->/;
