@@ -1,6 +1,7 @@
 import React from 'react';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import awardsData from '@site/data/awards.json';
+import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
 
 function WinnerCard({ entry }) {
@@ -71,12 +72,7 @@ export default function AwardsTimeline() {
   }
   const years = Array.from(byYear.keys()).sort((a, b) => b - a);
   const verifiedDate = awardsData.verifiedAt
-    ? new Date(awardsData.verifiedAt).toLocaleDateString('en-US', {
-        timeZone: 'UTC',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
+    ? formatDate(awardsData.verifiedAt)
     : null;
 
   return (

@@ -5,7 +5,7 @@
 // The component reads data/community-groups.json at module scope and renders
 // two things the checked-in corpus cannot vary:
 //
-//   src/components/shared/formatDate.js:13
+//   src/components/shared/formatDate.js:17
 //     `if (Number.isNaN(parsed.getTime())) return null;` — the shared
 //     formatDate returns null for a checkedAt that does not parse, which
 //     drops the "Upstream group links last verified on ..." line entirely;
@@ -19,7 +19,7 @@
 // community-groups.json appends exactly one archived group, so the ordinary
 // coverage build has `stale.length === 1` and always takes the singular arm.
 // The real checkedAt is a valid ISO timestamp, so
-// src/components/shared/formatDate.js:13 never returns.
+// src/components/shared/formatDate.js:17 never returns.
 //
 // Two groups drifting at once is an ordinary shape rather than defensive dead
 // code: `npm run check:community-group-links` sets `archived` and `reachable`
@@ -96,7 +96,7 @@ describeCoverage('a link check that found more than one group drifting', () => {
     page,
   }) => {
     expect(variantStale.length).toBeGreaterThan(1);
-    // What src/components/shared/formatDate.js:13 turns on: the
+    // What src/components/shared/formatDate.js:17 turns on: the
     // overlaid checkedAt is present but does not
     // parse, so formatDate reaches its guard instead of returning early on a
     // missing field.

@@ -6,6 +6,7 @@ import metrics from '@site/data/metrics.json';
 import ArchitectureFilters, {
   useArchitectureFilters,
 } from '@site/src/components/ArchitectureFilters';
+import { formatDate } from '../shared/formatDate';
 import { initials } from '../shared/initials';
 import styles from './styles.module.css';
 
@@ -14,14 +15,7 @@ function SyncStatus() {
   if (!architectures?.revision) return null;
   const shortRevision = architectures.revision.slice(0, 7);
   const commitUrl = `${architectures.repository}/commit/${architectures.revision}`;
-  const syncDate = metrics.generatedAt
-    ? new Date(metrics.generatedAt).toLocaleDateString('en-US', {
-        timeZone: 'UTC',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : null;
+  const syncDate = metrics.generatedAt ? formatDate(metrics.generatedAt) : null;
   return (
     <p className={styles.syncStatus}>
       Last synced from{' '}

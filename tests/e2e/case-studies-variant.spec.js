@@ -4,11 +4,11 @@
 // The component reads data/case-studies.json at module scope and branches on
 // two document-level fields:
 //
-//   src/components/CaseStudies/index.js:71-72 hands `data.generatedAt` to
+//   src/components/CaseStudies/index.js:72-73 hands `data.generatedAt` to
 //     the shared MirrorSyncStatus, whose `if (!generatedAt) return null;` at
 //     src/components/shared/MirrorSyncStatus.js:20 renders no provenance line
 //     when the corpus carries no generatedAt;
-//   src/components/CaseStudies/index.js:47
+//   src/components/CaseStudies/index.js:48
 //     `const caseStudies = data.caseStudies || [];` — the `|| []` fallback
 //     supplies the list the page sorts, filters, counts and maps over when
 //     the corpus carries no caseStudies array at all.

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import data from '@site/data/case-studies.json';
 import MirrorSyncStatus from '../shared/MirrorSyncStatus';
+import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
 
 function useCaseStudyFilterOptions(caseStudies) {
@@ -188,14 +189,7 @@ export default function CaseStudies() {
                   </a>
                 </th>
                 <td>{study.organization}</td>
-                <td>
-                  {study.publishedAt &&
-                    new Date(study.publishedAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                </td>
+                <td>{study.publishedAt && formatDate(study.publishedAt)}</td>
                 <td className={styles.projects}>{study.projects.join(', ')}</td>
                 <td>{study.industries.join(', ')}</td>
                 <td>{study.countries.join(', ')}</td>

@@ -43,7 +43,7 @@ const COVERAGE_JOB = 'e2e-coverage';
 //
 // Ceiling, measured on the current tree (651/671, 97.02%): 20 regions at
 // zero. Eleven are defensive fallbacks of the #1253 class:
-// src/components/CaseStudies/index.js:47,
+// src/components/CaseStudies/index.js:48,
 // src/components/CommunityPeople/index.js:134,
 // src/components/GroupLinkStatus/index.js:14,
 // src/components/MemberDirectory/DirectoryFreshness.js:19,
@@ -52,12 +52,12 @@ const COVERAGE_JOB = 'e2e-coverage';
 // src/components/MemberDirectory/DirectoryFreshness.js:49,
 // src/components/MetricsDashboard/index.js:65,
 // src/components/MetricsDashboard/index.js:85,
-// src/components/RadarReports/index.js:7 and
+// src/components/RadarReports/index.js:8 and
 // src/components/hooks/useFocusTrap.js:35. Five are guard arms that a
 // sibling fixture build (data-no-revision, data-variant) demonstrably
 // executes, yet the union never credits (#1256, #1236):
-// src/components/ReferenceArchitectures/index.js:14,
-// src/components/ReferenceArchitectures/index.js:35,
+// src/components/ReferenceArchitectures/index.js:15,
+// src/components/ReferenceArchitectures/index.js:29,
 // src/components/PeopleFreshness/index.js:13 and
 // src/components/GroupLinkStatus/index.js:24 (x2). The build that takes the
 // arm records no deviation at the arm's own span, and isContradictedRegion
