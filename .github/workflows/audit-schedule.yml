@@ -1,0 +1,40 @@
+name: Dependency audit
+
+# ci.yml runs `npm run check:audit` on pull_request and merge_group, so a
+# lockfile *change* is always gated. The advisory database moves on its own,
+# though: an advisory published against the lockfile exactly as committed
+# changes no file here, so nothing re-runs the gate while main is quiet, and
+# the finding waits for whoever happens to open the next pull request. The
+# same reasoning already gives codeql.yml its weekly cron.
+#
+# This runs only the audit gate, not ci.yml's full validate job, so the
+# scheduled cost stays at an `npm ci` plus one `npm audit --package-lock-only`.
+# A red run on this workflow is the notification; it opens nothing.
+on:
+  schedule:
+    # Monday, offset from codeql.yml's 07:31 so the two do not contend.
+    - cron: '47 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit dependencies against the advisory allowlist
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Audit dependencies against the advisory allowlist
+        run: npm run check:audit

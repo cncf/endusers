@@ -27,6 +27,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # scripts/generate-changelog.mjs renders docs/community/changelog.md
+          # from `git log --first-parent`; on a depth-1 checkout it can only
+          # emit the fallback page that links out to GitHub (#1409).
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

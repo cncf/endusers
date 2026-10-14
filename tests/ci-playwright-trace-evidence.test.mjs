@@ -46,15 +46,11 @@ import { parse } from 'yaml';
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const workflowDir = join(repoRoot, '.github', 'workflows');
 
-// `<workflow>#<job>` → why that job keeps no Playwright traces.
-const NO_TRACE_JOBS = new Map([
-  [
-    'ci.yml#e2e-coverage',
-    'Runs the suite only to collect V8 coverage and uploads coverage/e2e/ ' +
-      'instead; a flake there is diagnosed from the gating e2e job, which ' +
-      'runs the same specs against the same build and does keep traces.',
-  ],
-]);
+// `<workflow>#<job>` → why that job keeps no Playwright traces. Empty since
+// #1412: the e2e-coverage job runs the describeCoverage blocks that no other
+// job executes, so its allowlist reason (that the gating e2e job runs the same
+// specs) did not hold, and it now uploads traces too.
+const NO_TRACE_JOBS = new Map();
 
 // Playwright's own default when a config sets no outputDir.
 const DEFAULT_OUTPUT_DIR = 'test-results';
