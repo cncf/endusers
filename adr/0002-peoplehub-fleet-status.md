@@ -2,7 +2,7 @@
 
 - **Status**: Accepted
 - **Date**: 2026-08-08
-- **Tracking issue**: [#97](https://github.com/castrojo/endusers/issues/97)
+- **Tracking issue**: [#97](https://github.com/cncf/endusers/issues/97)
 
 ## Context
 
