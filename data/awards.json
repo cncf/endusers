@@ -5,7 +5,6 @@
   "verificationNote": "Audited all 15 entries (2018-2026) against the Top End User Award history on contribute.cncf.io/community/awards. Count matches the published history exactly (no gaps, no extras). Every announcementUrl, caseStudyUrl, and talkUrl was fetched and confirmed to resolve to the matching organization/award page as of this date.",
   "awards": [
     {
-      "year": 2026,
       "award": "top-end-user",
       "awardLabel": "Top End User Award",
       "organization": "SNCF",
