@@ -6,7 +6,7 @@
 // any host that merely mentions that text in a path, query or fragment, so the
 // destination must be decided by parsing the URL rather than by matching text.
 
-import { isSafeUrl } from './validate-utils.mjs';
+import { CNCF_HOST_SUFFIXES, isSafeUrl } from './validate-utils.mjs';
 
 /**
  * True only for an https URL whose host is cncf.io (or a subdomain of it) and
@@ -20,7 +20,7 @@ export function isCncfProjectHref(value) {
   // in one place; the /projects/ path-prefix requirement is specific to this
   // call site. Userinfo would otherwise let
   // "https://www.cncf.io@evil.example/projects/x" read as CNCF.
-  const url = isSafeUrl(value, { allowedHostSuffixes: ['cncf.io'] });
+  const url = isSafeUrl(value, { allowedHostSuffixes: CNCF_HOST_SUFFIXES });
   if (!url) return false;
 
   return url.pathname === '/projects' || url.pathname.startsWith('/projects/');

@@ -30,6 +30,11 @@ const KNOWN_CALL_SITES = [
   'scripts/validate-case-studies.mjs',
   'scripts/validate-radar-reports.mjs',
   'scripts/validate-metrics.mjs',
+  // The two non-validator copies (#1446, #1455): the project-card link gate
+  // passed the literal inline, and the profile-image host gate named it
+  // ALLOWED_DOMAIN_SUFFIXES.
+  'scripts/lib/project-card-links.mjs',
+  'scripts/lib/profile-image.mjs',
 ];
 
 function walk(dir) {
@@ -50,19 +55,22 @@ const scriptFiles = walk(scriptsDir)
   .sort((a, b) => a.path.localeCompare(b.path));
 
 /**
- * Files outside the shared module that declare their own
- * `ALLOWED_HOST_SUFFIXES` array literal instead of importing
- * CNCF_HOST_SUFFIXES. scripts/validate-metrics.mjs's derived
+ * Files outside the shared module that carry their own host-suffix array
+ * literal instead of importing CNCF_HOST_SUFFIXES: a `*_SUFFIXES = ['...']`
+ * declaration under any name, or a literal passed straight to
+ * `allowedHostSuffixes:`. scripts/validate-metrics.mjs's derived
  * `[...CNCF_HOST_SUFFIXES, 'github.com']` is not a literal copy and is not
  * flagged.
  */
 export function redeclaredHostSuffixLists(files) {
   const declaresLiteral =
-    /(?:const|let|var)\s+ALLOWED_HOST_SUFFIXES\s*=\s*\[\s*['"]/;
+    /(?:const|let|var)\s+[A-Z_]*_SUFFIXES\s*=\s*\[\s*['"]/;
+  const passesLiteral = /allowedHostSuffixes\s*:\s*\[\s*['"]/;
   return files
     .filter(
       ({ path, source }) =>
-        path !== SHARED_MODULE && declaresLiteral.test(source),
+        path !== SHARED_MODULE &&
+        (declaresLiteral.test(source) || passesLiteral.test(source)),
     )
     .map(({ path }) => path);
 }
@@ -100,6 +108,27 @@ test('the guard goes red on a reintroduced local copy (fixture)', () => {
   assert.deepEqual(redeclaredHostSuffixLists(fixture), [
     'scripts/validate-fixture.mjs',
   ]);
+});
+
+test('the guard goes red on a differently named literal or an inline option (fixture)', () => {
+  assert.deepEqual(
+    redeclaredHostSuffixLists([
+      {
+        path: 'scripts/lib/fixture-a.mjs',
+        source: "const ALLOWED_DOMAIN_SUFFIXES = ['cncf.io'];\n",
+      },
+      {
+        path: 'scripts/lib/fixture-b.mjs',
+        source: "isSafeUrl(value, { allowedHostSuffixes: ['cncf.io'] });\n",
+      },
+      {
+        path: 'scripts/lib/fixture-c.mjs',
+        source:
+          'isSafeUrl(value, { allowedHostSuffixes: CNCF_HOST_SUFFIXES });\n',
+      },
+    ]),
+    ['scripts/lib/fixture-a.mjs', 'scripts/lib/fixture-b.mjs'],
+  );
 });
 
 test('the guard stays clean for the derived metrics list (fixture)', () => {
