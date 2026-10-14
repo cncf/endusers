@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { join, relative } from 'node:path';
@@ -219,17 +227,17 @@ test('structured data identifies the site and its parent organization', () => {
 
 test('SITE_URL and BASE_URL overrides flow into url, baseUrl and the JSON-LD logo', async () => {
   const preview = await loadConfig({
-    SITE_URL: 'https://castrojo.github.io',
+    SITE_URL: 'https://example.github.io',
     BASE_URL: '/endusers/',
   });
-  assert.equal(preview.url, 'https://castrojo.github.io');
+  assert.equal(preview.url, 'https://example.github.io');
   assert.equal(preview.baseUrl, '/endusers/');
   const jsonLd = preview.headTags.find(
     (tag) => tag.attributes?.type === 'application/ld+json',
   );
   assert.equal(
     JSON.parse(jsonLd.innerHTML).logo,
-    'https://castrojo.github.io/endusers/img/cloud-native-end-users.svg',
+    'https://example.github.io/endusers/img/cloud-native-end-users.svg',
   );
 });
 
@@ -327,6 +335,48 @@ test('the e2e data fixtures are opt-in and scoped to the site data directory', a
     rule.use[0],
     `${siteDir}/tests/tools/e2e-data-fixture-loader.cjs`,
   );
+});
+
+test('robots.txt is written at build time with an absolute sitemap URL that follows the site origin', async () => {
+  // `Sitemap:` must be absolute, so a committed static/robots.txt has to name
+  // an origin -- and the one it named was the retired GitHub Pages URL, for
+  // as long as the site had been on Netlify. The origin is a deploy-time
+  // value here (scripts/netlify-build.mjs sets SITE_URL from Netlify's
+  // context) and changes again at the endusers.cncf.io cutover, so the file
+  // is generated from siteConfig instead and no static copy may shadow it.
+  assert.equal(existsSync(join(repoRoot, 'static', 'robots.txt')), false);
+  const factory = config.plugins.find(
+    (plugin) =>
+      typeof plugin === 'function' && plugin.name === 'endusersRobotsTxt',
+  );
+  assert.ok(factory, 'endusersRobotsTxt must be registered in every build');
+  const plugin = factory();
+  assert.equal(plugin.name, 'endusers-robots-txt');
+
+  for (const [url, baseUrl, expected] of [
+    ['https://endusers.cncf.io', '/', 'https://endusers.cncf.io/sitemap.xml'],
+    [
+      'https://deploy-preview-1--endusers.netlify.app',
+      '/',
+      'https://deploy-preview-1--endusers.netlify.app/sitemap.xml',
+    ],
+    [
+      'https://example.github.io',
+      '/endusers/',
+      'https://example.github.io/endusers/sitemap.xml',
+    ],
+  ]) {
+    const outDir = mkdtempSync(join(tmpdir(), 'endusers-robots-'));
+    try {
+      await plugin.postBuild({ siteConfig: { url, baseUrl }, outDir });
+      assert.equal(
+        readFileSync(join(outDir, 'robots.txt'), 'utf8'),
+        `User-agent: *\nAllow: /\n\nSitemap: ${expected}\n`,
+      );
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  }
 });
 
 test('the e2e fixture docs instance is opt-in and scoped to the fixture directory', async () => {
