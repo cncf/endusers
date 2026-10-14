@@ -204,8 +204,10 @@ const config = {
         // src/components/CommunityPeople renders as plain `<img src>`, so they
         // fire on page load with no user action. `rel="noreferrer"` is an
         // anchor-only control and cannot reach them; a document policy is the
-        // mechanism this site uses, so the policy travels with the HTML rather
-        // than depending on a hosting-provider response header.
+        // mechanism this site uses. netlify.toml also sends the same value as
+        // a Referrer-Policy response header, which is what covers a .svg or
+        // .json opened directly; the meta tag is kept so the policy travels
+        // with the HTML and holds on any static host.
         //
         // This is the disclosure half of the same exposure `img-src` below
         // addresses. `img-src` decides which hosts may be contacted at all;
@@ -242,8 +244,12 @@ const config = {
         // same-origin bundles and one same-origin stylesheet, so neither
         // directive constrains Docusaurus hydration or local search. See
         // SCRIPT_SOURCES above for why 'unsafe-eval' is dev-only.
-        // frame-ancestors is omitted because browsers ignore it when
-        // delivered via <meta http-equiv>; it needs a real response header.
+        // frame-ancestors is omitted here because browsers ignore it when
+        // delivered via <meta http-equiv>; netlify.toml sends it as a response
+        // header instead (with X-Frame-Options for older browsers), and
+        // tests/netlify-publish-contract.test.mjs pins that the header policy
+        // carries nothing but frame-ancestors, so the fetch directives below
+        // have exactly one source.
         // img-src, by contrast, is honoured in a meta policy, and it is the
         // directive that actually backs this project's remote-image host gates
         // (scripts/lib/profile-image.mjs, scripts/lib/project-assets.mjs, the

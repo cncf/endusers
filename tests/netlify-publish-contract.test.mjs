@@ -17,6 +17,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseToml } from 'smol-toml';
@@ -107,4 +108,57 @@ test('validate:all stops at the first failing validator', () => {
   for (const step of steps) {
     assert.match(step, /^npm run validate:[a-z-]+$/, step);
   }
+});
+
+// Response headers (#1494). The <meta http-equiv> policy in docusaurus.config.js
+// cannot deliver these: browsers ignore frame-ancestors in a meta tag, and no
+// meta tag reaches a .svg or .json opened directly. They are the only part of
+// the site's security policy that lives outside the build, so a missing block
+// here is a live regression the unit suite would not otherwise see.
+const SECURITY_HEADERS = {
+  'Content-Security-Policy': "frame-ancestors 'self'",
+  'X-Frame-Options': 'SAMEORIGIN',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'same-origin',
+};
+
+function siteWideHeaders() {
+  const rules = Array.isArray(netlify.headers) ? netlify.headers : [];
+  return rules.find((rule) => rule.for === '/*')?.values ?? {};
+}
+
+test('every response carries the security headers a meta policy cannot', () => {
+  const values = siteWideHeaders();
+  for (const [header, expected] of Object.entries(SECURITY_HEADERS)) {
+    assert.equal(
+      values[header],
+      expected,
+      `netlify.toml [[headers]] for "/*" must send ${header}: ${expected}`,
+    );
+  }
+});
+
+test('the response-header CSP carries only frame-ancestors', () => {
+  // The fetch directives are built in docusaurus.config.js from the host
+  // allowlists shared with scripts/lib/. A second copy here would drift from
+  // the first and the stricter of the two would silently win at runtime.
+  const directives = siteWideHeaders()
+    ['Content-Security-Policy'].split(';')
+    .map((directive) => directive.trim().split(/\s+/)[0])
+    .filter(Boolean);
+  assert.deepEqual(directives, ['frame-ancestors']);
+});
+
+test('the Referrer-Policy header matches the document meta policy', async () => {
+  // Two policies for one site would have the header win on non-HTML
+  // responses and the meta tag win on documents; keeping them equal means
+  // the two tests that reason about referrer leakage reason about one value.
+  // docusaurus.config.js is ESM but calls require.resolve() for its plugin
+  // list, as tests/site-config.test.mjs also provides for.
+  globalThis.require ??= createRequire(import.meta.url);
+  const config = (await import('../docusaurus.config.js')).default;
+  const meta = config.headTags.find(
+    (tag) => tag.tagName === 'meta' && tag.attributes?.name === 'referrer',
+  );
+  assert.equal(siteWideHeaders()['Referrer-Policy'], meta.attributes.content);
 });

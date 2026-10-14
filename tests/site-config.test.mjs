@@ -647,9 +647,9 @@ test('every linked web app manifest is served from this origin', () => {
 //
 // It cannot be replaced by `rel="noreferrer"` on anchors: the requests at
 // issue are `<img src>` subresources that fire on page load, and `rel` has no
-// effect on them. A response header would need host-specific configuration;
-// the meta tag keeps the policy inside the build, so it holds on any static
-// host.
+// effect on them. netlify.toml sends the same value as a response header for
+// non-HTML responses; the meta tag keeps the policy inside the build, so it
+// holds on any static host and in any preview.
 const REFERRER_POLICIES_WITHOUT_CROSS_ORIGIN_LEAK = new Set([
   'no-referrer',
   'same-origin',

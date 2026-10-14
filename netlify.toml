@@ -15,3 +15,19 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+# Response headers (#1494). These are the controls the <meta> policy in
+# docusaurus.config.js cannot deliver: browsers ignore frame-ancestors in a
+# meta tag, and no meta tag reaches a .svg or .json opened directly. The
+# fetch directives (img-src, script-src and the rest) deliberately stay in
+# docusaurus.config.js, where they are built from the host allowlists shared
+# with scripts/lib/; restating them here would give one policy two sources of
+# truth. tests/netlify-publish-contract.test.mjs pins this block.
+[[headers]]
+  for = "/*"
+
+  [headers.values]
+    Content-Security-Policy = "frame-ancestors 'self'"
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"

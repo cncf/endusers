@@ -157,3 +157,5 @@ words:
   - stargz
   - tentpole
   - tolerations
+  - clickjacking
+  - nosniff
