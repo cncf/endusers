@@ -1,7 +1,7 @@
 // End-to-end coverage for the member directory provenance note when a source
 // timestamp does not parse.
 //
-// DirectoryFreshness renders one sentence per scheduled data file, each behind
+// DirectoryFreshness renders one sentence per refreshed data file, each behind
 // its own formatDate() result (src/components/MemberDirectory/DirectoryFreshness.js
 // lines 16-18). formatDate() returns null for anything Date cannot parse
 // (src/components/shared/formatDate.js line 13), and three regions of that

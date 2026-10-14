@@ -137,7 +137,8 @@ test.describe('member directory filtering', () => {
   // page whether or not its handler survives hydration.
   //
   // The counts are asserted as a relation rather than a number because
-  // data/members.json is regenerated from the landscape on a schedule.
+  // data/members.json is regenerated from the landscape whenever the on-demand
+  // import-architectures.yml workflow is dispatched.
   test('the contributor filter narrows the directory to contributor profiles', async ({
     page,
   }) => {

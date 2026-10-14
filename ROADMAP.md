@@ -79,7 +79,7 @@ shipped silently. Content completeness alone is not a launch plan.
 - [ ] **Announcement channels**: a cncf.io blog post, a mention at an End User
       TAB meeting, and a KubeCon + CloudNativeCon mention or session are the
       minimum bar; amplify further via the End User community Slack.
-- [ ] **Launch success metrics** (issue #100): `data/launch-metrics.json`
+- [x] **Launch success metrics** (issue #100): `data/launch-metrics.json`
       defines the falsifiable signals — GitHub stars, watchers, forks, new
       unique human contributors since baseline, and good-first-issues claimed —
       each with a live-collected baseline and a 90-day post-launch target.

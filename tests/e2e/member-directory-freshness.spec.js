@@ -1,6 +1,6 @@
 // End-to-end guard for the provenance note at the top of /community/members
 // (src/components/MemberDirectory/DirectoryFreshness.js). Its three sentences
-// come from three separately scheduled data files, and each sits behind a `&&`
+// come from three separately refreshed data files, and each sits behind a `&&`
 // on its own formatDate() result -- which is null for anything Date cannot
 // parse. A refresh that writes a malformed timestamp therefore drops that
 // sentence silently, and if all three go the note disappears entirely.

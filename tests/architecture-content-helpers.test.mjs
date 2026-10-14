@@ -17,7 +17,7 @@ import {
 // the lines execute, but nothing states what they are supposed to return, so
 // a behavioural change inside them moves no test.
 //
-// Both callers are unattended: the daily cncf/architecture import and the
+// Both callers are unattended: the on-demand cncf/architecture import and the
 // reference-architecture submission issue. Their input is third-party text.
 
 const ARTWORK_SVG =

@@ -106,7 +106,7 @@ test('mirrorArtworkUrls still writes a regular-file destination', async () => {
 // adversary: a directory on a mirror path is what an interrupted run, or an
 // upstream asset renamed from `<name>` to `<name>/<name>`, leaves behind, and
 // `.github/workflows/import-architectures.yml` reruns `npm run
-// import:architectures` daily over whatever the last run left. Without the
+// import:architectures` on demand over whatever the last run left. Without the
 // guard, writeFileSync() would throw EISDIR and abort the whole import instead
 // of skipping the one asset it cannot mirror.
 test('mirrorArtworkUrls skips a destination that is not a regular file', async () => {

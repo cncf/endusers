@@ -6,7 +6,8 @@
 // wholesale by automation: `npm run import:architectures` regenerates
 // docs/architectures/<id>.md, data/architectures/catalog.json and the mirrored
 // files under static/img/architectures/ from the upstream cncf/architecture
-// repository on a schedule.
+// repository whenever import-architectures.yml is dispatched (on demand, not
+// on a schedule).
 //
 // The unit suite already pins the *file-level* contract hard — see
 // tests/architecture-catalog-contract.test.mjs, which proves catalog ids and
