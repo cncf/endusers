@@ -5,18 +5,21 @@
 // The component reads data/community-groups.json at module scope and renders
 // two things the checked-in corpus cannot vary:
 //
-//   line  7  `if (Number.isNaN(parsed.getTime())) return null;` — formatDate
-//            returns null for a checkedAt that does not parse, which drops
-//            the "Upstream group links last verified on ..." line entirely;
-//   lines 32-33  `stale.length === 1 ? 'has an' : 'have'` and
-//            `stale.length === 1 ? 'repository' : 'repositories'` — the
-//            plural grammar of the drift warning.
+//   src/components/shared/formatDate.js:13
+//     `if (Number.isNaN(parsed.getTime())) return null;` — the shared
+//     formatDate returns null for a checkedAt that does not parse, which
+//     drops the "Upstream group links last verified on ..." line entirely;
+//   src/components/GroupLinkStatus/index.js:23-24
+//     `stale.length === 1 ? 'has an' : 'have'` and
+//     `stale.length === 1 ? 'repository' : 'repositories'` — the plural
+//     grammar of the drift warning.
 //
 // Neither is reachable against the data the site ships. Both real groups are
 // archived:false / reachable:true, and tests/e2e/fixtures/data/
 // community-groups.json appends exactly one archived group, so the ordinary
 // coverage build has `stale.length === 1` and always takes the singular arm.
-// The real checkedAt is a valid ISO timestamp, so line 7 never returns.
+// The real checkedAt is a valid ISO timestamp, so
+// src/components/shared/formatDate.js:13 never returns.
 //
 // Two groups drifting at once is an ordinary shape rather than defensive dead
 // code: `npm run check:community-group-links` sets `archived` and `reachable`
@@ -93,7 +96,8 @@ describeCoverage('a link check that found more than one group drifting', () => {
     page,
   }) => {
     expect(variantStale.length).toBeGreaterThan(1);
-    // What line 7 turns on: the overlaid checkedAt is present but does not
+    // What src/components/shared/formatDate.js:13 turns on: the
+    // overlaid checkedAt is present but does not
     // parse, so formatDate reaches its guard instead of returning early on a
     // missing field.
     expect(variantGroups.checkedAt).toBeTruthy();
