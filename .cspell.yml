@@ -14,6 +14,8 @@ ignorePaths:
   - package-lock.json
   - '**/*.svg'
   - '**/*.json'
+  # Rendered from git history on every build; gitignored and not editable.
+  - docs/community/changelog.md
 words:
   - ACMM
   - Agones
@@ -38,6 +40,18 @@ words:
   - cartografos
   - Swisscom
   - Flipkart
+  # blog/authors.yml names and handles (blog/ joined the spell check in #1452)
+  - Aniszczyk
+  - caniszczyk
+  - Dvoretskyi
+  - idvoretskyi
+  - Ihor
+  - jeefy
+  - Killen
+  - Krook
+  - mrbobbytabl
+  - mrbobbytables
+  - Sica
   - Zeiss
   - Adobe
   - Allianz
