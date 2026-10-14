@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
-  isSafeUrl,
+  publishableCncfUrl,
   reportAndExit,
   CNCF_HOST_SUFFIXES,
 } from './lib/validate-utils.mjs';
@@ -12,17 +12,10 @@ import {
 // <a href> under a CNCF organization name. A scheme prefix test is not a gate:
 // it accepts any host, and it accepts a userinfo component
 // ("https://www.cncf.io@evil.example/") that resolves to a hostile host while
-// reading as CNCF to a maintainer skimming a generated JSON diff. isSafeUrl()
+// reading as CNCF to a maintainer skimming a generated JSON diff. publishableCncfUrl()
 // in ./lib/validate-utils.mjs is the shared gate; it parses the URL and holds
 // the host to an allow-list, the same standard
 // scripts/lib/profile-image.mjs already applies to profile images.
-
-function publishableUrl(value) {
-  if (typeof value !== 'string') return null;
-  return isSafeUrl(value.trim(), {
-    allowedHostSuffixes: CNCF_HOST_SUFFIXES,
-  });
-}
 
 const data = JSON.parse(
   readFileSync(new URL('../data/case-studies.json', import.meta.url)),
@@ -35,7 +28,7 @@ if (Number.isNaN(Date.parse(data.generatedAt)))
     severity: 'error',
     message: 'generatedAt must be a parseable date',
   });
-if (!data.sourceUrl || !publishableUrl(data.sourceUrl))
+if (!data.sourceUrl || !publishableCncfUrl(data.sourceUrl))
   errors.push({
     path: 'case-studies.json',
     severity: 'error',
@@ -77,7 +70,7 @@ for (const entry of Array.isArray(data.caseStudies) ? data.caseStudies : []) {
       severity: 'error',
       message: 'missing or duplicate url',
     });
-  else if (!publishableUrl(entry.url))
+  else if (!publishableCncfUrl(entry.url))
     errors.push({
       path: String(id),
       severity: 'error',

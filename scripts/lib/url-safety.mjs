@@ -33,6 +33,23 @@ const SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
 export const CNCF_HOST_SUFFIXES = ['cncf.io'];
 
 /**
+ * The parsed URL when `value` is a string that `isSafeUrl` accepts on a CNCF
+ * host, else `null`. The predicate the cncf.io mirror validators
+ * (scripts/validate-case-studies.mjs, scripts/validate-radar-reports.mjs)
+ * apply to every `url` and `sourceUrl` they publish as an <a href>; each
+ * carried its own identical copy before this export.
+ *
+ * @param {unknown} value
+ * @returns {URL|null}
+ */
+export function publishableCncfUrl(value) {
+  if (typeof value !== 'string') return null;
+  return isSafeUrl(value.trim(), {
+    allowedHostSuffixes: CNCF_HOST_SUFFIXES,
+  });
+}
+
+/**
  * Prefix `value` with `defaultScheme` when it has no scheme of its own, so a
  * bare host such as "example.test" resolves against https instead of being
  * concatenated — concatenation lets a value such as

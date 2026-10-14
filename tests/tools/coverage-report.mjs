@@ -515,7 +515,8 @@ export function formatRanges(lines) {
   return out.join(' ');
 }
 
-function percent(covered, total) {
+/** Percentage of `covered` over `total`; an empty denominator counts as fully covered. */
+export function percent(covered, total) {
   return total === 0 ? 100 : (covered / total) * 100;
 }
 

@@ -8,7 +8,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import v8ToIstanbul from 'v8-to-istanbul';
 import { AnyMap, decodedMap, encodedMap } from '@jridgewell/trace-mapping';
 
-import { countsForScript, enumerateSourceFiles } from './coverage-report.mjs';
+import {
+  countsForScript,
+  enumerateSourceFiles,
+  percent,
+} from './coverage-report.mjs';
 import {
   COVERAGE_ARTIFACT_KIND,
   readCoverageRun,
@@ -16,6 +20,7 @@ import {
 import {
   COVERAGE_SCRIPTS_DIR,
   isEligibleScript,
+  isInside,
   resolveScriptInRoot,
   scriptPathname,
   totalDecodeURIComponent,
@@ -77,10 +82,6 @@ function sha256(text) {
   return createHash('sha256').update(text).digest('hex');
 }
 
-function percent(covered, total) {
-  return total === 0 ? 100 : (covered / total) * 100;
-}
-
 function linePercent(covered, executable) {
   return Number(percent(covered, executable).toFixed(2));
 }
@@ -135,11 +136,6 @@ function parseArgs(argv) {
   }
   if (!options.input) throw new Error('--input is required');
   return options;
-}
-
-function isInside(root, candidate) {
-  const rel = relative(root, candidate);
-  return rel === '' || (!rel.startsWith('..') && !rel.startsWith(sep));
 }
 
 function repoRelative(root, file) {

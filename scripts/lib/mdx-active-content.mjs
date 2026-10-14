@@ -41,6 +41,7 @@ import { mdxjs } from 'micromark-extension-mdxjs';
 import { mdxFromMarkdown } from 'mdast-util-mdx';
 import { gfm } from 'micromark-extension-gfm';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
+import { eachNode } from './mdast-walk.mjs';
 import { activeScheme, describeTarget, remoteTarget } from './uri-safety.mjs';
 
 /** Inert inline elements that carry no script, network or layout capability. */
@@ -123,11 +124,6 @@ function literalValue(expression) {
   } catch {
     return null;
   }
-}
-
-function eachNode(node, visitor) {
-  visitor(node);
-  for (const child of node.children ?? []) eachNode(child, visitor);
 }
 
 /**
