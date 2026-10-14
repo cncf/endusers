@@ -13,15 +13,16 @@
 //     lines of that paragraph not rendering
 //     (src/components/AwardsTimeline/index.js line 80).
 //   * ReferenceArchitectures dates its sync line from metrics.generatedAt;
-//     the ': null' arm at line 23 and the '' arm at line 34 are the date
-//     being left off. metrics.generatedAt is read by four other components,
-//     so clearing it build-wide moves five pages at once.
+//     the ': null' arm at src/components/ReferenceArchitectures/index.js:24
+//     and the '' arm at src/components/ReferenceArchitectures/index.js:35 are
+//     the date being left off. metrics.generatedAt is read by four other
+//     components, so clearing it build-wide moves five pages at once.
 //   * PeopleFreshness renders its paragraph only when
 //     data/community-people.json's fetchedAt parses as a date; emptying that
 //     one field takes two 'return null' arms at once -- the Number.isNaN guard
-//     inside the shared formatDate (src/components/shared/formatDate.js
-//     line 12) and the !fetchedAt guard that drops the paragraph
-//     (src/components/PeopleFreshness/index.js line 13).
+//     inside the shared formatDate (src/components/shared/formatDate.js:13)
+//     and the !fetchedAt guard that drops the paragraph
+//     (src/components/PeopleFreshness/index.js:13).
 //
 // `npm run build:e2e:coverage` therefore produces two sites: the ordinary
 // coverage build, and a second one under /e2e-coverage-variant/ with
@@ -34,8 +35,8 @@
 // arm only this build reaches count as covered. *Regions* fold by span key,
 // and the build that takes a guard arm records no region at the arm's own
 // span (its deviation is the alternative it skipped), so the real build's
-// zero at the arm survives. ReferenceArchitectures:34 and
-// PeopleFreshness:13
+// zero at the arm survives. src/components/ReferenceArchitectures/index.js:35
+// and src/components/PeopleFreshness/index.js:13
 // are therefore still listed as uncovered regions even though this spec
 // drives them; see #1256 and the comment at the union in
 // tests/tools/e2e-coverage-report.mjs. The build still exists for the lines.
