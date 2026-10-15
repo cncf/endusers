@@ -1,6 +1,7 @@
 ---
 title: Governance
 sidebar_position: 2
+slug: /community/technical-advisory-board/governance
 description:
   How CNCF User Groups, Initiatives, and Technical Community Groups are
   governed.

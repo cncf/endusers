@@ -153,7 +153,7 @@ test('the footer signposts contributors to contribute.cncf.io', async ({
 });
 
 test('the changelog page renders', async ({ page }) => {
-  const response = await page.goto('/community/changelog');
+  const response = await page.goto('/resources/changelog');
   expect(response?.status()).toBeLessThan(400);
   await expect(page.getByRole('heading', { name: 'Changelog' })).toBeVisible();
 });

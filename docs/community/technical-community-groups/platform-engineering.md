@@ -12,7 +12,7 @@ The
 focuses on platform engineering practices, tools, and patterns that help
 development teams self-service their infrastructure needs while maintaining
 consistency, security, and governance across an organization. It is a Technical
-Community Group, not a User Group — see [Governance](../governance.md) for the
+Community Group, not a User Group — see [Governance](../technical-advisory-board/governance.md) for the
 distinction between the two.
 
 ## Focus areas

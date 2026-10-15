@@ -15,7 +15,7 @@ ignorePaths:
   - '**/*.svg'
   - '**/*.json'
   # Rendered from git history on every build; gitignored and not editable.
-  - docs/community/changelog.md
+  - docs/resources/changelog.md
 words:
   - ACMM
   - Agones

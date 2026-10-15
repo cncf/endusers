@@ -17,7 +17,7 @@ const LINK_ITEMS = [
   { label: 'Practitioners', to: '/' },
   {
     label: 'Projects from End Users',
-    to: '/community#projects-born-at-end-user-organizations',
+    to: '/community/projects-born',
   },
   { label: 'Metrics', to: '/metrics/' },
   { label: 'Events', to: '/events/' },

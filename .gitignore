@@ -233,5 +233,5 @@ dist
 ### Generated content ###
 # Rendered from git history by scripts/generate-changelog.mjs on every build
 # (package.json `_build`); committing it would freeze a stale copy.
-/docs/community/changelog.md
+/docs/resources/changelog.md
 

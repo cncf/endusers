@@ -19,7 +19,7 @@
 import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const RESOURCES_PATH = '/resources';
-const GOVERNANCE_PATH = '/community/governance';
+const GOVERNANCE_PATH = '/community/technical-advisory-board/governance';
 const PLATFORM_ENGINEERING_PATH =
   '/community/technical-community-groups/platform-engineering';
 
@@ -116,7 +116,7 @@ test.describe('community reference docs', () => {
     ).toBeVisible();
     await expect(page.locator('nav.menu').first()).toBeVisible();
 
-    // Written as a relative Markdown link (`../governance.md`); this asserts
+    // Written as a relative Markdown link (`../technical-advisory-board/governance.md`); this asserts
     // the build resolved it to the governance route rather than emitting the
     // source path.
     const governanceLink = page

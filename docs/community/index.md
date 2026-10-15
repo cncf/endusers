@@ -39,9 +39,9 @@ while still building in the open.
 
 ## Governance and leadership
 
-The [Technical Advisory Board](./technical-advisory-board.md) (TAB) oversees the
+The [Technical Advisory Board](./technical-advisory-board/index.md) (TAB) oversees the
 End User Community, its User Groups, and its Technical Community Groups. See the
-[Governance](./governance.md) page for how these groups are formed, run, and
+[Governance](./technical-advisory-board/governance.md) page for how these groups are formed, run, and
 held accountable.
 
 ## Community meeting and communication channels
@@ -102,12 +102,6 @@ Start small and move up as your time and interest allow.
    [TAB submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
 5. **Help shape direction** — Join a User Group, a Technical Community Group, or
    the TAB to advise on priorities and represent end user needs.
-
-## Projects born at end user organizations
-
-import ProjectsBorn from '@site/src/components/ProjectsBorn';
-
-<ProjectsBorn />
 
 ## Related CNCF resources
 

@@ -271,7 +271,7 @@ test('generateChangelog renders the history of a full checkout', () => {
     const summary = generateChangelog(dir);
     assert.equal(summary, 'wrote 2 changelog entries');
     const page = readFileSync(
-      join(dir, 'docs', 'community', 'changelog.md'),
+      join(dir, 'docs', 'resources', 'changelog.md'),
       'utf8',
     );
     assert.match(page, /## October 2026\n\n- \[three\]\([^)]*\/pull\/3\)/);
@@ -291,7 +291,7 @@ test('generateChangelog writes the fallback when there is no history', () => {
       'wrote changelog fallback (no full git history available)',
     );
     const page = readFileSync(
-      join(dir, 'docs', 'community', 'changelog.md'),
+      join(dir, 'docs', 'resources', 'changelog.md'),
       'utf8',
     );
     assert.ok(page.includes(FALLBACK_BODY));
@@ -306,14 +306,14 @@ test('generateChangelog writes the fallback when there is no history', () => {
 test('generate-changelog.mjs writes the fallback page outside a repository', () => {
   const result = runScriptInSandbox({
     script: 'generate-changelog.mjs',
-    outputs: ['docs/community/changelog.md'],
+    outputs: ['docs/resources/changelog.md'],
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(
     result.stdout,
     /wrote changelog fallback \(no full git history available\)/,
   );
-  const page = result.outputs['docs/community/changelog.md'];
+  const page = result.outputs['docs/resources/changelog.md'];
   assert.ok(page, 'expected the changelog page to be written');
   assert.ok(page.includes(FALLBACK_BODY));
   assert.match(page, /title: Changelog/);

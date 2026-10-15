@@ -76,7 +76,7 @@ test('the footer links to the changelog through Docusaurus <Link>', () => {
   assert.ok(changelog, 'expected a "Changelog" <Link> in the footer');
   // The stubbed useBaseUrl returns its input unchanged; in the shipped build
   // this resolves under the deployed baseUrl.
-  assert.equal(changelog.props.to, '/community/changelog');
+  assert.equal(changelog.props.to, '/resources/changelog');
 });
 
 test('the footer links to the content-issue form, guarded against tabnabbing', () => {

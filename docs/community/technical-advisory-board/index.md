@@ -1,6 +1,7 @@
 ---
 title: Technical Advisory Board
 sidebar_position: 3
+slug: /community/technical-advisory-board
 description:
   The CNCF End User Technical Advisory Board (TAB) and how it supports end
   users.

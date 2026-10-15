@@ -94,8 +94,8 @@ test.describe('radar reports', () => {
 });
 
 test.describe('projects born at end users', () => {
-  test('renders project cards on the community page', async ({ page }) => {
-    await page.goto('/community');
+  test('renders project cards on the projects page', async ({ page }) => {
+    await page.goto('/community/projects-born');
     // The footer renders a second, compact ProjectsBorn under the same
     // accessible name, so the in-page section is addressed by its heading id.
     const section = page.locator(
@@ -113,7 +113,7 @@ test.describe('community group link status', () => {
   test('reports when upstream group links were last verified', async ({
     page,
   }) => {
-    await page.goto('/community');
+    await page.goto('/community/projects-born');
     await expect(
       page.getByText(/Upstream group links last verified on .+\./),
     ).toBeVisible();

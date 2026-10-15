@@ -447,7 +447,7 @@ const config = {
             label: 'Community',
           },
           {
-            to: '/community#projects-born-at-end-user-organizations',
+            to: '/community/projects-born',
             label: 'Projects from End Users',
             position: 'left',
           },

@@ -31,7 +31,7 @@ is hand-curation under another name. Rejected.
 
 Every commit on `main` arrives by squash merge with a Conventional Commits
 subject, so `git log --first-parent` _is_ the list of merged PR titles.
-`scripts/generate-changelog.mjs` renders it into `docs/community/changelog.md`
+`scripts/generate-changelog.mjs` renders it into `docs/resources/changelog.md`
 on every build, keeping the reader-visible types (`feat`, `fix`, `docs`, `perf`)
 and dropping the rest. No pull request owes the changelog anything; it cannot
 drift.
