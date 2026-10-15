@@ -3,7 +3,11 @@
 // and CNCF staff lightboxes on the community page. See CONTRIBUTING.md:
 // never edit this file by hand, refresh it with `npm run fetch:community-people`.
 import { readFileSync } from 'node:fs';
-import { collectError, reportAndExit } from './lib/validate-utils.mjs';
+import {
+  checkIsoTimestamp,
+  collectError,
+  reportAndExit,
+} from './lib/validate-utils.mjs';
 import { profileImageUrl } from './lib/profile-image.mjs';
 
 const data = JSON.parse(
@@ -16,22 +20,17 @@ const errors = [];
 
 // Strict ISO 8601 only: plain Date.parse also accepts loose strings like
 // "March 1, 2026", which would silently defeat the staleness check below.
-const ISO_8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
-if (!ISO_8601.test(data.fetchedAt ?? '')) {
-  collectError(
-    errors,
-    'community-people.json',
-    'error',
-    'fetchedAt must be strict ISO 8601',
-  );
-} else if (new Date(data.fetchedAt).getTime() > Date.now() + 60_000) {
-  collectError(
-    errors,
-    'community-people.json',
-    'error',
-    'fetchedAt cannot be in the future',
-  );
-}
+// checkIsoTimestamp() in ./lib/validate-utils.mjs is the shared gate.
+checkIsoTimestamp(
+  errors,
+  'community-people.json',
+  'fetchedAt',
+  data.fetchedAt,
+  {
+    message: 'fetchedAt must be strict ISO 8601',
+    futureToleranceMs: 60_000,
+  },
+);
 
 // Member-for-member against the roster, matched by GitHub handle (falling
 // back to name for the one member without one), so a stale or

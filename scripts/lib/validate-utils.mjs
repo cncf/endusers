@@ -83,6 +83,59 @@ export function checkNonEmptyArray(errors, path, field, value) {
   return ok;
 }
 
+/** Strict ISO 8601 UTC form (no plain `Date.parse` laxity; see checkIsoTimestamp). */
+const ISO_8601_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+
+/**
+ * Validate that `value` is a strict ISO 8601 UTC timestamp, optionally also
+ * rejecting one dated beyond a future clock-skew allowance.
+ *
+ * validate-community-groups.mjs, validate-enduser-members.mjs and
+ * validate-launch-metrics.mjs each gated a "must be ISO 8601" field with a
+ * plain `Number.isNaN(Date.parse(value))` test, which also accepts loose,
+ * locale-dependent strings such as "March 1, 2026" — exactly the gap
+ * validate-community-people.mjs's own strict regex was written to close, but
+ * its copy stayed local. A value that passes the loose check while failing
+ * the strict one silently defeats any staleness/future check layered on top,
+ * which is the failure mode validate-community-groups.mjs's `checkedAt`
+ * grace-window check actually depends on being closed.
+ *
+ * @param {Array<Object>} errors - Array to accumulate errors.
+ * @param {string} path - File path or identifier used as the error's path.
+ * @param {string} field - Field name used in the default error messages.
+ * @param {unknown} value - Candidate timestamp.
+ * @param {Object} [options]
+ * @param {string} [options.message] - Message used when `value` is not
+ *   strict ISO 8601. Defaults to "<field> must be ISO 8601".
+ * @param {number} [options.futureToleranceMs] - When set, `value` must not
+ *   be later than `Date.now() + futureToleranceMs`.
+ * @param {string} [options.futureMessage] - Message used when `value` is
+ *   too far in the future. Defaults to "<field> cannot be in the future".
+ * @returns {boolean} Whether `value` passed every check performed.
+ */
+export function checkIsoTimestamp(errors, path, field, value, options = {}) {
+  const {
+    message = `${field} must be ISO 8601`,
+    futureToleranceMs,
+    futureMessage = `${field} cannot be in the future`,
+  } = options;
+
+  if (!ISO_8601_PATTERN.test(value ?? '')) {
+    errors.push({ path, severity: 'error', message });
+    return false;
+  }
+
+  if (
+    futureToleranceMs !== undefined &&
+    new Date(value).getTime() > Date.now() + futureToleranceMs
+  ) {
+    errors.push({ path, severity: 'error', message: futureMessage });
+    return false;
+  }
+
+  return true;
+}
+
 /**
  * Report collected errors and exit if any errors exist.
  * @param {Array<Object>} errors - Array of error objects with { path, severity, message }

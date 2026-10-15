@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
+  checkIsoTimestamp,
   checkUrl as checkUrlImpl,
   reportAndExit,
 } from './lib/validate-utils.mjs';
@@ -36,18 +37,13 @@ if (!data.generated)
     severity: 'error',
     message: 'generated must be true',
   });
-if (Number.isNaN(Date.parse(data.generatedAt)))
-  errors.push({
-    path: 'launch-metrics.json',
-    severity: 'error',
-    message: 'generatedAt must be ISO 8601',
-  });
-if (Number.isNaN(Date.parse(data.capturedAt)))
-  errors.push({
-    path: 'launch-metrics.json',
-    severity: 'error',
-    message: 'capturedAt must be ISO 8601',
-  });
+checkIsoTimestamp(
+  errors,
+  'launch-metrics.json',
+  'generatedAt',
+  data.generatedAt,
+);
+checkIsoTimestamp(errors, 'launch-metrics.json', 'capturedAt', data.capturedAt);
 checkUrl('launch-metrics.json', 'source', data.source);
 if (!data.checkpoint?.label || !data.checkpoint?.targetDate)
   errors.push({
@@ -91,12 +87,7 @@ for (const signal of signals) {
       severity: 'error',
       message: 'missing provenance (sourceUrl/collectedAt)',
     });
-  if (Number.isNaN(Date.parse(signal.collectedAt)))
-    errors.push({
-      path,
-      severity: 'error',
-      message: 'collectedAt must be ISO 8601',
-    });
+  checkIsoTimestamp(errors, path, 'collectedAt', signal.collectedAt);
   checkUrl(path, 'sourceUrl', signal.sourceUrl);
   checkNonNegativeInteger(path, 'baseline', signal.baseline);
   checkNonNegativeInteger(path, 'target90Day', signal.target90Day);

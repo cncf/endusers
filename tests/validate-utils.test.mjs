@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+  checkIsoTimestamp,
   checkNonEmptyArray,
   checkUrl,
   collectError,
@@ -558,4 +559,123 @@ test('checkNonEmptyArray reports an empty array, a non-array and a missing value
       },
     ]);
   }
+});
+
+test('checkIsoTimestamp accepts a strict ISO 8601 UTC value and pushes no error', () => {
+  const errors = [];
+  const ok = checkIsoTimestamp(
+    errors,
+    'data/launch-metrics.json',
+    'generatedAt',
+    '2026-09-21T00:00:00.000Z',
+  );
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+});
+
+test('checkIsoTimestamp rejects a loose Date.parse-able value with the default message', () => {
+  const errors = [];
+  const ok = checkIsoTimestamp(
+    errors,
+    'data/launch-metrics.json',
+    'generatedAt',
+    'March 1, 2026',
+  );
+  assert.equal(ok, false);
+  assert.deepEqual(errors, [
+    {
+      path: 'data/launch-metrics.json',
+      severity: 'error',
+      message: 'generatedAt must be ISO 8601',
+    },
+  ]);
+});
+
+test('checkIsoTimestamp uses a custom message when supplied', () => {
+  const errors = [];
+  checkIsoTimestamp(
+    errors,
+    'data/community-people.json',
+    'fetchedAt',
+    'not a date',
+    { message: 'fetchedAt must be strict ISO 8601' },
+  );
+  assert.deepEqual(errors, [
+    {
+      path: 'data/community-people.json',
+      severity: 'error',
+      message: 'fetchedAt must be strict ISO 8601',
+    },
+  ]);
+});
+
+test('checkIsoTimestamp treats a missing value as a format failure, not a crash', () => {
+  const errors = [];
+  const ok = checkIsoTimestamp(
+    errors,
+    'data/launch-metrics.json',
+    'generatedAt',
+    undefined,
+  );
+  assert.equal(ok, false);
+  assert.deepEqual(errors, [
+    {
+      path: 'data/launch-metrics.json',
+      severity: 'error',
+      message: 'generatedAt must be ISO 8601',
+    },
+  ]);
+});
+
+test('checkIsoTimestamp accepts a value inside the future-tolerance window', () => {
+  const errors = [];
+  const ok = checkIsoTimestamp(
+    errors,
+    'data/community-groups.json',
+    'checkedAt',
+    new Date(Date.now() + 30_000).toISOString(),
+    { futureToleranceMs: 60_000 },
+  );
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+});
+
+test('checkIsoTimestamp rejects a value beyond the future-tolerance window with the default message', () => {
+  const errors = [];
+  const ok = checkIsoTimestamp(
+    errors,
+    'data/community-groups.json',
+    'checkedAt',
+    new Date(Date.now() + 86_400_000).toISOString(),
+    { futureToleranceMs: 60_000 },
+  );
+  assert.equal(ok, false);
+  assert.deepEqual(errors, [
+    {
+      path: 'data/community-groups.json',
+      severity: 'error',
+      message: 'checkedAt cannot be in the future',
+    },
+  ]);
+});
+
+test('checkIsoTimestamp uses a custom futureMessage when supplied', () => {
+  const errors = [];
+  checkIsoTimestamp(
+    errors,
+    'data/community-people.json',
+    'fetchedAt',
+    new Date(Date.now() + 86_400_000).toISOString(),
+    {
+      futureToleranceMs: 60_000,
+      futureMessage: 'fetchedAt cannot be in the future',
+    },
+  );
+  assert.deepEqual(errors, [
+    {
+      path: 'data/community-people.json',
+      severity: 'error',
+      message: 'fetchedAt cannot be in the future',
+    },
+  ]);
 });
