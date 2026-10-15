@@ -629,6 +629,65 @@ test('checkIsoTimestamp treats a missing value as a format failure, not a crash'
   ]);
 });
 
+// The shape test alone matches `13` as a month and `45` as a day. Such a
+// value yields an Invalid Date, and `NaN > limit` is false, so it would reach
+// and silently pass the future-skew comparison below.
+test('checkIsoTimestamp rejects a calendar-impossible value the shape allows', () => {
+  for (const value of [
+    '2026-13-45T99:61:61Z',
+    '2026-00-10T00:00:00Z',
+    '2026-01-32T00:00:00Z',
+    '2026-06-30T23:59:60Z',
+  ]) {
+    const errors = [];
+    const ok = checkIsoTimestamp(
+      errors,
+      'data/community-groups.json',
+      'checkedAt',
+      value,
+      { futureToleranceMs: 60_000 },
+    );
+    assert.equal(ok, false, value);
+    assert.deepEqual(errors, [
+      {
+        path: 'data/community-groups.json',
+        severity: 'error',
+        message: 'checkedAt must be ISO 8601',
+      },
+    ]);
+  }
+});
+
+// `Date.parse` normalizes these rather than refusing them, so a round-trip
+// through Date.UTC is what rejects them.
+test('checkIsoTimestamp rejects out-of-range parts Date.parse would roll over', () => {
+  for (const value of [
+    '2026-02-31T00:00:00Z',
+    '2026-06-15T24:00:00Z',
+    '2026-06-15T22:60:00Z',
+  ]) {
+    const errors = [];
+    assert.equal(
+      checkIsoTimestamp(errors, 'data/metrics.json', 'generatedAt', value),
+      false,
+      value,
+    );
+    assert.equal(errors.length, 1);
+  }
+});
+
+test('checkIsoTimestamp accepts a real leap day and a fractional-second value', () => {
+  for (const value of ['2024-02-29T00:00:00Z', '2026-09-21T00:00:00.123Z']) {
+    const errors = [];
+    assert.equal(
+      checkIsoTimestamp(errors, 'data/metrics.json', 'generatedAt', value),
+      true,
+      value,
+    );
+    assert.deepEqual(errors, []);
+  }
+});
+
 test('checkIsoTimestamp accepts a value inside the future-tolerance window', () => {
   const errors = [];
   const ok = checkIsoTimestamp(
