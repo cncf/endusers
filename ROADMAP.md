@@ -124,7 +124,10 @@ Goal: endusers.cncf.io becomes the authoritative end-user destination.
       boundaries) (#1407). Audience boundary decided: ADR 0004. Outbound
       signposts shipped (site footer, architecture submission flow, community
       resources). Inbound-link requests against contribute.cncf.io and cncf.io
-      remain open (drafts: `adr/inbound-link-requests-for-0004.md`, #1434).
+      remain open: ready-to-file drafts are in
+      `adr/inbound-link-requests-for-0004.md` (origin issue #1434, closed once
+      the drafts shipped), but filing is deliberately held until the DNS cutover
+      (#1433) completes so requests do not point at a non-resolving URL.
 - [x] Public feedback loop: content-issue templates and a visible changelog
       (#1408). Shipped: the `content-issue.yml` report form and a changelog
       generated at build time (`adr/0003-public-changelog-mechanism.md`), both
