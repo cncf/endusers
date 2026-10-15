@@ -137,6 +137,39 @@ export function checkIsoTimestamp(errors, path, field, value, options = {}) {
 }
 
 /**
+ * Push a "<field> must be a parseable date[ <suffix>]" error when `value` is
+ * not a string `Date.parse` can resolve.
+ *
+ * validate-case-studies.mjs, validate-radar-reports.mjs and
+ * validate-awards.mjs each carried an independent
+ * `Number.isNaN(Date.parse(value))` copy with a near-identical message — the
+ * same centralize-after-drift precedent already applied here to
+ * checkNonEmptyArray() and checkUrl(). This is the loose `Date.parse` check;
+ * it is distinct from the strict ISO 8601 check some other validators apply
+ * to their own timestamp fields.
+ *
+ * @param {Array<Object>} errors - Array to accumulate errors.
+ * @param {string} path - File path or identifier used as the error's path.
+ * @param {string} field - Name used in the error message.
+ * @param {unknown} value - Candidate date string.
+ * @param {string} [messageSuffix] - Extra context appended to the message.
+ * @returns {boolean} Whether `value` parses as a date.
+ */
+export function checkParseableDate(errors, path, field, value, messageSuffix) {
+  const ok = typeof value === 'string' && !Number.isNaN(Date.parse(value));
+  if (!ok) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: messageSuffix
+        ? `${field} must be a parseable date ${messageSuffix}`
+        : `${field} must be a parseable date`,
+    });
+  }
+  return ok;
+}
+
+/**
  * Report collected errors and exit if any errors exist.
  * @param {Array<Object>} errors - Array of error objects with { path, severity, message }
  * @param {string} contextLabel - Label for output context (e.g., "architecture assets")

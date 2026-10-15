@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   checkIsoTimestamp,
   checkNonEmptyArray,
+  checkParseableDate,
   checkUrl,
   collectError,
   isSafeUrl,
@@ -676,6 +677,58 @@ test('checkIsoTimestamp uses a custom futureMessage when supplied', () => {
       path: 'data/community-people.json',
       severity: 'error',
       message: 'fetchedAt cannot be in the future',
+    },
+  ]);
+});
+
+test('checkParseableDate accepts a parseable date string and pushes no error', () => {
+  const errors = [];
+  const ok = checkParseableDate(
+    errors,
+    'data/case-studies.json',
+    'generatedAt',
+    '2026-01-01T00:00:00Z',
+  );
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+});
+
+test('checkParseableDate reports an unparseable, non-string and missing value', () => {
+  for (const value of ['not-a-date', undefined, null, 42]) {
+    const errors = [];
+    const ok = checkParseableDate(
+      errors,
+      'data/case-studies.json',
+      'generatedAt',
+      value,
+    );
+    assert.equal(ok, false, String(value));
+    assert.deepEqual(errors, [
+      {
+        path: 'data/case-studies.json',
+        severity: 'error',
+        message: 'generatedAt must be a parseable date',
+      },
+    ]);
+  }
+});
+
+test('checkParseableDate appends the provided message suffix on failure', () => {
+  const errors = [];
+  const ok = checkParseableDate(
+    errors,
+    'data/awards.json',
+    'verifiedAt',
+    'not-a-date',
+    'recording the last completeness audit against verifiedAgainst',
+  );
+  assert.equal(ok, false);
+  assert.deepEqual(errors, [
+    {
+      path: 'data/awards.json',
+      severity: 'error',
+      message:
+        'verifiedAt must be a parseable date recording the last completeness audit against verifiedAgainst',
     },
   ]);
 });
