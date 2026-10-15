@@ -421,6 +421,23 @@ test('fixableAllowlistedAdvisories tolerates a missing vulnerabilities key and b
   assert.deepEqual(fixableAllowlistedAdvisories(report, new Set([BRACES])), []);
 });
 
+test('fixableAllowlistedAdvisories orders a shared advisory by package name', () => {
+  // The same advisory can sit directly on more than one package (a pinned
+  // copy and a nested one); the CI log lists them in a stable order.
+  const report = {
+    vulnerabilities: {
+      zeta: { ...entry('high', [advisory(BRACES)]), fixAvailable: true },
+      alpha: { ...entry('high', [advisory(BRACES)]), fixAvailable: true },
+    },
+  };
+  assert.deepEqual(
+    fixableAllowlistedAdvisories(report, new Set([BRACES])).map(
+      (f) => f.package,
+    ),
+    ['alpha', 'zeta'],
+  );
+});
+
 test('fixableAllowlistedAdvisories defaults to the shipped allowlist', () => {
   const report = {
     vulnerabilities: Object.fromEntries(
