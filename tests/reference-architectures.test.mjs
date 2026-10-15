@@ -137,7 +137,7 @@ function toolbarProps(tree) {
 // data/metrics.json is regenerated from upstream by
 // .github/workflows/import-architectures.yml, which is why the three cases
 // below used to open with `if (!source?.revision) t.skip(...)`. Those arms
-// could never run: scripts/validate-metrics.mjs:55-61 exits 1 on a
+// could never run: scripts/validate-metrics.mjs:51-57 exits 1 on a
 // metrics.json whose sources.architectures.revision is absent, and :48 does
 // the same for a generatedAt that does not parse -- an absent one included.
 // Both refusals are pinned by tests/validate-metrics.test.mjs ("rejects

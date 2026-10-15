@@ -130,7 +130,7 @@ const SKIPS = [
     spec: 'metrics-dashboard.spec.js',
     reason: 'no omitted lifecycle indicators to show',
     needs: 'data/metrics.json omits at least one lifecycle indicator',
-    // scripts/validate-metrics.mjs:143 treats both the section and its
+    // scripts/validate-metrics.mjs:139 treats both the section and its
     // `omitted` list as optional, so an absent one is a shape the data may
     // legitimately take and this guard must report rather than throw on.
     holds: () =>

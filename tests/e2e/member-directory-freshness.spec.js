@@ -34,7 +34,7 @@ const architectures = metricsData?.sources?.architectures;
 // Each timestamp is asserted rather than used to skip the case: all three are
 // already required to be parseable upstream -- scripts/validate-enduser-members.mjs:91
 // for the landscape snapshot that generate-members.mjs copies to
-// sources.landscape.collectedAt, scripts/validate-metrics.mjs:76 for
+// sources.landscape.collectedAt, scripts/validate-metrics.mjs:72 for
 // generatedAt, and scripts/validate-awards.mjs:51 for verifiedAt. A value this
 // helper rejects is the regression itself, not a reason to stand down, so
 // skipping on it would hide exactly the failure this spec exists to catch.
