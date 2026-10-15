@@ -35,6 +35,10 @@ const LEGACY_ROUTES = [
     from: '/community/public-sector-user-group',
     to: '/community/user-groups/public-sector',
   },
+  {
+    from: '/community/technical-community-groups/platform-engineering',
+    to: '/community/user-groups/platform-engineering',
+  },
 ];
 
 function normalise(pathname) {

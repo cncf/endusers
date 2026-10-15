@@ -122,7 +122,7 @@ test('the footer links to the changelog and the content-issue form', async ({
   const footer = footerOf(page);
   const changelog = footer.getByRole('link', { name: 'Changelog' });
   await expect(changelog).toBeVisible();
-  await expect(changelog).toHaveAttribute('href', /\/community\/changelog\/?$/);
+  await expect(changelog).toHaveAttribute('href', /\/resources\/changelog\/?$/);
 
   const report = footer.getByRole('link', { name: 'Report a content issue' });
   await expect(report).toBeVisible();

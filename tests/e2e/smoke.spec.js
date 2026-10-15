@@ -113,7 +113,7 @@ test.describe('community group link status', () => {
   test('reports when upstream group links were last verified', async ({
     page,
   }) => {
-    await page.goto('/community/projects-born');
+    await page.goto('/community');
     await expect(
       page.getByText(/Upstream group links last verified on .+\./),
     ).toBeVisible();

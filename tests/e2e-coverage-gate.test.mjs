@@ -211,7 +211,14 @@ const MEASURED_ON_NODE_MAJOR = '22';
 // Re-measure with the recipe in CONTRIBUTING.md on Node MEASURED_ON_NODE_MAJOR,
 // update the table and any floor that moved, and set this constant in the same
 // change.
-const MEASURED_AT_SPEC_COUNT = 39;
+//
+// 39 -> 38: tests/e2e/technical-community-groups.spec.js was removed when the
+// Platform Engineering page moved under docs/community/user-groups/ and the
+// Technical Community Groups directory went with it. That spec drove only a
+// Docusaurus generated-index route, which (as its own header recorded)
+// executes no src/** source of its own, so the table above is carried over
+// unchanged rather than re-measured.
+const MEASURED_AT_SPEC_COUNT = 38;
 
 // The number of src/** modules the table above was measured against.
 //

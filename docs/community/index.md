@@ -27,8 +27,7 @@ while still building in the open.
   for access to End User-only discussion forums.
 - **Bring your organization in:** Learn about
   [joining the CNCF End User Community](https://www.cncf.io/enduser/).
-- **Find a peer group:** Browse the [User Groups](/community/user-groups) and
-  [Technical Community Groups](/community/technical-community-groups).
+- **Find a peer group:** Browse the [User Groups](/community/user-groups).
 - **Share an architecture:** Submit using the
   [in-repo submission template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml)
   or follow the
@@ -40,9 +39,9 @@ while still building in the open.
 ## Governance and leadership
 
 The [Technical Advisory Board](./technical-advisory-board/index.md) (TAB)
-oversees the End User Community, its User Groups, and its Technical Community
-Groups. See the [Governance](./technical-advisory-board/governance.md) page for
-how these groups are formed, run, and held accountable.
+oversees the End User Community and its User Groups. See the
+[Governance](./technical-advisory-board/governance.md) page for how these groups
+are formed, run, and held accountable.
 
 ## Community meeting and communication channels
 
@@ -90,8 +89,7 @@ Start small and move up as your time and interest allow.
    for access to End User-only discussion forums, including the private
    `#enduser` channel.
 2. **Show up** — Attend the public [TAB meeting](https://zoom.us/j/96509520391)
-   or a [User Group](/community/user-groups) or
-   [Technical Community Group](/community/technical-community-groups) call.
+   or a [User Group](/community/user-groups) call.
 3. **Share what you know** — Answer questions, recommend a resource, or point
    peers to a [case study](https://www.cncf.io/case-studies/) from your
    experience.
@@ -100,8 +98,8 @@ Start small and move up as your time and interest allow.
    [in-repo submission template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml)
    or the
    [TAB submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
-5. **Help shape direction** — Join a User Group, a Technical Community Group, or
-   the TAB to advise on priorities and represent end user needs.
+5. **Help shape direction** — Join a User Group or the TAB to advise on
+   priorities and represent end user needs.
 
 ## Related CNCF resources
 

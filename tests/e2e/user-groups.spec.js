@@ -1,5 +1,5 @@
 // End-to-end coverage for the User Groups section: the
-// /community/user-groups generated-index route and the two leaf docs it lists.
+// /community/user-groups generated-index route and the leaf docs it lists.
 //
 // This page is the one part of the community tree that has no source document.
 // docs/community/user-groups/_category_.json declares
@@ -13,7 +13,7 @@
 // correctly. docs/community/index.md links here as the way a visitor finds a
 // peer group, so that regression is worth catching.
 //
-// No other spec loads these routes. legacy-urls.spec.js reaches the two leaves
+// No other spec loads these routes. legacy-urls.spec.js reaches the leaves
 // by clicking through the /community/telecom-user-group and
 // /community/public-sector-user-group stubs, but asserts only that the
 // destination is not a 404 and that an `article` element exists — never the
