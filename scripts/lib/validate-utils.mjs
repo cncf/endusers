@@ -84,7 +84,43 @@ export function checkNonEmptyArray(errors, path, field, value) {
 }
 
 /** Strict ISO 8601 UTC form (no plain `Date.parse` laxity; see checkIsoTimestamp). */
-const ISO_8601_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+const ISO_8601_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?Z$/;
+
+/**
+ * Resolve a strict ISO 8601 UTC string to its epoch time, or NaN.
+ *
+ * The shape test alone is not enough: `\d{2}` matches `13` as a month and
+ * `45` as a day, and a value the shape accepts but the calendar does not —
+ * `2026-13-45T99:61:61Z` — yields an Invalid Date whose `getTime()` is NaN.
+ * `NaN > limit` is false, so a caller's future-skew comparison silently
+ * passes such a value instead of rejecting it, and the loose
+ * `Number.isNaN(Date.parse(value))` gates this helper replaced would have
+ * caught it. Round-tripping the captured components through `Date.UTC` also
+ * rejects the forms `Date.parse` normalizes rather than refuses, such as
+ * `2026-02-31T00:00:00Z` (rolls into March) and `2026-06-15T24:00:00Z`
+ * (rolls into the next day).
+ *
+ * @param {unknown} value - Candidate timestamp.
+ * @returns {number} Epoch milliseconds, or NaN when `value` is not a real
+ *   strict ISO 8601 UTC instant.
+ */
+function isoUtcTime(value) {
+  const match = ISO_8601_PATTERN.exec(value ?? '');
+  if (!match) return NaN;
+
+  const [, year, month, day, hour, minute, second] = match.map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  const roundTrips =
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day &&
+    date.getUTCHours() === hour &&
+    date.getUTCMinutes() === minute &&
+    date.getUTCSeconds() === second;
+
+  return roundTrips ? Date.parse(value) : NaN;
+}
 
 /**
  * Validate that `value` is a strict ISO 8601 UTC timestamp, optionally also
@@ -99,6 +135,10 @@ const ISO_8601_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
  * the strict one silently defeats any staleness/future check layered on top,
  * which is the failure mode validate-community-groups.mjs's `checkedAt`
  * grace-window check actually depends on being closed.
+ *
+ * Shape is checked by isoUtcTime(), which also requires the captured
+ * components to be a real UTC instant, so a calendar-impossible value cannot
+ * reach the future-skew comparison as a NaN that compares false.
  *
  * @param {Array<Object>} errors - Array to accumulate errors.
  * @param {string} path - File path or identifier used as the error's path.
@@ -120,14 +160,16 @@ export function checkIsoTimestamp(errors, path, field, value, options = {}) {
     futureMessage = `${field} cannot be in the future`,
   } = options;
 
-  if (!ISO_8601_PATTERN.test(value ?? '')) {
+  const time = isoUtcTime(value);
+
+  if (!Number.isFinite(time)) {
     errors.push({ path, severity: 'error', message });
     return false;
   }
 
   if (
     futureToleranceMs !== undefined &&
-    new Date(value).getTime() > Date.now() + futureToleranceMs
+    time > Date.now() + futureToleranceMs
   ) {
     errors.push({ path, severity: 'error', message: futureMessage });
     return false;
