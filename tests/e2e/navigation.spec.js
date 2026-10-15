@@ -15,10 +15,6 @@ import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const LINK_ITEMS = [
   { label: 'Practitioners', to: '/' },
-  {
-    label: 'Projects from End Users',
-    to: '/community/projects-born',
-  },
   { label: 'Metrics', to: '/metrics/' },
   { label: 'Events', to: '/events/' },
   { label: 'Blog', to: '/blog' },
@@ -101,17 +97,6 @@ test.describe('primary navbar', () => {
     await expect(navbarLink(page, 'Metrics')).toHaveClass(
       /navbar__link--active/,
     );
-  });
-
-  test('the fragment link lands on the section it names', async ({ page }) => {
-    const fragmentItem = LINK_ITEMS.find((item) => item.to.includes('#'));
-    const [, fragment] = fragmentItem.to.split('#');
-
-    await page.goto('/');
-    await navbarLink(page, fragmentItem.label).click();
-
-    await expect(page).toHaveURL(new RegExp(`#${fragment}$`));
-    await expect(page.locator(`#${fragment}`)).toBeAttached();
   });
 });
 

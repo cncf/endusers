@@ -446,11 +446,6 @@ const config = {
             position: 'left',
             label: 'Community',
           },
-          {
-            to: '/community/projects-born',
-            label: 'Projects from End Users',
-            position: 'left',
-          },
 
           // Right
           {
