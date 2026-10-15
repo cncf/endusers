@@ -1,5 +1,17 @@
 [
   {
+    "name": "Argo",
+    "origin": "Intuit",
+    "description": "Donated to CNCF by Intuit after growing from an internal tool.",
+    "url": "https://argoproj.github.io/"
+  },
+  {
+    "name": "Backstage",
+    "origin": "Spotify",
+    "description": "Created at Spotify to help teams build and operate software catalogs.",
+    "url": "https://backstage.io/"
+  },
+  {
     "name": "Envoy",
     "origin": "Lyft",
     "description": "Originally built at Lyft before becoming a CNCF project.",
@@ -12,21 +24,9 @@
     "url": "https://www.jaegertracing.io/"
   },
   {
-    "name": "Backstage",
-    "origin": "Spotify",
-    "description": "Created at Spotify to help teams build and operate software catalogs.",
-    "url": "https://backstage.io/"
-  },
-  {
     "name": "Vitess",
     "origin": "YouTube",
     "description": "First developed at YouTube to scale MySQL for production workloads.",
     "url": "https://vitess.io/"
-  },
-  {
-    "name": "Argo",
-    "origin": "Intuit",
-    "description": "Donated to CNCF by Intuit after growing from an internal tool.",
-    "url": "https://argoproj.github.io/"
   }
 ]

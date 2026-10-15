@@ -148,6 +148,36 @@ test('labels an entry with a non-string name as unknown', () => {
   assert.match(result.stderr, /unknown: name must be a non-empty string/);
 });
 
+test('rejects entries out of alphabetical order by name', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture([validData[1], validData[0]]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /out of alphabetical order: "Envoy" must come before "Jaeger"/,
+  );
+});
+
+test('compares names case-insensitively and skips non-string names', () => {
+  // "argo" sorts before "Envoy" by letter, not by code point, and an entry
+  // whose name is not a string is already reported; it must not also derail
+  // the comparison for its neighbours.
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture([
+      { ...validEntry, name: 'argo', url: 'https://argoproj.github.io/' },
+      { ...validEntry, name: 42 },
+      validEntry,
+      validData[1],
+    ]),
+  );
+  assert.equal(result.status, 1);
+  assert.doesNotMatch(result.stderr, /out of alphabetical order/);
+  assert.match(result.stderr, /name must be a non-empty string/);
+});
+
 test('rejects duplicate names', () => {
   const result = runScriptWithFixtures(
     SCRIPT,

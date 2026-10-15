@@ -140,8 +140,9 @@ Rules:
   [cncf/people](https://github.com/cncf/people)'s `people.json`, matched by
   GitHub handle; roster name, company, and role stay authoritative.
 - `data/projects-born.json` has no generator; edit it directly, verify the
-  origin story against a reliable source, and validate with
-  `npm run validate:projects-born` before adding an entry.
+  origin story against a reliable source, insert the entry in alphabetical order
+  by name (the page renders the file in order, and the validator rejects an
+  out-of-place entry), and validate with `npm run validate:projects-born`.
 - **Never edit `data/community-groups.json` by hand.** Add or rename a group in
   the `GROUPS` list in `scripts/check-community-group-links.mjs`, then refresh
   with `npm run check:community-group-links` (needs `GH_TOKEN`), which records
