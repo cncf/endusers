@@ -58,7 +58,12 @@ Two consequences matter when a submission is rejected:
   for non-HTML responses -- are sent by the `[[headers]]` block in
   `netlify.toml` and pinned by `tests/netlify-publish-contract.test.mjs`; the
   fetch directives are kept out of that block so the policy has one source of
-  truth.
+  truth. For the directly-opened-asset case the meta tag can never reach,
+  asset-scoped `[[headers]]` rules (`/img/*` and `/favicons/*`, the only paths
+  that serve an SVG) add a flat `script-src 'none'; object-src 'none'` denial,
+  so a directly-opened SVG renders as an inert document even if a parser gate is
+  bypassed. A flat denial carries no host list, so it cannot drift from the
+  allowlists in `docusaurus.config.js`.
 - A parser can still disagree with a browser on exotic input. The gates fail
   closed on anything the parser rejects, and every historical bypass is kept as
   a regression fixture in `tests/svg-active-content.test.mjs` and
