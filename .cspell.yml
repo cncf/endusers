@@ -159,3 +159,4 @@ words:
   - tolerations
   - clickjacking
   - nosniff
+  - hivecommons
