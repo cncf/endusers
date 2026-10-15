@@ -60,9 +60,9 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
 
 These recipes are a superset of the validation steps the Netlify build
 (`npm run build:netlify`, which runs `npm run validate:all` first) and the
-"Import reference architectures" workflow run, but they are **not** the same
+"Refresh metrics" workflow run, but they are **not** the same
 checks the "Validate repository" and "Lint repository" PR gates run, and a green
-`just build`/`just import` locally does **not** imply a green PR check. Before
+`just build`/`just refresh` locally does **not** imply a green PR check. Before
 opening a PR, also run `npm run test:unit:coverage:check` and the local check
 scripts that match "Lint repository": `npm run check:format`,
 `npm run check:spelling`, and `npm run check:markdown`. The "Validate
