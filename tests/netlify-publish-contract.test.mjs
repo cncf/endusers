@@ -16,9 +16,9 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseToml } from 'smol-toml';
 import { parse as parseYaml } from 'yaml';
@@ -161,4 +161,60 @@ test('the Referrer-Policy header matches the document meta policy', async () => 
     (tag) => tag.tagName === 'meta' && tag.attributes?.name === 'referrer',
   );
   assert.equal(siteWideHeaders()['Referrer-Policy'], meta.attributes.content);
+});
+
+// Asset-scoped rules (#1501). A browser that navigates to an SVG renders it
+// as a document in this origin and executes any script it carries; the <meta>
+// policy never reaches that response, so this flat denial is the second layer
+// behind the validate:architecture-assets parser gates. The denial needs no
+// host list, so it cannot drift from the allowlists in docusaurus.config.js.
+const ASSET_HEADER_PATHS = ['/img/*', '/favicons/*'];
+
+function assetHeaders(path) {
+  const rules = Array.isArray(netlify.headers) ? netlify.headers : [];
+  return rules.find((rule) => rule.for === path)?.values ?? {};
+}
+
+test('asset paths deny script and object without dropping a site-wide header', () => {
+  // Every site-wide value is restated, derived from SECURITY_HEADERS so the
+  // two can never drift; only the CSP gains the flat denials.
+  const assetCsp = `${SECURITY_HEADERS['Content-Security-Policy']}; script-src 'none'; object-src 'none'`;
+  for (const path of ASSET_HEADER_PATHS) {
+    const values = assetHeaders(path);
+    for (const [header, expected] of Object.entries(SECURITY_HEADERS)) {
+      const want = header === 'Content-Security-Policy' ? assetCsp : expected;
+      assert.equal(
+        values[header],
+        want,
+        `netlify.toml [[headers]] for "${path}" must send ${header}: ${want}`,
+      );
+    }
+  }
+});
+
+test('every served SVG falls under an asset header rule', () => {
+  // A rule like "/img/*" covers anything under that directory, so a static/
+  // walk is the ground truth for "every path that serves an SVG": an SVG
+  // added to a directory no rule covers would be a gap the validators do
+  // not see.
+  const svgPaths = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.svg'))
+        svgPaths.push(relative(join(repoRoot, 'static'), full));
+    }
+  };
+  walk(join(repoRoot, 'static'));
+  assert.ok(svgPaths.length > 0, 'static/ serves no SVGs');
+  const uncovered = svgPaths.filter(
+    (path) =>
+      !ASSET_HEADER_PATHS.some((rule) => path.startsWith(rule.slice(1, -1))),
+  );
+  assert.deepEqual(
+    uncovered,
+    [],
+    'SVGs served from paths no asset header rule covers',
+  );
 });

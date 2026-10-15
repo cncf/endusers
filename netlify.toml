@@ -31,3 +31,33 @@
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "same-origin"
+
+# Directly-opened assets. A browser that navigates to an SVG renders it as a
+# document in this origin, so the SVG gate in validate:architecture-assets is the
+# primary control and the <meta> fetch directives in docusaurus.config.js never
+# reach the response at all (CONTENT-SECURITY.md, "Residual risks"). A response
+# header does reach it. script-src 'none' is not a second copy of the host
+# allowlists kept in docusaurus.config.js -- it is a flat denial that is only
+# correct for a response that is never a page, so it cannot drift from them.
+#
+# These paths are every directory scripts/validate-architecture-assets.mjs walks,
+# which is every directory in static/ that holds an SVG. The site-wide values are
+# restated because Netlify does not document how it merges a header name set by
+# both a broad and a narrow matching rule; restating is correct either way.
+[[headers]]
+  for = "/img/*"
+
+  [headers.values]
+    Content-Security-Policy = "frame-ancestors 'self'; script-src 'none'; object-src 'none'"
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"
+
+[[headers]]
+  for = "/favicons/*"
+
+  [headers.values]
+    Content-Security-Policy = "frame-ancestors 'self'; script-src 'none'; object-src 'none'"
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"
