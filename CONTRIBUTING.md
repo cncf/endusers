@@ -32,7 +32,7 @@ Two `package.json` scripts deserve a note because nothing else references them:
 
 - `build:preview` is an alias of `build:production` kept for preview-style
   deploys of the production build; the two run the identical command, and the
-  deploy workflow uses `build:production`.
+  Netlify build (`build:netlify`) ends in `build:production`.
 - `update:pkgs` (`npx npm-check-updates -u`) is a maintainer-only bulk-refresh
   tool that rewrites every semver range in `package.json` at once. It is not the
   routine upgrade path — that remains per-package `npm install <package>` and
@@ -57,12 +57,13 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
   `validate:projects-born`, `validate:button-contrast`,
   `validate:enduser-members`, `validate:members`) followed by `build`.
 
-These recipes are a superset of the validation steps the "Deploy to GitHub
-Pages" and "Import reference architectures" workflows run, but they are **not**
-the same checks the "Validate repository" and "Lint repository" PR gates run,
-and a green `just build`/`just import` locally does **not** imply a green PR
-check. Before opening a PR, also run `npm run test:unit:coverage:check` and the
-local check scripts that match "Lint repository": `npm run check:format`,
+These recipes are a superset of the validation steps the Netlify build
+(`npm run build:netlify`, which runs `npm run validate:all` first) and the
+"Import reference architectures" workflow run, but they are **not** the same
+checks the "Validate repository" and "Lint repository" PR gates run, and a green
+`just build`/`just import` locally does **not** imply a green PR check. Before
+opening a PR, also run `npm run test:unit:coverage:check` and the local check
+scripts that match "Lint repository": `npm run check:format`,
 `npm run check:spelling`, and `npm run check:markdown`. The "Validate
 repository" gate additionally runs `npm run check:audit` (dependency advisory
 allowlist) — see step 5 below. `npm run check` also runs the lint trio, but it
@@ -180,9 +181,9 @@ and its alternatives are recorded in
 Two consequences worth knowing:
 
 - The generated page is gitignored; never commit it. `npm run build` and the
-  deploy job regenerate it, so it cannot drift. `npm run docus:start` does not
-  run the generator — run `npm run generate:changelog` once if you want the page
-  in the dev server.
+  Netlify build regenerate it, so it cannot drift. `npm run docus:start` does
+  not run the generator — run `npm run generate:changelog` once if you want the
+  page in the dev server.
 - Commit subjects become the public changelog text, so write pull request titles
   as if they were headings. A build with no full git history (a shallow
   checkout, for example) renders a fallback page linking GitHub's live merged-PR
