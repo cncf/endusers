@@ -72,9 +72,11 @@ path:
 
 ## Hive App workflow-permission gap
 
-The kubestellar-hive GitHub App installation on this repo has `contents:write`
+The hivecommons-hive GitHub App installation on this repo has `contents:write`
 but not the `workflows` permission, so hive agent branches that touch
-`.github/workflows/**` cannot be pushed through the App (see issue #120). This
+`.github/workflows/**` cannot be pushed through the App. Issue #120 tracked
+this gap and is closed, but the permission was never granted and the gap is
+still in effect. This
 is a repo/organization admin setting (GitHub App installation → Permissions),
 not something a pull request can change, so until an admin grants it agents must
 follow this interim process instead of opening artifact-only PRs:
