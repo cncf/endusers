@@ -26,6 +26,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse, stringify } from 'yaml';
+import { enumerateSourceFiles } from './tools/coverage-report.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const REPORT_SCRIPT = 'report:e2e:coverage';
@@ -41,8 +42,11 @@ const COVERAGE_JOB = 'e2e-coverage';
 // toolbar arms (#1079), and 97.26% (639/657) when it was ratcheted to 96 and
 // the per-file floor was added (#1232).
 //
-// Ceiling, measured on the current tree (651/671, 97.02%): 20 regions at
-// zero. Eleven are defensive fallbacks of the #1253 class:
+// Ceiling, measured on the current tree (655/676, 96.89%): 21 regions at
+// zero. Measured by the e2e-coverage job itself rather than a local run:
+// actions/runs/38635988670, job 116099178223, artifact `e2e-coverage`,
+// report.json runId 38635988670-1, head 1ae340352d8708a8a1e05c5ad3f400fe7e892b21.
+// Eleven are defensive fallbacks of the #1253 class:
 // src/components/CaseStudies/index.js:48,
 // src/components/CommunityPeople/index.js:134,
 // src/components/GroupLinkStatus/index.js:14,
@@ -70,7 +74,7 @@ const COVERAGE_JOB = 'e2e-coverage';
 // deliberately cannot resolve, and #1439 moved every one of them with
 // nothing going red.
 //
-// The remaining four zeros are:
+// The remaining five zeros are:
 //
 //   src/components/shared/MirrorSyncStatus.js:20 -- the same residual
 //     class. #1439 folded CaseStudies' and RadarReports' separate
@@ -80,8 +84,8 @@ const COVERAGE_JOB = 'e2e-coverage';
 //     witness is now tests/e2e/fixtures/data-variant/radar-reports.json
 //     alone: that overlay still clears the field to JSON null, and the
 //     case-studies overlay beside it no longer does (see the entry below).
-//   src/components/shared/MirrorSyncStatus.js:22 -- was NOT a residual, and
-//     is one now. The !syncDate arm is reachable only with a generatedAt
+//   src/components/shared/MirrorSyncStatus.js:22 (x2) -- was NOT a residual,
+//     and is one now. The !syncDate arm is reachable only with a generatedAt
 //     that is truthy and unparseable; until this note was edited no fixture
 //     build produced that shape -- both overlays set the field to null,
 //     which returns at src/components/shared/MirrorSyncStatus.js:20 first --
@@ -115,10 +119,12 @@ const COVERAGE_JOB = 'e2e-coverage';
 //     is not made here; until then this is a reporting residual.
 //
 // Do not set --check-source-regions above 96 or
-// --check-source-file-regions above 66 (PeopleFreshness, 2/3, whose one zero
-// is in that residual) without first changing the union. The aggregate stops
-// at 96 rather than 97 because 97 would demand 651 of 671 exactly -- a gate
-// with no slack at all.
+// --check-source-file-regions above 66 without first changing the union. Two
+// files sit exactly on that per-file floor and both of their zeros are in the
+// residual: src/components/PeopleFreshness/index.js at 2/3 and
+// src/components/shared/MirrorSyncStatus.js at 6/9. The aggregate stops at 96
+// rather than 97 because 97 would demand 656 of 676, one more than the 655
+// the run records -- a gate the current tree does not clear at all.
 //
 // The per-file floor is the unit lane's --check-source-file-regions argument
 // one level down: the aggregate lets roughly one region in twenty-five go
@@ -135,10 +141,12 @@ const FLOORS = {
 //
 // Unlike the unit lane's line counts, the e2e *region* counts are a V8
 // artifact that moves with the runtime, and the e2e lane never recorded which
-// runtime its floors came from. The same commit, the same suite (the 40 spec
-// files MEASURED_AT_SPEC_COUNT records, 356 tests under E2E_COVERAGE=1) and
-// the same two fixture builds measure differently on the major ci.yml pins
-// and on a newer one:
+// runtime its floors came from. One commit, one suite and the same two fixture
+// builds measure differently on the major ci.yml pins and on a newer one. The
+// two-column comparison below was taken on the tree that introduced this
+// constant -- it is kept as the demonstration that the runtime moves the
+// numbers, not as a description of the tree shipping now, whose node-22
+// figures are the ones recorded in the ceiling note above:
 //
 //   file                                      node 22.21.1   node 26.10.0
 //   src/components/MemberDirectory/
@@ -154,13 +162,13 @@ const FLOORS = {
 //
 // The covered counts barely move; the *denominator* does, because V8 splits
 // the same expression into a different number of ranges. So the lane's
-// headroom is a property of the runtime: on node 22 the aggregate is 651/671,
-// which is the 97.02% that leaves --check-source-regions 96 its only workable
-// value -- 97 would demand 651 of 671 exactly, a gate with no slack at all.
-// The same suite on node 26 reports 97.45%, which reads like three regions of
-// room. A contributor who follows CONTRIBUTING.md's local recipe on a newer
-// Node reads the second column, concludes the aggregate floor can be
-// ratcheted, and turns the required job red on the next denominator wobble.
+// headroom is a property of the runtime: the aggregate above cleared 97% on
+// node 22 by a single region and read 97.45% on node 26, which looks like
+// three regions of room. A contributor who follows CONTRIBUTING.md's local
+// recipe on a newer Node reads the second column, concludes the aggregate
+// floor can be ratcheted, and turns the required job red on the next
+// denominator wobble -- which is what the current tree's 655/676 (96.89%),
+// measured on node 22, would do immediately.
 //
 // That makes the pinned major part of the floors' meaning, and this constant
 // is what says so. `tests/dev-environment.test.mjs` already proves every
@@ -197,6 +205,33 @@ const MEASURED_ON_NODE_MAJOR = '22';
 // update the table and any floor that moved, and set this constant in the same
 // change.
 const MEASURED_AT_SPEC_COUNT = 40;
+
+// The number of src/** modules the table above was measured against.
+//
+// The spec count covers the half of the suite's shape that lives in
+// tests/e2e. The other half is the measured tree itself: the aggregate is a
+// ratio over the src/** modules the run observed, so splitting one module into
+// two re-measures the lane without touching a spec. Nothing noticed that
+// either. #1439 extracted src/components/shared/MirrorSyncStatus.js and
+// src/components/shared/initials.js out of their callers, which moved the
+// node-22 aggregate from 651/671 to 655/676 and put a second file on the
+// per-file floor, and every guard in this file stayed green -- the note above
+// had already recorded the symptom ("#1439 moved every one of them with
+// nothing going red") without the guard that would have caught it.
+//
+// Counted with enumerateSourceFiles(), the same walker the e2e reporter uses
+// for --require-source-files, restricted to src/ because that is the only tree
+// the reporter admits coverage for. That makes it as hermetic as the spec
+// count: no browser, no build, no coverage run. It is a count and not a file
+// list for the reason the spec count is -- editing a module's body without
+// adding or removing a file slips past it, which is the residual the ceiling
+// note's own citations are there to absorb.
+//
+// When this goes red the measured tree has changed shape since the table was
+// written. Re-measure with the recipe in CONTRIBUTING.md on Node
+// MEASURED_ON_NODE_MAJOR, update the table and any floor that moved, and set
+// this constant in the same change.
+const MEASURED_AT_SOURCE_MODULE_COUNT = 24;
 
 // Present-or-absent guarantees, which carry no percentage. --require-source-files
 // is the second, different guarantee the reporter documents: the percentage is a
@@ -399,6 +434,53 @@ test('the suite-shape guard fails when a spec is added or removed', () => {
   );
   assert.throws(
     () => checkSuiteShape(e2eSpecs.slice(1)),
+    /measurement table in this file was taken against/,
+  );
+});
+
+/**
+ * Asserts the src/** tree the table above was measured against is the tree on
+ * disk.
+ *
+ * Takes the module list as an argument for the reason checkSuiteShape does: a
+ * guard nobody has seen go red is indistinguishable from one that always
+ * passes.
+ *
+ * @param {string[]} modules repo-relative src/** module paths
+ */
+function checkSourceShape(modules) {
+  assert.equal(
+    modules.length,
+    MEASURED_AT_SOURCE_MODULE_COUNT,
+    `src/ now holds ${modules.length} modules, but the measurement table in ` +
+      `this file was taken against ${MEASURED_AT_SOURCE_MODULE_COUNT}. The ` +
+      'aggregate it records is a ratio over the src modules the run observed, ' +
+      'so splitting or folding one re-measures the lane without touching a ' +
+      'spec: re-run the recipe in CONTRIBUTING.md on Node ' +
+      `${MEASURED_ON_NODE_MAJOR}, update the table and any floor that moved, and set ` +
+      'MEASURED_AT_SOURCE_MODULE_COUNT in the same change',
+  );
+}
+
+const sourceModules = enumerateSourceFiles(repoRoot).filter((file) =>
+  file.startsWith('src/'),
+);
+
+test('the measurement table still describes the src tree on disk', () => {
+  assert.ok(
+    sourceModules.length > 0,
+    'no src/ modules found; the source-shape guard is asserting nothing',
+  );
+  checkSourceShape(sourceModules);
+});
+
+test('the source-shape guard fails when a src module is added or removed', () => {
+  assert.throws(
+    () => checkSourceShape([...sourceModules, 'src/components/Invented.js']),
+    /measurement table in this file was taken against/,
+  );
+  assert.throws(
+    () => checkSourceShape(sourceModules.slice(1)),
     /measurement table in this file was taken against/,
   );
 });
