@@ -769,6 +769,11 @@ function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
  * handed back as sanitized.
  *
  * @param {string} source - SVG file contents.
+ * @param {Object} [options]
+ * @param {(source: string) => string[]} [options.scan] - Detector run over
+ *   the rebuilt output. Defaults to {@link findActiveContent}; the override
+ *   exists so the survival throw below can be exercised, because the default
+ *   detector and the stripper agree by construction today.
  * @returns {{ source: string, removed: string[] }}
  * @throws {Error} If the document cannot be edited safely or active content
  *   survives. A document that is not well-formed, declares entities, or is
@@ -777,7 +782,7 @@ function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
  *   whose payload it cannot see would be the opposite of what the
  *   verification is for.
  */
-export function stripActiveContent(source) {
+export function stripActiveContent(source, { scan = findActiveContent } = {}) {
   const text = String(source);
   const findings = findActiveContent(text);
   if (!findings.length) return { source: text, removed: [] };
@@ -791,8 +796,21 @@ export function stripActiveContent(source) {
   }
 
   // Findings and removals both come from classifyTag() over this same parse,
-  // and the output is serialized from the tree, so what is left is exactly the
-  // nodes that produced no finding.
+  // and the output is serialized from the tree, so what is left should be
+  // exactly the nodes that produced no finding. That is an argument about two
+  // code paths agreeing, not a property of the bytes being returned, and the
+  // bytes are what callers publish at the site origin: architecture-content.mjs
+  // and enduser-collector.mjs write this string into static/ with no active
+  // content check of their own. Re-scan the actual output so any future
+  // divergence between classifyTag()'s removal set, rebuild()'s serialization
+  // and findActiveContent()'s detection fails closed here instead of
+  // publishing a document that only looks sanitized.
   const result = rebuild(text, parsed.events, { strip: true });
+  const residual = scan(result.source);
+  if (residual.length) {
+    throw new Error(
+      `Active content survived stripping from SVG: ${residual.join('; ')}`,
+    );
+  }
   return result;
 }
