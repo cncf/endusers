@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import {
   checkNonEmptyArray,
+  checkNonEmptyString,
   checkUrl as checkUrlImpl,
   reportAndExit,
 } from './lib/validate-utils.mjs';
@@ -43,14 +44,7 @@ for (const entry of Array.isArray(data) ? data : []) {
   const path = typeof entry?.name === 'string' ? entry.name : 'unknown';
 
   for (const field of REQUIRED_TEXT_FIELDS) {
-    const value = entry?.[field];
-    if (typeof value !== 'string' || !value.trim()) {
-      errors.push({
-        path,
-        severity: 'error',
-        message: `${field} must be a non-empty string`,
-      });
-    }
+    checkNonEmptyString(errors, path, field, entry?.[field]);
   }
 
   if (typeof entry?.name === 'string' && names.has(entry.name)) {
