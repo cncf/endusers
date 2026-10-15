@@ -781,6 +781,75 @@ test('throws rather than returning a source the detector still flags', () => {
   });
 });
 
+// The test above covers the structural refusal, which happens *before* the
+// document is rebuilt. This one covers the other half of the same promise: a
+// document that is well-formed enough to edit still has to come back inert.
+// architecture-content.mjs (mirrorArtworkUrls) and enduser-collector.mjs
+// (mirrorLandscapeLogo) write this return value straight into static/ and run
+// only findRemoteReferences() over it, so stripActiveContent() is the sole
+// active-content gate on the bytes those two paths publish at the site origin.
+// Asserting the post-condition over every construct the module strips keeps a
+// future change to classifyTag()'s removal set, rebuild()'s serialization or
+// findActiveContent()'s detection from silently drifting apart.
+const STRIPPABLE_CONSTRUCTS = [
+  ['<script> element', '<script>alert(1)</script>'],
+  ['<handler> element', '<handler type="text/javascript">alert(1)</handler>'],
+  ['<listener> element', '<listener handler="#h"/>'],
+  [
+    '<iframe> in foreignObject',
+    '<foreignObject><iframe src="https://evil.example/"/></foreignObject>',
+  ],
+  ['<embed> element', '<embed src="https://evil.example/x"/>'],
+  ['<object> element', '<object data="https://evil.example/x"/>'],
+  ['<base> element', '<base href="https://evil.example/"/>'],
+  [
+    '<meta> refresh',
+    '<meta http-equiv="refresh" content="0;url=https://evil.example/"/>',
+  ],
+  ['event handler attribute', '<rect width="1" height="1" onload="alert(1)"/>'],
+  [
+    'srcdoc document attribute',
+    '<foreignObject><iframe srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"/></foreignObject>',
+  ],
+  ['javascript: href', '<a href="javascript:alert(1)">x</a>'],
+  [
+    'namespace-prefixed script',
+    '<x:script xmlns:x="http://www.w3.org/2000/svg">alert(1)</x:script>',
+  ],
+  [
+    '<animate> installing an href',
+    '<a><animate attributeName="href" to="javascript:alert(1)"/></a>',
+  ],
+  [
+    '<set> installing an href',
+    '<a><set attributeName="href" to="javascript:alert(1)"/></a>',
+  ],
+];
+
+for (const [label, markup] of STRIPPABLE_CONSTRUCTS) {
+  test(`stripActiveContent returns an inert document for ${label}`, () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${markup}</svg>`;
+    assert.ok(
+      findActiveContent(svg).length > 0,
+      'fixture is meant to carry active content',
+    );
+    const { source, removed } = stripActiveContent(svg);
+    assert.ok(removed.length > 0, 'something should have been removed');
+    // The returned bytes, not the parse they came from: this is what the
+    // mirroring callers write to static/.
+    assert.deepEqual(findActiveContent(source), []);
+  });
+}
+
+test('stripActiveContent returns an inert document for every construct at once', () => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><?xml-stylesheet href="https://evil.example/x.xsl" type="text/xsl"?>${STRIPPABLE_CONSTRUCTS.map(
+    ([, markup]) => markup,
+  ).join('')}</svg>`;
+  assert.ok(findActiveContent(svg).length > 0);
+  const { source } = stripActiveContent(svg);
+  assert.deepEqual(findActiveContent(source), []);
+});
+
 // An XML parser expands author-defined general entities before the document
 // tree exists, so a payload parked in a declaration never appears in any
 // attribute value this module can normalize. The scanner cannot resolve them,
