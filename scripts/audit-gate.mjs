@@ -176,7 +176,8 @@ export function fixableAllowlistedAdvisories(
 }
 
 // Renders npm's `fixAvailable` value as a short phrase for the CI log.
-function describeFix(fixAvailable) {
+// Exported for the unit tests; main() is its only production caller.
+export function describeFix(fixAvailable) {
   if (fixAvailable && typeof fixAvailable === 'object') {
     const target = [fixAvailable.name, fixAvailable.version]
       .filter(Boolean)

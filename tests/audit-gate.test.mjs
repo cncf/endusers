@@ -27,6 +27,7 @@ import {
   classifyAudit,
   unusedAllowlistEntries,
   fixableAllowlistedAdvisories,
+  describeFix,
 } from '../scripts/audit-gate.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -433,6 +434,29 @@ test('fixableAllowlistedAdvisories defaults to the shipped allowlist', () => {
     fixableAllowlistedAdvisories(report).map((f) => f.id),
     [...ALLOWLISTED_ADVISORIES].sort(),
   );
+});
+
+// --- describeFix ---
+
+test('describeFix names the release npm points at, flagging a semver-major bump', () => {
+  assert.equal(
+    describeFix({ name: 'braces', version: '3.0.4', isSemVerMajor: true }),
+    'upgrade to braces@3.0.4, semver-major',
+  );
+  assert.equal(
+    describeFix({ name: 'braces', version: '3.0.4', isSemVerMajor: false }),
+    'upgrade to braces@3.0.4',
+  );
+  assert.equal(describeFix({ version: '3.0.4' }), 'upgrade to 3.0.4');
+});
+
+test('describeFix falls back to a generic phrase when npm names no release', () => {
+  // npm emits a bare `true` when the fix is a plain `npm audit fix`, and an
+  // object can in principle arrive without name/version; neither should
+  // produce "upgrade to " with nothing after it.
+  assert.equal(describeFix(true), 'a fix is available');
+  assert.equal(describeFix({}), 'a fix is available');
+  assert.equal(describeFix({ isSemVerMajor: true }), 'a fix is available');
 });
 
 // --- CLI entry, with npm stubbed ---
