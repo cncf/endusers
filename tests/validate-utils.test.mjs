@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   checkIsoTimestamp,
   checkNonEmptyArray,
+  checkNonEmptyString,
   checkParseableDate,
   checkUrl,
   collectError,
@@ -731,4 +732,26 @@ test('checkParseableDate appends the provided message suffix on failure', () => 
         'verifiedAt must be a parseable date recording the last completeness audit against verifiedAgainst',
     },
   ]);
+});
+
+test('checkNonEmptyString accepts a non-blank string and pushes no error', () => {
+  const errors = [];
+  const ok = checkNonEmptyString(errors, 'data/members.json', 'name', 'Adobe');
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+});
+
+test('checkNonEmptyString reports an empty, whitespace-only, non-string and missing value', () => {
+  for (const value of ['', '   ', 42, null, undefined]) {
+    const errors = [];
+    const ok = checkNonEmptyString(errors, 'data/members.json', 'name', value);
+    assert.equal(ok, false, JSON.stringify(value));
+    assert.deepEqual(errors, [
+      {
+        path: 'data/members.json',
+        severity: 'error',
+        message: 'name must be a non-empty string',
+      },
+    ]);
+  }
 });

@@ -24,7 +24,12 @@ const data = JSON.parse(
 );
 const errors = [];
 
-checkParseableDate(errors, 'case-studies.json', 'generatedAt', data.generatedAt);
+checkParseableDate(
+  errors,
+  'case-studies.json',
+  'generatedAt',
+  data.generatedAt,
+);
 if (!data.sourceUrl || !publishableCncfUrl(data.sourceUrl))
   errors.push({
     path: 'case-studies.json',

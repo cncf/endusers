@@ -25,7 +25,12 @@ const data = JSON.parse(
 );
 const errors = [];
 
-checkParseableDate(errors, 'radar-reports.json', 'generatedAt', data.generatedAt);
+checkParseableDate(
+  errors,
+  'radar-reports.json',
+  'generatedAt',
+  data.generatedAt,
+);
 if (!data.sourceUrl || !publishableCncfUrl(data.sourceUrl))
   errors.push({
     path: 'radar-reports.json',
