@@ -3,8 +3,8 @@ name: Reference architecture submission
 # A maintainer applying the `architecture-ready` label to an issue opened with
 # .github/ISSUE_TEMPLATE/reference-architecture.yml signals that the
 # submission is in good shape. This turns that label into a pull request built
-# from the issue's answers, the same way import-architectures.yml turns an
-# upstream cncf/architecture checkout into a pull request.
+# from the issue's answers: a catalog record, a generated docs page and any
+# mirrored diagram assets.
 on:
   issues:
     types: [labeled]

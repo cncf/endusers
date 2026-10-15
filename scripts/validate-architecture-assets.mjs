@@ -413,7 +413,7 @@ if (shouldFix && issues.length === 0) {
 // one. walk() rejects symlinked *entries*, but a walk rooted at a symlinked
 // directory descends into the link target, so every file found there is
 // validated as if it were a published asset and is written back through by
-// --fix. Mirrors isRealDirectory() in scripts/import-architectures.mjs.
+// --fix.
 function assetRootKind(dir) {
   const stats = lstatSync(dir, { throwIfNoEntry: false });
   if (!stats) return 'missing';

@@ -176,3 +176,15 @@ test('keeps mirrored artwork referenced by definition and escapes labels and pat
     '[x](<https://evil.example/a b.png>)',
   );
 });
+
+// Edits are applied back to front so earlier offsets stay valid; a body with
+// two rewrites is what exercises the ordering.
+test('cleanMarkdown rewrites several references in one body', () => {
+  assert.equal(
+    cleanMarkdown(
+      '![a](images/a.png) text ![b](https://evil.example/b.png) more ![c](./c.png)',
+      'demo',
+    ),
+    '![a](/img/architectures/demo/a.png) text [b](https://evil.example/b.png) more ![c](/img/architectures/demo/c.png)',
+  );
+});

@@ -1,9 +1,9 @@
-name: Import reference architectures
+name: Refresh metrics
 
 on:
-  # On-demand only: a maintainer or contributor triggers this from the
-  # Actions tab (or `gh workflow run`) when cncf/architecture has new
-  # content to pull in, rather than importing on a recurring schedule.
+  # On-demand only: a maintainer triggers this from the Actions tab (or
+  # `gh workflow run`) when data/metrics.json and the end user member list
+  # should be brought up to date, rather than refreshing on a schedule.
   workflow_dispatch:
 
 permissions:
@@ -14,14 +14,14 @@ permissions:
 # refresh-radar-reports.yml. workflow_dispatch only, so two runs overlap as
 # soon as the button is pressed twice. Not cancelled, for the same reason.
 concurrency:
-  group: automation/import-architectures
+  group: automation/refresh-metrics
   cancel-in-progress: false
 
 env:
   NODE_VERSION: '22'
 
 jobs:
-  import:
+  refresh:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -32,32 +32,28 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-      - run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
       - run: npm ci
       - run: npm run collect:metrics
         env:
           GH_TOKEN: ${{ github.token }}
       - run: npm run collect:enduser-members
       - run: npm run validate:enduser-members
-      - run: npm run import:architectures
+      - run: npm run generate:members
       - run: npm run fix:format
       - run: npm run validate:metrics
-      - run: npm run validate:architectures
-      - run: npm run validate:architecture-assets
-      - run: npm run validate:awards
       - run: npm run validate:members
       - run: npm run test:unit
       - run: npm run build
       - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
-          branch: automation/import-architectures
+          branch: automation/refresh-metrics
           delete-branch: true
-          commit-message: 'chore: import reference architectures'
-          title: 'chore: import latest reference architectures'
+          commit-message: 'chore: refresh metrics'
+          title: 'chore: refresh metrics and member data'
           body: |
-            Automated metrics refresh and architecture import.
-            Automated import from https://github.com/cncf/architecture.
+            Automated refresh of `data/metrics.json`, the end user member
+            list and the generated member directory.
 
-            The production build and architecture validation passed.
+            Validation, the unit tests and the production build passed.
           labels: automated
           signoff: true

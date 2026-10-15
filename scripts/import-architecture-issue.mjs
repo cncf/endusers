@@ -2,8 +2,7 @@
 /**
  * Turns a reference-architecture submission issue (opened with
  * .github/ISSUE_TEMPLATE/reference-architecture.yml) into a catalog record and
- * docs/architectures/<id>.md page, the same shapes scripts/import-architectures.mjs
- * produces from a cncf/architecture checkout.
+ * docs/architectures/<id>.md page.
  *
  * Run by .github/workflows/architecture-submission.yml when a maintainer adds
  * the `architecture-ready` label to a submission issue. The workflow points

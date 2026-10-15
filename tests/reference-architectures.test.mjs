@@ -5,10 +5,10 @@
 // the `node --test --experimental-test-coverage` report at all.
 //
 // scripts/validate-architectures.mjs guards the shape of the catalog JSON;
-// nothing guarded what the page does with it. The provenance line's
-// target/rel pairing, the logo-versus-initials arm of a card, the industries
-// fallback, the four-project cap and the empty-state escape hatch could all
-// regress silently. These assertions cover the rendered output.
+// nothing guarded what the page does with it. The logo-versus-initials arm
+// of a card, the industries fallback, the four-project cap and the
+// empty-state escape hatch could all regress silently. These assertions cover
+// the rendered output.
 //
 // `<ArchitectureFilters />` is asserted only through the props it is handed:
 // the toolbar's own internals belong to tests/architecture-filters.test.mjs.
@@ -18,7 +18,6 @@ import test from 'node:test';
 
 import React from 'react';
 
-import { importWithData } from './helpers-component-data.mjs';
 import { importSource } from './helpers-jsx.mjs';
 import {
   findAllByType,
@@ -31,7 +30,6 @@ const ReferenceArchitectures = (
   await importSource('src/components/ReferenceArchitectures/index.js')
 ).default;
 const catalog = (await importSource('data/architectures/catalog.json')).default;
-const metrics = (await importSource('data/metrics.json')).default;
 
 // React routes useState/useMemo through a per-render "dispatcher" slot.
 // Swapping that slot lets a plain Node test render a stateful component with
@@ -96,23 +94,6 @@ function render(Component) {
   return view;
 }
 
-/**
- * Nested components are yielded by the walker without being descended into.
- * Invoking one renders its subtree, which is how the card and the provenance
- * line — neither of which is exported — are reached.
- *
- * @param {any} tree root element
- * @param {string} name function name of the component to invoke
- * @returns {any} the element tree that component returns
- */
-function renderNested(tree, name) {
-  const element = [...walkElements(tree)].find(
-    (node) => typeof node.type === 'function' && node.type.name === name,
-  );
-  assert.ok(element, `expected the component to render a <${name} />`);
-  return element.type(element.props);
-}
-
 /** The component function of the first nested `<name />` in the tree. */
 function nestedComponent(tree, name) {
   const element = [...walkElements(tree)].find(
@@ -133,25 +114,6 @@ function toolbarProps(tree) {
   assert.ok(element, 'expected the component to render the filter toolbar');
   return element.props;
 }
-
-// data/metrics.json is regenerated from upstream by
-// .github/workflows/import-architectures.yml, which is why the three cases
-// below used to open with `if (!source?.revision) t.skip(...)`. Those arms
-// could never run: scripts/validate-metrics.mjs:51-57 exits 1 on a
-// metrics.json whose sources.architectures.revision is absent, and :48 does
-// the same for a generatedAt that does not parse -- an absent one included.
-// Both refusals are pinned by tests/validate-metrics.test.mjs ("rejects
-// missing source revisions", "rejects a missing generatedAt"), and ci.yml
-// runs `npm run validate:metrics` in the same job as this suite, so a refresh
-// that dropped either field turns that job red rather than reaching here.
-//
-// They are deleted rather than carried for the reason
-// tests/e2e-data-dependent-skips.test.mjs gives at length: a skip is reported
-// as a non-failure, so a guard that did fire would retire this file's only
-// coverage of the sync-status links in silence. Guards whose premise another
-// gate already enforces are pinned and removed (#1491), not kept as
-// permanently-dead regions.
-const source = metrics.sources.architectures;
 
 test('the catalog is a labelled landmark region', () => {
   const { tree } = render(ReferenceArchitectures);
@@ -237,55 +199,6 @@ test('the empty state clear button restores the full grid', () => {
     'the empty state is gone once the filters are cleared',
   );
   assert.equal(toolbarProps(view.tree).resultCount, catalog.length);
-});
-
-test('the sync status cites the mirrored revision and its commit', () => {
-  const { tree } = render(ReferenceArchitectures);
-  const status = renderNested(tree, 'SyncStatus');
-  const links = findAllByType(status, 'a');
-
-  assert.equal(links.length, 2);
-  assert.equal(links[0].props.href, source.repository);
-  assert.equal(textOf(links[0]), 'cncf/architecture');
-  assert.equal(
-    links[1].props.href,
-    `${source.repository}/commit/${source.revision}`,
-  );
-  assert.equal(
-    textOf(links[1]),
-    source.revision.slice(0, 7),
-    'the commit link shows the abbreviated revision',
-  );
-  assert.equal(findByType(links[1], 'code') !== undefined, true);
-});
-
-test('every outbound sync-status link pairs target=_blank with rel=noreferrer', () => {
-  const { tree } = render(ReferenceArchitectures);
-  const links = findAllByType(renderNested(tree, 'SyncStatus'), 'a');
-  assert.ok(links.length > 0);
-  for (const link of links) {
-    assert.equal(link.props.target, '_blank');
-    assert.equal(
-      link.props.rel,
-      'noreferrer',
-      `${link.props.href} opens a new tab without rel="noreferrer"`,
-    );
-  }
-});
-
-test('the sync status renders the generation date in UTC', () => {
-  const { tree } = render(ReferenceArchitectures);
-  const expected = new Date(metrics.generatedAt).toLocaleDateString('en-US', {
-    timeZone: 'UTC',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-  assert.match(textOf(renderNested(tree, 'SyncStatus')), /^Last synced from /);
-  assert.ok(
-    textOf(renderNested(tree, 'SyncStatus')).endsWith(` on ${expected}.`),
-    'the provenance line ends with the UTC-formatted sync date',
-  );
 });
 
 test('a card shows the logo asset when one is mirrored', () => {
@@ -471,106 +384,4 @@ test('the logo wrapper is hidden from assistive technology', () => {
     },
   });
   assert.equal(findByType(card, 'div').props['aria-hidden'], 'true');
-});
-
-// SyncStatus degrades in two ways that data/metrics.json never exercises: it
-// renders nothing at all when the mirror records no architectures revision,
-// and it drops the trailing date when there is no generatedAt. Every
-// provenance test above skips itself unless the live file happens to carry a
-// revision, so both arms were unreached — a refresh that stopped emitting
-// `sources.architectures` would take the whole /docs/architectures page down
-// with a TypeError before any test noticed.
-//
-// The component reads metrics at module scope and takes no props, so the
-// fixtures are driven through a rewritten copy, the same way
-// tests/people-freshness.test.mjs reaches its unparseable-timestamp branch.
-
-const METRICS_SPECIFIER = '@site/data/metrics.json';
-
-const SYNCED = {
-  generatedAt: '2026-07-27T03:29:35.945Z',
-  sources: {
-    architectures: {
-      repository: 'https://github.com/cncf/architecture',
-      revision: '551ef61f618a353dbea55efc0241616cbb286b4d',
-    },
-  },
-};
-
-/**
- * Renders the provenance line against a fixture metrics file.
- *
- * @param {unknown} metricsFixture stands in for data/metrics.json
- * @returns {Promise<any>} what SyncStatus returned, which may be null
- */
-async function syncStatusWith(metricsFixture) {
-  const module = await importWithData(
-    'src/components/ReferenceArchitectures/index.js',
-    { [METRICS_SPECIFIER]: metricsFixture },
-  );
-  try {
-    const { tree } = render(module.default);
-    return renderNested(tree, 'SyncStatus');
-  } finally {
-    module.cleanup();
-  }
-}
-
-test('the fixture harness reproduces the provenance line it replaces', async () => {
-  const status = await syncStatusWith(SYNCED);
-  const links = findAllByType(status, 'a');
-  assert.equal(links.length, 2, 'the fixture must reach the rendered arm');
-  assert.equal(
-    links[1].props.href,
-    `${SYNCED.sources.architectures.repository}/commit/${SYNCED.sources.architectures.revision}`,
-  );
-  assert.equal(textOf(links[1]), '551ef61');
-});
-
-test('a metrics file recording no architectures source renders no provenance line', async () => {
-  assert.equal(
-    await syncStatusWith({ generatedAt: SYNCED.generatedAt, sources: {} }),
-    null,
-  );
-});
-
-test('a metrics file with no sources object at all renders no provenance line', async () => {
-  assert.equal(await syncStatusWith({ generatedAt: SYNCED.generatedAt }), null);
-});
-
-test('an architectures source with no revision renders no provenance line', async () => {
-  assert.equal(
-    await syncStatusWith({
-      generatedAt: SYNCED.generatedAt,
-      sources: {
-        architectures: { repository: 'https://github.com/cncf/architecture' },
-      },
-    }),
-    null,
-  );
-});
-
-test('the page still renders its catalog when the provenance line is empty', async () => {
-  const module = await importWithData(
-    'src/components/ReferenceArchitectures/index.js',
-    { [METRICS_SPECIFIER]: { sources: {} } },
-  );
-  try {
-    const { tree } = render(module.default);
-    assert.equal(tree.type, 'section');
-    assert.match(textOf(tree), /real-world architecture reports/);
-  } finally {
-    module.cleanup();
-  }
-});
-
-test('a missing generatedAt drops the date rather than rendering "Invalid Date"', async () => {
-  const text = textOf(await syncStatusWith({ sources: SYNCED.sources }));
-  assert.match(text, /^Last synced from /);
-  assert.ok(
-    text.endsWith('551ef61.'),
-    `expected the line to stop after the revision, got: ${text}`,
-  );
-  assert.doesNotMatch(text, / on /);
-  assert.doesNotMatch(text, /Invalid Date/);
 });

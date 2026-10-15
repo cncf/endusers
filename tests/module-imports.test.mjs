@@ -49,9 +49,9 @@ const sourceFiles = [
 ];
 
 // `import x from 'y'`, `import 'y'`, `export { x } from 'y'`, `import('y')`.
-// Comment bodies and the template literal in import-architectures.mjs that
-// *emits* an import into generated MDX must not be picked up, so the pattern
-// requires a real statement keyword at the start of a line.
+// Comment bodies and template literals that *emit* an import into generated
+// MDX must not be picked up, so the pattern requires a real statement keyword
+// at the start of a line.
 const STATIC_IMPORT =
   /^\s*(?:import|export)\b[^'"\n]*?from\s*['"]([^'"]+)['"]/gm;
 const BARE_IMPORT = /^\s*import\s*['"]([^'"]+)['"]/gm;

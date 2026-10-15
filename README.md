@@ -9,8 +9,8 @@ pathways to participate.
 
 - **Practitioners** — the landing page for people operating cloud native systems
   in production
-- **Architectures** — real-world reference architectures imported from
-  [cncf/architecture](https://github.com/cncf/architecture)
+- **Architectures** — a catalog of real-world reference architectures
+  contributed by CNCF end users
 - **Community** — the End User Technical Advisory Board (TAB), End User Groups,
   ways to engage, the directory of member organizations, and the organizations
   recognized with CNCF End User awards

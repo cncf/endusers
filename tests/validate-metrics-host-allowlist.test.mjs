@@ -1,8 +1,9 @@
 // Host allow-list coverage for scripts/validate-metrics.mjs.
 //
 // Every URL in data/metrics.json is rendered under hard-coded anchor text
-// ("cncf/architecture" in src/components/ReferenceArchitectures, "Source ↗" in
-// src/components/MetricsDashboard), so an https URL on a host that is not
+// ("cncf/architecture" in src/components/MemberDirectory/DirectoryFreshness,
+// "Source ↗" in src/components/MetricsDashboard), so an https URL on a host
+// that is not
 // CNCF's publishes as a CNCF-labelled link to an unrelated origin. These cases
 // pin the allow-list at every checkUrl() call site.
 import assert from 'node:assert/strict';

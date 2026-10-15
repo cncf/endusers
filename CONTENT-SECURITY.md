@@ -1,12 +1,12 @@
 # Content security rules for imported architecture content
 
-Reference-architecture pages and their diagrams are imported from sources this
-repository does not control: a
-[cncf/architecture](https://github.com/cncf/architecture) checkout, or the body
-of a GitHub issue anyone can open. Both importers run unattended, and a
-published SVG or Markdown page executes in the site's origin, so every import
-passes through validators that reject content able to run script or fetch from
-third-party hosts.
+Reference-architecture pages and their diagrams are imported from a source this
+repository does not control: the body of a GitHub issue anyone can open. The
+importer runs unattended, and a published SVG or Markdown page executes in the
+site's origin, so every import passes through validators that reject content
+able to run script or fetch from third-party hosts. The same validators run in
+CI over every committed page, including those that originated in
+[cncf/architecture](https://github.com/cncf/architecture).
 
 Those validators are `npm run validate:architectures` (page bodies) and
 `npm run validate:architecture-assets` (SVG diagram files). When a submission

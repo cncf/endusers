@@ -3,8 +3,8 @@
  * repository (cncf/landscape, cncf/architecture) into a local working
  * directory before reading it.
  *
- * Three scripts (collect-metrics.mjs, collect-enduser-members.mjs,
- * import-architectures.mjs) carried independent copies of the same two
+ * The collectors (collect-metrics.mjs, collect-enduser-members.mjs) once
+ * carried independent copies of the same two
  * `git` invocations -- a depth-1 clone, then a HEAD rev-parse to pin the
  * commit the generated output was built from -- with small drifts already
  * visible between them (differing `execFileSync` option shapes). Centralizing

@@ -103,17 +103,19 @@ function directWorkflowTargets() {
   return targets;
 }
 
-// A workflow that runs `npm run import:architectures` also runs whatever that
-// script's own body runs, and package.json chains refresh scripts that way
-// (`import:architectures` ends in `npm run generate:members`). Reading only
-// the workflow text would report every such script as unwired and push the
-// repository into recording exemptions for scripts CI does in fact run.
-function reachableFromWorkflows() {
-  const reached = directWorkflowTargets();
+// A workflow that runs `npm run foo` also runs whatever foo's own package.json
+// body runs, so a refresh script chained from another counts as wired. Reading
+// only the workflow text would report every such script as unwired and push
+// the repository into recording exemptions for scripts CI does in fact run.
+function reachableFromWorkflows(
+  direct = directWorkflowTargets(),
+  table = scripts,
+) {
+  const reached = new Set(direct);
   const queue = [...reached];
   while (queue.length > 0) {
     const target = queue.pop();
-    const body = scripts[target];
+    const body = table[target];
     if (typeof body !== 'string') continue;
     for (const next of npmRunTargets(body)) {
       if (reached.has(next)) continue;
@@ -153,7 +155,7 @@ test('every refresh script this suite recognises is a real script', () => {
   assert.ok(
     refresh.includes('collect:metrics') &&
       refresh.includes('fetch:community-people') &&
-      refresh.includes('import:architectures'),
+      refresh.includes('generate:members'),
     `expected the known refresh scripts to be recognised, got ${refresh.join(', ')}`,
   );
 });
@@ -167,27 +169,33 @@ test('the scheduled collectors are detected as wired', () => {
     'collect:radar-reports',
     'fetch:community-people',
     'collect:enduser-members',
-    'import:architectures',
+    'generate:members',
   ]) {
     assert.ok(reached.has(name), `expected a workflow to run ${name}`);
   }
 });
 
 test('a refresh script chained from another counts as wired', () => {
-  // `generate:members` appears in no workflow: import-architectures.yml runs
-  // `import:architectures`, whose package.json body runs it. Without the
-  // transitive step this suite would demand an exemption for a script CI runs
-  // on every architecture import.
-  assert.ok(
-    !directWorkflowTargets().has('generate:members'),
-    'generate:members is expected to be reached only through another script; ' +
-      'if a workflow now runs it directly, this guard no longer proves that ' +
-      'chained scripts are followed and should be re-pointed',
-  );
-  assert.ok(
-    reachableFromWorkflows().has('generate:members'),
-    'generate:members is chained from import:architectures in package.json ' +
-      'and must be followed there',
+  // No refresh script is chained this way in package.json today, so the
+  // transitive step is pinned against a synthetic table: a workflow that runs
+  // `outer` must count `inner` as wired, follow a chain through a non-refresh
+  // script, and tolerate a target with no package.json body.
+  const table = {
+    outer: 'node scripts/outer.mjs && npm run inner',
+    inner: 'npm run -s collect:synthetic',
+    'collect:synthetic': 'node scripts/collect-synthetic.mjs',
+  };
+  const reached = reachableFromWorkflows(['outer', 'not-a-script'], table);
+  assert.deepEqual([...reached].sort(), [
+    'collect:synthetic',
+    'inner',
+    'not-a-script',
+    'outer',
+  ]);
+  assert.equal(
+    reachableFromWorkflows(['collect:synthetic'], table).has('outer'),
+    false,
+    'reachability follows script bodies forward only',
   );
 });
 

@@ -57,17 +57,18 @@ const COVERAGE_JOB = 'e2e-coverage';
 // src/components/MetricsDashboard/index.js:65,
 // src/components/MetricsDashboard/index.js:85,
 // src/components/RadarReports/index.js:8 and
-// src/components/hooks/useFocusTrap.js:35. Five are guard arms that a
+// src/components/hooks/useFocusTrap.js:35. Three are guard arms that a
 // sibling fixture build (data-no-revision, data-variant) demonstrably
 // executes, yet the union never credits (#1256, #1236):
-// src/components/ReferenceArchitectures/index.js:15,
-// src/components/ReferenceArchitectures/index.js:29,
 // src/components/PeopleFreshness/index.js:13 and
-// src/components/GroupLinkStatus/index.js:24 (x2). The build that takes the
+// src/components/GroupLinkStatus/index.js:24 (x2). (ReferenceArchitectures'
+// two SyncStatus arms used to sit in this list; the cncf/architecture sync
+// and the provenance line it fed were removed, so they are gone rather than
+// credited.) The build that takes the
 // arm records no deviation at the arm's own span, and isContradictedRegion
 // only admits witnesses from the script that produced the zero. That
 // restriction is deliberate (#1066: a different bundle maps the same skipped
-// arm to a different span), so the five are a documented reporting residual,
+// arm to a different span), so the three are a documented reporting residual,
 // not a coverage gap. Every citation above is path-qualified so
 // tests/source-line-citations.test.mjs can see it; the previous revision of
 // this note cited bare `GroupLinkStatus:33`-style lines, which that guard
@@ -204,7 +205,7 @@ const MEASURED_ON_NODE_MAJOR = '22';
 // Re-measure with the recipe in CONTRIBUTING.md on Node MEASURED_ON_NODE_MAJOR,
 // update the table and any floor that moved, and set this constant in the same
 // change.
-const MEASURED_AT_SPEC_COUNT = 40;
+const MEASURED_AT_SPEC_COUNT = 39;
 
 // The number of src/** modules the table above was measured against.
 //

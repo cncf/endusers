@@ -1,12 +1,13 @@
 serve:
     npm run docus:start -- --host 0.0.0.0
 
-import:
+refresh:
+    npm run collect:metrics
     npm run collect:enduser-members
     npm run validate:enduser-members
-    npm run import:architectures
-    npm run validate:architectures
-    npm run validate:architecture-assets
+    npm run generate:members
+    npm run validate:members
+    npm run validate:metrics
 
 build:
     npm run validate:architectures

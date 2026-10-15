@@ -3,8 +3,8 @@
 // `tests/automation-workflow-ordering.test.mjs` holds every workflow that
 // regenerates a dataset to running that dataset's validator afterwards, in the
 // same job. The Justfile is the other entry point the same generators are run
-// from -- `just import` runs `collect:enduser-members` and
-// `import:architectures` against the working tree -- and that file binds
+// from -- `just refresh` runs `collect:metrics`, `collect:enduser-members` and
+// `generate:members` against the working tree -- and that file binds
 // workflows only, because it reads `.github/workflows` and nothing else.
 //
 // `tests/dev-environment.test.mjs` does bind the Justfile to CI, but on a
@@ -167,7 +167,7 @@ test('the generator and validator detection is not vacuous', () => {
     validatorFor('collect:enduser-members'),
     'validate:enduser-members',
   );
-  assert.equal(validatorFor('import:architectures'), 'validate:architectures');
+  assert.equal(validatorFor('generate:members'), 'validate:members');
   assert.equal(isGenerator('validate:members'), false);
   assert.equal(isGenerator('collect:no-such-dataset'), false);
   assert.deepEqual(npmRunTargets(['npm run docus:start -- --host 0.0.0.0']), [

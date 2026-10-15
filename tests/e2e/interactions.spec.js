@@ -138,7 +138,7 @@ test.describe('member directory filtering', () => {
   //
   // The counts are asserted as a relation rather than a number because
   // data/members.json is regenerated from the landscape whenever the on-demand
-  // import-architectures.yml workflow is dispatched.
+  // refresh-metrics.yml workflow is dispatched.
   test('the contributor filter narrows the directory to contributor profiles', async ({
     page,
   }) => {

@@ -742,9 +742,9 @@ test('generates members from the current repository data', () => {
   }
 });
 
-// scripts/import-architectures.mjs copies `organization` from the `org_name`
-// frontmatter of the cncf/architecture clone, so the override maps and slug
-// indexes are keyed by upstream-controlled strings. Before #564 an
+// A catalog record's `organization` is submitter-controlled text (the issue
+// importer copies it from the submission form), so the override maps and slug
+// indexes are keyed by strings this repository does not choose. Before #564 an
 // organisation named after an Object.prototype member inherited that member as
 // its slug and lost its name entirely (a function-valued property that
 // JSON.stringify drops), publishing a nameless member card.

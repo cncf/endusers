@@ -35,8 +35,10 @@ Never assert counts or winner lists from memory.
 - `/metrics` is generated from `data/metrics.json`. Refresh with
   `npm run collect:metrics`, validate with `npm run validate:metrics`. Never
   hand-edit generated data; change `scripts/collect-metrics.mjs` instead.
-- `/architectures` content is imported from cncf/architecture via
-  `npm run import:architectures`.
+- `/architectures` pages are generated from submission issues by
+  `.github/workflows/architecture-submission.yml`; the hand-authored catalog and
+  submission guide are `docs/architectures/index.md` and
+  `docs/architectures/submit.md`.
 - `/awards` is rendered from `data/awards.json`; winners are data entries, not
   pages.
 
