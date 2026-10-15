@@ -26,6 +26,8 @@ import {
   advisoryId,
   classifyAudit,
   unusedAllowlistEntries,
+  fixableAllowlistedAdvisories,
+  describeFix,
 } from '../scripts/audit-gate.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -346,6 +348,134 @@ test('unusedAllowlistEntries defaults to the shipped allowlist', () => {
   assert.deepEqual(unusedAllowlistEntries(report), []);
 });
 
+// --- fixableAllowlistedAdvisories ---
+
+test('fixableAllowlistedAdvisories reports nothing while no fix exists', () => {
+  // The shipped state: braces is in the lockfile, npm reports fixAvailable
+  // false, and the entry is doing exactly the work it was added for.
+  const report = {
+    vulnerabilities: {
+      braces: entry('high', [advisory(BRACES)]),
+      micromatch: entry('high', ['braces']),
+    },
+  };
+  assert.deepEqual(fixableAllowlistedAdvisories(report, new Set([BRACES])), []);
+});
+
+test('fixableAllowlistedAdvisories names an entry npm can now fix', () => {
+  // The expiry unusedAllowlistEntries() cannot see: upstream published a fix,
+  // so the advisory is still in the report (the entry still looks "used")
+  // while its stated reason -- no patched release exists -- is now false.
+  const fix = { name: 'braces', version: '3.0.4', isSemVerMajor: false };
+  const report = {
+    vulnerabilities: {
+      braces: { ...entry('high', [advisory(BRACES)]), fixAvailable: fix },
+    },
+  };
+  assert.deepEqual(fixableAllowlistedAdvisories(report, new Set([BRACES])), [
+    { id: BRACES, package: 'braces', fixAvailable: fix },
+  ]);
+});
+
+test('fixableAllowlistedAdvisories accepts a bare true fixAvailable', () => {
+  const report = {
+    vulnerabilities: {
+      braces: { ...entry('high', [advisory(BRACES)]), fixAvailable: true },
+    },
+  };
+  assert.deepEqual(
+    fixableAllowlistedAdvisories(report, new Set([BRACES])).map((f) => f.id),
+    [BRACES],
+  );
+});
+
+test('fixableAllowlistedAdvisories ignores a package that only inherits the advisory', () => {
+  // micromatch's fixAvailable describes its own tree, not whether the braces
+  // advisory itself has a patched release; reporting it would blame the
+  // allowlist entry for an unrelated upgrade path.
+  const report = {
+    vulnerabilities: {
+      braces: entry('high', [advisory(BRACES)]),
+      micromatch: { ...entry('high', ['braces']), fixAvailable: true },
+    },
+  };
+  assert.deepEqual(fixableAllowlistedAdvisories(report, new Set([BRACES])), []);
+});
+
+test('fixableAllowlistedAdvisories ignores a fixable advisory outside the allowlist', () => {
+  // A non-allowlisted advisory is already classifyAudit()'s business; naming
+  // it here too would report the same finding twice.
+  const report = {
+    vulnerabilities: {
+      newdep: { ...entry('high', [advisory(NEW_BAD)]), fixAvailable: true },
+    },
+  };
+  assert.deepEqual(fixableAllowlistedAdvisories(report, new Set([BRACES])), []);
+});
+
+test('fixableAllowlistedAdvisories tolerates a missing vulnerabilities key and bare entries', () => {
+  assert.deepEqual(fixableAllowlistedAdvisories({}, new Set([BRACES])), []);
+  const report = {
+    vulnerabilities: { bare: { severity: 'high', fixAvailable: true } },
+  };
+  assert.deepEqual(fixableAllowlistedAdvisories(report, new Set([BRACES])), []);
+});
+
+test('fixableAllowlistedAdvisories orders a shared advisory by package name', () => {
+  // The same advisory can sit directly on more than one package (a pinned
+  // copy and a nested one); the CI log lists them in a stable order.
+  const report = {
+    vulnerabilities: {
+      zeta: { ...entry('high', [advisory(BRACES)]), fixAvailable: true },
+      alpha: { ...entry('high', [advisory(BRACES)]), fixAvailable: true },
+    },
+  };
+  assert.deepEqual(
+    fixableAllowlistedAdvisories(report, new Set([BRACES])).map(
+      (f) => f.package,
+    ),
+    ['alpha', 'zeta'],
+  );
+});
+
+test('fixableAllowlistedAdvisories defaults to the shipped allowlist', () => {
+  const report = {
+    vulnerabilities: Object.fromEntries(
+      [...ALLOWLISTED_ADVISORIES].map((id, index) => [
+        `pkg-${index}`,
+        { ...entry('high', [advisory(id)]), fixAvailable: true },
+      ]),
+    ),
+  };
+  assert.deepEqual(
+    fixableAllowlistedAdvisories(report).map((f) => f.id),
+    [...ALLOWLISTED_ADVISORIES].sort(),
+  );
+});
+
+// --- describeFix ---
+
+test('describeFix names the release npm points at, flagging a semver-major bump', () => {
+  assert.equal(
+    describeFix({ name: 'braces', version: '3.0.4', isSemVerMajor: true }),
+    'upgrade to braces@3.0.4, semver-major',
+  );
+  assert.equal(
+    describeFix({ name: 'braces', version: '3.0.4', isSemVerMajor: false }),
+    'upgrade to braces@3.0.4',
+  );
+  assert.equal(describeFix({ version: '3.0.4' }), 'upgrade to 3.0.4');
+});
+
+test('describeFix falls back to a generic phrase when npm names no release', () => {
+  // npm emits a bare `true` when the fix is a plain `npm audit fix`, and an
+  // object can in principle arrive without name/version; neither should
+  // produce "upgrade to " with nothing after it.
+  assert.equal(describeFix(true), 'a fix is available');
+  assert.equal(describeFix({}), 'a fix is available');
+  assert.equal(describeFix({ isSemVerMajor: true }), 'a fix is available');
+});
+
 // --- CLI entry, with npm stubbed ---
 
 // Stub placed first on PATH so the script under test never reaches the real
@@ -430,6 +560,28 @@ test('cli: exits 0 when every finding is allowlisted, despite npm exiting 1', ()
   const result = runGate({ stdout: JSON.stringify(report), status: '1' });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /2 high\/critical finding/);
+});
+
+test('cli: exits 1 when npm reports a fix for an allowlisted advisory', () => {
+  // The suppression's premise has expired: the advisory is still present, so
+  // the stale-entry check stays quiet, but npm says it is fixable now.
+  const report = {
+    vulnerabilities: {
+      braces: {
+        severity: 'high',
+        via: [advisory(BRACES)],
+        range: '*',
+        nodes: [],
+        fixAvailable: { name: 'braces', version: '3.0.4', isSemVerMajor: true },
+      },
+    },
+  };
+  const result = runGate({ stdout: JSON.stringify(report), status: '1' });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /now reports as fixable/);
+  assert.match(result.stderr, new RegExp(`${BRACES} via braces`));
+  assert.match(result.stderr, /upgrade to braces@3\.0\.4, semver-major/);
+  assert.doesNotMatch(result.stdout, /audit-gate: ok/);
 });
 
 test('cli: exits 1 naming a new advisory outside the allowlist', () => {

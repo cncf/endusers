@@ -25,8 +25,10 @@ import { spawnSync } from 'node:child_process';
 // advisories" table; remove the entry the moment upstream publishes a fix
 // (for braces: when `npm view braces versions` lists a release above 3.0.3),
 // so the gate starts enforcing it. unusedAllowlistEntries() below fails the
-// gate once an entry stops matching anything in the lockfile, so that removal
-// is prompted rather than left to be noticed.
+// gate once an entry stops matching anything in the lockfile, and
+// fixableAllowlistedAdvisories() fails it once npm reports a fix while the
+// advisory is still present, so that removal is prompted rather than left to
+// be noticed.
 export const ALLOWLISTED_ADVISORIES = new Set([
   // braces <= 3.0.3 via micromatch in @docusaurus/utils globbing; build-time
   // only, never shipped to the published site.
@@ -130,6 +132,62 @@ export function unusedAllowlistEntries(
   return [...allowlist].filter((id) => !reported.has(id)).sort();
 }
 
+// Reports allowlist entries whose advisory is still in the lockfile but which
+// npm now says it can fix.
+//
+// Every entry in ALLOWLISTED_ADVISORIES rests on one premise: no patched
+// release exists, so the gate would be permanently red without the
+// suppression. unusedAllowlistEntries() above only notices when the advisory
+// *leaves* the lockfile. The far more likely expiry is the other one --
+// upstream publishes a fix and the project has not upgraded yet. The advisory
+// stays in the report, the entry stays "used", and the suppression silently
+// outlives its reason: a high/critical finding this project could fix today
+// goes on passing the gate, and nothing but someone re-reading the comment and
+// running `npm view <pkg> versions` by hand would ever catch it.
+//
+// npm already answers the question. Each report entry carries `fixAvailable`:
+// `false` when no reachable upgrade resolves it, and otherwise `true` or an
+// object naming the release to move to (which may be a semver-major bump, so
+// the fix can need a human decision -- hence a gate failure that asks for one,
+// not an automatic upgrade). Only the entry that carries the advisory object
+// directly is consulted; a package that merely inherits the advisory through
+// its `via` chain reports the fix for its own dependency tree, not for the
+// advisory itself.
+//
+// @returns {Array<{id: string, package: string, fixAvailable: unknown}>}
+export function fixableAllowlistedAdvisories(
+  report,
+  allowlist = ALLOWLISTED_ADVISORIES,
+) {
+  const fixable = [];
+  for (const [name, entry] of Object.entries(report.vulnerabilities ?? {})) {
+    if (!entry.fixAvailable) continue;
+    for (const via of entry.via ?? []) {
+      if (typeof via === 'string') continue;
+      const id = advisoryId(via);
+      if (allowlist.has(id)) {
+        fixable.push({ id, package: name, fixAvailable: entry.fixAvailable });
+      }
+    }
+  }
+  return fixable.sort(
+    (a, b) => a.id.localeCompare(b.id) || a.package.localeCompare(b.package),
+  );
+}
+
+// Renders npm's `fixAvailable` value as a short phrase for the CI log.
+// Exported for the unit tests; main() is its only production caller.
+export function describeFix(fixAvailable) {
+  if (fixAvailable && typeof fixAvailable === 'object') {
+    const target = [fixAvailable.name, fixAvailable.version]
+      .filter(Boolean)
+      .join('@');
+    const major = fixAvailable.isSemVerMajor ? ', semver-major' : '';
+    return target ? `upgrade to ${target}${major}` : `a fix is available`;
+  }
+  return 'a fix is available';
+}
+
 function main() {
   // --package-lock-only audits the lockfile without needing node_modules,
   // which is also what keeps the result identical between a fresh CI
@@ -204,6 +262,29 @@ function main() {
         'if it came back. Remove it from ALLOWLISTED_ADVISORIES in ' +
         "scripts/audit-gate.mjs and drop its row from SECURITY.md's " +
         '"Known unpatched dependency advisories" table.',
+    );
+    process.exit(1);
+  }
+  // Reported last: the two checks above describe advisories the gate is
+  // currently letting through, while this one describes a suppression whose
+  // stated reason ("no patched release exists") npm now contradicts.
+  const fixable = fixableAllowlistedAdvisories(report);
+  if (fixable.length > 0) {
+    console.error(
+      'audit-gate: allowlisted advisories npm now reports as fixable:',
+    );
+    for (const item of fixable) {
+      console.error(
+        `  ${item.id} via ${item.package}: ${describeFix(item.fixAvailable)}`,
+      );
+    }
+    console.error(
+      'Each allowlist entry exists only because no patched release existed. ' +
+        'npm now says one does, so the entry is suppressing a finding this ' +
+        'project can fix. Take the upgrade (it may be semver-major and need ' +
+        'a deliberate decision), then remove the advisory from ' +
+        'ALLOWLISTED_ADVISORIES in scripts/audit-gate.mjs and drop its row ' +
+        'from SECURITY.md\'s "Known unpatched dependency advisories" table.',
     );
     process.exit(1);
   }
