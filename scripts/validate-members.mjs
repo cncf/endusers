@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import {
   checkNonEmptyArray,
+  checkNonEmptyString,
   checkUrl,
   reportAndExit,
 } from './lib/validate-utils.mjs';
@@ -145,14 +146,7 @@ for (const member of members) {
   const path = typeof member?.id === 'string' ? member.id : 'unknown';
 
   for (const field of REQUIRED_TEXT_FIELDS) {
-    const value = member?.[field];
-    if (typeof value !== 'string' || !value.trim()) {
-      errors.push({
-        path,
-        severity: 'error',
-        message: `${field} must be a non-empty string`,
-      });
-    }
+    checkNonEmptyString(errors, path, field, member?.[field]);
   }
 
   if (typeof member?.id === 'string' && ids.has(member.id)) {
@@ -244,13 +238,7 @@ for (const member of members) {
         'subcategory',
         'sourceUrl',
       ]) {
-        if (typeof source?.[field] !== 'string' || !source[field].trim()) {
-          errors.push({
-            path: sourcePath,
-            severity: 'error',
-            message: `${field} must be a non-empty string`,
-          });
-        }
+        checkNonEmptyString(errors, sourcePath, field, source?.[field]);
       }
       if (!['member', 'contributor'].includes(source?.role)) {
         errors.push({

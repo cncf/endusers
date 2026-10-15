@@ -84,6 +84,34 @@ export function checkNonEmptyArray(errors, path, field, value) {
 }
 
 /**
+ * Push a "<field> must be a non-empty string" error when `value` is not a
+ * string or is empty/whitespace-only.
+ *
+ * validate-members.mjs (member records and membershipSources entries) and
+ * validate-projects-born.mjs each looped their own required-text-fields list
+ * through an identical `typeof value !== 'string' || !value.trim()` test and
+ * an identically worded message. Centralizing it here means the next
+ * required-field loop only has to call it.
+ *
+ * @param {Array<Object>} errors - Array to accumulate errors.
+ * @param {string} path - File path or identifier used as the error's path.
+ * @param {string} field - Name used in the error message.
+ * @param {unknown} value - Candidate string.
+ * @returns {boolean} Whether `value` is a non-empty string.
+ */
+export function checkNonEmptyString(errors, path, field, value) {
+  const ok = typeof value === 'string' && value.trim() !== '';
+  if (!ok) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: `${field} must be a non-empty string`,
+    });
+  }
+  return ok;
+}
+
+/**
  * Report collected errors and exit if any errors exist.
  * @param {Array<Object>} errors - Array of error objects with { path, severity, message }
  * @param {string} contextLabel - Label for output context (e.g., "architecture assets")
