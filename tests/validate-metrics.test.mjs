@@ -51,6 +51,21 @@ test('rejects a non-ISO generatedAt', () => {
   assert.match(result.stderr, /ISO 8601/);
 });
 
+// An absent generatedAt reaches the same arm as an unparseable one --
+// Date.parse(undefined) is NaN -- but only the unparseable case was pinned,
+// so nothing stated that the field is *required* rather than merely
+// well-formed when present. tests/reference-architectures.test.mjs reads
+// metrics.generatedAt unguarded on that premise.
+test('rejects a missing generatedAt', () => {
+  const { generatedAt, ...withoutGeneratedAt } = validData;
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture(withoutGeneratedAt),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /ISO 8601/);
+});
+
 test('rejects missing source revisions', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
