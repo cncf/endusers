@@ -83,6 +83,120 @@ export function checkNonEmptyArray(errors, path, field, value) {
   return ok;
 }
 
+/** Strict ISO 8601 UTC form (no plain `Date.parse` laxity; see checkIsoTimestamp). */
+const ISO_8601_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+
+/**
+ * Validate that `value` is a strict ISO 8601 UTC timestamp, optionally also
+ * rejecting one dated beyond a future clock-skew allowance.
+ *
+ * validate-community-groups.mjs, validate-enduser-members.mjs and
+ * validate-launch-metrics.mjs each gated a "must be ISO 8601" field with a
+ * plain `Number.isNaN(Date.parse(value))` test, which also accepts loose,
+ * locale-dependent strings such as "March 1, 2026" — exactly the gap
+ * validate-community-people.mjs's own strict regex was written to close, but
+ * its copy stayed local. A value that passes the loose check while failing
+ * the strict one silently defeats any staleness/future check layered on top,
+ * which is the failure mode validate-community-groups.mjs's `checkedAt`
+ * grace-window check actually depends on being closed.
+ *
+ * @param {Array<Object>} errors - Array to accumulate errors.
+ * @param {string} path - File path or identifier used as the error's path.
+ * @param {string} field - Field name used in the default error messages.
+ * @param {unknown} value - Candidate timestamp.
+ * @param {Object} [options]
+ * @param {string} [options.message] - Message used when `value` is not
+ *   strict ISO 8601. Defaults to "<field> must be ISO 8601".
+ * @param {number} [options.futureToleranceMs] - When set, `value` must not
+ *   be later than `Date.now() + futureToleranceMs`.
+ * @param {string} [options.futureMessage] - Message used when `value` is
+ *   too far in the future. Defaults to "<field> cannot be in the future".
+ * @returns {boolean} Whether `value` passed every check performed.
+ */
+export function checkIsoTimestamp(errors, path, field, value, options = {}) {
+  const {
+    message = `${field} must be ISO 8601`,
+    futureToleranceMs,
+    futureMessage = `${field} cannot be in the future`,
+  } = options;
+
+  if (!ISO_8601_PATTERN.test(value ?? '')) {
+    errors.push({ path, severity: 'error', message });
+    return false;
+  }
+
+  if (
+    futureToleranceMs !== undefined &&
+    new Date(value).getTime() > Date.now() + futureToleranceMs
+  ) {
+    errors.push({ path, severity: 'error', message: futureMessage });
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Push a "<field> must be a parseable date[ <suffix>]" error when `value` is
+ * not a string `Date.parse` can resolve.
+ *
+ * validate-case-studies.mjs, validate-radar-reports.mjs and
+ * validate-awards.mjs each carried an independent
+ * `Number.isNaN(Date.parse(value))` copy with a near-identical message — the
+ * same centralize-after-drift precedent already applied here to
+ * checkNonEmptyArray() and checkUrl(). This is the loose `Date.parse` check;
+ * it is distinct from the strict ISO 8601 check some other validators apply
+ * to their own timestamp fields.
+ *
+ * @param {Array<Object>} errors - Array to accumulate errors.
+ * @param {string} path - File path or identifier used as the error's path.
+ * @param {string} field - Name used in the error message.
+ * @param {unknown} value - Candidate date string.
+ * @param {string} [messageSuffix] - Extra context appended to the message.
+ * @returns {boolean} Whether `value` parses as a date.
+ */
+export function checkParseableDate(errors, path, field, value, messageSuffix) {
+  const ok = typeof value === 'string' && !Number.isNaN(Date.parse(value));
+  if (!ok) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: messageSuffix
+        ? `${field} must be a parseable date ${messageSuffix}`
+        : `${field} must be a parseable date`,
+    });
+  }
+  return ok;
+}
+
+/**
+ * Push a "<field> must be a non-empty string" error when `value` is not a
+ * string or is empty/whitespace-only.
+ *
+ * validate-members.mjs (member records and membershipSources entries) and
+ * validate-projects-born.mjs each looped their own required-text-fields list
+ * through an identical `typeof value !== 'string' || !value.trim()` test and
+ * an identically worded message. Centralizing it here means the next
+ * required-field loop only has to call it.
+ *
+ * @param {Array<Object>} errors - Array to accumulate errors.
+ * @param {string} path - File path or identifier used as the error's path.
+ * @param {string} field - Name used in the error message.
+ * @param {unknown} value - Candidate string.
+ * @returns {boolean} Whether `value` is a non-empty string.
+ */
+export function checkNonEmptyString(errors, path, field, value) {
+  const ok = typeof value === 'string' && value.trim() !== '';
+  if (!ok) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: `${field} must be a non-empty string`,
+    });
+  }
+  return ok;
+}
+
 /**
  * Report collected errors and exit if any errors exist.
  * @param {Array<Object>} errors - Array of error objects with { path, severity, message }

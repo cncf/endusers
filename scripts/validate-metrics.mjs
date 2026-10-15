@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
+  checkIsoTimestamp,
   checkUrl as checkUrlImpl,
   reportAndExit,
   CNCF_HOST_SUFFIXES,
@@ -45,12 +46,7 @@ if (!data.generated)
     severity: 'error',
     message: 'generated must be true',
   });
-if (Number.isNaN(Date.parse(data.generatedAt)))
-  errors.push({
-    path: 'metrics.json',
-    severity: 'error',
-    message: 'generatedAt must be ISO 8601',
-  });
+checkIsoTimestamp(errors, 'metrics.json', 'generatedAt', data.generatedAt);
 if (
   !data.sources?.landscape?.revision ||
   !data.sources?.architectures?.revision

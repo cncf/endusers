@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   CNCF_HOST_SUFFIXES,
   checkNonEmptyArray,
+  checkParseableDate,
   checkUrl,
   reportAndExit,
 } from './lib/validate-utils.mjs';
@@ -38,13 +39,13 @@ const LINK_HOST_SUFFIXES = {
   talkUrl: [...CNCF_HOST_SUFFIXES, 'youtube.com', 'youtu.be'],
 };
 
-if (Number.isNaN(Date.parse(data.verifiedAt)))
-  errors.push({
-    path: 'awards.json',
-    severity: 'error',
-    message:
-      'verifiedAt must be a parseable date recording the last completeness audit against verifiedAgainst',
-  });
+checkParseableDate(
+  errors,
+  'awards.json',
+  'verifiedAt',
+  data.verifiedAt,
+  'recording the last completeness audit against verifiedAgainst',
+);
 if (!data.verifiedAgainst)
   errors.push({
     path: 'awards.json',

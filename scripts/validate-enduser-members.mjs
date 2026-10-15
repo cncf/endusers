@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import {
+  checkIsoTimestamp,
   checkUrl as checkUrlImpl,
   reportAndExit,
 } from './lib/validate-utils.mjs';
@@ -74,9 +75,9 @@ function localAsset(path, value) {
 if (snapshot?.generated !== true) {
   error('generated', 'must be true');
 }
-if (Number.isNaN(Date.parse(snapshot?.collectedAt))) {
-  error('collectedAt', 'must be an ISO timestamp');
-}
+checkIsoTimestamp(errors, 'collectedAt', 'collectedAt', snapshot?.collectedAt, {
+  message: 'collectedAt must be an ISO timestamp',
+});
 
 const source = snapshot?.source;
 if (!source || typeof source !== 'object') {

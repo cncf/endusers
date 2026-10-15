@@ -4,7 +4,10 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+  checkIsoTimestamp,
   checkNonEmptyArray,
+  checkNonEmptyString,
+  checkParseableDate,
   checkUrl,
   collectError,
   isSafeUrl,
@@ -555,6 +558,199 @@ test('checkNonEmptyArray reports an empty array, a non-array and a missing value
         path: 'data/awards.json',
         severity: 'error',
         message: 'awards must be a non-empty array',
+      },
+    ]);
+  }
+});
+
+test('checkIsoTimestamp accepts a strict ISO 8601 UTC value and pushes no error', () => {
+  const errors = [];
+  const ok = checkIsoTimestamp(
+    errors,
+    'data/launch-metrics.json',
+    'generatedAt',
+    '2026-09-21T00:00:00.000Z',
+  );
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+});
+
+test('checkIsoTimestamp rejects a loose Date.parse-able value with the default message', () => {
+  const errors = [];
+  const ok = checkIsoTimestamp(
+    errors,
+    'data/launch-metrics.json',
+    'generatedAt',
+    'March 1, 2026',
+  );
+  assert.equal(ok, false);
+  assert.deepEqual(errors, [
+    {
+      path: 'data/launch-metrics.json',
+      severity: 'error',
+      message: 'generatedAt must be ISO 8601',
+    },
+  ]);
+});
+
+test('checkIsoTimestamp uses a custom message when supplied', () => {
+  const errors = [];
+  checkIsoTimestamp(
+    errors,
+    'data/community-people.json',
+    'fetchedAt',
+    'not a date',
+    { message: 'fetchedAt must be strict ISO 8601' },
+  );
+  assert.deepEqual(errors, [
+    {
+      path: 'data/community-people.json',
+      severity: 'error',
+      message: 'fetchedAt must be strict ISO 8601',
+    },
+  ]);
+});
+
+test('checkIsoTimestamp treats a missing value as a format failure, not a crash', () => {
+  const errors = [];
+  const ok = checkIsoTimestamp(
+    errors,
+    'data/launch-metrics.json',
+    'generatedAt',
+    undefined,
+  );
+  assert.equal(ok, false);
+  assert.deepEqual(errors, [
+    {
+      path: 'data/launch-metrics.json',
+      severity: 'error',
+      message: 'generatedAt must be ISO 8601',
+    },
+  ]);
+});
+
+test('checkIsoTimestamp accepts a value inside the future-tolerance window', () => {
+  const errors = [];
+  const ok = checkIsoTimestamp(
+    errors,
+    'data/community-groups.json',
+    'checkedAt',
+    new Date(Date.now() + 30_000).toISOString(),
+    { futureToleranceMs: 60_000 },
+  );
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+});
+
+test('checkIsoTimestamp rejects a value beyond the future-tolerance window with the default message', () => {
+  const errors = [];
+  const ok = checkIsoTimestamp(
+    errors,
+    'data/community-groups.json',
+    'checkedAt',
+    new Date(Date.now() + 86_400_000).toISOString(),
+    { futureToleranceMs: 60_000 },
+  );
+  assert.equal(ok, false);
+  assert.deepEqual(errors, [
+    {
+      path: 'data/community-groups.json',
+      severity: 'error',
+      message: 'checkedAt cannot be in the future',
+    },
+  ]);
+});
+
+test('checkIsoTimestamp uses a custom futureMessage when supplied', () => {
+  const errors = [];
+  checkIsoTimestamp(
+    errors,
+    'data/community-people.json',
+    'fetchedAt',
+    new Date(Date.now() + 86_400_000).toISOString(),
+    {
+      futureToleranceMs: 60_000,
+      futureMessage: 'fetchedAt cannot be in the future',
+    },
+  );
+  assert.deepEqual(errors, [
+    {
+      path: 'data/community-people.json',
+      severity: 'error',
+      message: 'fetchedAt cannot be in the future',
+    },
+  ]);
+});
+
+test('checkParseableDate accepts a parseable date string and pushes no error', () => {
+  const errors = [];
+  const ok = checkParseableDate(
+    errors,
+    'data/case-studies.json',
+    'generatedAt',
+    '2026-01-01T00:00:00Z',
+  );
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+});
+
+test('checkParseableDate reports an unparseable, non-string and missing value', () => {
+  for (const value of ['not-a-date', undefined, null, 42]) {
+    const errors = [];
+    const ok = checkParseableDate(
+      errors,
+      'data/case-studies.json',
+      'generatedAt',
+      value,
+    );
+    assert.equal(ok, false, String(value));
+    assert.deepEqual(errors, [
+      {
+        path: 'data/case-studies.json',
+        severity: 'error',
+        message: 'generatedAt must be a parseable date',
+      },
+    ]);
+  }
+});
+
+test('checkParseableDate appends the provided message suffix on failure', () => {
+  const errors = [];
+  const ok = checkParseableDate(
+    errors,
+    'data/awards.json',
+    'verifiedAt',
+    'not-a-date',
+    'recording the last completeness audit against verifiedAgainst',
+  );
+  assert.equal(ok, false);
+  assert.deepEqual(errors, [
+    {
+      path: 'data/awards.json',
+      severity: 'error',
+      message:
+        'verifiedAt must be a parseable date recording the last completeness audit against verifiedAgainst',
+    },
+  ]);
+});
+
+test('checkNonEmptyString accepts a non-blank string and pushes no error', () => {
+  const errors = [];
+  const ok = checkNonEmptyString(errors, 'data/members.json', 'name', 'Adobe');
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+});
+
+test('checkNonEmptyString reports an empty, whitespace-only, non-string and missing value', () => {
+  for (const value of ['', '   ', 42, null, undefined]) {
+    const errors = [];
+    const ok = checkNonEmptyString(errors, 'data/members.json', 'name', value);
+    assert.equal(ok, false, JSON.stringify(value));
+    assert.deepEqual(errors, [
+      {
+        path: 'data/members.json',
+        severity: 'error',
+        message: 'name must be a non-empty string',
       },
     ]);
   }

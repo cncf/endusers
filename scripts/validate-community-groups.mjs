@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
+  checkIsoTimestamp,
   checkNonEmptyArray,
   collectError,
   isSafeUrl,
@@ -26,21 +27,13 @@ function publishableRepositoryUrl(value) {
   return Boolean(url) && url.hostname.toLowerCase() === 'github.com';
 }
 
-if (Number.isNaN(Date.parse(data.checkedAt))) {
-  collectError(
-    errors,
-    'community-groups.json',
-    'error',
-    'checkedAt must be ISO 8601',
-  );
-} else if (new Date(data.checkedAt).getTime() > Date.now() + 60_000) {
-  collectError(
-    errors,
-    'community-groups.json',
-    'error',
-    'checkedAt cannot be in the future',
-  );
-}
+checkIsoTimestamp(
+  errors,
+  'community-groups.json',
+  'checkedAt',
+  data.checkedAt,
+  { futureToleranceMs: 60_000 },
+);
 
 checkNonEmptyArray(errors, 'community-groups.json', 'groups', data.groups);
 
