@@ -233,8 +233,8 @@ test('maps a top-level .mdx page to its catalog id', () => {
   assert.equal(pageCatalogId('evil.mdx'), 'evil');
 });
 
-test('exempts only the hand-authored index page', () => {
-  assert.ok(REPO_AUTHORED_PAGES.has('index.md'));
+test('exempts only the hand-authored catalog and submission pages', () => {
+  assert.deepEqual([...REPO_AUTHORED_PAGES].sort(), ['index.md', 'submit.md']);
   assert.equal(REPO_AUTHORED_PAGES.has('adobe.md'), false);
 });
 

@@ -434,9 +434,10 @@ const config = {
             activeBaseRegex: '^/$',
           },
           {
-            to: '/architectures',
-            label: 'Architectures',
+            type: 'docSidebar',
+            sidebarId: 'architecturesSidebar',
             position: 'left',
+            label: 'Architectures',
           },
           {
             type: 'docSidebar',

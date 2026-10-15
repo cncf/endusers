@@ -5,9 +5,10 @@
 # literal and fails the MDX build with "Could not parse expression with acorn"
 # (see #681, #795); any local reformatting would also be overwritten by the
 # next import anyway. Excludes every generated org page but keeps the
-# hand-authored index.
+# hand-authored pages (the set in scripts/lib/architecture-pages.mjs).
 docs/architectures/*.md
 !docs/architectures/index.md
+!docs/architectures/submit.md
 # Workflow file: formatting it requires a credential with the Workflows permission:
 .github/workflows/create-milestones.yml
 # Blog posts contain MDX JSX comments ({/* truncate */}) that prettier's markdown

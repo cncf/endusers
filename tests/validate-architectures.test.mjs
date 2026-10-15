@@ -287,15 +287,18 @@ test('scans an .mdx page for MDX expressions', () => {
   );
 });
 
-// index.md is hand-authored, not imported: it renders layout elements and
-// imports a component, all of which the imported-content gate is right to
-// reject in an imported body. Scanning it would turn CI red on repo content.
-test('exempts the hand-authored index page from the imported-content gate', () => {
+// index.md and submit.md are hand-authored, not imported: they render layout
+// elements and index.md imports a component, all of which the imported-content
+// gate is right to reject in an imported body. Scanning them would turn CI red
+// on repo content.
+test('exempts the hand-authored pages from the imported-content gate', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
     catalogFixture([validRecord], {
       'docs/architectures/index.md':
         '# Catalog\n\n<div className="pillars"><h3>Why</h3></div>\n\nimport X from \'@site/src/components/X\';\n\n<X />\n',
+      'docs/architectures/submit.md':
+        '# Submit\n\n<div className="benefit-cards"><h3>Review</h3></div>\n',
     }),
   );
   assert.equal(result.status, 0, result.stderr);
@@ -317,6 +320,17 @@ test('rejects a catalog record that claims a repo-authored page id', () => {
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /\[error\] index: id is reserved/);
+});
+
+test('reserves every repo-authored page id, not just index', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([{ ...validRecord, id: 'submit', assets: [] }], {
+      'docs/architectures/submit.md': '# Submit\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\[error\] submit: id is reserved/);
 });
 
 // A nested page is published at its own route and can never match a catalog
