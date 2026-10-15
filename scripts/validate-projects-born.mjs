@@ -22,6 +22,11 @@ import {
 // No host allow-list: these are legitimately third-party project sites
 // (envoyproxy.io, jaegertracing.io, backstage.io), unlike the cncf.io feeds
 // guarded by validate-radar-reports.mjs and validate-case-studies.mjs.
+//
+// Entries are kept in alphabetical order by name. The component renders the
+// file in corpus order, so the order a reader sees is the order here; the
+// check below turns an entry appended at the end into a failing validation
+// rather than a list that is almost sorted.
 
 const REQUIRED_TEXT_FIELDS = ['name', 'origin', 'description'];
 
@@ -40,6 +45,7 @@ const errors = [];
 checkNonEmptyArray(errors, 'projects-born.json', 'projects-born.json', data);
 
 const names = new Set();
+let previousName;
 for (const entry of Array.isArray(data) ? data : []) {
   const path = typeof entry?.name === 'string' ? entry.name : 'unknown';
 
@@ -55,6 +61,19 @@ for (const entry of Array.isArray(data) ? data : []) {
     });
   }
   names.add(entry?.name);
+
+  if (
+    typeof entry?.name === 'string' &&
+    typeof previousName === 'string' &&
+    entry.name.localeCompare(previousName, 'en', { sensitivity: 'base' }) < 0
+  ) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: `out of alphabetical order: "${entry.name}" must come before "${previousName}"`,
+    });
+  }
+  if (typeof entry?.name === 'string') previousName = entry.name;
 
   checkUrl(errors, path, entry?.url);
 }
