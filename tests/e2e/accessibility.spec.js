@@ -36,10 +36,23 @@ import { test, expect } from '../tools/e2e-coverage.cjs';
 // One route per page template.
 //
 // Routes that reuse a template already listed here are deliberately absent:
-// /blog/authors/<name> and /blog/tags/<tag> render the same blog list page as
-// /blog, and /community/user-groups/<group> renders the same doc page as
-// /community/technical-advisory-board. Scanning them would cost time without
-// covering new markup.
+// /community/user-groups/<group> renders the same doc page as
+// /community/technical-advisory-board, and every /architectures/<org> page
+// renders the same doc page as /architectures/adobe. Scanning them would cost
+// time without covering new markup.
+//
+// Which routes those are is not a judgement call any more. Docusaurus stamps
+// the page template onto the built markup as a class pair -- `blog-wrapper
+// blog-list-page`, `docs-wrapper docs-doc-page` -- and the "every page
+// template in the sitemap is scanned" test below reads them back out of
+// build/ and fails when a template has no route here. The list this replaced
+// claimed /blog/authors/<name> and /blog/tags/<tag> "render the same blog
+// list page as /blog"; the build says they are `blog-authors-posts-page` and
+// `blog-tags-post-list-page`, two templates of their own with their own
+// header markup (an author card, a tag title block), and both went unscanned
+// for as long as the comment stood. That is the /awards failure again -- a
+// prose claim about which markup a route renders, with nothing reading the
+// build to check it.
 const ROUTES = [
   { path: '/', label: 'practitioners home' },
   { path: '/community', label: 'community landing' },
@@ -60,7 +73,9 @@ const ROUTES = [
   { path: '/blog/welcome-to-endusers-cncf-io', label: 'blog post' },
   { path: '/blog/archive', label: 'blog archive' },
   { path: '/blog/authors', label: 'blog authors index' },
+  { path: '/blog/authors/castrojo', label: 'blog author posts' },
   { path: '/blog/tags', label: 'blog tags index' },
+  { path: '/blog/tags/community', label: 'blog tag post list' },
 ];
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
@@ -91,6 +106,45 @@ function describe(violation) {
     .map((node) => node.target.join(' '))
     .join(', ');
   return `${violation.id} (${violation.impact ?? 'unknown impact'}) at ${where}`;
+}
+
+// The routes the built site publishes, normalized to the form ROUTES uses.
+function sitemapPaths() {
+  const sitemap = readFileSync(resolve('build/sitemap.xml'), 'utf8');
+  const paths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => {
+    const path = new URL(loc).pathname.replace(/\/$/, '');
+    return path === '' ? '/' : path;
+  });
+
+  expect(
+    paths.length,
+    'no routes parsed out of build/sitemap.xml',
+  ).toBeGreaterThan(0);
+
+  return paths;
+}
+
+// Class tokens that name a page *template*. Instance-identifying tokens
+// (plugin-id-default, docs-version-current, docs-doc-id-<id>) are excluded by
+// construction: this matches the whole token, so a prefixed variant of one of
+// these names does not pass.
+const TEMPLATE_TOKEN =
+  /^(?:docs|blog)-(?:wrapper|[a-z-]*page)$|^plugin-(?:docs|blog|pages|content-[a-z-]+)$/;
+const CLASS_ATTRIBUTE = /class="([^"]*)"/g;
+
+// The built markup for `path`, reduced to the sorted set of template tokens it
+// carries. Pages rendered from the same Docusaurus template share a signature;
+// pages rendered from different ones do not.
+function templateSignature(path) {
+  const file = resolve(`build${path === '/' ? '' : path}/index.html`);
+  const html = readFileSync(file, 'utf8');
+  const tokens = new Set();
+  for (const [, value] of html.matchAll(CLASS_ATTRIBUTE)) {
+    for (const token of value.split(/\s+/)) {
+      if (TEMPLATE_TOKEN.test(token)) tokens.add(token);
+    }
+  }
+  return [...tokens].sort().join(' ') || '<no template classes>';
 }
 
 async function scan(page, path, mode = 'light') {
@@ -171,18 +225,7 @@ test('every scanned route is a listed page of the built site', () => {
   // <AwardsTimeline /> -- was never scanned at all. Every real page template
   // appears in the sitemap, and a stub excluded from it does not, so
   // membership is the check that separates the two.
-  const sitemap = readFileSync(resolve('build/sitemap.xml'), 'utf8');
-  const listed = new Set(
-    [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => {
-      const path = new URL(loc).pathname.replace(/\/$/, '');
-      return path === '' ? '/' : path;
-    }),
-  );
-
-  expect(
-    listed.size,
-    'no routes parsed out of build/sitemap.xml',
-  ).toBeGreaterThan(0);
+  const listed = new Set(sitemapPaths());
 
   const unlisted = ROUTES.map((route) => route.path).filter(
     (path) => !listed.has(path),
@@ -191,6 +234,52 @@ test('every scanned route is a listed page of the built site', () => {
   expect(
     unlisted,
     'these routes are not in build/sitemap.xml — an unlisted stub scans nothing',
+  ).toEqual([]);
+});
+
+test('every page template in the sitemap is scanned by some route', () => {
+  // The companion to the membership test above, pointing the other way.
+  // That one proves no listed route is a stub; this one proves ROUTES has
+  // not fallen behind the site.
+  //
+  // ROUTES is deliberately a subset -- "one route per page template" -- and
+  // until this test existed the subset was justified by prose alone. Nothing
+  // read the build, so a comment asserting that /blog/authors/<name> renders
+  // "the same blog list page as /blog" kept two templates out of the scan
+  // indefinitely, and adding a page type to the site would do the same again
+  // in silence: the suite would keep passing, one template less.
+  //
+  // Docusaurus writes the template onto the page's own wrapper as a class
+  // pair -- `blog-wrapper blog-list-page`, `docs-wrapper docs-doc-page` --
+  // alongside the `plugin-<name>` of the plugin that routed it. Those tokens
+  // are the identity this groups by. Tokens that name the *instance* rather
+  // than the template (`plugin-id-default`, `docs-version-current`,
+  // `docs-doc-id-<id>`) are not in the allowlist, so every architecture
+  // detail page folds onto one signature rather than becoming 20.
+  //
+  // Read off build/ rather than the running server: the signature is in the
+  // server-rendered HTML, so this needs no browser and no navigation, which
+  // is what lets it cover all of the sitemap instead of a sample.
+  const templates = new Map();
+  for (const path of sitemapPaths()) {
+    const signature = templateSignature(path);
+    if (!templates.has(signature)) templates.set(signature, path);
+  }
+
+  expect(
+    templates.size,
+    'no page templates parsed out of build/ — the markup Docusaurus stamps the template onto has changed shape',
+  ).toBeGreaterThan(0);
+
+  const scanned = new Set(ROUTES.map((route) => templateSignature(route.path)));
+  const unscanned = [...templates]
+    .filter(([signature]) => !scanned.has(signature))
+    .map(([signature, example]) => `${signature} (e.g. ${example})`)
+    .sort();
+
+  expect(
+    unscanned,
+    'these page templates are in the sitemap but no route in ROUTES renders them — add one route per template',
   ).toEqual([]);
 });
 
