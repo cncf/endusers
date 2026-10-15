@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import {
   checkNonEmptyArray,
+  checkParseableDate,
   publishableCncfUrl,
   reportAndExit,
   CNCF_HOST_SUFFIXES,
@@ -23,12 +24,7 @@ const data = JSON.parse(
 );
 const errors = [];
 
-if (Number.isNaN(Date.parse(data.generatedAt)))
-  errors.push({
-    path: 'case-studies.json',
-    severity: 'error',
-    message: 'generatedAt must be a parseable date',
-  });
+checkParseableDate(errors, 'case-studies.json', 'generatedAt', data.generatedAt);
 if (!data.sourceUrl || !publishableCncfUrl(data.sourceUrl))
   errors.push({
     path: 'case-studies.json',
