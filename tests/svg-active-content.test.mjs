@@ -826,6 +826,28 @@ const STRIPPABLE_CONSTRUCTS = [
   ],
 ];
 
+test('stripActiveContent throws instead of returning output its detector still flags', () => {
+  // The default detector and the stripper agree by construction, so the
+  // survival throw is only reachable through the scan seam. Drive it with a
+  // detector that reports a finding over the rebuilt bytes and assert the
+  // sanitized string never reaches the caller.
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>';
+  const seen = [];
+  assert.throws(
+    () =>
+      stripActiveContent(svg, {
+        scan: (output) => {
+          seen.push(output);
+          return ['<script> element survived'];
+        },
+      }),
+    /Active content survived stripping from SVG: <script> element survived/,
+  );
+  assert.equal(seen.length, 1);
+  assert.doesNotMatch(seen[0], /<script/);
+});
+
 for (const [label, markup] of STRIPPABLE_CONSTRUCTS) {
   test(`stripActiveContent returns an inert document for ${label}`, () => {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${markup}</svg>`;

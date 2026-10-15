@@ -769,6 +769,11 @@ function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
  * handed back as sanitized.
  *
  * @param {string} source - SVG file contents.
+ * @param {Object} [options]
+ * @param {(source: string) => string[]} [options.scan] - Detector run over
+ *   the rebuilt output. Defaults to {@link findActiveContent}; the override
+ *   exists so the survival throw below can be exercised, because the default
+ *   detector and the stripper agree by construction today.
  * @returns {{ source: string, removed: string[] }}
  * @throws {Error} If the document cannot be edited safely or active content
  *   survives. A document that is not well-formed, declares entities, or is
@@ -777,7 +782,7 @@ function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
  *   whose payload it cannot see would be the opposite of what the
  *   verification is for.
  */
-export function stripActiveContent(source) {
+export function stripActiveContent(source, { scan = findActiveContent } = {}) {
   const text = String(source);
   const findings = findActiveContent(text);
   if (!findings.length) return { source: text, removed: [] };
@@ -801,7 +806,7 @@ export function stripActiveContent(source) {
   // and findActiveContent()'s detection fails closed here instead of
   // publishing a document that only looks sanitized.
   const result = rebuild(text, parsed.events, { strip: true });
-  const residual = findActiveContent(result.source);
+  const residual = scan(result.source);
   if (residual.length) {
     throw new Error(
       `Active content survived stripping from SVG: ${residual.join('; ')}`,
