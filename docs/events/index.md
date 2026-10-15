@@ -13,6 +13,18 @@ events, conversations, and networking.
 
 ## Upcoming
 
+### KubeCon + CloudNativeCon Europe 2027
+
+**March 15–18, 2027 · Barcelona, Spain.** End user programming for this
+conference has not been announced yet.
+
+- [KubeCon + CloudNativeCon Europe 2027](https://events.linuxfoundation.org/kubecon-cloudnativecon-europe-2027/)
+
+> This section is reviewed quarterly and after the conference so it never shows
+> a past event as upcoming. Last verified: 2026-10-15.
+
+## Past
+
 ### KubeCon + CloudNativeCon North America 2026
 
 **November 9–12, 2026 · Salt Lake City, Utah.** Explore the end user talks
@@ -21,14 +33,9 @@ scheduled for the main conference on November 10–12.
 - [KubeCon + CloudNativeCon North America 2026](https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/)
 - [Full schedule](https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/)
 
-> This section is reviewed quarterly and after the conference so it never shows
-> a past event as upcoming. Last verified: 2026-10-12.
-
 #### End user talks
 
 <EndUserTalkSchedule />
-
-## Past
 
 ### KubeCon + CloudNativeCon North America 2025
 
