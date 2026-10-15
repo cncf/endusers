@@ -593,6 +593,35 @@ test('checkIsoTimestamp rejects a loose Date.parse-able value with the default m
   ]);
 });
 
+test('checkIsoTimestamp rejects calendar-impossible and normalizing timestamps, even with a future gate', () => {
+  for (const value of [
+    '2026-13-45T99:61:61Z',
+    '2026-00-10T00:00:00Z',
+    '2026-01-32T00:00:00Z',
+    '2026-06-30T23:59:60Z',
+    '2026-02-31T00:00:00Z',
+    '2026-06-15T24:00:00Z',
+    '2026-06-15T22:60:00Z',
+  ]) {
+    const errors = [];
+    const ok = checkIsoTimestamp(errors, 'f.json', 'at', value, {
+      futureToleranceMs: 60_000,
+    });
+    assert.equal(ok, false, value);
+    assert.deepEqual(errors, [
+      { path: 'f.json', severity: 'error', message: 'at must be ISO 8601' },
+    ]);
+  }
+});
+
+test('checkIsoTimestamp accepts leap days and fractional seconds', () => {
+  for (const value of ['2024-02-29T00:00:00Z', '2026-09-21T00:00:00.123Z']) {
+    const errors = [];
+    assert.equal(checkIsoTimestamp(errors, 'f.json', 'at', value), true);
+    assert.deepEqual(errors, []);
+  }
+});
+
 test('checkIsoTimestamp uses a custom message when supplied', () => {
   const errors = [];
   checkIsoTimestamp(
