@@ -1,4 +1,4 @@
-// Changelog generation for docs/community/changelog.md.
+// Changelog generation for docs/resources/changelog.md.
 //
 // The public feedback loop (#1408) needs a page where a returning reader can
 // see what changed on the site. The mechanism is a build-time rendering of
@@ -191,7 +191,7 @@ export function generateChangelog(root) {
   const page = renderPage(
     entries.length > 0 ? renderChangelog(entries) : FALLBACK_BODY,
   );
-  const target = join(root, 'docs', 'community', 'changelog.md');
+  const target = join(root, 'docs', 'resources', 'changelog.md');
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, page);
   return entries.length > 0

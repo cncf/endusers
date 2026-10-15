@@ -64,6 +64,11 @@ const LEGACY_STUBS = [
     slug: '/community/public-sector-user-group',
     target: '/community/user-groups/public-sector',
   },
+  {
+    file: 'docs/community/platform-engineering-tcg.md',
+    slug: '/community/technical-community-groups/platform-engineering',
+    target: '/community/user-groups/platform-engineering',
+  },
 ];
 
 function walk(dir) {

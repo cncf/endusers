@@ -1,19 +1,18 @@
 ---
 title: Platform Engineering
 sidebar_position: 1
-description: The CNCF Platform Engineering Technical Community Group.
-slug: /community/technical-community-groups/platform-engineering
+description: Cloud native collaboration for platform engineering end users.
+slug: /community/user-groups/platform-engineering
 ---
 
-# Platform Engineering Technical Community Group
+# Platform Engineering User Group
 
-The
-[CNCF Platform Engineering Technical Community Group (TCG)](https://community.cncf.io/)
-focuses on platform engineering practices, tools, and patterns that help
-development teams self-service their infrastructure needs while maintaining
-consistency, security, and governance across an organization. It is a Technical
-Community Group, not a User Group — see [Governance](../governance.md) for the
-distinction between the two.
+The [CNCF Platform Engineering User Group](https://community.cncf.io/) focuses
+on platform engineering practices, tools, and patterns that help development
+teams self-service their infrastructure needs while maintaining consistency,
+security, and governance across an organization. See
+[Governance](../technical-advisory-board/governance.md) for how User Groups are
+formed and run.
 
 ## Focus areas
 

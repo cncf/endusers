@@ -1,6 +1,6 @@
 // End-to-end coverage for the three sidebar doc routes no other spec loads:
-// /resources, /community/governance and
-// /community/technical-community-groups/platform-engineering.
+// /resources, /community/technical-advisory-board/governance and
+// /community/user-groups/platform-engineering.
 //
 // The existing specs reach /resources/case-studies and /resources/radar-reports
 // but never the Resources landing page itself, and no spec has ever requested
@@ -19,9 +19,8 @@
 import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const RESOURCES_PATH = '/resources';
-const GOVERNANCE_PATH = '/community/governance';
-const PLATFORM_ENGINEERING_PATH =
-  '/community/technical-community-groups/platform-engineering';
+const GOVERNANCE_PATH = '/community/technical-advisory-board/governance';
+const PLATFORM_ENGINEERING_PATH = '/community/user-groups/platform-engineering';
 
 function normalise(pathname) {
   const trimmed = pathname.replace(/\/+$/, '');
@@ -104,21 +103,21 @@ test.describe('community reference docs', () => {
     ).toBeVisible();
   });
 
-  test('the platform engineering TCG page renders and links to governance', async ({
+  test('the platform engineering user group page renders and links to governance', async ({
     page,
   }) => {
     await gotoDoc(page, PLATFORM_ENGINEERING_PATH);
 
     await expect(
       page.getByRole('heading', {
-        name: 'Platform Engineering Technical Community Group',
+        name: 'Platform Engineering User Group',
       }),
     ).toBeVisible();
     await expect(page.locator('nav.menu').first()).toBeVisible();
 
-    // Written as a relative Markdown link (`../governance.md`); this asserts
-    // the build resolved it to the governance route rather than emitting the
-    // source path.
+    // Written as a relative Markdown link
+    // (`../technical-advisory-board/governance.md`); this asserts the build
+    // resolved it to the governance route rather than emitting the source path.
     const governanceLink = page
       .locator('article')
       .getByRole('link', { name: 'Governance', exact: true });

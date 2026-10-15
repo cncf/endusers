@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Renders docs/community/changelog.md from the repository's git history.
+// Renders docs/resources/changelog.md from the repository's git history.
 // Runs as part of every build (package.json `_build`); see
 // scripts/lib/changelog.mjs for the mechanism and CONTRIBUTING.md for the
 // decision record.

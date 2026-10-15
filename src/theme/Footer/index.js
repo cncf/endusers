@@ -140,7 +140,7 @@ export default function Footer() {
       <hr className={styles.divider} />
       <div className={styles.bottomRow}>
         <p className={styles.feedbackLinks}>
-          <Link to={useBaseUrl('/community/changelog')}>Changelog</Link>
+          <Link to={useBaseUrl('/resources/changelog')}>Changelog</Link>
           {' | '}
           <a
             href="https://github.com/cncf/endusers/issues/new?template=content-issue.yml"

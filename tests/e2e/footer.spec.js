@@ -122,7 +122,7 @@ test('the footer links to the changelog and the content-issue form', async ({
   const footer = footerOf(page);
   const changelog = footer.getByRole('link', { name: 'Changelog' });
   await expect(changelog).toBeVisible();
-  await expect(changelog).toHaveAttribute('href', /\/community\/changelog\/?$/);
+  await expect(changelog).toHaveAttribute('href', /\/resources\/changelog\/?$/);
 
   const report = footer.getByRole('link', { name: 'Report a content issue' });
   await expect(report).toBeVisible();
@@ -153,7 +153,7 @@ test('the footer signposts contributors to contribute.cncf.io', async ({
 });
 
 test('the changelog page renders', async ({ page }) => {
-  const response = await page.goto('/community/changelog');
+  const response = await page.goto('/resources/changelog');
   expect(response?.status()).toBeLessThan(400);
   await expect(page.getByRole('heading', { name: 'Changelog' })).toBeVisible();
 });

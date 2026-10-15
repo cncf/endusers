@@ -174,11 +174,11 @@ Visitors who find incorrect, outdated, or missing content can report it with the
 footer. Reports land with the `documentation` label.
 
 The site publishes its own changelog at
-[`/community/changelog`](https://endusers.cncf.io/community/changelog), also
+[`/resources/changelog`](https://endusers.cncf.io/resources/changelog), also
 linked from the footer. It is generated from git history on every build by
 `scripts/generate-changelog.mjs` (`npm run generate:changelog`), which renders
 the reader-visible Conventional Commits types (`feat`, `fix`, `docs`, `perf`)
-from `git log --first-parent` into `docs/community/changelog.md`. The decision
+from `git log --first-parent` into `docs/resources/changelog.md`. The decision
 and its alternatives are recorded in
 [`adr/0003-public-changelog-mechanism.md`](adr/0003-public-changelog-mechanism.md).
 Two consequences worth knowing:

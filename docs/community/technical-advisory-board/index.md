@@ -1,6 +1,7 @@
 ---
 title: Technical Advisory Board
 sidebar_position: 3
+slug: /community/technical-advisory-board
 description:
   The CNCF End User Technical Advisory Board (TAB) and how it supports end
   users.
@@ -11,8 +12,7 @@ represents end users within the CNCF community. The TAB helps surface end user
 needs, improve visibility into CNCF project adoption, advise on technical
 direction, and review reference architectures.
 
-The TAB oversees and governs the [User Groups](/community/user-groups) and
-[Technical Community Groups](/community/technical-community-groups) per the
+The TAB oversees and governs the [User Groups](/community/user-groups) per the
 [User Group Governance](./governance.md) document. The TAB itself operates under
 its own charter, described in the
 [cncf/tab README](https://github.com/cncf/tab/blob/main/README.md) — it is not
@@ -38,7 +38,7 @@ import PeopleFreshness from '@site/src/components/PeopleFreshness';
 - Provide feedback on project usability, reliability, and performance.
 - Review and approve reference architectures.
 - Advise on End User Radar tools and techniques.
-- Provide oversight for User Groups and Technical Community Groups.
+- Provide oversight for User Groups.
 
 See the
 [TAB membership and charter](https://github.com/cncf/tab/blob/main/README.md),
