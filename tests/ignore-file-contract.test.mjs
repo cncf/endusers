@@ -279,7 +279,13 @@ test('compilePattern implements the gitignore subset both files use', () => {
   const directory = () => true;
 
   const anyDepth = compilePattern('governance.md');
-  assert.equal(anyDepth.test('docs/community/technical-advisory-board/governance.md', false), true);
+  assert.equal(
+    anyDepth.test(
+      'docs/community/technical-advisory-board/governance.md',
+      false,
+    ),
+    true,
+  );
 
   const rooted = compilePattern('docs/architectures/*.md');
   assert.equal(rooted.test('docs/architectures/acme.md', false), true);

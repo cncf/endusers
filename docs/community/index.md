@@ -39,10 +39,10 @@ while still building in the open.
 
 ## Governance and leadership
 
-The [Technical Advisory Board](./technical-advisory-board/index.md) (TAB) oversees the
-End User Community, its User Groups, and its Technical Community Groups. See the
-[Governance](./technical-advisory-board/governance.md) page for how these groups are formed, run, and
-held accountable.
+The [Technical Advisory Board](./technical-advisory-board/index.md) (TAB)
+oversees the End User Community, its User Groups, and its Technical Community
+Groups. See the [Governance](./technical-advisory-board/governance.md) page for
+how these groups are formed, run, and held accountable.
 
 ## Community meeting and communication channels
 
