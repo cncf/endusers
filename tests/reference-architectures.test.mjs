@@ -134,7 +134,24 @@ function toolbarProps(tree) {
   return element.props;
 }
 
-const source = metrics?.sources?.architectures;
+// data/metrics.json is regenerated from upstream by
+// .github/workflows/import-architectures.yml, which is why the three cases
+// below used to open with `if (!source?.revision) t.skip(...)`. Those arms
+// could never run: scripts/validate-metrics.mjs:55-61 exits 1 on a
+// metrics.json whose sources.architectures.revision is absent, and :48 does
+// the same for a generatedAt that does not parse -- an absent one included.
+// Both refusals are pinned by tests/validate-metrics.test.mjs ("rejects
+// missing source revisions", "rejects a missing generatedAt"), and ci.yml
+// runs `npm run validate:metrics` in the same job as this suite, so a refresh
+// that dropped either field turns that job red rather than reaching here.
+//
+// They are deleted rather than carried for the reason
+// tests/e2e-data-dependent-skips.test.mjs gives at length: a skip is reported
+// as a non-failure, so a guard that did fire would retire this file's only
+// coverage of the sync-status links in silence. Guards whose premise another
+// gate already enforces are pinned and removed (#1491), not kept as
+// permanently-dead regions.
+const source = metrics.sources.architectures;
 
 test('the catalog is a labelled landmark region', () => {
   const { tree } = render(ReferenceArchitectures);
@@ -222,11 +239,7 @@ test('the empty state clear button restores the full grid', () => {
   assert.equal(toolbarProps(view.tree).resultCount, catalog.length);
 });
 
-test('the sync status cites the mirrored revision and its commit', (t) => {
-  if (!source?.revision) {
-    t.skip('data/metrics.json records no architecture source revision');
-    return;
-  }
+test('the sync status cites the mirrored revision and its commit', () => {
   const { tree } = render(ReferenceArchitectures);
   const status = renderNested(tree, 'SyncStatus');
   const links = findAllByType(status, 'a');
@@ -246,11 +259,7 @@ test('the sync status cites the mirrored revision and its commit', (t) => {
   assert.equal(findByType(links[1], 'code') !== undefined, true);
 });
 
-test('every outbound sync-status link pairs target=_blank with rel=noreferrer', (t) => {
-  if (!source?.revision) {
-    t.skip('data/metrics.json records no architecture source revision');
-    return;
-  }
+test('every outbound sync-status link pairs target=_blank with rel=noreferrer', () => {
   const { tree } = render(ReferenceArchitectures);
   const links = findAllByType(renderNested(tree, 'SyncStatus'), 'a');
   assert.ok(links.length > 0);
@@ -264,11 +273,7 @@ test('every outbound sync-status link pairs target=_blank with rel=noreferrer', 
   }
 });
 
-test('the sync status renders the generation date in UTC', (t) => {
-  if (!source?.revision || !metrics.generatedAt) {
-    t.skip('data/metrics.json records no generation timestamp');
-    return;
-  }
+test('the sync status renders the generation date in UTC', () => {
   const { tree } = render(ReferenceArchitectures);
   const expected = new Date(metrics.generatedAt).toLocaleDateString('en-US', {
     timeZone: 'UTC',
