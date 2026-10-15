@@ -296,6 +296,7 @@ test('compilePattern implements the gitignore subset both files use', () => {
   const negation = compilePattern('!docs/architectures/index.md');
   assert.equal(negation.negated, true);
   assert.equal(negation.test('docs/architectures/index.md', false), true);
+  assert.equal(negation.test('docs/architectures/submit.md', false), false);
 
   assert.equal(compilePattern('docs/[ab].md').unsupported, 'character class');
 });

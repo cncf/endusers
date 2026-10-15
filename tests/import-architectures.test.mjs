@@ -1175,11 +1175,12 @@ org_name: Acme Corp
 Acme runs Kubernetes.
 `,
     ),
-    // docs/architectures/index.md is authored in this repo, not imported, and
-    // a stale page from a previous import sits beside it. The prune must
-    // delete only the imported one.
+    // docs/architectures/index.md and submit.md are authored in this repo,
+    // not imported, and a stale page from a previous import sits beside them.
+    // The prune must delete only the imported one.
     repoFiles: {
       'docs/architectures/index.md': indexPage,
+      'docs/architectures/submit.md': '# Submit yours\n',
       'docs/architectures/removed-upstream.md': '# gone from upstream\n',
     },
   });
@@ -1187,6 +1188,7 @@ Acme runs Kubernetes.
   try {
     assert.equal(run.status, 0, run.stderr);
     assert.equal(run.read('docs/architectures/index.md'), indexPage);
+    assert.equal(run.read('docs/architectures/submit.md'), '# Submit yours\n');
     assert.equal(run.exists('docs/architectures/removed-upstream.md'), false);
     assert.equal(run.exists('docs/architectures/acme.md'), true);
   } finally {

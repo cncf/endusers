@@ -18,13 +18,13 @@ import { join } from 'node:path';
 
 /**
  * Pages written by this repository rather than imported from
- * cncf/architecture. `index.md` is the hand-authored catalog landing page: it
- * renders <div>/<h3> layout and imports <ReferenceArchitectures />, all of
- * which findActiveContent() is correct to reject in an *imported* body. They
- * are exempt from the imported-content gate and are never pruned by the
- * importer.
+ * cncf/architecture. `index.md` is the hand-authored catalog landing page and
+ * `submit.md` the hand-authored submission guide: both render <div>/<h3>
+ * layout and index.md imports <ReferenceArchitectures />, all of which
+ * findActiveContent() is correct to reject in an *imported* body. They are
+ * exempt from the imported-content gate and are never pruned by the importer.
  */
-export const REPO_AUTHORED_PAGES = new Set(['index.md']);
+export const REPO_AUTHORED_PAGES = new Set(['index.md', 'submit.md']);
 
 /**
  * Catalog ids an imported record may not claim.

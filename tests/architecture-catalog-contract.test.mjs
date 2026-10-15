@@ -3,6 +3,7 @@ import test from 'node:test';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
+import { REPO_AUTHORED_PAGES } from '../scripts/lib/architecture-pages.mjs';
 
 // The architecture catalog, the per-record JSON files and the generated
 // Docusaurus pages are three artifacts written by a single import run
@@ -175,7 +176,7 @@ test('each record file is byte-identical in content to its catalog entry', () =>
 
 test('catalog ids and generated doc pages are one-to-one', () => {
   const pages = readdirSync(docsDir)
-    .filter((name) => name.endsWith('.md') && name !== 'index.md')
+    .filter((name) => name.endsWith('.md') && !REPO_AUTHORED_PAGES.has(name))
     .map((name) => name.replace(/\.md$/, ''))
     .sort();
   assert.deepEqual(
@@ -233,11 +234,13 @@ test('each doc page attributes the revision its record was imported from', () =>
   }
 });
 
-test('the architectures landing page exists and has a title', () => {
-  const index = join(docsDir, 'index.md');
-  assert.ok(existsSync(index), 'docs/architectures/index.md must exist');
-  const frontmatter = readFrontmatter(readFileSync(index, 'utf8'), 'index.md');
-  assert.equal(typeof frontmatter.title, 'string');
+test('every repo-authored architectures page exists and has a title', () => {
+  for (const page of REPO_AUTHORED_PAGES) {
+    const path = join(docsDir, page);
+    assert.ok(existsSync(path), `docs/architectures/${page} must exist`);
+    const frontmatter = readFrontmatter(readFileSync(path, 'utf8'), page);
+    assert.equal(typeof frontmatter.title, 'string', page);
+  }
 });
 
 test('assets are namespaced under the record id and present in static/', () => {
