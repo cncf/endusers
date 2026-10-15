@@ -44,10 +44,10 @@
 //
 // tests/e2e/fixtures/data-no-revision/ holds exactly the shape these arms
 // need: it leaves metrics.generatedAt and the landscape timestamp alone, so
-// the note renders both sentences, and ReferenceArchitectures -- the component
-// that build exists for -- returns at its revision guard before it reads
-// sources.architectures.repository. Clearing the two URLs there un-covers
-// nothing that build reaches. It is hosted there rather than in a directory of
+// the note renders both sentences. (The build was first added for the
+// ReferenceArchitectures provenance line's absent-revision guard; that line
+// went with the cncf/architecture sync, and this note is now the build's
+// only consumer.) It is hosted there rather than in a directory of
 // its own because each fixture directory is a full Docusaurus compile in the
 // "End-to-end coverage" job (see the preamble of
 // tests/tools/e2e-data-fixtures.cjs): a new build is for a shape that

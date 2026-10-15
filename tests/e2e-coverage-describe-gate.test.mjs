@@ -59,7 +59,6 @@ const COVERAGE_GATED = [
   'metrics-empty-collections-variant.spec.js',
   'metrics-sparkline.spec.js',
   'radar-reports-variant.spec.js',
-  'reference-architectures-no-revision.spec.js',
 ];
 
 const specNames = readdirSync(specDir)

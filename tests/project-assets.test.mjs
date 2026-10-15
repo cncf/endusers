@@ -200,8 +200,8 @@ test('artwork with a non-image extension is never mirrored or mapped', () => {
 
 test('artworkPath refuses non-string input rather than throwing', () => {
   // projectAsset type-checks before delegating, but artworkPath is exported
-  // and called directly (scripts/import-architectures.mjs), so the guard is
-  // load-bearing there.
+  // and called directly (scripts/import-architecture-issue.mjs), so the guard
+  // is load-bearing there.
   for (const value of [null, undefined, 42, 0, {}, ['x'], true]) {
     assert.equal(artworkPath(value), null, String(value));
   }

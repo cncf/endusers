@@ -24,11 +24,12 @@ Guidelines for technical documentation within this repository.
 
 - `docs/practitioners/`: The site homepage (slug `/`). Single page, no sidebars.
 - `docs/architectures/`: Reference architecture catalog (`index.md`) and the
-  submission guide (`submit.md`), the only two pages in its sidebar. Generated
-  pages are imported by `npm run import:architectures`; do not hand-edit
-  imported architecture pages, and register any new hand-authored page in
-  `REPO_AUTHORED_PAGES` (`scripts/lib/architecture-pages.mjs`) so the importer
-  does not prune it.
+  submission guide (`submit.md`), the only two pages in its sidebar. The other
+  pages are generated from submission issues by
+  `.github/workflows/architecture-submission.yml` and then committed; register
+  any new hand-authored page in `REPO_AUTHORED_PAGES`
+  (`scripts/lib/architecture-pages.mjs`) so the content-security gate treats it
+  as repo-authored.
 - `docs/community/`: The End User TAB, Governance, User Groups, Technical
   Community Groups, Awards, and Members — plus engagement pathways.
 - `docs/metrics/`: The metrics dashboard, rendered from `data/metrics.json`.

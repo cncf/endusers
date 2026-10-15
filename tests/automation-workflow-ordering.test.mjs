@@ -312,7 +312,7 @@ test('the generator and validator detection is not vacuous', () => {
   assert.ok(
     generators.includes('collect:metrics') &&
       generators.includes('fetch:community-people') &&
-      generators.includes('import:architectures') &&
+      generators.includes('generate:members') &&
       generators.includes('collect:enduser-members'),
     `expected the known generators to be recognised, got ${generators.join(', ')}`,
   );
@@ -369,8 +369,8 @@ test('the workflows this contract applies to are actually detected', () => {
   assert.deepEqual(workflowFiles.filter(publishesSite), []);
   assert.deepEqual(workflowFiles.filter(commitsGeneratedOutput), [
     'architecture-submission.yml',
-    'import-architectures.yml',
     'refresh-community-people.yml',
+    'refresh-metrics.yml',
     'refresh-radar-reports.yml',
   ]);
 });

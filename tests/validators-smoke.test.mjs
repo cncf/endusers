@@ -8,7 +8,7 @@ const repoRoot = resolveRepoRoot(import.meta.url);
 
 // Read-only validators that must pass against the repository's current
 // generated data. Scripts that clone upstream repos or call network APIs
-// (collect-metrics, fetch-community-people, import-architectures) are
+// (collect-metrics, fetch-community-people, collect-enduser-members) are
 // intentionally excluded.
 const READ_ONLY_VALIDATORS = [
   'validate-metrics.mjs',

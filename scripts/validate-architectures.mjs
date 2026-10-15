@@ -19,9 +19,7 @@ const idPattern = /^[a-z0-9][a-z0-9-]*$/;
 
 const catalogPath = join(root, 'data/architectures/catalog.json');
 if (!existsSync(catalogPath))
-  throw new Error(
-    'Missing data/architectures/catalog.json; run npm run import:architectures',
-  );
+  throw new Error('Missing data/architectures/catalog.json');
 
 // The catalog is regenerated from the third-party cncf/architecture repository,
 // so every field that reaches an href or an <img src> is treated as untrusted.
@@ -105,9 +103,8 @@ for (const record of records) {
 // Docusaurus publishes every .md under docs/architectures/ regardless of
 // whether a record names it, so scanning per-record left any page the catalog
 // did not mention published and completely unguarded. That is reachable
-// unattended: the importer only pruned pages whose directory still existed
-// upstream, so an architecture removed from cncf/architecture dropped out of
-// the catalog while its page stayed behind forever.
+// unattended: a record deleted from the catalog leaves its page behind, and
+// nothing else would ever scan it again.
 const docsDir = join(root, 'docs/architectures');
 const { pages, irregular } = listArchitecturePages(docsDir);
 const catalogIds = new Set(records.map((record) => record.id).filter(Boolean));
@@ -132,7 +129,7 @@ for (const page of pages) {
       path: page,
       severity: 'error',
       message:
-        'page has no catalog record; it is published but nothing regenerates it — delete it or re-run npm run import:architectures',
+        'page has no catalog record; it is published but nothing in data/architectures/ describes it — delete it or add its catalog record',
     });
 
   for (const { line, reason, snippet } of findActiveContent(

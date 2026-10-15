@@ -22,7 +22,8 @@ import ReferenceArchitectures from
 
 ## About this catalog
 
-Architecture content is imported from the
-[CNCF Cloud Native Reference Architecture project](https://github.com/cncf/architecture).
-Each architecture includes its source revision and attribution. Documentation is
+Architectures are contributed by CNCF end users through the
+[submission process](/architectures/submit). Several were first published in the
+[CNCF Cloud Native Reference Architecture project](https://github.com/cncf/architecture)
+and carry their source revision and attribution on the page. Documentation is
 distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

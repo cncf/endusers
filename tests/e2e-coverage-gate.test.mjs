@@ -42,32 +42,34 @@ const COVERAGE_JOB = 'e2e-coverage';
 // toolbar arms (#1079), and 97.26% (639/657) when it was ratcheted to 96 and
 // the per-file floor was added (#1232).
 //
-// Ceiling, measured on the current tree (655/676, 96.89%): 21 regions at
+// Ceiling, measured on the current tree (645/661, 97.58%): 16 regions at
 // zero. Measured by the e2e-coverage job itself rather than a local run:
-// actions/runs/38635988670, job 116099178223, artifact `e2e-coverage`,
-// report.json runId 38635988670-1, head 1ae340352d8708a8a1e05c5ad3f400fe7e892b21.
-// Eleven are defensive fallbacks of the #1253 class:
+// actions/runs/38788348099, job 116606094620, artifact `e2e-coverage`,
+// report.json runId 38788348099-1, head 5265cb8586e180d8dc7d347b444fdf43bbd22e04.
+// Eight are defensive fallbacks of the #1253 class:
 // src/components/CaseStudies/index.js:48,
 // src/components/CommunityPeople/index.js:134,
 // src/components/GroupLinkStatus/index.js:14,
 // src/components/MemberDirectory/DirectoryFreshness.js:19,
-// src/components/MemberDirectory/DirectoryFreshness.js:30,
-// src/components/MemberDirectory/DirectoryFreshness.js:44,
-// src/components/MemberDirectory/DirectoryFreshness.js:49,
 // src/components/MetricsDashboard/index.js:65,
 // src/components/MetricsDashboard/index.js:85,
 // src/components/RadarReports/index.js:8 and
-// src/components/hooks/useFocusTrap.js:35. Five are guard arms that a
+// src/components/hooks/useFocusTrap.js:35. Three are guard arms that a
 // sibling fixture build (data-no-revision, data-variant) demonstrably
 // executes, yet the union never credits (#1256, #1236):
-// src/components/ReferenceArchitectures/index.js:15,
-// src/components/ReferenceArchitectures/index.js:29,
 // src/components/PeopleFreshness/index.js:13 and
-// src/components/GroupLinkStatus/index.js:24 (x2). The build that takes the
+// src/components/GroupLinkStatus/index.js:24 (x2). (ReferenceArchitectures'
+// two SyncStatus arms used to sit in this list; the cncf/architecture sync
+// and the provenance line it fed were removed, so they are gone rather than
+// credited. DirectoryFreshness.js:30, :44 and :49 used to sit in the
+// fallback list above and are credited in this run: the data-no-revision
+// build now exists for DirectoryFreshness alone, and the run records its
+// plain-text `cncf/architecture` arm and the two guards beside it as
+// taken.) The build that takes the
 // arm records no deviation at the arm's own span, and isContradictedRegion
 // only admits witnesses from the script that produced the zero. That
 // restriction is deliberate (#1066: a different bundle maps the same skipped
-// arm to a different span), so the five are a documented reporting residual,
+// arm to a different span), so the three are a documented reporting residual,
 // not a coverage gap. Every citation above is path-qualified so
 // tests/source-line-citations.test.mjs can see it; the previous revision of
 // this note cited bare `GroupLinkStatus:33`-style lines, which that guard
@@ -78,9 +80,10 @@ const COVERAGE_JOB = 'e2e-coverage';
 //
 //   src/components/shared/MirrorSyncStatus.js:20 -- the same residual
 //     class. #1439 folded CaseStudies' and RadarReports' separate
-//     !generatedAt guards into this shared one, which is why the fallback
-//     count above is eleven where this note used to say thirteen: two zeros
-//     (CaseStudies' and RadarReports' own guards) became one. Its browser
+//     !generatedAt guards into this shared one, which is one reason the
+//     fallback count above has fallen from the thirteen this note used to
+//     say: two zeros (CaseStudies' and RadarReports' own guards) became
+//     one. Its browser
 //     witness is now tests/e2e/fixtures/data-variant/radar-reports.json
 //     alone: that overlay still clears the field to JSON null, and the
 //     case-studies overlay beside it no longer does (see the entry below).
@@ -119,12 +122,15 @@ const COVERAGE_JOB = 'e2e-coverage';
 //     is not made here; until then this is a reporting residual.
 //
 // Do not set --check-source-regions above 96 or
-// --check-source-file-regions above 66 without first changing the union. Two
-// files sit exactly on that per-file floor and both of their zeros are in the
-// residual: src/components/PeopleFreshness/index.js at 2/3 and
-// src/components/shared/MirrorSyncStatus.js at 6/9. The aggregate stops at 96
-// rather than 97 because 97 would demand 656 of 676, one more than the 655
-// the run records -- a gate the current tree does not clear at all.
+// --check-source-file-regions above 66 without first changing the union. One
+// file sits exactly on that per-file floor and all of its zeros are in the
+// residual: src/components/shared/MirrorSyncStatus.js at 6/9
+// (src/components/PeopleFreshness/index.js, which used to share the floor at
+// 2/3, reads 3/4 in this run -- the denominator moved, not the code; see
+// MEASURED_ON_NODE_MAJOR). The aggregate stays at 96 rather than 97: 97 would
+// demand 642 of 661, and the 645 the run records clears that by three
+// regions, which is inside the same-major runtime wobble documented below
+// and not room to ratchet on.
 //
 // The per-file floor is the unit lane's --check-source-file-regions argument
 // one level down: the aggregate lets roughly one region in twenty-five go
@@ -167,8 +173,9 @@ const FLOORS = {
 // three regions of room. A contributor who follows CONTRIBUTING.md's local
 // recipe on a newer Node reads the second column, concludes the aggregate
 // floor can be ratcheted, and turns the required job red on the next
-// denominator wobble -- which is what the current tree's 655/676 (96.89%),
-// measured on node 22, would do immediately.
+// denominator wobble -- which is what the tree before #1527 (655/676,
+// 96.89%, measured on node 22) would have done immediately, and what the
+// current tree's three-region margin over 97 leaves exposed to.
 //
 // That makes the pinned major part of the floors' meaning, and this constant
 // is what says so. `tests/dev-environment.test.mjs` already proves every
@@ -204,7 +211,7 @@ const MEASURED_ON_NODE_MAJOR = '22';
 // Re-measure with the recipe in CONTRIBUTING.md on Node MEASURED_ON_NODE_MAJOR,
 // update the table and any floor that moved, and set this constant in the same
 // change.
-const MEASURED_AT_SPEC_COUNT = 40;
+const MEASURED_AT_SPEC_COUNT = 39;
 
 // The number of src/** modules the table above was measured against.
 //

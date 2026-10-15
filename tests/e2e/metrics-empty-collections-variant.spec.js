@@ -59,9 +59,8 @@
 // assertions below only pass if it did — but
 // tests/tools/e2e-coverage-report.mjs keys a region on its exact original
 // coordinates, and the two builds' generated code does not always map back to
-// the same ones. Where it does, the regions fold (the variant's cleared
-// `generatedAt` already folds ReferenceArchitectures' two arms); where it does
-// not, the union keeps the zero. That is the region-attribution problem
+// the same ones. Where it does, the regions fold; where it does not, the
+// union keeps the zero. That is the region-attribution problem
 // tracked in #1066 and #1079, not something this fixture can reach.
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';

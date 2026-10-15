@@ -2,12 +2,11 @@
 //
 // smoke.spec.js loads /architectures and asserts the catalog listing reports a
 // non-zero count, but no spec has ever opened one of the pages that listing
-// links to. Those pages are the only surface on the site that is rewritten
-// wholesale by automation: `npm run import:architectures` regenerates
+// links to. Those pages are the only surface on the site that is written
+// wholesale by automation: the issue importer generates
 // docs/architectures/<id>.md, data/architectures/catalog.json and the mirrored
-// files under static/img/architectures/ from the upstream cncf/architecture
-// repository whenever import-architectures.yml is dispatched (on demand, not
-// on a schedule).
+// files under static/img/architectures/ from a submission issue whenever
+// architecture-submission.yml runs.
 //
 // The unit suite already pins the *file-level* contract hard — see
 // tests/architecture-catalog-contract.test.mjs, which proves catalog ids and
@@ -61,9 +60,9 @@ test.describe('reference architecture detail pages', () => {
         page.getByRole('heading', { level: 1, name: record.title }),
       ).toBeVisible();
 
-      // CC BY 4.0 obliges the site to carry attribution for the upstream text,
-      // and the pinned revision is what makes the import reproducible. Both
-      // live in the leading blockquote that import-architectures.mjs writes.
+      // CC BY 4.0 obliges the site to carry attribution for text that
+      // originated in cncf/architecture, and the pinned revision records
+      // exactly what was taken. Both live in the page's leading blockquote.
       const attribution = page.locator('article blockquote').first();
       await expect(attribution).toContainText(record.sourceCommit);
       await expect(attribution).toContainText('CC BY 4.0');

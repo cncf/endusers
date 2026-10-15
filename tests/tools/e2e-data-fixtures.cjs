@@ -27,12 +27,12 @@
 // The build list is the directory listing, not a registry: adding
 // `tests/e2e/fixtures/data-<name>/` adds a build, and nothing else has to be
 // told about it. That matters because one additional build is not enough.
-// `data-variant` clears `metrics.generatedAt`, which is what reaches
-// ReferenceArchitectures' `: null` syncDate arm; the same component's
-// absent-revision guard needs `sources.architectures.revision` cleared while
-// `generatedAt` stays present, so the two shapes cannot share a build. With
-// a fixed number of builds every such pair is a standoff where covering one
-// arm un-covers another; with a directory per build it is one more directory.
+// `data-variant` clears `metrics.generatedAt`, which is what reaches the
+// `: null` date arms of the provenance lines; DirectoryFreshness' unlinked
+// arm needs `sources.architectures.revision` cleared while `generatedAt`
+// stays present, so the two shapes cannot share a build. With a fixed number
+// of builds every such pair is a standoff where covering one arm un-covers
+// another; with a directory per build it is one more directory.
 //
 // Each build is a full Docusaurus compile, so CI time for the end-to-end
 // coverage job grows linearly in the number of `data-<name>/` directories.
@@ -98,8 +98,8 @@
 // root object, so a data file whose root is an array -- data/architectures/
 // catalog.json and data/projects-born.json -- had no addressable path at all.
 // It is keyed on a field value rather than a positional index because both
-// files are regenerated (`npm run import:architectures`,
-// `npm run collect:projects-born`) and entry order is not stable, while the
+// files are regenerated (the architecture issue importer, hand edits to
+// projects-born.json) and entry order is not stable, while the
 // fail-loud guarantee is the point: an overlay naming a record that the
 // regenerated file no longer carries breaks the build instead of quietly
 // dropping the coverage it was written for.

@@ -77,8 +77,8 @@ function isPullRequestTriggered(doc) {
 // flight, with the reason. Keyed by file name.
 const SERIALISED_WORKFLOWS = new Map([
   [
-    'import-architectures.yml',
-    'Force-pushes the constant branch automation/import-architectures and ' +
+    'refresh-metrics.yml',
+    'Force-pushes the constant branch automation/refresh-metrics and ' +
       'deletes that ref when it stops differing from the base, so the branch ' +
       'name is the resource two runs contend for and the group has to be as ' +
       'constant as the branch is. Not PR-triggered, so it is outside the ' +
@@ -87,12 +87,12 @@ const SERIALISED_WORKFLOWS = new Map([
   [
     'refresh-community-people.yml',
     'Force-pushes the constant branch automation/refresh-community-people; ' +
-      'same reasoning as import-architectures.yml.',
+      'same reasoning as refresh-metrics.yml.',
   ],
   [
     'refresh-radar-reports.yml',
     'Force-pushes the constant branch automation/refresh-radar-reports; ' +
-      'same reasoning as import-architectures.yml.',
+      'same reasoning as refresh-metrics.yml.',
   ],
   [
     'create-milestones.yml',

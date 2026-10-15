@@ -230,9 +230,11 @@ test('CONTRIBUTING.md still warns that `just build` is not the PR gate', () => {
 // catch, so each is run once more against a document edited to contain it.
 
 test('a validator added to the recipe alone is caught', () => {
+  // Anchored on the step that follows so the edit lands in `build`, not in the
+  // `refresh` recipe, which also ends its validators with validate:members.
   const drifted = JUSTFILE.replace(
-    '    npm run validate:members\n',
-    '    npm run validate:members\n    npm run validate:newly-added\n',
+    '    npm run validate:members\n    npm run build\n',
+    '    npm run validate:members\n    npm run validate:newly-added\n    npm run build\n',
   );
   assert.notEqual(drifted, JUSTFILE, 'the fixture edit matched nothing');
   const { undocumented, phantom } = validatorDrift(CONTRIBUTING, drifted);
@@ -293,14 +295,14 @@ test('a Justfile with no build recipe is reported, not crashed on', () => {
 });
 
 test('a recipe body stops at the next recipe, not at the end of the file', () => {
-  // `import` precedes `build` in the Justfile and runs validators of its own.
+  // `refresh` precedes `build` in the Justfile and runs validators of its own.
   // A parser that ran past the blank line between them would credit `just
   // build` with `validate:enduser-members` from the wrong recipe.
-  const body = justRecipe(JUSTFILE, 'import');
-  assert.ok(body, 'Justfile declares no import recipe; update this test');
+  const body = justRecipe(JUSTFILE, 'refresh');
+  assert.ok(body, 'Justfile declares no refresh recipe; update this test');
   assert.ok(
     !body.includes('npm run build'),
-    'the import recipe body ran on into the build recipe',
+    'the refresh recipe body ran on into the build recipe',
   );
 });
 

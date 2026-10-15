@@ -150,7 +150,7 @@ const EXPECTED = new Map([
   [
     'data-no-revision/metrics.json',
     {
-      why: "clears sources.architectures.revision to reach the absent-revision guard in ReferenceArchitectures, and sources.architectures.repository to reach DirectoryFreshness's plain-text 'cncf/architecture' arm; the gate requires that revision",
+      why: "clears sources.architectures.revision and sources.architectures.repository to reach DirectoryFreshness's plain-text 'cncf/architecture' arm; the gate requires that revision",
       adds: ['metrics.json: source revisions are required'],
     },
   ],
@@ -199,7 +199,7 @@ const EXPECTED = new Map([
   [
     'data-variant/metrics.json',
     {
-      why: 'clears generatedAt and five collections to reach the empty fallbacks in MetricsDashboard and ReferenceArchitectures',
+      why: 'clears generatedAt and five collections to reach the empty fallbacks in MetricsDashboard',
       adds: ['metrics.json: generatedAt must be ISO 8601'],
     },
   ],

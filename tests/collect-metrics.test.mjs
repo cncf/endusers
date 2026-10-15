@@ -240,8 +240,7 @@ test('collect-metrics tolerates a landscape with no projects', () => {
 
 // #1276: Dirent.isDirectory() is false for a symlink, so a symlinked
 // architecture directory upstream fell out of the "Reference architectures"
-// count silently. The count now agrees with import-architectures.mjs, which
-// skips the same entry (#1267), and says so in the log.
+// count silently. The skip is now explicit (#1267) and says so in the log.
 test('collect-metrics skips a symlinked architecture directory and warns', () => {
   const result = run({
     architectures: ['acme-platform', 'globex-edge'],

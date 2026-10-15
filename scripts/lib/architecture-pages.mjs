@@ -1,37 +1,35 @@
 // Single source of truth for which files under docs/architectures/ are
-// imported pages.
+// generated architecture pages rather than hand-authored ones.
 //
 // Docusaurus routes docs/ by filesystem, not by data/architectures/catalog.json,
 // so every page in this directory is published whether or not a catalog record
 // names it. The docs plugin's default `include` globs both .md and .mdx, so an
 // .mdx page is published exactly like a .md one and has to be enumerated here
-// too; listing only .md left an .mdx page unscanned by the active-content gate
-// and unpruned by the importer.
-// Driving either the import pruner or the active-content gate from
-// the catalog (or from the upstream checkout) therefore leaves any file the
-// two disagree about published and unguarded — the failure mode
+// too; listing only .md left an .mdx page unscanned by the active-content
+// gate. Driving the gate from the catalog therefore leaves any file the two
+// disagree about published and unguarded — the failure mode
 // scripts/validate-community-people.mjs already documents for its own loop.
-// Both callers enumerate the directory through this module instead.
+// The gate enumerates the directory through this module instead.
 
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Pages written by this repository rather than imported from
- * cncf/architecture. `index.md` is the hand-authored catalog landing page and
- * `submit.md` the hand-authored submission guide: both render <div>/<h3>
- * layout and index.md imports <ReferenceArchitectures />, all of which
- * findActiveContent() is correct to reject in an *imported* body. They are
- * exempt from the imported-content gate and are never pruned by the importer.
+ * Pages written by hand in this repository rather than generated from a
+ * submission. `index.md` is the catalog landing page and `submit.md` the
+ * submission guide: both render <div>/<h3> layout and index.md imports
+ * <ReferenceArchitectures />, all of which findActiveContent() is correct to
+ * reject in a *generated* body. They are exempt from the imported-content
+ * gate.
  */
 export const REPO_AUTHORED_PAGES = new Set(['index.md', 'submit.md']);
 
 /**
  * Catalog ids an imported record may not claim.
  *
- * Both importers write their page to `docs/architectures/<id>.md`, and the id
- * is derived from submitter- or upstream-controlled text (the "Organization or
- * Team Name" answer on a submission issue, or an upstream directory name). An
+ * The issue importer writes its page to `docs/architectures/<id>.md`, and the
+ * id is derived from submitter-controlled text (the "Organization or Team
+ * Name" answer on a submission issue). An
  * id that slugifies to a repo-authored page name therefore overwrites that
  * hand-authored page with imported content — and because the active-content
  * gate in scripts/validate-architectures.mjs deliberately skips

@@ -4,8 +4,8 @@ import test from 'node:test';
 import { formatDate } from '../src/components/shared/formatDate.js';
 
 // formatDate() is the single date formatter behind AwardsTimeline,
-// PeopleFreshness, ReferenceArchitectures, CaseStudies, RadarReports and
-// GroupLinkStatus, and the `timeZone: 'UTC'` option is the whole reason it
+// PeopleFreshness, CaseStudies, RadarReports and GroupLinkStatus, and the
+// `timeZone: 'UTC'` option is the whole reason it
 // exists: the site is prerendered in UTC and rehydrated in the visitor's
 // browser, so formatting in the local zone renders the previous day for
 // everyone west of UTC and mismatches the server-rendered text.
@@ -120,8 +120,8 @@ test('the zones and values chosen here do drift without the pin', () => {
   }
 });
 
-// The documented contract the six call sites branch on: PeopleFreshness,
-// ReferenceArchitectures and GroupLinkStatus all test the result for null
+// The documented contract the call sites branch on: PeopleFreshness and
+// GroupLinkStatus both test the result for null
 // before rendering, so a helper that returned 'Invalid Date' instead would
 // put that string on the page rather than suppressing the line.
 test('an unparseable or missing value is null, not a rendered string', () => {
@@ -139,9 +139,9 @@ test('an unparseable or missing value is null, not a rendered string', () => {
 // formats the epoch. Pinned as the behaviour it is rather than as the
 // behaviour the name suggests, because what keeps it off the page is not here.
 //
-// Four call sites never pass it -- AwardsTimeline, ReferenceArchitectures,
-// CaseStudies, RadarReports and MirrorSyncStatus all test the field for
-// truthiness first. The remaining two, PeopleFreshness (`peopleData.fetchedAt`)
+// Most call sites never pass it -- AwardsTimeline, CaseStudies, RadarReports
+// and MirrorSyncStatus all test the field for truthiness first. The remaining
+// two, PeopleFreshness (`peopleData.fetchedAt`)
 // and GroupLinkStatus (`groupsData?.checkedAt`, whose optional chaining guards
 // a missing object and not a null field), hand the value straight over and
 // would render `January 1, 1970` in a note that is meant to disappear.

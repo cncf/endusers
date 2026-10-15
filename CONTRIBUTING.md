@@ -45,11 +45,12 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
 `Justfile` provides shortcuts that wrap the npm scripts above:
 
 - `just serve` — start the dev server bound to all interfaces.
-- `just import` — refresh end-user member data from `cncf/landscape`
-  (`collect:enduser-members`, `validate:enduser-members` — this step clones
-  `cncf/landscape` from GitHub, so it needs network access) and then import
-  reference architectures and run `import:architectures`,
-  `validate:architectures`, and `validate:architecture-assets`.
+- `just refresh` — refresh the metrics dashboard data and the end-user member
+  data (`collect:metrics`, `collect:enduser-members`,
+  `validate:enduser-members`, `generate:members`, `validate:members`,
+  `validate:metrics` — these steps clone `cncf/landscape` and
+  `cncf/architecture` from GitHub and call the GitHub API, so they need network
+  access and `GH_TOKEN`).
 - `just build` — run the data validators (`validate:architectures`,
   `validate:architecture-assets`, `validate:metrics`, `validate:awards`,
   `validate:community-people`, `validate:community-groups`,
@@ -113,13 +114,14 @@ Rules:
   `npm run collect:launch-metrics` (needs `GH_TOKEN`) and validate with
   `npm run validate:launch-metrics`.
 - Verify award entries against the linked cncf.io announcement before adding.
-- Reference architectures are imported from
-  [cncf/architecture](https://github.com/cncf/architecture) — fix content
-  upstream, then re-import. Imported pages and SVG diagrams must pass the
-  content-security validators (`validate:architectures`,
-  `validate:architecture-assets`); the rules they enforce — and how to fix an
-  `active content` or `remote reference` failure — are documented in
-  [CONTENT-SECURITY.md](CONTENT-SECURITY.md).
+- Reference architecture pages are generated from submission issues by
+  `.github/workflows/architecture-submission.yml`; the pages that originated in
+  [cncf/architecture](https://github.com/cncf/architecture) are committed
+  content, attributed on each page under CC BY 4.0, and are edited here. All
+  architecture pages and SVG diagrams must pass the content-security validators
+  (`validate:architectures`, `validate:architecture-assets`); the rules they
+  enforce — and how to fix an `active content` or `remote reference` failure —
+  are documented in [CONTENT-SECURITY.md](CONTENT-SECURITY.md).
 - Verify CNCF facts (award winners, TAB scope, architecture counts) against
   authoritative sources. Never assert numbers without a source.
 - Radar report `summary` fields in `data/radar-reports.json` are hand-written
@@ -423,18 +425,17 @@ a full Docusaurus compile, so the coverage job's wall time grows linearly in the
 number of these directories: add one when the shape it needs provably conflicts
 with every existing build, not as the first reach for a branch an additive
 overlay could cover instead. `tests/e2e/data-variants.spec.js` and
-`tests/e2e/reference-architectures-no-revision.spec.js` are worked examples.
+`tests/e2e/member-directory-freshness-unlinked.spec.js` are worked examples.
 
 Data overlays reach only components that read `data/*.json`. A branch whose
 props arrive through generated MDX — the architecture pages under
-`docs/architectures/` are committed output of `npm run import:architectures`, so
-a prop shape absent from every imported page is absent from every build — needs
-the second mechanism: MDX fixture pages committed under
-`tests/e2e/fixtures/docs/`. When `E2E_COVERAGE=1`, `docusaurus.config.js`
-registers an extra docs-plugin instance that serves them at the
-`/e2e-coverage-fixtures/` route, where a spec can render the component with
-exactly the props the real corpus never supplies. See
-`tests/e2e/cncf-project-card.spec.js` for a worked example. Like the data
+`docs/architectures/` are committed files written by the submission importer, so
+a prop shape absent from every page is absent from every build — needs the
+second mechanism: MDX fixture pages committed under `tests/e2e/fixtures/docs/`.
+When `E2E_COVERAGE=1`, `docusaurus.config.js` registers an extra docs-plugin
+instance that serves them at the `/e2e-coverage-fixtures/` route, where a spec
+can render the component with exactly the props the real corpus never supplies.
+See `tests/e2e/cncf-project-card.spec.js` for a worked example. Like the data
 overlays, nothing outside `E2E_COVERAGE=1` registers the instance, so these
 pages never reach a production build or the deployed site.
 

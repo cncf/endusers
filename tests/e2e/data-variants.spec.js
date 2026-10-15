@@ -12,11 +12,8 @@
 //     data/awards.json carries a verifiedAt; the ': null' arm is the fourteen
 //     lines of that paragraph not rendering
 //     (src/components/AwardsTimeline/index.js line 76).
-//   * ReferenceArchitectures dates its sync line from metrics.generatedAt;
-//     the ': null' arm at src/components/ReferenceArchitectures/index.js:18
-//     and the '' arm at src/components/ReferenceArchitectures/index.js:29 are
-//     the date being left off. metrics.generatedAt is read by four other
-//     components, so clearing it build-wide moves five pages at once.
+//   * metrics.generatedAt is read by several components' provenance lines,
+//     so clearing it build-wide moves their pages at once.
 //   * PeopleFreshness renders its paragraph only when
 //     data/community-people.json's fetchedAt parses as a date; emptying that
 //     one field takes two 'return null' arms at once -- the Number.isNaN guard
@@ -35,10 +32,9 @@
 // arm only this build reaches count as covered. *Regions* fold by span key,
 // and the build that takes a guard arm records no region at the arm's own
 // span (its deviation is the alternative it skipped), so the real build's
-// zero at the arm survives. src/components/ReferenceArchitectures/index.js:29
-// and src/components/PeopleFreshness/index.js:13
-// are therefore still listed as uncovered regions even though this spec
-// drives them; see #1256 and the comment at the union in
+// zero at the arm survives. src/components/PeopleFreshness/index.js:13
+// is therefore still listed as an uncovered region even though this spec
+// drives it; see #1256 and the comment at the union in
 // tests/tools/e2e-coverage-report.mjs. The build still exists for the lines.
 //
 // Each case asserts the real route as well. On its own, an assertion that a
@@ -68,7 +64,6 @@ const people = loadSiteData('community-people.json', COVERAGE_ENV);
 const variantPeople = loadSiteData('community-people.json', VARIANT_ENV);
 
 const PROVENANCE = /Winner history audited for completeness against/;
-const SYNC_STATUS = /Last synced from/;
 const PROFILES_REFRESHED = /Profiles last refreshed from public GitHub sources/;
 
 describeCoverage('data the site has not received yet', () => {
@@ -87,26 +82,6 @@ describeCoverage('data the site has not received yet', () => {
     const years = page.getByText(/^\d{4}$/);
     await expect(years.first()).toBeVisible();
     await expect(page.getByText(PROVENANCE)).toHaveCount(0);
-  });
-
-  test('ReferenceArchitectures drops its sync date with no generatedAt', async ({
-    page,
-  }) => {
-    expect(metrics.generatedAt).toBeTruthy();
-    expect(variantMetrics.generatedAt).toBeNull();
-    const revision = metrics.sources.architectures.revision.slice(0, 7);
-
-    await page.goto('/architectures');
-    const synced = page.getByText(SYNC_STATUS);
-    await expect(synced).toBeVisible();
-    await expect(synced).toContainText(/ on \w+ \d{1,2}, \d{4}\.$/);
-
-    await page.goto(`${VARIANT_BASE}/architectures`);
-    const unsynced = page.getByText(SYNC_STATUS);
-    // The revision half of the line is unchanged, so what is missing is the
-    // date and only the date.
-    await expect(unsynced).toContainText(revision);
-    await expect(unsynced).toHaveText(new RegExp(`${revision}\\.$`));
   });
 
   test('PeopleFreshness drops its paragraph with an unparseable fetchedAt', async ({

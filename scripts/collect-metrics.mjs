@@ -55,9 +55,8 @@ try {
   }
   // Dirent.isDirectory() is false for a symlink, so a symlinked architecture
   // directory upstream would drop out of the published count with no trace.
-  // import-architectures.mjs skips the same entry for the same reason and
-  // warns; the count has to agree with the import, so skip it here too and
-  // leave the drop visible in the workflow log (#1276).
+  // Skip it explicitly and leave the drop visible in the workflow log
+  // (#1276).
   const architecturesRoot = join(architectureDir, 'content/en/architectures');
   const architectures = readdirSync(architecturesRoot, {
     withFileTypes: true,

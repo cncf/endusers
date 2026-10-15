@@ -6,8 +6,8 @@ import { parse as parseYaml } from 'yaml';
 import { REPO_AUTHORED_PAGES } from '../scripts/lib/architecture-pages.mjs';
 
 // The architecture catalog, the per-record JSON files and the generated
-// Docusaurus pages are three artifacts written by a single import run
-// (scripts/import-architectures.mjs). Nothing re-checks that they still agree
+// Docusaurus pages are three artifacts written together by an import run
+// (scripts/import-architecture-issue.mjs). Nothing re-checks that they still agree
 // once committed: validate-architectures.mjs reads only catalog.json, and
 // validate-architecture-assets.mjs reads only static/img/architectures. A
 // partial import, a hand-edited page or a deleted record therefore ships a
@@ -22,11 +22,12 @@ const assetsRoot = join(repoRoot, 'static/img/architectures');
 
 const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
 
-// Two import paths feed the catalog with different provenance shapes.
-// scripts/import-architectures.mjs pins each record to an upstream
-// cncf/architecture commit (`sourceCommit` + a commit-pinned `sourceUrl`).
-// scripts/import-architecture-issue.mjs turns a submission issue into a
-// record whose source IS the issue (`sourceIssue` + the issue URL); there is
+// Two provenance shapes coexist in the catalog. Records that originated in
+// the CNCF Cloud Native Reference Architecture project are pinned to the
+// cncf/architecture commit they were taken from (`sourceCommit` + a
+// commit-pinned `sourceUrl`), which is what their CC BY 4.0 attribution
+// cites. scripts/import-architecture-issue.mjs turns a submission issue into
+// a record whose source IS the issue (`sourceIssue` + the issue URL); there is
 // no upstream commit to pin, so the commit-pinning assertions below apply
 // only to records without `sourceIssue`.
 function isIssueSourced(record) {

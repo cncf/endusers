@@ -16,8 +16,7 @@ const repoRoot = new URL('..', import.meta.url).pathname;
 
 // scripts/import-architecture-issue.mjs mirrors CNCF project logos over the
 // network. The sandbox below mirrors the repo layout in a temp directory and
-// stubs fetch so the script can be exercised offline, the same approach
-// helpers-import-sandbox.mjs uses for the cncf/architecture importer.
+// stubs fetch so the script can be exercised offline.
 const FETCH_STUB = `import { readFileSync } from 'node:fs';
 
 const responses = JSON.parse(readFileSync(process.env.FAKE_FETCH, 'utf8'));
