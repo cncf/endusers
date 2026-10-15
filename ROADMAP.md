@@ -131,8 +131,10 @@ Goal: endusers.cncf.io becomes the authoritative end-user destination.
 - [x] Public feedback loop: content-issue templates and a visible changelog
       (#1408). Shipped: the `content-issue.yml` report form and a changelog
       generated at build time (`adr/0003-public-changelog-mechanism.md`), both
-      linked from the site footer. The deployed changelog renders its fallback
-      page until the deploy checkout fetches full history (#1409).
+      linked from the site footer. The fallback-page caveat from the GitHub
+      Pages era (#1409) no longer applies: since the move to Netlify (ADR 0005,
+      #1485, #1489) the deploy checkout carries full git history, and the
+      deployed changelog renders real dated entries.
 
 ## Non-goals
 
