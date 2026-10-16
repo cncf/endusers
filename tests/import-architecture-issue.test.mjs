@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { parse } from 'yaml';
 import { runImportArchitectureIssue } from './helpers-import-issue-sandbox.mjs';
 
 // Every label the issue template renders, in template order. Mirrors
@@ -47,6 +49,67 @@ const REQUIRED_ANSWERS = {
   'Brief overview of your architecture and any potential goals you are trying to achieve with it?':
     'We run a multi-region platform on Kubernetes.',
 };
+
+// The three copies of these strings, and what keeps them in step.
+//
+// GitHub renders each issue-form field as a `### <label>` heading followed by
+// the response, so the `label:` text in
+// .github/ISSUE_TEMPLATE/reference-architecture.yml is the only link between
+// the form and scripts/import-architecture-issue.mjs, which says so in its own
+// header. The script holds the second copy, in BODY_SECTIONS and its
+// `field(fields, 'Organization or Team Name')` lookup; LABELS above is the
+// third.
+//
+// The script-to-LABELS half is already enforced, behaviourally: every test in
+// this file drives the real script over a body built from LABELS, so a
+// BODY_SECTIONS label that stopped matching fails them. The template half was
+// not enforced by anything. A maintainer retitling a form field -- a copy edit
+// that touches no code, passes review on its own merits, and is exactly the
+// kind of change a YAML form invites -- would leave this suite green and break
+// the importer only when a real submitter's issue was labelled, surfacing as
+// an automated failure comment on that submitter's issue.
+//
+// These two guards close that half, which closes the triangle.
+const TEMPLATE_FIELDS = parse(
+  readFileSync(
+    fileURLToPath(
+      new URL(
+        '../.github/ISSUE_TEMPLATE/reference-architecture.yml',
+        import.meta.url,
+      ),
+    ),
+    'utf8',
+  ),
+).body.filter((element) => element.type !== 'markdown');
+
+test('LABELS mirrors the issue form, field for field and in order', () => {
+  assert.deepEqual(
+    TEMPLATE_FIELDS.map((element) => element.attributes.label),
+    LABELS,
+    'the reference-architecture issue form and the headings this suite feeds ' +
+      'the importer have drifted; the form\u2019s `label:` text is what GitHub ' +
+      'renders as `### <label>`, so a label only the form knows about is a ' +
+      'section the importer will never find',
+  );
+});
+
+test('every field the issue form requires is answered by the fixture', () => {
+  // Subset rather than equality: a field the form leaves optional may still be
+  // one the script refuses to proceed without, and REQUIRED_ANSWERS is free to
+  // answer it. The direction that must hold is the other one -- a fixture
+  // calling itself the required answers cannot omit something the form makes
+  // mandatory, or the suite is proving the importer works on a body no real
+  // submitter can send.
+  const required = TEMPLATE_FIELDS.filter(
+    (element) => element.validations?.required,
+  ).map((element) => element.attributes.label);
+  const answered = Object.keys(REQUIRED_ANSWERS);
+  assert.deepEqual(
+    required.filter((label) => !answered.includes(label)),
+    [],
+    'REQUIRED_ANSWERS omits a field the issue form marks required',
+  );
+});
 
 function fixtureIssue(overrides = {}, answers = {}) {
   return {
