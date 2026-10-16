@@ -605,6 +605,29 @@ test('collects source attribution from catalog and award URLs, skipping nulls', 
   ]);
 });
 
+test('deduplicates source attribution shared across multiple award entries', () => {
+  // A multi-award member whose entries cite the same case study (Intuit,
+  // Spotify in data/awards.json) must not repeat the URL.
+  const result = run({
+    catalog: [catalogEntry()],
+    awards: [
+      awardEntry({ caseStudyUrl: 'https://example.test/case-study' }),
+      awardEntry({
+        year: 2025,
+        caseStudyUrl: 'https://example.test/case-study',
+      }),
+    ],
+  });
+
+  const attribution = memberById(result, 'acme').sourceAttribution;
+  assert.deepEqual(attribution, [...new Set(attribution)]);
+  assert.equal(
+    attribution.filter((url) => url === 'https://example.test/case-study')
+      .length,
+    1,
+  );
+});
+
 test('picks an asset named logo ahead of every other candidate', () => {
   const result = run({
     catalog: [
