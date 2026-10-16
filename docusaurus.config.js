@@ -455,11 +455,6 @@ const config = {
             label: 'Resources',
           },
           {
-            to: '/metrics/',
-            label: 'Metrics',
-            position: 'right',
-          },
-          {
             to: '/events/',
             label: 'Events',
             position: 'right',

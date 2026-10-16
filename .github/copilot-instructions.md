@@ -32,7 +32,7 @@ Never assert counts or winner lists from memory.
 
 ## Generated data
 
-- `/metrics` is generated from `data/metrics.json`. Refresh with
+- `/resources/metrics` is generated from `data/metrics.json`. Refresh with
   `npm run collect:metrics`, validate with `npm run validate:metrics`. Never
   hand-edit generated data; change `scripts/collect-metrics.mjs` instead.
 - `/architectures` pages are generated from submission issues by

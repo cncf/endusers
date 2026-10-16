@@ -23,7 +23,7 @@ test.describe('member directory', () => {
 
 test.describe('metrics dashboard', () => {
   test('renders its metric cards', async ({ page }) => {
-    await page.goto('/metrics');
+    await page.goto('/resources/metrics');
     await expect(page.getByText(/Last updated .* UTC/)).toBeVisible();
 
     const lifecycle = page.getByRole('heading', {

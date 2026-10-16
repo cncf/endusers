@@ -114,7 +114,7 @@ test.describe('colour mode', () => {
       expect(await decoration('.pillar p a')).toContain('underline');
       expect(await decoration('.audience-cta')).toBe('none');
       expect(await decoration('.navbar__link')).toBe('none');
-      await page.goto('/metrics');
+      await page.goto('/resources/metrics');
       expect(await decoration('a[class*="card"]')).toBe('none');
     });
   }
@@ -203,7 +203,7 @@ test.describe('colour mode', () => {
     // A full document load rather than a client-side transition: the stored
     // preference has to be re-read and applied by the inline script Docusaurus
     // injects, which is the part that regresses independently of the toggle.
-    await page.goto('/metrics/');
+    await page.goto('/resources/metrics/');
     await expect(
       theme(page),
       'the chosen mode should be restored on a fresh page load',

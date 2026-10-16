@@ -13,14 +13,9 @@
 // correctly. docs/community/index.md links here as the way a visitor finds a
 // peer group, so that regression is worth catching.
 //
-// No other spec loads these routes. legacy-urls.spec.js reaches the leaves
-// by clicking through the /community/telecom-user-group and
-// /community/public-sector-user-group stubs, but asserts only that the
-// destination is not a 404 and that an `article` element exists — never the
-// page's own content, and never the index. The eleven other specs navigate to
-// /, /architectures, /blog, /blog/tags, /community, /community/awards,
-// /community/members, /metrics, /resources/case-studies and
-// /resources/radar-reports.
+// No other spec loads these routes: the others navigate to /, /architectures,
+// /blog, /blog/tags, /community, /community/awards, /community/members,
+// /resources/metrics, /resources/case-studies and /resources/radar-reports.
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
@@ -40,9 +35,9 @@ const category = JSON.parse(
 );
 const INDEX_PATH = category.link.slug;
 
-// Matches the frontmatter reader in tests/docs-contract.test.mjs and
-// tests/legacy-url-stubs.test.mjs: a leading `---` fence, values taken as
-// single-line `key: value` pairs with optional surrounding quotes.
+// Matches the frontmatter reader in tests/docs-contract.test.mjs: a leading
+// `---` fence, values taken as single-line `key: value` pairs with optional
+// surrounding quotes.
 function frontmatterValue(frontmatter, key) {
   const match = frontmatter.match(new RegExp(`^${key}:\\s*(.+?)\\s*$`, 'm'));
   if (!match) return null;
@@ -192,10 +187,9 @@ test.describe('User Groups section', () => {
       await expectNotNotFound(page);
       await expect(page.locator('article h1')).toBeVisible();
 
-      // These are ordinary listed docs, unlike the /community/*-user-group
-      // stubs that forward to them (see legacy-urls.spec.js). If one ever
-      // picked up `unlisted: true` it would drop out of the sidebar and the
-      // sitemap while still answering requests.
+      // These are ordinary listed docs. If one ever picked up
+      // `unlisted: true` it would drop out of the sidebar and the sitemap
+      // while still answering requests.
       await expect(
         page.getByText('This page is unlisted.', { exact: false }),
       ).toHaveCount(0);

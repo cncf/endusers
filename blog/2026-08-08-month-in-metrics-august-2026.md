@@ -6,7 +6,7 @@ tags: [metrics, community]
 ---
 
 This is the first in a monthly series pulled straight from the numbers behind
-[/metrics](/metrics/) and [/architectures](/architectures/) — no editorializing, just what
+[/resources/metrics](/resources/metrics/) and [/architectures](/architectures/) — no editorializing, just what
 changed and where the data comes from.
 
 {/*truncate*/}
@@ -36,7 +36,7 @@ underscoring that the bottleneck is authoring and review, not process throughput
 ## Reading these numbers yourself
 
 Every figure above traces back to an authoritative source — the [Metrics
-page](/metrics/) links each one, and nothing here is asserted without a source URL. If a
+page](/resources/metrics/) links each one, and nothing here is asserted without a source URL. If a
 number can't be sourced, it's left out entirely (a handful of figures, like end-user
 member counts and Slack membership, currently are, for exactly that reason).
 

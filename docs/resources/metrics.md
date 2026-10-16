@@ -1,7 +1,8 @@
 ---
 title: Metrics
 description: Current CNCF end user and ecosystem metrics.
-sidebar_position: 1
+sidebar_position: 4
+hide_table_of_contents: true
 ---
 
 # Metrics

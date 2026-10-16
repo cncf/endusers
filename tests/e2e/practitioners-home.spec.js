@@ -41,7 +41,7 @@ const START_HERE = [
   { label: 'Reference Architectures', href: '/architectures/' },
   { label: 'Community', href: '/community/' },
   { label: 'Awards', href: '/community/awards/' },
-  { label: 'Metrics', href: '/metrics/' },
+  { label: 'Metrics', href: '/resources/metrics/' },
   { label: 'Events', href: '/events/' },
 ];
 

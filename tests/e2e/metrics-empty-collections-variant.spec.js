@@ -65,7 +65,7 @@
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 
-const METRICS_PATH = '/metrics';
+const METRICS_PATH = '/resources/metrics';
 const VARIANT_BASE = '/e2e-coverage-variant';
 const LIFECYCLE = 'section[aria-labelledby="lifecycle-title"]';
 const CARD = 'div[class*="lifecycleCard"]';

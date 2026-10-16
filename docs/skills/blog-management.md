@@ -52,7 +52,8 @@ To publish a Month in Metrics post:
    `data/metrics.json`, not stale numbers.
 2. Create `blog/YYYY-MM-DD-month-in-metrics-<month>-<year>.md` following the
    post format above, tagged `metrics`. Cite every figure with the same source
-   links used on `/metrics`; never restate a number without its `sourceUrl`.
+   links used on `/resources/metrics`; never restate a number without its
+   `sourceUrl`.
 3. Note what changed since the previous Month in Metrics post (new
    architectures, membership counts, award announcements) rather than repeating
    the same figures unchanged.

@@ -15,7 +15,6 @@ import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const LINK_ITEMS = [
   { label: 'Practitioners', to: '/' },
-  { label: 'Metrics', to: '/metrics/' },
   { label: 'Events', to: '/events/' },
   { label: 'Blog', to: '/blog' },
 ];
@@ -50,7 +49,7 @@ test.describe('primary navbar', () => {
   });
 
   test('the logo links back to the site root', async ({ page }) => {
-    await page.goto('/metrics/');
+    await page.goto('/events/');
 
     const logo = page.locator('nav.navbar a.navbar__brand');
     await expect(logo).toBeVisible();
@@ -92,9 +91,9 @@ test.describe('primary navbar', () => {
   }
 
   test('marks the item for the current page as active', async ({ page }) => {
-    await page.goto('/metrics/');
+    await page.goto('/events/');
 
-    await expect(navbarLink(page, 'Metrics')).toHaveClass(
+    await expect(navbarLink(page, 'Events')).toHaveClass(
       /navbar__link--active/,
     );
   });

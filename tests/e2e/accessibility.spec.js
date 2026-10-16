@@ -78,10 +78,8 @@ const ROUTES = [
   { path: '/community/user-groups', label: 'generated doc category index' },
   { path: '/architectures', label: 'architecture catalog' },
   { path: '/architectures/adobe', label: 'architecture detail' },
-  // /awards is a three-line "Awards moved" stub with unlisted: true; the page
-  // that mounts <AwardsTimeline /> is docs/community/awards.md.
   { path: '/community/awards', label: 'awards timeline' },
-  { path: '/metrics', label: 'metrics dashboard' },
+  { path: '/resources/metrics', label: 'metrics dashboard' },
   { path: '/events', label: 'events' },
   { path: '/resources', label: 'resources landing' },
   { path: '/resources/case-studies', label: 'case studies' },
@@ -396,12 +394,12 @@ test('every baselined route is a route this spec scans', () => {
 });
 
 test('every scanned route is a listed page of the built site', () => {
-  // How /awards went unnoticed: it is an unlisted "Awards moved" stub, so the
-  // route labelled "awards timeline" scanned three lines of redirect notice
-  // and passed, while /community/awards -- the only page that mounts
-  // <AwardsTimeline /> -- was never scanned at all. Every real page template
-  // appears in the sitemap, and a stub excluded from it does not, so
-  // membership is the check that separates the two.
+  // How a scan can pass without scanning anything: when /awards was still an
+  // unlisted "Awards moved" stub, the route labelled "awards timeline" scanned
+  // three lines of redirect notice and passed, while /community/awards -- the
+  // only page that mounts <AwardsTimeline /> -- was never scanned at all.
+  // Every real page template appears in the sitemap, and a stub excluded from
+  // it does not, so membership is the check that separates the two.
   const listed = new Set(sitemapPaths());
 
   const unlisted = [

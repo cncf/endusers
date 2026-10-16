@@ -245,7 +245,15 @@ const MEASURED_ON_NODE_MAJOR = '22';
 // src/components/PeopleFreshness/index.js oscillates between the 2/3 recorded
 // in the node-22 column above and the 3/4 the ceiling note records; both read
 // at or above the per-file floor, which is why the floor is 66 and not 75.
-const MEASURED_AT_SPEC_COUNT = 39;
+//
+// 39 -> 38: tests/e2e/legacy-urls.spec.js was removed with the unlisted
+// compatibility stubs it exercised (/members, /awards, /metrics and the
+// /community/* pre-reorganisation paths). The site is not public yet, so
+// there were no inbound links to keep alive. The stubs were plain Markdown
+// docs that mounted no src/** component, and every onward destination the
+// spec clicked through to is loaded by another spec, so the table above is
+// again carried over unchanged.
+const MEASURED_AT_SPEC_COUNT = 38;
 
 // The number of src/** modules the table above was measured against.
 //

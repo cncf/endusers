@@ -25,7 +25,7 @@
 import { newCoverageContext, test, expect } from '../tools/e2e-coverage.cjs';
 import metricsData from '../../data/metrics.json';
 
-const METRICS_PATH = '/metrics';
+const METRICS_PATH = '/resources/metrics';
 
 test('chart point titles exist before JavaScript runs', async ({
   browser,
