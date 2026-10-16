@@ -30,7 +30,7 @@ organizations adopting cloud native technologies to build things that matter.
   schedules, and every channel where end users compare notes.
 - **[End User Awards](/community/awards)** — the organizations CNCF has recognized for running
   cloud native at its best, from Bloomberg in 2018 to SNCF in 2026.
-- **[Metrics](/metrics/)** — a transparent snapshot of ecosystem and end-user activity,
+- **[Metrics](/resources/metrics/)** — a transparent snapshot of ecosystem and end-user activity,
   generated from authoritative public sources. If we can't source a number, we leave it
   out.
 - **[Events](/events/)** — where the community gathers at KubeCon + CloudNativeCon,

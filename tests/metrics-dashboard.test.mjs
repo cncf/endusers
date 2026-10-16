@@ -1,4 +1,4 @@
-// MetricsDashboard renders the whole /metrics page: the headline metric cards,
+// MetricsDashboard renders the whole /resources/metrics page: the headline metric cards,
 // the reference-architecture lifecycle panel, the time-series line charts and
 // the breakdown bar charts. All of it is hand-rolled SVG whose coordinates come
 // from three unexported helpers (pointX, pointY, linePoints) plus an inline

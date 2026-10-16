@@ -64,7 +64,7 @@ const ROUTES = [
   // /awards is a three-line "Awards moved" stub with unlisted: true; the page
   // that mounts <AwardsTimeline /> is docs/community/awards.md.
   { path: '/community/awards', label: 'awards timeline' },
-  { path: '/metrics', label: 'metrics dashboard' },
+  { path: '/resources/metrics', label: 'metrics dashboard' },
   { path: '/events', label: 'events' },
   { path: '/resources', label: 'resources landing' },
   { path: '/resources/case-studies', label: 'case studies' },

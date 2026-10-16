@@ -78,19 +78,19 @@ or CI will fail the PR.
 - **Lazy Loading**: Use the `docs/skills/` manifest to discover detailed
   instructions for specific tasks (e.g., blog posts, documentation updates).
 - **Structure**: Maintain Docusaurus file layout and sidebar configurations
-  (`sidebars.js`). Single-page sections (practitioners, events, metrics)
-  intentionally have no sidebar; multi-page sections (architectures, which lists
-  only its catalog and submission pages so imported architecture pages stay
-  full-width; community which includes awards and members; resources) do.
+  (`sidebars.js`). Single-page sections (practitioners, events) intentionally
+  have no sidebar; multi-page sections (architectures, which lists only its
+  catalog and submission pages so imported architecture pages stay full-width;
+  community which includes awards and members; resources) do.
 - **Facts**: Verify CNCF facts (award winners, TAB scope, architecture counts)
   against authoritative sources: cncf/tab, cncf/architecture, cncf/landscape,
   and cncf.io announcements. Never assert numbers without a source.
 
 ## Metrics
 
-The `/metrics` page is generated from `data/metrics.json`. Refresh it with
-`npm run collect:metrics`, validate with `npm run validate:metrics`, and build
-with `npm run build`. Do not edit generated metrics data manually; update
+The `/resources/metrics` page is generated from `data/metrics.json`. Refresh it
+with `npm run collect:metrics`, validate with `npm run validate:metrics`, and
+build with `npm run build`. Do not edit generated metrics data manually; update
 `scripts/collect-metrics.mjs` instead.
 
 ## Awards

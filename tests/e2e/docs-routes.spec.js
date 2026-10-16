@@ -12,10 +12,10 @@
 // page reachable from the navbar yet rendering an empty shell.
 //
 // /resources is the only doc on the site whose body is hand-written JSX: it
-// imports @docusaurus/Link and renders the two `pillar` cards that are the sole
-// entry points to the case-study and radar-report tables. A `<Link to>` that
-// stops resolving under the deployed baseUrl breaks both, and nothing else
-// would catch it.
+// imports @docusaurus/Link and renders the four `pillar` cards that are the
+// sole entry points to the case-study and radar-report tables, the metrics
+// dashboard and the generated changelog. A `<Link to>` that stops resolving
+// under the deployed baseUrl breaks all four, and nothing else would catch it.
 import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const RESOURCES_PATH = '/resources';
@@ -57,6 +57,8 @@ test.describe('resources landing page', () => {
   for (const pillar of [
     { label: 'Case Studies', to: '/resources/case-studies' },
     { label: 'Radar Reports', to: '/resources/radar-reports' },
+    { label: 'Metrics', to: '/resources/metrics' },
+    { label: 'Changelog', to: '/resources/changelog' },
   ]) {
     test(`the "${pillar.label}" pillar links to ${pillar.to}`, async ({
       page,

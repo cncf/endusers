@@ -32,7 +32,8 @@ Guidelines for technical documentation within this repository.
   as repo-authored.
 - `docs/community/`: The End User TAB, Governance, User Groups, Technical
   Community Groups, Awards, and Members — plus engagement pathways.
-- `docs/metrics/`: The metrics dashboard, rendered from `data/metrics.json`.
+- `docs/resources/metrics.md`: The metrics dashboard, rendered from
+  `data/metrics.json`.
 - `docs/events/`: End user events at KubeCon + CloudNativeCon.
 - `docs/resources/`: Case studies and Technology Radar reports, rendered from
   `data/case-studies.json` and `data/radar-reports.json` (see the data

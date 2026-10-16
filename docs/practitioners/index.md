@@ -57,8 +57,8 @@ architects, and organizations running cloud native technologies in production.
   Groups, and how to get involved
 - **[Awards](/community/awards/)** — the organizations recognized for advancing
   cloud native as end users
-- **[Metrics](/metrics/)** — a transparent snapshot of ecosystem and end user
-  activity
+- **[Metrics](/resources/metrics/)** — a transparent snapshot of ecosystem and
+  end user activity
 - **[Events](/events/)** — where the community gathers at KubeCon +
   CloudNativeCon
 

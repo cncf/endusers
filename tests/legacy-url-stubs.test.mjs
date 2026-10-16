@@ -1,6 +1,6 @@
 // Contract for the pages that keep legacy inbound URLs alive.
 //
-// Five docs exist for no reason other than backwards compatibility: they are
+// Seven docs exist for no reason other than backwards compatibility: they are
 // `unlisted: true`, their body is a single sentence pointing at the page that
 // replaced them, and they are reachable only by their `slug`. Nothing else in
 // the repository links to them, so every other docs contract walks straight
@@ -68,6 +68,11 @@ const LEGACY_STUBS = [
     file: 'docs/community/platform-engineering-tcg.md',
     slug: '/community/technical-community-groups/platform-engineering',
     target: '/community/user-groups/platform-engineering',
+  },
+  {
+    file: 'docs/metrics/index.md',
+    slug: '/metrics',
+    target: '/resources/metrics',
   },
 ];
 

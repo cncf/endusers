@@ -197,10 +197,10 @@ Two consequences worth knowing:
 - GitHub Flavored Markdown for all content.
 - No emojis in content, code, or commit messages.
 - Maintain the Docusaurus layout and `sidebars.js` configuration. Single-page
-  sections (practitioners, events, metrics) intentionally have no sidebar;
-  multi-page sections (architectures, which lists only its catalog and
-  submission pages so imported architecture pages stay full-width; community
-  which includes awards and members; resources) do.
+  sections (practitioners, events) intentionally have no sidebar; multi-page
+  sections (architectures, which lists only its catalog and submission pages so
+  imported architecture pages stay full-width; community which includes awards
+  and members; resources) do.
 
 ## Good first issues
 

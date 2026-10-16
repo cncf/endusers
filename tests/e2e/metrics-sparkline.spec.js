@@ -24,7 +24,7 @@
 // the other rather than adding a case, so it was given the variant build.
 // `add` introduces a trend *beside* the real two instead: both keep rendering
 // exactly as they did, and all three Sparkline arms -- no values, one value,
-// many values -- render together on the one real /metrics page in one build.
+// many values -- render together on the one real /resources/metrics page in one build.
 //
 // Keeping it out of the variant build is what lets
 // tests/e2e/metrics-empty-collections-variant.spec.js clear
@@ -39,7 +39,7 @@
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 
-const METRICS_PATH = '/metrics';
+const METRICS_PATH = '/resources/metrics';
 const LIFECYCLE = 'section[aria-labelledby="lifecycle-title"]';
 
 // The overlay is applied by the E2E_COVERAGE=1 build only, so outside the

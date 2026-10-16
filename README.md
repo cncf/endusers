@@ -80,9 +80,9 @@ and DNS cutover plan.
 
 ## Metrics data
 
-The `/metrics` page is generated from public CNCF repositories. Before running
-the refresh, set `GH_TOKEN` to a GitHub personal access token with public-repo
-read access — the script makes enough GitHub API calls to exceed the
+The `/resources/metrics` page is generated from public CNCF repositories. Before
+running the refresh, set `GH_TOKEN` to a GitHub personal access token with
+public-repo read access — the script makes enough GitHub API calls to exceed the
 unauthenticated rate limit. Then run `npm run collect:metrics` to refresh
 `data/metrics.json`, followed by `npm run validate:metrics` and `npm run build`.
 Generated metrics data should not be edited manually. Landscape-derived values
