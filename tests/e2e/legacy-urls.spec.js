@@ -1,7 +1,7 @@
 // End-to-end coverage for the legacy inbound URLs (see
 // tests/legacy-url-stubs.test.mjs for the source-side contract).
 //
-// Six routes exist only so links published elsewhere keep working: cncf.io,
+// Five routes exist only so links published elsewhere keep working: cncf.io,
 // the End User mailing list and the `#enduser` Slack channel all still point
 // at the pre-reorganisation paths. docusaurus.config.js registers no
 // client-redirects plugin, so each route is served by an `unlisted: true`
@@ -25,7 +25,6 @@ import { test, expect } from '../tools/e2e-coverage.cjs';
 // reaches them, and because an unintended change should fail in both places.
 const LEGACY_ROUTES = [
   { from: '/members', to: '/community/members' },
-  { from: '/awards', to: '/community/awards' },
   { from: '/community/end-user-community', to: '/community' },
   {
     from: '/community/telecom-user-group',
@@ -52,8 +51,8 @@ async function expectNotNotFound(page) {
   ).toHaveCount(0);
 }
 
-// The `<loc>` entries are absolute URLs, so a substring match for `/awards`
-// also hits `/community/awards`. Compare parsed pathnames instead.
+// The `<loc>` entries are absolute URLs, so a substring match for `/members`
+// also hits `/community/members`. Compare parsed pathnames instead.
 async function sitemapPaths(request) {
   const response = await request.get('/sitemap.xml');
   expect(response.status()).toBe(200);

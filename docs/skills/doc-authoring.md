@@ -39,7 +39,7 @@ Guidelines for technical documentation within this repository.
   `data/case-studies.json` and `data/radar-reports.json` (see the data
   contribution model in CONTRIBUTING.md); do not hand-edit generated listings.
 - Moved pages keep an `unlisted: true` stub at the old slug pointing to the new
-  home (see `docs/awards/index.md` and `docs/members/index.md`).
+  home (see `docs/members/index.md`).
 
 ## Constraints
 
