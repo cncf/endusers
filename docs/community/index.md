@@ -41,23 +41,3 @@ import GroupLinkStatus from '@site/src/components/GroupLinkStatus';
     <p>Open source projects that started inside end user organizations and grew into CNCF projects, with the organization each one came from.</p>
   </div>
 </div>
-
-## Community meeting and communication channels
-
-- [CNCF End User mailing list](https://lists.cncf.io/g/cncf-enduser/join)
-- [CNCF Slack](https://slack.cncf.io/), including the `#tab` and `#enduser`
-  channels
-- [CNCF community platform](https://community.cncf.io/)
-- [Public TAB meeting project](https://github.com/orgs/cncf/projects/60)
-- [TAB public meeting](https://zoom.us/j/96509520391) — third Monday of each
-  month at 8:00 AM Pacific Time
-
-## Related CNCF resources
-
-- [CNCF End User Community](https://www.cncf.io/enduser/)
-- [CNCF contributor portal](https://contribute.cncf.io/) — contributing code,
-  docs, or reviews to a CNCF project (a contributor audience, distinct from the
-  adopter audience this site serves; see ADR 0004)
-- [CNCF TAB repository](https://github.com/cncf/tab)
-- [CNCF architecture repository](https://github.com/cncf/architecture)
-- [CNCF End User Technology Radar](https://radar.cncf.io/)

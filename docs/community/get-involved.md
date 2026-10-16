@@ -1,10 +1,11 @@
 ---
 title: Get Involved
 sidebar_position: 2
-description:
-  How to join the CNCF End User Community, find its leadership and governance,
-  contribute a reference architecture, climb the contribution ladder, and reach
-  the CNCF staff who support end users.
+description: >-
+  Whether your organization is new to CNCF or already active, this page collects
+  the ways to take part in the End User Community: where to request access, who
+  leads and governs the community, how to share a reference architecture, how
+  involvement typically grows over time, and who at CNCF is there to help.
 slug: /community/get-involved
 ---
 
@@ -49,6 +50,16 @@ oversees the End User Community and its User Groups. See the
 [Governance](./technical-advisory-board/governance.md) page for how these groups
 are formed, run, and held accountable.
 
+## Community meeting and communication channels
+
+- [CNCF End User mailing list](https://lists.cncf.io/g/cncf-enduser/join)
+- [CNCF Slack](https://slack.cncf.io/), including the `#tab` and `#enduser`
+  channels
+- [CNCF community platform](https://community.cncf.io/)
+- [Public TAB meeting project](https://github.com/orgs/cncf/projects/60)
+- [TAB public meeting](https://zoom.us/j/96509520391) — third Monday of each
+  month at 8:00 AM Pacific Time
+
 ## Reference architectures
 
 The TAB-led
@@ -86,6 +97,16 @@ Start small and move up as your time and interest allow.
    [TAB submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md).
 5. **Help shape direction** — Join a User Group or the TAB to advise on
    priorities and represent end user needs.
+
+## Related CNCF resources
+
+- [CNCF End User Community](https://www.cncf.io/enduser/)
+- [CNCF contributor portal](https://contribute.cncf.io/) — contributing code,
+  docs, or reviews to a CNCF project (a contributor audience, distinct from the
+  adopter audience this site serves; see ADR 0004)
+- [CNCF TAB repository](https://github.com/cncf/tab)
+- [CNCF architecture repository](https://github.com/cncf/architecture)
+- [CNCF End User Technology Radar](https://radar.cncf.io/)
 
 ## CNCF End User Support Staff
 
