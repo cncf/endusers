@@ -8,6 +8,10 @@ hide_table_of_contents: true
 
 import ProjectsBorn from '@site/src/components/ProjectsBorn';
 
+import CommunityPeople from '@site/src/components/CommunityPeople';
+
+import PeopleFreshness from '@site/src/components/PeopleFreshness';
+
 import Link from '@docusaurus/Link';
 
 # CNCF End Users
@@ -101,6 +105,18 @@ studies, and operational lessons with the wider community.
   </div>
 </div>
 
+## Get to know your peers
+
+The
+[End User Technical Advisory Board (TAB)](/community/technical-advisory-board)
+is made up of practitioners from end user organizations. They represent end user
+needs within CNCF, advise on technical direction, and review reference
+architectures.
+
+<PeopleFreshness />
+
+<CommunityPeople section="tab" />
+
 ## Networking and events
 
 Connect with peers through the channels and events built for end users:
@@ -163,12 +179,6 @@ adds value and helps the next adopter.
 
 ## Get involved
 
-- Request [mailing-list membership](https://lists.cncf.io/g/cncf-enduser/join)
-- Apply to the
-  [End User Contributor Program](https://www.cncf.io/end-user-contributor-application/)
-- Bring your organization into the
-  [CNCF End User Community](https://www.cncf.io/enduser/)
-- Share your architecture through the
-  [in-repo submission template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml)
-  or the
-  [TAB submission process](https://github.com/cncf/tab/blob/main/process/reference-architectures.md)
+Ready to take the next step? See [Get Involved](/community/get-involved) for how
+to join the mailing list, apply to the End User Contributor Program, bring your
+organization into the community, and share your architecture.
