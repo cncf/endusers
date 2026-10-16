@@ -218,7 +218,34 @@ const MEASURED_ON_NODE_MAJOR = '22';
 // Docusaurus generated-index route, which (as its own header recorded)
 // executes no src/** source of its own, so the table above is carried over
 // unchanged rather than re-measured.
-const MEASURED_AT_SPEC_COUNT = 38;
+//
+// 38 -> 39: tests/e2e/community-landing.spec.js was added for the section-card
+// grid on docs/community/index.md. Re-measured with the CONTRIBUTING.md recipe
+// on node 22.23.3 -- the major this file records -- twice against the same two
+// fixture builds, once with the new spec and once without it, so the spec's own
+// effect is separated from the tree's:
+//
+//   file                                      without spec    with spec
+//   src/components/MemberDirectory/
+//     DirectoryFreshness.js                     11/15 73.33% 11/14 78.57%
+//   src/components/PeopleFreshness/index.js      3/4  75.00%   2/3  66.67%
+//   src files (aggregate)                    648/665 97.44% 647/663 97.59%
+//
+// No floor moved: the aggregate clears 96 either way and the lowest file stays
+// src/components/shared/MirrorSyncStatus.js at 6/9 (66.67%), the per-file floor
+// this note already says not to ratchet past. The table above is therefore
+// carried over rather than rewritten -- it was taken by the e2e-coverage job
+// itself, with the artifact provenance recorded beside it, and a local render
+// is not an equal substitute for that.
+//
+// The two files that moved are the two this note already names as the lane's
+// unstable denominators, and they moved the way it describes: the covered
+// counts barely change while V8 splits the same expressions into a different
+// number of ranges once a differently-shaped union of scripts is captured.
+// src/components/PeopleFreshness/index.js oscillates between the 2/3 recorded
+// in the node-22 column above and the 3/4 the ceiling note records; both read
+// at or above the per-file floor, which is why the floor is 66 and not 75.
+const MEASURED_AT_SPEC_COUNT = 39;
 
 // The number of src/** modules the table above was measured against.
 //
