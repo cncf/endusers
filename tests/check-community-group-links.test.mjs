@@ -168,6 +168,92 @@ test('survives a transport-level failure and still writes the other groups', () 
   );
 });
 
+test('carries forward the last-known status when a recheck is inconclusive', () => {
+  // A group already known-archived must stay flagged when its recheck
+  // fails transiently: both consumers read null archived/reachable as
+  // healthy, so writing nulls here would dismiss the staleness banner on a
+  // network blip.
+  const knownStaleReport = JSON.stringify({
+    checkedAt: '2000-01-01T00:00:00.000Z',
+    groups: [
+      {
+        slug: 'public-sector',
+        name: 'Public Sector User Group',
+        repository: 'https://github.com/cncf/public-sector-user-group',
+        archived: true,
+        reachable: true,
+      },
+      {
+        slug: 'telecom',
+        name: 'Telecom User Group',
+        repository: 'https://github.com/cncf/telecom-user-group',
+        archived: false,
+        reachable: true,
+      },
+    ],
+  });
+  const result = runScriptWithFetchMock({
+    script: 'check-community-group-links.mjs',
+    fixtures: { [OUTPUT]: knownStaleReport },
+    routes: [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
+    outputs: [OUTPUT],
+  });
+  const output = parseOutput(result);
+
+  const carried = bySlug(output, 'public-sector');
+  assert.equal(carried.archived, true);
+  assert.equal(carried.reachable, true);
+  assert.equal(bySlug(output, 'telecom').reachable, true);
+  assert.match(result.stdout, /\(1 need attention\)/);
+});
+
+test('carries forward null last-known status when recorded in previous report', () => {
+  const previousReport = JSON.stringify({
+    checkedAt: '2000-01-01T00:00:00.000Z',
+    groups: [
+      {
+        slug: 'public-sector',
+        name: 'Public Sector User Group',
+        repository: 'https://github.com/cncf/public-sector-user-group',
+        archived: null,
+        reachable: null,
+      },
+      {
+        slug: 'telecom',
+        name: 'Telecom User Group',
+        repository: 'https://github.com/cncf/telecom-user-group',
+        archived: false,
+        reachable: true,
+      },
+    ],
+  });
+  const result = runScriptWithFetchMock({
+    script: 'check-community-group-links.mjs',
+    fixtures: { [OUTPUT]: previousReport },
+    routes: [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
+    outputs: [OUTPUT],
+  });
+  const output = parseOutput(result);
+
+  const carried = bySlug(output, 'public-sector');
+  assert.equal(carried.archived, null);
+  assert.equal(carried.reachable, null);
+});
+
+test('falls back cleanly when the previous report cannot be parsed', () => {
+  const result = runScriptWithFetchMock({
+    script: 'check-community-group-links.mjs',
+    fixtures: { [OUTPUT]: 'not valid json' },
+    routes: [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
+    outputs: [OUTPUT],
+  });
+  const output = parseOutput(result);
+
+  const carried = bySlug(output, 'public-sector');
+  assert.equal(carried.archived, null);
+  assert.equal(carried.reachable, null);
+});
+
 test('reports every stale group in a single run', () => {
   const result = run([
     { match: PUBLIC_SECTOR, body: { archived: true } },
