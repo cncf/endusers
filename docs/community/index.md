@@ -13,8 +13,6 @@ import Link from '@docusaurus/Link';
 
 import GroupLinkStatus from '@site/src/components/GroupLinkStatus';
 
-## Explore the Community section
-
 <GroupLinkStatus />
 
 <div className="pillars pillars-duo">
