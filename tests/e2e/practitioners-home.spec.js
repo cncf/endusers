@@ -6,8 +6,9 @@
 // the navbar that the theme renders around it; tests/e2e/footer.spec.js loads
 // it, but only to exercise the footer. Everything between the two — the hero,
 // the four pillars, the award photo, the "Start here" links, the page's own
-// <ProjectsBorn> instance, the four audience cards and the five-step
-// contribution ladder — is hand-authored JSX inside an MDX document, and no
+// <ProjectsBorn> instance, the four audience cards, the TAB roster under "Get
+// to know your peers", the five-step contribution ladder and the closing "Get
+// involved" pointer — is hand-authored JSX inside an MDX document, and no
 // unit test renders it: tests/mdx-components.test.mjs parses the file as text
 // and tests/projects-born-render.test.mjs drives the component in isolation
 // with default props.
@@ -31,6 +32,16 @@ const PAGE_SECTION = 'section[aria-labelledby="projects-born-title-section"]';
 const projectsBornData = JSON.parse(
   readFileSync(resolve('data/projects-born.json'), 'utf8'),
 );
+
+// The landing page renders <CommunityPeople section="tab" /> — the same
+// instance as /community/technical-advisory-board — so the roster it shows
+// must match the data file entry for entry, in order.
+const tabPeople =
+  JSON.parse(readFileSync(resolve('data/community-people.json'), 'utf8')).people
+    .tab || [];
+
+// CSS modules hash the class, so the prefix is the stable half.
+const PERSON_CARD = 'article[class^="personCard_"]';
 
 // The "Start here" list, in document order. These are written as literal
 // hrefs inside a Markdown list, so they are reachable by Docusaurus' broken
@@ -217,6 +228,101 @@ test.describe('landing page wayfinding', () => {
       );
       await expect(step.locator('h3')).toHaveText(heading);
     }
+  });
+
+  test('"Get involved" points to the community Get Involved page and it resolves', async ({
+    page,
+  }) => {
+    await page.goto('/');
+
+    // The section used to carry its own list of sign-up links; it now defers
+    // to /community/get-involved so there is a single place to keep current.
+    // Docusaurus appends a "Direct link to ..." hash anchor inside every h2,
+    // so the accessible name is matched on its leading text, not exactly.
+    const heading = article(page).getByRole('heading', {
+      level: 2,
+      name: /^Get involved/,
+    });
+    await expect(heading).toBeVisible();
+
+    const link = article(page).getByRole('link', {
+      name: 'Get Involved',
+      exact: true,
+    });
+    await expect(link).toHaveAttribute(
+      'href',
+      /^\/community\/get-involved\/?$/,
+    );
+
+    const response = await page.goto('/community/get-involved');
+    expect(
+      response?.status(),
+      '/community/get-involved should not 404',
+    ).toBeLessThan(400);
+    await expectNotNotFound(page);
+    await expect(
+      page.getByRole('heading', { name: 'Get Involved', exact: true }),
+    ).toBeVisible();
+  });
+});
+
+test.describe('landing page TAB roster', () => {
+  test('"Get to know your peers" introduces and links the TAB', async ({
+    page,
+  }) => {
+    await page.goto('/');
+
+    const heading = article(page).getByRole('heading', {
+      level: 2,
+      name: /^Get to know your peers/,
+    });
+    await expect(heading).toBeVisible();
+
+    const link = article(page).getByRole('link', {
+      name: 'End User Technical Advisory Board (TAB)',
+      exact: true,
+    });
+    await expect(link).toHaveAttribute(
+      'href',
+      /^\/community\/technical-advisory-board\/?$/,
+    );
+
+    const response = await page.goto('/community/technical-advisory-board');
+    expect(response?.status()).toBeLessThan(400);
+    await expectNotNotFound(page);
+  });
+
+  test('lists every TAB member in data order, as the TAB page does', async ({
+    page,
+  }) => {
+    test.skip(
+      tabPeople.length === 0,
+      'data/community-people.json defines no TAB people',
+    );
+    await page.goto('/');
+
+    const cards = article(page).locator(PERSON_CARD);
+    await expect(cards).toHaveCount(tabPeople.length);
+
+    for (const [index, person] of tabPeople.entries()) {
+      const card = cards.nth(index);
+      await expect(card.locator('h4')).toHaveText(person.name);
+      await expect(
+        card.getByRole('button', { name: `Open ${person.name} profile` }),
+      ).toBeVisible();
+    }
+  });
+
+  test('renders the profile freshness note alongside the roster', async ({
+    page,
+  }) => {
+    await page.goto('/');
+
+    await expect(
+      article(page).getByText(
+        /Profiles last refreshed from public GitHub sources on /,
+      ),
+    ).toBeVisible();
   });
 });
 

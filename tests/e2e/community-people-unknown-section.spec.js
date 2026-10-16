@@ -3,9 +3,10 @@
 //   const people = peopleData.people[section] || [];
 //     src/components/CommunityPeople/index.js line 134
 //
-// The published site renders the component twice -- `section="tab"` from
-// docs/community/technical-advisory-board/index.md and `section="staff"` from
-// docs/community/get-involved.md -- and both sections are guaranteed to exist and to
+// The published site renders the component three times -- `section="tab"` from
+// docs/community/technical-advisory-board/index.md and docs/practitioners/index.md,
+// and `section="staff"` from docs/community/get-involved.md -- and both
+// sections are guaranteed to exist and to
 // be non-empty: tests/community-people-data.test.mjs scans docs/ for
 // `<CommunityPeople section="..." />` and fails when the named section is
 // absent from data/community-people.json or carries no entries. So the right
