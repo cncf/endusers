@@ -9,13 +9,12 @@ import {
 } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
 import {
   buildLandscapeSnapshot,
   publishLandscapeSnapshot,
 } from './lib/enduser-collector.mjs';
 import { ensureOwnedAssetManifest } from './lib/enduser-assets.mjs';
-import { cloneShallow, revParseHead } from './lib/git-source.mjs';
+import { cloneLandscape } from './lib/landscape-source.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const work = mkdtempSync(join(root, '.enduser-landscape-'));
@@ -30,17 +29,7 @@ const previousSnapshot = existsSync(output)
   : null;
 
 try {
-  cloneShallow('https://github.com/cncf/landscape.git', landscapeRoot);
-  const revision = revParseHead(landscapeRoot);
-  if (!/^[0-9a-f]{40}$/.test(revision)) {
-    throw new Error(
-      `landscape clone returned an invalid revision: ${revision}`,
-    );
-  }
-
-  const document = parse(
-    readFileSync(join(landscapeRoot, 'landscape.yml'), 'utf8'),
-  );
+  const { document, revision } = cloneLandscape(landscapeRoot);
   const snapshot = buildLandscapeSnapshot({
     document,
     revision,
