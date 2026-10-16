@@ -115,8 +115,17 @@ test('validate:all stops at the first failing validator', () => {
 // meta tag reaches a .svg or .json opened directly. They are the only part of
 // the site's security policy that lives outside the build, so a missing block
 // here is a live regression the unit suite would not otherwise see.
+//
+// Strict-Transport-Security is pinned here for a reason the other four do not
+// have: it is the only header in the set whose absence is invisible from a
+// response. The others are missing controls on a response the visitor did
+// receive; this one is the difference between a browser that refuses to speak
+// http:// to this host at all and one that makes a strippable cleartext
+// request first. Netlify sends nothing by default, so the value in
+// netlify.toml is the whole control.
 const SECURITY_HEADERS = {
   'Content-Security-Policy': "frame-ancestors 'self'",
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'X-Frame-Options': 'SAMEORIGIN',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'same-origin',
