@@ -91,6 +91,7 @@ function run({
     '2024-03-05T00:00:00Z',
   ],
   routes,
+  env,
 } = {}) {
   return runScriptInSandbox({
     script: 'collect-metrics.mjs',
@@ -106,6 +107,7 @@ function run({
       { match: PULLS_ROUTE, body: [pull()] },
     ],
     outputs: ['data/metrics.json'],
+    env,
   });
 }
 
@@ -170,6 +172,14 @@ test('collect-metrics records the cloned revisions as sources', () => {
     data.sources.landscape.revision,
     data.sources.architectures.revision,
   );
+});
+
+test('collect-metrics rejects a landscape clone whose revision is not a full commit sha', () => {
+  const result = run({ env: { ENDUSERS_REAL_GIT: '/bin/echo' } });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /landscape clone returned an invalid revision: /);
+  assert.equal(result.outputs['data/metrics.json'], null);
 });
 
 test('collect-metrics breaks projects down by category and maturity, sorted by count', () => {
