@@ -1,77 +1,61 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import membersData from '@site/data/members.json';
 import { useFilterOptions } from './hooks';
 import { matchesMembership } from './utils';
 import { MemberCard } from './MemberCard';
 import { DirectoryFreshness } from './DirectoryFreshness';
+import { useFilterToolbar } from '../shared/useFilterToolbar';
 import styles from './styles.module.css';
+
+const DEFAULT_FILTERS = {
+  query: '',
+  industry: '',
+  project: '',
+  membership: '',
+  hasArchitecture: false,
+  hasAward: false,
+};
+
+function filterMembers(members, filters) {
+  const { query, industry, project, membership, hasArchitecture, hasAward } =
+    filters;
+  const normalizedQuery = query.trim().toLowerCase();
+  return members.filter((member) => {
+    if (
+      normalizedQuery &&
+      !member.name.toLowerCase().includes(normalizedQuery)
+    ) {
+      return false;
+    }
+    if (industry && !member.industries.includes(industry)) {
+      return false;
+    }
+    if (project && !member.projects.includes(project)) {
+      return false;
+    }
+    if (!matchesMembership(member.membershipStatus, membership)) {
+      return false;
+    }
+    if (hasArchitecture && member.architectures.length === 0) {
+      return false;
+    }
+    if (hasAward && member.awards.length === 0) {
+      return false;
+    }
+    return true;
+  });
+}
 
 export default function MemberDirectory() {
   const { members } = membersData;
   const { industries, projects, membershipStatuses } =
     useFilterOptions(members);
 
-  const [query, setQuery] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [project, setProject] = useState('');
-  const [membership, setMembership] = useState('');
-  const [hasArchitecture, setHasArchitecture] = useState(false);
-  const [hasAward, setHasAward] = useState(false);
-
-  const normalizedQuery = query.trim().toLowerCase();
-
-  const filtered = useMemo(() => {
-    return members.filter((member) => {
-      if (
-        normalizedQuery &&
-        !member.name.toLowerCase().includes(normalizedQuery)
-      ) {
-        return false;
-      }
-      if (industry && !member.industries.includes(industry)) {
-        return false;
-      }
-      if (project && !member.projects.includes(project)) {
-        return false;
-      }
-      if (!matchesMembership(member.membershipStatus, membership)) {
-        return false;
-      }
-      if (hasArchitecture && member.architectures.length === 0) {
-        return false;
-      }
-      if (hasAward && member.awards.length === 0) {
-        return false;
-      }
-      return true;
-    });
-  }, [
-    members,
-    normalizedQuery,
-    industry,
-    project,
-    membership,
-    hasArchitecture,
-    hasAward,
-  ]);
-
-  const clearFilters = () => {
-    setQuery('');
-    setIndustry('');
-    setProject('');
-    setMembership('');
-    setHasArchitecture(false);
-    setHasAward(false);
-  };
-
-  const activeFiltersCount = [
-    normalizedQuery,
-    industry,
-    project,
-    membership,
-    hasArchitecture,
-    hasAward,
-  ].filter(Boolean).length;
+  const { filters, setFilter, filtered, clearFilters, activeCount } =
+    useFilterToolbar(members, DEFAULT_FILTERS, filterMembers);
+  const { query, industry, project, membership, hasArchitecture, hasAward } =
+    filters;
+  const activeFiltersCount = activeCount;
 
   return (
     <section aria-label="End User Community organization directory">
@@ -85,7 +69,7 @@ export default function MemberDirectory() {
             id="member-search"
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => setFilter('query', event.target.value)}
             placeholder="Search organizations by name"
             className={styles.searchInput}
           />
@@ -98,7 +82,7 @@ export default function MemberDirectory() {
             <select
               id="member-industry"
               value={industry}
-              onChange={(event) => setIndustry(event.target.value)}
+              onChange={(event) => setFilter('industry', event.target.value)}
               className={styles.select}
             >
               <option value="">All industries</option>
@@ -119,7 +103,7 @@ export default function MemberDirectory() {
             <select
               id="member-membership"
               value={membership}
-              onChange={(event) => setMembership(event.target.value)}
+              onChange={(event) => setFilter('membership', event.target.value)}
               className={styles.select}
             >
               <option value="">All organizations</option>
@@ -137,7 +121,7 @@ export default function MemberDirectory() {
             <select
               id="member-project"
               value={project}
-              onChange={(event) => setProject(event.target.value)}
+              onChange={(event) => setFilter('project', event.target.value)}
               className={styles.select}
             >
               <option value="">All projects</option>
@@ -152,7 +136,9 @@ export default function MemberDirectory() {
             <input
               type="checkbox"
               checked={hasArchitecture}
-              onChange={(event) => setHasArchitecture(event.target.checked)}
+              onChange={(event) =>
+                setFilter('hasArchitecture', event.target.checked)
+              }
             />
             <span>Has architecture</span>
           </label>
@@ -160,7 +146,7 @@ export default function MemberDirectory() {
             <input
               type="checkbox"
               checked={hasAward}
-              onChange={(event) => setHasAward(event.target.checked)}
+              onChange={(event) => setFilter('hasAward', event.target.checked)}
             />
             <span>Has award</span>
           </label>

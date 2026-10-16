@@ -1,8 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import data from '@site/data/case-studies.json';
 import MirrorSyncStatus from '../shared/MirrorSyncStatus';
 import { formatDate } from '../shared/formatDate';
+import { useFilterToolbar } from '../shared/useFilterToolbar';
 import styles from './styles.module.css';
+
+const DEFAULT_FILTERS = { query: '', project: '', industry: '', country: '' };
 
 function useCaseStudyFilterOptions(caseStudies) {
   return useMemo(() => {
@@ -47,25 +50,11 @@ function filterCaseStudies(caseStudies, { query, project, industry, country }) {
 export default function CaseStudies() {
   const caseStudies = data.caseStudies || [];
   const options = useCaseStudyFilterOptions(caseStudies);
-  const [query, setQuery] = useState('');
-  const [project, setProject] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [country, setCountry] = useState('');
-
-  const filters = { query, project, industry, country };
-  const filtered = useMemo(
-    () => filterCaseStudies(sortByPublishedAtDesc(caseStudies), filters),
-    [caseStudies, query, project, industry, country],
-  );
-  const activeCount = [query.trim(), project, industry, country].filter(
-    Boolean,
-  ).length;
-  const clearFilters = () => {
-    setQuery('');
-    setProject('');
-    setIndustry('');
-    setCountry('');
-  };
+  const { filters, setFilter, filtered, clearFilters, activeCount } =
+    useFilterToolbar(caseStudies, DEFAULT_FILTERS, (studies, currentFilters) =>
+      filterCaseStudies(sortByPublishedAtDesc(studies), currentFilters),
+    );
+  const { query, project, industry, country } = filters;
 
   return (
     <section aria-label="CNCF case studies">
@@ -83,7 +72,7 @@ export default function CaseStudies() {
           id="case-study-search"
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => setFilter('query', event.target.value)}
           placeholder="Search by organization"
           className={styles.searchInput}
         />
@@ -98,7 +87,7 @@ export default function CaseStudies() {
             <select
               id="case-study-project"
               value={project}
-              onChange={(event) => setProject(event.target.value)}
+              onChange={(event) => setFilter('project', event.target.value)}
               className={styles.select}
             >
               <option value="">All projects</option>
@@ -119,7 +108,7 @@ export default function CaseStudies() {
             <select
               id="case-study-industry"
               value={industry}
-              onChange={(event) => setIndustry(event.target.value)}
+              onChange={(event) => setFilter('industry', event.target.value)}
               className={styles.select}
             >
               <option value="">All industries</option>
@@ -140,7 +129,7 @@ export default function CaseStudies() {
             <select
               id="case-study-country"
               value={country}
-              onChange={(event) => setCountry(event.target.value)}
+              onChange={(event) => setFilter('country', event.target.value)}
               className={styles.select}
             >
               <option value="">All countries</option>
