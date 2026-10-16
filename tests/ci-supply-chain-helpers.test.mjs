@@ -28,10 +28,13 @@ import {
   floatingRunnerProblem,
   jobs,
   jobsWithUnconstrainedToken,
+  injectableExpression,
   jobsWithoutRunner,
   persistingCheckoutBaselineProblems,
   persistsCredentials,
   runnerLabels,
+  scriptBodies,
+  scriptInjectionRisks,
   steps,
   timeoutBaselineProblems,
   timeoutFaults,
@@ -505,4 +508,115 @@ test('floatingRunnerBaselineProblems retires an entry whose workflow, job or gap
     floatingRunnerBaselineProblems(workflows, new Set(['gone.yml: build']))[0],
     /does not exist/,
   );
+});
+
+const GITHUB_SCRIPT = `actions/github-script@${SHA}`;
+
+test('scriptBodies collects shell run blocks and github-script bodies', () => {
+  const doc = parse(
+    `jobs:\n` +
+      `  build:\n` +
+      `    steps:\n` +
+      `      - run: echo hi\n` +
+      `      - uses: actions/checkout@${SHA}\n` +
+      `      - uses: ${GITHUB_SCRIPT}\n` +
+      `        with:\n` +
+      `          script: core.info('hi')\n`,
+  );
+  assert.deepEqual(scriptBodies(doc), [
+    { jobName: 'build', index: 0, kind: 'run', body: 'echo hi' },
+    {
+      jobName: 'build',
+      index: 2,
+      kind: 'with.script',
+      body: "core.info('hi')",
+    },
+  ]);
+});
+
+test('scriptBodies ignores steps that hand no string to an interpreter', () => {
+  // A `uses:` step with no `with:` at all, a github-script step whose `script`
+  // is absent, and a step with neither key: each reaches a different guard.
+  const doc = parse(
+    `jobs:\n` +
+      `  build:\n` +
+      `    steps:\n` +
+      `      - uses: ${GITHUB_SCRIPT}\n` +
+      `      - uses: ${GITHUB_SCRIPT}\n` +
+      `        with:\n` +
+      `          result-encoding: string\n` +
+      `      - name: nothing to run\n`,
+  );
+  assert.deepEqual(scriptBodies(doc), []);
+});
+
+test('injectableExpression flags payload text and clears fixed-shape values', () => {
+  for (const expression of [
+    ' github.event.issue.body ',
+    'github.event.comment.body',
+    'github.event.pull_request.title',
+    'github.event.head_commit.message',
+    "github.event['issue'].title",
+    'github.head_ref',
+    'github.event',
+    'toJSON(github.event)',
+  ]) {
+    assert.equal(
+      injectableExpression(expression),
+      true,
+      `${expression} should be treated as untrusted`,
+    );
+  }
+
+  for (const expression of [
+    ' github.event.issue.number ',
+    'github.event.pull_request.number',
+    'steps.coverage_tests.outcome',
+    'env.NODE_VERSION',
+    'github.run_id',
+    // Not the `github.event` context: a step output that merely starts with
+    // the same letters must not be swept up by a prefix match.
+    'github.eventual_output',
+  ]) {
+    assert.equal(
+      injectableExpression(expression),
+      false,
+      `${expression} should be treated as safe`,
+    );
+  }
+});
+
+test('scriptInjectionRisks names the workflow, job, step and expression', () => {
+  const offender = workflow(
+    'submission.yml',
+    `jobs:\n` +
+      `  import:\n` +
+      `    steps:\n` +
+      `      - run: echo "\${{ github.event.issue.number }}"\n` +
+      `      - run: |\n` +
+      `          echo "\${{ github.event.issue.title }}"\n` +
+      `          echo "\${{ github.head_ref }}"\n` +
+      `      - uses: ${GITHUB_SCRIPT}\n` +
+      `        with:\n` +
+      `          script: core.info('\${{ github.event.comment.body }}')\n`,
+  );
+  assert.deepEqual(scriptInjectionRisks([offender]), [
+    'submission.yml (import) step 1 run: ${{ github.event.issue.title }}',
+    'submission.yml (import) step 1 run: ${{ github.head_ref }}',
+    'submission.yml (import) step 2 with.script: ${{ github.event.comment.body }}',
+  ]);
+});
+
+test('scriptInjectionRisks returns nothing for a compliant workflow', () => {
+  const clean = workflow(
+    'ci.yml',
+    `jobs:\n` +
+      `  build:\n` +
+      `    steps:\n` +
+      `      - run: echo "\${{ steps.tests.outcome }}"\n` +
+      `      - run: echo "$ISSUE_TITLE"\n` +
+      `        env:\n` +
+      `          ISSUE_TITLE: \${{ github.event.issue.title }}\n`,
+  );
+  assert.deepEqual(scriptInjectionRisks([clean]), []);
 });

@@ -22,6 +22,7 @@ import {
   jobs,
   jobsWithUnconstrainedToken,
   jobsWithoutRunner,
+  scriptInjectionRisks,
   persistingCheckoutBaselineProblems,
   steps,
   timeoutBaselineProblems,
@@ -229,4 +230,23 @@ test('the runner pinning baseline retires itself', () => {
     KNOWN_FLOATING_RUNNERS,
   );
   assert.deepEqual(problems, [], problems.join('\n'));
+});
+
+// architecture-submission.yml is why this guard exists rather than being
+// theoretical. It runs on `issues: labeled` -- so the payload it is handed was
+// authored by whoever opened the issue, who needs no write access -- and it
+// holds `contents: write`, `pull-requests: write` and `issues: write`. A single
+// `${{ github.event.issue.body }}` placed in one of its `run:` blocks would
+// hand an arbitrary shell command that write token, with no review step
+// between the issue and the run. The tree is clean today: the one expression
+// interpolated into any script body is `steps.coverage_tests.outcome` in
+// ci.yml, whose value is one of Playwright's four step outcomes. This keeps it
+// that way.
+test('no script body interpolates an untrusted expression', () => {
+  const risks = scriptInjectionRisks(workflows);
+  assert.deepEqual(
+    risks,
+    [],
+    `pass the value through 'env:' and read it as "$VAR" instead; a '\${{ }}' expression is substituted into the script before the interpreter runs, so attacker-authored text becomes code:\n${risks.join('\n')}`,
+  );
 });
