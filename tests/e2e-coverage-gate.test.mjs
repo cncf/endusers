@@ -218,7 +218,15 @@ const MEASURED_ON_NODE_MAJOR = '22';
 // Docusaurus generated-index route, which (as its own header recorded)
 // executes no src/** source of its own, so the table above is carried over
 // unchanged rather than re-measured.
-const MEASURED_AT_SPEC_COUNT = 38;
+//
+// 38 -> 37: tests/e2e/legacy-urls.spec.js was removed with the unlisted
+// compatibility stubs it exercised (/members, /awards, /metrics and the
+// /community/* pre-reorganisation paths). The site is not public yet, so
+// there were no inbound links to keep alive. The stubs were plain Markdown
+// docs that mounted no src/** component, and every onward destination the
+// spec clicked through to is loaded by another spec, so the table above is
+// again carried over unchanged.
+const MEASURED_AT_SPEC_COUNT = 37;
 
 // The number of src/** modules the table above was measured against.
 //
