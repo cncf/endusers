@@ -15,7 +15,7 @@ test('the directory uses the approved End User Directory heading', () => {
 });
 
 test('private community copy uses verified request/application destinations', () => {
-  const community = read('docs/community/index.md');
+  const community = read('docs/community/get-involved.md');
   const practitioners = read('docs/practitioners/index.md');
   const combined = `${community}\n${practitioners}`;
 

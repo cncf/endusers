@@ -78,7 +78,7 @@ async function waitForHydration(locator) {
 }
 
 async function openStaffProfile(page, name) {
-  await page.goto('/community');
+  await page.goto('/community/get-involved');
   const trigger = page.getByRole('button', { name: `Open ${name} profile` });
   await waitForHydration(trigger);
   await trigger.click();
@@ -109,7 +109,7 @@ describeCoverage('drifted upstream data', () => {
   }) => {
     expect(anonymous).toBeTruthy();
 
-    await page.goto('/community');
+    await page.goto('/community/get-involved');
     const trigger = page.getByRole('button', {
       name: `Open ${anonymous.name} profile`,
     });
