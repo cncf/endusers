@@ -23,11 +23,26 @@
 # docusaurus.config.js, where they are built from the host allowlists shared
 # with scripts/lib/; restating them here would give one policy two sources of
 # truth. tests/netlify-publish-contract.test.mjs pins this block.
+#
+# Strict-Transport-Security is the one control here that protects the response
+# rather than constrains it. Netlify does not send it on its own -- its HTTPS
+# documentation requires the site to set it in this file -- so without it a
+# browser sent to http:// makes one cleartext request before the redirect, and
+# an attacker on that path answers it instead of redirecting. Every other
+# header in this block travels *inside* the response, so a stripped connection
+# simply omits them all; this is the only one that survives, because the
+# browser remembers it. max-age is one year, the hstspreload.org minimum.
+# includeSubDomains is safe for a host that serves no sub-subdomains of its
+# own. `preload` is deliberately absent: it is an effectively irreversible
+# commitment held by browser vendors over the apex domain, so it belongs to
+# whoever administers cncf.io, not to this file, and can be added later
+# without rework.
 [[headers]]
   for = "/*"
 
   [headers.values]
     Content-Security-Policy = "frame-ancestors 'self'"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "same-origin"
@@ -49,6 +64,7 @@
 
   [headers.values]
     Content-Security-Policy = "frame-ancestors 'self'; script-src 'none'; object-src 'none'"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "same-origin"
@@ -58,6 +74,7 @@
 
   [headers.values]
     Content-Security-Policy = "frame-ancestors 'self'; script-src 'none'; object-src 'none'"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "same-origin"
