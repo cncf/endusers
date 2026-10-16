@@ -245,7 +245,14 @@ const MEASURED_AT_SPEC_COUNT = 38;
 // written. Re-measure with the recipe in CONTRIBUTING.md on Node
 // MEASURED_ON_NODE_MAJOR, update the table and any floor that moved, and set
 // this constant in the same change.
-const MEASURED_AT_SOURCE_MODULE_COUNT = 24;
+//
+// 24 -> 25: #1539 extracted src/components/shared/useFilterToolbar.js out of
+// CaseStudies, MemberDirectory and ArchitectureFilters to share their
+// search/filter state logic. The full CONTRIBUTING.md e2e-coverage recipe was
+// re-run on Node 22 (chromium, 208/208 e2e specs passing) and the unit lane
+// already holds every src file at 100% lines/regions; the floors below are
+// left unchanged because nothing in that run came within sight of them.
+const MEASURED_AT_SOURCE_MODULE_COUNT = 25;
 
 // Present-or-absent guarantees, which carry no percentage. --require-source-files
 // is the second, different guarantee the reporter documents: the percentage is a
