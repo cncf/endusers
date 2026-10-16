@@ -64,6 +64,16 @@ Two consequences matter when a submission is rejected:
   so a directly-opened SVG renders as an inert document even if a parser gate is
   bypassed. A flat denial carries no host list, so it cannot drift from the
   allowlists in `docusaurus.config.js`.
+- Every control above travels inside an HTTPS response, so an attacker who keeps
+  the visitor on cleartext never has to defeat one — the stripped response
+  simply carries none of them.
+  `Strict-Transport-Security: max-age=31536000; includeSubDomains`, sent by the
+  same `[[headers]]` blocks, is the one control the browser remembers between
+  responses: after the first HTTPS visit it refuses to speak `http://` to this
+  host, so there is no cleartext request left to answer. Netlify sends no HSTS
+  of its own, so `netlify.toml` is the whole control. `preload` is deliberately
+  omitted: it is an effectively irreversible commitment over the apex domain and
+  belongs to whoever administers `cncf.io`.
 - A parser can still disagree with a browser on exotic input. The gates fail
   closed on anything the parser rejects, and every historical bypass is kept as
   a regression fixture in `tests/svg-active-content.test.mjs` and

@@ -1,5 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
+import { useFilterToolbar } from '../shared/useFilterToolbar';
 import styles from './styles.module.css';
+
+const DEFAULT_FILTERS = {
+  query: '',
+  industry: '',
+  project: '',
+  organization: '',
+};
 
 export function useArchitectureFilterOptions(architectures) {
   return useMemo(() => {
@@ -45,35 +53,16 @@ export function filterArchitectures(architectures, filters) {
 
 export function useArchitectureFilters(architectures) {
   const options = useArchitectureFilterOptions(architectures);
-  const [query, setQuery] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [project, setProject] = useState('');
-  const [organization, setOrganization] = useState('');
-
-  const filters = { query, industry, project, organization };
-  const filtered = useMemo(
-    () => filterArchitectures(architectures, filters),
-    [architectures, filters],
-  );
-
-  const clearFilters = () => {
-    setQuery('');
-    setIndustry('');
-    setProject('');
-    setOrganization('');
-  };
-
-  const activeCount = [query.trim(), industry, project, organization].filter(
-    Boolean,
-  ).length;
+  const { filters, setFilter, filtered, clearFilters, activeCount } =
+    useFilterToolbar(architectures, DEFAULT_FILTERS, filterArchitectures);
 
   return {
     options,
     filters,
-    setQuery,
-    setIndustry,
-    setProject,
-    setOrganization,
+    setQuery: (value) => setFilter('query', value),
+    setIndustry: (value) => setFilter('industry', value),
+    setProject: (value) => setFilter('project', value),
+    setOrganization: (value) => setFilter('organization', value),
     filtered,
     clearFilters,
     activeCount,

@@ -33,6 +33,23 @@ import { resolve } from 'node:path';
 
 import { test, expect } from '../tools/e2e-coverage.cjs';
 
+// React attaches its fiber to the DOM node it hydrates, so the presence of a
+// `__react*` property is the signal that the element's handlers are live.
+// Clicking a dialog trigger before that point silently discards the click and
+// the scan below would analyse an unopened dialog. Same helper, and the same
+// reason for it, as tests/e2e/interactions.spec.js and
+// tests/e2e/community-people.spec.js.
+async function waitForHydration(locator) {
+  await locator.waitFor({ state: 'visible' });
+  await locator.evaluate(async (element) => {
+    const hydrated = (node) =>
+      Object.keys(node).some((key) => key.startsWith('__react'));
+    while (!hydrated(element)) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  });
+}
+
 // One route per page template.
 //
 // Routes that reuse a template already listed here are deliberately absent:
@@ -75,6 +92,89 @@ const ROUTES = [
   { path: '/blog/tags', label: 'blog tags index' },
   { path: '/blog/tags/community', label: 'blog tag post list' },
 ];
+
+// Interactive states the route scans above structurally cannot reach.
+//
+// Every scan in ROUTES analyses a page in the state it loads in. That is the
+// whole site as far as axe is concerned, and it leaves out the markup that
+// only exists once a user does something: the two profile dialogs, and the
+// navbar drawer that replaces the header below Docusaurus' mobile breakpoint.
+// None of that DOM is in any document axe has ever been handed.
+//
+// The rules that go unrun with it are not a long tail. A modal is the one
+// construct axe has a dedicated rule family for -- aria-dialog-name,
+// aria-hidden-focus on the inert page behind it, aria-required-attr on
+// aria-modal, nested-interactive -- and none of those rules can fire against
+// a closed dialog, because the elements they match are not rendered. The
+// drawer is a second landmark and a second navigation list appearing in a
+// document that already has one, which is the shape duplicate-landmark and
+// list rules exist to catch.
+//
+// The suite asserts plenty about these states by hand, and the division is
+// the same one this file's preamble draws for routes: tests/e2e/
+// interactions.spec.js and tests/e2e/community-people.spec.js check aria-modal,
+// the close button's accessible name and the focus trap; tests/e2e/
+// navigation.spec.js checks that the drawer lists the same links as the
+// desktop navbar. Each of those is a specific assertion someone wrote after
+// noticing a specific problem. None of them is a rule engine, and a heading
+// level, a contrast token or a label lost inside an opened dialog ships green
+// today exactly as it did for routes before this file existed.
+//
+// All three states scan clean as of this commit, so KNOWN_STATE_VIOLATIONS
+// below is empty and these are regression guards rather than a baseline of
+// known bugs. They are scanned in both colour modes for the same reason the
+// routes are: a dialog paints its own surface, so a contrast regression there
+// is invisible to a light-mode-only scan.
+const INTERACTIVE_STATES = [
+  {
+    label: 'member profile dialog',
+    path: '/community/members',
+    async open(page) {
+      const section = page.getByRole('region', {
+        name: 'End User Community organization directory',
+      });
+      const trigger = section
+        .getByRole('button', { name: /^Open .+ profile$/ })
+        .first();
+      await waitForHydration(trigger);
+      await trigger.click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+    },
+  },
+  {
+    label: 'TAB profile dialog',
+    path: '/community/technical-advisory-board',
+    async open(page) {
+      const trigger = page
+        .getByRole('button', { name: /^Open .+ profile$/ })
+        .first();
+      await waitForHydration(trigger);
+      await trigger.click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+    },
+  },
+  {
+    label: 'mobile navigation drawer',
+    path: '/',
+    // Below Docusaurus' navbar breakpoint the header renders as a hamburger
+    // and the links move into `.navbar-sidebar`, which does not exist in the
+    // desktop document at all. Set before the navigation, not after: the
+    // breakpoint decides what the page builds, so resizing a loaded desktop
+    // page is not the same document.
+    viewport: { width: 414, height: 896 },
+    async open(page) {
+      const toggle = page.locator('.navbar__toggle');
+      await expect(toggle).toBeVisible();
+      await toggle.click();
+      await expect(page.locator('.navbar-sidebar')).toBeVisible();
+    },
+  },
+];
+
+// The state counterpart of KNOWN_VIOLATIONS, keyed by state label, with the
+// same self-retiring contract: an entry that stops being reported fails the
+// retirement test below and has to be deleted.
+const KNOWN_STATE_VIOLATIONS = {};
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
@@ -145,7 +245,7 @@ function templateSignature(path) {
   return [...tokens].sort().join(' ') || '<no template classes>';
 }
 
-async function scan(page, path, mode = 'light') {
+async function prepare(page, path, mode) {
   const response = await page.goto(path);
   expect(response?.status(), `${path} should not 404`).toBeLessThan(400);
   await expect(
@@ -157,6 +257,23 @@ async function scan(page, path, mode = 'light') {
   await page.locator('main').first().waitFor();
   await expect(page.locator('html')).toHaveAttribute('data-theme', mode);
   await page.evaluate(() => document.fonts.ready);
+}
+
+async function scan(page, path, mode = 'light') {
+  await prepare(page, path, mode);
+
+  return scanner(page).analyze();
+}
+
+// Drives one entry of INTERACTIVE_STATES to the state it describes and scans
+// the document there. The state's own `open` asserts the new markup is
+// present before this returns, so a scan that found nothing because the
+// dialog never opened fails as a missing dialog rather than passing as a
+// clean page.
+async function scanState(page, state, mode = 'light') {
+  if (state.viewport) await page.setViewportSize(state.viewport);
+  await prepare(page, state.path, mode);
+  await state.open(page);
 
   return scanner(page).analyze();
 }
@@ -178,6 +295,66 @@ for (const mode of ['light', 'dark']) {
     });
   }
 }
+
+for (const mode of ['light', 'dark']) {
+  for (const state of INTERACTIVE_STATES) {
+    test(`${state.label} has no unrecorded WCAG A/AA violations in ${mode}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: mode });
+      const results = await scanState(page, state, mode);
+      const allowed = new Set(KNOWN_STATE_VIOLATIONS[state.label] ?? []);
+      const unrecorded = results.violations.filter((v) => !allowed.has(v.id));
+
+      expect(
+        unrecorded.map(describe),
+        `${state.label} reported WCAG violations that are not in KNOWN_STATE_VIOLATIONS`,
+      ).toEqual([]);
+    });
+  }
+}
+
+test('the state baseline records no violation that has been fixed', async ({
+  page,
+}) => {
+  // One navigation, one interaction and one full-page scan per recorded
+  // state, run serially in a single test.
+  test.setTimeout(240_000);
+
+  const byLabel = new Map(
+    INTERACTIVE_STATES.map((state) => [state.label, state]),
+  );
+  const stale = [];
+
+  for (const [label, ruleIds] of Object.entries(KNOWN_STATE_VIOLATIONS)) {
+    const results = await scanState(page, byLabel.get(label));
+    const reported = new Set(results.violations.map((v) => v.id));
+    for (const ruleId of ruleIds) {
+      if (!reported.has(ruleId)) stale.push(`${label}: ${ruleId}`);
+    }
+  }
+
+  expect(
+    stale,
+    'these rules no longer fail — delete them from KNOWN_STATE_VIOLATIONS',
+  ).toEqual([]);
+});
+
+test('every baselined state is a state this spec scans', () => {
+  // The companion of the ROUTES check below: a KNOWN_STATE_VIOLATIONS key
+  // that names no entry in INTERACTIVE_STATES would silence nothing, and the
+  // retirement test above would throw on the undefined state rather than say
+  // so.
+  const scanned = new Set(INTERACTIVE_STATES.map((state) => state.label));
+  const unknown = Object.keys(KNOWN_STATE_VIOLATIONS).filter(
+    (label) => !scanned.has(label),
+  );
+
+  expect(
+    unknown,
+    'KNOWN_STATE_VIOLATIONS names states INTERACTIVE_STATES does not scan',
+  ).toEqual([]);
+});
 
 test('the baseline records no violation that has been fixed', async ({
   page,
@@ -225,9 +402,12 @@ test('every scanned route is a listed page of the built site', () => {
   // it does not, so membership is the check that separates the two.
   const listed = new Set(sitemapPaths());
 
-  const unlisted = ROUTES.map((route) => route.path).filter(
-    (path) => !listed.has(path),
-  );
+  const unlisted = [
+    ...ROUTES.map((route) => route.path),
+    // The states are reached by interacting with a route, so the same
+    // argument applies to the page each one starts from.
+    ...INTERACTIVE_STATES.map((state) => state.path),
+  ].filter((path) => !listed.has(path));
 
   expect(
     unlisted,

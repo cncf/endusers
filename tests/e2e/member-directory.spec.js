@@ -147,9 +147,9 @@ test.describe('member profile dialog without a logo', () => {
 // and "Has award" toggles were reached by the unit suite's fake DOM alone.
 //
 // That left eight regions of src/components/MemberDirectory/index.js executed
-// only outside a browser: the four predicate guards at src/components/MemberDirectory/index.js:31,
-// src/components/MemberDirectory/index.js:34, src/components/MemberDirectory/index.js:40 and src/components/MemberDirectory/index.js:43, and the four handlers that feed them at
-// src/components/MemberDirectory/index.js:101, src/components/MemberDirectory/index.js:140, src/components/MemberDirectory/index.js:155 and src/components/MemberDirectory/index.js:163. Those
+// only outside a browser: the four predicate guards at src/components/MemberDirectory/index.js:30,
+// src/components/MemberDirectory/index.js:33, src/components/MemberDirectory/index.js:39 and src/components/MemberDirectory/index.js:42, and the four handlers that feed them at
+// src/components/MemberDirectory/index.js:85, src/components/MemberDirectory/index.js:124, src/components/MemberDirectory/index.js:139 and src/components/MemberDirectory/index.js:149. Those
 // handlers are the part a fake DOM cannot vouch for -- each control is bound to
 // its own `useState` setter through its own `htmlFor`/`id` pair or its own
 // `checked` prop, so a duplicated id, an option list built from the wrong

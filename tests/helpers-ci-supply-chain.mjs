@@ -293,3 +293,72 @@ export function floatingRunnerBaselineProblems(workflows, known) {
   }
   return problems;
 }
+
+// Strings a workflow hands to an interpreter: a shell `run:` block, and the
+// JavaScript body `actions/github-script` evaluates. A `${{ }}` expression is
+// substituted into these by the runner *before* the interpreter sees them, so
+// an expression carrying attacker-authored text is not an argument to the
+// script -- it becomes part of the script.
+export function scriptBodies(doc) {
+  const bodies = [];
+  for (const { jobName, index, step } of steps(doc)) {
+    if (typeof step?.run === 'string') {
+      bodies.push({ jobName, index, kind: 'run', body: step.run });
+    }
+    const uses = typeof step?.uses === 'string' ? step.uses : '';
+    const script = step?.with?.script;
+    if (
+      uses.split('@')[0].endsWith('actions/github-script') &&
+      typeof script === 'string'
+    ) {
+      bodies.push({ jobName, index, kind: 'with.script', body: script });
+    }
+  }
+  return bodies;
+}
+
+const EXPRESSION = /\$\{\{([^}]*)\}\}/g;
+
+// Deliberately wider than the field list in GitHub's "Understanding the risk
+// of script injections" hardening guide. That list enumerates the known-bad
+// fields (`github.event.issue.body`, `github.event.comment.body`, ...) and has
+// grown with the webhook payloads, so matching it exactly would leave each
+// newly added string field unguarded until the list was updated here. The rule
+// is the reverse: everything reachable from the webhook payload is untrusted
+// inside a script body, and the exceptions are the shapes that cannot carry a
+// shell metacharacter. `*.number` is an integer in every payload that has one,
+// which is why architecture-submission.yml may interpolate
+// `github.event.issue.number` into its branch and commit-message inputs.
+//
+// The fix for a flagged expression is never to quote it: pass the value
+// through `env:` and read it as `"$VAR"` in the script, which is what
+// architecture-submission.yml's failure comment already does with
+// ISSUE_NUMBER.
+export function injectableExpression(expression) {
+  const text = expression.trim();
+  // `github.head_ref` is the source branch name of a pull request, which an
+  // outside contributor names when they open it.
+  if (text === 'github.head_ref') return true;
+  // Matched anywhere in the expression rather than anchored, so a wrapper
+  // such as `toJSON(github.event)` -- which splices the whole payload in -- is
+  // caught too. The word boundary keeps an unrelated name that merely shares
+  // the prefix, like a `github.eventual_output` step reference, out of it.
+  if (!/\bgithub\.event\b/.test(text)) return false;
+  if (/^github\.event[\w.]*\.number$/.test(text)) return false;
+  return true;
+}
+
+export function scriptInjectionRisks(workflows) {
+  const risks = [];
+  for (const { name, doc } of workflows) {
+    for (const { jobName, index, kind, body } of scriptBodies(doc)) {
+      for (const match of body.matchAll(EXPRESSION)) {
+        if (!injectableExpression(match[1])) continue;
+        risks.push(
+          `${name} (${jobName}) step ${index} ${kind}: \${{${match[1]}}}`,
+        );
+      }
+    }
+  }
+  return risks;
+}
