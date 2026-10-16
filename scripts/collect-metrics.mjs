@@ -11,18 +11,18 @@ import {
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
 import { githubAllPages, makeGitHubHeaders } from './lib/github.mjs';
 import { cloneShallow, revParseHead } from './lib/git-source.mjs';
+import { readLandscape } from './lib/landscape-source.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const work = mkdtempSync(join(tmpdir(), 'cncf-metrics-'));
 const landscapeDir = join(work, 'landscape');
 const architectureDir = join(work, 'architecture');
 try {
-  cloneShallow('https://github.com/cncf/landscape.git', landscapeDir);
+  const { revision: landscapeCommit, document: source } =
+    readLandscape(landscapeDir);
   cloneShallow('https://github.com/cncf/architecture.git', architectureDir);
-  const landscapeCommit = revParseHead(landscapeDir);
   const architectureCommit = revParseHead(architectureDir);
   const architectureHistory = architectureDir;
   execFileSync('git', ['-C', architectureHistory, 'fetch', '--unshallow'], {
@@ -31,9 +31,6 @@ try {
   execFileSync('git', ['-C', landscapeDir, 'fetch', '--unshallow'], {
     stdio: 'ignore',
   });
-  const source = parse(
-    readFileSync(join(landscapeDir, 'landscape.yml'), 'utf8'),
-  );
   const projects = [];
   const categoryCounts = {};
   const maturityCounts = {};
