@@ -1,0 +1,25 @@
+name: Set up Node.js and install dependencies
+description: >-
+  Install the pinned Node.js version, enable the npm cache, and run `npm ci`
+  so every workflow job installs dependencies the same way CI does. Centralizes
+  the setup-node@.../npm ci pair that was duplicated, with a drifting
+  node-version (an `env.NODE_VERSION` variable in some workflows, a bare `22`
+  literal in others), across 9 workflow files.
+
+inputs:
+  node-version:
+    description: Node.js version to install.
+    required: false
+    default: '22'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
