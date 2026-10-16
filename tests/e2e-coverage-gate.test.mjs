@@ -42,30 +42,52 @@ const COVERAGE_JOB = 'e2e-coverage';
 // toolbar arms (#1079), and 97.26% (639/657) when it was ratcheted to 96 and
 // the per-file floor was added (#1232).
 //
-// Ceiling, measured on the current tree (645/661, 97.58%): 16 regions at
+// Ceiling, measured on the current tree (675/692, 97.54%): 17 regions at
 // zero. Measured by the e2e-coverage job itself rather than a local run:
-// actions/runs/38788348099, job 116606094620, artifact `e2e-coverage`,
-// report.json runId 38788348099-1, head 5265cb8586e180d8dc7d347b444fdf43bbd22e04.
+// actions/runs/38973064009, artifact `e2e-coverage`, report.json runId
+// 38973064009-1, head db7798fdb8b445fda33d63770e5f93141c4c0129.
 // Eight are defensive fallbacks of the #1253 class:
-// src/components/CaseStudies/index.js:48,
+// src/components/CaseStudies/index.js:51,
 // src/components/CommunityPeople/index.js:134,
 // src/components/GroupLinkStatus/index.js:14,
 // src/components/MemberDirectory/DirectoryFreshness.js:19,
 // src/components/MetricsDashboard/index.js:65,
 // src/components/MetricsDashboard/index.js:85,
 // src/components/RadarReports/index.js:8 and
-// src/components/hooks/useFocusTrap.js:35. Three are guard arms that a
+// src/components/hooks/useFocusTrap.js:35. Four are guard arms that a
 // sibling fixture build (data-no-revision, data-variant) demonstrably
 // executes, yet the union never credits (#1256, #1236):
-// src/components/PeopleFreshness/index.js:13 and
-// src/components/GroupLinkStatus/index.js:24 (x2). (ReferenceArchitectures'
-// two SyncStatus arms used to sit in this list; the cncf/architecture sync
-// and the provenance line it fed were removed, so they are gone rather than
-// credited. DirectoryFreshness.js:30, :44 and :49 used to sit in the
-// fallback list above and are credited in this run: the data-no-revision
-// build now exists for DirectoryFreshness alone, and the run records its
-// plain-text `cncf/architecture` arm and the two guards beside it as
-// taken.) The build that takes the
+// src/components/PeopleFreshness/index.js:13,
+// src/components/MemberDirectory/DirectoryFreshness.js:30,
+// src/components/MemberDirectory/DirectoryFreshness.js:44 and
+// src/components/MemberDirectory/DirectoryFreshness.js:49.
+// (ReferenceArchitectures' two SyncStatus arms used to sit in this list; the
+// cncf/architecture sync and the provenance line it fed were removed, so they
+// are gone rather than credited. src/components/GroupLinkStatus/index.js:24
+// (x2) also used to sit here and is credited in this run, leaving only that
+// file's :14 fallback.)
+//
+// The three DirectoryFreshness arms moved between the two measurements in
+// the direction this note exists to make visible, and nothing went red.
+// Against the run the previous revision of this note cited
+// (actions/runs/38788348099, report.json runId 38788348099-1, head
+// 5265cb8586e180d8dc7d347b444fdf43bbd22e04) the file read 11/12 regions
+// (91.67%) with :19 its only zero; it now reads 12/16 (75.00%) with
+// [19, 30, 44, 49]. That is not lost browser coverage:
+// tests/e2e/member-directory-freshness-unlinked.spec.js still drives all
+// three arms from the data-no-revision build, and
+// src/components/MemberDirectory/DirectoryFreshness.js, that spec and
+// tests/e2e/fixtures/data-no-revision/ are byte-identical across the two
+// revisions. The one change under src/components/MemberDirectory/ between
+// them is #1547's useFilterToolbar extraction in
+// src/components/MemberDirectory/index.js, which re-split the enclosing
+// bundle -- the file's region denominator went 12 to 16 -- and put the arms
+// back into the residual below. src/components/CaseStudies/index.js:48
+// became :51 in the same change. The per-file floor is 66 and the file reads
+// 75, so the three regions left the covered set with every check green,
+// which is why they are written down here rather than inferred later.
+//
+// The build that takes the
 // arm records no deviation at the arm's own span, and isContradictedRegion
 // only admits witnesses from the script that produced the zero. That
 // restriction is deliberate (#1066: a different bundle maps the same skipped
@@ -126,9 +148,9 @@ const COVERAGE_JOB = 'e2e-coverage';
 // file sits exactly on that per-file floor and all of its zeros are in the
 // residual: src/components/shared/MirrorSyncStatus.js at 6/9
 // (src/components/PeopleFreshness/index.js, which used to share the floor at
-// 2/3, reads 3/4 in this run -- the denominator moved, not the code; see
+// 2/3, reads 4/5 in this run -- the denominator moved, not the code; see
 // MEASURED_ON_NODE_MAJOR). The aggregate stays at 96 rather than 97: 97 would
-// demand 642 of 661, and the 645 the run records clears that by three
+// demand 672 of 692, and the 675 the run records clears that by three
 // regions, which is inside the same-major runtime wobble documented below
 // and not room to ratchet on.
 //
