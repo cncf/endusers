@@ -132,9 +132,11 @@ function legacyMembers(catalog, awardsData) {
       talkUrl: a.talkUrl || null,
     }));
     const sourceAttribution = [
-      ...catalogEntries.map((e) => e.sourceUrl),
-      ...awardEntries.map((a) => a.announcementUrl).filter(Boolean),
-      ...awardEntries.map((a) => a.caseStudyUrl).filter(Boolean),
+      ...new Set([
+        ...catalogEntries.map((e) => e.sourceUrl),
+        ...awardEntries.map((a) => a.announcementUrl).filter(Boolean),
+        ...awardEntries.map((a) => a.caseStudyUrl).filter(Boolean),
+      ]),
     ];
 
     return {
