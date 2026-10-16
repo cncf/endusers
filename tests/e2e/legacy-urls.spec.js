@@ -1,7 +1,7 @@
 // End-to-end coverage for the legacy inbound URLs (see
 // tests/legacy-url-stubs.test.mjs for the source-side contract).
 //
-// Seven routes exist only so links published elsewhere keep working: cncf.io,
+// Six routes exist only so links published elsewhere keep working: cncf.io,
 // the End User mailing list and the `#enduser` Slack channel all still point
 // at the pre-reorganisation paths. docusaurus.config.js registers no
 // client-redirects plugin, so each route is served by an `unlisted: true`
@@ -39,7 +39,6 @@ const LEGACY_ROUTES = [
     from: '/community/technical-community-groups/platform-engineering',
     to: '/community/user-groups/platform-engineering',
   },
-  { from: '/metrics', to: '/resources/metrics' },
 ];
 
 function normalise(pathname) {
