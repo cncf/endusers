@@ -96,14 +96,14 @@ describeCoverage('data the site has not received yet', () => {
       true,
     );
 
-    await page.goto('/community');
+    await page.goto('/community/get-involved');
     await expect(page.getByText(PROFILES_REFRESHED)).toBeVisible();
 
-    await page.goto(`${VARIANT_BASE}/community`);
+    await page.goto(`${VARIANT_BASE}/community/get-involved`);
     // The rest of the page still renders: this is the paragraph being absent,
     // not the page failing to build.
     await expect(
-      page.getByRole('heading', { name: 'Community', exact: true }),
+      page.getByRole('heading', { name: 'Get Involved', exact: true }),
     ).toBeVisible();
     await expect(page.getByText(PROFILES_REFRESHED)).toHaveCount(0);
   });
