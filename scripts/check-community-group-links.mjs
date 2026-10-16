@@ -7,7 +7,7 @@
 // Run via: npm run check:community-group-links
 // Requires GH_TOKEN (or GITHUB_TOKEN) to avoid the unauthenticated rate limit.
 
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { makeGitHubHeaders } from './lib/github.mjs';
 
@@ -33,6 +33,26 @@ const GROUPS = [
 const headers = makeGitHubHeaders(
   process.env.GH_TOKEN || process.env.GITHUB_TOKEN,
 );
+
+// Last-known statuses from the previous report, keyed by slug. A group
+// whose recheck comes back inconclusive (reachable === null) inherits
+// these instead of writing nulls: both consumers (GroupLinkStatus and
+// validate-community-groups.mjs) read null as healthy, so writing nulls
+// over a known-archived or known-missing entry would let a transient
+// network error silently dismiss the staleness banner.
+const previousBySlug = new Map();
+try {
+  const report = JSON.parse(readFileSync(output, 'utf8'));
+  for (const group of report.groups || []) {
+    if (group && typeof group.slug === 'string') {
+      previousBySlug.set(group.slug, group);
+    }
+  }
+} catch {
+  // No usable previous report (first run, missing or unparsable file):
+  // nothing to carry forward.
+}
+
 const groups = [];
 let staleCount = 0;
 
@@ -54,7 +74,9 @@ for (const { slug, name, repo } of GROUPS) {
     }
   } catch (error) {
     console.warn(`Could not check ${repo}: ${error.message}`);
-    reachable = null;
+    const known = previousBySlug.get(slug);
+    archived = known ? (known.archived ?? null) : null;
+    reachable = known ? (known.reachable ?? null) : null;
   }
   if (archived || reachable === false) {
     staleCount += 1;
