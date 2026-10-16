@@ -137,6 +137,12 @@ const SKIPS = [
       (metricsData.referenceArchitectureLifecycle?.omitted ?? []).length > 0,
   },
   {
+    spec: 'practitioners-home.spec.js',
+    reason: 'data/community-people.json defines no TAB people',
+    needs: 'data/community-people.json lists at least one TAB person',
+    holds: () => tabPeople.length > 0,
+  },
+  {
     spec: 'radar-reports.spec.js',
     reason:
       'the component renders no provenance line for a corpus without generatedAt',
