@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, relative } from 'node:path';
 import test from 'node:test';
 import { parse as parseYaml } from 'yaml';
 import { stripJsonComments } from './helpers-jsonc.mjs';
@@ -312,6 +321,59 @@ function workflowNodeMajors() {
   return found;
 }
 
+// `.github/actions/**` is the other place a Node major can live, and the walk
+// above cannot see it: it reads `.github/workflows` and nothing else. A
+// composite action that wraps `actions/setup-node` moves the pin out of every
+// workflow that adopts it and into the action's own `inputs.node-version`
+// default. The workflows that still carry a literal keep the
+// `workflowVersions.length > 0` guard below satisfied, so the parity test goes
+// on passing while the one declaration that decides the runtime sits in a file
+// it never opens, and a bump that misses the devcontainer is green.
+//
+// The two shapes below are the ones a composite action can carry a major in:
+// the input default, and a literal on a step. A `${{ inputs.node-version }}`
+// step is skipped for the same reason the walk above skips
+// `${{ env.NODE_VERSION }}` -- it resolves to the default, which is already
+// recorded -- and an action that hard-codes a version on the step instead of
+// declaring an input is caught by the second.
+function actionNodeMajors(doc, file) {
+  const found = [];
+  const fallback = doc?.inputs?.['node-version']?.default;
+  if (fallback !== undefined) found.push({ file, version: String(fallback) });
+  for (const step of doc?.runs?.steps ?? []) {
+    const version = step?.with?.['node-version'];
+    if (version === undefined) continue;
+    const literal = String(version);
+    if (literal.includes('${{')) continue;
+    found.push({ file, version: literal });
+  }
+  return found;
+}
+
+// Actions live one directory down by convention
+// (`.github/actions/<name>/action.yml`) but nothing enforces that depth, so
+// the walk recurses rather than assuming it. An absent `.github/actions` is
+// the repository's current state, not an error.
+function actionFiles(dir) {
+  if (!existsSync(dir)) return [];
+  const found = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) found.push(...actionFiles(path));
+    else if (/^action\.ya?ml$/.test(entry.name)) found.push(path);
+  }
+  return found;
+}
+
+function compositeActionNodeMajors(dir = join(root, '.github/actions')) {
+  return actionFiles(dir).flatMap((path) =>
+    actionNodeMajors(
+      parseYaml(readFileSync(path, 'utf8')),
+      relative(root, path),
+    ),
+  );
+}
+
 function devcontainerNodeMajor() {
   const devcontainer = JSON.parse(stripJsonComments(devcontainerRaw));
   const features = devcontainer.features ?? {};
@@ -330,7 +392,10 @@ function devcontainerNodeMajor() {
 
 test('devcontainer Node major matches the Node major every workflow pins', () => {
   const devcontainerMajor = devcontainerNodeMajor();
-  const workflowVersions = workflowNodeMajors();
+  const workflowVersions = [
+    ...workflowNodeMajors(),
+    ...compositeActionNodeMajors(),
+  ];
   assert.ok(
     workflowVersions.length > 0,
     'no workflow pins a Node version; update this test',
@@ -341,9 +406,85 @@ test('devcontainer Node major matches the Node major every workflow pins', () =>
   assert.deepEqual(
     mismatched,
     [],
-    `workflows pin a Node major the devcontainer does not (devcontainer: ${devcontainerMajor}): ${mismatched
+    `workflows or composite actions pin a Node major the devcontainer does not (devcontainer: ${devcontainerMajor}): ${mismatched
       .map(({ file, version }) => `${file}=${version}`)
       .join(', ')}`,
+  );
+});
+
+// The assertion above is a no-op until a composite action exists, and the
+// repository has none yet, so the walk itself is pinned here against a
+// fixture tree rather than against `.github/actions`. Each entry below is one
+// shape the real directory can take: an action nested deeper than the
+// `.github/actions/<name>/action.yml` convention, an action that declares the
+// major as an input default only, one that hard-codes it on the step instead,
+// a `${{ inputs.node-version }}` indirection that must not be double-counted,
+// and a neighbouring file that is not an action manifest.
+test('the composite-action walk finds every Node major a composite action pins', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'endusers-actions-'));
+  try {
+    const write = (relativePath, contents) => {
+      const path = join(dir, relativePath);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, contents);
+    };
+
+    write(
+      'setup/action.yml',
+      [
+        'inputs:',
+        '  node-version:',
+        "    default: '22'",
+        'runs:',
+        '  using: composite',
+        '  steps:',
+        '    - uses: actions/setup-node@v7',
+        '      with:',
+        '        node-version: ${{ inputs.node-version }}',
+        '',
+      ].join('\n'),
+    );
+    write(
+      'nested/deeper/action.yaml',
+      [
+        'runs:',
+        '  using: composite',
+        '  steps:',
+        '    - uses: actions/setup-node@v7',
+        '      with:',
+        '        node-version: 24',
+        '    - run: npm ci',
+        '      shell: bash',
+        '',
+      ].join('\n'),
+    );
+    write('setup/README.md', 'not an action manifest\n');
+
+    assert.deepEqual(
+      compositeActionNodeMajors(dir).sort((a, b) =>
+        a.file.localeCompare(b.file),
+      ),
+      [
+        {
+          file: relative(root, join(dir, 'nested/deeper/action.yaml')),
+          version: '24',
+        },
+        { file: relative(root, join(dir, 'setup/action.yml')), version: '22' },
+      ],
+      'the walk must record the input default once and the step literal once, and skip the ${{ }} indirection and the non-manifest file',
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// An absent directory is the repository's state today: the walk has to report
+// nothing rather than throw, or the parity test fails on every tree that has
+// not adopted a composite action yet.
+test('the composite-action walk treats an absent .github/actions as empty', () => {
+  assert.deepEqual(
+    compositeActionNodeMajors(join(root, '.github/actions-does-not-exist')),
+    [],
   );
 });
 
