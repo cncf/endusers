@@ -25,7 +25,7 @@
 // thirteen for AwardsTimeline). Those branches need per-route data, not a
 // per-build overlay, and get a second build of their own rather than a second
 // record; see tests/e2e/data-variants.spec.js.
-import { test, expect } from '../tools/e2e-coverage.cjs';
+import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 
 // The overlays are applied by the E2E_COVERAGE=1 build only, so outside the
@@ -62,20 +62,6 @@ const noIndustries = catalog.find(
 const someIndustries = catalog.find(
   (architecture) => architecture.industries.length > 0,
 );
-
-// React attaches its fiber to the DOM node it hydrates, so the presence of a
-// `__react*` property is the signal that the element's handlers are live.
-// Clicking before that point silently discards the input.
-async function waitForHydration(locator) {
-  await locator.waitFor({ state: 'visible' });
-  await locator.evaluate(async (element) => {
-    const hydrated = (node) =>
-      Object.keys(node).some((key) => key.startsWith('__react'));
-    while (!hydrated(element)) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  });
-}
 
 async function openStaffProfile(page, name) {
   await page.goto('/community/get-involved');

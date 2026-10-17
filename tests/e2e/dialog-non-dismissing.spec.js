@@ -32,21 +32,7 @@
 // arms here are emitted under coordinates that no browser interaction reaches,
 // so landing this spec does not clear either line from the uncovered-region
 // list (the same attribution limit tracked by #1066 and #1079).
-import { test, expect } from '../tools/e2e-coverage.cjs';
-
-// React attaches its fiber to the DOM node it hydrates, so the presence of a
-// `__react*` property is the signal that the element's handlers are live.
-// Clicking before that point silently discards the input.
-async function waitForHydration(locator) {
-  await locator.waitFor({ state: 'visible' });
-  await locator.evaluate(async (element) => {
-    const hydrated = (node) =>
-      Object.keys(node).some((key) => key.startsWith('__react'));
-    while (!hydrated(element)) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  });
-}
+import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
 
 async function openProfile(page, path, region) {
   await page.goto(path);

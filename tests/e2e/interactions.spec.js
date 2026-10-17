@@ -8,22 +8,7 @@
 // throws, a mismatched server render that bails out) leaves every unit test
 // green while the shipped page renders a dead toolbar. Only a browser against
 // `build/` can catch that.
-import { test, expect } from '../tools/e2e-coverage.cjs';
-
-// React attaches its fiber to the DOM node it hydrates, so the presence of a
-// `__react*` property is the signal that the element's handlers are live.
-// Interacting before that point silently discards the input: the element is
-// visible and enabled, but no state update follows.
-async function waitForHydration(locator) {
-  await locator.waitFor({ state: 'visible' });
-  await locator.evaluate(async (element) => {
-    const hydrated = (node) =>
-      Object.keys(node).some((key) => key.startsWith('__react'));
-    while (!hydrated(element)) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  });
-}
+import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
 
 function shownCount(text) {
   const [, shown] = text?.match(/Showing\s+(\d+)\s+of\s+(\d+)/) || [];

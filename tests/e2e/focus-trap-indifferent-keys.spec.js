@@ -34,21 +34,7 @@
 // so the assertion is "focus did not move", not "some element is focused".
 // Escape afterwards shows the listener was still attached and still listening,
 // so a passing run cannot be a detached handler.
-import { test, expect } from '../tools/e2e-coverage.cjs';
-
-// React attaches its fiber to the DOM node it hydrates, so the presence of a
-// `__react*` property is the signal that the element's handlers are live.
-// Interacting before that point silently discards the input.
-async function waitForHydration(locator) {
-  await locator.waitFor({ state: 'visible' });
-  await locator.evaluate(async (element) => {
-    const hydrated = (node) =>
-      Object.keys(node).some((key) => key.startsWith('__react'));
-    while (!hydrated(element)) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  });
-}
+import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
 
 // The index of the focused element within the dialog's focusable list, using
 // the same selector useFocusTrap queries. -1 means focus sits outside the

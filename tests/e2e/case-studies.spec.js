@@ -7,22 +7,8 @@
 // render mismatches, the static table still paints and every existing test
 // stays green while the shipped toolbar does nothing. These tests exercise the
 // controls in a real browser against `build/`.
-import { test, expect } from '../tools/e2e-coverage.cjs';
+import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
-
-// React attaches its fiber to the DOM node it hydrates, so the presence of a
-// `__react*` property is the signal that the element's handlers are live.
-// Interacting before that point silently discards the input.
-async function waitForHydration(locator) {
-  await locator.waitFor({ state: 'visible' });
-  await locator.evaluate(async (element) => {
-    const hydrated = (node) =>
-      Object.keys(node).some((key) => key.startsWith('__react'));
-    while (!hydrated(element)) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  });
-}
 
 function shownCount(text) {
   const [, shown] = text?.match(/Showing\s+(\d+)\s+of\s+(\d+)/) || [];
