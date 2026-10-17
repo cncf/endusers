@@ -267,6 +267,84 @@ function racingBranchWorkflows(parsedWorkflows) {
     .sort();
 }
 
+// The third contract, for everything the first two cannot reach: a workflow
+// that grants itself a write permission must declare a concurrency group.
+//
+// withoutConcurrency above only asks this of PR-triggered workflows, and
+// racingBranchWorkflows only of workflows that push a branch they name. A
+// workflow that is in neither population but still mutates shared repository
+// state -- milestones, issue and pull request comments, labels -- is
+// serialised today only by hand. SERIALISED_WORKFLOWS already says why that is
+// sharp for the two such workflows the repository has: create-milestones.yml
+// snapshots the milestone list before its loop, so two dispatches both see a
+// title as absent and both create it, and pr-queue-hygiene.yml reads then
+// writes a hidden marker comment non-atomically, so two runs both find no
+// marker and both post one onto a contributor PR. Neither pushes a branch.
+//
+// Those two keep their groups only incidentally: the retirement guard below
+// asserts that an allowlisted workflow still declares one, so deleting their
+// group fails on the allowlist rather than on a contract. A *new* workflow of
+// the same class arrives with no allowlist entry and no group, and every test
+// in this file passes over it -- the same hole the preamble describes for the
+// PR lane.
+//
+// A write permission is the mechanical signal for "writes something two runs
+// could both write", and it needs no per-workflow judgement. The rule holds
+// across the repository today with no exemption table: every workflow that
+// grants a write already declares a group, and the only workflow with no
+// concurrency block, audit-schedule.yml, is contents: read at the workflow
+// level with no job-level grant. It runs the audit gate and opens nothing.
+//
+// Permissions are read with GitHub's own precedence -- a job's `permissions:`
+// replaces the workflow's rather than merging with it -- so a workflow that
+// grants a write at the top and narrows a job to read is judged on what that
+// job can actually do. tests/ci-supply-chain.test.mjs separately requires
+// every workflow to declare `permissions:` at one level or the other and bans
+// `permissions: write-all`; the readers below still handle the string form and
+// the absent form, so this contract does not become the hole through which an
+// unserialised writer arrives if either of those is ever relaxed.
+const WRITE_ALL = 'write-all';
+
+// The permission map each job is actually evaluated under. `permissions:` is
+// a replacement, not a merge: a job that declares its own is judged on that
+// alone, and one that does not inherits the workflow's.
+function effectivePermissions(doc) {
+  const jobs = doc?.jobs;
+  const jobPermissions = Object.values(
+    typeof jobs === 'object' && jobs !== null ? jobs : {},
+  ).map((job) =>
+    job?.permissions === undefined ? doc?.permissions : job.permissions,
+  );
+  // A workflow with no jobs block still carries its own declaration, so the
+  // scan has something to judge rather than silently passing.
+  return jobPermissions.length > 0 ? jobPermissions : [doc?.permissions];
+}
+
+// Whether one permission declaration grants any write. `write-all` is the
+// shorthand ci-supply-chain.test.mjs bans; an absent declaration leaves the
+// token at the repository default, which can be read-write, so it counts as a
+// write here rather than being waved through.
+function grantsWrite(permissions) {
+  if (permissions === undefined || permissions === null) return true;
+  if (typeof permissions === 'string') return permissions.trim() === WRITE_ALL;
+  if (typeof permissions !== 'object') return false;
+  return Object.values(permissions).some(
+    (level) => typeof level === 'string' && level.trim() === 'write',
+  );
+}
+
+function writesWithGitHubToken(doc) {
+  return effectivePermissions(doc).some(grantsWrite);
+}
+
+function writersWithoutConcurrency(parsedWorkflows) {
+  return parsedWorkflows
+    .filter(({ doc }) => writesWithGitHubToken(doc))
+    .filter(({ doc }) => groupExpression(doc) === undefined)
+    .map(({ name }) => name)
+    .sort();
+}
+
 // The `${{ ... }}` bodies of an expression, whitespace-normalised, so a branch
 // and a group can be compared on what they actually vary with rather than on
 // their surrounding text.
@@ -353,6 +431,25 @@ test('every workflow that pushes a PR branch serialises itself on that branch', 
     offenders,
     [],
     `two overlapping runs would both write the same refs/heads/<branch>: the loser's --force-with-lease fails on stale info, and 'delete-branch: true' can delete the ref the other run just opened a pull request from. Declare a concurrency group keyed exactly as the branch is:\n${offenders.join('\n')}`,
+  );
+});
+
+test('the write-permission detection is not vacuous', () => {
+  const writers = workflows
+    .filter(({ doc }) => writesWithGitHubToken(doc))
+    .map(({ name }) => name);
+  assert.ok(
+    writers.length > 0,
+    'no workflow was detected as granting a write permission, so the contract below would pass over an empty set',
+  );
+});
+
+test('every workflow that grants a write permission declares a concurrency group', () => {
+  const offenders = writersWithoutConcurrency(workflows);
+  assert.deepEqual(
+    offenders,
+    [],
+    `a workflow that writes milestones, comments, labels or refs with no 'concurrency:' lets two runs interleave a read-then-write: both observe the state as it was before either acted, and both act. Neither the PR contract above nor the branch contract below reaches a workflow that is not PR-triggered and pushes no branch:\n${offenders.join('\n')}`,
   );
 });
 
@@ -467,6 +564,101 @@ test('the group reader normalises both concurrency spellings', () => {
       concurrency: { group: 'x', 'cancel-in-progress': true },
     }),
     true,
+  );
+});
+
+test('the write-permission scan reports the workflows it exists to catch', () => {
+  const writerNoGroup = fixture('label-sweep.yml', {
+    on: { schedule: [{ cron: '0 0 * * *' }] },
+    permissions: { contents: 'read', issues: 'write' },
+    jobs: { sweep: { steps: [] } },
+  });
+  assert.deepEqual(writersWithoutConcurrency(writerNoGroup), [
+    'label-sweep.yml',
+  ]);
+
+  // The same grant made at job level, which is where codeql.yml and
+  // pr-queue-hygiene.yml make theirs.
+  const jobLevelWriter = fixture('label-sweep.yml', {
+    on: { schedule: [{ cron: '0 0 * * *' }] },
+    permissions: { contents: 'read' },
+    jobs: { sweep: { permissions: { 'pull-requests': 'write' }, steps: [] } },
+  });
+  assert.deepEqual(writersWithoutConcurrency(jobLevelWriter), [
+    'label-sweep.yml',
+  ]);
+
+  // A group of any shape satisfies this contract: unlike the PR lane, the
+  // question here is only whether two runs share a lane at all. Whether that
+  // key is too constant is unexplainedConstantGroups' question.
+  const writerWithGroup = fixture('label-sweep.yml', {
+    on: { schedule: [{ cron: '0 0 * * *' }] },
+    permissions: { issues: 'write' },
+    concurrency: { group: 'label-sweep' },
+    jobs: { sweep: { steps: [] } },
+  });
+  assert.deepEqual(writersWithoutConcurrency(writerWithGroup), []);
+
+  // A read-only workflow with no group is outside the rule, which is what
+  // keeps audit-schedule.yml off this list.
+  const reader = fixture('audit.yml', {
+    on: { schedule: [{ cron: '0 0 * * *' }] },
+    permissions: { contents: 'read' },
+    jobs: { audit: { steps: [] } },
+  });
+  assert.deepEqual(writersWithoutConcurrency(reader), []);
+});
+
+test('the permission reader follows job-level replacement, not merging', () => {
+  // A job that declares its own permissions is judged on those alone, so a
+  // workflow-level write narrowed away by every job is not a writer.
+  assert.equal(
+    writesWithGitHubToken({
+      permissions: { contents: 'write' },
+      jobs: { only: { permissions: { contents: 'read' } } },
+    }),
+    false,
+  );
+  // ...and a job that declares none inherits the workflow's.
+  assert.equal(
+    writesWithGitHubToken({
+      permissions: { contents: 'write' },
+      jobs: { only: { steps: [] } },
+    }),
+    true,
+  );
+  // One writing job among readers is still a writer.
+  assert.equal(
+    writesWithGitHubToken({
+      permissions: { contents: 'read' },
+      jobs: {
+        reader: { steps: [] },
+        writer: { permissions: { issues: 'write' } },
+      },
+    }),
+    true,
+  );
+  // The blanket shorthand ci-supply-chain.test.mjs bans, and the absent
+  // declaration it also bans: both leave the token able to write, so neither
+  // may pass this contract silently if that ban is relaxed.
+  assert.equal(grantsWrite(WRITE_ALL), true);
+  assert.equal(grantsWrite(undefined), true);
+  assert.equal(grantsWrite('read-all'), false);
+  assert.equal(grantsWrite({}), false);
+  assert.equal(grantsWrite({ contents: 'none' }), false);
+  // YAML renders a bare `contents:` as null, and a scalar `permissions:` that
+  // is neither shorthand is not a grant at all; neither is a string to compare.
+  assert.equal(grantsWrite({ contents: null }), false);
+  assert.equal(grantsWrite(42), false);
+  // A workflow with no jobs block is still judged on its own declaration
+  // rather than passing over an empty set.
+  assert.equal(
+    writesWithGitHubToken({ permissions: { issues: 'write' } }),
+    true,
+  );
+  assert.equal(
+    writesWithGitHubToken({ permissions: { issues: 'read' } }),
+    false,
   );
 });
 
