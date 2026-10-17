@@ -42,21 +42,7 @@
 // The cases therefore assert the observable consequences -- no page error, the
 // scroll lock released, and focus left where the visitor put it -- rather than
 // asserting that a line ran.
-import { test, expect } from '../tools/e2e-coverage.cjs';
-
-// React attaches its fiber to the DOM node it hydrates, so the presence of a
-// `__react*` property is the signal that the element's handlers are live.
-// Interacting before that point silently discards the input.
-async function waitForHydration(locator) {
-  await locator.waitFor({ state: 'visible' });
-  await locator.evaluate(async (element) => {
-    const hydrated = (node) =>
-      Object.keys(node).some((key) => key.startsWith('__react'));
-    while (!hydrated(element)) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  });
-}
+import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
 
 // A query no organization in data/members.json can match, so every card --
 // including the one whose profile is open -- leaves the list.

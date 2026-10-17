@@ -31,24 +31,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { test, expect } from '../tools/e2e-coverage.cjs';
-
-// React attaches its fiber to the DOM node it hydrates, so the presence of a
-// `__react*` property is the signal that the element's handlers are live.
-// Clicking a dialog trigger before that point silently discards the click and
-// the scan below would analyse an unopened dialog. Same helper, and the same
-// reason for it, as tests/e2e/interactions.spec.js and
-// tests/e2e/community-people.spec.js.
-async function waitForHydration(locator) {
-  await locator.waitFor({ state: 'visible' });
-  await locator.evaluate(async (element) => {
-    const hydrated = (node) =>
-      Object.keys(node).some((key) => key.startsWith('__react'));
-    while (!hydrated(element)) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  });
-}
+import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
 
 // One route per page template.
 //

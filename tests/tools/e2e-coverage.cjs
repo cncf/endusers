@@ -283,6 +283,24 @@ async function newCoverageContext(browser, options = {}, testInfoOverride) {
   );
 }
 
+// React attaches its fiber to the DOM node it hydrates, so the presence of a
+// `__react*` property is the signal that the element's handlers are live.
+// Interacting before that point silently discards the input: the element is
+// visible and enabled, but no state update follows. Every spec that clicks a
+// React-rendered control waits on this first; it is a timing helper, so it is
+// defined once here rather than per spec, where a changed poll or predicate
+// would reach some specs and leave the rest to flake (#1534).
+async function waitForHydration(locator) {
+  await locator.waitFor({ state: 'visible' });
+  await locator.evaluate(async (element) => {
+    const hydrated = (node) =>
+      Object.keys(node).some((key) => key.startsWith('__react'));
+    while (!hydrated(element)) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  });
+}
+
 exports.coverageArtifactStem = coverageArtifactStem;
 exports.CoverageManager = CoverageManager;
 exports.coverageManagerFixture = coverageManagerFixture;
@@ -291,6 +309,7 @@ exports.isCoverageEnabled = isCoverageEnabled;
 exports.newCoverageContext = newCoverageContext;
 exports.newCoverageContextForTest = newCoverageContextForTest;
 exports.pageFixture = pageFixture;
+exports.waitForHydration = waitForHydration;
 exports.test = baseTest.extend({
   coverageManager: [coverageManagerFixture, { auto: true }],
   page: pageFixture,

@@ -19,7 +19,7 @@
 // executed in a browser at all.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { test, expect } from '../tools/e2e-coverage.cjs';
+import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
 
 const TAB_PATH = '/community/technical-advisory-board';
 
@@ -38,20 +38,6 @@ const tabPeople = peopleData.people.tab || [];
 // a person selected from the data at run time rather than by name.
 const withBio = tabPeople.find((person) => person.bio);
 const withoutBio = tabPeople.find((person) => !person.bio);
-
-// React attaches its fiber to the DOM node it hydrates, so the presence of a
-// `__react*` property is the signal that the element's handlers are live.
-// Clicking before that point silently discards the input.
-async function waitForHydration(locator) {
-  await locator.waitFor({ state: 'visible' });
-  await locator.evaluate(async (element) => {
-    const hydrated = (node) =>
-      Object.keys(node).some((key) => key.startsWith('__react'));
-    while (!hydrated(element)) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  });
-}
 
 async function openProfile(page, name) {
   await page.goto(TAB_PATH);
