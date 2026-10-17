@@ -29,7 +29,7 @@ There is no formal nomination process yet. In the near term:
    fixes — see `CONTRIBUTING.md`).
 2. Demonstrate familiarity with the review standards in this repository:
    audience fit (end users, not contributors), sourced facts, and the
-   generated-data rules for `/resources/metrics`, `/awards`, and
+   generated-data rules for `/resources/metrics`, `/community/awards`, and
    `/architectures`.
 3. Ask an existing maintainer to sponsor you, or open an issue proposing
    yourself with links to your prior contributions.
