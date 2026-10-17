@@ -27,10 +27,17 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse, stringify } from 'yaml';
 import { enumerateSourceFiles } from './tools/coverage-report.mjs';
+import {
+  findNodeSetupStep,
+  loadLocalActions,
+  nodeMajor,
+  pinnedNodeVersion,
+} from './helpers-node-setup.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const REPORT_SCRIPT = 'report:e2e:coverage';
 const COVERAGE_JOB = 'e2e-coverage';
+const localActions = loadLocalActions(repoRoot);
 
 // Measured on the suite this commit ships: the e2e-coverage job renders with
 // `--check-source 100 --check-source-regions 96 --check-source-file-regions 66`
@@ -371,34 +378,23 @@ function check(flags) {
  *
  * Read from the job rather than from the workflow as a whole because it is
  * that job's runtime, and only that one, that produces the region counts the
- * floors are set against. A `${{ env.NODE_VERSION }}` indirection is resolved
- * against the workflow's top-level `env` so the contract survives the
- * refactor that hoists the version into one place.
+ * floors are set against. The job installs Node through the
+ * `setup-node-deps` composite action, so the version is resolved by
+ * helpers-node-setup.mjs: a `with.node-version` on the step (literal or
+ * `${{ env.* }}`) wins, otherwise the action's input default is the pin.
  *
  * @param {string} text contents of ci.yml
  * @returns {string|null} the major, or null when the job pins none
  */
 function setupNodeStep(document) {
-  const steps = document.jobs[COVERAGE_JOB].steps;
-  // `uses` is absent on the job's `run:` steps; stringifying undefined yields
-  // a value that simply does not match, so the find needs no guard of its own.
-  return steps.find((candidate) =>
-    String(candidate.uses).startsWith('actions/setup-node@'),
-  );
+  return findNodeSetupStep(document.jobs[COVERAGE_JOB].steps, localActions);
 }
 
 function coverageJobNodeMajor(text) {
   const document = parse(text);
-  const declared = setupNodeStep(document)?.with?.['node-version'];
-  if (declared === undefined) return null;
-  const literal = String(declared);
-  const fromEnv = literal.match(
-    /^\$\{\{\s*env\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}$/,
-  );
-  if (!fromEnv) return literal.split('.')[0];
-  const resolved = document.env?.[fromEnv[1]];
-  if (resolved === undefined) return null;
-  return String(resolved).split('.')[0];
+  const step = setupNodeStep(document);
+  if (!step) return null;
+  return nodeMajor(pinnedNodeVersion(step, document, localActions));
 }
 
 test(`package.json defines the ${REPORT_SCRIPT} script`, () => {
@@ -665,10 +661,8 @@ test('a deleted --check-source-file-regions fails the guard', () => {
 function withCoverageJobNode(mutate) {
   const document = parse(workflowText);
   const step = setupNodeStep(document);
-  assert.ok(
-    step,
-    `fixture is stale: ${COVERAGE_JOB} has no actions/setup-node step`,
-  );
+  assert.ok(step, `fixture is stale: ${COVERAGE_JOB} has no Node setup step`);
+  step.with ??= {};
   mutate(document, step);
   return stringify(document);
 }
@@ -685,10 +679,26 @@ test('bumping the job Node major fails the runtime guard', () => {
 });
 
 test('an unpinned job Node major fails the runtime guard', () => {
+  // Through the composite action an absent `with.node-version` falls back to
+  // the action's default, so "unpinned" means calling setup-node directly
+  // with no version at all.
   const unpinned = withCoverageJobNode((_document, step) => {
+    step.uses = 'actions/setup-node@' + 'f'.repeat(40);
     delete step.with['node-version'];
   });
   assert.throws(() => checkRuntime(unpinned), /must pin a Node major/);
+});
+
+test('the composite action default is what pins the job when the step passes nothing', () => {
+  const defaulted = withCoverageJobNode((_document, step) => {
+    assert.ok(
+      String(step.uses).startsWith('./.github/actions/'),
+      'fixture is stale: the coverage job no longer installs Node through a local action',
+    );
+    delete step.with['node-version'];
+  });
+  assert.equal(coverageJobNodeMajor(defaulted), MEASURED_ON_NODE_MAJOR);
+  assert.doesNotThrow(() => checkRuntime(defaulted));
 });
 
 test('a NODE_VERSION indirection is resolved against the workflow env', () => {

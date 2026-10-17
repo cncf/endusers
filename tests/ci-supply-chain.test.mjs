@@ -31,6 +31,14 @@ import {
   unboundedJobs,
   unpinnedActions,
 } from './helpers-ci-supply-chain.mjs';
+import {
+  isNodeSetupStep,
+  loadLocalActions,
+  nodeMajor,
+  pinnedNodeVersion,
+} from './helpers-node-setup.mjs';
+
+const localActions = loadLocalActions(new URL('..', import.meta.url).pathname);
 
 const workflowDir = new URL('../.github/workflows/', import.meta.url).pathname;
 
@@ -98,29 +106,16 @@ test('every Node setup step pins the same Node major version', () => {
   const versions = new Set();
   for (const { name, doc } of workflows) {
     for (const { jobName, step } of steps(doc)) {
-      if (!step?.uses?.startsWith('actions/setup-node@')) continue;
-      const declared = step.with?.['node-version'];
+      if (!isNodeSetupStep(step, localActions)) continue;
+      const pinned = pinnedNodeVersion(step, doc, localActions);
       assert.ok(
-        declared !== undefined,
-        `${name} (${jobName}): setup-node must declare node-version rather than inherit a default`,
+        pinned !== null,
+        `${name} (${jobName}): ${step.uses} must pin node-version (directly, through env, or through the composite action's input default) rather than inherit the runner default`,
       );
-      const raw = String(declared);
-      const fromEnv = raw.match(
-        /\$\{\{\s*env\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}/,
-      );
-      if (fromEnv) {
-        const resolved = doc.env?.[fromEnv[1]];
-        assert.ok(
-          resolved !== undefined,
-          `${name} (${jobName}): node-version references env.${fromEnv[1]}, which the workflow does not define`,
-        );
-        versions.add(String(resolved).split('.')[0]);
-      } else {
-        versions.add(raw.split('.')[0]);
-      }
+      versions.add(nodeMajor(pinned));
     }
   }
-  assert.ok(versions.size > 0, 'no setup-node step found in any workflow');
+  assert.ok(versions.size > 0, 'no Node setup step found in any workflow');
   assert.equal(
     versions.size,
     1,

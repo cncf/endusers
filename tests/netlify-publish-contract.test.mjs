@@ -23,7 +23,14 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseToml } from 'smol-toml';
 import { parse as parseYaml } from 'yaml';
 
+import {
+  findNodeSetupStep,
+  loadLocalActions,
+  pinnedNodeVersion,
+} from './helpers-node-setup.mjs';
+
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+const localActions = loadLocalActions(repoRoot);
 
 const netlify = parseToml(readFileSync(join(repoRoot, 'netlify.toml'), 'utf8'));
 const ci = parseYaml(
@@ -64,13 +71,11 @@ test('the publish directory is where Docusaurus writes', () => {
 });
 
 test('Netlify builds on the Node version ci.yml validates against', () => {
-  const setupNode = (ci.jobs?.validate?.steps ?? []).find((step) =>
-    String(step.uses ?? '').startsWith('actions/setup-node@'),
-  );
-  assert.ok(setupNode, 'ci.yml validate job has no actions/setup-node step');
+  const setupNode = findNodeSetupStep(ci.jobs?.validate?.steps, localActions);
+  assert.ok(setupNode, 'ci.yml validate job has no Node setup step');
   assert.equal(
     netlify.build?.environment?.NODE_VERSION,
-    String(setupNode.with['node-version']),
+    pinnedNodeVersion(setupNode, ci, localActions),
   );
 });
 

@@ -20,6 +20,8 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { parse } from 'yaml';
 
+import { loadLocalActions } from './helpers-node-setup.mjs';
+
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const workflowDir = join(repoRoot, '.github', 'workflows');
 
@@ -71,25 +73,59 @@ const workflows = readdirSync(workflowDir)
     return { name, source, doc: parse(source) };
   });
 
+const INSTALL_COMMAND = /\bnpm\s+(ci|install|i)\b/;
+const LOCAL_ACTION_PREFIX = './.github/actions/';
+const localActions = loadLocalActions(repoRoot);
+
+// Every npm install a workflow run performs, with the working directory and
+// env it runs under. A composite action under .github/actions/ runs its steps
+// inside the calling job -- same workspace, same env -- so an install inside
+// one is yielded once per job that calls it, carrying that job's env, rather
+// than once per action file.
 function* installSteps() {
   for (const { name, doc } of workflows) {
     const workflowDefault = doc?.defaults?.run?.['working-directory'];
     for (const [jobId, job] of Object.entries(doc?.jobs ?? {})) {
       const jobDefault = job?.defaults?.run?.['working-directory'];
       for (const [index, step] of (job?.steps ?? []).entries()) {
-        const run = typeof step?.run === 'string' ? step.run : '';
-        if (!/\bnpm\s+(ci|install|i)\b/.test(run)) continue;
-        yield {
-          where: `${name} ${jobId} step[${index}]`,
-          run,
-          workingDirectory:
-            step?.['working-directory'] ?? jobDefault ?? workflowDefault ?? '.',
-          env: {
-            ...(doc?.env ?? {}),
-            ...(job?.env ?? {}),
-            ...(step?.env ?? {}),
-          },
+        const where = `${name} ${jobId} step[${index}]`;
+        const env = {
+          ...(doc?.env ?? {}),
+          ...(job?.env ?? {}),
+          ...(step?.env ?? {}),
         };
+        const run = typeof step?.run === 'string' ? step.run : '';
+        if (INSTALL_COMMAND.test(run)) {
+          yield {
+            where,
+            run,
+            workingDirectory:
+              step?.['working-directory'] ??
+              jobDefault ??
+              workflowDefault ??
+              '.',
+            env,
+          };
+        }
+        const uses = String(step?.uses ?? '');
+        if (!uses.startsWith(LOCAL_ACTION_PREFIX)) continue;
+        const actionName = uses.slice(LOCAL_ACTION_PREFIX.length);
+        const action = localActions.get(actionName);
+        for (const [inner, actionStep] of (
+          action?.runs?.steps ?? []
+        ).entries()) {
+          const actionRun =
+            typeof actionStep?.run === 'string' ? actionStep.run : '';
+          if (!INSTALL_COMMAND.test(actionRun)) continue;
+          // `defaults.run` does not reach into a composite action; only the
+          // action step's own working-directory moves it off the workspace.
+          yield {
+            where: `${where} -> ${uses} step[${inner}]`,
+            run: actionRun,
+            workingDirectory: actionStep?.['working-directory'] ?? '.',
+            env: { ...env, ...(actionStep?.env ?? {}) },
+          };
+        }
       }
     }
   }
