@@ -64,13 +64,6 @@ const UNREACHED_PRIVATE_SCRIPTS = new Map([
       'Deliberately not in `check`, which must see every file.',
   ],
   [
-    '_check:markdown:1',
-    'A single-file markdownlint invocation with no caller and no documented ' +
-      'use; `check:markdown` runs `_check:markdown:all` instead. Recorded ' +
-      'rather than deleted because removing a package.json script is a ' +
-      "maintainer's call, not a test's.",
-  ],
-  [
     '_check:markdown:delta',
     'Contributor shortcut: lints only the files `_list:git:delta` reports. ' +
       'Deliberately not in `check`, which must see every file.',
