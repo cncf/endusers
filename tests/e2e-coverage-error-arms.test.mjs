@@ -21,8 +21,9 @@
 // tests/e2e-coverage-split-range.test.mjs states the one behind the third
 // residual arm, so a change that makes either fallback live fails here on its
 // own name. The fourth arm, `collectE2ECoverage`'s zero-statement skip, is
-// left alone deliberately: the semantics around it are under discussion in
-// #1556, and pinning today's behaviour would pre-empt that decision.
+// left alone deliberately: #1556 examined it against the published artifacts
+// and found no run has ever produced a zero-line source entry, so there is no
+// real shape to pin a fixture to. See that issue for the evidence.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
