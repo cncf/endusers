@@ -93,6 +93,8 @@ jobs:
         run: npm run check:spelling
       - name: Check markdown
         run: npm run check:markdown
+      - name: Check duplication
+        run: npm run check:duplication
 
   e2e:
     name: End-to-end tests

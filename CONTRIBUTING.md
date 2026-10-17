@@ -65,10 +65,11 @@ These recipes are a superset of the validation steps the Netlify build
 `just build`/`just refresh` locally does **not** imply a green PR check. Before
 opening a PR, also run `npm run test:unit:coverage:check` and the local check
 scripts that match "Lint repository": `npm run check:format`,
-`npm run check:spelling`, and `npm run check:markdown`. The "Validate
-repository" gate additionally runs `npm run check:audit` (dependency advisory
-allowlist) — see step 5 below. `npm run check` also runs the lint trio, but it
-additionally runs `check:audit`, `check:links` (network-dependent) and
+`npm run check:spelling`, `npm run check:markdown`, and
+`npm run check:duplication`. The "Validate repository" gate additionally runs
+`npm run check:audit` (dependency advisory allowlist) — see step 5 below.
+`npm run check` also runs the lint checks, but it additionally runs
+`check:audit`, `check:links` (network-dependent) and
 `check:community-group-links` (needs `GH_TOKEN` and rewrites
 `data/community-groups.json`) — see step 5 below before running the full
 `npm run check`. `just` is optional — the npm scripts remain the canonical
@@ -236,17 +237,26 @@ enough for a first contribution.
 4. Verify with `npm run build` before opening a PR. If your change touches
    pages, components, or navigation, also run the end-to-end suite — see
    [End-to-end tests](#end-to-end-tests) below.
-5. Run `npm run check:format`, `npm run check:spelling`, and
-   `npm run check:markdown` — the required "Lint repository" check runs these
-   three on every PR. If a check fails:
+5. Run `npm run check:format`, `npm run check:spelling`,
+   `npm run check:markdown`, and `npm run check:duplication` — the required
+   "Lint repository" check runs these four on every PR. If a check fails:
    - `check:format` — run `npm run fix:format` to auto-format.
    - `check:spelling` — add the flagged term to `.cspell.yml` if it's a
      legitimate project word, or fix the typo.
    - `check:markdown` — fix the reported issue, or add an inline disable comment
      per the rules in `.markdownlint.yaml` if the rule doesn't apply.
+   - `check:duplication` — runs [jscpd](https://github.com/kucherenko/jscpd)
+     over `tests/`, `src/` and `scripts/` (settings in `.jscpd.json`) and fails
+     when it counts more exact clones than the `CLONE_CEILING` in
+     `scripts/check-duplication.mjs`. Extract the repeated piece into a shared
+     helper rather than adding another copy; `npx jscpd --config .jscpd.json`
+     lists every clone with its lines. The ceiling only ever goes down: when
+     your change removes enough clones, the gate fails with the new count and
+     asks you to lower the constant to it, which keeps the headroom from being
+     spent on the next copy.
 
    The "Validate repository" check also runs `npm run check:audit` on every PR,
-   which fails differently from the lint trio:
+   which fails differently from the lint checks:
    - `check:audit` — fails the build on any high/critical dependency advisory
      not in the allowlist (see "Known unpatched dependency advisories" in
      [`SECURITY.md`](SECURITY.md)). The advisory database updates daily, so a
@@ -254,9 +264,9 @@ enough for a first contribution.
      run `npm audit fix --force`; flag the failure for maintainers, who own the
      allowlist in `scripts/audit-gate.mjs`.
 
-   `npm run check` runs the lint trio plus three more scripts that the PR gates
-   enforce separately ("Validate repository") or not at all, so treat it as a
-   superset rather than a drop-in for the CI checks:
+   `npm run check` runs the lint checks plus three more scripts that the PR
+   gates enforce separately ("Validate repository") or not at all, so treat it
+   as a superset rather than a drop-in for the CI checks:
    - `check:audit` — see above; part of "Validate repository", not "Lint
      repository".
    - `check:links` — runs `markdown-link-check` over every `*.md` file in the

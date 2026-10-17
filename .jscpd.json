@@ -1,0 +1,14 @@
+{
+  "path": ["tests", "src", "scripts"],
+  "minTokens": 50,
+  "minLines": 5,
+  "gitignore": true,
+  "absolute": true,
+  "noSymlinks": true,
+  "ignore": [
+    "**/node_modules/**",
+    "**/build/**",
+    "**/.docusaurus/**",
+    "**/coverage/**"
+  ]
+}
