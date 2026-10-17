@@ -134,16 +134,31 @@ test('aliveStatusCodes is a non-empty list of HTTP status codes', () => {
   }
 });
 
-test('retryOn429 is paired with a retryCount that permits a retry', () => {
-  if (config.retryOn429 !== true) return;
+// Both contracts below are conditional: they constrain a key only while that
+// key is set, and dropping `retryOn429` or `timeout` from the config is a
+// legitimate choice rather than a regression. The bail-out is therefore kept,
+// but reported through `t.skip()` instead of a bare `return` — node:test
+// counts a returned test as a pass, so the old form made "this contract no
+// longer applies" and "this contract was checked and held" indistinguishable
+// in the suite output.
+test('retryOn429 is paired with a retryCount that permits a retry', (t) => {
+  if (config.retryOn429 !== true) {
+    t.skip(
+      'retryOn429 is not enabled, so there is no retry for retryCount to permit',
+    );
+    return;
+  }
   assert.ok(
     Number.isInteger(config.retryCount) && config.retryCount >= 1,
     `${CONFIG_PATH}: retryOn429 is on but retryCount is ${JSON.stringify(config.retryCount)}; link-check only retries while attempts < retryCount, so the retry never happens`,
   );
 });
 
-test('timeout is a duration string link-check can parse', () => {
-  if (config.timeout === undefined) return;
+test('timeout is a duration string link-check can parse', (t) => {
+  if (config.timeout === undefined) {
+    t.skip('no timeout is configured, so the CLI default applies unparsed');
+    return;
+  }
   assert.match(
     config.timeout,
     /^\d+(?:\.\d+)?\s*(?:ms|s|m|h)$/,
