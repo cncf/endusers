@@ -482,3 +482,127 @@ test('no recorded CI exemption names a gate a workflow already runs', () => {
     'exemptions for gates a workflow runs; delete these entries',
   );
 });
+
+// The `collect:*` and `fetch:*` scripts are the other half of the data
+// contract. The gate guard above asks whether every `validate:*`/`check:*`
+// script is run by a workflow, because a gate nobody runs rejects nothing.
+// The mirror question is never asked: a collector nobody runs *refreshes*
+// nothing. data/*.json then keeps validating cleanly against its schema while
+// drifting further from the upstream it mirrors, which is the one failure mode
+// no validator can see — the file is still well-formed, just wrong.
+//
+// Nothing else in the suite notices. The guards above only ask whether the
+// names resolve; `tests/automation-workflow-ordering.test.mjs` pins the step
+// order *inside* the refresh workflows that exist, so a collector that has no
+// workflow at all is simply absent from everything it checks.
+//
+// Scope is deliberately the scripts that pull from an upstream source. The
+// `generate:*` scripts derive from data already in the tree and are chained
+// from other package.json scripts (`generate:changelog` from `_build`), so
+// "which workflow runs it" is not the right question for them; the existing
+// 'every `npm run` inside a package.json script names a defined script' guard
+// is what covers that chaining.
+const REFRESH_SCRIPT_PATTERN = /^(?:collect|fetch):/;
+
+// `<script>` → why no workflow refreshes it. Same bargain as
+// GATES_NOT_RUN_BY_CI: staying manual is allowed, but it has to be a decision
+// on the record rather than an omission nobody can distinguish from a
+// regression.
+const REFRESH_SCRIPTS_NOT_RUN_BY_CI = new Map([
+  [
+    'collect:case-studies',
+    'No scheduled workflow exists yet; scripts/collect-case-studies.mjs says ' +
+      'so in its own header and documents `npm run collect:case-studies` as ' +
+      'the manual refresh for data/case-studies.json.',
+  ],
+  [
+    'collect:end-user-talks',
+    'A snapshot of one event schedule (Sessionize, KubeCon NA 2026) rather ' +
+      'than a continuously moving upstream; scripts/collect-end-user-talks.mjs ' +
+      'documents `npm run collect:end-user-talks` as the manual refresh.',
+  ],
+  [
+    'collect:launch-metrics',
+    'A point-in-time capture, not a feed: scripts/collect-launch-metrics.mjs ' +
+      'records the launch-day baseline the 90-day comparison measures from, ' +
+      'so a schedule would overwrite the very baseline it exists to preserve.',
+  ],
+]);
+
+function refreshScripts() {
+  return Object.keys(scripts).filter((name) =>
+    REFRESH_SCRIPT_PATTERN.test(name),
+  );
+}
+
+test('every collect:*/fetch:* refresh is run by a workflow or recorded as exempt', () => {
+  const targets = workflowRunTargets();
+  const unrefreshed = refreshScripts()
+    .filter(
+      (name) => !targets.has(name) && !REFRESH_SCRIPTS_NOT_RUN_BY_CI.has(name),
+    )
+    .sort();
+  assert.deepEqual(
+    unrefreshed,
+    [],
+    'collectors package.json defines that no workflow runs; either add a ' +
+      'refresh workflow step for them or record the omission in ' +
+      'REFRESH_SCRIPTS_NOT_RUN_BY_CI with a reason',
+  );
+});
+
+test('the refresh guard recognises the collectors that are wired up', () => {
+  // Pins the guard above to evidence rather than to spelling, the way
+  // 'every gate this suite recognises is a real package.json script' does: a
+  // pattern that stopped matching would make the assertion pass vacuously.
+  const refreshes = refreshScripts();
+  const targets = workflowRunTargets();
+  for (const name of ['collect:metrics', 'fetch:community-people']) {
+    assert.ok(
+      refreshes.includes(name),
+      `expected ${name} to be recognised as a refresh script, got ${refreshes.join(', ')}`,
+    );
+    assert.ok(
+      targets.has(name),
+      `expected a workflow to run ${name}; if it was removed, the guard above ` +
+        'has lost the evidence that it can see a wired-up collector',
+    );
+  }
+});
+
+test('every recorded refresh exemption still names a defined script', () => {
+  const stale = [...REFRESH_SCRIPTS_NOT_RUN_BY_CI.keys()].filter(
+    (name) => !(name in scripts),
+  );
+  assert.deepEqual(
+    stale,
+    [],
+    'REFRESH_SCRIPTS_NOT_RUN_BY_CI names scripts package.json no longer defines',
+  );
+});
+
+test('every recorded refresh exemption carries a reason', () => {
+  const unexplained = [...REFRESH_SCRIPTS_NOT_RUN_BY_CI.entries()]
+    .filter(([, reason]) => typeof reason !== 'string' || reason.trim() === '')
+    .map(([name]) => name);
+  assert.deepEqual(
+    unexplained,
+    [],
+    'exemptions recorded without saying why the collector is not refreshed in CI',
+  );
+});
+
+test('no recorded refresh exemption names a collector a workflow already runs', () => {
+  // An exemption that is no longer true reads as a standing decision to leave
+  // something manual that CI does in fact refresh, and would silently absorb a
+  // later removal of that step.
+  const targets = workflowRunTargets();
+  const contradicted = [...REFRESH_SCRIPTS_NOT_RUN_BY_CI.keys()]
+    .filter((name) => targets.has(name))
+    .sort();
+  assert.deepEqual(
+    contradicted,
+    [],
+    'exemptions for collectors a workflow runs; delete these entries',
+  );
+});
