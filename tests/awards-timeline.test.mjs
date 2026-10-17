@@ -201,8 +201,20 @@ test('the audit banner names the source it links to and dates it in UTC', () => 
 // so formatting it without `timeZone: 'UTC'` renders the previous day for every
 // visitor west of UTC — and, because Docusaurus prerenders in CI (UTC) and
 // rehydrates in the browser, produces a hydration text mismatch as well.
+//
+// The precondition is asserted rather than returned on. `scripts/validate-awards.mjs`
+// requires both fields — `checkParseableDate` for `verifiedAt`, an explicit
+// error for a missing `verifiedAgainst` — and `.github/workflows/ci.yml` runs
+// `npm run validate:awards` in the gating `validate` job, so neither can go
+// missing while CI is green. A bare `return` in that state would report this
+// guard as a passing test that checked nothing, which is the one outcome a
+// regression guard must not have; `tests/radar-reports.test.mjs` pins its own
+// dated branch the same way.
 test('the audit date does not drift with the runtime time zone', (t) => {
-  if (!awardsData.verifiedAt || !awardsData.verifiedAgainst) return;
+  assert.ok(
+    awardsData.verifiedAt && awardsData.verifiedAgainst,
+    'data/awards.json must carry verifiedAt and verifiedAgainst for this guard to render the banner at all; validate:awards requires both',
+  );
 
   const original = process.env.TZ;
   const control = (zone) => {
