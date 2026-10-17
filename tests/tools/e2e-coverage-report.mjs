@@ -70,6 +70,14 @@ const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 // rather than against it. Raise the floor rather than this list when a probe
 // does land, and extend this list rather than lower the floor when a new
 // fallback proves unreachable.
+//
+// The two `main` entries above rest on a premise that lives outside the arms
+// -- every value in the call graph being an `Error` -- so a `throw` written in
+// a later edit could make both live without either arm being touched.
+// tests/e2e-coverage-error-arms.test.mjs asserts that premise directly, the
+// way tests/e2e-coverage-split-range.test.mjs asserts the
+// `splitRangeAtBoundaries` one, so such a change fails on a test name rather
+// than quietly altering what the failure artifact reports.
 
 class CoverageReportError extends Error {
   constructor(message, { runId = null, runStatus = null } = {}) {
@@ -1057,6 +1065,12 @@ export async function main(argv = process.argv.slice(2)) {
       },
       unmappedSources: [],
       missingSourceFiles: [],
+      // `?? String(error)` is unreachable today: everything the `try` above
+      // can raise is an Error, whose `message` is a string even when empty.
+      // Kept rather than deleted because the artifact is the only record a CI
+      // reader gets of why the gate failed, and publishing `null` there would
+      // be worse than publishing the coerced text.
+      // tests/e2e-coverage-error-arms.test.mjs pins the premise.
       diagnostics: { warnings: [], errors: [error.message ?? String(error)] },
     };
     await writeE2ECoverageReport(failure, {
@@ -1136,6 +1150,10 @@ if (
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
   main().catch((error) => {
+    // `?? error` shares its premise with the `?? String(error)` fallback in
+    // main()'s catch: a thrown Error always carries a stack, so the bare
+    // value is printed only for a non-Error, which nothing here can throw.
+    // tests/e2e-coverage-error-arms.test.mjs pins it.
     console.error(error.stack ?? error);
     process.exitCode = 1;
   });
