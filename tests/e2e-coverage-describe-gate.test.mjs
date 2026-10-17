@@ -61,7 +61,12 @@ const COVERAGE_GATED = [
   'radar-reports-variant.spec.js',
 ];
 
-const specNames = readdirSync(specDir)
+// Recursive because playwright.config.js sets `testDir: 'tests/e2e'` and no
+// `testMatch`, so the runner collects specs below that directory as well.
+// A flat listing here would leave this gate reading a smaller inventory than
+// the job it guards actually runs, which is the direction that fails open.
+const specNames = readdirSync(specDir, { recursive: true })
+  .map((entry) => String(entry))
   .filter((entry) => entry.endsWith('.spec.js'))
   .sort();
 

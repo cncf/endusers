@@ -64,7 +64,13 @@ function specCode(specPath) {
 /** Escapes a build name for embedding in a route pattern. */
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 
-const SPEC_SOURCES = readdirSync(SPEC_DIR)
+// Recursive for the same reason as the listings in
+// tests/e2e-coverage-describe-gate.test.mjs: playwright.config.js points
+// `testDir` at tests/e2e with no `testMatch`, so a spec one directory down is
+// run by the job and would otherwise be invisible here -- which would report a
+// fixture build as reaching no browser when a nested spec opens it.
+const SPEC_SOURCES = readdirSync(SPEC_DIR, { recursive: true })
+  .map((entry) => String(entry))
   .filter((name) => name.endsWith('.spec.js'))
   .sort()
   .map((name) => [name, specCode(join(SPEC_DIR, name))]);
