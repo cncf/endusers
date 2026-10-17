@@ -8,32 +8,21 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const workflowDir = join(repoRoot, '.github', 'workflows');
+import {
+  jobEntries,
+  loadWorkflows,
+  repoRoot,
+  runCommands,
+} from './helpers-workflows.mjs';
 
 const packageJson = JSON.parse(
   readFileSync(join(repoRoot, 'package.json'), 'utf8'),
 );
 const scripts = packageJson.scripts ?? {};
 
-const workflowFiles = readdirSync(workflowDir)
-  .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
-  .sort();
-
-// Collects every `run:` string across jobs.*.steps[] of one workflow.
-function runCommands(workflowFile) {
-  const parsed = parse(readFileSync(join(workflowDir, workflowFile), 'utf8'));
-  const commands = [];
-  for (const job of Object.values(parsed?.jobs ?? {})) {
-    for (const step of job?.steps ?? []) {
-      if (typeof step?.run === 'string') commands.push(step.run);
-    }
-  }
-  return commands;
-}
+const workflows = loadWorkflows();
 
 // `npm run foo`, `npm run foo -- --bar`, `npm run -s foo`, `npm -s run foo`.
 function npmRunTargets(command) {
@@ -46,13 +35,9 @@ function npmRunTargets(command) {
 }
 
 test('every workflow parses as YAML and declares at least one job', () => {
-  assert.ok(workflowFiles.length > 0, 'no workflow files found');
-  for (const file of workflowFiles) {
-    const parsed = parse(readFileSync(join(workflowDir, file), 'utf8'));
-    assert.ok(
-      Object.keys(parsed?.jobs ?? {}).length > 0,
-      `${file} declares no jobs`,
-    );
+  assert.ok(workflows.length > 0, 'no workflow files found');
+  for (const { name, doc } of workflows) {
+    assert.ok(jobEntries(doc).length > 0, `${name} declares no jobs`);
   }
 });
 
@@ -63,16 +48,14 @@ test('every workflow parses as YAML and declares at least one job', () => {
 // #813: an `architecture-ready` label never started the submission job.
 // https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
 function envContextJobs(parsed) {
-  return Object.entries(parsed?.jobs ?? {})
+  return jobEntries(parsed)
     .filter(([, job]) => typeof job?.if === 'string' && /\benv\./.test(job.if))
     .map(([jobName]) => jobName);
 }
 
 test('no job-level `if:` references the env context', () => {
-  const offenders = workflowFiles.flatMap((file) =>
-    envContextJobs(parse(readFileSync(join(workflowDir, file), 'utf8'))).map(
-      (jobName) => `${file}:${jobName}`,
-    ),
+  const offenders = workflows.flatMap(({ name, doc }) =>
+    envContextJobs(doc).map((jobName) => `${name}:${jobName}`),
   );
   assert.deepEqual(
     offenders,
@@ -83,10 +66,10 @@ test('no job-level `if:` references the env context', () => {
 
 test('every `npm run` in a workflow names a defined package.json script', () => {
   const missing = [];
-  for (const file of workflowFiles) {
-    for (const command of runCommands(file)) {
+  for (const { name, doc } of workflows) {
+    for (const command of runCommands(doc)) {
       for (const target of npmRunTargets(command)) {
-        if (!(target in scripts)) missing.push(`${file}: npm run ${target}`);
+        if (!(target in scripts)) missing.push(`${name}: npm run ${target}`);
       }
     }
   }
@@ -293,10 +276,10 @@ test('the unit suite runs in every workflow that runs a validator', () => {
   // A workflow that validates data but skips the unit suite can publish a
   // regression the suite would have caught.
   const offenders = [];
-  for (const file of workflowFiles) {
-    const targets = runCommands(file).flatMap(npmRunTargets);
+  for (const { name, doc } of workflows) {
+    const targets = runCommands(doc).flatMap(npmRunTargets);
     const runsValidator = targets.some((t) => t.startsWith('validate:'));
-    if (runsValidator && !targets.some(runsUnitSuite)) offenders.push(file);
+    if (runsValidator && !targets.some(runsUnitSuite)) offenders.push(name);
   }
   assert.deepEqual(
     offenders,
@@ -309,14 +292,14 @@ test('the Playwright end-to-end suite runs in some workflow', () => {
   // Regression for #672: tests/e2e/ existed, wired as `npm run test:e2e`,
   // and no workflow ever ran it, so it contributed no CI signal and could
   // break, bit-rot, or start asserting stale behaviour silently.
-  const runsIt = workflowFiles.some((file) =>
-    runCommands(file).flatMap(npmRunTargets).includes('test:e2e'),
+  const runsIt = workflows.some(({ doc }) =>
+    runCommands(doc).flatMap(npmRunTargets).includes('test:e2e'),
   );
   assert.ok(runsIt, 'no workflow runs `npm run test:e2e`');
 });
 
 test('browser coverage is isolated in a visible gating job with a source floor', () => {
-  const workflow = parse(readFileSync(join(workflowDir, 'ci.yml'), 'utf8'));
+  const workflow = workflows.find(({ name }) => name === 'ci.yml').doc;
   const required = workflow.jobs?.e2e;
   const coverage = workflow.jobs?.['e2e-coverage'];
   assert.ok(required, 'required e2e job is missing');
@@ -415,8 +398,8 @@ function gateScripts() {
 
 function workflowRunTargets() {
   const targets = new Set();
-  for (const file of workflowFiles) {
-    for (const command of runCommands(file)) {
+  for (const { doc } of workflows) {
+    for (const command of runCommands(doc)) {
       for (const target of npmRunTargets(command)) targets.add(target);
     }
   }

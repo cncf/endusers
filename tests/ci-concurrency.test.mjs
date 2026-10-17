@@ -37,20 +37,11 @@
 // the companion staleness test forces the entry to be deleted once the
 // workflow stops needing it.
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import test from 'node:test';
-import { parse } from 'yaml';
 
-const workflowDir = new URL('../.github/workflows/', import.meta.url).pathname;
+import { loadWorkflows } from './helpers-workflows.mjs';
 
-const workflows = readdirSync(workflowDir)
-  .filter((name) => /\.ya?ml$/.test(name))
-  .sort()
-  .map((name) => ({
-    name,
-    doc: parse(readFileSync(join(workflowDir, name), 'utf8')),
-  }));
+const workflows = loadWorkflows();
 
 // `on` is parsed as the boolean true by YAML 1.1 compatibility rules, so the
 // trigger block is read back through both keys. Mirrors the helper in

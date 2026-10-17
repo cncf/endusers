@@ -23,10 +23,8 @@
 // its workflow is fixed, so the table cannot quietly outlive the problem.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
 import {
   commitsGeneratedOutput,
   currentViolations,
@@ -36,35 +34,22 @@ import {
   publishesSite,
   validatorFor,
 } from './helpers-workflow-ordering.mjs';
-
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const workflowDir = join(repoRoot, '.github', 'workflows');
+import { loadWorkflows, repoRoot } from './helpers-workflows.mjs';
 
 const scripts =
   JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')).scripts ??
   {};
-
-const workflowFiles = readdirSync(workflowDir)
-  .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
-  .sort();
 
 // Every violation the repository is currently carrying, keyed
 // `<workflow>:<rule>`. Delete an entry when its workflow is fixed; the
 // staleness guard below fails if one is left behind.
 const KNOWN_ORDERING_VIOLATIONS = new Map([]);
 
-function parseWorkflow(file) {
-  return parse(readFileSync(join(workflowDir, file), 'utf8'));
-}
-
 // The detectors live in ./helpers-workflow-ordering.mjs so they can be driven
 // over violating fixtures as well as over this tree. The repository complies,
 // so every reporting arm in them is unreachable from here;
 // ./workflow-ordering-helpers.test.mjs is what proves they can still fire.
-const workflows = workflowFiles.map((name) => ({
-  name,
-  doc: parseWorkflow(name),
-}));
+const workflows = loadWorkflows();
 
 function violationsHere() {
   return currentViolations(workflows, scripts);
@@ -170,7 +155,8 @@ test('the generator and validator detection is not vacuous', () => {
 
 test('members validation runs before the ci.yml production build', () => {
   for (const [file, jobName] of [['ci.yml', 'validate']]) {
-    const targets = orderedTargets(parseWorkflow(file).jobs[jobName]);
+    const doc = workflows.find((entry) => entry.name === file).doc;
+    const targets = orderedTargets(doc.jobs[jobName]);
     const members = targets.indexOf('validate:members');
     const build = targets.findIndex(
       (target) => target === 'build:production' || target === 'build',

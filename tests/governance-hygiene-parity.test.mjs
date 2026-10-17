@@ -19,8 +19,10 @@
 
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { readWorkflow } from './helpers-workflows.mjs';
 import test from 'node:test';
 
 import {
@@ -125,7 +127,7 @@ test('the documented conflict threshold is the one the script enforces', () => {
 });
 
 test('the workflow GOVERNANCE.md says runs on a schedule is scheduled and runs the script', () => {
-  const workflow = readFileSync(join(repoRoot, WORKFLOW_PATH), 'utf8');
+  const workflow = readWorkflow(basename(WORKFLOW_PATH)).source;
   const manifest = JSON.parse(
     readFileSync(join(repoRoot, 'package.json'), 'utf8'),
   );

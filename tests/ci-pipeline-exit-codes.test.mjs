@@ -41,15 +41,10 @@
 // the staleness guard deletes the entry once the step stops needing it.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const workflowDir = join(repoRoot, '.github', 'workflows');
+import { walkSteps, workflowMap } from './helpers-workflows.mjs';
 
-// `<workflow>#<job>#<step name>` → why that pipeline may keep the last stage's
+// `<workflow>#<job>#<step>` → why that pipeline may keep the last stage's
 // exit status. Empty: every pipeline in the repository asks for pipefail
 // today, either through `shell:` or through `set -euo pipefail`.
 const PIPEFAIL_EXEMPT_STEPS = new Map([]);
@@ -62,18 +57,14 @@ const GUARDED_GATE = {
   step: 'Run unit tests with coverage',
 };
 
-function isWorkflowFile(name) {
-  return name.endsWith('.yml') || name.endsWith('.yaml');
+const workflows = workflowMap();
+
+// `<workflow>#<job>#<step>`, the step named as the exemption tables spell it.
+// A step reached through a local composite action carries the `uses:` chain
+// in front of its name, so it cannot be confused with a direct step.
+function stepKey(file, jobName, step, via) {
+  return `${file}#${jobName}#${[...via, step.name ?? step.run].join(' > ')}`;
 }
-
-const workflowFiles = readdirSync(workflowDir).filter(isWorkflowFile).sort();
-
-const workflows = new Map(
-  workflowFiles.map((file) => [
-    file,
-    parse(readFileSync(join(workflowDir, file), 'utf8')),
-  ]),
-);
 
 // `-o pipefail`, `-eo pipefail`, `-euo pipefail`: the option letter may sit at
 // the end of a bundled short-flag cluster, and `pipefail` is its argument.
@@ -191,9 +182,9 @@ function unguardedPipelines(parsedWorkflows, allowlist) {
   const offenders = [];
   for (const [file, workflow] of parsedWorkflows) {
     for (const [jobName, job] of Object.entries(workflow?.jobs ?? {})) {
-      for (const step of job?.steps ?? []) {
+      for (const { step, via } of walkSteps(job)) {
         if (!hasPipeline(step?.run)) continue;
-        const key = `${file}#${jobName}#${step.name ?? step.run}`;
+        const key = stepKey(file, jobName, step, via);
         if (allowlist.has(key)) continue;
         if (shellAppliesPipefail(effectiveShell(step, job, workflow))) continue;
         if (declaresPipefail(step.run)) continue;
@@ -207,16 +198,17 @@ function unguardedPipelines(parsedWorkflows, allowlist) {
 function staleExemptions(parsedWorkflows, allowlist) {
   const stale = [];
   for (const key of allowlist.keys()) {
-    const [file, jobName, stepName] = key.split('#');
+    const [file, jobName] = key.split('#');
     const workflow = parsedWorkflows.get(file);
     const job = workflow?.jobs?.[jobName];
     if (!job) {
       stale.push(`${key} (no such job)`);
       continue;
     }
-    const step = (job.steps ?? []).find(
-      (candidate) => (candidate.name ?? candidate.run) === stepName,
-    );
+    const step = [...walkSteps(job)].find(
+      (candidate) =>
+        stepKey(file, jobName, candidate.step, candidate.via) === key,
+    )?.step;
     if (!step) {
       stale.push(`${key} (no such step)`);
       continue;
@@ -241,10 +233,7 @@ function fixture(jobs, extra = {}) {
 }
 
 test('every piped run step in the repository keeps its pipeline exit code', () => {
-  assert.ok(
-    workflowFiles.length > 0,
-    'no workflows found under .github/workflows',
-  );
+  assert.ok(workflows.size > 0, 'no workflows found under .github/workflows');
   assert.deepEqual(
     unguardedPipelines(workflows, PIPEFAIL_EXEMPT_STEPS),
     [...PIPEFAIL_EXEMPT_STEPS.keys()].sort(),
@@ -315,15 +304,6 @@ test('staleExemptions matches an unnamed step by its command', () => {
   assert.deepEqual(staleExemptions(fixture({ ci: {} }), allowlist), [
     'fixture.yml#ci#x | y (no such step)',
   ]);
-});
-
-test('isWorkflowFile accepts both workflow extensions', () => {
-  // The directory holds only `.yml` today; `.yaml` is equally valid to Actions
-  // and a workflow added under it must not escape every scanner here.
-  assert.equal(isWorkflowFile('ci.yml'), true);
-  assert.equal(isWorkflowFile('ci.yaml'), true);
-  assert.equal(isWorkflowFile('README.md'), false);
-  assert.equal(isWorkflowFile('ci.yml.bak'), false);
 });
 
 test('the pipefail exemption list does not outlive its steps', () => {

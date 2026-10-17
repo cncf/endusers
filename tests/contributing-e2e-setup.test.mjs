@@ -18,7 +18,8 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
+
+import { readWorkflow } from './helpers-workflows.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
@@ -28,9 +29,7 @@ function readDoc(name) {
   return readFileSync(join(repoRoot, name), 'utf8');
 }
 
-const workflow = parse(
-  readFileSync(join(repoRoot, '.github/workflows/ci.yml'), 'utf8'),
-);
+const workflow = readWorkflow('ci.yml').doc;
 
 function workflowRunSteps() {
   const runs = [];

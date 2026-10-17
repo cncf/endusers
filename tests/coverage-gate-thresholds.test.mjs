@@ -17,6 +17,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+
+import { readWorkflow } from './helpers-workflows.mjs';
 import test from 'node:test';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -205,7 +207,7 @@ test(`package.json defines the ${GATE_SCRIPT} gate`, () => {
 });
 
 test('the gate is the command ci.yml runs for coverage', () => {
-  const workflow = readFileSync(`${repoRoot}.github/workflows/ci.yml`, 'utf8');
+  const workflow = readWorkflow('ci.yml').source;
   assert.match(
     workflow,
     new RegExp(`npm run ${GATE_SCRIPT}\\b`),

@@ -1,8 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
@@ -184,23 +181,6 @@ test('nodeMajor keeps the major and passes null through', () => {
   assert.equal(nodeMajor('22.12.0'), '22');
   assert.equal(nodeMajor(24), '24');
   assert.equal(nodeMajor(null), null);
-});
-
-test('loadLocalActions reads every action directory and tolerates gaps', () => {
-  const root = mkdtempSync(join(tmpdir(), 'endusers-local-actions-'));
-  try {
-    assert.deepEqual([...loadLocalActions(root).keys()], []);
-    const dir = join(root, '.github/actions');
-    mkdirSync(join(dir, 'one'), { recursive: true });
-    mkdirSync(join(dir, 'empty'), { recursive: true });
-    writeFileSync(join(dir, 'one/action.yml'), 'name: One\n');
-    writeFileSync(join(dir, 'README.md'), 'not an action\n');
-    const loaded = loadLocalActions(root);
-    assert.deepEqual([...loaded.keys()], ['one']);
-    assert.equal(loaded.get('one').name, 'One');
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
 });
 
 test('the repository action pins the Node major the workflows build on', () => {

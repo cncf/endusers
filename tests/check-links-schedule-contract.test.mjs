@@ -38,13 +38,12 @@
 // staleness guard forces the entry out once it stops being needed.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import { parse } from 'yaml';
 
-const root = new URL('..', import.meta.url).pathname;
-const workflowDir = join(root, '.github', 'workflows');
+import { loadWorkflows, repoRoot as root } from './helpers-workflows.mjs';
 
 const LINK_GATE = 'check:links';
 const LINK_WORKFLOW = 'check-links.yml';
@@ -53,13 +52,7 @@ const LIST_HELPER = '_list:check:*';
 const scripts =
   JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts ?? {};
 
-const workflows = readdirSync(workflowDir)
-  .filter((name) => /\.ya?ml$/.test(name))
-  .sort()
-  .map((name) => ({
-    name,
-    doc: parse(readFileSync(join(workflowDir, name), 'utf8')),
-  }));
+const workflows = loadWorkflows();
 
 // Workflows allowed to reach the network gate from a pull_request trigger,
 // keyed by file name with the reason. Empty on purpose.

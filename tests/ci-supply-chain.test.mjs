@@ -8,10 +8,7 @@
 // from there is what keeps a green run here evidence that the contract was
 // checked rather than evidence that it found nothing to look at.
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import test from 'node:test';
-import { parse } from 'yaml';
 
 import {
   actionsMissingVersionComment,
@@ -33,21 +30,13 @@ import {
 } from './helpers-ci-supply-chain.mjs';
 import {
   isNodeSetupStep,
-  loadLocalActions,
   nodeMajor,
   pinnedNodeVersion,
 } from './helpers-node-setup.mjs';
+import { loadLocalActions, loadWorkflows } from './helpers-workflows.mjs';
 
-const localActions = loadLocalActions(new URL('..', import.meta.url).pathname);
-
-const workflowDir = new URL('../.github/workflows/', import.meta.url).pathname;
-
-const workflows = readdirSync(workflowDir)
-  .filter((name) => /\.ya?ml$/.test(name))
-  .map((name) => {
-    const source = readFileSync(join(workflowDir, name), 'utf8');
-    return { name, source, doc: parse(source) };
-  });
+const localActions = loadLocalActions();
+const workflows = loadWorkflows();
 
 test('every workflow parses and declares at least one job', () => {
   assert.ok(workflows.length > 0, 'no workflow files found');

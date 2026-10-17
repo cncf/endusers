@@ -16,14 +16,14 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { parse } from 'yaml';
 
-import { loadLocalActions } from './helpers-node-setup.mjs';
-
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const workflowDir = join(repoRoot, '.github', 'workflows');
+import {
+  LOCAL_ACTION_PREFIX,
+  loadLocalActions,
+  loadWorkflows,
+  repoRoot,
+} from './helpers-workflows.mjs';
 
 const manifest = JSON.parse(
   readFileSync(join(repoRoot, 'package.json'), 'utf8'),
@@ -66,16 +66,10 @@ function findNpmrcFiles(dir, found = []) {
   return found;
 }
 
-const workflows = readdirSync(workflowDir)
-  .filter((name) => /\.ya?ml$/.test(name))
-  .map((name) => {
-    const source = readFileSync(join(workflowDir, name), 'utf8');
-    return { name, source, doc: parse(source) };
-  });
+const workflows = loadWorkflows();
 
 const INSTALL_COMMAND = /\bnpm\s+(ci|install|i)\b/;
-const LOCAL_ACTION_PREFIX = './.github/actions/';
-const localActions = loadLocalActions(repoRoot);
+const localActions = loadLocalActions();
 
 // Every npm install a workflow run performs, with the working directory and
 // env it runs under. A composite action under .github/actions/ runs its steps

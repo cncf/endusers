@@ -59,15 +59,10 @@
 // step stops needing it.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const workflowDir = join(repoRoot, '.github', 'workflows');
+import { walkSteps, workflowMap } from './helpers-workflows.mjs';
 
-// `<workflow>#<job>#<step name>` → why that script may run on past a failing
+// `<workflow>#<job>#<step>` → why that script may run on past a failing
 // command. Empty: the repository's one custom shell template carries a
 // single-command script, which needs no exemption.
 const ERREXIT_EXEMPT_STEPS = new Map([]);
@@ -80,18 +75,14 @@ const PATTERN_SOURCE = {
   step: 'Run unit tests with coverage',
 };
 
-function isWorkflowFile(name) {
-  return name.endsWith('.yml') || name.endsWith('.yaml');
+const workflows = workflowMap();
+
+// `<workflow>#<job>#<step>`, the step named as the exemption table spells it.
+// A step reached through a local composite action carries the `uses:` chain
+// in front of its name, so it cannot be confused with a direct step.
+function stepKey(file, jobName, step, via) {
+  return `${file}#${jobName}#${[...via, step.name ?? step.run].join(' > ')}`;
 }
-
-const workflowFiles = readdirSync(workflowDir).filter(isWorkflowFile).sort();
-
-const workflows = new Map(
-  workflowFiles.map((file) => [
-    file,
-    parse(readFileSync(join(workflowDir, file), 'utf8')),
-  ]),
-);
 
 // `-e` may sit alone or inside a bundled short-flag cluster (`-eo pipefail`,
 // `-euo pipefail`), and `-o errexit` is the long spelling of the same option.
@@ -218,9 +209,9 @@ function unguardedSteps(parsedWorkflows, allowlist) {
   const offenders = [];
   for (const [file, workflow] of parsedWorkflows) {
     for (const [jobName, job] of Object.entries(workflow?.jobs ?? {})) {
-      for (const step of job?.steps ?? []) {
+      for (const { step, via } of walkSteps(job)) {
         if (typeof step?.run !== 'string') continue;
-        const key = `${file}#${jobName}#${step.name ?? step.run}`;
+        const key = stepKey(file, jobName, step, via);
         if (allowlist.has(key)) continue;
         const shell = effectiveShell(step, job, workflow);
         if (!isGoverned(shell)) continue;
@@ -237,16 +228,17 @@ function unguardedSteps(parsedWorkflows, allowlist) {
 function staleExemptions(parsedWorkflows, allowlist) {
   const stale = [];
   for (const key of allowlist.keys()) {
-    const [file, jobName, stepName] = key.split('#');
+    const [file, jobName] = key.split('#');
     const workflow = parsedWorkflows.get(file);
     const job = workflow?.jobs?.[jobName];
     if (!job) {
       stale.push(`${key} (no such job)`);
       continue;
     }
-    const step = (job.steps ?? []).find(
-      (candidate) => (candidate.name ?? candidate.run) === stepName,
-    );
+    const step = [...walkSteps(job)].find(
+      (candidate) =>
+        stepKey(file, jobName, candidate.step, candidate.via) === key,
+    )?.step;
     if (!step) {
       stale.push(`${key} (no such step)`);
       continue;
@@ -284,10 +276,7 @@ function fixture(jobs, extra = {}) {
 }
 
 test('every custom-shell run step in the repository keeps fail-fast', () => {
-  assert.ok(
-    workflowFiles.length > 0,
-    'no workflows found under .github/workflows',
-  );
+  assert.ok(workflows.size > 0, 'no workflows found under .github/workflows');
   assert.deepEqual(
     unguardedSteps(workflows, ERREXIT_EXEMPT_STEPS),
     [...ERREXIT_EXEMPT_STEPS.keys()].sort(),
@@ -661,15 +650,6 @@ test('staleExemptions matches an unnamed step by its command', () => {
     ),
     [],
   );
-});
-
-test('isWorkflowFile accepts both workflow extensions', () => {
-  // The directory holds only `.yml` today; `.yaml` is equally valid to Actions
-  // and a workflow added under it must not escape the scanner here.
-  assert.equal(isWorkflowFile('ci.yml'), true);
-  assert.equal(isWorkflowFile('ci.yaml'), true);
-  assert.equal(isWorkflowFile('README.md'), false);
-  assert.equal(isWorkflowFile('ci.yml.bak'), false);
 });
 
 test('the errexit exemption list does not outlive its steps', () => {

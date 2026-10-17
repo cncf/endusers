@@ -25,21 +25,16 @@
 // entry to be deleted as its collector is scheduled.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const workflowDir = join(repoRoot, '.github', 'workflows');
+import { loadWorkflows, repoRoot, runCommands } from './helpers-workflows.mjs';
 
 const scripts =
   JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')).scripts ??
   {};
 
-const workflowFiles = readdirSync(workflowDir)
-  .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
-  .sort();
+const workflows = loadWorkflows();
 
 // The namespaces package.json already uses for scripts that write data into
 // the repository, matching GENERATOR_NAMESPACES in
@@ -73,18 +68,6 @@ const REFRESH_NOT_RUN_BY_CI = new Map([
   ],
 ]);
 
-// Collects every `run:` string across jobs.*.steps[] of one workflow.
-function runCommands(workflowFile) {
-  const parsed = parse(readFileSync(join(workflowDir, workflowFile), 'utf8'));
-  const commands = [];
-  for (const job of Object.values(parsed?.jobs ?? {})) {
-    for (const step of job?.steps ?? []) {
-      if (typeof step?.run === 'string') commands.push(step.run);
-    }
-  }
-  return commands;
-}
-
 // `npm run foo`, `npm run foo -- --bar`, `npm run -s foo`, `npm -s run foo`.
 function npmRunTargets(command) {
   const targets = [];
@@ -95,8 +78,8 @@ function npmRunTargets(command) {
 
 function directWorkflowTargets() {
   const targets = new Set();
-  for (const file of workflowFiles) {
-    for (const command of runCommands(file)) {
+  for (const { doc } of workflows) {
+    for (const command of runCommands(doc)) {
       for (const target of npmRunTargets(command)) targets.add(target);
     }
   }

@@ -48,13 +48,12 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
+import { readWorkflow } from './helpers-workflows.mjs';
+
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const CONTRIBUTING = readFileSync(join(repoRoot, 'CONTRIBUTING.md'), 'utf8');
 const JUSTFILE = readFileSync(join(repoRoot, 'Justfile'), 'utf8');
-const WORKFLOW = readFileSync(
-  join(repoRoot, '.github/workflows/ci.yml'),
-  'utf8',
-);
+const WORKFLOW = readWorkflow('ci.yml').source;
 
 // The two ci.yml jobs that gate a pull request. The e2e jobs are deliberately
 // out of scope: CONTRIBUTING.md documents their setup separately, and

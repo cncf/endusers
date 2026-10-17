@@ -32,6 +32,7 @@ import {
   nodeMajor,
   pinnedNodeVersion,
 } from './helpers-node-setup.mjs';
+import { readWorkflow } from './helpers-workflows.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const REPORT_SCRIPT = 'report:e2e:coverage';
@@ -118,10 +119,7 @@ function reporterFlags(workflowText) {
   return flags;
 }
 
-const workflowText = readFileSync(
-  join(repoRoot, '.github', 'workflows', 'ci.yml'),
-  'utf8',
-);
+const workflowText = readWorkflow('ci.yml').source;
 
 function check(flags) {
   assert.ok(
