@@ -1,10 +1,9 @@
 // Pins the `src/**` and `scripts/**` line numbers the test tree cites in prose.
 //
-// The end-to-end lane documents itself by line number. The residual note in
-// tests/e2e-coverage-gate.test.mjs names the exact regions the union cannot
-// credit, every data overlay under tests/e2e/fixtures/ explains in its
-// `description` which arm it exists to reach, and the specs that drive those
-// arms quote the guard they are about. That is the only record of *why* a
+// The end-to-end lane documents itself by line number. Every data overlay
+// under tests/e2e/fixtures/ explains in its `description` which arm it exists
+// to reach, and the specs that drive those arms quote the guard they are
+// about. That is the only record of *why* a
 // fixture build exists, and tests/tools/e2e-data-fixtures.cjs already refuses
 // an overlay whose `description` is empty.
 //
@@ -20,9 +19,8 @@
 //
 // The damage is not cosmetic. A reader who follows `utils.js line 16` to decide
 // whether an overlay still earns its build reads an unrelated function and
-// concludes the overlay is stale, or keeps a build nobody needs. The gate test's
-// residual list is the argument for not ratcheting --check-source-regions above
-// 97; an entry pointing at nothing is an argument nobody can check.
+// concludes the overlay is stale, or keeps a build nobody needs. A citation
+// pointing at nothing is an argument nobody can check.
 //
 // So: a cited line has to exist and has to carry code. Citing a blank line or a
 // comment is how a stale citation looks once the lines below it have shifted,
