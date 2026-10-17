@@ -36,7 +36,7 @@
 // asserted, not skipped. Outside the coverage run the overlay is not applied
 // (loadSiteData returns the file unchanged), so the plain "End-to-end tests"
 // job keeps the skip: there the case genuinely depends on upstream data.
-import { test, expect } from '../tools/e2e-coverage.cjs';
+import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 
 const MEMBERS_PATH = '/community/members';
@@ -51,20 +51,6 @@ const COVERAGE_RUN = process.env.E2E_COVERAGE === '1';
 // than named here: under the coverage build the overlay guarantees at least
 // one, and a real logo-less member is preferred when the data still has one.
 const withoutLogo = members.find((member) => !member.logo);
-
-// React attaches its fiber to the DOM node it hydrates, so the presence of a
-// `__react*` property is the signal that the element's handlers are live.
-// Clicking before that point silently discards the input.
-async function waitForHydration(locator) {
-  await locator.waitFor({ state: 'visible' });
-  await locator.evaluate(async (element) => {
-    const hydrated = (node) =>
-      Object.keys(node).some((key) => key.startsWith('__react'));
-    while (!hydrated(element)) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  });
-}
 
 test.describe('member profile dialog without a logo', () => {
   test('shows the member initials in place of a logo image', async ({
