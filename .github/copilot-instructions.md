@@ -39,8 +39,8 @@ Never assert counts or winner lists from memory.
   `.github/workflows/architecture-submission.yml`; the hand-authored catalog and
   submission guide are `docs/architectures/index.md` and
   `docs/architectures/submit.md`.
-- `/awards` is rendered from `data/awards.json`; winners are data entries, not
-  pages.
+- `/community/awards` is rendered from `data/awards.json`; winners are data
+  entries, not pages.
 
 ## Build
 
