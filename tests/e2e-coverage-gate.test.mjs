@@ -253,7 +253,25 @@ const MEASURED_ON_NODE_MAJOR = '22';
 // docs that mounted no src/** component, and every onward destination the
 // spec clicked through to is loaded by another spec, so the table above is
 // again carried over unchanged.
-const MEASURED_AT_SPEC_COUNT = 38;
+//
+// 38 -> 39: tests/e2e/architecture-submit.spec.js was added for
+// /architectures/submit, the one listed sidebar doc route no other spec
+// loaded. The table above is carried over unchanged, for the reason the two
+// entries above give for doing so rather than by re-measuring: that route is
+// a plain Markdown doc. Its body is hand-written markup -- the `pillar` and
+// `benefit` card grids -- compiled by MDX into static elements, and it mounts
+// no src/** component of its own. The only src/** module that executes on it
+// is src/theme/Footer/index.js, which is on every page of the site and is
+// already driven by tests/e2e/footer.spec.js, so the new spec moves no src/**
+// region into or out of the covered set on its own account.
+//
+// What a local run cannot settle is the denominator: a differently-shaped
+// union of captured scripts re-splits the same expressions, which is the
+// wobble the PeopleFreshness and DirectoryFreshness notes above describe, and
+// only the e2e-coverage job itself measures it. No floor is moved here on the
+// strength of a guess -- the job runs on every pull request, and if the union
+// shifts a file under its floor it says so by name.
+const MEASURED_AT_SPEC_COUNT = 39;
 
 // The number of src/** modules the table above was measured against.
 //
