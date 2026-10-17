@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import test from 'node:test';
-import { parse } from 'yaml';
+
+import { readWorkflow, repoRoot as root } from './helpers-workflows.mjs';
 
 // CodeQL is the only static-analysis gate in this repository, and it is not a
 // required status check: when its path filters stop matching the sources it is
@@ -11,9 +12,7 @@ import { parse } from 'yaml';
 // parts of .github/workflows/codeql.yml whose silent drift would disable the
 // scan rather than break it.
 
-const root = new URL('../', import.meta.url).pathname;
-const workflowPath = join(root, '.github/workflows/codeql.yml');
-const workflow = parse(readFileSync(workflowPath, 'utf8'));
+const workflow = readWorkflow('codeql.yml').doc;
 
 // `on` is parsed as the boolean true by YAML 1.1 compatibility rules, so the
 // trigger block is read back through both keys.

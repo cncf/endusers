@@ -36,7 +36,6 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
 import {
@@ -44,8 +43,7 @@ import {
   scriptInjectionRisks,
   unpinnedActions,
 } from './helpers-ci-supply-chain.mjs';
-
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+import { loadWorkflows, repoRoot } from './helpers-workflows.mjs';
 const ACTION_DIR = join('.github', 'actions');
 const ACTION_FILE = 'action.yml';
 
@@ -189,14 +187,7 @@ const actionNames = new Set(
   actions.map(({ name }) => name.split(/[\\/]/).at(-2)),
 );
 
-const workflowDir = join(repoRoot, '.github', 'workflows');
-const workflows = readdirSync(workflowDir)
-  .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
-  .sort()
-  .map((name) => {
-    const source = readFileSync(join(workflowDir, name), 'utf8');
-    return { name, source, doc: parse(source) };
-  });
+const workflows = loadWorkflows();
 
 // --- the contract, over the real tree ---------------------------------------
 

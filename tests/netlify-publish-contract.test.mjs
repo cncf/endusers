@@ -21,21 +21,19 @@ import { createRequire } from 'node:module';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseToml } from 'smol-toml';
-import { parse as parseYaml } from 'yaml';
 
 import {
   findNodeSetupStep,
   loadLocalActions,
   pinnedNodeVersion,
 } from './helpers-node-setup.mjs';
+import { readWorkflow } from './helpers-workflows.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const localActions = loadLocalActions(repoRoot);
 
 const netlify = parseToml(readFileSync(join(repoRoot, 'netlify.toml'), 'utf8'));
-const ci = parseYaml(
-  readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8'),
-);
+const ci = readWorkflow('ci.yml').doc;
 const packageJson = JSON.parse(
   readFileSync(join(repoRoot, 'package.json'), 'utf8'),
 );

@@ -7,44 +7,17 @@
 // each of them read `step.with['node-version']` off a setup-node step; once
 // the pin moved into the action's input default, a reader that stops at the
 // workflow sees no version at all.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { parse } from 'yaml';
+import {
+  LOCAL_ACTION_PREFIX,
+  loadLocalActions,
+  localActionName,
+} from './helpers-workflows.mjs';
 
-export const LOCAL_ACTION_PREFIX = './.github/actions/';
+export { LOCAL_ACTION_PREFIX, loadLocalActions };
+
 const SETUP_NODE = 'actions/setup-node@';
 const ENV_REF = /^\$\{\{\s*env\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}$/;
 const INPUT_REF = /^\$\{\{\s*inputs\.([A-Za-z_][A-Za-z0-9_-]*)\s*\}\}$/;
-
-// Every `.github/actions/<name>/action.yml` parsed, keyed by `<name>`. An
-// absent directory is an empty map, not an error.
-export function loadLocalActions(root) {
-  const actions = new Map();
-  let entries;
-  try {
-    entries = readdirSync(join(root, '.github/actions'), {
-      withFileTypes: true,
-    });
-  } catch {
-    return actions;
-  }
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const path = join(root, '.github/actions', entry.name, 'action.yml');
-    try {
-      actions.set(entry.name, parse(readFileSync(path, 'utf8')));
-    } catch {
-      // A directory without a manifest is not an action; the supply-chain
-      // contract reports it, this resolver just does not see it.
-    }
-  }
-  return actions;
-}
-
-function localActionName(uses) {
-  if (!uses.startsWith(LOCAL_ACTION_PREFIX)) return null;
-  return uses.slice(LOCAL_ACTION_PREFIX.length).split('@')[0];
-}
 
 function setupNodeStepOf(action) {
   return (action?.runs?.steps ?? []).find((step) =>

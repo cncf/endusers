@@ -38,6 +38,8 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { parse } from 'yaml';
 
+import { readWorkflow } from './helpers-workflows.mjs';
+
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const COVERAGE_JOB = 'e2e-coverage';
 const REPORT_SCRIPT = 'report:e2e:coverage';
@@ -113,10 +115,7 @@ function assertParity(enforced, documented) {
   );
 }
 
-const workflowText = readFileSync(
-  join(repoRoot, '.github', 'workflows', 'ci.yml'),
-  'utf8',
-);
+const workflowText = readWorkflow('ci.yml').source;
 const contributing = readFileSync(join(repoRoot, 'CONTRIBUTING.md'), 'utf8');
 
 test('CONTRIBUTING.md documents the e2e coverage thresholds ci.yml enforces', () => {

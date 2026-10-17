@@ -26,27 +26,12 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const workflowDir = join(repoRoot, '.github/workflows');
-
-function readWorkflows() {
-  return readdirSync(workflowDir)
-    .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
-    .sort()
-    .map((name) => ({
-      name,
-      doc: parse(readFileSync(join(workflowDir, name), 'utf8')),
-    }));
-}
-
-function jobEntries(doc) {
-  return Object.entries(doc?.jobs ?? {});
-}
+import {
+  jobEntries,
+  loadWorkflows as readWorkflows,
+} from './helpers-workflows.mjs';
 
 function runOf(step) {
   return typeof step?.run === 'string' ? step.run : '';

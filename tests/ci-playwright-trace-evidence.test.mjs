@@ -38,13 +38,10 @@
 // uploading.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const workflowDir = join(repoRoot, '.github', 'workflows');
+import { repoRoot, workflowMap } from './helpers-workflows.mjs';
 
 // `<workflow>#<job>` → why that job keeps no Playwright traces. Empty since
 // #1412: the e2e-coverage job runs the describeCoverage blocks that no other
@@ -71,16 +68,7 @@ const SURVIVES_A_GREEN_RUN = new Set(['always()', '!cancelled()']);
 // run with no flake.
 const TOLERATES_NO_FILES = new Set(['warn', 'ignore']);
 
-const workflowFiles = readdirSync(workflowDir)
-  .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
-  .sort();
-
-const workflows = new Map(
-  workflowFiles.map((file) => [
-    file,
-    parse(readFileSync(join(workflowDir, file), 'utf8')),
-  ]),
-);
+const workflows = workflowMap();
 
 const packageJson = JSON.parse(
   readFileSync(join(repoRoot, 'package.json'), 'utf8'),

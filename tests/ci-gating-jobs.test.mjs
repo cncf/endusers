@@ -33,13 +33,8 @@
 // opting out, so the allowlist cannot quietly outlive the exemption.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const workflowDir = join(repoRoot, '.github', 'workflows');
+import { workflowMap } from './helpers-workflows.mjs';
 
 // `<workflow>#<job>` → why that job is allowed to swallow its own failure.
 // Empty since #990 made e2e-coverage gating; the map and its stale-entry test
@@ -71,16 +66,7 @@ const PULL_REQUEST_WORKFLOWS = new Map([
   ],
 ]);
 
-const workflowFiles = readdirSync(workflowDir)
-  .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
-  .sort();
-
-const workflows = new Map(
-  workflowFiles.map((file) => [
-    file,
-    parse(readFileSync(join(workflowDir, file), 'utf8')),
-  ]),
-);
+const workflows = workflowMap();
 
 // A `continue-on-error` is "declared" unless it is pinned off. The field
 // accepts an expression, so anything that is not literally false — including
@@ -166,10 +152,7 @@ function fixture(jobs) {
 }
 
 test('every workflow parses and ci.yml still defines its gating jobs', () => {
-  assert.ok(
-    workflowFiles.length > 0,
-    'no workflows found under .github/workflows',
-  );
+  assert.ok(workflows.size > 0, 'no workflows found under .github/workflows');
 
   const ci = workflows.get('ci.yml');
   assert.ok(ci, 'ci.yml is missing; it carries the repository gate');

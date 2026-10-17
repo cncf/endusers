@@ -18,13 +18,14 @@
 // fails a run that names a label the repository does not have, but label
 // existence is only knowable from the GitHub API.
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { parse } from 'yaml';
 
 import { stripJsonComments } from './helpers-jsonc.mjs';
+import { loadWorkflows } from './helpers-workflows.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const configPath = join(repoRoot, '.github', 'dependabot.yml');
@@ -105,15 +106,10 @@ test('the github-actions ecosystem is configured, so SHA-pinned actions still ge
   // Cross-check the premise: if the workflows stopped being SHA-pinned this
   // entry would no longer be the pin-refresh mechanism, and this test's reason
   // for existing would have changed.
-  const workflowDir = join(repoRoot, '.github', 'workflows');
-  const workflowNames = readdirSync(workflowDir).filter((name) =>
-    /\.ya?ml$/.test(name),
-  );
-  assert.ok(workflowNames.length > 0, 'no workflow files found to update');
-  const pinned = workflowNames
-    .flatMap((name) =>
-      readFileSync(join(workflowDir, name), 'utf8').split(/\r?\n/),
-    )
+  const workflows = loadWorkflows();
+  assert.ok(workflows.length > 0, 'no workflow files found to update');
+  const pinned = workflows
+    .flatMap(({ source }) => source.split(/\r?\n/))
     .filter((line) => /^\s*-?\s*uses:\s*\S+@[0-9a-f]{40}\b/.test(line));
   assert.ok(
     pinned.length > 0,

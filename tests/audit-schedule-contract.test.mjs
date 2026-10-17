@@ -56,13 +56,10 @@
 //     the workflow holds no write scope at all.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const workflowDir = join(repoRoot, '.github', 'workflows');
+import { loadWorkflows, repoRoot } from './helpers-workflows.mjs';
 
 const AUDIT_GATE = 'check:audit';
 const AUDIT_WORKFLOW = 'audit-schedule.yml';
@@ -73,13 +70,7 @@ const manifest = JSON.parse(
   readFileSync(join(repoRoot, 'package.json'), 'utf8'),
 );
 
-const workflows = readdirSync(workflowDir)
-  .filter((name) => /\.ya?ml$/u.test(name))
-  .sort()
-  .map((name) => ({
-    name,
-    doc: parse(readFileSync(join(workflowDir, name), 'utf8')),
-  }));
+const workflows = loadWorkflows();
 
 function workflow(name) {
   const found = workflows.find((entry) => entry.name === name);
