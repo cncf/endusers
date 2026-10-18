@@ -1,9 +1,16 @@
 import fs from 'node:fs';
+import { reportAndExit } from './lib/validate-utils.mjs';
 
-const css = fs.readFileSync(
-  new URL('../src/css/custom.css', import.meta.url),
-  'utf8',
-);
+// Every other scripts/validate-*.mjs collects findings into an `errors`
+// array and hands it to reportAndExit() for a uniform report format (grouped
+// [error]/[warn] lines on stderr, exit code 1 on failure) — this was the one
+// holdout, throwing a raw Error and relying on Node's uncaught-exception
+// stack dump instead. That diverges from the shared validator contract every
+// script in `validate:all` otherwise honors.
+
+const PATH = 'src/css/custom.css';
+
+const css = fs.readFileSync(new URL(`../${PATH}`, import.meta.url), 'utf8');
 const colors = [
   ...css.matchAll(/--cncf-button-background(?:-hover)?:\s*(#[0-9a-f]{6})/gi),
 ].map(([, color]) => color.toLowerCase());
@@ -23,15 +30,19 @@ function contrast(first, second) {
   return (values[1] + 0.05) / (values[0] + 0.05);
 }
 
+const errors = [];
 if (
   colors.length !== 4 ||
   colors.some((color) => contrast(color, '#ffffff') < 4.5)
 ) {
-  throw new Error(
-    `Button backgrounds must provide 4.5:1 contrast with white text: ${colors.join(', ')}`,
-  );
+  errors.push({
+    path: PATH,
+    severity: 'error',
+    message: `Button backgrounds must provide 4.5:1 contrast with white text: ${colors.join(', ')}`,
+  });
 }
 
+reportAndExit(errors, 'button contrast');
 console.log(
   `Button contrast validated for ${colors.length} theme backgrounds.`,
 );
