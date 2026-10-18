@@ -103,8 +103,9 @@ const ROUTES = [
 // level, a contrast token or a label lost inside an opened dialog ships green
 // today exactly as it did for routes before this file existed.
 //
-// All three states scan clean as of this commit, so KNOWN_STATE_VIOLATIONS
-// below is empty and these are regression guards rather than a baseline of
+// The two dialogs keep the header mounted, so they inherit the navbar's
+// search-button entry in KNOWN_STATE_VIOLATIONS below; the drawer scans
+// clean. Beyond that these are regression guards rather than a baseline of
 // known bugs. They are scanned in both colour modes for the same reason the
 // routes are: a dialog paints its own surface, so a contrast regression there
 // is invisible to a light-mode-only scan.
@@ -154,10 +155,32 @@ const INTERACTIVE_STATES = [
   },
 ];
 
+// Violations carried by the navbar, which every scanned document renders.
+//
+// docusaurus-plugin-search-local's SearchButton labels itself
+// `aria-label="Search (Control+k)"` while its visible text is "Search" plus
+// the kbd hint "K" (the Control key is drawn as an icon). The accessible name
+// does not contain the visible text, which is what WCAG 2.5.3 Label in Name
+// and axe's label-content-name-mismatch check. axe-core 4.14.0 removed the
+// rule's `experimental` tag, so it now runs under wcag21a and reports the
+// button on every page and in every dialog state that keeps the header
+// mounted. The mobile drawer scans clean because the placeholder and key
+// hints are hidden below the navbar breakpoint, leaving no visible text to
+// mismatch.
+//
+// The site has no hook for the fix: the plugin's SearchBar renders
+// SearchButton without passing `translations`, so neither string can be
+// changed from docusaurus.config.js. This is a baseline, not a suppression;
+// the retirement tests below fail the moment the plugin stops reporting it.
+const NAVBAR_VIOLATIONS = ['label-content-name-mismatch'];
+
 // The state counterpart of KNOWN_VIOLATIONS, keyed by state label, with the
 // same self-retiring contract: an entry that stops being reported fails the
 // retirement test below and has to be deleted.
-const KNOWN_STATE_VIOLATIONS = {};
+const KNOWN_STATE_VIOLATIONS = {
+  'member profile dialog': [...NAVBAR_VIOLATIONS],
+  'TAB profile dialog': [...NAVBAR_VIOLATIONS],
+};
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
@@ -170,7 +193,12 @@ const DISABLED_RULES = Object.create(null);
 // an axe rule id. Deleting a fixed entry is required, not optional: the
 // "records no violation that has been fixed" test below fails while a stale
 // entry remains, so the baseline cannot outlive the bug it describes.
-const KNOWN_VIOLATIONS = {};
+//
+// Every route carries the navbar, so every route starts from
+// NAVBAR_VIOLATIONS; route-specific entries are appended per path.
+const KNOWN_VIOLATIONS = Object.fromEntries(
+  ROUTES.map((route) => [route.path, [...NAVBAR_VIOLATIONS]]),
+);
 
 function scanner(page) {
   const builder = new AxeBuilder({ page }).withTags(WCAG_TAGS);
