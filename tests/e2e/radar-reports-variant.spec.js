@@ -4,16 +4,16 @@
 // The component reads data/radar-reports.json at module scope and branches on
 // two document-level fields:
 //
-//   src/components/RadarReports/index.js:11-12 hands `data.generatedAt` to
-//     the shared MirrorSyncStatus, whose `if (!generatedAt) return null;` at
-//     src/components/shared/MirrorSyncStatus.js:20 renders no provenance line
+//   RadarReports hands `data.generatedAt` to the shared MirrorSyncStatus,
+//     whose `if (!generatedAt) return null;` guard in
+//     src/components/shared/MirrorSyncStatus.js renders no provenance line
 //     when the corpus carries no generatedAt. This overlay is that arm's only
 //     browser witness: the case-studies overlay beside it carries an
-//     unparseable string rather than null, so it lands one line further on,
-//     at src/components/shared/MirrorSyncStatus.js:22 (see the preamble of
+//     unparseable string rather than null, so it reaches the later
+//     `!syncDate` guard (see the preamble of
 //     tests/e2e/case-studies-variant.spec.js). Clearing this field to
-//     anything truthy takes the line-20 arm with it;
-//   src/components/RadarReports/index.js:8
+//     anything truthy takes the `!generatedAt` arm with it;
+//   RadarReports' list initialization:
 //     `const radarReports = data.radarReports || [];` — the `|| []` fallback
 //     supplies the list the page maps over when the corpus carries no
 //     radarReports array at all.

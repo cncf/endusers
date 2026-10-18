@@ -7,9 +7,9 @@
 // disagree with itself: at main eff33b5 the e2e-coverage job's summary
 // reported 18 uncovered regions across `src/**` while the per-file lists named
 // only 17 lines, because src/components/GroupLinkStatus/index.js scored 15/18
-// and listed lines 23 and 33 -- two entries for three zeros. The third was
+// and listed just two distinct lines -- two entries for three zeros. The third was
 // unreachable from the report, and the e2e gate's prose had to carry the
-// missing multiplicity by hand as "GroupLinkStatus:33 (x2)"
+// missing multiplicity of GroupLinkStatus's plural drift-warning ternaries by hand
 // (tests/e2e-coverage-gate.test.mjs).
 //
 // That matters because the list is the report's only guidance about *where*

@@ -9,17 +9,16 @@
 // gained:
 //
 //   * AwardsTimeline shows its provenance paragraph only when
-//     data/awards.json carries a verifiedAt; the ': null' arm is the fourteen
-//     lines of that paragraph not rendering
-//     (src/components/AwardsTimeline/index.js line 76).
+//     data/awards.json carries a verifiedAt; the ': null' arm of its
+//     verifiedDate ternary omits that paragraph.
 //   * metrics.generatedAt is read by several components' provenance lines,
 //     so clearing it build-wide moves their pages at once.
 //   * PeopleFreshness renders its paragraph only when
 //     data/community-people.json's fetchedAt parses as a date; emptying that
 //     one field takes two 'return null' arms at once -- the Number.isNaN guard
-//     inside the shared formatDate (src/components/shared/formatDate.js:17)
+//     inside the shared formatDate (src/components/shared/formatDate.js)
 //     and the !fetchedAt guard that drops the paragraph
-//     (src/components/PeopleFreshness/index.js:13).
+//     (src/components/PeopleFreshness/index.js).
 //
 // `npm run build:e2e:coverage` therefore produces two sites: the ordinary
 // coverage build, and a second one under /e2e-coverage-variant/ with
@@ -32,7 +31,7 @@
 // arm only this build reaches count as covered. *Regions* fold by span key,
 // and the build that takes a guard arm records no region at the arm's own
 // span (its deviation is the alternative it skipped), so the real build's
-// zero at the arm survives. src/components/PeopleFreshness/index.js:13
+// zero at the arm survives. PeopleFreshness's `!fetchedAt` guard
 // is therefore still listed as an uncovered region even though this spec
 // drives it; see #1256 and the comment at the union in
 // tests/tools/e2e-coverage-report.mjs. The build still exists for the lines.

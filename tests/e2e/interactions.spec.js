@@ -111,10 +111,10 @@ test.describe('member directory filtering', () => {
   });
 
   // The toolbar's membership <select> ships three options
-  // (MEMBERSHIP_FILTERS, src/components/MemberDirectory/hooks.js:3-10) and the
+  // (MEMBERSHIP_FILTERS in src/components/MemberDirectory/hooks.js) and the
   // case above drives two of them. `contributor` is answered by its own branch
   // of `matchesMembership`
-  // (src/components/MemberDirectory/utils.js:26-28), and no browser case has
+  // in src/components/MemberDirectory/utils.js, and no browser case has
   // ever selected it: the branch body is a zero region in the end-to-end
   // report while the unit suite covers it through a fake DOM. A filter arm
   // that only ever runs against a fake DOM is exactly the shape this file
@@ -147,8 +147,8 @@ test.describe('member directory filtering', () => {
     // Every surviving card carries a contributor label, which is what
     // distinguishes a working filter from one that merely re-rendered: both
     // labels `matchesMembership` admits here contain "Contributor"
-    // (src/components/MemberDirectory/utils.js:13,
-    // src/components/MemberDirectory/utils.js:15).
+    // (membershipLabel's `contributor` and `member-and-contributor` cases
+    // in src/components/MemberDirectory/utils.js).
     const cards = section.locator('article');
     await expect(cards.first()).toBeVisible();
     for (const card of await cards.all()) {

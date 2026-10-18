@@ -4,16 +4,16 @@
 // The component reads data/metrics.json at module scope and maps over five
 // document-level collections through a fallback that supplies an empty one:
 //
-//   src/components/MetricsDashboard/index.js:65
+//   LifecycleSection's cards fallback:
 //     `(lifecycle?.cards || []).map(...)` — the lifecycle cards;
-//   src/components/MetricsDashboard/index.js:76
+//   LifecycleSection's trends fallback:
 //     `Object.entries(lifecycle?.trends || {})` — the trend grid;
-//   src/components/MetricsDashboard/index.js:85
+//   LifecycleSection's omitted fallback:
 //     `(lifecycle?.omitted || []).map(...)` — the "what is not yet
 //     measurable" disclosure items;
-//   src/components/MetricsDashboard/index.js:124
+//   MetricsDashboard's series fallback:
 //     `Object.entries(metricsData.series || {})` — the line charts;
-//   src/components/MetricsDashboard/index.js:174
+//   MetricsDashboard's breakdowns fallback:
 //     `Object.entries(metricsData.breakdowns || {})` — the bar charts.
 //
 // None of the five fallbacks is reachable against the data the site ships: the
@@ -36,7 +36,7 @@
 // tests/e2e/fixtures/data-variant/** layered on, one `docusaurus serve`
 // offers both, and the report unions what each build reached.
 //
-// `referenceArchitectureLifecycle.trends` at src/components/MetricsDashboard/index.js:76
+// `referenceArchitectureLifecycle.trends` in LifecycleSection
 // used to be the one
 // collection this overlay could not clear. The same overlay appended a point
 // to `trends.submissions.values` for the single-point sparkline arm, `set` is
@@ -45,7 +45,7 @@
 // the single-point trend is now `add`ed beside the real two in the ordinary
 // build (tests/e2e/fixtures/data/metrics.json, asserted by
 // tests/e2e/metrics-sparkline.spec.js), so nothing in the variant build needs
-// trends to survive and src/components/MetricsDashboard/index.js:76 is
+// trends to survive and `referenceArchitectureLifecycle.trends` is
 // cleared here with the rest.
 //
 // The real route is asserted alongside the variant one. On its own, an

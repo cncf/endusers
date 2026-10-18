@@ -1,7 +1,7 @@
 // End-to-end coverage for the roster fallback in CommunityPeople.
 //
 //   const people = peopleData.people[section] || [];
-//     src/components/CommunityPeople/index.js line 134
+//     CommunityPeople's roster resolution in src/components/CommunityPeople/index.js
 //
 // The published site renders the component three times -- `section="tab"` from
 // docs/community/technical-advisory-board/index.md and docs/practitioners/index.md,

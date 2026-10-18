@@ -4,11 +4,11 @@
 // The component reads data/case-studies.json at module scope and branches on
 // two document-level fields:
 //
-//   src/components/CaseStudies/index.js:72-73 hands `data.generatedAt` to
-//     the shared MirrorSyncStatus, whose `if (!syncDate) return null;` at
-//     src/components/shared/MirrorSyncStatus.js:22 renders no provenance line
+//   CaseStudies hands `data.generatedAt` to the shared MirrorSyncStatus,
+//     whose `if (!syncDate) return null;` guard in
+//     src/components/shared/MirrorSyncStatus.js renders no provenance line
 //     when the corpus carries a generatedAt that does not parse;
-//   src/components/CaseStudies/index.js:48
+//   CaseStudies' list initialization:
 //     `const caseStudies = data.caseStudies || [];` — the `|| []` fallback
 //     supplies the list the page sorts, filters, counts and maps over when
 //     the corpus carries no caseStudies array at all.
@@ -23,14 +23,12 @@
 //
 // The unparseable timestamp is this overlay's and not the shipped corpus's for
 // the ordinary reason, and it is deliberately not JSON null. `null` is falsy,
-// so MirrorSyncStatus would return one line earlier, at its
-// `if (!generatedAt) return null;`
-// (src/components/shared/MirrorSyncStatus.js:20), and the
-// src/components/shared/MirrorSyncStatus.js:22 arm would stay unreached by
-// every browser build — which is what it was until this overlay
+// so MirrorSyncStatus would return earlier, at its missing-timestamp guard
+// `if (!generatedAt) return null;`, and the `!syncDate` arm would stay
+// unreached by every browser build — which is what it was until this overlay
 // changed shape: unit-covered by tests/case-studies-sync-status.test.mjs and
-// reached by no build at all. Line 20 keeps its browser coverage from
-// tests/e2e/fixtures/data-variant/radar-reports.json, which still clears the
+// reached by no build at all. The `!generatedAt` guard keeps its browser
+// coverage from tests/e2e/fixtures/data-variant/radar-reports.json, which clears the
 // field outright and is asserted by tests/e2e/radar-reports-variant.spec.js,
 // so the two overlays hold one arm each instead of both holding the same one.
 //
@@ -88,7 +86,8 @@ const variantStudies = loadSiteData('case-studies.json', VARIANT_ENV);
 
 const sectionOf = (page) => page.getByRole('region', { name: SECTION_NAME });
 
-// The same question formatDate asks (src/components/shared/formatDate.js:17),
+// The same Number.isNaN question formatDate asks
+// (src/components/shared/formatDate.js),
 // which is what decides between MirrorSyncStatus's two return-null arms.
 const parses = (value) => !Number.isNaN(new Date(value).getTime());
 

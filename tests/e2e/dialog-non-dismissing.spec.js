@@ -5,13 +5,14 @@
 // backdrop rather than to the dialog:
 //
 //   onMouseDown={(event) => event.target === event.currentTarget && onClose()}
-//     src/components/MemberDirectory/MemberProfile.js line 15
-//     src/components/CommunityPeople/index.js line 32
+//     MemberProfile in src/components/MemberDirectory/MemberProfile.js
+//     PersonDialog in src/components/CommunityPeople/index.js
 //
-// tests/e2e/interactions.spec.js:261 and tests/e2e/community-people.spec.js:181
+// The backdrop-click cases in tests/e2e/interactions.spec.js and
+// tests/e2e/community-people.spec.js
 // drive the true arm in a browser -- a mousedown at a coordinate clear of the
 // dialog closes it. Nothing drives the false arm, and the e2e coverage report
-// on `main` names both lines as uncovered regions while the unit suite reports
+// on `main` names both handlers as uncovered regions while the unit suite reports
 // both files at 100% region coverage.
 //
 // The regression this guards is specific: drop the
@@ -19,7 +20,7 @@
 // anywhere inside the profile dismisses it. Replacing both handlers with a
 // bare `onMouseDown={() => onClose()}` and rebuilding was measured against the
 // three specs that already drive these dialogs: 34 of their 35 cases stay
-// green, and the one that fails -- community-people.spec.js:170, "clicking the
+// green, and the one that fails -- community-people.spec.js's "clicking the
 // close button closes it and restores focus" -- fails on its focus-restoration
 // assertion, saying nothing about the guard. Both cases below fail on the
 // dialog disappearing, which is the behaviour itself. The unit suite cannot
