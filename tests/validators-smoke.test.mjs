@@ -26,12 +26,47 @@ const READ_ONLY_VALIDATORS = [
   'validate-members.mjs',
 ];
 
+// The working tree as git sees it, untracked files included. Used as a
+// before/after pair rather than as an absolute "clean" assertion: the suite
+// runs against a checkout that already holds build output, coverage
+// directories and a contributor's own edits, none of which this file has any
+// business failing on. Only what changes across one validator's run is its
+// doing.
+//
+// No other test writes inside the repository -- the script sandbox
+// (tests/helpers-script-sandbox.mjs) copies into a tmpdir first -- so a
+// concurrent test file cannot move this snapshot underneath a validator.
+function workingTreeState() {
+  return execFileSync(
+    'git',
+    ['status', '--porcelain', '--untracked-files=all'],
+    {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    },
+  );
+}
+
 for (const script of READ_ONLY_VALIDATORS) {
   test(`${script} passes against current repo data`, () => {
+    // "Read-only" is the entry condition for this list, and until now nothing
+    // checked it: every name here is executed against the real repository on
+    // every pull request, so a validator that starts writing -- an auto-fix
+    // that stops honouring its --fix flag, a mirror step that lands in
+    // static/ -- would silently edit the checkout mid-suite and leave CI
+    // committing to a tree the PR never proposed.
+    const before = workingTreeState();
+
     const stdout = execFileSync('node', [join(repoRoot, 'scripts', script)], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     assert.match(stdout, /[Vv]alidated|validated/);
+
+    assert.equal(
+      workingTreeState(),
+      before,
+      `${script} changed the working tree; READ_ONLY_VALIDATORS runs it on every pull request, so it has to leave the checkout alone`,
+    );
   });
 }
