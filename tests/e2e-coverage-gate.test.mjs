@@ -50,14 +50,21 @@ const localActions = loadLocalActions(repoRoot);
 //
 // The aggregate region floor sits a few regions under what the job records.
 // That margin is the same-major runtime wobble described at
-// MEASURED_ON_NODE_MAJOR, not room to ratchet on. The per-file floor is bound
-// by the lowest file, whose uncovered regions are a documented reporting
-// residual (#1066, #1469): it is a floor against a file falling, not a target.
-// Raise either only after reading the job's own artifact on the pinned major.
+// MEASURED_ON_NODE_MAJOR, not room to ratchet on. Raise it only after reading
+// the job's own artifact on the pinned major.
+//
+// There is deliberately no per-file region floor in this lane. The browser
+// report attributes regions across two builds (the real site and the
+// coverage-variant overlay), and the union cannot always credit an arm one
+// build executed when the other recorded a zero over it: MirrorSyncStatus.js
+// and profile-links.mjs both sat on the old 66 floor with every uncovered arm
+// demonstrably reached in a browser (#1593, same class as #1066 and #1079).
+// Per-file region accuracy is the unit lane's job, where
+// --check-source-file-regions 100 measures the same files without that
+// artifact.
 const FLOORS = {
   '--check-source': 100,
   '--check-source-regions': 96,
-  '--check-source-file-regions': 66,
 };
 
 // The Node major the floors above were measured on.
@@ -302,39 +309,6 @@ test('a deleted --check-source-regions fails the guard', () => {
   assert.throws(
     () => check(reporterFlags(weakenedRegions(''))),
     /must pass --check-source-regions/,
-  );
-});
-
-// The per-file floor is the one a reviewer is most likely to wave through a
-// drop in, because it reads as low already; the fixture proves 66 is a floor
-// the guard holds, not a default it tolerates moving.
-function weakenedFileRegions(replacement) {
-  const original = '            --check-source-file-regions 66 \\\n';
-  assert.ok(
-    workflowText.includes(original),
-    'fixture is stale: ci.yml no longer renders with --check-source-file-regions 66',
-  );
-  return workflowText.replace(original, replacement);
-}
-
-test('a lowered --check-source-file-regions fails the guard', () => {
-  assert.throws(
-    () =>
-      check(
-        reporterFlags(
-          weakenedFileRegions(
-            '            --check-source-file-regions 50 \\\n',
-          ),
-        ),
-      ),
-    /--check-source-file-regions is 50, below the 66/,
-  );
-});
-
-test('a deleted --check-source-file-regions fails the guard', () => {
-  assert.throws(
-    () => check(reporterFlags(weakenedFileRegions(''))),
-    /must pass --check-source-file-regions/,
   );
 });
 
