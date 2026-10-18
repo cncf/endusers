@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolveRepoRoot } from './helpers.mjs';
 import { parse as parseYaml } from 'yaml';
 import { REPO_AUTHORED_PAGES } from '../scripts/lib/architecture-pages.mjs';
 
@@ -15,7 +15,7 @@ import { REPO_AUTHORED_PAGES } from '../scripts/lib/architecture-pages.mjs';
 // catalog entry with no page, or a page with no entry, without failing a
 // check. These tests assert the contract between the three.
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+const repoRoot = resolveRepoRoot(import.meta.url);
 const catalogPath = join(repoRoot, 'data/architectures/catalog.json');
 const recordsDir = join(repoRoot, 'data/architectures/records');
 const docsDir = join(repoRoot, 'docs/architectures');

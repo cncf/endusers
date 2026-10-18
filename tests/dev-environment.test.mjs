@@ -12,7 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { resolveRepoRoot } from './helpers.mjs';
 import { parse as parseYaml } from 'yaml';
 import { stripJsonComments } from './helpers-jsonc.mjs';
 
@@ -21,7 +21,7 @@ import { stripJsonComments } from './helpers-jsonc.mjs';
 // package.json and into the Node version CI pins, entirely through strings,
 // and nothing in the suite reads either file: a renamed script or a bumped
 // runtime leaves them silently stale.
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = resolveRepoRoot(import.meta.url);
 
 const packageJson = JSON.parse(
   readFileSync(join(root, 'package.json'), 'utf8'),

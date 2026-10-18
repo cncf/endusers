@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { resolveRepoRoot } from './helpers.mjs';
 import { stripJsonComments } from './helpers-jsonc.mjs';
 
 // tests/dev-environment.test.mjs parses .devcontainer/devcontainer.json and
@@ -16,7 +16,7 @@ import { stripJsonComments } from './helpers-jsonc.mjs';
 // and no backslash escape, so the block-comment arms, the string-escape arm
 // and the end-of-input tail never execute. Every case below is a shape the
 // stripper claims to handle that no file in the repo currently has.
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = resolveRepoRoot(import.meta.url);
 
 test('line comments are removed and the newline that ends them is kept', () => {
   assert.equal(

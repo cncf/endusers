@@ -11,9 +11,9 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolveRepoRoot } from './helpers.mjs';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+const repoRoot = resolveRepoRoot(import.meta.url);
 
 // scripts/import-architecture-issue.mjs mirrors CNCF project logos over the
 // network. The sandbox below mirrors the repo layout in a temp directory and
