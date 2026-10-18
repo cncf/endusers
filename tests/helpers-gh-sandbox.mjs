@@ -11,8 +11,9 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const repoRoot = new URL('..', import.meta.url).pathname;
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
 // Stub placed first on PATH so a script that shells out to `gh` never reaches
 // the network or a real credential. Every invocation is appended to a log file

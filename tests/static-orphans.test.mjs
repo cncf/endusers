@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const repoRoot = new URL('..', import.meta.url).pathname;
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const staticRoot = join(repoRoot, 'static');
 
 // Directories under static/ that are published but whose contents are only

@@ -24,6 +24,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   DATA_DIR,
@@ -33,9 +34,9 @@ import {
   overlayDirFor,
 } from './tools/e2e-data-fixtures.cjs';
 
-const SPEC_DIR = new URL('e2e/', import.meta.url).pathname;
+const SPEC_DIR = fileURLToPath(new URL('e2e/', import.meta.url));
 
-const REPO_ROOT = new URL('..', import.meta.url).pathname;
+const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 /** Every committed overlay in one fixture directory, as absolute paths. */
 function overlaysIn(dir) {
