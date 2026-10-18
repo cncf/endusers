@@ -82,3 +82,24 @@ test('each card includes title, speakers, room, and official schedule link', () 
     assert.equal(anchor.props.href, talk.url);
   }
 });
+
+// The badge beside each slot must come from the data file's timezone field,
+// the same source the intro sentence uses, so regenerating the snapshot for
+// an event in another timezone cannot leave a stale hardcoded label (#1594).
+test('every slot badge renders the timezone from the data file', () => {
+  const tree = EndUserTalkSchedule();
+  const slotCount = schedule.days.reduce(
+    (count, day) => count + day.slots.length,
+    0,
+  );
+  const badges = findAllByType(tree, 'span').filter(
+    (node) =>
+      typeof node.props?.className === 'string' &&
+      node.props.className.includes('timezone'),
+  );
+
+  assert.equal(badges.length, slotCount);
+  for (const badge of badges) {
+    assert.equal(textOf(badge), schedule.timezone);
+  }
+});
