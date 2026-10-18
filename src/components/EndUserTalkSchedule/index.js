@@ -45,7 +45,7 @@ export default function EndUserTalkSchedule() {
                 <span className={styles.endTime}>
                   – <time dateTime={slot.end}>{slot.endLabel}</time>
                 </span>
-                <span className={styles.timezone}>MST</span>
+                <span className={styles.timezone}>{schedule.timezone}</span>
               </div>
               <ul
                 className={styles.talks}
