@@ -1,13 +1,23 @@
 // Guards .github/dependabot.yml, which no other test reads.
 //
-// The file is load-bearing for a guarantee that tests/ci-supply-chain.test.mjs
-// already enforces from the other side: every third-party action in
-// .github/workflows is pinned to a full commit SHA. A SHA pin never floats
-// onto an upstream security fix, so the github-actions ecosystem entry here is
-// the only mechanism that ever rewrites those pins. Delete that entry, misspell
-// its directory, or set its PR limit to 0, and the pins silently freeze — every
-// existing test stays green, because nothing else in the suite looks at this
-// file.
+// The file is load-bearing for a guarantee two other tests enforce from the
+// other side: every third-party action is pinned to a full commit SHA, in
+// .github/workflows (tests/ci-supply-chain.test.mjs) and in the composite
+// actions under .github/actions (tests/composite-action-supply-chain.test.mjs).
+// A SHA pin never floats onto an upstream security fix, so the github-actions
+// ecosystem entry here is the only mechanism that ever rewrites those pins.
+// Delete that entry, misspell its directory, or set its PR limit to 0, and the
+// pins silently freeze — every existing test stays green, because nothing else
+// in the suite looks at this file.
+//
+// The two halves of that guarantee need two different directories. For the
+// github-actions ecosystem a directory of "/" means .github/workflows and the
+// repository-root action.yml; a composite action in
+// .github/actions/<name>/action.yml is reached only by naming its own
+// directory, and a workflow's `uses: ./.github/actions/<name>` is a local
+// reference Dependabot does not follow to find it. So the composite-action
+// coverage is asserted here against the actions actually on disk, rather than
+// assumed from the "/" entry.
 //
 // Dependabot validates this configuration server-side and reports a failure on
 // the repository's Dependabot tab rather than on a pull request, so a malformed
@@ -25,7 +35,7 @@ import test from 'node:test';
 import { parse } from 'yaml';
 
 import { stripJsonComments } from './helpers-jsonc.mjs';
-import { loadWorkflows } from './helpers-workflows.mjs';
+import { loadLocalActions, loadWorkflows } from './helpers-workflows.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const configPath = join(repoRoot, '.github', 'dependabot.yml');
@@ -51,6 +61,23 @@ const WEEKDAYS = new Set([
 // disk so a typo cannot pass as a configured-but-inert entry.
 function resolveDirectory(directory) {
   return join(repoRoot, directory.replace(/^\/+/, ''));
+}
+
+// Every directory an update entry covers. Dependabot accepts either the
+// singular `directory` or the plural `directories`; both are normalized here
+// so each assertion below reads one shape.
+function directoriesOf(entry) {
+  if (Array.isArray(entry?.directories)) return entry.directories;
+  return entry?.directory === undefined ? [] : [entry.directory];
+}
+
+// Repo-relative directory of every composite action in the repository. These
+// are the directories the github-actions entry has to name one by one: "/"
+// does not reach them.
+function compositeActionDirectories() {
+  return [...loadLocalActions().keys()]
+    .map((name) => `/.github/actions/${name}`)
+    .sort();
 }
 
 function entriesFor(ecosystem) {
@@ -97,19 +124,44 @@ test('the github-actions ecosystem is configured, so SHA-pinned actions still ge
   );
 
   const [entry] = actionEntries;
-  assert.equal(
-    entry.directory,
-    '/',
-    'github-actions updates are discovered from the repository root',
+  const directories = directoriesOf(entry);
+  assert.ok(
+    directories.includes('/'),
+    'github-actions updates are discovered from the repository root, which is ' +
+      'what covers .github/workflows',
   );
 
-  // Cross-check the premise: if the workflows stopped being SHA-pinned this
-  // entry would no longer be the pin-refresh mechanism, and this test's reason
-  // for existing would have changed.
+  // "/" covers .github/workflows and nothing under .github/actions, so every
+  // composite action has to be named. An action missing here keeps its
+  // required SHA pin and loses the only thing that ever rewrites it.
+  const composites = compositeActionDirectories();
+  assert.ok(
+    composites.length > 0,
+    'expected at least one composite action under .github/actions; if they ' +
+      'are all gone, drop the entries below and this assertion with them',
+  );
+  for (const directory of composites) {
+    assert.ok(
+      directories.includes(directory),
+      `the composite action at ${directory} is not covered by the ` +
+        'github-actions entry, so its SHA-pinned `uses:` steps are enforced ' +
+        'by tests/composite-action-supply-chain.test.mjs but never refreshed',
+    );
+  }
+
+  // Cross-check the premise: if the workflows and composite actions stopped
+  // being SHA-pinned this entry would no longer be the pin-refresh mechanism,
+  // and this test's reason for existing would have changed.
   const workflows = loadWorkflows();
   assert.ok(workflows.length > 0, 'no workflow files found to update');
-  const pinned = workflows
-    .flatMap(({ source }) => source.split(/\r?\n/))
+  const sources = [
+    ...workflows.map(({ source }) => source),
+    ...composites.map((directory) =>
+      readFileSync(join(resolveDirectory(directory), 'action.yml'), 'utf8'),
+    ),
+  ];
+  const pinned = sources
+    .flatMap((source) => source.split(/\r?\n/))
     .filter((line) => /^\s*-?\s*uses:\s*\S+@[0-9a-f]{40}\b/.test(line));
   assert.ok(
     pinned.length > 0,
@@ -161,29 +213,47 @@ test('the devcontainers ecosystem is configured against the config it updates', 
 
 test('every update entry names a directory that exists in the repository', () => {
   for (const entry of updates) {
-    const { directory } = entry;
-    assert.equal(
-      typeof directory,
-      'string',
-      `${entry['package-ecosystem']}: directory must be a string`,
-    );
+    const directories = directoriesOf(entry);
     assert.ok(
-      directory.startsWith('/'),
-      `${entry['package-ecosystem']}: directory "${directory}" must be repo-relative and start with "/"`,
+      directories.length > 0,
+      `${entry['package-ecosystem']}: must declare directory or directories`,
     );
-    assert.ok(
-      existsSync(resolveDirectory(directory)),
-      `${entry['package-ecosystem']}: directory "${directory}" does not exist`,
-    );
+    for (const directory of directories) {
+      assert.equal(
+        typeof directory,
+        'string',
+        `${entry['package-ecosystem']}: directory must be a string`,
+      );
+      assert.ok(
+        directory.startsWith('/'),
+        `${entry['package-ecosystem']}: directory "${directory}" must be repo-relative and start with "/"`,
+      );
+      // Only the plural `directories` key accepts globs, so an unexpanded "*"
+      // in a path checked against disk here would be a literal directory name
+      // that cannot exist. Nothing in this repository uses one; assert that,
+      // rather than letting a glob silently skip the existence check.
+      assert.ok(
+        !directory.includes('*'),
+        `${entry['package-ecosystem']}: directory "${directory}" uses a glob, ` +
+          'which cannot be checked against the tree offline; name the ' +
+          'directory explicitly',
+      );
+      assert.ok(
+        existsSync(resolveDirectory(directory)),
+        `${entry['package-ecosystem']}: directory "${directory}" does not exist`,
+      );
+    }
   }
 });
 
 test('no two update entries share an ecosystem and directory', () => {
   const seen = new Set();
   for (const entry of updates) {
-    const key = `${entry['package-ecosystem']}@${entry.directory}`;
-    assert.ok(!seen.has(key), `duplicate update entry for ${key}`);
-    seen.add(key);
+    for (const directory of directoriesOf(entry)) {
+      const key = `${entry['package-ecosystem']}@${directory}`;
+      assert.ok(!seen.has(key), `duplicate update entry for ${key}`);
+      seen.add(key);
+    }
   }
 });
 
@@ -251,7 +321,7 @@ test('every update entry requests at least one label', () => {
 
 test('every npm group pattern still matches a declared dependency', () => {
   for (const entry of entriesFor('npm')) {
-    const declared = declaredNpmDependencies(entry.directory);
+    const declared = directoriesOf(entry).flatMap(declaredNpmDependencies);
     for (const [groupName, group] of Object.entries(entry.groups ?? {})) {
       // Groups keyed only by dependency-type match by classification rather
       // than by name, so there is no pattern to go stale.

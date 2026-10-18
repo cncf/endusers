@@ -6,8 +6,28 @@ updates:
   # comment, so this is what keeps the pins current. Only labels that already
   # exist in this repository are requested; Dependabot fails a run that names
   # a label it cannot find.
+  #
+  # `directories`, not `directory`: for the github-actions ecosystem a
+  # directory of `/` means `.github/workflows` and the repository-root
+  # `action.yml` — and nothing else. Composite actions living in
+  # `.github/actions/<name>/action.yml` are not discovered through it, and a
+  # workflow's `uses: ./.github/actions/<name>` is a local reference Dependabot
+  # does not follow. Their `uses:` pins are nevertheless required to be
+  # SHA-pinned with a version comment (tests/composite-action-supply-chain.test.mjs),
+  # so without an entry naming them those pins are enforced but never
+  # refreshed: frozen at whatever SHA they were written with, for good.
+  #
+  # Each composite action directory is listed explicitly rather than matched
+  # with the `*` glob `directories` also accepts. An entry that resolves to
+  # nothing is silently inert — Dependabot reports configuration problems on
+  # the repository's Dependabot tab, not on a pull request — and an explicit
+  # path is the form tests/dependabot-contract.test.mjs can check against the
+  # tree offline, so a new composite action that nobody adds here fails the
+  # suite instead of quietly losing its updates.
   - package-ecosystem: 'github-actions'
-    directory: '/'
+    directories:
+      - '/'
+      - '/.github/actions/setup-node-deps'
     schedule:
       interval: 'weekly'
       day: 'monday'
