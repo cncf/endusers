@@ -32,11 +32,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { findActiveContent as findSvgActiveContent } from '../scripts/lib/svg-active-content.mjs';
 import { findActiveContent as findMdxActiveContent } from '../scripts/lib/mdx-active-content.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 
 const read = (relative) => readFileSync(join(root, relative), 'utf8');
 

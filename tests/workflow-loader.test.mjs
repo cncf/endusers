@@ -17,6 +17,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   isWorkflowFile,
@@ -245,7 +246,7 @@ test("the repository's composite action is inside every scanner's scope", () => 
 const testsDir = join(repoRoot, 'tests');
 const LOADER = 'helpers-workflows.mjs';
 // This file spells the forbidden shapes out as fixtures below.
-const GUARD = relative(testsDir, new URL(import.meta.url).pathname);
+const GUARD = relative(testsDir, fileURLToPath(import.meta.url));
 
 // A filesystem call aimed at the workflow directory, however the path is
 // spelled: join()'d segments, a literal, or a URL.
