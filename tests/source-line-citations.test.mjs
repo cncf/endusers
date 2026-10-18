@@ -48,6 +48,7 @@ import test from 'node:test';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readWorkflow, workflowFiles } from './helpers-workflows.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const SELF = 'tests/source-line-citations.test.mjs';
@@ -91,6 +92,55 @@ export function parseCitations(text) {
   return found;
 }
 
+// The third tree the test tree cites by line, and the one the doctrine above
+// does not cover: `.github/workflows/**`. The prose in tests/ argues about
+// what CI does by pointing at the step that does it, and those line numbers
+// rot faster than src/**'s -- a workflow grows a step in the middle far more
+// often than a module grows a function, and every step below it shifts.
+//
+// A bare `ci.yml:40` is resolvable in a way a bare `utils.js:40` is not, which
+// is why this is matched where CITATION refuses the unqualified spelling:
+// GitHub requires every workflow to sit directly in one flat directory, so the
+// basename is the whole identity. A name that is not a workflow on disk is not
+// a workflow citation at all and is left alone.
+const WORKFLOW_DIR = '.github/workflows';
+const WORKFLOW_CITATION = /\b([a-z0-9][a-z0-9.-]*\.yml):(\d+)(?:-(\d+))?/g;
+
+export function parseWorkflowCitations(text, isWorkflow) {
+  const found = [];
+  for (const match of text.matchAll(WORKFLOW_CITATION)) {
+    const [, file, start, end] = match;
+    if (!isWorkflow(file)) continue;
+    found.push({ file, start: Number(start), end: Number(end ?? start) });
+  }
+  return found;
+}
+
+// A workflow citation is a claim about a *step*, so it has to land on one. The
+// anchors are the two lines a step is identified by -- its `- name:` and its
+// `run:`/`uses:` -- and they are what a reader is being pointed at; every
+// other line is a continuation (`fi`, a `with:` value, a heredoc body) or a
+// structural key (`jobs:`, a job id, `steps:`).
+//
+// That distinction is what makes the check survive the drift it exists for.
+// When a step is inserted above a cited one, the old number almost always
+// still exists and still carries text -- "does this line have code on it" sees
+// nothing wrong -- but it has slid off the anchor onto a continuation line or
+// into the next job, which is a fault this can name. Only the endpoints are
+// constrained: a range's interior is the body of the thing being cited.
+const WORKFLOW_ANCHOR = /^\s*(?:-\s+name:|-?\s*(?:run|uses):)/;
+
+export function workflowCitationFault({ file, start, end }, readLines) {
+  const lines = readLines(file);
+  if (end > lines.length)
+    return `cites line ${end}, but ${file} has ${lines.length}`;
+  for (const line of [start, end]) {
+    if (!WORKFLOW_ANCHOR.test(lines[line - 1]))
+      return `cites line ${line}, which is not a step (${lines[line - 1].trim() || 'blank'})`;
+  }
+  return null;
+}
+
 // Blank and comment-only lines are reported separately from a line that does
 // not exist at all: the first two are a citation that slid, the third is a
 // citation into a file that shrank, and the distinction is what tells a reader
@@ -118,6 +168,12 @@ function walk(dir, found = []) {
   return found;
 }
 
+function sourceLines(text) {
+  const lines = text.split('\n');
+  if (lines.at(-1) === '') lines.pop();
+  return lines;
+}
+
 function readRepoLines(path) {
   const full = join(repoRoot, path);
   try {
@@ -125,10 +181,7 @@ function readRepoLines(path) {
   } catch {
     return null;
   }
-  const text = readFileSync(full, 'utf8');
-  const lines = text.split('\n');
-  if (lines.at(-1) === '') lines.pop();
-  return lines;
+  return sourceLines(readFileSync(full, 'utf8'));
 }
 
 test('every src/ and scripts/ line the test tree cites still carries code', () => {
@@ -152,6 +205,49 @@ test('every src/ and scripts/ line the test tree cites still carries code', () =
   assert.ok(
     counted >= 20,
     `expected the test tree to cite ${CITED_ROOTS.join(' and ')} lines, found ${counted}`,
+  );
+});
+
+// Every workflow line the test tree cites still names a step.
+//
+// Same rot as the src/** check above, in the tree that moves most: inserting
+// one step into a job shifts every line below it, and the prose that pointed
+// at those steps goes on reading as though it still does. `ci: gate exact-clone
+// count with jscpd in the lint job` (#1582) is the shape -- a step added to a
+// job, every later number off by two, nothing red.
+test('every workflow line the test tree cites still names a step', () => {
+  // Read through tests/helpers-workflows.mjs: tests/workflow-loader.test.mjs
+  // reserves every direct read of the workflow directory to that module.
+  const sources = new Map(
+    workflowFiles().map((name) => [name, readWorkflow(name).source]),
+  );
+  const isWorkflow = (file) => sources.has(file);
+  const readWorkflowLines = (file) => sourceLines(sources.get(file));
+
+  const faults = [];
+  let counted = 0;
+  for (const file of walk(join(repoRoot, 'tests'))) {
+    const origin = relative(repoRoot, file);
+    if (origin === SELF) continue;
+    const text = readFileSync(file, 'utf8');
+    for (const citation of parseWorkflowCitations(text, isWorkflow)) {
+      counted += 1;
+      const fault = workflowCitationFault(citation, readWorkflowLines);
+      if (fault) faults.push(`${origin}: ${citation.file} ${fault}`);
+    }
+  }
+  assert.deepEqual(
+    faults,
+    [],
+    `stale workflow citations:\n${faults.join('\n')}`,
+  );
+  // Vacuity floor, for the same reason the src/** check carries one: a parser
+  // that matched nothing would pass while checking nothing. Kept low because
+  // workflow citations are rare by design -- prose should name the gate, not
+  // the line, unless the line is the point.
+  assert.ok(
+    counted >= 2,
+    `expected the test tree to cite ${WORKFLOW_DIR} lines, found ${counted}`,
   );
 });
 
@@ -214,4 +310,50 @@ test('a stale citation is reported, and a live one is not', () => {
     citationFault({ path: 'src/gone.js', start: 1, end: 1 }, readLines),
     'no such file',
   );
+});
+
+test('workflow citations are parsed, and non-workflow .yml names are not', () => {
+  const isWorkflow = (file) => file === 'ci.yml' || file === 'codeql.yml';
+  assert.deepEqual(
+    parseWorkflowCitations(
+      'the gate at ci.yml:35, the validate steps at ci.yml:50-75, ' +
+        'the scan at codeql.yml:12, but not .markdownlint.yaml:4 ' +
+        'nor pnpm-lock.yml:9',
+      isWorkflow,
+    ),
+    [
+      { file: 'ci.yml', start: 35, end: 35 },
+      { file: 'ci.yml', start: 50, end: 75 },
+      { file: 'codeql.yml', start: 12, end: 12 },
+    ],
+  );
+});
+
+// Red is the only proof. Each case is the #1582 shape: a step inserted above
+// the cited one, leaving a number that still exists and still carries text
+// while no longer naming the step the prose is about.
+test('a workflow citation that slid off its step is reported', () => {
+  const workflow = [
+    '  validate:',
+    '    steps:',
+    '      - name: Run unit tests',
+    '        run: npm run test:unit',
+    '        shell: bash',
+    '',
+    '      - name: Build site',
+    '        run: npm run build',
+    '      - uses: ./.github/actions/setup-node-deps',
+  ];
+  const fault = (start, end) =>
+    workflowCitationFault({ file: 'ci.yml', start, end }, () => workflow);
+
+  assert.equal(fault(3, 3), null);
+  assert.equal(fault(4, 4), null);
+  assert.equal(fault(3, 8), null);
+  // `uses:` anchors a step as surely as `run:` does.
+  assert.equal(fault(9, 9), null);
+  assert.equal(fault(5, 5), 'cites line 5, which is not a step (shell: bash)');
+  assert.equal(fault(6, 6), 'cites line 6, which is not a step (blank)');
+  assert.equal(fault(3, 1), 'cites line 1, which is not a step (validate:)');
+  assert.equal(fault(11, 11), 'cites line 11, but ci.yml has 9');
 });
