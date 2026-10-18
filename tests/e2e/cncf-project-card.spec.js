@@ -2,7 +2,7 @@
 // architecture page produces.
 //
 // CNCFProjectCard renders its meta row behind `(since || version)`
-// (src/components/CNCFProjectCard/index.js line 29). The component is rendered
+// in src/components/CNCFProjectCard/index.js. The component is rendered
 // only from the committed MDX under docs/architectures/, and every one of
 // those cards carries `since` with `version`, `since` alone, or neither --
 // never `version` alone. The overlays in tests/tools/e2e-data-fixtures.cjs

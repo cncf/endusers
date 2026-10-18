@@ -4,22 +4,21 @@
 // DirectoryFreshness links each named source through a ternary
 // (src/components/MemberDirectory/DirectoryFreshness.js):
 //
-//   25    {landscape?.sourceUrl ? (
-//   26      <a href={landscape.sourceUrl} ...>cncf/landscape</a>
-//   29    ) : (
-//   30      'cncf/landscape'
-//   31    )}
+//   {landscape?.sourceUrl ? (
+//     <a href={landscape.sourceUrl} ...>cncf/landscape</a>
+//   ) : (
+//     'cncf/landscape'
+//   )}
 //
-//   39    {architectures?.repository ? (
-//   40      <a href={architectures.repository} ...>cncf/architecture</a>
-//   43    ) : (
-//   44      'cncf/architecture'
-//   45    )}
+//   {architectures?.repository ? (
+//     <a href={architectures.repository} ...>cncf/architecture</a>
+//   ) : (
+//     'cncf/architecture'
+//   )}
 //
-// The right-hand arms at src/components/MemberDirectory/DirectoryFreshness.js:30
-// and src/components/MemberDirectory/DirectoryFreshness.js:44 are ordinary
-// shapes rather than
-// defensive dead code: data/members.json's sources.landscape is copied from
+// The plain-text arms of the landscape.sourceUrl and architectures.repository
+// ternaries are ordinary shapes rather than defensive dead code:
+// data/members.json's sources.landscape is copied from
 // the pinned landscape snapshot by scripts/generate-members.mjs, and
 // data/metrics.json's sources.architectures is written by
 // `npm run collect:metrics`. Either collector can pin a source it cannot
@@ -34,10 +33,9 @@
 // -- a parseable timestamp -- while its URL is absent, and that pair conflicts
 // with both existing builds:
 //
-//   * the ordinary coverage build is where the anchors at
-//     src/components/MemberDirectory/DirectoryFreshness.js:26 and
-//     src/components/MemberDirectory/DirectoryFreshness.js:40 are measured from, so clearing the URLs there would trade those arms for
-//     these rather than add a case;
+//   * the ordinary coverage build is where the landscape and architecture
+//     source anchors are measured from, so clearing the URLs there would
+//     trade those arms for these rather than add a case;
 //   * tests/e2e/fixtures/data-variant/ makes sources.landscape.collectedAt
 //     unparseable and clears metrics.generatedAt, so on that page neither
 //     sentence renders at all and the ternaries are never evaluated.

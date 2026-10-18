@@ -185,7 +185,7 @@ describeCoverage('drifted upstream data', () => {
   //
   //   status === 'contributor' || status === 'member-and-contributor'
   //
-  // (src/components/MemberDirectory/utils.js:26-28). The committed
+  // in src/components/MemberDirectory/utils.js. The committed
   // data/members.json holds no `member-and-contributor` organization, so
   // against the real build the left operand is true for every record the
   // filter admits and the right one never evaluates -- the dual-role arm is

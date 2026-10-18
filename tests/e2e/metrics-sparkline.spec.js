@@ -1,6 +1,6 @@
 // End-to-end coverage for the Sparkline arm that centres a lone point.
 //
-// src/components/MetricsDashboard/index.js line 28 picks a sparkline point's
+// Sparkline in src/components/MetricsDashboard/index.js picks a point's
 // x-coordinate:
 //
 //   `${values.length === 1 ? 50 : (index / (values.length - 1)) * 100},...`
@@ -28,8 +28,8 @@
 //
 // Keeping it out of the variant build is what lets
 // tests/e2e/metrics-empty-collections-variant.spec.js clear
-// `referenceArchitectureLifecycle.trends` there for the `|| {}` fallback at
-// src/components/MetricsDashboard/index.js:76, which no build could reach while the append had to stay.
+// `referenceArchitectureLifecycle.trends` there for LifecycleSection's `|| {}`
+// fallback, which no build could reach while the append had to stay.
 //
 // All three arms are asserted together rather than the single-point one alone.
 // An assertion that one sparkline centres its point passes just as well when

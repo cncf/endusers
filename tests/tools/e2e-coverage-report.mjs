@@ -456,9 +456,9 @@ function isDriftedRegion(region, regions) {
 // artifact carries no region -- covered or zero -- for the span.
 // `useFocusTrap`'s cleanup runs once with the trigger unmounted and the
 // `previousFocus` arm executes uniformly with the arrow around it; that
-// artifact records lines 49-51 covered and no range in the cleanup at all,
-// while every truthy-path artifact of the same chunk records `51:25-51:41`
-// at zero. The zero survives the union because no covered region ever shares
+// artifact records the cleanup covered and no range in it at all,
+// while every truthy-path artifact of the same chunk records the
+// `previousFocus` operand at zero. The zero survives the union because no covered region ever shares
 // (or crosses) its key.
 //
 // Absence only proves execution inside one script: V8 emits a zero range
@@ -910,9 +910,9 @@ export async function collectE2ECoverage(
       // the report internally inconsistent -- at main eff33b5 the summary
       // reported 18 uncovered regions across src/** while the per-file lists
       // named 17 lines, because GroupLinkStatus/index.js is 15/18 yet listed
-      // only lines 23 and 33. A reader working the list could not see the
+      // only two distinct lines. A reader working the list could not see the
       // third zero at all, and the e2e gate's own prose had to annotate it
-      // "GroupLinkStatus:33 (x2)" by hand. Repeating the line keeps
+      // with the plural drift-warning ternaries' multiplicity by hand. Repeating the line keeps
       // `uncoveredRegions.length` equal to `regions - coveredRegions`, which
       // is the invariant anyone reading the two numbers together assumes.
       const uncoveredRegions = regionValues

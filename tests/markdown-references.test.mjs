@@ -1,11 +1,10 @@
 // Every repository thing the Markdown prose names still exists.
 //
-// The site build link-checks the Markdown under docs/ and blog/, and
-// tests/source-line-citations.test.mjs pins the src/ and scripts/ line numbers
-// the test tree cites. Neither reaches the twenty-odd Markdown files at the
-// repository root and under .github/ -- README, CONTRIBUTING, AGENTS,
-// MAINTAINERS, the copilot instructions -- and neither reads a route, a
-// workflow name or an npm script written in backticks as anything but text.
+// The site build link-checks the Markdown under docs/ and blog/, but does not
+// reach the twenty-odd Markdown files at the repository root and under
+// .github/ -- README, CONTRIBUTING, AGENTS, MAINTAINERS, the copilot
+// instructions -- or read a route, a workflow name or an npm script written
+// in backticks as anything but text.
 //
 // That is where the stale references of the last week lived. Five human
 // restructures (#1524, #1527, #1528, #1531, #1552) each renamed a route, a

@@ -5,11 +5,11 @@
 // The component reads data/community-groups.json at module scope and renders
 // two things the checked-in corpus cannot vary:
 //
-//   src/components/shared/formatDate.js:17
+//   formatDate's Number.isNaN guard in src/components/shared/formatDate.js:
 //     `if (Number.isNaN(parsed.getTime())) return null;` — the shared
 //     formatDate returns null for a checkedAt that does not parse, which
 //     drops the "Upstream group links last verified on ..." line entirely;
-//   src/components/GroupLinkStatus/index.js:23-24
+//   GroupLinkStatus's stale.length ternaries:
 //     `stale.length === 1 ? 'has an' : 'have'` and
 //     `stale.length === 1 ? 'repository' : 'repositories'` — the plural
 //     grammar of the drift warning.
@@ -19,7 +19,7 @@
 // community-groups.json appends exactly one archived group, so the ordinary
 // coverage build has `stale.length === 1` and always takes the singular arm.
 // The real checkedAt is a valid ISO timestamp, so
-// src/components/shared/formatDate.js:17 never returns.
+// formatDate's Number.isNaN guard never returns.
 //
 // Two groups drifting at once is an ordinary shape rather than defensive dead
 // code: `npm run check:community-group-links` sets `archived` and `reachable`
@@ -39,7 +39,7 @@
 // with tests/e2e/fixtures/data-variant/** layered on, one `docusaurus serve`
 // offers both, and the report unions what each build reached.
 //
-// The union credits the *lines* of the plural arms; the two line-33 *regions*
+// The union credits the *lines* of the plural arms; their two *regions*
 // stay listed as uncovered because the build that takes an arm records no
 // region at the arm's own span (#1256). See the comment at the union in
 // tests/tools/e2e-coverage-report.mjs before reading that residual as a gap.
@@ -96,7 +96,7 @@ describeCoverage('a link check that found more than one group drifting', () => {
     page,
   }) => {
     expect(variantStale.length).toBeGreaterThan(1);
-    // What src/components/shared/formatDate.js:17 turns on: the
+    // What formatDate's Number.isNaN guard turns on: the
     // overlaid checkedAt is present but does not
     // parse, so formatDate reaches its guard instead of returning early on a
     // missing field.

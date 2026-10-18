@@ -32,10 +32,12 @@ const architectures = metricsData?.sources?.architectures;
 
 // DirectoryFreshness renders a sentence only when formatDate() returns a date.
 // Each timestamp is asserted rather than used to skip the case: all three are
-// already required to be parseable upstream -- scripts/validate-enduser-members.mjs:91
-// for the landscape snapshot that generate-members.mjs copies to
-// sources.landscape.collectedAt, scripts/validate-metrics.mjs:72 for
-// generatedAt, and scripts/validate-awards.mjs:51 for verifiedAt. A value this
+// already required to be parseable upstream -- the collectedAt check in
+// scripts/validate-enduser-members.mjs for the landscape snapshot that
+// generate-members.mjs copies to
+// sources.landscape.collectedAt, the generatedAt check in
+// scripts/validate-metrics.mjs, and the verifiedAt check in
+// scripts/validate-awards.mjs. A value this
 // helper rejects is the regression itself, not a reason to stand down, so
 // skipping on it would hide exactly the failure this spec exists to catch.
 const parses = (value) =>

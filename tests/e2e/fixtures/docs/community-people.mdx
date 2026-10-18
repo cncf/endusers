@@ -10,9 +10,9 @@ import CommunityPeople from '@site/src/components/CommunityPeople';
 # CommunityPeople coverage fixture
 
 This page exists only in the end-to-end coverage build. `CommunityPeople`
-resolves its roster with `peopleData.people[section] || []`
-(`src/components/CommunityPeople/index.js` line 134), and the published pages
-render only `section="tab"` and `section="staff"` — both of which
+resolves its roster with `peopleData.people[section] || []` (the roster
+resolution in `src/components/CommunityPeople/index.js`), and the published
+pages render only `section="tab"` and `section="staff"` — both of which
 `data/community-people.json` always defines, because
 `tests/community-people-data.test.mjs` fails the build if a section rendered
 under `docs/` is missing or empty. The `|| []` arm is therefore unreachable from

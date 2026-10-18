@@ -180,8 +180,8 @@ test.describe('case study facet filters', () => {
 // Every study in data/case-studies.json carries a publishedAt, so two arms of
 // the table are unreachable from the shipped data: the "|| ''" fallbacks
 // sortByPublishedAtDesc compares with when a study has no date
-// (src/components/CaseStudies/index.js:30), and the empty arm of the date
-// cell beside it (src/components/CaseStudies/index.js:181).
+// in src/components/CaseStudies/index.js, and the empty arm of the
+// `study.publishedAt` date-cell ternary beside it.
 //
 // Unlike a cleared document-level field, a missing date is a property of one
 // record, so tests/e2e/fixtures/data/case-studies.json appends undated studies

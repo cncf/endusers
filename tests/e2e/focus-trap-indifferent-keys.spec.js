@@ -4,19 +4,19 @@
 // listener for the whole lifetime of an open lightbox, so it sees every key
 // the user presses anywhere on the page, not just Tab and Escape:
 //
-//   28  const onKeyDown = (event) => {
-//   29    if (event.key === 'Escape') { onClose(); return; }
-//   33    if (event.key !== 'Tab') return;          // <- this arm
-//   34    const focusable = dialogRef.current?.querySelectorAll(...);
-//   38    if (event.shiftKey && document.activeElement === first) { ... }
-//   41    else if (!event.shiftKey && document.activeElement === last) { ... }
+//   const onKeyDown = (event) => {
+//     if (event.key === 'Escape') { onClose(); return; }
+//     if (event.key !== 'Tab') return;          // <- this arm
+//     const focusable = dialogRef.current?.querySelectorAll(...);
+//     if (event.shiftKey && document.activeElement === first) { ... }
+//     else if (!event.shiftKey && document.activeElement === last) { ... }
 //
 // The Escape arm is driven by `Escape closes the dialog` in
 // tests/e2e/community-people.spec.js and tests/e2e/member-directory.spec.js;
 // the two wrap arms by `traps Tab inside the dialog` and the Shift+Tab case in
-// tests/e2e/interactions.spec.js. Line 33 -- the early return that makes the
-// listener indifferent to every other key -- had no browser assertion at all:
-// the e2e coverage report lists region 33 as uncovered
+// tests/e2e/interactions.spec.js. The non-Tab guard -- the early return that
+// makes the listener indifferent to every other key -- had no browser assertion:
+// the e2e coverage report lists that guard as uncovered
 // (src/components/hooks/useFocusTrap.js, 85.71% regions).
 //
 // What the guard protects is not academic. Without it, any keystroke reaching
@@ -29,7 +29,7 @@
 // Each case therefore presses its indifferent key from the last focusable
 // element rather than from the close button the trap focuses on mount, which is
 // the only position from which the removal of
-// src/components/hooks/useFocusTrap.js:33 is observable. Focus is
+// useFocusTrap's `event.key !== 'Tab'` guard is observable. Focus is
 // read back as an index into the same `button, a[href]` list the trap queries,
 // so the assertion is "focus did not move", not "some element is focused".
 // Escape afterwards shows the listener was still attached and still listening,
@@ -109,7 +109,7 @@ test.describe('focus trap ignores keys that are neither Tab nor Escape', () => {
       expect(await focusedIndex(page)).toBe(0);
 
       // One backward Tab wraps to the last focusable -- the only position from
-      // which a key falling through src/components/hooks/useFocusTrap.js:33
+      // which a key falling through useFocusTrap's non-Tab guard
       // would move focus.
       await page.keyboard.press('Shift+Tab');
       await expect.poll(() => focusedIndex(page)).toBe(count - 1);
@@ -117,7 +117,7 @@ test.describe('focus trap ignores keys that are neither Tab nor Escape', () => {
       for (const key of INDIFFERENT_KEYS) {
         await page.keyboard.press(key);
         // Still the last focusable: the listener returned without touching
-        // focus. Were src/components/hooks/useFocusTrap.js:33 absent,
+        // focus. Were useFocusTrap's non-Tab guard absent,
         // `!shiftKey && activeElement === last` would hold and focus would be
         // back at index 0.
         expect(await focusedIndex(page)).toBe(count - 1);

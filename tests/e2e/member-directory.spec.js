@@ -5,7 +5,7 @@
 // backdrop dismissal, but every case there opens `.first()` card — and the
 // first card in data/members.json carries a logo. The dialog's other arm, the
 // large initials shown when a member has no logo
-// (src/components/MemberDirectory/MemberProfile.js:35-41), was therefore never
+// (MemberProfile's `member.logo` fallback), was therefore never
 // executed in a browser: the CI e2e coverage report listed MemberProfile.js at
 // 97.65% with the four lines of that arm uncovered.
 //
@@ -133,9 +133,8 @@ test.describe('member profile dialog without a logo', () => {
 // and "Has award" toggles were reached by the unit suite's fake DOM alone.
 //
 // That left eight regions of src/components/MemberDirectory/index.js executed
-// only outside a browser: the four predicate guards at src/components/MemberDirectory/index.js:30,
-// src/components/MemberDirectory/index.js:33, src/components/MemberDirectory/index.js:39 and src/components/MemberDirectory/index.js:42, and the four handlers that feed them at
-// src/components/MemberDirectory/index.js:85, src/components/MemberDirectory/index.js:124, src/components/MemberDirectory/index.js:139 and src/components/MemberDirectory/index.js:149. Those
+// only outside a browser: filterMembers' industry, project, hasArchitecture
+// and hasAward guards, and the corresponding controls' onChange handlers. Those
 // handlers are the part a fake DOM cannot vouch for -- each control is bound to
 // its own `useState` setter through its own `htmlFor`/`id` pair or its own
 // `checked` prop, so a duplicated id, an option list built from the wrong
