@@ -22,6 +22,7 @@ const READ_ONLY_VALIDATORS = [
   'validate-community-people.mjs',
   'validate-community-groups.mjs',
   'validate-projects-born.mjs',
+  'validate-end-user-talks.mjs',
   'validate-enduser-members.mjs',
   'validate-members.mjs',
 ];
