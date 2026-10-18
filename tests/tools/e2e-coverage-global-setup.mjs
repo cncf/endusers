@@ -30,8 +30,18 @@
 // capture precisely because a sealed run cannot be reused, which makes
 // re-running `npm run test:e2e:coverage` against the previous `$RUN_DIR` the
 // most likely way to reach it.
+//
+// The built site is checked here for the same reason. The reporter refuses a
+// run with no attributable src/** coverage, but only after the suite has run
+// to completion against the wrong site — and `playwright.config.js` sets
+// `reuseExistingServer: !process.env.CI`, so a `docusaurus serve` left over
+// from an earlier `npm run build` is adopted by a local coverage run without
+// a word. See `assertCoverageBuild`.
 
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { isCoverageEnabled } = require('./e2e-coverage.cjs');
@@ -47,6 +57,127 @@ const SEED_A_RUN =
   '  node tests/tools/e2e-coverage-run.mjs init --dir "$RUN_DIR" --run-id "$RUN_ID"\n' +
   '  E2E_COVERAGE_DIR="$RUN_DIR" E2E_COVERAGE_RUN_ID="$RUN_ID" npm run test:e2e:coverage\n' +
   'To run the suite without capturing coverage, unset E2E_COVERAGE.';
+
+// How CONTRIBUTING.md "Browser source coverage" says to produce the site the
+// capture runs against. Separate from SEED_A_RUN because a reader who reaches
+// the build guard below has usually seeded the run correctly and skipped (or
+// invalidated) only the build step.
+const BUILD_FOR_COVERAGE =
+  'Produce the instrumented site first, as CONTRIBUTING.md "Browser source ' +
+  'coverage" shows:\n' +
+  '  npm run build:e2e:coverage\n' +
+  'To run the suite without capturing coverage, unset E2E_COVERAGE.';
+
+// The directory `playwright.config.js` serves. Its webServer runs
+// `npx docusaurus serve` with no `--dir`, so the suite is always pointed at
+// Docusaurus' default output directory, and ci.yml renders the report with
+// `--build build` against the same one. Kept as a default argument rather
+// than read from the config so the checks below stay pure functions of a
+// path that tests can hand a temporary directory.
+export const DEFAULT_BUILD_DIR = fileURLToPath(
+  new URL('../../build', import.meta.url),
+);
+
+// What `npm run build:e2e:coverage` leaves behind and `npm run build` does
+// not. Both markers are registered in docusaurus.config.js behind the same
+// `E2E_COVERAGE === '1'` test, so either one missing means the site on disk
+// was built without it:
+//
+//   * `assets/js/*.js.map` comes from the endusers-e2e-source-maps plugin
+//     (`devtool: 'source-map'`). Without those maps the capture records
+//     bundle offsets that no src/** file can be credited with, and the run
+//     ends in the reporter's "No src/** coverage was attributable".
+//   * `e2e-coverage-fixtures/` is the second docs instance serving
+//     tests/e2e/fixtures/docs/**. Without it the specs that exercise
+//     fixture-only prop shapes fail on a 404 rather than on their assertion.
+//
+// Checking both names the cause precisely instead of leaving a reader to
+// infer it from whichever symptom surfaced first.
+const FIXTURE_DOCS_ROUTE = 'e2e-coverage-fixtures';
+const CLIENT_BUNDLE_DIR = join('assets', 'js');
+
+/**
+ * Describes why `buildDir` is not an e2e coverage build, or `null` if it is.
+ *
+ * Pure and synchronous so tests/e2e-coverage-build-marker.test.mjs can drive
+ * every arm against temporary directories. `assertCoverageBuild` is the only
+ * caller that consults `process.env`.
+ *
+ * @param {string} buildDir directory `docusaurus serve` will serve
+ * @returns {string|null} a sentence naming the problem, or null when none
+ */
+export function coverageBuildProblem(buildDir) {
+  if (!isDirectory(buildDir)) {
+    return `no site has been built at ${buildDir}`;
+  }
+  if (!isDirectory(join(buildDir, FIXTURE_DOCS_ROUTE))) {
+    return (
+      `the site at ${buildDir} has no ${FIXTURE_DOCS_ROUTE}/ route, so it ` +
+      'was built without E2E_COVERAGE=1'
+    );
+  }
+  if (!hasSourceMap(join(buildDir, CLIENT_BUNDLE_DIR))) {
+    return (
+      `the site at ${buildDir} ships no ${CLIENT_BUNDLE_DIR}/*.js.map, so ` +
+      'the capture could not be mapped back to src/**'
+    );
+  }
+  return null;
+}
+
+/**
+ * Whether `path` exists and is a directory.
+ *
+ * `existsSync` alone would accept a file of the same name, which is the shape
+ * a stray `build` artifact takes.
+ *
+ * @param {string} path filesystem path to test
+ * @returns {boolean}
+ */
+function isDirectory(path) {
+  return existsSync(path) && statSync(path).isDirectory();
+}
+
+/**
+ * Whether `bundleDir` holds at least one emitted source map.
+ *
+ * A missing directory counts as no maps: a build that never produced client
+ * bundles cannot have mapped them either.
+ *
+ * @param {string} bundleDir directory holding the client bundles
+ * @returns {boolean}
+ */
+function hasSourceMap(bundleDir) {
+  if (!isDirectory(bundleDir)) return false;
+  return readdirSync(bundleDir).some((entry) => entry.endsWith('.js.map'));
+}
+
+/**
+ * Throws when coverage is on but the built site is not a coverage build.
+ *
+ * The reporter already refuses a run with no attributable src/** coverage,
+ * but only after the whole suite has run against the wrong site. This is the
+ * same diagnosis made before that time is spent, which is this module's
+ * purpose (see the header).
+ *
+ * The hazard is not hypothetical: `playwright.config.js` sets
+ * `reuseExistingServer: !process.env.CI`, so a `docusaurus serve` left
+ * running from an earlier `npm run build` is adopted silently by a local
+ * coverage run.
+ *
+ * @param {NodeJS.ProcessEnv} [env] environment to inspect
+ * @param {string} [buildDir] directory `docusaurus serve` will serve
+ * @returns {void}
+ */
+export function assertCoverageBuild(
+  env = process.env,
+  buildDir = DEFAULT_BUILD_DIR,
+) {
+  if (!isCoverageEnabled(env)) return;
+  const problem = coverageBuildProblem(buildDir);
+  if (problem === null) return;
+  throw new Error(`E2E_COVERAGE=1 but ${problem}. ${BUILD_FOR_COVERAGE}`);
+}
 
 /**
  * The variables `tests/tools/e2e-coverage.cjs` requires once coverage is on.
@@ -159,4 +290,5 @@ export function causeMessage(cause) {
 export default async function globalSetup() {
   assertCoverageEnv();
   await assertCoverageRun();
+  assertCoverageBuild();
 }
