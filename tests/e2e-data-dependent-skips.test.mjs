@@ -165,9 +165,9 @@ function stripComments(source) {
 // tests/e2e/** with room to spare.
 function skipSites() {
   const sites = [];
-  for (const name of readdirSync(specDir).filter((entry) =>
-    entry.endsWith('.spec.js'),
-  )) {
+  for (const name of readdirSync(specDir, { recursive: true })
+    .map((entry) => String(entry))
+    .filter((entry) => entry.endsWith('.spec.js'))) {
     const source = stripComments(readFileSync(join(specDir, name), 'utf8'));
     const pattern = /test\.skip\(/g;
     let match;
