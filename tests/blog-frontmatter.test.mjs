@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { parse } from 'yaml';
 
 // Docusaurus fails the blog build outright when a post references an author or
@@ -13,11 +13,24 @@ const blogDir = new URL('../blog/', import.meta.url).pathname;
 const authors = parse(readFileSync(join(blogDir, 'authors.yml'), 'utf8'));
 const tags = parse(readFileSync(join(blogDir, 'tags.yml'), 'utf8'));
 
-const POST_FILENAME = /^(\d{4}-\d{2}-\d{2})-(.+)\.mdx?$/;
-
-const postFiles = readdirSync(blogDir)
-  .filter((name) => POST_FILENAME.test(name))
+// The blog plugin collects `**/*.{md,mdx}` and skips GlobExcludeDefault, whose
+// reachable arm here is the `_` prefix on a file or directory segment. A flat
+// listing would leave a post one directory down building — and breaking the
+// build on a bad author key — while staying invisible to every test below.
+const markdownFiles = readdirSync(blogDir, { recursive: true })
+  .map((name) => name.split(sep).join('/'))
+  .filter(
+    (name) =>
+      /\.mdx?$/.test(name) &&
+      !name.split('/').some((segment) => segment.startsWith('_')),
+  )
   .sort();
+
+// Both layouts Docusaurus dates from the path: `YYYY-MM-DD-<slug>.md` at the
+// blog root, and the folder form `YYYY-MM-DD-<slug>/index.md`.
+const POST_FILENAME = /^(\d{4}-\d{2}-\d{2})-([^/]+?)(?:\/index)?\.mdx?$/;
+
+const postFiles = markdownFiles.filter((name) => POST_FILENAME.test(name));
 
 function readFrontmatter(file) {
   const source = readFileSync(join(blogDir, file), 'utf8');
@@ -30,6 +43,15 @@ test('blog/ contains at least one post', () => {
   assert.ok(
     postFiles.length > 0,
     'expected blog posts named YYYY-MM-DD-<slug>.md',
+  );
+});
+
+test('every markdown file the blog plugin collects is a dated post', () => {
+  assert.deepEqual(
+    markdownFiles,
+    postFiles,
+    'blog sources must be YYYY-MM-DD-<slug>.md or YYYY-MM-DD-<slug>/index.md, ' +
+      'or Docusaurus publishes a post no test here validates',
   );
 });
 
