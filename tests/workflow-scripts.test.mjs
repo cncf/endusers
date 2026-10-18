@@ -341,13 +341,15 @@ test('browser coverage is isolated in a visible gating job with a source floor',
     /--check-source-regions\s+96\b/,
     'the e2e coverage report must gate on --check-source-regions 96',
   );
-  // #1232: the aggregate lets its slack concentrate in one file. The per-file
-  // floor fails on that file's name instead of averaging it away; 66 is bound
-  // by the lowest file (PeopleFreshness, 2/3), not chosen as a target.
-  assert.match(
+  // #1232 added a per-file floor here so the aggregate could not let its slack
+  // concentrate in one file. It was removed in #1593: the browser lane's
+  // per-file region counts carry a cross-build attribution artifact that left
+  // files with every arm executed sitting on the floor, and the unit lane
+  // already holds --check-source-file-regions 100 on the same files.
+  assert.doesNotMatch(
     coverageCommands,
-    /--check-source-file-regions\s+66\b/,
-    'the e2e coverage report must gate on --check-source-file-regions 66',
+    /--check-source-file-regions/,
+    'the e2e coverage report must not gate per file; that floor measures a reporting artifact (#1593)',
   );
   // #992: the ratio is computed over observed files only, so a src module the
   // bundle drops vanishes from numerator and denominator alike. The file-set

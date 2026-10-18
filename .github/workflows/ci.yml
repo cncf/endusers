@@ -242,7 +242,6 @@ jobs:
             --build build \
             --check-source 100 \
             --check-source-regions 96 \
-            --check-source-file-regions 66 \
             --require-source-files \
             --json coverage/e2e/report.json \
             --text coverage/e2e/report.txt
