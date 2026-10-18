@@ -56,20 +56,33 @@ const SELF = 'tests/source-line-citations.test.mjs';
 // The trees whose line numbers a production refactor moves.
 const CITED_ROOTS = ['src/', 'scripts/'];
 
+// The one spelling of a cited path, shared by both regexes below. They have to
+// agree: CITATION decides what counts as a qualified citation, QUALIFIED_BEFORE
+// decides what counts as *not* bare, and a path either regex alone accepts is a
+// citation reported as bare while never being resolved against the file.
+const CITED_PATH = String.raw`(?:src|scripts)\/[A-Za-z0-9._/-]+\.(?:js|mjs|cjs|jsx)`;
+
+// MDX prose spells a path as code, so a closing backtick sits between the path
+// and the words: `` `src/components/X/index.js` line 134 ``. The backtick is
+// optional here rather than a second spelling, because both regexes take it
+// from this one fragment and so cannot disagree about it.
+const AFTER_PATH = '`?';
+
 // Both forms the repository already writes: `path/to/file.js:42-44` and
 // `path/to/file.js line 16` / `lines 14-22`. A bare `utils.js line 16` with no
 // directory is deliberately not matched -- there is no way to resolve it to a
 // file, and inventing one would make this guard fail on prose it cannot check.
-const CITATION =
-  /((?:src|scripts)\/[A-Za-z0-9._/-]+\.(?:js|mjs|cjs|jsx))(?::(\d+)(?:-(\d+))?|\s+lines?\s+(\d+)(?:-(\d+))?)/g;
+const CITATION = new RegExp(
+  `(${CITED_PATH})(?::(\\d+)(?:-(\\d+))?|${AFTER_PATH}\\s+lines?\\s+(\\d+)(?:-(\\d+))?)`,
+  'g',
+);
 
 // A `line N` / `lines N-M` whose preceding token is not a source filename.
 // Only the token immediately before the word is inspected: "index.js:7" is
 // the colon spelling and never reaches here, and "index.js line 7" is the
 // qualified word spelling, so anything else in that position is a bare cite.
 const LINE_WORD = /\blines?\s+\d+(?:-\d+)?/g;
-const QUALIFIED_BEFORE =
-  /(?:src|scripts)\/[A-Za-z0-9._/-]+\.(?:js|mjs|cjs|jsx)\s*$/;
+const QUALIFIED_BEFORE = new RegExp(`${CITED_PATH}${AFTER_PATH}\\s*$`);
 
 export function bareLineCitations(text) {
   const found = [];
@@ -159,11 +172,18 @@ export function citationFault({ path, start, end }, readLines) {
   return null;
 }
 
-function walk(dir, found = []) {
+// The extensions the test tree argues in. `.mdx` is here because the e2e
+// coverage overlay pages under tests/e2e/fixtures/docs/ are MDX and cite the
+// arms they exist to reach exactly the way the JS overlays and specs do; while
+// the walk skipped them their citations were checked by neither test below.
+// `.jsx` is here for symmetry with the extensions CITATION already resolves.
+const SCANNED = /\.(mjs|cjs|js|jsx|json|mdx)$/;
+
+export function walk(dir, found = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) walk(full, found);
-    else if (/\.(mjs|cjs|js|json)$/.test(entry.name)) found.push(full);
+    else if (SCANNED.test(entry.name)) found.push(full);
   }
   return found;
 }
@@ -289,6 +309,38 @@ test('both citation spellings are parsed, and bare filenames are not', () => {
       { path: 'scripts/lib/url-safety.mjs', start: 7, end: 7 },
       { path: 'src/lib/profile-links.mjs', start: 2, end: 4 },
     ],
+  );
+});
+
+// The MDX spelling has to be parsed and *not* also reported as bare: the two
+// regexes read the same text from opposite ends, so a fragment only one of
+// them accepts turns a resolved citation into a bare-citation failure. Both
+// halves are asserted on one string for that reason.
+test('the MDX backtick spelling is a qualified citation, not a bare one', () => {
+  const prose =
+    'resolves its roster with `peopleData.people[section] || []`\n' +
+    '(`src/components/CommunityPeople/index.js` line 134), and the arm at\n' +
+    '`src/lib/y.mjs` lines 2-4, and the colon form `src/lib/y.mjs:9`';
+
+  assert.deepEqual(parseCitations(prose), [
+    { path: 'src/components/CommunityPeople/index.js', start: 134, end: 134 },
+    { path: 'src/lib/y.mjs', start: 2, end: 4 },
+    { path: 'src/lib/y.mjs', start: 9, end: 9 },
+  ]);
+  assert.deepEqual(bareLineCitations(prose), []);
+});
+
+// The citation above is only checked while the walk reaches the file holding
+// it. An extension dropping back out of SCANNED would leave every test here
+// green -- the parser cases are strings, and faults over an unread tree is an
+// empty list -- so the reach is asserted directly.
+test('the walk reaches the e2e MDX overlay pages', () => {
+  const scanned = walk(join(repoRoot, 'tests')).map((file) =>
+    relative(repoRoot, file),
+  );
+  assert.ok(
+    scanned.includes('tests/e2e/fixtures/docs/community-people.mdx'),
+    'the walk no longer reaches tests/e2e/fixtures/docs/*.mdx',
   );
 });
 
