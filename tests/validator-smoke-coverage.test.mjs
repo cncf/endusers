@@ -5,11 +5,11 @@
 // That list is load-bearing well beyond the unit suite. It is what makes the
 // read-only validators run against the *real* repository data on every pull
 // request: `.github/workflows/ci.yml` runs `npm run test:unit:coverage:check`
-// (ci.yml:40), which executes this suite, and a validator missing from the
+// (ci.yml:35), which executes this suite, and a validator missing from the
 // array is executed by nothing in it.
 //
 // The validators also reach the PR gate a second way. ci.yml's `validate` job
-// runs each `npm run validate:*` gate as a step of its own (ci.yml:55-79), and
+// runs each `npm run validate:*` gate as a step of its own (ci.yml:50-75), and
 // tests/workflow-scripts.test.mjs's "every validate:*/check:* gate is run by a
 // workflow or recorded as exempt" is what keeps that list complete. The two
 // paths guard different omissions and neither subsumes the other: a validator
