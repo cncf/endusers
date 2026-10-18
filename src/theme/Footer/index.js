@@ -47,7 +47,7 @@ export default function Footer() {
           <circle fill="#000" cx="142" cy="138" r="37"></circle>
           <path
             stroke="#000"
-            stroke-width="66"
+            strokeWidth="66"
             d="M244 194v198M142 194v198"
           ></path>
           <path
@@ -79,9 +79,9 @@ export default function Footer() {
         >
           <path
             fill="currentcolor"
-            fill-rule="evenodd"
+            fillRule="evenodd"
             d="M12.599 7.083a6.181 6.181.0 11-12.363.0 6.181 6.181.0 0112.363.0zm14.376.0a6.18 6.18.0 11-12.362.0 6.18 6.18.0 0112.362.0z"
-            clip-rule="evenodd"
+            clipRule="evenodd"
           ></path>
         </svg>
       ),
