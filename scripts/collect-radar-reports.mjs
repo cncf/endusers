@@ -11,9 +11,10 @@
 // the PR the refresh workflow opens.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { decodeEntities, fetchAllPages } from './lib/cncf-wp-api.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const API = 'https://www.cncf.io/wp-json/wp/v2';
 const SOURCE_URL = 'https://www.cncf.io/reports?_sft_lf-report-type=radar';
 const PLACEHOLDER_SUMMARY = 'Summary needed — see the report for details.';
