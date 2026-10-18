@@ -2,13 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
 // Docusaurus fails the blog build outright when a post references an author or
 // tag key that is absent from blog/authors.yml or blog/tags.yml. Nothing in
 // `npm run check` catches that before a deploy, so assert the contract here.
 
-const blogDir = new URL('../blog/', import.meta.url).pathname;
+const blogDir = fileURLToPath(new URL('../blog/', import.meta.url));
 
 const authors = parse(readFileSync(join(blogDir, 'authors.yml'), 'utf8'));
 const tags = parse(readFileSync(join(blogDir, 'tags.yml'), 'utf8'));

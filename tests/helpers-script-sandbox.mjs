@@ -12,8 +12,9 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
+import { resolveRepoRoot } from './helpers.mjs';
 
-const repoRoot = new URL('..', import.meta.url).pathname;
+const repoRoot = resolveRepoRoot(import.meta.url);
 
 // Preload module injected with `node --import`. It replaces globalThis.fetch
 // before the script under test is evaluated, so network-dependent scripts run

@@ -11,9 +11,10 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { resolveRepoRoot } from './helpers.mjs';
 
 const SCRIPT = 'generate-members.mjs';
-const repoRoot = new URL('..', import.meta.url).pathname;
+const repoRoot = resolveRepoRoot(import.meta.url);
 
 // generate-members.mjs reads its inputs and writes data/members.json relative to
 // its own location, so the shared runScriptWithFixtures helper — which deletes

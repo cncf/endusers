@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { resolveRepoRoot } from './helpers.mjs';
 
-const repoRoot = new URL('..', import.meta.url).pathname;
+const repoRoot = resolveRepoRoot(import.meta.url);
 
 const people = JSON.parse(
   readFileSync(join(repoRoot, 'data/community-people.json'), 'utf8'),

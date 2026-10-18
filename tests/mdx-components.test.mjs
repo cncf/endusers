@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, dirname, resolve } from 'node:path';
+import { join } from 'node:path';
+import { resolveRepoRoot } from './helpers.mjs';
 
-const repoRoot = resolve(dirname(new URL(import.meta.url).pathname), '..');
+const repoRoot = resolveRepoRoot(import.meta.url);
 const CONTENT_DIRS = ['docs', 'blog'];
 
 // Tags that Docusaurus/MDX resolves without a file-local import.

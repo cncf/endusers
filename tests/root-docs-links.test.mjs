@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
+import { resolveRepoRoot } from './helpers.mjs';
 
-const repoRoot = resolve(dirname(new URL(import.meta.url).pathname), '..');
+const repoRoot = resolveRepoRoot(import.meta.url);
 
 // Root-level *.md are the contributor-facing entry points. They are not part
 // of the Docusaurus route tree, so `onBrokenMarkdownLinks` never reads them.

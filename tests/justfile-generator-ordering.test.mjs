@@ -26,8 +26,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
+import { resolveRepoRoot } from './helpers.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = resolveRepoRoot(import.meta.url);
 
 const scripts =
   JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts ?? {};
