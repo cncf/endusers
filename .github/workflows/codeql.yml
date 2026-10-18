@@ -12,6 +12,7 @@ on:
       - '**/*.tsx'
       - package.json
       - package-lock.json
+      - '.github/actions/**'
       - '.github/workflows/**'
   pull_request:
     branches: [main]
@@ -24,6 +25,7 @@ on:
       - '**/*.tsx'
       - package.json
       - package-lock.json
+      - '.github/actions/**'
       - '.github/workflows/**'
   schedule:
     - cron: '31 7 * * 1'
@@ -33,8 +35,8 @@ permissions:
 
 # Not a required status check, so it is safe to skip entirely (rather than
 # just cancel) when a PR touches neither JavaScript/TypeScript source nor a
-# workflow: an unmatched path means the workflow never starts, and nothing
-# here gates the merge queue on it. The weekly schedule run still scans the
+# workflow or composite action: an unmatched path means the workflow never
+# starts, and nothing here gates the merge queue on it. The weekly schedule run still scans the
 # full tree regardless of what changed most recently.
 concurrency:
   group: codeql-${{ github.event.pull_request.number || github.ref }}
@@ -53,10 +55,11 @@ jobs:
       # One language failing must not hide the other language's results.
       fail-fast: false
       matrix:
-        # `actions` analyses the workflow files themselves: script injection
-        # through ${{ github.event.* }} in `run:` blocks, over-broad
-        # GITHUB_TOKEN permissions, un-pinned third-party actions. Nothing else
-        # in this repository reads the workflows statically.
+        # `actions` analyses the workflow files and the composite actions under
+        # .github/actions they call: script injection through
+        # ${{ github.event.* }} in `run:` blocks, over-broad GITHUB_TOKEN
+        # permissions, un-pinned third-party actions. Nothing else in this
+        # repository reads the workflows statically.
         language: ['javascript-typescript', 'actions']
     steps:
       - name: Check out repository

@@ -3,7 +3,11 @@ import { readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import test from 'node:test';
 
-import { readWorkflow, repoRoot as root } from './helpers-workflows.mjs';
+import {
+  loadLocalActions,
+  readWorkflow,
+  repoRoot as root,
+} from './helpers-workflows.mjs';
 
 // CodeQL is the only static-analysis gate in this repository, and it is not a
 // required status check: when its path filters stop matching the sources it is
@@ -224,6 +228,25 @@ test('a change to any workflow, including the scanner itself, triggers a scan', 
   assert.ok(
     paths.includes('.github/workflows/**'),
     'codeql.yml path filters omit .github/workflows/**, so a workflow edit is never analysed and narrowing the scan does not run it',
+  );
+});
+
+test('a change to a composite action triggers a scan', () => {
+  // The `actions` extractor reads `.github/actions/<name>/action.yml` as well
+  // as the workflows, and ci.yml runs its steps through one. A PR that edits
+  // only the composite action would otherwise match no filter and ship with
+  // the weekly schedule as its first scan.
+  const actions = loadLocalActions();
+  assert.ok(
+    actions.size > 0,
+    'no composite actions under .github/actions, so this contract is checking nothing',
+  );
+  const paths = pathFilters('push');
+  assert.ok(
+    paths.includes('.github/actions/**'),
+    `codeql.yml path filters omit .github/actions/**, so edits to ${[
+      ...actions.keys(),
+    ].join(', ')} are never analysed on the PR`,
   );
 });
 
