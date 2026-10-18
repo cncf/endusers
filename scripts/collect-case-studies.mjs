@@ -11,9 +11,10 @@
 // from the post title, which is just the organization name.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { decodeEntities, fetchAllPages } from './lib/cncf-wp-api.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const API = 'https://www.cncf.io/wp-json/wp/v2';
 const SOURCE_URL = 'https://www.cncf.io/case-studies/';
 

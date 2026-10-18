@@ -9,9 +9,10 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { makeGitHubHeaders } from './lib/github.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const output = join(root, 'data/community-groups.json');
 
 // Source-of-truth list of End User Groups linked from

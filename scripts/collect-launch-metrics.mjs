@@ -16,13 +16,14 @@
 // capturedAt so the 90-day comparison starts from the announcement-day numbers.
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   githubAllPages,
   githubFetch,
   makeGitHubHeaders,
 } from './lib/github.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const REPO = 'cncf/endusers';
 const USER_AGENT = 'cncf-endusers-launch-metrics';
 
