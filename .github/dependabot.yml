@@ -28,6 +28,7 @@ updates:
     directories:
       - '/'
       - '/.github/actions/setup-node-deps'
+      - '/.github/actions/open-automation-pr'
     schedule:
       interval: 'weekly'
       day: 'monday'
