@@ -272,6 +272,13 @@ test('initials takes the first letter of the first two words, uppercased', () =>
   assert.equal(initials('Spotify'), 'S');
 });
 
+test('initials ignores whitespace padding around a name', () => {
+  assert.equal(initials(' Acme Corp'), 'AC');
+  assert.equal(initials('Acme Corp '), 'AC');
+  assert.equal(initials('\tAcme Corp'), 'AC');
+  assert.equal(initials('Acme  Corp'), 'AC');
+});
+
 test('formatCount picks the singular only for exactly one', () => {
   assert.equal(formatCount(1, 'award', 'awards'), '1 award');
   assert.equal(formatCount(2, 'award', 'awards'), '2 awards');
