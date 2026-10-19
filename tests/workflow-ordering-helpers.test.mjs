@@ -139,6 +139,31 @@ test('commitsGeneratedOutput and publishesSite match on the action, not the name
     commitsGeneratedOutput({ jobs: { a: { steps: [{ uses: CREATE_PR }] } } }),
     true,
   );
+  // Through a local composite wrapper, resolved against the actions the
+  // caller supplies: known and wrapping the action, known and not, unknown.
+  const wrapper = { uses: './.github/actions/open-pr' };
+  const actions = new Map([
+    ['open-pr', { runs: { using: 'composite', steps: [{ uses: CREATE_PR }] } }],
+    ['setup', { runs: { using: 'composite', steps: [{ run: 'npm ci' }] } }],
+  ]);
+  assert.equal(
+    commitsGeneratedOutput({ jobs: { a: { steps: [wrapper] } } }, { actions }),
+    true,
+  );
+  assert.equal(
+    commitsGeneratedOutput(
+      { jobs: { a: { steps: [{ uses: './.github/actions/setup' }] } } },
+      { actions },
+    ),
+    false,
+  );
+  assert.equal(
+    commitsGeneratedOutput(
+      { jobs: { a: { steps: [wrapper] } } },
+      { actions: new Map() },
+    ),
+    false,
+  );
   assert.equal(publishesSite({ jobs: { a: { steps: [] } } }), false);
   assert.equal(
     publishesSite({

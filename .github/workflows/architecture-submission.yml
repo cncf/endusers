@@ -47,10 +47,9 @@ jobs:
       - run: npm run validate:architectures
       - run: npm run validate:architecture-assets
       - run: npm run build
-      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      - uses: ./.github/actions/open-automation-pr
         with:
           branch: automation/architecture-issue-${{ github.event.issue.number }}
-          delete-branch: true
           commit-message:
             'docs: add reference architecture from issue #${{
             github.event.issue.number }}'
@@ -64,8 +63,6 @@ jobs:
 
             The production build and architecture validation passed. Please
             still review the generated page for accuracy before merging.
-          labels: automated
-          signoff: true
       - name: Comment on failure
         if: failure()
         run: |
