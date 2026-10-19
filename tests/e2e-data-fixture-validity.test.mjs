@@ -155,6 +155,31 @@ const EXPECTED = new Map([
     },
   ],
   [
+    'data-unparseable-dates/awards.json',
+    {
+      why: "makes verifiedAt unparseable so DirectoryFreshness's awardsDate is null, one of the three dates its all-absent guard needs missing together; the gate requires a parseable verifiedAt",
+      adds: [
+        'awards.json: verifiedAt must be a parseable date recording the last completeness audit against verifiedAgainst',
+      ],
+    },
+  ],
+  [
+    'data-unparseable-dates/members.json',
+    {
+      why: "makes sources.landscape.collectedAt unparseable so DirectoryFreshness's landscapeDate is null; validate-members.mjs holds that field to the pinned landscape snapshot",
+      adds: [
+        'members.json.sources.landscape: landscape provenance must match enduser-landscape.json',
+      ],
+    },
+  ],
+  [
+    'data-unparseable-dates/metrics.json',
+    {
+      why: "makes generatedAt unparseable so DirectoryFreshness's architecturesDate is null; the gate requires an ISO 8601 generatedAt",
+      adds: ['metrics.json: generatedAt must be ISO 8601'],
+    },
+  ],
+  [
     'data-variant/awards.json',
     {
       why: 'clears verifiedAt to drop the provenance paragraph from AwardsTimeline',

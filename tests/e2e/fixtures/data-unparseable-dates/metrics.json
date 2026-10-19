@@ -1,0 +1,6 @@
+{
+  "description": "Makes the document-level generatedAt unparseable so DirectoryFreshness's architecturesDate is null, the second of the three dates the all-absent guard in src/components/MemberDirectory/DirectoryFreshness.js requires to be absent together. tests/e2e/fixtures/data-variant/metrics.json sets this field to null instead, which formatDate (src/components/shared/formatDate.js) renders as January 1, 1970 rather than dropping -- the variant build's own spec asserts that it stays truthy -- so the variant build renders the architectures sentence and never reaches the guard.",
+  "set": {
+    "generatedAt": "not a timestamp"
+  }
+}
