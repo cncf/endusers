@@ -1,5 +1,6 @@
 import React from 'react';
 import metricsData from '@site/data/metrics.json';
+import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
 
 function pointX(index, length) {
@@ -93,16 +94,14 @@ function LifecycleSection() {
 }
 
 export default function MetricsDashboard() {
-  const updated = new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'long',
-    timeStyle: 'short',
-    timeZone: 'UTC',
-  }).format(new Date(metricsData.generatedAt));
+  const updated = formatDate(metricsData.generatedAt);
   return (
     <>
-      <div className={styles.meta}>
-        Last updated {updated} UTC · collected from public CNCF repositories
-      </div>
+      {updated && (
+        <div className={styles.meta}>
+          Last updated {updated} · collected from public CNCF repositories
+        </div>
+      )}
       <LifecycleSection />
       <div className={styles.grid}>
         {metricsData.metrics.map((metric) => (

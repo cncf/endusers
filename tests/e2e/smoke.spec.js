@@ -24,7 +24,7 @@ test.describe('member directory', () => {
 test.describe('metrics dashboard', () => {
   test('renders its metric cards', async ({ page }) => {
     await page.goto('/resources/metrics');
-    await expect(page.getByText(/Last updated .* UTC/)).toBeVisible();
+    await expect(page.getByText(/Last updated/)).toBeVisible();
 
     const lifecycle = page.getByRole('heading', {
       name: 'Reference architecture lifecycle',
