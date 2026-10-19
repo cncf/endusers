@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useFilterToolbar } from '../shared/useFilterToolbar';
-import styles from './styles.module.css';
+import FilterToolbar from '../shared/FilterToolbar';
 
 const DEFAULT_FILTERS = {
   query: '',
@@ -81,100 +81,42 @@ export default function ArchitectureFilters({
   resultCount,
   totalCount,
 }) {
-  return (
-    <div className={styles.toolbar}>
-      <div className={styles.searchRow}>
-        <label htmlFor="architecture-search" className={styles.visuallyHidden}>
-          Search architectures by organization or title
-        </label>
-        <input
-          id="architecture-search"
-          type="search"
-          value={filters.query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search architectures by organization or title"
-          className={styles.searchInput}
-        />
-      </div>
-      <div className={styles.filtersRow}>
-        <div className={styles.filter}>
-          <label
-            htmlFor="architecture-organization"
-            className={styles.visuallyHidden}
-          >
-            Filter by organization
-          </label>
-          <select
-            id="architecture-organization"
-            value={filters.organization}
-            onChange={(event) => setOrganization(event.target.value)}
-            className={styles.select}
-          >
-            <option value="">All organizations</option>
-            {options.organizations.map((org) => (
-              <option key={org} value={org}>
-                {org}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className={styles.filter}>
-          <label
-            htmlFor="architecture-industry"
-            className={styles.visuallyHidden}
-          >
-            Filter by industry
-          </label>
-          <select
-            id="architecture-industry"
-            value={filters.industry}
-            onChange={(event) => setIndustry(event.target.value)}
-            className={styles.select}
-          >
-            <option value="">All industries</option>
-            {options.industries.map((ind) => (
-              <option key={ind} value={ind}>
-                {ind}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className={styles.filter}>
-          <label
-            htmlFor="architecture-project"
-            className={styles.visuallyHidden}
-          >
-            Filter by CNCF project
-          </label>
-          <select
-            id="architecture-project"
-            value={filters.project}
-            onChange={(event) => setProject(event.target.value)}
-            className={styles.select}
-          >
-            <option value="">All projects</option>
-            {options.projects.map((proj) => (
-              <option key={proj} value={proj}>
-                {proj}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div className={styles.resultsBar}>
-        <p aria-live="polite">
-          Showing <strong>{resultCount}</strong> of {totalCount} architectures
-        </p>
-        {activeCount > 0 && (
-          <button
-            type="button"
-            onClick={onClear}
-            className={styles.clearButton}
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
-    </div>
-  );
+  return FilterToolbar({
+    searchId: 'architecture-search',
+    searchLabel: 'Search architectures by organization or title',
+    searchValue: filters.query,
+    searchPlaceholder: 'Search architectures by organization or title',
+    onSearchChange: setQuery,
+    selects: [
+      {
+        id: 'architecture-organization',
+        label: 'Filter by organization',
+        value: filters.organization,
+        onChange: setOrganization,
+        options: options.organizations,
+        allLabel: 'All organizations',
+      },
+      {
+        id: 'architecture-industry',
+        label: 'Filter by industry',
+        value: filters.industry,
+        onChange: setIndustry,
+        options: options.industries,
+        allLabel: 'All industries',
+      },
+      {
+        id: 'architecture-project',
+        label: 'Filter by CNCF project',
+        value: filters.project,
+        onChange: setProject,
+        options: options.projects,
+        allLabel: 'All projects',
+      },
+    ],
+    resultCount,
+    totalCount,
+    resultNoun: 'architectures',
+    activeCount,
+    onClear,
+  });
 }
