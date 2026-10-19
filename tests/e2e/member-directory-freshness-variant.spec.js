@@ -32,6 +32,7 @@
 // broken; the pair is what makes it evidence that the arm switched.
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
+import { expectDirectoryIntact } from './helpers/member-directory-assertions.js';
 
 const MEMBERS_PATH = '/community/members';
 const VARIANT_BASE = '/e2e-coverage-variant';
@@ -131,12 +132,7 @@ describeCoverage(
 
       // A member card list proves the page is intact, so the assertions above
       // are about the note and not about a build that lost the route.
-      const section = page.getByRole('region', {
-        name: 'End User Community organization directory',
-      });
-      await expect(
-        section.getByRole('button', { name: /^Open .+ profile$/ }).first(),
-      ).toBeVisible();
+      await expectDirectoryIntact(page, expect);
     });
   },
 );

@@ -1,0 +1,6 @@
+{
+  "description": "Makes the document-level verifiedAt unparseable so DirectoryFreshness's awardsDate is null, the last of the three dates the all-absent guard in src/components/MemberDirectory/DirectoryFreshness.js requires to be absent together. tests/e2e/fixtures/data-variant/awards.json sets this field to null, which formatDate (src/components/shared/formatDate.js) renders as January 1, 1970 and leaves truthy, so the award sentence survives there and the guard is never reached.",
+  "set": {
+    "verifiedAt": "not a timestamp"
+  }
+}
