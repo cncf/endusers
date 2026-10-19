@@ -1,12 +1,11 @@
 ---
-name: frontend-ui-standards
+name: ui-standards
 description:
   Use when adding or changing Docusaurus components, global CSS, responsive
   layouts, accessibility, or theme-aware UI.
 metadata:
   context7-sources:
     - /websites/docusaurus_io_3_9_2
-unlisted: true
 ---
 
 # Frontend UI Standards

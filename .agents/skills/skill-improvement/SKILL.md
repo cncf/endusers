@@ -1,5 +1,8 @@
 ---
-unlisted: true
+name: skill-improvement
+description:
+  Use when adding, refactoring, or retiring an agent skill in .agents/skills/ so
+  the manifest and front matter stay in sync.
 ---
 
 # Skill: Skill Improvement
@@ -15,8 +18,10 @@ documentation structure.
 
 ## Adding Skills
 
-- Add entry to `docs/skills/manifest.md`.
-- Create skill file with clear "Purpose" and "Constraints" sections.
+- Create `.agents/skills/<name>/SKILL.md` with `name` and `description` front
+  matter, following the [Agent Skills](https://agentskills.io) layout.
+- Add entry to `.agents/skills/manifest.md`.
+- Give the skill clear "Purpose" and "Constraints" sections.
 - Ensure the skill is "agent-first" (imperative, clear boundaries).
 - Every manifest row must point at a file that exists; remove rows when skills
   are deleted.

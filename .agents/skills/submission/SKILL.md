@@ -1,5 +1,8 @@
 ---
-unlisted: true
+name: submission
+description:
+  Use when preparing a CNCF End User reference architecture submission issue
+  from an external document or case study.
 ---
 
 # Skill: Reference Architecture Submission
