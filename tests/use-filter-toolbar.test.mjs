@@ -56,6 +56,38 @@ test('setFilter updates one field, narrows the filtered list and counts as activ
   assert.equal(after.activeCount, 1);
 });
 
+// Every other case in this file sets `query` to 'acme' beside a tag filter
+// that has already narrowed the list to Acme, so the predicate's query arm
+// only ever accepted. Until these two cases, nothing asserted that a query
+// reaching `filtered` removes anything: the hook could have dropped the field
+// before calling the predicate and every assertion above would still pass,
+// because `activeCount` is derived from `filters` rather than from the
+// filtered list.
+test('a query alone narrows the filtered list', () => {
+  const hook = renderHook(() =>
+    useFilterToolbar(ITEMS, DEFAULT_FILTERS, byTagAndName),
+  );
+  hook.result.setFilter('query', 'globex');
+  const after = hook.rerender();
+
+  assert.deepEqual(
+    after.filtered.map((item) => item.name),
+    ['Globex'],
+  );
+  assert.equal(after.activeCount, 1);
+});
+
+test('a query that matches no item filters everything out', () => {
+  const hook = renderHook(() =>
+    useFilterToolbar(ITEMS, DEFAULT_FILTERS, byTagAndName),
+  );
+  hook.result.setFilter('query', 'initech');
+  const after = hook.rerender();
+
+  assert.deepEqual(after.filtered, []);
+  assert.equal(after.activeCount, 1);
+});
+
 test('a query that is only whitespace does not count as an active filter', () => {
   const hook = renderHook(() =>
     useFilterToolbar(ITEMS, DEFAULT_FILTERS, byTagAndName),
