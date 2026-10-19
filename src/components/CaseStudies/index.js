@@ -3,6 +3,7 @@ import data from '@site/data/case-studies.json';
 import MirrorSyncStatus from '../shared/MirrorSyncStatus';
 import { formatDate } from '../shared/formatDate';
 import { useFilterToolbar } from '../shared/useFilterToolbar';
+import FilterToolbar from '../shared/FilterToolbar';
 import styles from './styles.module.css';
 
 const DEFAULT_FILTERS = { query: '', project: '', industry: '', country: '' };
@@ -64,99 +65,44 @@ export default function CaseStudies() {
         label="cncf.io/case-studies"
         className={styles.syncStatus}
       />
-      <div className={styles.toolbar}>
-        <label htmlFor="case-study-search" className={styles.visuallyHidden}>
-          Search case studies by organization
-        </label>
-        <input
-          id="case-study-search"
-          type="search"
-          value={query}
-          onChange={(event) => setFilter('query', event.target.value)}
-          placeholder="Search by organization"
-          className={styles.searchInput}
-        />
-        <div className={styles.filtersRow}>
-          <div className={styles.filter}>
-            <label
-              htmlFor="case-study-project"
-              className={styles.visuallyHidden}
-            >
-              Filter by CNCF project
-            </label>
-            <select
-              id="case-study-project"
-              value={project}
-              onChange={(event) => setFilter('project', event.target.value)}
-              className={styles.select}
-            >
-              <option value="">All projects</option>
-              {options.projects.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.filter}>
-            <label
-              htmlFor="case-study-industry"
-              className={styles.visuallyHidden}
-            >
-              Filter by industry
-            </label>
-            <select
-              id="case-study-industry"
-              value={industry}
-              onChange={(event) => setFilter('industry', event.target.value)}
-              className={styles.select}
-            >
-              <option value="">All industries</option>
-              {options.industries.map((i) => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.filter}>
-            <label
-              htmlFor="case-study-country"
-              className={styles.visuallyHidden}
-            >
-              Filter by country
-            </label>
-            <select
-              id="case-study-country"
-              value={country}
-              onChange={(event) => setFilter('country', event.target.value)}
-              className={styles.select}
-            >
-              <option value="">All countries</option>
-              {options.countries.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className={styles.resultsBar}>
-          <p aria-live="polite">
-            Showing <strong>{filtered.length}</strong> of {caseStudies.length}{' '}
-            case studies
-          </p>
-          {activeCount > 0 && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className={styles.clearButton}
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-      </div>
+      {FilterToolbar({
+        searchId: 'case-study-search',
+        searchLabel: 'Search case studies by organization',
+        searchValue: query,
+        searchPlaceholder: 'Search by organization',
+        onSearchChange: (value) => setFilter('query', value),
+        selects: [
+          {
+            id: 'case-study-project',
+            label: 'Filter by CNCF project',
+            value: project,
+            onChange: (value) => setFilter('project', value),
+            options: options.projects,
+            allLabel: 'All projects',
+          },
+          {
+            id: 'case-study-industry',
+            label: 'Filter by industry',
+            value: industry,
+            onChange: (value) => setFilter('industry', value),
+            options: options.industries,
+            allLabel: 'All industries',
+          },
+          {
+            id: 'case-study-country',
+            label: 'Filter by country',
+            value: country,
+            onChange: (value) => setFilter('country', value),
+            options: options.countries,
+            allLabel: 'All countries',
+          },
+        ],
+        resultCount: filtered.length,
+        totalCount: caseStudies.length,
+        resultNoun: 'case studies',
+        activeCount,
+        onClear: clearFilters,
+      })}
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>

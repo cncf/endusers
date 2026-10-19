@@ -5,6 +5,7 @@ import { matchesMembership } from './utils';
 import { MemberCard } from './MemberCard';
 import { DirectoryFreshness } from './DirectoryFreshness';
 import { useFilterToolbar } from '../shared/useFilterToolbar';
+import FilterToolbar from '../shared/FilterToolbar';
 import styles from './styles.module.css';
 
 const DEFAULT_FILTERS = {
@@ -60,79 +61,40 @@ export default function MemberDirectory() {
   return (
     <section aria-label="End User Community organization directory">
       <DirectoryFreshness />
-      <div className={styles.toolbar}>
-        <div className={styles.searchRow}>
-          <label htmlFor="member-search" className={styles.visuallyHidden}>
-            Search organizations by name
-          </label>
-          <input
-            id="member-search"
-            type="search"
-            value={query}
-            onChange={(event) => setFilter('query', event.target.value)}
-            placeholder="Search organizations by name"
-            className={styles.searchInput}
-          />
-        </div>
-        <div className={styles.filtersRow}>
-          <div className={styles.filter}>
-            <label htmlFor="member-industry" className={styles.visuallyHidden}>
-              Filter by industry
-            </label>
-            <select
-              id="member-industry"
-              value={industry}
-              onChange={(event) => setFilter('industry', event.target.value)}
-              className={styles.select}
-            >
-              <option value="">All industries</option>
-              {industries.map((ind) => (
-                <option key={ind} value={ind}>
-                  {ind}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.filter}>
-            <label
-              htmlFor="member-membership"
-              className={styles.visuallyHidden}
-            >
-              Filter by membership status
-            </label>
-            <select
-              id="member-membership"
-              value={membership}
-              onChange={(event) => setFilter('membership', event.target.value)}
-              className={styles.select}
-            >
-              <option value="">All organizations</option>
-              {membershipStatuses.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.filter}>
-            <label htmlFor="member-project" className={styles.visuallyHidden}>
-              Filter by CNCF project
-            </label>
-            <select
-              id="member-project"
-              value={project}
-              onChange={(event) => setFilter('project', event.target.value)}
-              className={styles.select}
-            >
-              <option value="">All projects</option>
-              {projects.map((proj) => (
-                <option key={proj} value={proj}>
-                  {proj}
-                </option>
-              ))}
-            </select>
-          </div>
-          <label className={styles.toggle}>
+      {FilterToolbar({
+        searchId: 'member-search',
+        searchLabel: 'Search organizations by name',
+        searchValue: query,
+        searchPlaceholder: 'Search organizations by name',
+        onSearchChange: (value) => setFilter('query', value),
+        selects: [
+          {
+            id: 'member-industry',
+            label: 'Filter by industry',
+            value: industry,
+            onChange: (value) => setFilter('industry', value),
+            options: industries,
+            allLabel: 'All industries',
+          },
+          {
+            id: 'member-membership',
+            label: 'Filter by membership status',
+            value: membership,
+            onChange: (value) => setFilter('membership', value),
+            options: membershipStatuses,
+            allLabel: 'All organizations',
+          },
+          {
+            id: 'member-project',
+            label: 'Filter by CNCF project',
+            value: project,
+            onChange: (value) => setFilter('project', value),
+            options: projects,
+            allLabel: 'All projects',
+          },
+        ],
+        extra: [
+          <label className={styles.toggle} key="hasArchitecture">
             <input
               type="checkbox"
               checked={hasArchitecture}
@@ -141,32 +103,22 @@ export default function MemberDirectory() {
               }
             />
             <span>Has architecture</span>
-          </label>
-          <label className={styles.toggle}>
+          </label>,
+          <label className={styles.toggle} key="hasAward">
             <input
               type="checkbox"
               checked={hasAward}
               onChange={(event) => setFilter('hasAward', event.target.checked)}
             />
             <span>Has award</span>
-          </label>
-        </div>
-        <div className={styles.resultsBar}>
-          <p aria-live="polite">
-            Showing <strong>{filtered.length}</strong> of {members.length}{' '}
-            organizations
-          </p>
-          {activeFiltersCount > 0 && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className={styles.clearButton}
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-      </div>
+          </label>,
+        ],
+        resultCount: filtered.length,
+        totalCount: members.length,
+        resultNoun: 'organizations',
+        activeCount: activeFiltersCount,
+        onClear: clearFilters,
+      })}
 
       {filtered.length === 0 ? (
         <div className={styles.emptyState}>
