@@ -82,11 +82,14 @@ test.describe('member profile dialog without a logo', () => {
     await waitForHydration(trigger);
 
     // The card's own fallback is server-rendered, so it is readable before the
-    // dialog exists. Comparing the dialog against it keeps this spec from
-    // restating the initials() rule that utils.js owns and the unit suite
-    // already pins.
+    // dialog exists. It sits in the card body beside the trigger rather than
+    // inside it: the trigger is the stretched, textless button that keeps the
+    // whole card clickable (#1630). Comparing the dialog against it keeps this
+    // spec from restating the initials() rule that utils.js owns and the unit
+    // suite already pins.
+    const card = trigger.locator('..');
     const cardInitials = (
-      await trigger.locator('span[class^="initials_"]').innerText()
+      await card.locator('span[class^="initials_"]').innerText()
     ).trim();
     expect(cardInitials).not.toEqual('');
 

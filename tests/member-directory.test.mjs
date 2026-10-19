@@ -644,6 +644,19 @@ test('the card names the member and labels its trigger', () => {
   assert.equal(textOf(findByClass(tree, 'viewLink')), 'View profile →');
 });
 
+// WCAG 2.5.3 (axe label-content-name-mismatch) passes only while the
+// trigger has no visible text of its own: any card copy rendered inside the
+// button becomes part of its visible label, which "Open <name> profile"
+// does not contain. The copy therefore lives in cardBody, beside the
+// trigger that is stretched over it.
+test('the card trigger carries no visible text of its own', () => {
+  const { tree } = render(MemberCard, { member: RICH_MEMBER });
+  const button = findByClass(tree, 'cardButton');
+  assert.equal(textOf(button), '');
+  assert.equal(findByClass(button, 'orgName'), undefined);
+  assert.equal(findByClass(tree, 'cardBody').props.children.length, 2);
+});
+
 test('a card with a logo renders a lazy, decorative image at the base URL', () => {
   const { tree } = render(MemberCard, { member: MEMBER_WITH_LOGO });
   const image = findByType(tree, 'img');
