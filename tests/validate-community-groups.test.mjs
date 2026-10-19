@@ -68,6 +68,34 @@ test('accepts a checkedAt inside the 60-second clock-skew grace window', () => {
   assert.doesNotMatch(result.stderr, /cannot be in the future/);
 });
 
+// `null` rather than absent or malformed, because it is the one value whose
+// rejection the rendering argument depends on and the other two cases do not
+// imply.
+//
+// GroupLinkStatus passes `groupsData?.checkedAt` straight to the shared
+// formatDate (src/components/GroupLinkStatus/index.js), and its optional
+// chaining guards a missing object, not a null field. `new Date(null)` coerces
+// to 0 rather than to an invalid date, so a null that reached the committed
+// file would render the epoch in a line that is meant to disappear.
+// tests/format-date.test.mjs pins that formatting and names this validator as
+// what keeps the value out; this is the assertion on the other end of that
+// argument.
+//
+// Worth asserting here rather than assuming it from the non-ISO case above:
+// `checkedAt` is gated by checkIsoTimestamp(), whose strict pattern runs over
+// `value ?? ''`, and a gate written instead around `Date.parse` or a
+// truthiness test would treat an explicit null differently from the string
+// this file already rejects.
+test('rejects a null checkedAt, which would otherwise render as the epoch', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...validData, checkedAt: null }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /checkedAt must be ISO 8601/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
 test('rejects an empty groups array', () => {
   const result = runScriptWithFixtures(
     SCRIPT,

@@ -258,6 +258,33 @@ test('reports a missing fetchedAt instead of crashing on an absent field', () =>
   assert.doesNotMatch(result.stderr, /TypeError/);
 });
 
+// `null` rather than absent or malformed, because it is the one value whose
+// rejection the rendering argument depends on and the other two cases do not
+// imply.
+//
+// PeopleFreshness hands `peopleData.fetchedAt` straight to the shared
+// formatDate (src/components/PeopleFreshness/index.js), and
+// `new Date(null)` coerces to 0 rather than to an invalid date, so a null that
+// reached the committed file would render "Profiles last refreshed from public
+// GitHub sources on January 1, 1970" in a paragraph that is meant to
+// disappear. tests/format-date.test.mjs pins that formatting and names this
+// validator as what keeps the value out; this is the assertion on the other
+// end of that argument.
+//
+// The absent-field case above does not cover it: a missing key and an explicit
+// null are different values, and a looser gate -- `value == null` read as
+// "unset", or a truthiness test -- can treat them differently. They coincide
+// here only because checkIsoTimestamp() runs a strict pattern over `value ?? ''`.
+test('rejects a null fetchedAt, which would otherwise render as the epoch', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    fixture({ ...freshData, fetchedAt: null }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /strict ISO 8601/);
+  assert.doesNotMatch(result.stderr, /TypeError/);
+});
+
 test('rejects a generated section the roster does not declare', () => {
   const result = runScriptWithFixtures(SCRIPT, fixture(freshData, {}));
   assert.equal(result.status, 1);

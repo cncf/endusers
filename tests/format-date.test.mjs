@@ -146,12 +146,21 @@ test('an unparseable or missing value is null, not a rendered string', () => {
 // a missing object and not a null field), hand the value straight over and
 // would render `January 1, 1970` in a note that is meant to disappear.
 //
-// What stops that is the data gate: scripts/validate-community-people.mjs
-// rejects a `fetchedAt` that fails its strict ISO 8601 test (`null ?? ''`
-// does), and scripts/validate-community-groups.mjs rejects a `checkedAt` that
-// `Date.parse` reads as NaN (`Date.parse(null)` does). Both run in ci.yml. If
-// either field is ever made optional, this is the assertion that should be
+// What stops that is the data gate: scripts/validate-community-people.mjs and
+// scripts/validate-community-groups.mjs both run their field through
+// checkIsoTimestamp() in scripts/lib/validate-utils.mjs, whose strict ISO 8601
+// pattern is matched against `value ?? ''` and so rejects null. Both run in
+// ci.yml, and tests/validate-community-people.test.mjs and
+// tests/validate-community-groups.test.mjs each assert the null case directly.
+// If either field is ever made optional, this is the assertion that should be
 // consulted first.
+//
+// Named as one gate rather than two mechanisms on purpose. An earlier revision
+// of this comment said community-groups rejected `checkedAt` because
+// `Date.parse(null)` is NaN; it is in fact the same strict helper, and the
+// difference is not cosmetic -- `Date.parse` also accepts loose strings like
+// "March 1, 2026", which is the laxity validate-community-people.mjs's own
+// comment says the strict helper exists to refuse.
 test('null is formatted as the epoch, and is kept out by the data gate', () => {
   assert.equal(formatDate(null), 'January 1, 1970');
 });
