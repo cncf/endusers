@@ -7,6 +7,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -28,6 +29,48 @@ const STEM_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 function manifestPath(runDir) {
   return join(runDir, 'manifest.json');
+}
+
+/**
+ * The commit the coverage run measures, or null when it cannot be determined.
+ *
+ * Every line and region number the reporter emits is an offset into the source
+ * as it stood at one commit. The manifest recorded `runId` but never that
+ * commit, so an artifact outlived the coordinates it addresses: the
+ * `e2e-coverage` artifact of run 38418930699 reports
+ * `src/components/ReferenceArchitectures/index.js` as 95.65% regions with
+ * uncovered regions at lines 13 and 34, and those lines named a `SyncStatus`
+ * helper the file no longer has -- it was 142 lines then and is 104 now. A
+ * reader with only the artifact cannot tell that apart from a live finding,
+ * and chases an arm that no longer exists.
+ *
+ * `GITHUB_SHA` is preferred over `git rev-parse` because the merge_group and
+ * pull_request lanes both build a ref that is not any local branch tip, and
+ * the environment names the commit the workflow was handed. The `git` fallback
+ * is what makes a local `npm run report:e2e:coverage` carry provenance too.
+ * Neither being available is recorded as `null` rather than raised: provenance
+ * is evidence for a later reader, and a run that cannot name its commit is
+ * still a run worth reporting.
+ *
+ * @param {object} [deps]
+ * @param {NodeJS.ProcessEnv} [deps.env] environment to read `GITHUB_SHA` from
+ * @param {Function} [deps.spawn] `spawnSync`-shaped runner
+ * @returns {string|null} the commit SHA, or null when unknown
+ */
+export function resolveRevision({ env = process.env, spawn = spawnSync } = {}) {
+  const fromEnvironment = env.GITHUB_SHA;
+  if (typeof fromEnvironment === 'string' && fromEnvironment.trim() !== '') {
+    return fromEnvironment.trim();
+  }
+  const result = spawn('git', ['rev-parse', 'HEAD'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  });
+  if (!result || result.status !== 0 || typeof result.stdout !== 'string') {
+    return null;
+  }
+  const revision = result.stdout.trim();
+  return revision === '' ? null : revision;
 }
 
 function assertRunId(runId) {
@@ -184,7 +227,7 @@ export async function main(argv = process.argv.slice(2)) {
     const manifest = await initCoverageRun(
       runDir,
       optionValue(argv, '--run-id'),
-      { project: 'chromium' },
+      { project: 'chromium', revision: resolveRevision() },
     );
     process.stdout.write(`${JSON.stringify(manifest)}\n`);
     return manifest;

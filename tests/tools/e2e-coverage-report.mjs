@@ -742,6 +742,10 @@ function emptyReport(run, status = 'ok') {
     status,
     runId: run.runId,
     runStatus: run.status,
+    // Provenance for the coordinates below: see resolveRevision() in
+    // tests/tools/e2e-coverage-run.mjs. Null when the run could not name its
+    // commit, never absent, so a consumer always has the key to check.
+    revision: run.revision ?? null,
     scripts: { captured: 0, converted: 0, ignored: 0 },
     sources: [],
     summary: {
@@ -980,6 +984,11 @@ export async function collectE2ECoverage(
 export function renderE2ECoverageReport(report) {
   const lines = [
     `E2E coverage: ${report.status} (run ${report.runId}; status ${report.runStatus ?? 'unknown'})`,
+    // On its own line rather than appended to the header above: the header is
+    // matched anchored by tests/e2e-coverage-report.test.mjs, and a reader
+    // scanning the artifact for which commit these line numbers address should
+    // not have to parse a parenthetical to find it.
+    `Revision: ${report.revision ?? 'unknown'}`,
     '',
     // The region column is what makes a --check-source-regions failure
     // diagnosable from the text artifact alone, mirroring the unit reporter.
@@ -1053,6 +1062,7 @@ export async function main(argv = process.argv.slice(2)) {
           : 'tooling-error',
       runId: error.runId ?? run?.runId ?? null,
       runStatus: error.runStatus ?? run?.status ?? null,
+      revision: run?.revision ?? null,
       scripts: { captured: 0, converted: 0, ignored: 0 },
       sources: [],
       summary: {
