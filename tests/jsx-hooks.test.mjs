@@ -34,7 +34,7 @@ test('an unstubbed @docusaurus alias is left to the default resolver', async () 
   const hooks = await import('./tools/jsx-hooks.mjs');
   const sentinel = { url: 'deferred', shortCircuit: true };
   const next = () => sentinel;
-  assert.equal(hooks.resolve('@docusaurus/router', {}, next), sentinel);
+  assert.equal(hooks.resolve('@docusaurus/BrowserOnly', {}, next), sentinel);
   assert.notEqual(hooks.resolve('@docusaurus/Link', {}, next), sentinel);
 });
 

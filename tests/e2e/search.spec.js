@@ -102,7 +102,10 @@ test.describe('navbar search', () => {
   }) => {
     await page.goto('/architectures');
 
-    const trigger = page.getByLabel(/^Search \(/);
+    // The button's accessible name leads with its visible text ("Search" and
+    // the "K" key hint) per WCAG 2.5.3; the keyboard shortcut follows in
+    // parentheses (#1618).
+    const trigger = page.getByLabel(/^Search K \(/);
     await expect(trigger).toBeVisible();
     await trigger.click();
 

@@ -7,7 +7,8 @@
 //   2. They import `./styles.module.css`, which Node cannot resolve.
 //   3. They import the `@site/...` alias, which only webpack understands.
 //   4. They import `@docusaurus/useBaseUrl` and `@docusaurus/Link`, which are
-//      theme aliases rather than installed packages.
+//      theme aliases rather than installed packages, and swizzled theme
+//      components additionally import `@theme/...` aliases.
 //   5. They import relative paths with no file extension, such as
 //      `../hooks/useFocusTrap`, which webpack completes and Node does not.
 //
@@ -35,13 +36,36 @@ const DATA_ALIAS = '@site/data/';
 const JSON_SPECIFIER = /\.json$/;
 const RELATIVE_SPECIFIER = /^\.\.?\//;
 const DOCUSAURUS_ALIAS = '@docusaurus/';
+const THEME_ALIAS = '@theme/';
 
 const REPO_ROOT = new URL('../../', import.meta.url);
 const STUB_ROOT = new URL('./docusaurus-stubs/', import.meta.url);
+const THEME_STUB_ROOT = new URL('./theme-stubs/', import.meta.url);
+const PACKAGE_STUB_ROOT = new URL('./package-stubs/', import.meta.url);
 
 // Only the `@docusaurus/...` aliases that src/ actually imports are stubbed;
 // anything else keeps failing loudly rather than resolving to a silent no-op.
-const DOCUSAURUS_STUBS = new Set(['useBaseUrl', 'Link']);
+const DOCUSAURUS_STUBS = new Set([
+  'useBaseUrl',
+  'Link',
+  'router',
+  'useGlobalData',
+  'ExecutionEnvironment',
+]);
+
+// The `@theme/...` aliases a swizzled component under src/theme/ imports from
+// the plugin it swizzles. Each maps to a marker stub under ./theme-stubs/
+// that mirrors the specifier's path, so tests assert against the props a
+// component passes rather than rendering the plugin's real implementation.
+const THEME_STUBS = new Set([
+  'SearchModal',
+  'ErrorBoundary',
+  'SearchBar/SearchButton',
+]);
+
+// Bare package specifiers whose real implementation needs a live DOM, so
+// unit tests substitute the recording stub under ./package-stubs/.
+const PACKAGE_STUBS = new Set(['mark.js']);
 
 const CSS_STUB =
   'data:text/javascript,export default new Proxy({},{get:(_,key)=>' +
@@ -137,6 +161,23 @@ export function resolve(specifier, context, nextResolve) {
         shortCircuit: true,
       };
     }
+  }
+  if (specifier.startsWith(THEME_ALIAS)) {
+    const name = specifier.slice(THEME_ALIAS.length);
+    if (THEME_STUBS.has(name)) {
+      return {
+        url: new URL(`${name}.mjs`, THEME_STUB_ROOT).href,
+        format: 'module',
+        shortCircuit: true,
+      };
+    }
+  }
+  if (PACKAGE_STUBS.has(specifier)) {
+    return {
+      url: new URL(`${specifier}.mjs`, PACKAGE_STUB_ROOT).href,
+      format: 'module',
+      shortCircuit: true,
+    };
   }
   // A relative specifier is left to Node unless it names nothing on disk, in
   // which case webpack's extension completion is applied. Completion is only

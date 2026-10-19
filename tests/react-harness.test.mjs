@@ -12,6 +12,7 @@ import React from 'react';
 
 import { renderHook } from './tools/react-hook-driver.mjs';
 import { textOf } from './tools/react-element-tree.mjs';
+import { resolve } from './tools/jsx-hooks.mjs';
 
 test('the hook driver memoises useCallback on its dependency array', () => {
   // No component under test uses useCallback today, so the dispatcher slot is
@@ -160,6 +161,42 @@ test('an omitted dependency array re-runs the memo and the effect', () => {
   api.rerender();
   assert.equal(api.result, 2, 'a memo without deps must be recomputed');
   assert.deepEqual(effectLog, ['setup', 'cleanup', 'setup']);
+});
+
+test('the jsx loader maps a stubbed @theme import to its theme stub', () => {
+  // The swizzled SearchBar imports @theme/SearchModal, @theme/ErrorBoundary
+  // and @theme/SearchBar/SearchButton; each must land on the marker stub that
+  // mirrors the specifier's path under tests/tools/theme-stubs/.
+  const result = resolve('@theme/SearchModal', {}, () => {
+    throw new Error('a stubbed alias must short-circuit the default resolve');
+  });
+  assert.equal(result.shortCircuit, true);
+  assert.ok(
+    result.url.endsWith('/tests/tools/theme-stubs/SearchModal.mjs'),
+    `unexpected stub target: ${result.url}`,
+  );
+});
+
+test('an unstubbed @theme import falls through to the default resolver', () => {
+  // Only the aliases a src/ component actually imports are stubbed; anything
+  // else must keep failing loudly downstream rather than resolving to a
+  // silent no-op.
+  const result = resolve('@theme/Navbar', {}, (specifier) => ({
+    url: `default:${specifier}`,
+  }));
+  assert.equal(result.url, 'default:@theme/Navbar');
+});
+
+test('the jsx loader maps mark.js to its package stub', () => {
+  // The real mark.js walks a live DOM, which no unit test has.
+  const result = resolve('mark.js', {}, () => {
+    throw new Error('a stubbed package must short-circuit the default resolve');
+  });
+  assert.equal(result.shortCircuit, true);
+  assert.ok(
+    result.url.endsWith('/tests/tools/package-stubs/mark.js.mjs'),
+    `unexpected stub target: ${result.url}`,
+  );
 });
 
 test('unmounting twice runs each cleanup only once', () => {

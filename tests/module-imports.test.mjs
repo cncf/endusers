@@ -158,14 +158,59 @@ test('every @site/ alias resolves from the repository root', () => {
   assert.deepEqual(unresolved, [], '@site/ aliases that resolve to nothing');
 });
 
+test('every @theme/ alias resolves against a theme directory', () => {
+  // `@theme` is the Docusaurus alias for the stacked theme directories: the
+  // site's own src/theme/ first, then each plugin's theme dir. A swizzled
+  // component imports the unswizzled pieces of its plugin through it, and a
+  // stale path fails the production build and nothing earlier — the same
+  // argument as the @site/ check above.
+  const themeRoots = [
+    join(repoRoot, 'src', 'theme'),
+    join(
+      repoRoot,
+      'node_modules',
+      'docusaurus-plugin-search-local',
+      'lib',
+      'client',
+      'theme',
+    ),
+    join(
+      repoRoot,
+      'node_modules',
+      '@docusaurus',
+      'theme-classic',
+      'lib',
+      'theme',
+    ),
+  ];
+  const themeImports = imports.filter(({ specifier }) =>
+    specifier.startsWith('@theme/'),
+  );
+  assert.ok(
+    themeImports.length > 0,
+    'no @theme/ imports found — the check would be vacuous',
+  );
+  const unresolved = [];
+  for (const { file, specifier } of themeImports) {
+    const name = specifier.slice('@theme/'.length);
+    if (!themeRoots.some((root) => resolvesWithCandidates(join(root, name))))
+      unresolved.push(`${file} -> ${specifier}`);
+  }
+  assert.deepEqual(unresolved, [], '@theme/ aliases that resolve to nothing');
+});
+
 test('every bare import is declared in package.json', () => {
   const undeclared = [];
   for (const { file, specifier } of imports) {
     if (
       specifier.startsWith('.') ||
       specifier.startsWith('node:') ||
-      specifier.startsWith('@site/')
+      specifier.startsWith('@site/') ||
+      specifier.startsWith('@theme/')
     ) {
+      // `@site/...` and `@theme/...` are Docusaurus aliases resolved against
+      // the repository root and the theme directories, not packages; both
+      // have their own resolution tests above.
       continue;
     }
     const segments = specifier.split('/');
