@@ -390,6 +390,13 @@ const GATES_NOT_RUN_BY_CI = new Map([
       'chains is run individually by ci.yml, and ' +
       'tests/netlify-publish-contract.test.mjs pins that parity.',
   ],
+  [
+    'validate:end-user-talks',
+    'Exists for the Netlify publish path, which runs validate:all and no ' +
+      'unit tests; the PR lane already enforces the same link allow-list ' +
+      'through tests/end-user-talks-data.test.mjs under npm run test:unit, ' +
+      'so a separate ci.yml step would only run the contract a second time.',
+  ],
 ]);
 
 function gateScripts() {
