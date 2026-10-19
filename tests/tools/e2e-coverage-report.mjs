@@ -836,6 +836,22 @@ export async function collectE2ECoverage(
           continue;
         }
         const lineCoverage = getLineCoverage(coverageData);
+        // An entry carrying no located statement at all. Nothing the installed
+        // converter emits is that shape -- it carries a statement for every
+        // line of every source it holds, including a source whose text is
+        // empty -- so this arm never runs, and
+        // tests/e2e-coverage-statement-map.test.mjs pins that premise against
+        // the library rather than leaving it to be rediscovered.
+        //
+        // It is kept rather than deleted because the arm is not a formatting
+        // nicety like the error-text fallbacks below: a row built from such an
+        // entry would have an empty denominator, which `percent` scores as
+        // fully covered, and would take the module out of
+        // `missingSourceFiles` -- the file-set guarantee is computed from the
+        // modules this loop admitted. A converter release that started
+        // emitting statement-less entries would otherwise turn every module it
+        // touched from "never measured" into "100% covered", which is the one
+        // outcome (#992) the file-set gate exists to make impossible.
         if (lineCoverage.size === 0) continue;
         const regionCoverage = getRegionCoverage(coverageData);
         const target = sources.get(relativePath) ?? {
