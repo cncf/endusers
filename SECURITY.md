@@ -22,12 +22,14 @@ maintained by volunteers, so timelines for fixes vary with severity.
 
 ## Scope
 
-This policy covers the site source, build scripts, and GitHub Actions workflows
-in this repository. [Dependabot](.github/dependabot.yml) opens pull requests for
+This policy covers the site source, build scripts, and GitHub Actions
+workflows and composite actions (`.github/actions/`) in this repository.
+[Dependabot](.github/dependabot.yml) opens pull requests for
 routine npm and GitHub Actions version updates, and
 [CodeQL](.github/workflows/codeql.yml) scans the JavaScript/TypeScript source
-and the GitHub Actions workflows (the `actions` language) on pushes to main,
-pull requests that touch either, and a weekly schedule. Report all
+and the GitHub Actions workflows and composite actions (the `actions`
+language) on pushes to main, pull requests that touch either, and a weekly
+schedule. Report all
 vulnerabilities in third-party dependencies here, including ones with no fixed
 version available yet.
 
