@@ -65,10 +65,20 @@ const formatsToADate = (value) => !Number.isNaN(new Date(value).getTime());
 
 const MEMBERSHIP_SENTENCE = /Directory membership data last synced from/;
 const ARCHITECTURES_SENTENCE = /Architecture-derived profiles last synced from/;
-// The epoch rendered by formatDate(null), in whichever timezone the browser
-// runs: nothing pins TZ for the Playwright run, and 0ms is the last day of
-// 1969 west of UTC.
-const EPOCH_DATE = /December 31, 1969|January 1, 1970/;
+// The epoch rendered by formatDate(null). The browser's zone does not enter
+// into it: src/components/shared/formatDate.js formats with
+// `timeZone: 'UTC'`, so 0ms is the UTC epoch day in every zone.
+// tests/format-date.test.mjs asserts that exact string, and asserts the same
+// UTC day across Los Angeles, Berlin and Kiritimati.
+//
+// Pinned rather than offered as an alternation with "December 31, 1969".
+// That alternation read as caution about the unpinned Playwright run, but the
+// previous-day rendering it admitted is exactly what dropping the
+// `timeZone: 'UTC'` option produces west of UTC -- the regression the helper's
+// own docblock says the pin exists to prevent. Accepting it here made this
+// assertion blind to the one failure it would otherwise have witnessed in a
+// browser.
+const EPOCH_DATE = /January 1, 1970/;
 
 const note = (page) => page.locator('p[class*="freshnessNote"]');
 

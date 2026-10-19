@@ -446,8 +446,10 @@ test('a data file patched by both directories collects both overlays', () => {
 test('the variant build clears the fields the ordinary build keeps', () => {
   // community-people.json clears to '' rather than null: PeopleFreshness
   // formats the field with `new Date(fetchedAt)`, and new Date(null) is 0
-  // rather than an invalid date, so null would render a 1969 timestamp
-  // instead of reaching the guards the overlay exists for.
+  // rather than an invalid date, so null would render a January 1, 1970
+  // timestamp instead of reaching the guards the overlay exists for.
+  // formatDate pins `timeZone: 'UTC'`, so that is the rendering in every
+  // zone; tests/format-date.test.mjs asserts it.
   const cases = [
     ['awards.json', (data) => data.verifiedAt, null],
     ['metrics.json', (data) => data.generatedAt, null],
