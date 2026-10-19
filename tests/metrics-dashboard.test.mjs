@@ -13,6 +13,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { formatDate } from '../src/components/shared/formatDate.js';
 import { importWithData } from './helpers-component-data.mjs';
 import { importSource } from './helpers-jsx.mjs';
 import {
@@ -75,23 +76,21 @@ function parsePoints(value) {
 const lifecycle = renderNested(dashboard, 'LifecycleSection');
 const Sparkline = componentNamed(lifecycle, 'Sparkline');
 
-test('the freshness line states when the data was collected, in UTC', () => {
+test('the freshness line states when the data was collected', () => {
   const meta = elements(dashboard).find((element) =>
     textOf(element).startsWith('Last updated'),
   );
   assert.ok(meta, 'expected a "Last updated" meta line');
 
-  const expected = new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'long',
-    timeStyle: 'short',
-    timeZone: 'UTC',
-  }).format(new Date(metricsData.generatedAt));
-  assert.match(textOf(meta), new RegExp(`Last updated ${expected} UTC`));
-  assert.match(
-    textOf(meta),
-    /UTC/,
-    'the timestamp is formatted in UTC, so it must say so',
+  // The component routes the timestamp through the shared formatDate helper,
+  // whose UTC pinning and invalid-date handling are pinned in
+  // tests/format-date.test.mjs.
+  const expected = formatDate(metricsData.generatedAt);
+  assert.ok(
+    expected,
+    'the checked-in metrics.json must have a parseable generatedAt',
   );
+  assert.match(textOf(meta), new RegExp(`Last updated ${expected}`));
 });
 
 test('every headline metric becomes one outbound card', () => {
@@ -499,6 +498,19 @@ async function renderWith(data, nested) {
     module.cleanup();
   }
 }
+
+test('an unparseable generatedAt renders no meta line instead of throwing', async () => {
+  // formatDate returns null for a timestamp that does not parse; the
+  // dashboard must drop the meta line in that case rather than throw a
+  // RangeError during static site generation (#1656).
+  const tree = await renderWith(baseData({ generatedAt: 'not a timestamp' }));
+  assert.equal(
+    elements(tree).filter((element) => textOf(element).includes('Last updated'))
+      .length,
+    0,
+    'no meta line should render when generatedAt does not parse',
+  );
+});
 
 test('a metrics file with no lifecycle section still renders the panel', async () => {
   const panel = await renderWith(baseData(), 'LifecycleSection');
