@@ -40,6 +40,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { loadWorkflows } from './helpers-workflows.mjs';
+import {
+  CREATE_PR_ACTION as PR_BRANCH_ACTION,
+  opensPullRequest,
+} from './helpers-workflow-ordering.mjs';
 
 const workflows = loadWorkflows();
 
@@ -156,18 +160,15 @@ function isPerEvent(expression) {
 // names itself. The action force-pushes `branch:` to `refs/heads/<branch>` and,
 // with `delete-branch: true`, deletes that same ref once it stops differing
 // from the base, so the branch name is the shared resource two runs contend
-// for.
-const PR_BRANCH_ACTION = 'peter-evans/create-pull-request';
-
-function pullRequestBranches(doc) {
+// for. The branch is read from the step the workflow wrote, whether it uses
+// the action directly or through .github/actions/open-automation-pr, which
+// forwards `branch:` unchanged.
+function pullRequestBranches(doc, options) {
   const jobs = doc?.jobs;
   if (typeof jobs !== 'object' || jobs === null) return [];
   return Object.values(jobs)
     .flatMap((job) => (Array.isArray(job?.steps) ? job.steps : []))
-    .filter(
-      (step) =>
-        typeof step?.uses === 'string' && step.uses.includes(PR_BRANCH_ACTION),
-    )
+    .filter((step) => opensPullRequest(step, options))
     .map((step) => step?.with?.branch)
     .filter((branch) => typeof branch === 'string')
     .map((branch) => branch.replace(/\s+/g, ' ').trim());
@@ -855,6 +856,44 @@ test('the branch reader finds the action wherever it sits', () => {
       },
     }),
     ['x', 'y'],
+  );
+  // The action reached through a local composite wrapper: the branch is the
+  // one the workflow passed to the wrapper, not the `${{ inputs.branch }}`
+  // the wrapper forwards. A local action that does not open a PR, or one
+  // the fixture does not know, contributes nothing.
+  const actions = new Map([
+    [
+      'open-pr',
+      {
+        runs: {
+          using: 'composite',
+          steps: [
+            {
+              uses: `${PR_BRANCH_ACTION}@v8`,
+              with: { branch: '${{ inputs.branch }}' },
+            },
+          ],
+        },
+      },
+    ],
+    ['setup', { runs: { using: 'composite', steps: [{ run: 'npm ci' }] } }],
+  ]);
+  assert.deepEqual(
+    pullRequestBranches(
+      {
+        jobs: {
+          a: {
+            steps: [
+              { uses: './.github/actions/setup' },
+              { uses: './.github/actions/open-pr', with: { branch: 'z' } },
+              { uses: './.github/actions/unknown', with: { branch: 'w' } },
+            ],
+          },
+        },
+      },
+      { actions },
+    ),
+    ['z'],
   );
 });
 

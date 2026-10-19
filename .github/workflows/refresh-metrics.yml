@@ -37,10 +37,9 @@ jobs:
       - run: npm run validate:members
       - run: npm run test:unit
       - run: npm run build
-      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      - uses: ./.github/actions/open-automation-pr
         with:
           branch: automation/refresh-metrics
-          delete-branch: true
           commit-message: 'chore: refresh metrics'
           title: 'chore: refresh metrics and member data'
           body: |
@@ -48,5 +47,3 @@ jobs:
             list and the generated member directory.
 
             Validation, the unit tests and the production build passed.
-          labels: automated
-          signoff: true

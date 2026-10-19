@@ -34,10 +34,9 @@ jobs:
       - run: npm run validate:radar-reports
       - run: npm run test:unit
       - run: npm run build
-      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      - uses: ./.github/actions/open-automation-pr
         with:
           branch: automation/refresh-radar-reports
-          delete-branch: true
           commit-message: 'chore: refresh radar reports'
           title: 'chore: refresh radar reports'
           body: |
@@ -47,5 +46,3 @@ jobs:
             New reports get a placeholder summary (flagged as a warning by
             `npm run validate:radar-reports`); replace it with a real
             one-sentence description before merging.
-          labels: automated
-          signoff: true

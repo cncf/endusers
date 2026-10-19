@@ -1,0 +1,32 @@
+name: Open an automation pull request
+description: >-
+  Open a PR for an automated content/data refresh with this repo's required
+  labels, signoff and branch-deletion policy fixed, so each automation workflow
+  only has to supply its branch name and PR text.
+
+inputs:
+  branch:
+    description: Branch name for the automated change.
+    required: true
+  commit-message:
+    description: Commit message for the automated change.
+    required: true
+  title:
+    description: Pull request title.
+    required: true
+  body:
+    description: Pull request body.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        branch: ${{ inputs.branch }}
+        delete-branch: true
+        commit-message: ${{ inputs.commit-message }}
+        title: ${{ inputs.title }}
+        body: ${{ inputs.body }}
+        labels: automated
+        signoff: true

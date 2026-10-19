@@ -33,13 +33,10 @@ jobs:
       - run: npm run validate:community-groups
       - run: npm run test:unit
       - run: npm run build
-      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      - uses: ./.github/actions/open-automation-pr
         with:
           branch: automation/refresh-community-people
-          delete-branch: true
           commit-message: 'chore: refresh community profiles and group status'
           title: 'chore: refresh community profiles and group status'
           body: |
             Automated refresh of the public GitHub profile data used by the End User Community lightboxes, and of the archived/reachable status recorded for each community group in data/community-groups.json.
-          labels: automated
-          signoff: true

@@ -11,7 +11,12 @@
 //
 // Nothing here reads the repository. The caller supplies `{ name, doc }`
 // records and a scripts map, which is what lets a fixture stand in for
-// .github/workflows/ without writing anything to disk.
+// .github/workflows/ without writing anything to disk. The one exception is
+// opensPullRequest(), which descends into local composite actions through
+// walkSteps() in ./helpers-workflows.mjs; a fixture passes its own `actions`
+// map to keep that read out too.
+
+import { stepsOf, walkSteps } from './helpers-workflows.mjs';
 
 // A script that writes data into the repository, as opposed to one that reads
 // it. Matched on the package.json namespaces the repository already uses for
@@ -88,12 +93,33 @@ export function validatorFor(generator, scripts) {
   return validator in scripts ? validator : undefined;
 }
 
+export const CREATE_PR_ACTION = 'peter-evans/create-pull-request';
+
+// Whether a step opens a pull request: by using the action itself, or by
+// using a local composite action whose steps do.
+// .github/actions/open-automation-pr wraps the action so each automation
+// workflow only supplies its branch and PR text, and a detector that matched
+// only the direct `uses:` would stop seeing every workflow that calls the
+// wrapper. `options` is handed to walkSteps(), so `{ actions }` can supply a
+// fixture's composite actions in place of the repository's.
+export function opensPullRequest(step, options) {
+  for (const { step: inner } of walkSteps({ steps: [step] }, options)) {
+    if (
+      typeof inner?.uses === 'string' &&
+      inner.uses.startsWith(CREATE_PR_ACTION)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // A workflow that opens a pull request out of what it just generated. Detected
 // by the action it uses rather than by filename, so a renamed or newly added
 // automation job is covered without editing this file.
-export function commitsGeneratedOutput(doc) {
-  return actionsUsedBy(doc).some((uses) =>
-    uses.startsWith('peter-evans/create-pull-request'),
+export function commitsGeneratedOutput(doc, options) {
+  return jobsOf(doc).some(([, job]) =>
+    stepsOf(job).some((step) => opensPullRequest(step, options)),
   );
 }
 
