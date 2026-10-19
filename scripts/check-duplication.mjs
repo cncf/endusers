@@ -30,7 +30,7 @@ export const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 // of the last adjustment. Lower it whenever the gate reports headroom; never
 // raise it. A change that genuinely needs a new copy should instead
 // extract the shared piece, which is what the count exists to prompt.
-export const CLONE_CEILING = 268;
+export const CLONE_CEILING = 264;
 
 // How far below the ceiling the count may fall before the gate insists the
 // ceiling follow it down. Without this the slack left by one clean-up would
