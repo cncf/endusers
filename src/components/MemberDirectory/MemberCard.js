@@ -11,13 +11,7 @@ export function MemberCard({ member }) {
 
   return (
     <article className={styles.card}>
-      <button
-        ref={triggerRef}
-        type="button"
-        className={styles.cardButton}
-        onClick={() => setOpen(true)}
-        aria-label={`Open ${member.name} profile`}
-      >
+      <div className={styles.cardBody}>
         <div className={styles.logoWrapper} aria-hidden="true">
           {member.logo ? (
             <img src={logoUrl} alt="" className={styles.logo} loading="lazy" />
@@ -68,7 +62,18 @@ export function MemberCard({ member }) {
           )}
           <span className={styles.viewLink}>View profile →</span>
         </div>
-      </button>
+      </div>
+      {/* The trigger is stretched over the whole card and carries no visible
+          text of its own, so its accessible name only has to name the
+          profile it opens (WCAG 2.5.3 Label in Name). Putting the card copy
+          inside the button would make all of it the visible label. */}
+      <button
+        ref={triggerRef}
+        type="button"
+        className={styles.cardButton}
+        onClick={() => setOpen(true)}
+        aria-label={`Open ${member.name} profile`}
+      />
       {open && (
         <MemberProfile
           member={member}

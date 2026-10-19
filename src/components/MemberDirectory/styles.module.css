@@ -162,23 +162,32 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+/* The trigger carries no visible text: it is stretched over the card so the
+   whole card stays clickable while the accessible name comes from
+   aria-label alone. */
 .cardButton {
   background: none;
   border: 0;
   color: inherit;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+  inset: 0;
   padding: 0;
+  position: absolute;
   text-align: left;
-  width: 100%;
 }
 
-.cardButton:hover .orgName,
-.cardButton:focus-visible .orgName {
+.card:hover .orgName,
+.card:focus-within .orgName {
   color: var(--ifm-color-primary);
 }
 
