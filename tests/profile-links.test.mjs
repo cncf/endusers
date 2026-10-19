@@ -119,3 +119,97 @@ test('websiteUrl reports the host the URL parser actually derives', () => {
   // A missing slash is normalised the same way rather than rejected.
   assert.equal(websiteUrl('http:/example.test'), 'http://example.test/');
 });
+
+// The four tests below pin authority-parsing outcomes that websiteUrl()
+// already produces but nothing asserted. They matter more than ordinary edge
+// cases because of where the value comes from: the free-text "blog" field of a
+// third-party GitHub profile, copied verbatim into data/community-people.json
+// by scripts/fetch-community-people.mjs and committed unedited by the
+// scheduled refresh workflow. Nobody reviews that string before it becomes an
+// href, so the only thing standing between it and a misleading link is the URL
+// parser this module resolves through.
+//
+// The tests above cover the disguise websiteUrl() was written for -- an
+// explicit userinfo component -- and the protocols it refuses. The authority
+// can also be bent without a "@" that survives parsing, and the cases below
+// are the three ways that happens plus the one place a bare host is refused.
+
+// Only a backslash separates the host from the rest here, and WHATWG treats a
+// backslash as a slash inside a special scheme's authority. The authority
+// therefore ends at the backslash, so the link points at the host the reader
+// sees *first* -- good.example -- and "@evil.example" lands in the path. That
+// is the safe resolution, and it is safe because of how the parser splits the
+// string rather than because of anything this module checks: the userinfo
+// guard never fires, because by the time it runs `username` is already empty.
+//
+// So this is a property that a refactor can silently invert. Replacing the
+// `new URL()` resolution in applyDefaultScheme() with a manual split on "@",
+// or any hand-rolled host extraction, would read the trailing label as the
+// host and hand the reader a link to evil.example wearing good.example's name,
+// with every existing test in this file still green.
+test('websiteUrl resolves a backslash authority to the leading visible host', () => {
+  assert.equal(
+    websiteUrl('good.example\\@evil.example'),
+    'https://good.example/@evil.example',
+  );
+  assert.equal(
+    websiteUrl('https://good.example\\@evil.example'),
+    'https://good.example/@evil.example',
+  );
+  // Without the "@" the same split applies, so the trailing labels cannot
+  // promote themselves into the host either.
+  assert.equal(
+    websiteUrl('good.example\\.evil.example'),
+    'https://good.example/.evil.example',
+  );
+});
+
+// A schemeless value is only resolved against https when SCHEME_PATTERN finds
+// no scheme on it, and that pattern -- /^[a-z][a-z0-9+.-]*:/i -- allows dots,
+// so "example.test:" matches it as a scheme. "example.test:8080" is therefore
+// parsed as given rather than as a host with a port, yielding protocol
+// "example.test:", which is outside the allowed http/https set and drops the
+// link.
+//
+// Pinned because the outcome is easy to mistake for a port ban and "fix" by
+// widening the allowed protocols, which would admit every other scheme a
+// dotted prefix can spell. A port is not refused -- it survives whenever the
+// value carries a scheme of its own -- so the second half of this test records
+// where the boundary actually sits.
+test('websiteUrl drops a schemeless host whose port reads as a scheme', () => {
+  assert.equal(websiteUrl('example.test:8080'), null);
+  assert.equal(websiteUrl('example.test:8080/blog'), null);
+  assert.equal(websiteUrl('example.test:'), null);
+  // The same authority keeps its port once the value says which scheme it is.
+  assert.equal(
+    websiteUrl('https://example.test:8080'),
+    'https://example.test:8080/',
+  );
+});
+
+// "gооd.example" here carries two Cyrillic о (U+043E) in place of the Latin
+// letters. The parser converts the host to its punycode form, so the href the
+// anchor carries is xn--gd-fmca.example and not the Latin-looking original:
+// the encoded authority is what any later host comparison or display would
+// have to reckon with. websiteUrl() does not reject homographs -- it has no
+// allowlist to reject them against -- and recording that it normalises rather
+// than rejects keeps the behaviour from being assumed either way.
+test('websiteUrl emits the punycode host for a non-ASCII authority', () => {
+  assert.equal(websiteUrl('gооd.example'), 'https://xn--gd-fmca.example/');
+  assert.equal(
+    websiteUrl('https://gооd.example'),
+    'https://xn--gd-fmca.example/',
+  );
+});
+
+// The two halves disagree, and both are the parser's doing rather than the
+// trim() in websiteUrl(), which only removes ASCII whitespace. A trailing NUL
+// is a C0 control the parser strips, leaving an ordinary host; a NUL inside
+// the host is a forbidden host code point, which makes the parse throw and
+// takes the catch in checkUrl(). Pinned so neither is mistaken for the other:
+// the first shows a control character cannot smuggle itself into an href, the
+// second shows a mangled host is dropped instead of being repaired.
+test('websiteUrl strips a trailing NUL but drops one inside the host', () => {
+  assert.equal(websiteUrl('evil.example\u0000'), 'https://evil.example/');
+  assert.equal(websiteUrl('exa\u0000mple.test'), null);
+});
