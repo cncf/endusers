@@ -77,6 +77,26 @@ async function fixtureRun() {
   return { root, runDir, buildDir };
 }
 
+async function writePageCoverage(
+  fixture,
+  pageIndex,
+  ranges,
+  url = 'http://localhost:3000/assets/js/app.js',
+) {
+  await writeCoverageArtifact(fixture.runDir, `worker-0-page-${pageIndex}`, {
+    schemaVersion: 1,
+    kind: 'endusers.playwright.v8-coverage',
+    runId: 'run-1',
+    result: [
+      {
+        url,
+        scriptId: String(pageIndex + 1),
+        functions: [{ functionName: '', isBlockCoverage: true, ranges }],
+      },
+    ],
+  });
+}
+
 test('collectE2ECoverage rejects an unsealed run instead of mixing stale data', async () => {
   const fixture = await fixtureRun();
   try {
@@ -210,31 +230,14 @@ test('collectE2ECoverage maps V8 ranges through an external source map to src li
         ]),
       }),
     );
-    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
-      schemaVersion: 1,
-      kind: 'endusers.playwright.v8-coverage',
-      runId: 'run-1',
-      result: [
-        {
-          url: 'http://localhost:3000/assets/js/app.js',
-          scriptId: '1',
-          functions: [
-            {
-              functionName: '',
-              isBlockCoverage: true,
-              ranges: [
-                {
-                  startOffset: generated.indexOf('const miss'),
-                  endOffset: scriptText.length,
-                  count: 0,
-                },
-                { startOffset: 0, endOffset: scriptText.length, count: 1 },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    await writePageCoverage(fixture, 0, [
+      {
+        startOffset: generated.indexOf('const miss'),
+        endOffset: scriptText.length,
+        count: 0,
+      },
+      { startOffset: 0, endOffset: scriptText.length, count: 1 },
+    ]);
     await sealCoverageRun(fixture.runDir, 'passed');
 
     const report = await collectE2ECoverage(fixture.runDir, {
@@ -310,66 +313,28 @@ test('a zero-count region spanning only covered lines is not counted against the
     );
 
     // One page runs everything but the last line.
-    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
-      schemaVersion: 1,
-      kind: 'endusers.playwright.v8-coverage',
-      runId: 'run-1',
-      result: [
-        {
-          url: 'http://localhost:3000/assets/js/app.js',
-          scriptId: '1',
-          functions: [
-            {
-              functionName: '',
-              isBlockCoverage: true,
-              ranges: [
-                {
-                  startOffset: 0,
-                  endOffset: scriptText.length,
-                  count: 1,
-                },
-                {
-                  startOffset: offset('const e'),
-                  endOffset: scriptText.length,
-                  count: 0,
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    await writePageCoverage(fixture, 0, [
+      { startOffset: 0, endOffset: scriptText.length, count: 1 },
+      {
+        startOffset: offset('const e'),
+        endOffset: scriptText.length,
+        count: 0,
+      },
+    ]);
     // A second page contributes two more zero-count blocks: one over lines
     // 1-3, standing in for the mis-mapped multi-line span (line 2 is blank, so
     // the span has to be judged on the lines that carry statements), and one
     // from inside line 4 to the end of line 5, which closes on a line nothing
     // ran. Only the first is a phantom.
-    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-1', {
-      schemaVersion: 1,
-      kind: 'endusers.playwright.v8-coverage',
-      runId: 'run-1',
-      result: [
-        {
-          url: 'http://localhost:3000/assets/js/app.js',
-          scriptId: '2',
-          functions: [
-            {
-              functionName: '',
-              isBlockCoverage: true,
-              ranges: [
-                { startOffset: 0, endOffset: scriptText.length, count: 1 },
-                { startOffset: 0, endOffset: offset('const d'), count: 0 },
-                {
-                  startOffset: offset('const d') + 'const d'.length,
-                  endOffset: offset('const e') + 'const e = 5;'.length,
-                  count: 0,
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    await writePageCoverage(fixture, 1, [
+      { startOffset: 0, endOffset: scriptText.length, count: 1 },
+      { startOffset: 0, endOffset: offset('const d'), count: 0 },
+      {
+        startOffset: offset('const d') + 'const d'.length,
+        endOffset: offset('const e') + 'const e = 5;'.length,
+        count: 0,
+      },
+    ]);
     await sealCoverageRun(fixture.runDir, 'passed');
 
     const report = await collectE2ECoverage(fixture.runDir, {
@@ -459,54 +424,23 @@ test('a single-line zero-count region survives a covered region that encloses it
 
     // One page runs the whole of the *other* chunk and nothing else,
     // contributing a covered region that spans every line of the file.
-    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
-      schemaVersion: 1,
-      kind: 'endusers.playwright.v8-coverage',
-      runId: 'run-1',
-      result: [
-        {
-          url: 'http://localhost:3000/assets/js/app2.js',
-          scriptId: '1',
-          functions: [
-            {
-              functionName: '',
-              isBlockCoverage: true,
-              ranges: [
-                { startOffset: 0, endOffset: scriptText.length, count: 1 },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    await writePageCoverage(
+      fixture,
+      0,
+      [{ startOffset: 0, endOffset: scriptText.length, count: 1 }],
+      'http://localhost:3000/assets/js/app2.js',
+    );
     // A second page reaches the same script but leaves one arm inside line 1
     // unexecuted. The covered region from the first page encloses it on both
     // lines and columns; it is still a real gap.
-    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-1', {
-      schemaVersion: 1,
-      kind: 'endusers.playwright.v8-coverage',
-      runId: 'run-1',
-      result: [
-        {
-          url: 'http://localhost:3000/assets/js/app.js',
-          scriptId: '2',
-          functions: [
-            {
-              functionName: '',
-              isBlockCoverage: true,
-              ranges: [
-                { startOffset: 0, endOffset: scriptText.length, count: 1 },
-                {
-                  startOffset: source.indexOf('= 1;'),
-                  endOffset: source.indexOf('= 1;') + '= 1;'.length,
-                  count: 0,
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    await writePageCoverage(fixture, 1, [
+      { startOffset: 0, endOffset: scriptText.length, count: 1 },
+      {
+        startOffset: source.indexOf('= 1;'),
+        endOffset: source.indexOf('= 1;') + '= 1;'.length,
+        count: 0,
+      },
+    ]);
     await sealCoverageRun(fixture.runDir, 'passed');
 
     const report = await collectE2ECoverage(fixture.runDir, {
@@ -581,50 +515,16 @@ test('a zero-count region crossed by a covered one is treated as source-map drif
     // One page runs the whole script, and a block from column 3 onwards twice
     // over -- a loop body. Its differing count is what makes V8 emit the
     // boundary at column 3 at all.
-    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-0', {
-      schemaVersion: 1,
-      kind: 'endusers.playwright.v8-coverage',
-      runId: 'run-1',
-      result: [
-        {
-          url: 'http://localhost:3000/assets/js/app.js',
-          scriptId: '1',
-          functions: [
-            {
-              functionName: '',
-              isBlockCoverage: true,
-              ranges: [
-                { startOffset: 0, endOffset: scriptText.length, count: 1 },
-                { startOffset: 3, endOffset: scriptText.length, count: 2 },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    await writePageCoverage(fixture, 0, [
+      { startOffset: 0, endOffset: scriptText.length, count: 1 },
+      { startOffset: 3, endOffset: scriptText.length, count: 2 },
+    ]);
     // A second page maps the same original branch to a span that starts
     // earlier and ends earlier, and reports it unexecuted.
-    await writeCoverageArtifact(fixture.runDir, 'worker-0-page-1', {
-      schemaVersion: 1,
-      kind: 'endusers.playwright.v8-coverage',
-      runId: 'run-1',
-      result: [
-        {
-          url: 'http://localhost:3000/assets/js/app.js',
-          scriptId: '2',
-          functions: [
-            {
-              functionName: '',
-              isBlockCoverage: true,
-              ranges: [
-                { startOffset: 0, endOffset: scriptText.length, count: 1 },
-                { startOffset: 0, endOffset: 6, count: 0 },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    await writePageCoverage(fixture, 1, [
+      { startOffset: 0, endOffset: scriptText.length, count: 1 },
+      { startOffset: 0, endOffset: 6, count: 0 },
+    ]);
     await sealCoverageRun(fixture.runDir, 'passed');
 
     const report = await collectE2ECoverage(fixture.runDir, {
@@ -694,18 +594,7 @@ async function contradictionFixture(buildArtifacts) {
   );
   const artifacts = buildArtifacts(scriptText.length);
   for (const [index, { url, ranges }] of artifacts.entries()) {
-    await writeCoverageArtifact(fixture.runDir, `worker-0-page-${index}`, {
-      schemaVersion: 1,
-      kind: 'endusers.playwright.v8-coverage',
-      runId: 'run-1',
-      result: [
-        {
-          url: url ?? 'http://localhost:3000/assets/js/app.js',
-          scriptId: String(index + 1),
-          functions: [{ functionName: '', isBlockCoverage: true, ranges }],
-        },
-      ],
-    });
+    await writePageCoverage(fixture, index, ranges, url);
   }
   await sealCoverageRun(fixture.runDir, 'passed');
   return fixture;
