@@ -7,8 +7,8 @@
 //
 //   formatDate's Number.isNaN guard in src/components/shared/formatDate.js:
 //     `if (Number.isNaN(parsed.getTime())) return null;` — the shared
-//     formatDate returns null for a checkedAt that does not parse, which
-//     drops the "Upstream group links last verified on ..." line entirely;
+//     formatDate returns null for a generatedAt that does not parse, which
+//     drops the "Upstream group status last updated on ..." line entirely;
 //   GroupLinkStatus's stale.length ternaries:
 //     `stale.length === 1 ? 'has an' : 'have'` and
 //     `stale.length === 1 ? 'repository' : 'repositories'` — the plural
@@ -18,7 +18,7 @@
 // archived:false / reachable:true, and tests/e2e/fixtures/data/
 // community-groups.json appends exactly one archived group, so the ordinary
 // coverage build has `stale.length === 1` and always takes the singular arm.
-// The real checkedAt is a valid ISO timestamp, so
+// The real generatedAt is a valid ISO timestamp, so
 // formatDate's Number.isNaN guard never returns.
 //
 // Two groups drifting at once is an ordinary shape rather than defensive dead
@@ -30,7 +30,7 @@
 // covers the branches an *additive* overlay reaches, where an extra record
 // renders beside the real ones and nothing already covered stops rendering.
 // Here the two arms of each ternary are mutually exclusive on one page, and
-// clearing checkedAt removes the verification line that the ordinary build
+// clearing generatedAt removes the last-updated line that the ordinary build
 // covers — so overlaying once would swap which arm is reachable rather than
 // add a case. They belong to the variant build for the same reason
 // AwardsTimeline's provenance paragraph does; see the preamble of
@@ -54,12 +54,12 @@ import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 
 const COMMUNITY_PATH = '/community';
 const VARIANT_BASE = '/e2e-coverage-variant';
-const VERIFIED_LINE = /Upstream group links last verified on/;
+const UPDATED_LINE = /Upstream group status last updated on/;
 const SINGULAR = /has an archived or unreachable upstream repository —/;
 const PLURAL = /have archived or unreachable upstream repositories —/;
 
 // The variant site is only built by the coverage run; outside it the base
-// path does not exist and the ordinary page still has a parseable checkedAt.
+// path does not exist and the ordinary page still has a parseable generatedAt.
 const describeCoverage =
   process.env.E2E_COVERAGE === '1' ? test.describe : test.describe.skip;
 
@@ -76,32 +76,32 @@ const stale = groups.groups.filter(isStale);
 const variantStale = variantGroups.groups.filter(isStale);
 
 describeCoverage('a link check that found more than one group drifting', () => {
-  test('the real page dates its verification line and uses the singular', async ({
+  test('the real page dates its last-updated line and uses the singular', async ({
     page,
   }) => {
     // The premise of the whole file: against the data the coverage build
     // ships, both arms below are unreachable.
     expect(stale).toHaveLength(1);
-    expect(new Date(groups.checkedAt).getTime()).not.toBeNaN();
+    expect(new Date(groups.generatedAt).getTime()).not.toBeNaN();
 
     await page.goto(COMMUNITY_PATH);
-    await expect(page.getByText(VERIFIED_LINE)).toBeVisible();
+    await expect(page.getByText(UPDATED_LINE)).toBeVisible();
     const warning = page.getByText(SINGULAR);
     await expect(warning).toBeVisible();
     await expect(warning).toContainText(stale[0].name);
     await expect(page.getByText(PLURAL)).toHaveCount(0);
   });
 
-  test('the variant page drops the verification line and uses the plural', async ({
+  test('the variant page drops the last-updated line and uses the plural', async ({
     page,
   }) => {
     expect(variantStale.length).toBeGreaterThan(1);
     // What formatDate's Number.isNaN guard turns on: the
-    // overlaid checkedAt is present but does not
+    // overlaid generatedAt is present but does not
     // parse, so formatDate reaches its guard instead of returning early on a
     // missing field.
-    expect(variantGroups.checkedAt).toBeTruthy();
-    expect(new Date(variantGroups.checkedAt).getTime()).toBeNaN();
+    expect(variantGroups.generatedAt).toBeTruthy();
+    expect(new Date(variantGroups.generatedAt).getTime()).toBeNaN();
 
     await page.goto(`${VARIANT_BASE}${COMMUNITY_PATH}`);
     // The route built and served: the page's own heading is prose around the
@@ -109,9 +109,9 @@ describeCoverage('a link check that found more than one group drifting', () => {
     await expect(
       page.getByRole('heading', { name: 'Community', level: 1 }),
     ).toBeVisible();
-    // formatDate returned null, so the verification line is gone rather than
+    // formatDate returned null, so the last-updated line is gone rather than
     // rendering "Invalid Date".
-    await expect(page.getByText(VERIFIED_LINE)).toHaveCount(0);
+    await expect(page.getByText(UPDATED_LINE)).toHaveCount(0);
     await expect(page.getByText(/Invalid Date/)).toHaveCount(0);
     const warning = page.getByText(PLURAL);
     await expect(warning).toBeVisible();

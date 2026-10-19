@@ -420,7 +420,7 @@ function comparePositions(lineA, columnA, lineB, columnB) {
 // Crossing is the whole test, and it is deliberately narrower than
 // containment. A covered region that *encloses* a zero one is the ordinary
 // shape of a branch arm inside an executed block -- GroupLinkStatus's
-// `checkedAt` guard and RadarReports' empty-corpus arms are enclosed exactly
+// `generatedAt` guard and RadarReports' empty-corpus arms are enclosed exactly
 // that way -- so enclosure is never treated as drift.
 function crossesRegion(zero, covered) {
   return (

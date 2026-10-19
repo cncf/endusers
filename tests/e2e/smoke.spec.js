@@ -110,12 +110,12 @@ test.describe('projects born at end users', () => {
 });
 
 test.describe('community group link status', () => {
-  test('reports when upstream group links were last verified', async ({
+  test('reports when upstream group status was last updated', async ({
     page,
   }) => {
     await page.goto('/community');
     await expect(
-      page.getByText(/Upstream group links last verified on .+\./),
+      page.getByText(/Upstream group status last updated on .+\./),
     ).toBeVisible();
   });
 });

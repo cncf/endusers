@@ -18,7 +18,7 @@ function fixture(data) {
 }
 
 const validData = {
-  checkedAt: new Date().toISOString(),
+  generatedAt: new Date().toISOString(),
   groups: [validGroup()],
 };
 
@@ -28,40 +28,37 @@ test('accepts a valid community groups file', () => {
   assert.match(result.stdout, /Validated 1 End User Group links/);
 });
 
-test('rejects a non-ISO checkedAt', () => {
+test('rejects a non-ISO generatedAt', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
-    fixture({ ...validData, checkedAt: 'not a date' }),
+    fixture({ ...validData, generatedAt: 'not a date' }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /checkedAt must be ISO 8601/);
+  assert.match(result.stderr, /generatedAt must be ISO 8601/);
 });
 
-// `checkedAt` is written by check-community-group-links.mjs from the machine
+// `generatedAt` is written by check-community-group-links.mjs from the machine
 // that runs the refresh job. A clock skewed forward there would otherwise be
-// read as "freshly checked" forever, since the staleness warning below only
-// ever fires on positive ages.
-test('rejects a checkedAt in the future', () => {
+// read as a future content update.
+test('rejects a generatedAt in the future', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
     fixture({
       ...validData,
-      checkedAt: new Date(Date.now() + 86_400_000).toISOString(),
+      generatedAt: new Date(Date.now() + 86_400_000).toISOString(),
     }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /checkedAt cannot be in the future/);
+  assert.match(result.stderr, /generatedAt cannot be in the future/);
   assert.doesNotMatch(result.stderr, /must be ISO 8601/);
 });
 
-// The future check is the `else` arm of the ISO parse, so the 60-second grace
-// window is the only thing keeping an ordinary run from tripping it.
-test('accepts a checkedAt inside the 60-second clock-skew grace window', () => {
+test('accepts generatedAt inside the 60-second clock-skew grace window', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
     fixture({
       ...validData,
-      checkedAt: new Date(Date.now() + 30_000).toISOString(),
+      generatedAt: new Date(Date.now() + 30_000).toISOString(),
     }),
   );
   assert.equal(result.status, 0, result.stderr);
@@ -72,7 +69,7 @@ test('accepts a checkedAt inside the 60-second clock-skew grace window', () => {
 // rejection the rendering argument depends on and the other two cases do not
 // imply.
 //
-// GroupLinkStatus passes `groupsData?.checkedAt` straight to the shared
+// GroupLinkStatus passes `groupsData?.generatedAt` straight to the shared
 // formatDate (src/components/GroupLinkStatus/index.js), and its optional
 // chaining guards a missing object, not a null field. `new Date(null)` coerces
 // to 0 rather than to an invalid date, so a null that reached the committed
@@ -82,17 +79,17 @@ test('accepts a checkedAt inside the 60-second clock-skew grace window', () => {
 // argument.
 //
 // Worth asserting here rather than assuming it from the non-ISO case above:
-// `checkedAt` is gated by checkIsoTimestamp(), whose strict pattern runs over
+// `generatedAt` is gated by checkIsoTimestamp(), whose strict pattern runs over
 // `value ?? ''`, and a gate written instead around `Date.parse` or a
 // truthiness test would treat an explicit null differently from the string
 // this file already rejects.
-test('rejects a null checkedAt, which would otherwise render as the epoch', () => {
+test('rejects a null generatedAt, which would otherwise render as the epoch', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
-    fixture({ ...validData, checkedAt: null }),
+    fixture({ ...validData, generatedAt: null }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /checkedAt must be ISO 8601/);
+  assert.match(result.stderr, /generatedAt must be ISO 8601/);
   assert.doesNotMatch(result.stderr, /TypeError/);
 });
 
@@ -276,12 +273,13 @@ test('warns, without failing, on an unreachable upstream repo', () => {
   assert.match(result.stderr, /could not be found/);
 });
 
-test('warns, without failing, when checkedAt exceeds the staleness interval', () => {
-  const stale = new Date(Date.now() - 61 * 86_400_000).toISOString();
+test('accepts an old generatedAt when unchanged status remains published', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
-    fixture({ ...validData, checkedAt: stale }),
+    fixture({
+      ...validData,
+      generatedAt: '2020-01-01T00:00:00.000Z',
+    }),
   );
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stderr, /exceeding the 60-day check interval/);
 });

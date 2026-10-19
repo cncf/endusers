@@ -4,19 +4,21 @@ import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
 
 /**
- * Freshness + drift signal for the End User Group cards, sourced from
+ * Last-updated + drift signal for the End User Group cards, sourced from
  * data/community-groups.json (set by `npm run check:community-group-links`).
  * Surfaces any group whose upstream repository is archived or unreachable so
  * that drift is visible on the page, not just in a CI log.
  */
 export default function GroupLinkStatus() {
-  const checkedAt = formatDate(groupsData?.checkedAt);
+  const generatedAt = formatDate(groupsData?.generatedAt);
   const stale = (groupsData?.groups || []).filter(
     (group) => group.archived || group.reachable === false,
   );
   return (
     <div className={styles.freshnessNote}>
-      {checkedAt && <p>Upstream group links last verified on {checkedAt}.</p>}
+      {generatedAt && (
+        <p>Upstream group status last updated on {generatedAt}.</p>
+      )}
       {stale.length > 0 && (
         <p className={styles.warning}>
           {stale.map((group) => group.name).join(', ')}{' '}

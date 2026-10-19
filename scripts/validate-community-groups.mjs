@@ -30,8 +30,8 @@ function publishableRepositoryUrl(value) {
 checkIsoTimestamp(
   errors,
   'community-groups.json',
-  'checkedAt',
-  data.checkedAt,
+  'generatedAt',
+  data.generatedAt,
   { futureToleranceMs: 60_000 },
 );
 
@@ -80,23 +80,6 @@ for (const group of Array.isArray(data.groups) ? data.groups : []) {
       'upstream repository could not be found (renamed or deleted?)',
     );
   }
-}
-
-// Stale-repo-status: refresh-community-people.yml re-runs
-// check-community-group-links.mjs weekly, so checkedAt only ages when that
-// pipeline breaks or every upstream check comes back inconclusive (the
-// checker then refuses to write). Warn rather than fail so this data source
-// joining community-people.json's staleness class does not add a
-// permanently-red build gate for an upstream-owned lifecycle signal.
-const ageDays = (Date.now() - new Date(data.checkedAt).getTime()) / 86_400_000;
-const STALENESS_WARN_DAYS = 60;
-if (Number.isFinite(ageDays) && ageDays > STALENESS_WARN_DAYS) {
-  collectError(
-    errors,
-    'community-groups.json',
-    'warn',
-    `checkedAt is ${Math.round(ageDays)} days old, exceeding the ${STALENESS_WARN_DAYS}-day check interval`,
-  );
 }
 
 reportAndExit(errors, 'community groups');

@@ -142,7 +142,7 @@ test('an unparseable or missing value is null, not a rendered string', () => {
 // Most call sites never pass it -- AwardsTimeline, CaseStudies, RadarReports
 // and MirrorSyncStatus all test the field for truthiness first. The remaining
 // two, PeopleFreshness (`peopleData.fetchedAt`)
-// and GroupLinkStatus (`groupsData?.checkedAt`, whose optional chaining guards
+// and GroupLinkStatus (`groupsData?.generatedAt`, whose optional chaining guards
 // a missing object and not a null field), hand the value straight over and
 // would render `January 1, 1970` in a note that is meant to disappear.
 //
@@ -156,7 +156,7 @@ test('an unparseable or missing value is null, not a rendered string', () => {
 // consulted first.
 //
 // Named as one gate rather than two mechanisms on purpose. An earlier revision
-// of this comment said community-groups rejected `checkedAt` because
+// of this comment said community-groups rejected its timestamp because
 // `Date.parse(null)` is NaN; it is in fact the same strict helper, and the
 // difference is not cosmetic -- `Date.parse` also accepts loose strings like
 // "March 1, 2026", which is the laxity validate-community-people.mjs's own

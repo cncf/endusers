@@ -1,6 +1,6 @@
 // GroupLinkStatus renders the freshness + drift note above the End User Group
 // cards on docs/community/index.md. Nothing imported the module before this
-// file, so none of its branches had unit coverage: the checkedAt line, the
+// file, so none of its branches had unit coverage: the generatedAt line, the
 // drift warning that names archived or unreachable upstream repositories, and
 // the singular/plural wording that warning switches on.
 //
@@ -46,14 +46,17 @@ async function renderWith(data) {
   }
 }
 
-test('the live data file renders the checkedAt verification line', () => {
-  const expected = new Date(groupsData.checkedAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+test('the live data file renders the generatedAt last-updated line', () => {
+  const expected = new Date(groupsData.generatedAt).toLocaleDateString(
+    'en-US',
+    {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    },
+  );
   const text = textOf(GroupLinkStatus());
-  assert.match(text, /Upstream group links last verified on/);
+  assert.match(text, /Upstream group status last updated on/);
   assert.ok(
     text.includes(expected),
     `expected the rendered text to include ${expected}`,
@@ -72,16 +75,16 @@ test('healthy live data raises no drift warning', () => {
   }
 });
 
-test('an unparseable checkedAt drops the verification line rather than rendering "Invalid Date"', async () => {
+test('an unparseable generatedAt drops the last-updated line rather than rendering "Invalid Date"', async () => {
   const text = textOf(
-    await renderWith({ checkedAt: 'not a timestamp', groups: [group()] }),
+    await renderWith({ generatedAt: 'not a timestamp', groups: [group()] }),
   );
-  assert.doesNotMatch(text, /last verified/);
+  assert.doesNotMatch(text, /last updated/);
   assert.doesNotMatch(text, /Invalid Date/);
 });
 
 test('missing groups data renders without throwing', async () => {
-  const tree = await renderWith({ checkedAt: '2026-03-04T05:06:07.000Z' });
+  const tree = await renderWith({ generatedAt: '2026-03-04T05:06:07.000Z' });
   assert.match(textOf(tree), /March 4, 2026/);
   assert.doesNotMatch(textOf(tree), /archived or unreachable/);
 });
@@ -89,7 +92,7 @@ test('missing groups data renders without throwing', async () => {
 test('an archived upstream repository is named in the warning', async () => {
   const text = textOf(
     await renderWith({
-      checkedAt: '2026-03-04T05:06:07.000Z',
+      generatedAt: '2026-03-04T05:06:07.000Z',
       groups: [
         group(),
         group({ slug: 'telecom', name: 'Telecom User Group', archived: true }),
@@ -104,7 +107,7 @@ test('an archived upstream repository is named in the warning', async () => {
 test('an unreachable upstream repository is named in the warning', async () => {
   const text = textOf(
     await renderWith({
-      checkedAt: '2026-03-04T05:06:07.000Z',
+      generatedAt: '2026-03-04T05:06:07.000Z',
       groups: [group({ reachable: false })],
     }),
   );
@@ -114,7 +117,7 @@ test('an unreachable upstream repository is named in the warning', async () => {
 test('two drifted groups are listed together with plural wording', async () => {
   const text = textOf(
     await renderWith({
-      checkedAt: '2026-03-04T05:06:07.000Z',
+      generatedAt: '2026-03-04T05:06:07.000Z',
       groups: [
         group({ archived: true }),
         group({

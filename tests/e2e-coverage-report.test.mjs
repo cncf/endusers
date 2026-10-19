@@ -361,7 +361,7 @@ test('a zero-count region spanning only covered lines is not counted against the
 // contributed by another artifact of the same script -- that is simply what a
 // branch arm inside an enclosing block looks like once V8's ranges are mapped
 // back. Measured on the published `e2e-coverage` artifact for run
-// 37412914368, GroupLinkStatus's `checkedAt` guard, DirectoryFreshness's
+// 37412914368, GroupLinkStatus's `generatedAt` guard, DirectoryFreshness's
 // plural arms and RadarReports' empty-corpus arms are each enclosed exactly as
 // the drifted spans in #1079 are, so folding a zero region into a covered one
 // that contains it would erase real gaps that tests are still being written

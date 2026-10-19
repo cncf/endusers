@@ -133,7 +133,7 @@ function isoUtcTime(value) {
  * validate-community-people.mjs's own strict regex was written to close, but
  * its copy stayed local. A value that passes the loose check while failing
  * the strict one silently defeats any staleness/future check layered on top,
- * which is the failure mode validate-community-groups.mjs's `checkedAt`
+ * which is the failure mode validate-community-groups.mjs's `generatedAt`
  * grace-window check actually depends on being closed.
  *
  * Shape is checked by isoUtcTime(), which also requires the captured
