@@ -274,10 +274,8 @@ enough for a first contribution.
      fail for reasons unrelated to your change (a linked site being temporarily
      down, for example).
    - `check:community-group-links` — needs `GH_TOKEN` set to avoid the
-     unauthenticated GitHub rate limit, and unconditionally rewrites
-     `data/community-groups.json` with a fresh `checkedAt` timestamp. Only
-     commit that file's diff when you intentionally meant to refresh group
-     status; otherwise revert it before opening your PR.
+     unauthenticated GitHub rate limit. It updates `data/community-groups.json`
+     and its `generatedAt` timestamp only when group status content changes.
 
 6. Commit with a DCO sign-off: `git commit -s`. CI enforces this and will fail
    the PR if any commit is missing a `Signed-off-by` trailer. If you forget, fix

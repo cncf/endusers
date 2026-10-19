@@ -40,10 +40,12 @@ const headers = makeGitHubHeaders(
 // these instead of writing nulls: both consumers (GroupLinkStatus and
 // validate-community-groups.mjs) read null as healthy, so writing nulls
 // over a known-archived or known-missing entry would let a transient
-// network error silently dismiss the staleness banner.
+// network error silently dismiss the drift warning.
 const previousBySlug = new Map();
+let previousReport;
 try {
   const report = JSON.parse(readFileSync(output, 'utf8'));
+  previousReport = report;
   for (const group of report.groups || []) {
     if (group && typeof group.slug === 'string') {
       previousBySlug.set(group.slug, group);
@@ -89,11 +91,8 @@ for (const { slug, name, repo } of GROUPS) {
 }
 
 // A run where every check came back inconclusive (token rejected, network
-// down, API outage) has verified nothing: writing the report anyway would
-// stamp a fresh checkedAt on stale knowledge, and both the freshness UI and
-// validate-community-groups.mjs read that timestamp as a successful
-// verification. Refuse to write so the previous report — and its honest,
-// aging checkedAt — survives. Partial failure is still recorded.
+// down, API outage) has verified nothing. Refuse to write so the previous
+// report survives; partial failure is still recorded.
 const inconclusive = groups.filter((group) => group.reachable === null);
 if (inconclusive.length === groups.length) {
   console.error(
@@ -102,11 +101,26 @@ if (inconclusive.length === groups.length) {
   process.exit(1);
 }
 
-writeFileSync(
-  output,
-  JSON.stringify({ checkedAt: new Date().toISOString(), groups }, null, 2) +
-    '\n',
-);
 console.log(
   `Checked ${groups.length} End User Group upstream repositories${staleCount ? ` (${staleCount} need attention)` : ''}`,
+);
+
+// The check runs weekly, but the generated content usually does not change.
+// Keep the timestamp tied to the published status data so routine successful
+// checks do not create timestamp-only refresh pull requests.
+if (
+  Array.isArray(previousReport?.groups) &&
+  typeof previousReport.generatedAt === 'string' &&
+  JSON.stringify(groups) === JSON.stringify(previousReport.groups)
+) {
+  console.log(
+    'No community group status changes detected; leaving report untouched.',
+  );
+  process.exit(0);
+}
+
+writeFileSync(
+  output,
+  JSON.stringify({ generatedAt: new Date().toISOString(), groups }, null, 2) +
+    '\n',
 );

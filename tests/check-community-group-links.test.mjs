@@ -9,12 +9,14 @@ const TELECOM = 'repos/cncf/telecom-user-group';
 
 // The script writes straight into data/ without creating it, so the sandbox
 // has to start from an existing (stale) report the same way the repo does.
-const STALE_REPORT = JSON.stringify({ checkedAt: '2000-01-01T00:00:00.000Z' });
+const STALE_REPORT = JSON.stringify({
+  generatedAt: '2000-01-01T00:00:00.000Z',
+});
 
-function run(routes) {
+function run(routes, fixtures = { [OUTPUT]: STALE_REPORT }) {
   return runScriptWithFetchMock({
     script: 'check-community-group-links.mjs',
-    fixtures: { [OUTPUT]: STALE_REPORT },
+    fixtures,
     routes,
     outputs: [OUTPUT],
   });
@@ -35,6 +37,26 @@ function bySlug(output, slug) {
 
 function live(match) {
   return { match, body: { archived: false } };
+}
+
+function existingGroups(publicSector = {}) {
+  return [
+    {
+      slug: 'public-sector',
+      name: 'Public Sector User Group',
+      repository: 'https://github.com/cncf/public-sector-user-group',
+      archived: false,
+      reachable: true,
+      ...publicSector,
+    },
+    {
+      slug: 'telecom',
+      name: 'Telecom User Group',
+      repository: 'https://github.com/cncf/telecom-user-group',
+      archived: false,
+      reachable: true,
+    },
+  ];
 }
 
 test('records every configured group as healthy when both repos are live', () => {
@@ -76,19 +98,64 @@ test('derives the repository URL and slug/name pairs from the group table', () =
   });
 });
 
-test('writes a parseable ISO checkedAt envelope terminated by a newline', () => {
+test('writes a parseable ISO generatedAt envelope terminated by a newline', () => {
   const result = run([live(PUBLIC_SECTOR), live(TELECOM)]);
   const raw = result.outputs[OUTPUT];
 
   assert.ok(raw.endsWith('\n'), 'expected a trailing newline');
-  const { checkedAt } = JSON.parse(raw);
-  assert.match(checkedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  const { generatedAt } = JSON.parse(raw);
+  assert.match(generatedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   assert.ok(
-    Number.isFinite(Date.parse(checkedAt)),
-    'checkedAt must parse as a date',
+    Number.isFinite(Date.parse(generatedAt)),
+    'generatedAt must parse as a date',
   );
-  // The report is replaced, never merged, so the previous timestamp is gone.
-  assert.notEqual(checkedAt, '2000-01-01T00:00:00.000Z');
+  assert.notEqual(generatedAt, '2000-01-01T00:00:00.000Z');
+});
+
+test('leaves the report untouched when group status has not changed', () => {
+  const existing = {
+    generatedAt: '2026-09-23T10:36:35.435Z',
+    groups: existingGroups(),
+  };
+  const raw = JSON.stringify(existing, null, 2) + '\n';
+  const result = run([live(PUBLIC_SECTOR), live(TELECOM)], {
+    [OUTPUT]: raw,
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /No community group status changes detected/);
+  assert.equal(result.outputs[OUTPUT], raw);
+});
+
+test('updates generatedAt when group status changes', () => {
+  const existing = {
+    generatedAt: '2020-01-01T00:00:00.000Z',
+    groups: existingGroups(),
+  };
+  const result = run(
+    [{ match: PUBLIC_SECTOR, body: { archived: true } }, live(TELECOM)],
+    { [OUTPUT]: JSON.stringify(existing) },
+  );
+  const output = parseOutput(result);
+
+  assert.notEqual(output.generatedAt, existing.generatedAt);
+  assert.equal(bySlug(output, 'public-sector').archived, true);
+});
+
+test('migrates a legacy checkedAt report to generatedAt', () => {
+  const existing = {
+    checkedAt: '2026-09-23T10:36:35.435Z',
+    groups: existingGroups(),
+  };
+  const output = parseOutput(
+    run([live(PUBLIC_SECTOR), live(TELECOM)], {
+      [OUTPUT]: JSON.stringify(existing),
+    }),
+  );
+
+  assert.ok(Number.isFinite(Date.parse(output.generatedAt)));
+  assert.equal('checkedAt' in output, false);
+  assert.deepEqual(output.groups, existing.groups);
 });
 
 test('flags an archived upstream repository as stale', () => {
@@ -174,30 +241,13 @@ test('carries forward the last-known status when a recheck is inconclusive', () 
   // healthy, so writing nulls here would dismiss the staleness banner on a
   // network blip.
   const knownStaleReport = JSON.stringify({
-    checkedAt: '2000-01-01T00:00:00.000Z',
-    groups: [
-      {
-        slug: 'public-sector',
-        name: 'Public Sector User Group',
-        repository: 'https://github.com/cncf/public-sector-user-group',
-        archived: true,
-        reachable: true,
-      },
-      {
-        slug: 'telecom',
-        name: 'Telecom User Group',
-        repository: 'https://github.com/cncf/telecom-user-group',
-        archived: false,
-        reachable: true,
-      },
-    ],
+    generatedAt: '2000-01-01T00:00:00.000Z',
+    groups: existingGroups({ archived: true }),
   });
-  const result = runScriptWithFetchMock({
-    script: 'check-community-group-links.mjs',
-    fixtures: { [OUTPUT]: knownStaleReport },
-    routes: [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
-    outputs: [OUTPUT],
-  });
+  const result = run(
+    [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
+    { [OUTPUT]: knownStaleReport },
+  );
   const output = parseOutput(result);
 
   const carried = bySlug(output, 'public-sector');
@@ -209,30 +259,13 @@ test('carries forward the last-known status when a recheck is inconclusive', () 
 
 test('carries forward null last-known status when recorded in previous report', () => {
   const previousReport = JSON.stringify({
-    checkedAt: '2000-01-01T00:00:00.000Z',
-    groups: [
-      {
-        slug: 'public-sector',
-        name: 'Public Sector User Group',
-        repository: 'https://github.com/cncf/public-sector-user-group',
-        archived: null,
-        reachable: null,
-      },
-      {
-        slug: 'telecom',
-        name: 'Telecom User Group',
-        repository: 'https://github.com/cncf/telecom-user-group',
-        archived: false,
-        reachable: true,
-      },
-    ],
+    generatedAt: '2000-01-01T00:00:00.000Z',
+    groups: existingGroups({ archived: null, reachable: null }),
   });
-  const result = runScriptWithFetchMock({
-    script: 'check-community-group-links.mjs',
-    fixtures: { [OUTPUT]: previousReport },
-    routes: [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
-    outputs: [OUTPUT],
-  });
+  const result = run(
+    [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
+    { [OUTPUT]: previousReport },
+  );
   const output = parseOutput(result);
 
   const carried = bySlug(output, 'public-sector');
@@ -241,12 +274,10 @@ test('carries forward null last-known status when recorded in previous report', 
 });
 
 test('falls back cleanly when the previous report cannot be parsed', () => {
-  const result = runScriptWithFetchMock({
-    script: 'check-community-group-links.mjs',
-    fixtures: { [OUTPUT]: 'not valid json' },
-    routes: [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
-    outputs: [OUTPUT],
-  });
+  const result = run(
+    [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
+    { [OUTPUT]: 'not valid json' },
+  );
   const output = parseOutput(result);
 
   const carried = bySlug(output, 'public-sector');
@@ -293,7 +324,7 @@ test('refuses to overwrite the report when every check is inconclusive', () => {
     result.stderr,
     /All 2 End User Group checks were inconclusive; leaving the existing report untouched\./,
   );
-  // The pre-existing report must survive with its honest stale checkedAt:
+  // The pre-existing report must survive with its honest old generatedAt:
   // rewriting it would date-stamp a verification that never happened.
   assert.equal(result.outputs[OUTPUT], STALE_REPORT);
 });

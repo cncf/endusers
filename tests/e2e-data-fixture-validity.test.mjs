@@ -176,8 +176,8 @@ const EXPECTED = new Map([
   [
     'data-variant/community-groups.json',
     {
-      why: "makes checkedAt unparseable to reach formatDate's NaN guard in GroupLinkStatus",
-      adds: ['community-groups.json: checkedAt must be ISO 8601'],
+      why: "makes generatedAt unparseable to reach formatDate's NaN guard in GroupLinkStatus",
+      adds: ['community-groups.json: generatedAt must be ISO 8601'],
     },
   ],
   [
