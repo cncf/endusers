@@ -40,9 +40,17 @@
 // current spec uses, and requiring them keeps the contract something a new
 // spec satisfies by being written the way the existing ones are.
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import test from 'node:test';
 
 import { resolveRepoRoot } from './helpers.mjs';
@@ -53,12 +61,13 @@ const { coverageBuildNames } = require('./tools/e2e-data-fixtures.cjs');
 const repoRoot = resolveRepoRoot(import.meta.url);
 const specDir = join(repoRoot, 'tests', 'e2e');
 
-function specSources() {
-  return readdirSync(specDir)
+function specSources(directory = specDir) {
+  return readdirSync(directory, { recursive: true })
+    .map((entry) => String(entry))
     .filter((entry) => entry.endsWith('.spec.js'))
     .map((entry) => ({
       name: entry,
-      source: readFileSync(join(specDir, entry), 'utf8'),
+      source: readFileSync(join(directory, entry), 'utf8'),
     }));
 }
 
@@ -73,6 +82,24 @@ function mentionsBasePath(source, name) {
 function mentionsBuildEnv(source, name) {
   return new RegExp(`E2E_COVERAGE_BUILD:\\s*'${name}'`).test(source);
 }
+
+test('spec discovery includes nested Playwright specs', (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'endusers-e2e-build-reach-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+
+  const nestedDirectory = join(directory, 'nested');
+  mkdirSync(nestedDirectory);
+  writeFileSync(
+    join(nestedDirectory, 'copy.spec.js'),
+    'test("nested", () => {});',
+  );
+  writeFileSync(join(directory, 'helper.js'), 'not a spec');
+
+  assert.deepEqual(
+    specSources(directory).map(({ name }) => name),
+    ['nested/copy.spec.js'],
+  );
+});
 
 test('every fixture build is visited by at least one e2e spec', () => {
   const names = coverageBuildNames();
