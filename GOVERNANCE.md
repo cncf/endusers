@@ -59,7 +59,11 @@ delegate an agent to merge these low-risk classes:
 - Generated-data refreshes (metrics, architectures, community people) that pass
   their `validate:*` checks.
 - Typo and link fixes.
-- Test-only changes that add coverage without touching production code.
+- Test-only changes that exercise production code and state which behavior in
+  `src/`, `scripts/`, `docs/`, `data/`, `static/` or `.github/workflows/` would
+  regress undetected without them
+  ([ADR 0006](./adr/0006-retire-line-number-citations-in-test-prose.md)). Guards
+  over the test tree itself are not in this class.
 
 The following use the independent-review rule above rather than the low-risk
 path:

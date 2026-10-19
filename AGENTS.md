@@ -76,6 +76,12 @@ or CI will fail the PR.
   recently closed) PRs and issues touching the same files or problem. See the
   "Cross-agent duplicate prevention" section of `GOVERNANCE.md` for the full
   policy.
+- **Test-only work**: A PR confined to `tests/` must state which behavior in
+  `src/`, `scripts/`, `docs/`, `data/`, `static/` or `.github/workflows/` would
+  regress undetected without it. Guards over the test tree itself (citation
+  pins, listing reach, harness-of-harness tests) are out of agent remit unless a
+  maintainer files the issue
+  ([ADR 0006](./adr/0006-retire-line-number-citations-in-test-prose.md)).
 - **Audience**: Content is for CNCF end users (adopters), not project
   contributors. Contributor-facing material belongs on contribute.cncf.io.
 - **Documentation Standards**: Follow GFM (GitHub Flavored Markdown).
