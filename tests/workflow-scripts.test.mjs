@@ -598,3 +598,129 @@ test('no recorded refresh exemption names a collector a workflow already runs', 
     'exemptions for collectors a workflow runs; delete these entries',
   );
 });
+
+// Both exemption maps above argue their case by naming another file: the
+// end-user-talks gate rests on tests/end-user-talks-data.test.mjs enforcing the
+// same link allow-list in the pull-request lane, and each recorded collector
+// points at the scripts/ header that documents its manual refresh. Those
+// citations are the whole of what makes an omission a decision rather than a
+// gap, and nothing reads them.
+//
+// That is not hypothetical bookkeeping. Rename or delete
+// tests/end-user-talks-data.test.mjs and the pull-request lane loses the
+// end-user-talks link allow-list outright -- no ci.yml step runs
+// validate:end-user-talks, because the exemption says it would duplicate that
+// test -- while every guard above stays green: the key is still a defined
+// script, the reason is still non-empty, and no workflow contradicts it. The
+// recorded decision survives the evidence it rested on.
+//
+// So the same bargain the guards above strike over an exemption's key is
+// struck here over its reason: cite whatever argues the case, but a repository
+// file the reason names has to exist. Taken as a pure function of a map and a
+// resolver so the fixtures below can prove it reports a citation that has gone
+// stale -- a guard nobody has seen go red is indistinguishable from one that
+// always passes, the reasoning tests/data-gate-contract.test.mjs gives for the
+// same shape.
+//
+// Scope is `.mjs` files under tests/ and scripts/, which is what an exemption
+// has so far had reason to name. Prose, a workflow, or a Markdown document
+// cited in a reason is left alone: those are argued elsewhere, and widening
+// the pattern to every token that looks like a path would make the guard
+// report the repository's own sentences.
+const CITED_PATH = /\b(?:tests|scripts)\/[A-Za-z0-9._/-]*\.mjs\b/g;
+
+/**
+ * Every repository file path named in an exemption map's reasons.
+ *
+ * @param {Map<string, string>} exemptions gate or collector -> reason
+ * @returns {Array<{name: string, path: string}>} repo-relative citations
+ */
+function citedPaths(exemptions) {
+  const cited = [];
+  for (const [name, reason] of exemptions) {
+    // A reason that is not text is already reported by the 'carries a reason'
+    // guards above; there is nothing here to read.
+    if (typeof reason !== 'string') continue;
+    for (const [path] of reason.matchAll(CITED_PATH))
+      cited.push({ name, path });
+  }
+  return cited;
+}
+
+/**
+ * The citations that no longer resolve, as `<name>: <path>`.
+ *
+ * @param {Map<string, string>} exemptions gate or collector -> reason
+ * @param {(path: string) => boolean} resolves repo-relative path predicate
+ * @returns {string[]} sorted report, empty when every citation exists
+ */
+function staleCitations(exemptions, resolves) {
+  return citedPaths(exemptions)
+    .filter(({ path }) => !resolves(path))
+    .map(({ name, path }) => `${name}: ${path}`)
+    .sort();
+}
+
+const resolvesInRepo = (path) => existsSync(join(repoRoot, path));
+
+test('every file a recorded exemption cites still exists', () => {
+  const recorded = new Map([
+    ...GATES_NOT_RUN_BY_CI,
+    ...REFRESH_SCRIPTS_NOT_RUN_BY_CI,
+  ]);
+  assert.deepEqual(
+    staleCitations(recorded, resolvesInRepo),
+    [],
+    'exemption reasons naming files the repository no longer has; the ' +
+      'omission each one argues for is no longer the decision that was ' +
+      'recorded, so either restore the file it rests on or re-argue the entry',
+  );
+});
+
+test('both exemption maps are seen to cite the files they rest on', () => {
+  // Pins the guard above to evidence rather than to spelling, the way 'every
+  // gate this suite recognises is a real package.json script' does: a pattern
+  // that stopped matching would make the assertion pass vacuously over an
+  // empty citation list.
+  for (const [label, exemptions] of [
+    ['GATES_NOT_RUN_BY_CI', GATES_NOT_RUN_BY_CI],
+    ['REFRESH_SCRIPTS_NOT_RUN_BY_CI', REFRESH_SCRIPTS_NOT_RUN_BY_CI],
+  ]) {
+    assert.ok(
+      citedPaths(exemptions).length > 0,
+      `expected ${label} to cite the files its reasons rest on; if an entry ` +
+        'stopped naming one, the guard above has lost the evidence that it ' +
+        'can see a citation at all',
+    );
+  }
+});
+
+test('the citation guard reports a reason whose file is gone', () => {
+  const fixture = new Map([
+    [
+      'validate:gone',
+      'Covered by tests/removed-contract.test.mjs under npm run test:unit.',
+    ],
+    [
+      'collect:gone',
+      'scripts/collect-removed.mjs documents the manual refresh.',
+    ],
+    [
+      'validate:kept',
+      'Covered by tests/workflow-scripts.test.mjs, which is this file.',
+    ],
+    ['check:prose', 'Argued in CONTRIBUTING.md; no repository file is named.'],
+    ['check:unexplained', undefined],
+  ]);
+  assert.deepEqual(staleCitations(fixture, resolvesInRepo), [
+    'collect:gone: scripts/collect-removed.mjs',
+    'validate:gone: tests/removed-contract.test.mjs',
+  ]);
+});
+
+test('a reason that names no repository file cites nothing', () => {
+  assert.deepEqual(
+    citedPaths(new Map([['check:prose', 'Argued in prose only.']])),
+    [],
+  );
+});

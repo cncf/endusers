@@ -4,10 +4,23 @@ import test from 'node:test';
 
 import { checkUrl } from '../scripts/lib/validate-utils.mjs';
 
-// data/end-user-talks.json is the only committed dataset under
-// data/ with no gate of its own: there is no scripts/validate-*.mjs for it in
-// the ci.yml validate job, and the two tests that read it are rendering
-// contracts rather than data contracts.
+// This file is the pull-request lane's data contract for
+// data/end-user-talks.json. When it was written (#1383) the dataset was the
+// only committed one under data/ with no gate of its own, which is what the
+// rest of this header argues from; scripts/validate-end-user-talks.mjs has
+// since (#1624) put the same link allow-list on the Netlify publish path,
+// chained into validate:all.
+//
+// That validator is deliberately not a step in the ci.yml validate job -- the
+// omission is recorded in GATES_NOT_RUN_BY_CI in
+// tests/workflow-scripts.test.mjs, on the grounds that what follows already
+// enforces the contract on this lane. So the two gates do not back each other
+// up: this file is the whole of the pull-request lane's cover, and weakening
+// it removes the allow-list from every pull request while the publish-path
+// validator stays green.
+//
+// The other two tests that read the dataset are rendering contracts rather
+// than data contracts, which is why neither stands in for this one.
 // tests/end-user-talk-schedule.test.mjs derives its expectations from the same
 // file it is checking, so both sides of every assertion move together, and
 // tests/collect-end-user-talks.test.mjs exercises
