@@ -55,6 +55,22 @@
 # allowlists kept in docusaurus.config.js -- it is a flat denial that is only
 # correct for a response that is never a page, so it cannot drift from them.
 #
+# default-src 'none' is here for the reason docusaurus.config.js gives for the
+# meta policy: a fetch directive this header does not name is unrestricted, not
+# inherited. Without it, script-src and object-src made a directly-opened SVG
+# inert but left it free to *fetch* -- an <image href> on any host, an @import,
+# a url() in a presentation attribute, a remote @font-face, an <iframe> inside
+# <foreignObject> -- so a visitor's IP, User-Agent and Referer still reached a
+# host the diagram's author chose whenever the parser gate was bypassed. That
+# gate is the primary control; this is the layer that has to hold when it does
+# not.
+#
+# The three allowances are what the published corpus actually uses and nothing
+# more: inline <style> blocks and style= attributes from draw.io exports,
+# inline data:image/png payloads, and (for parity with docusaurus.config.js)
+# same-origin fonts, of which static/ currently declares none. Still no host
+# list, so this block cannot drift from the allowlists in docusaurus.config.js.
+#
 # These paths are every directory scripts/validate-architecture-assets.mjs walks,
 # which is every directory in static/ that holds an SVG. The site-wide values are
 # restated because Netlify does not document how it merges a header name set by
@@ -63,7 +79,7 @@
   for = "/img/*"
 
   [headers.values]
-    Content-Security-Policy = "frame-ancestors 'self'; script-src 'none'; object-src 'none'"
+    Content-Security-Policy = "frame-ancestors 'self'; default-src 'none'; script-src 'none'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
@@ -73,7 +89,7 @@
   for = "/favicons/*"
 
   [headers.values]
-    Content-Security-Policy = "frame-ancestors 'self'; script-src 'none'; object-src 'none'"
+    Content-Security-Policy = "frame-ancestors 'self'; default-src 'none'; script-src 'none'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
