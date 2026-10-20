@@ -39,7 +39,7 @@ async function loadConfig(env = {}) {
   }
 }
 
-const cleanEnv = { CI: undefined, E2E_PORT: undefined };
+const cleanEnv = { CI: undefined, E2E_PORT: undefined, E2E_WEBKIT: undefined };
 
 test('defaults to port 3000 when E2E_PORT is unset', async () => {
   const config = await loadConfig(cleanEnv);
@@ -146,7 +146,7 @@ test('leaves the worker count to Playwright in CI', async () => {
   assert.equal(config.workers, undefined);
 });
 
-test('declares a single Desktop Chrome project', async () => {
+test('declares a single Desktop Chrome project by default', async () => {
   const config = await loadConfig(cleanEnv);
   assert.deepEqual(
     config.projects.map((project) => project.name),
@@ -155,6 +155,75 @@ test('declares a single Desktop Chrome project', async () => {
   assert.equal(config.projects[0].use.defaultBrowserType, 'chromium');
   assert.equal(config.projects[0].use.isMobile, false);
   assert.match(config.projects[0].use.userAgent, /Chrome\//);
+});
+
+// The WebKit project is the suite's only evidence about a non-Blink engine,
+// and it is opt-in: .github/workflows/ci.yml installs the chromium bundle
+// alone, and the coverage lane drives `page.coverage`, which Playwright
+// exposes on Chromium only. Both halves are asserted, because each failure is
+// silent in its own way — a project that stopped being added leaves the
+// second engine untested while E2E_WEBKIT still looks honoured, and a project
+// that became unconditional fails the e2e job with a missing browser rather
+// than with a test result.
+test('adds a WebKit smoke project when E2E_WEBKIT is set', async () => {
+  const config = await loadConfig({ ...cleanEnv, E2E_WEBKIT: '1' });
+  assert.deepEqual(
+    config.projects.map((project) => project.name),
+    ['chromium', 'webkit-smoke'],
+  );
+
+  const webkit = config.projects[1];
+  assert.equal(webkit.use.defaultBrowserType, 'webkit');
+  assert.equal(webkit.use.isMobile, false);
+  assert.match(webkit.use.userAgent, /Safari\//);
+});
+
+test('leaves the chromium project untouched when E2E_WEBKIT is set', async () => {
+  const config = await loadConfig({ ...cleanEnv, E2E_WEBKIT: '1' });
+  assert.equal(config.projects[0].name, 'chromium');
+  assert.equal(config.projects[0].use.defaultBrowserType, 'chromium');
+  assert.equal(config.projects[0].testMatch, undefined);
+});
+
+// A second engine running the whole suite would double the e2e lane's runtime
+// and re-assert interactions that are engine-independent. Only the smoke
+// spec — the cross-page "renders at all" set — is in scope, and the pattern
+// is checked against the real file so a rename cannot leave the project
+// matching nothing and reporting green.
+test('runs only the smoke spec on WebKit', async () => {
+  const config = await loadConfig({ ...cleanEnv, E2E_WEBKIT: '1' });
+  const { testMatch } = config.projects[1];
+  assert.ok(testMatch instanceof RegExp, 'testMatch must be a RegExp');
+
+  const smokeSpec = join(repoRoot, config.testDir, 'smoke.spec.js');
+  assert.ok(existsSync(smokeSpec), `${smokeSpec} does not exist`);
+  assert.ok(testMatch.test(smokeSpec));
+
+  const otherSpecs = readdirSync(join(repoRoot, config.testDir)).filter(
+    (entry) => entry.endsWith('.spec.js') && entry !== 'smoke.spec.js',
+  );
+  assert.ok(otherSpecs.length > 0, 'expected more than one e2e spec');
+  for (const entry of otherSpecs) {
+    assert.equal(
+      testMatch.test(join(repoRoot, config.testDir, entry)),
+      false,
+      `${entry} must not run on WebKit`,
+    );
+  }
+});
+
+// Only the exact opt-in value enables it. An inherited `E2E_WEBKIT=0` or a
+// variable exported empty by a shell wrapper must not start downloading and
+// launching a browser the caller never asked for.
+test('treats any value other than 1 as no WebKit project', async () => {
+  for (const value of ['', '0', 'false', 'true']) {
+    const config = await loadConfig({ ...cleanEnv, E2E_WEBKIT: value });
+    assert.deepEqual(
+      config.projects.map((project) => project.name),
+      ['chromium'],
+      `E2E_WEBKIT=${JSON.stringify(value)} must not add a project`,
+    );
+  }
 });
 
 test('points testDir at a directory that holds spec files', async () => {

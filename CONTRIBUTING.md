@@ -360,6 +360,33 @@ and serves the static output already built in `build/` via `docusaurus serve` �
 it does not rebuild your changes, so re-run `npm run build:production` after
 each edit before re-running the suite.
 
+### Running the smoke spec on WebKit
+
+Every project in `playwright.config.js` is Chromium except one, so a defect
+that only reproduces on Safari's engine — an unsupported CSS feature, a
+Blink-only DOM API — is invisible to the suite. `E2E_WEBKIT=1` adds a
+`webkit-smoke` project that runs `tests/e2e/smoke.spec.js`, and only that spec,
+on Desktop Safari:
+
+```bash
+npx playwright install --with-deps webkit   # once per machine, as above
+E2E_WEBKIT=1 npm run test:e2e -- --project=webkit-smoke
+```
+
+It is opt-in, and unset it changes nothing: `npm run test:e2e` is the same
+Chromium-only run it was before. Two things depend on that default. The
+`End-to-end tests` job installs the chromium bundle alone, so an unconditional
+WebKit project would report a browser that will not launch rather than a test
+result; and browser source coverage is collected through Playwright's
+`page.coverage`, which exists on Chromium only, so the `e2e-coverage` job and
+`npm run test:e2e:coverage` must stay on Chromium. Do not combine `E2E_WEBKIT`
+with `E2E_COVERAGE`.
+
+Keep the WebKit project scoped to the smoke spec. A second engine running the
+whole suite doubles the lane's runtime to re-assert interactions that do not
+differ between engines; the smoke spec is the cross-page "renders at all" set,
+which is where an engine difference actually shows up.
+
 Browser source coverage is opt-in and is not part of the required e2e command.
 Use a fresh run directory for each capture so artifacts from an earlier run
 cannot be mixed into the report:
