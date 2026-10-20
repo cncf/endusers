@@ -114,6 +114,58 @@ test('an unreachable upstream repository is named in the warning', async () => {
   assert.match(text, /Research User Group has an archived or unreachable/);
 });
 
+// `npm run check:community-group-links` writes `archived: null` /
+// `reachable: null` for a group whose recheck came back inconclusive -- a
+// network error, a rejected token, an API outage -- when no previous report
+// carries a known status forward. Both consumers read null as healthy on
+// purpose: scripts/check-community-group-links.mjs says so where it writes
+// the value, and scripts/validate-community-groups.mjs warns only on the
+// strict `=== true` / `=== false` comparisons.
+//
+// The filter here has to make the same distinction (`group.archived ||
+// group.reachable === false`), and nothing pinned it: every fixture in this
+// file and in tests/e2e/fixtures/** sets both fields to a boolean, so
+// relaxing the strict comparison to `!group.reachable` would keep the whole
+// suite green while telling readers that a group nobody could check is
+// archived or unreachable.
+test('an inconclusive recheck is not reported as drift', async () => {
+  const text = textOf(
+    await renderWith({
+      generatedAt: '2026-03-04T05:06:07.000Z',
+      groups: [group({ archived: null, reachable: null })],
+    }),
+  );
+  assert.doesNotMatch(text, /archived or unreachable/);
+  assert.doesNotMatch(text, /Research User Group/);
+});
+
+test('an unknown archived flag alone is not reported as drift', async () => {
+  const text = textOf(
+    await renderWith({
+      generatedAt: '2026-03-04T05:06:07.000Z',
+      groups: [group({ archived: null })],
+    }),
+  );
+  assert.doesNotMatch(text, /archived or unreachable/);
+});
+
+test('a genuinely archived group is still named when another is inconclusive', async () => {
+  const text = textOf(
+    await renderWith({
+      generatedAt: '2026-03-04T05:06:07.000Z',
+      groups: [
+        group({ archived: null, reachable: null }),
+        group({ slug: 'telecom', name: 'Telecom User Group', archived: true }),
+      ],
+    }),
+  );
+  assert.match(
+    text,
+    /Telecom User Group has an archived or unreachable upstream repository/,
+  );
+  assert.doesNotMatch(text, /Research User Group/);
+});
+
 test('two drifted groups are listed together with plural wording', async () => {
   const text = textOf(
     await renderWith({
