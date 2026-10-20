@@ -11,7 +11,10 @@ export function initials(name) {
     .trim()
     .split(/\s+/)
     .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
+    .map((part) => {
+      const [first = ''] = [...part];
+      const [upper = ''] = [...first.toUpperCase()];
+      return upper;
+    })
+    .join('');
 }
