@@ -1,0 +1,36 @@
+/*
+ * Shared shape for the logo-or-initials avatar (OrgAvatar.js). Sizing varies
+ * by consumer -- larger for MemberDirectory's grid card, slightly smaller for
+ * ReferenceArchitectures' -- so `.wrapper`/`.initials` read their dimensions
+ * and background from custom properties, set by the consumer's own
+ * `wrapperClassName` modifier. Defaults match ReferenceArchitectures' prior
+ * values; MemberDirectory's modifier overrides all three.
+ */
+.wrapper {
+  align-items: center;
+  background: var(--org-avatar-bg, var(--ifm-color-emphasis-100));
+  display: flex;
+  height: var(--org-avatar-size, 92px);
+  justify-content: center;
+  padding: 1rem;
+}
+
+.logo {
+  max-height: 56px;
+  max-width: 72%;
+  object-fit: contain;
+}
+
+.initials {
+  align-items: center;
+  background: var(--cncf-button-background);
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  font-size: var(--org-avatar-font-size, 1rem);
+  font-weight: 700;
+  height: var(--org-avatar-initials-size, 48px);
+  justify-content: center;
+  letter-spacing: 0.08em;
+  width: var(--org-avatar-initials-size, 48px);
+}

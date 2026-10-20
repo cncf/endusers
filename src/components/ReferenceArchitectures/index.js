@@ -5,7 +5,8 @@ import catalog from '@site/data/architectures/catalog.json';
 import ArchitectureFilters, {
   useArchitectureFilters,
 } from '@site/src/components/ArchitectureFilters';
-import { initials } from '../shared/initials';
+import { OrgAvatar } from '../shared/OrgAvatar';
+import { ProjectTagList } from '../shared/ProjectTagList';
 import EmptyFilterState from '../shared/EmptyFilterState';
 import styles from './styles.module.css';
 
@@ -18,13 +19,9 @@ function ArchitectureCard({ architecture }) {
   const logoUrl = useBaseUrl(logoAsset || '');
   return (
     <Link to={`/architectures/${id}`} className={styles.card}>
-      <div className={styles.logoWrapper} aria-hidden="true">
-        {logoAsset ? (
-          <img src={logoUrl} alt="" className={styles.logo} />
-        ) : (
-          <span className={styles.initials}>{initials(organization)}</span>
-        )}
-      </div>
+      {/* No wrapperClassName override: this card's avatar sizing matches
+          OrgAvatar's own defaults (see shared/OrgAvatar.module.css). */}
+      {OrgAvatar({ logoUrl: logoAsset ? logoUrl : null, name: organization })}
       <div className={styles.cardContent}>
         <p className={styles.eyebrow}>
           {industries.join(' · ') || 'Reference architecture'}
@@ -32,13 +29,7 @@ function ArchitectureCard({ architecture }) {
         <h2 className={styles.orgName}>{organization}</h2>
         <p className={styles.title}>{title}</p>
         <p className={styles.summary}>{summary}</p>
-        <div className={styles.projectsList}>
-          {projects.slice(0, 4).map((project) => (
-            <span key={project} className={styles.projectTag}>
-              {project}
-            </span>
-          ))}
-        </div>
+        {ProjectTagList({ projects })}
         <span className={styles.link}>View architecture →</span>
       </div>
     </Link>
