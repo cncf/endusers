@@ -152,6 +152,31 @@ test('activeScheme requires a scheme boundary before data: too', () => {
   assert.equal(activeScheme('xdata:text/html,<b>'), null);
 });
 
+// The other half of that boundary rule. `activeScheme` matches both branches
+// with the same `(?:^|[^a-z0-9+.-])` prefix, and the ACTIVE_SCHEMES branch has
+// both halves asserted above -- the negative (a scheme glued to a preceding
+// word) and the positive (`url(javascript:...)`). The data: branch had only the negative, so nothing
+// held its alternation's second arm in place: narrowing the match to `^data:`
+// leaves the whole suite green, while a value that reaches the classifier with
+// anything in front of the scheme stops being a finding.
+//
+// That front matter is not hypothetical. An SVG carries these inside a CSS
+// value, which `url(` prefixes by construction, and `classifyTag` hands the
+// whole raw attribute value to `activeScheme`, so a `style` attribute arrives
+// with its property name still attached. Both forms below are flagged today
+// and would not be under an anchored match.
+test('activeScheme matches data: after a non-scheme character', () => {
+  assert.equal(
+    activeScheme('background:url(data:text/html;base64,PHN2Zz4=)'),
+    'data:text/html',
+  );
+  assert.equal(activeScheme('url(data:text/xsl,<x/>)'), 'data:text/xsl');
+  assert.equal(
+    activeScheme('url(data:image/svg+xml,<svg/>)'),
+    'data:image/svg+xml',
+  );
+});
+
 test('activeScheme leaves ordinary references alone', () => {
   assert.equal(activeScheme('/img/architectures/acme/diagram.svg'), null);
   assert.equal(activeScheme('https://www.cncf.io/'), null);
