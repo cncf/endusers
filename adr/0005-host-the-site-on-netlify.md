@@ -203,8 +203,8 @@ counts toward line coverage.
   pipeline row), `ROADMAP.md` (Phase 3 DNS bullet),
   `adr/stakeholder-outreach-draft-for-0001.md` and
   `adr/inbound-link-requests-for-0004.md` (interim URL mentions) are updated to
-  the Netlify URL. `docs/skills/` is checked for GitHub Pages references and
-  updated if any.
+  the Netlify URL. `docs/skills/` (now `.agents/skills/`) is checked for GitHub
+  Pages references and updated if any.
 - `adr/README.md` lists this ADR.
 
 ### Rollout

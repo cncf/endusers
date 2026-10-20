@@ -69,7 +69,7 @@ Goal: every pillar section is accurate, current, and self-maintaining.
 - [x] Blog: establish a publishing cadence beyond the welcome post — monthly
       "Month in Metrics" post sourced from `data/metrics.json` diffs (issue #76;
       cadence documented in
-      [docs/skills/blog-management.md](docs/skills/blog-management.md#publishing-cadence))
+      [.agents/skills/blog-management/SKILL.md](.agents/skills/blog-management/SKILL.md#publishing-cadence))
 
 ## Launch (tracking: #90) (current)
 

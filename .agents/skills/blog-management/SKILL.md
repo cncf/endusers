@@ -1,5 +1,8 @@
 ---
-unlisted: true
+name: blog-management
+description:
+  Use when creating, editing, or scheduling posts on the CNCF End User Community
+  blog, including front matter, authors, and publishing cadence.
 ---
 
 # Skill: Blog Management

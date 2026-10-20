@@ -161,7 +161,7 @@ const HISTORICAL_REFERENCES = new Map([
     ]),
   ],
   [
-    'docs/skills/ui-standards.md',
+    '.agents/skills/ui-standards/SKILL.md',
     new Map([
       [
         '/websites/docusaurus_io_3_9_2',

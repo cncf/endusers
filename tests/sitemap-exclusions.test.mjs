@@ -1,25 +1,25 @@
 // Guards the sitemap `ignorePatterns` contract in docusaurus.config.js.
 //
-// `ignorePatterns` is the only thing standing between agent tooling and the
-// public sitemap, and it is a list of bare glob strings that names routes
-// living in a different file. Nothing else in the suite reads it:
-// tests/site-config.test.mjs asserts the navbar, the docs routeBasePath and
-// the search plugin, and tests/docs-contract.test.mjs asserts frontmatter,
-// but neither one connects a pattern to the docs it is supposed to cover.
-// Both failure directions are silent in a green build:
+// `ignorePatterns` is the only sitemap exclusion this site has, and it is a
+// list of bare glob strings that names routes living in a different file.
+// Nothing else in the suite reads it: tests/site-config.test.mjs asserts the
+// navbar, the docs routeBasePath and the search plugin, and
+// tests/docs-contract.test.mjs asserts frontmatter, but neither one connects
+// a pattern to the docs it is supposed to cover. Both failure directions are
+// silent in a green build:
 //
-//   - a new docs/skills/*.md lands without `unlisted: true`, or the
-//     `/skills/**` pattern is narrowed, and agent tooling starts being
-//     advertised to crawlers as site content;
-//   - a pattern is widened or a real doc is moved underneath one, and a
-//     published page drops out of the sitemap with no other symptom.
+//   - a doc is placed under a pattern without `unlisted: true`, so it is
+//     withheld from crawlers yet still shipped in the sidebar and the local
+//     search index;
+//   - a pattern is widened, or left behind after the docs it covered moved
+//     out of the tree (agent skills lived under docs/skills/ until they moved
+//     to .agents/skills/), and it silently covers whatever lands there next.
 //
 // The pairing matters because the two mechanisms cover different surfaces.
 // `unlisted: true` hides a doc from the sidebar, from local search and from
-// the sitemap; `ignorePatterns` only ever removes it from the sitemap. The
-// config comment states the intent -- "/skills/* is agent tooling, not site
-// content" -- so a sitemap-excluded doc that is still listed in the sidebar
-// and indexed by search contradicts the reason the pattern exists.
+// the sitemap; `ignorePatterns` only ever removes it from the sitemap. A
+// sitemap-excluded doc that is still listed in the sidebar and indexed by
+// search contradicts the reason a pattern exists.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -34,7 +34,6 @@ globalThis.require ??= createRequire(import.meta.url);
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const docsRoot = join(repoRoot, 'docs');
-const skillsRoot = join(docsRoot, 'skills');
 
 const config = (await import('../docusaurus.config.js')).default;
 const sitemapOptions = config.presets?.[0]?.[1]?.sitemap ?? {};
@@ -174,21 +173,6 @@ test('every doc the sitemap excludes is also unlisted', () => {
       frontmatterValue(file, 'unlisted'),
       'true',
       `${relative(repoRoot, file)} serves ${route}, which sitemap ignorePattern ${JSON.stringify(pattern)} withholds from crawlers, so it must also carry "unlisted: true" — without it the page still ships in the sidebar and the local search index, which is the opposite of the "not site content" rationale the pattern was added for`,
-    );
-  }
-});
-
-test('every docs/skills doc is excluded from the sitemap', () => {
-  const skillFiles = walk(skillsRoot);
-  assert.ok(
-    skillFiles.length > 0,
-    'docs/skills is empty; drop the "/skills/**" sitemap ignorePattern along with the tree',
-  );
-  for (const file of skillFiles) {
-    const route = routeForDoc(file);
-    assert.ok(
-      ignorePatterns.some((pattern) => matchesPattern(pattern, route)),
-      `${relative(repoRoot, file)} serves ${route}, but no sitemap ignorePattern covers it — agent tooling would be advertised to crawlers as site content`,
     );
   }
 });

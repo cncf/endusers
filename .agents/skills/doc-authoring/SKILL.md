@@ -1,5 +1,8 @@
 ---
-unlisted: true
+name: doc-authoring
+description:
+  Use when writing or updating documentation pages under docs/, including front
+  matter, sidebar placement, tone, and link conventions.
 ---
 
 # Skill: Documentation Authoring

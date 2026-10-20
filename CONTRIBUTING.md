@@ -163,8 +163,9 @@ Rules:
 ## Blog contributions
 
 The blog is hand-authored Markdown in `blog/`, not generated from a data file.
-See [`docs/skills/blog-management.md`](docs/skills/blog-management.md) for post
-format, front matter (`blog/authors.yml`/`blog/tags.yml` keys), and the
+See
+[`.agents/skills/blog-management/SKILL.md`](.agents/skills/blog-management/SKILL.md)
+for post format, front matter (`blog/authors.yml`/`blog/tags.yml` keys), and the
 publishing cadence.
 
 ## Reporting content problems and the changelog
@@ -455,7 +456,7 @@ overlaid data into the next production build in the same working tree.
 ## Agent contributors
 
 AI agents should start at [`AGENTS.md`](AGENTS.md) and the skill manifest in
-[`docs/skills/manifest.md`](docs/skills/manifest.md).
+[`.agents/skills/manifest.md`](.agents/skills/manifest.md).
 
 ## Project direction and policies
 

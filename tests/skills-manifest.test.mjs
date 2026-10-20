@@ -1,21 +1,20 @@
-// Guards the skill index in docs/skills/manifest.md against drift.
+// Guards the skill index in .agents/skills/manifest.md against drift.
 //
 // AGENTS.md calls that manifest the "Index of all available agent skills" and
-// tells agents to "use the `docs/skills/` manifest to discover" the detailed
-// guidance, and CONTRIBUTING.md sends them to the same table. Discovery is
-// therefore the table, not the directory: a skill file that no row names is a
-// file no agent is told to read, and a row naming a file that was renamed or
-// removed sends one to a path that does not exist. Both directions are a
-// hand-maintained markdown table away from the tree they describe, and both
-// are silent in a green build -- adding docs/skills/submission.md required a
-// separate manual edit to this table (#1368), and nothing would have failed
-// had that edit been forgotten.
+// tells agents to "use the `.agents/skills/` manifest to discover" the
+// detailed guidance, and CONTRIBUTING.md sends them to the same table.
+// Discovery is therefore the table, not the directory: a skill that no row
+// names is a skill no agent is told to read, and a row naming a skill that
+// was renamed or removed sends one to a path that does not exist. Both
+// directions are a hand-maintained markdown table away from the tree they
+// describe, and both are silent in a green build -- adding the submission
+// skill required a separate manual edit to this table (#1368), and nothing
+// would have failed had that edit been forgotten.
 //
-// tests/sitemap-exclusions.test.mjs already walks docs/skills, but for the
-// opposite property: that every file there is `unlisted: true` and matched by
-// a sitemap ignorePattern, i.e. that none of them reaches the public sitemap.
-// A skill file can satisfy all of that and still be absent from the manifest.
-// tests/docs-contract.test.mjs asserts frontmatter, not cross-file indexes.
+// The tree follows the Agent Skills layout (https://agentskills.io): one
+// `<name>/SKILL.md` per skill, whose front matter carries a `name` equal to
+// the directory and a `description` saying when to use it. Nothing in the
+// build reads .agents/, so this file is the only gate on that shape too.
 //
 // The assertions below are a set comparison in both directions plus a link
 // check, and they are expressed as a pure function over the manifest text so
@@ -24,13 +23,15 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const skillsRoot = join(repoRoot, 'docs', 'skills');
+const skillsRoot = join(repoRoot, '.agents', 'skills');
 const MANIFEST = 'manifest.md';
+const SKILL_FILE = 'SKILL.md';
+const LABEL_PREFIX = '.agents/skills/';
 
 /**
  * Split a markdown table into its body rows.
@@ -52,7 +53,7 @@ function tableRows(text) {
   assert.notEqual(
     delimiter,
     -1,
-    'docs/skills/manifest.md must index the skills as a markdown table',
+    '.agents/skills/manifest.md must index the skills as a markdown table',
   );
   return lines.slice(delimiter + 1).map((line) =>
     line
@@ -79,8 +80,9 @@ function entryPoint(cell) {
  * Returns every disagreement rather than the first so a rename that breaks
  * both directions reports as one failure naming both, not as two runs.
  *
- * @param {string} text contents of docs/skills/manifest.md
- * @param {string[]} skillFiles skill filenames, excluding the manifest itself
+ * @param {string} text contents of .agents/skills/manifest.md
+ * @param {string[]} skillFiles skill entry points relative to .agents/skills,
+ *   e.g. `doc-authoring/SKILL.md`
  * @returns {string[]} human-readable problems; empty when the index is exact
  */
 function manifestProblems(text, skillFiles) {
@@ -99,10 +101,10 @@ function manifestProblems(text, skillFiles) {
     listed.add(link.target);
     if (!skillFiles.includes(link.target)) {
       problems.push(
-        `${link.target} is linked by ${skill} but is not a file in docs/skills`,
+        `${link.target} is linked by ${skill} but is not a file in .agents/skills`,
       );
     }
-    if (link.label !== `docs/skills/${link.target}`) {
+    if (link.label !== `${LABEL_PREFIX}${link.target}`) {
       problems.push(
         `${skill} links ${link.target} but reads "${link.label}"; the two must name the same file`,
       );
@@ -111,25 +113,75 @@ function manifestProblems(text, skillFiles) {
   for (const file of skillFiles) {
     if (!listed.has(file)) {
       problems.push(
-        `docs/skills/${file} is not listed in the manifest, so nothing tells an agent it exists`,
+        `${LABEL_PREFIX}${file} is not listed in the manifest, so nothing tells an agent it exists`,
       );
     }
   }
   return problems;
 }
 
-const skillFiles = readdirSync(skillsRoot)
-  .filter((entry) => entry.endsWith('.md'))
-  .filter((entry) => entry !== MANIFEST)
+const skillDirs = readdirSync(skillsRoot, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
   .sort();
+
+const skillFiles = skillDirs.map((dir) => `${dir}/${SKILL_FILE}`);
 
 const manifestText = readFileSync(join(skillsRoot, MANIFEST), 'utf8');
 
-test('docs/skills holds skills for the manifest to index', () => {
+/**
+ * Read a top-level front matter value, or undefined when the key is absent.
+ * Folded multi-line values (`key:` followed by indented lines) are joined so a
+ * wrapped description still counts as present.
+ *
+ * @param {string} text file contents
+ * @param {string} key front matter key
+ * @returns {string|undefined}
+ */
+function frontmatterValue(text, key) {
+  const block = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text)?.[1] ?? '';
+  const match = new RegExp(
+    `^${key}:[ \\t]*(.*)((?:\\r?\\n[ \\t]+.*)*)`,
+    'm',
+  ).exec(block);
+  if (match === null) return undefined;
+  return `${match[1]}${match[2]}`.replace(/\s+/g, ' ').trim();
+}
+
+test('.agents/skills holds skills for the manifest to index', () => {
   assert.ok(
-    skillFiles.length > 0,
-    'docs/skills contains no skill files; drop the manifest along with the tree',
+    skillDirs.length > 0,
+    '.agents/skills contains no skill directories; drop the manifest along with the tree',
   );
+});
+
+test('every skill directory holds a SKILL.md', () => {
+  for (const dir of skillDirs) {
+    assert.ok(
+      existsSync(join(skillsRoot, dir, SKILL_FILE)),
+      `.agents/skills/${dir}/ has no ${SKILL_FILE}; a directory with no entry point cannot be indexed or loaded`,
+    );
+  }
+});
+
+test('every SKILL.md names itself after its directory and says when to use it', () => {
+  for (const dir of skillDirs) {
+    const text = readFileSync(join(skillsRoot, dir, SKILL_FILE), 'utf8');
+    assert.equal(
+      frontmatterValue(text, 'name'),
+      dir,
+      `.agents/skills/${dir}/${SKILL_FILE} must carry "name: ${dir}" so the skill is addressed by the same name on disk and in front matter`,
+    );
+    assert.ok(
+      frontmatterValue(text, 'description'),
+      `.agents/skills/${dir}/${SKILL_FILE} needs a non-empty "description" so an agent can decide whether to load it`,
+    );
+    assert.equal(
+      frontmatterValue(text, 'unlisted'),
+      undefined,
+      `.agents/skills/${dir}/${SKILL_FILE} still carries "unlisted", a Docusaurus key with no meaning outside docs/`,
+    );
+  }
 });
 
 test('the manifest indexes exactly the skill files on disk', () => {
@@ -149,57 +201,91 @@ function fixture(...rows) {
 }
 
 const row = (name, file) =>
-  `| **${name}** | why | [docs/skills/${file}](${file}) |`;
+  `| **${name}** | why | [.agents/skills/${file}](${file}) |`;
 
 test('an unlisted skill file is reported', () => {
   assert.deepEqual(
-    manifestProblems(fixture(row('A', 'a.md')), ['a.md', 'b.md']),
+    manifestProblems(fixture(row('A', 'a/SKILL.md')), [
+      'a/SKILL.md',
+      'b/SKILL.md',
+    ]),
     [
-      'docs/skills/b.md is not listed in the manifest, so nothing tells an agent it exists',
+      '.agents/skills/b/SKILL.md is not listed in the manifest, so nothing tells an agent it exists',
     ],
   );
 });
 
 test('a row pointing at a missing file is reported', () => {
   assert.deepEqual(
-    manifestProblems(fixture(row('A', 'a.md'), row('Gone', 'gone.md')), [
-      'a.md',
-    ]),
-    ['gone.md is linked by **Gone** but is not a file in docs/skills'],
+    manifestProblems(
+      fixture(row('A', 'a/SKILL.md'), row('Gone', 'gone/SKILL.md')),
+      ['a/SKILL.md'],
+    ),
+    ['gone/SKILL.md is linked by **Gone** but is not a file in .agents/skills'],
   );
 });
 
 test('a duplicated entry point is reported', () => {
   assert.deepEqual(
-    manifestProblems(fixture(row('A', 'a.md'), row('Again', 'a.md')), ['a.md']),
-    ['a.md is listed more than once'],
+    manifestProblems(
+      fixture(row('A', 'a/SKILL.md'), row('Again', 'a/SKILL.md')),
+      ['a/SKILL.md'],
+    ),
+    ['a/SKILL.md is listed more than once'],
   );
 });
 
 test('a row whose label and target disagree is reported', () => {
   assert.deepEqual(
-    manifestProblems(fixture('| **A** | why | [docs/skills/b.md](a.md) |'), [
-      'a.md',
-    ]),
+    manifestProblems(
+      fixture('| **A** | why | [.agents/skills/b/SKILL.md](a/SKILL.md) |'),
+      ['a/SKILL.md'],
+    ),
     [
-      '**A** links a.md but reads "docs/skills/b.md"; the two must name the same file',
+      '**A** links a/SKILL.md but reads ".agents/skills/b/SKILL.md"; the two must name the same file',
     ],
   );
 });
 
 test('a row with no link at all is reported', () => {
   assert.deepEqual(
-    manifestProblems(fixture('| **A** | why | docs/skills/a.md |'), ['a.md']),
+    manifestProblems(fixture('| **A** | why | .agents/skills/a/SKILL.md |'), [
+      'a/SKILL.md',
+    ]),
     [
       '**A** has no entry-point link',
-      'docs/skills/a.md is not listed in the manifest, so nothing tells an agent it exists',
+      '.agents/skills/a/SKILL.md is not listed in the manifest, so nothing tells an agent it exists',
     ],
   );
 });
 
 test('an index that is no longer a table fails loudly', () => {
   assert.throws(
-    () => manifestProblems('See docs/skills/a.md for details.', ['a.md']),
+    () =>
+      manifestProblems('See .agents/skills/a/SKILL.md for details.', [
+        'a/SKILL.md',
+      ]),
     /must index the skills as a markdown table/,
   );
+});
+
+test('frontmatterValue reads scalar and folded values and ignores the body', () => {
+  const text = [
+    '---',
+    'name: a',
+    'description:',
+    '  Use when the first line',
+    '  wraps onto a second.',
+    '---',
+    '',
+    'unlisted: true',
+  ].join('\n');
+  assert.equal(frontmatterValue(text, 'name'), 'a');
+  assert.equal(
+    frontmatterValue(text, 'description'),
+    'Use when the first line wraps onto a second.',
+  );
+  assert.equal(frontmatterValue(text, 'unlisted'), undefined);
+  assert.equal(frontmatterValue('# No front matter', 'name'), undefined);
+  assert.equal(frontmatterValue('---\ndescription:\n---\n', 'description'), '');
 });

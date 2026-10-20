@@ -19,9 +19,11 @@ in production.
 ## Skills & Capabilities
 
 This repository defines specific skills for AI agents to follow when
-contributing or managing documentation.
+contributing or managing documentation. They live in `.agents/skills/`, one
+`<name>/SKILL.md` per skill with `name` and `description` front matter following
+the [Agent Skills](https://agentskills.io) layout; they are not site content.
 
-- [Skill Manifest](docs/skills/manifest.md) - Index of all available agent
+- [Skill Manifest](.agents/skills/manifest.md) - Index of all available agent
   skills.
 
 ## Hive Configuration
@@ -87,7 +89,7 @@ or CI will fail the PR.
 - **Documentation Standards**: Follow GFM (GitHub Flavored Markdown).
 - **No Client Secrets**: Never include proprietary or client-specific framing.
 - **No Emojis**: Do not use emojis in content, code, or commit messages.
-- **Lazy Loading**: Use the `docs/skills/` manifest to discover detailed
+- **Lazy Loading**: Use the `.agents/skills/` manifest to discover detailed
   instructions for specific tasks (e.g., blog posts, documentation updates).
 - **Structure**: Maintain Docusaurus file layout and sidebar configurations
   (`sidebars.js`). Single-page sections (practitioners, events) intentionally
