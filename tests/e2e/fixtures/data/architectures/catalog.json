@@ -1,8 +1,11 @@
 {
-  "description": "Clears one catalog entry's industries so ArchitectureCard renders the 'Reference architecture' eyebrow fallback in src/components/ReferenceArchitectures/index.js. Every shipped entry carries a non-empty industries array, so the fallback never renders against the real data. The other seven entries keep their industries, so both arms of the `||` render in the same build and no second build is needed.",
+  "description": "Clears one catalog entry's industries, and another entry's assets, so ArchitectureCard takes two arms in src/components/ReferenceArchitectures/index.js that the shipped catalog cannot reach. The 'Reference architecture' eyebrow fallback needs an empty industries array; every shipped entry carries a non-empty one. The `architecture.assets?.find(...)` optional-chain needs a nullish assets field; every shipped entry carries an array, so the chain is always entered and its short-circuit never runs. Both are per-record rather than document-level, so the remaining entries still render the populated eyebrow and still enter the chain: both arms of each pair render in the same build and no second build is needed. swisscom-cloud-native-telco is the entry nulled because it carries no logo or wordmark asset to begin with, so the chain already resolved to undefined for it and the rendered card is unchanged -- only which arm produced the undefined differs. allianz and swisscom-kubernetes-service keep their assets arrays and no logo asset, so the chain-entered-but-no-match arm stays covered beside it.",
   "setWhere": {
     "id=allianz": {
       "industries": []
+    },
+    "id=swisscom-cloud-native-telco": {
+      "assets": null
     }
   }
 }
