@@ -546,3 +546,57 @@ test('flags a string-valued style attribute, which React refuses to render', () 
     'MDX expression',
   ]);
 });
+
+// Docusaurus's mdx-loader runs unwrapMdxCodeBlocks() on every page before the
+// MDX compiler sees it, deleting the fences of a ```mdx-code-block block and
+// leaving its body behind as flow content. A scan that reads that fence as
+// code vouches for a body the compiler executes: a built page carried a live
+// remote <img> and an evaluated `{...}` expression out of one.
+test('reports an mdx-code-block fence, whose body Docusaurus compiles as MDX', () => {
+  const body = [
+    '## Overview',
+    '',
+    '```mdx-code-block',
+    '<img src="https://beacon.invalid/px.png" />',
+    '```',
+  ].join('\n');
+  assert.deepEqual(reasons(body), [
+    'mdx-code-block fence, whose body Docusaurus compiles as MDX rather than displaying as code',
+  ]);
+});
+
+test('reports the four-backtick and indented forms Docusaurus also unwraps', () => {
+  const fourBackticks = ['````mdx-code-block', '<b>x</b>', '````'].join('\n');
+  assert.deepEqual(reasons(fourBackticks), [
+    'mdx-code-block fence, whose body Docusaurus compiles as MDX rather than displaying as code',
+  ]);
+
+  const indented = [
+    '- item',
+    '',
+    '  ```mdx-code-block',
+    '  <b>x</b>',
+    '  ```',
+  ].join('\n');
+  assert.deepEqual(reasons(indented), [
+    'mdx-code-block fence, whose body Docusaurus compiles as MDX rather than displaying as code',
+  ]);
+});
+
+test('leaves ordinary fenced and inline code alone', () => {
+  // The exemption is for the one info string Docusaurus rewrites, not for
+  // code blocks in general: an architecture page showing a YAML snippet with
+  // braces and angle brackets must still pass.
+  const body = [
+    '```yaml',
+    'spec: { replicas: 3 }',
+    '```',
+    '',
+    'Inline `<div onClick={x}>` stays code too.',
+    '',
+    '```mdx-code-block-ish',
+    '<div onClick={x}>',
+    '```',
+  ].join('\n');
+  assert.deepEqual(reasons(body), []);
+});

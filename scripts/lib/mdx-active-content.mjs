@@ -20,6 +20,12 @@
  * finding unless it is one of the inert string-literal attributes the importer
  * emits itself.
  *
+ * A fenced code block is otherwise left alone, because MDX evaluates nothing
+ * inside one — except for ```mdx-code-block, which Docusaurus unwraps into
+ * live MDX before the compiler runs (see ./mdx-code-blocks.mjs). The importer
+ * never emits one and no published page needs one, so its presence is itself a
+ * finding: the body it hides is compiled, not displayed.
+ *
  * The scan answers the second of the two questions `uri-safety.mjs` states
  * both gates must answer -- does the value make a visitor's browser contact
  * another host -- only for destinations the browser fetches with no user
@@ -42,6 +48,7 @@ import { mdxFromMarkdown } from 'mdast-util-mdx';
 import { gfm } from 'micromark-extension-gfm';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { eachNode } from './mdast-walk.mjs';
+import { isUnwrappedCodeBlock } from './mdx-code-blocks.mjs';
 import { activeScheme, describeTarget, remoteTarget } from './uri-safety.mjs';
 
 /** Inert inline elements that carry no script, network or layout capability. */
@@ -235,6 +242,13 @@ export function findActiveContent(markdown) {
       const url = definitions.get(node.identifier);
       // An unresolved reference renders as literal text and loads nothing.
       if (url !== undefined) reportRemoteImage(line, url);
+    } else if (node.type === 'code') {
+      if (isUnwrappedCodeBlock(text, node)) {
+        report(
+          line,
+          'mdx-code-block fence, whose body Docusaurus compiles as MDX rather than displaying as code',
+        );
+      }
     } else if (URL_NODES.has(node.type)) {
       if (activeScheme(node.url)) report(line, 'script-capable URL scheme');
       if (node.type === 'image') reportRemoteImage(line, node.url);
