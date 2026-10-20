@@ -450,6 +450,29 @@ test('resolves an image reference through its definition', () => {
   ]);
 });
 
+test('resolves a repeated label to its first definition, as the renderer does', () => {
+  // CommonMark gives a repeated label to the first definition, and
+  // mdast-util-to-hast -- which @mdx-js/mdx runs to compile the page -- fills
+  // its map under `if (!map.has(id))` to mimic exactly that. Resolving to the
+  // last one instead made this scan vouch for a destination the published page
+  // discards: the pair below reported nothing while the compiled page carried
+  // src="https://evil.example/p.png".
+  assert.deepEqual(
+    reasons(
+      '![p][d]\n\n[d]: https://evil.example/p.png\n[d]: /img/architectures/acme/p.png',
+    ),
+    ['remote image destination https://evil.example/p.png'],
+  );
+  // The mirror case: the remote duplicate is the one the renderer discards, so
+  // reporting it would reject a page that loads nothing remote.
+  assert.deepEqual(
+    reasons(
+      '![p][d]\n\n[d]: /img/architectures/acme/p.png\n[d]: https://evil.example/p.png',
+    ),
+    [],
+  );
+});
+
 test('leaves an unresolved image reference alone', () => {
   // Nothing resolves it, so it renders as literal text and loads nothing.
   assert.deepEqual(reasons('![p][missing]'), []);

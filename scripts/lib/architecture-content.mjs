@@ -77,7 +77,15 @@ function rewriteImages(body, id) {
   const images = [];
 
   const walk = (node, inLink) => {
-    if (node.type === 'definition') definitions.set(node.identifier, node.url);
+    // First definition of a repeated label wins, matching CommonMark and the
+    // renderer (mdast-util-to-hast), so the image policy is applied to the
+    // destination the page would actually have loaded rather than to a
+    // duplicate the renderer discards. Kept identical to the resolution in
+    // scripts/lib/mdx-active-content.mjs: the import-time rewrite and the
+    // publish-time gate must not disagree about which definition a reference
+    // names.
+    if (node.type === 'definition' && !definitions.has(node.identifier))
+      definitions.set(node.identifier, node.url);
     if (node.type === 'image' || node.type === 'imageReference') {
       images.push({ node, inLink });
     }

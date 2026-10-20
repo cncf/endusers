@@ -153,6 +153,28 @@ test('does not touch an image written inside a code span or fence', () => {
   assert.equal(cleanMarkdown(body, 'demo'), body);
 });
 
+test('resolves a repeated label to its first definition', () => {
+  // CommonMark and the renderer both give a repeated label to the first
+  // definition, so the image policy has to be applied to that one: resolving
+  // to the last instead rewrote the reference from a destination the published
+  // page would never have loaded, and left this module disagreeing with the
+  // publish-time gate in scripts/lib/mdx-active-content.mjs.
+  assert.equal(
+    cleanMarkdown(
+      '![d][x]\n\n[x]: https://evil.example/b.png\n[x]: images/d.png',
+      'demo',
+    ),
+    '[d](https://evil.example/b.png)\n\n[x]: https://evil.example/b.png\n[x]: images/d.png',
+  );
+  assert.equal(
+    cleanMarkdown(
+      '![d][x]\n\n[x]: images/d.png\n[x]: https://evil.example/b.png',
+      'demo',
+    ),
+    '![d](/img/architectures/demo/d.png)\n\n[x]: images/d.png\n[x]: https://evil.example/b.png',
+  );
+});
+
 test('leaves an unresolved image reference and an absolute reference path alone', () => {
   assert.equal(cleanMarkdown('![a][missing]', 'demo'), '![a][missing]');
   assert.equal(
