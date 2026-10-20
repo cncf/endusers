@@ -25,7 +25,17 @@ claims against authoritative CNCF sources.
 ## Core Process
 
 1. Reuse the existing one-directory component pattern:
-   `src/components/<Name>/index.js` and `styles.module.css`.
+   `src/components/<Name>/index.js` and `styles.module.css`. When markup, logic,
+   or helpers are shared by two or more components, extract them into
+   `src/components/shared/` as flat files (`<name>.js`, optional
+   `<name>.module.css`) — see `FilterToolbar.js`, `formatDate.js`,
+   `initials.js`, and `useFilterToolbar.js` there. Call shared presentational
+   components such as `FilterToolbar` as **plain functions**
+   (`FilterToolbar({...})`), not as JSX elements: the hook-free render tests
+   (`tests/tools/react-element-tree.mjs`) walk the returned element tree without
+   invoking nested function components, so a `<FilterToolbar />` element would
+   never be expanded and every structural assertion against its output would
+   break.
 2. Keep reusable data in `data/` and import it with `@site/data/...`; use
    `useBaseUrl` for asset paths from data and `Link` for internal routes.
 3. Put site-wide rules in `src/css/custom.css`; prefer theme variables over
