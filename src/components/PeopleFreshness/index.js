@@ -1,6 +1,6 @@
-import React from 'react';
 import peopleData from '@site/data/community-people.json';
 import { formatDate } from '../shared/formatDate';
+import { FreshnessNote } from '../shared/FreshnessNote';
 import styles from './styles.module.css';
 
 /**
@@ -11,9 +11,8 @@ import styles from './styles.module.css';
 export default function PeopleFreshness() {
   const fetchedAt = formatDate(peopleData.fetchedAt);
   if (!fetchedAt) return null;
-  return (
-    <p className={styles.freshnessNote}>
-      Profiles last refreshed from public GitHub sources on {fetchedAt}.
-    </p>
-  );
+  return FreshnessNote({
+    className: styles.freshnessMargin,
+    children: `Profiles last refreshed from public GitHub sources on ${fetchedAt}.`,
+  });
 }

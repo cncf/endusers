@@ -3,6 +3,7 @@ import metrics from '@site/data/metrics.json';
 import awardsData from '@site/data/awards.json';
 import membersData from '@site/data/members.json';
 import { formatDate } from './utils';
+import { FreshnessNote } from '../shared/FreshnessNote';
 import styles from './styles.module.css';
 
 // Member profiles are compiled from the pinned landscape snapshot, reference
@@ -17,37 +18,44 @@ export function DirectoryFreshness() {
   const landscapeDate = formatDate(landscape?.collectedAt);
   const awardsDate = formatDate(awardsData?.verifiedAt);
   if (!landscapeDate && !architecturesDate && !awardsDate) return null;
-  return (
-    <p className={styles.freshnessNote}>
-      {landscapeDate && (
-        <>
-          Directory membership data last synced from{' '}
-          {landscape?.sourceUrl ? (
-            <a href={landscape.sourceUrl} target="_blank" rel="noreferrer">
-              cncf/landscape
-            </a>
-          ) : (
-            'cncf/landscape'
-          )}{' '}
-          on {landscapeDate}.
-        </>
-      )}
-      {landscapeDate && architecturesDate && ' '}
-      {architecturesDate && (
-        <>
-          Architecture-derived profiles last synced from{' '}
-          {architectures?.repository ? (
-            <a href={architectures.repository} target="_blank" rel="noreferrer">
-              cncf/architecture
-            </a>
-          ) : (
-            'cncf/architecture'
-          )}{' '}
-          on {architecturesDate}.
-        </>
-      )}
-      {(landscapeDate || architecturesDate) && awardsDate && ' '}
-      {awardsDate && <>Award data last verified on {awardsDate}.</>}
-    </p>
-  );
+  return FreshnessNote({
+    className: styles.freshnessMargin,
+    children: (
+      <>
+        {landscapeDate && (
+          <>
+            Directory membership data last synced from{' '}
+            {landscape?.sourceUrl ? (
+              <a href={landscape.sourceUrl} target="_blank" rel="noreferrer">
+                cncf/landscape
+              </a>
+            ) : (
+              'cncf/landscape'
+            )}{' '}
+            on {landscapeDate}.
+          </>
+        )}
+        {landscapeDate && architecturesDate && ' '}
+        {architecturesDate && (
+          <>
+            Architecture-derived profiles last synced from{' '}
+            {architectures?.repository ? (
+              <a
+                href={architectures.repository}
+                target="_blank"
+                rel="noreferrer"
+              >
+                cncf/architecture
+              </a>
+            ) : (
+              'cncf/architecture'
+            )}{' '}
+            on {architecturesDate}.
+          </>
+        )}
+        {(landscapeDate || architecturesDate) && awardsDate && ' '}
+        {awardsDate && <>Award data last verified on {awardsDate}.</>}
+      </>
+    ),
+  });
 }
