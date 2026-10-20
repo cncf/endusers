@@ -157,9 +157,18 @@ export function findActiveContent(markdown) {
   // identifier. The definition node itself is never reported as remote --
   // `linkReference` resolves through the same map, and an imported page
   // legitimately carries remote link definitions.
+  //
+  // The FIRST definition of a repeated label wins, because that is the one the
+  // published page uses: CommonMark specifies it, and mdast-util-to-hast --
+  // which @mdx-js/mdx runs to compile the page -- fills its own map under
+  // `if (!map.has(id))` to mimic it. Overwriting instead would make this scan
+  // vouch for a destination the renderer discards, so a document carrying a
+  // remote first definition and an inert second one would publish the remote
+  // one unreported. A later duplicate is dead text the renderer ignores.
   const definitions = new Map();
   eachNode(tree, (node) => {
-    if (node.type === 'definition') definitions.set(node.identifier, node.url);
+    if (node.type === 'definition' && !definitions.has(node.identifier))
+      definitions.set(node.identifier, node.url);
   });
 
   // Every caller passes a string: an image node's `url`, a definition `url`
