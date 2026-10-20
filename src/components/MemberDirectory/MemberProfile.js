@@ -1,35 +1,22 @@
 import React from 'react';
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
-import { useFocusTrap } from '../hooks/useFocusTrap';
+import ProfileDialogShell from '../shared/ProfileDialogShell';
 import { initials, formatCount, membershipLabel } from './utils';
 import styles from './styles.module.css';
 
 export function MemberProfile({ member, onClose, triggerRef }) {
-  const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
   const logoUrl = useBaseUrl(member.logo || '');
 
-  return (
-    <div
-      className={styles.backdrop}
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
-    >
-      <section
-        ref={dialogRef}
-        className={styles.dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="member-profile-name"
-      >
-        <button
-          ref={closeRef}
-          type="button"
-          className={styles.closeButton}
-          onClick={onClose}
-          aria-label={`Close ${member.name} profile`}
-        >
-          <span aria-hidden="true">×</span>
-        </button>
+  return ProfileDialogShell({
+    onClose,
+    triggerRef,
+    labelledBy: 'member-profile-name',
+    closeLabel: `Close ${member.name} profile`,
+    maxWidth: '720px',
+    maxHeight: 'min(800px, 92vh)',
+    children: (
+      <>
         <div className={styles.profileHero}>
           <div className={styles.logoStage} aria-hidden="true">
             {member.logo ? (
@@ -164,7 +151,7 @@ export function MemberProfile({ member, onClose, triggerRef }) {
             </ul>
           </div>
         </div>
-      </section>
-    </div>
-  );
+      </>
+    ),
+  });
 }

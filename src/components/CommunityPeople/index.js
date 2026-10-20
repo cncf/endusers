@@ -1,11 +1,10 @@
 import React, { useRef, useState } from 'react';
 import peopleData from '@site/data/community-people.json';
 import { profileUrl, websiteUrl } from '@site/src/lib/profile-links.mjs';
-import { useFocusTrap } from '../hooks/useFocusTrap';
+import ProfileDialogShell from '../shared/ProfileDialogShell';
 import styles from './styles.module.css';
 
 function PersonDialog({ person, onClose, triggerRef }) {
-  const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
   const {
     name,
     company,
@@ -26,27 +25,13 @@ function PersonDialog({ person, onClose, triggerRef }) {
     ['Website', websiteUrl(blog)],
   ].filter(([, href]) => href);
 
-  return (
-    <div
-      className={styles.backdrop}
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
-    >
-      <section
-        ref={dialogRef}
-        className={styles.dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="profile-name"
-      >
-        <button
-          ref={closeRef}
-          type="button"
-          className={styles.closeButton}
-          onClick={onClose}
-          aria-label={`Close ${name} profile`}
-        >
-          <span aria-hidden="true">×</span>
-        </button>
+  return ProfileDialogShell({
+    onClose,
+    triggerRef,
+    labelledBy: 'profile-name',
+    closeLabel: `Close ${name} profile`,
+    children: (
+      <>
         <div className={styles.profileHero}>
           <img
             src={image}
@@ -86,9 +71,9 @@ function PersonDialog({ person, onClose, triggerRef }) {
             Profile details refreshed from public sources at build time.
           </p>
         </div>
-      </section>
-    </div>
-  );
+      </>
+    ),
+  });
 }
 
 function PersonCard({ person }) {
