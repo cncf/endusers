@@ -1,0 +1,36 @@
+.emptyState {
+  border: 1px dashed var(--ifm-color-emphasis-300);
+  border-radius: 12px;
+  margin: 2rem 0;
+  padding: 2rem;
+  text-align: center;
+}
+
+.emptyState h3 {
+  margin: 0 0 0.5rem;
+}
+
+.emptyState p {
+  color: var(--ifm-color-emphasis-700);
+  margin: 0 0 1rem;
+}
+
+.clearButton {
+  background: transparent;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  color: var(--ifm-color-primary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+}
+
+.clearButton:hover {
+  border-color: var(--ifm-color-primary);
+}
+
+.clearButton:focus-visible {
+  outline: 3px solid var(--ifm-color-primary-light);
+  outline-offset: 2px;
+}

@@ -6,6 +6,7 @@ import { MemberCard } from './MemberCard';
 import { DirectoryFreshness } from './DirectoryFreshness';
 import { useFilterToolbar } from '../shared/useFilterToolbar';
 import FilterToolbar from '../shared/FilterToolbar';
+import EmptyFilterState from '../shared/EmptyFilterState';
 import styles from './styles.module.css';
 
 const DEFAULT_FILTERS = {
@@ -121,19 +122,12 @@ export default function MemberDirectory() {
       />
 
       {filtered.length === 0 ? (
-        <div className={styles.emptyState}>
-          <h3>No organizations match</h3>
-          <p>
-            Try clearing filters or searching for a different organization name.
-          </p>
-          <button
-            type="button"
-            onClick={clearFilters}
-            className={styles.clearButton}
-          >
-            Clear filters
-          </button>
-        </div>
+        EmptyFilterState({
+          heading: 'No organizations match',
+          onClear: clearFilters,
+          children:
+            'Try clearing filters or searching for a different organization name.',
+        })
       ) : (
         <ul className={styles.grid}>
           {filtered.map((member) => (

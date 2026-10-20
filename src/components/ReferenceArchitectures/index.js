@@ -6,6 +6,7 @@ import ArchitectureFilters, {
   useArchitectureFilters,
 } from '@site/src/components/ArchitectureFilters';
 import { initials } from '../shared/initials';
+import EmptyFilterState from '../shared/EmptyFilterState';
 import styles from './styles.module.css';
 
 function ArchitectureCard({ architecture }) {
@@ -75,20 +76,12 @@ export default function ReferenceArchitectures() {
         totalCount={catalog.length}
       />
       {filtered.length === 0 ? (
-        <div className={styles.emptyState}>
-          <h3>No architectures match</h3>
-          <p>
-            Try clearing filters or searching for a different organization or
-            title.
-          </p>
-          <button
-            type="button"
-            onClick={clearFilters}
-            className={styles.clearButton}
-          >
-            Clear filters
-          </button>
-        </div>
+        EmptyFilterState({
+          heading: 'No architectures match',
+          onClear: clearFilters,
+          children:
+            'Try clearing filters or searching for a different organization or title.',
+        })
       ) : (
         <div className={styles.grid}>
           {filtered.map((architecture) => (
