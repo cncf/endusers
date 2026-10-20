@@ -180,7 +180,23 @@ test('the Referrer-Policy header matches the document meta policy', async () => 
 // policy never reaches that response, so this flat denial is the second layer
 // behind the validate:architecture-assets parser gates. The denial needs no
 // host list, so it cannot drift from the allowlists in docusaurus.config.js.
+//
+// default-src 'none' is part of that denial (#1684): a fetch directive this
+// header does not name is unrestricted rather than inherited, so before it the
+// rules stopped a directly-opened SVG from running script while leaving it
+// free to fetch an image, stylesheet, font or <iframe> from any host. The
+// three allowances name what the committed SVGs use -- inline styles, inline
+// data: images -- plus same-origin fonts for parity with docusaurus.config.js.
 const ASSET_HEADER_PATHS = ['/img/*', '/favicons/*'];
+
+const ASSET_CSP_DENIALS = [
+  "default-src 'none'",
+  "script-src 'none'",
+  "object-src 'none'",
+  "img-src 'self' data:",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
+];
 
 function assetHeaders(path) {
   const rules = Array.isArray(netlify.headers) ? netlify.headers : [];
@@ -190,7 +206,10 @@ function assetHeaders(path) {
 test('asset paths deny script and object without dropping a site-wide header', () => {
   // Every site-wide value is restated, derived from SECURITY_HEADERS so the
   // two can never drift; only the CSP gains the flat denials.
-  const assetCsp = `${SECURITY_HEADERS['Content-Security-Policy']}; script-src 'none'; object-src 'none'`;
+  const assetCsp = [
+    SECURITY_HEADERS['Content-Security-Policy'],
+    ...ASSET_CSP_DENIALS,
+  ].join('; ');
   for (const path of ASSET_HEADER_PATHS) {
     const values = assetHeaders(path);
     for (const [header, expected] of Object.entries(SECURITY_HEADERS)) {

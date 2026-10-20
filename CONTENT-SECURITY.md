@@ -60,10 +60,17 @@ Two consequences matter when a submission is rejected:
   fetch directives are kept out of that block so the policy has one source of
   truth. For the directly-opened-asset case the meta tag can never reach,
   asset-scoped `[[headers]]` rules (`/img/*` and `/favicons/*`, the only paths
-  that serve an SVG) add a flat `script-src 'none'; object-src 'none'` denial,
-  so a directly-opened SVG renders as an inert document even if a parser gate is
-  bypassed. A flat denial carries no host list, so it cannot drift from the
-  allowlists in `docusaurus.config.js`.
+  that serve an SVG) add a flat denial, so a directly-opened SVG renders as an
+  inert document even if a parser gate is bypassed. The denial leads with
+  `default-src 'none'` on purpose: a fetch directive a header does not name is
+  unrestricted rather than inherited, so `script-src 'none'; object-src 'none'`
+  on their own stopped such an SVG from running script while leaving it free to
+  fetch an image, stylesheet, font or `<iframe>` from any host — the same
+  IP/User-Agent/`Referer` disclosure the remote-reference half of the SVG gate
+  exists to prevent. `img-src 'self' data:`, `style-src 'self' 'unsafe-inline'`
+  and `font-src 'self'` are the only allowances, and they name what the
+  committed SVGs actually use. A flat denial carries no host list, so it cannot
+  drift from the allowlists in `docusaurus.config.js`.
 - Every control above travels inside an HTTPS response, so an attacker who keeps
   the visitor on cleartext never has to defeat one — the stripped response
   simply carries none of them.
