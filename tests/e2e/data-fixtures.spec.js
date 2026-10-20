@@ -62,6 +62,25 @@ const noIndustries = catalog.find(
 const someIndustries = catalog.find(
   (architecture) => architecture.industries.length > 0,
 );
+// The `architecture.assets?.find(...)` optional chain in ArchitectureCard has
+// two ways to produce no logo asset: the chain short-circuits on a nullish
+// `assets`, or it is entered and `find` matches nothing. Only the second
+// occurs against the shipped catalog, where every entry carries an array.
+// Both records are addressed through the overlay so a catalog that stops
+// carrying either shape fails here instead of silently dropping the arm.
+const nullishAssets = catalog.find(
+  (architecture) => architecture.assets == null,
+);
+const unmatchedAssets = catalog.find(
+  (architecture) =>
+    Array.isArray(architecture.assets) &&
+    !architecture.assets.some((asset) => /logo|wordmark/i.test(asset)),
+);
+const matchedAssets = catalog.find(
+  (architecture) =>
+    Array.isArray(architecture.assets) &&
+    architecture.assets.some((asset) => /logo|wordmark/i.test(asset)),
+);
 
 async function openStaffProfile(page, name) {
   await page.goto('/community/get-involved');
@@ -262,5 +281,56 @@ describeCoverage('drifted upstream data', () => {
         exact: true,
       }),
     ).toBeVisible();
+  });
+
+  // ArchitectureCard resolves its logo with `architecture.assets?.find(...)`.
+  // Every entry the catalog ships carries an assets array, so the browser has
+  // only ever entered the chain -- the short-circuit arm that a nullish
+  // `assets` takes has never run, and a catalog regenerated without the field
+  // would exercise it for the first time in production. The overlay nulls the
+  // field on one entry that carries no logo or wordmark asset anyway, so the
+  // card it renders is unchanged and only the arm that produced the missing
+  // asset differs.
+  test('ArchitectureCard renders a card for an entry with no assets field', async ({
+    page,
+  }) => {
+    expect(nullishAssets).toBeTruthy();
+    expect(unmatchedAssets).toBeTruthy();
+    expect(matchedAssets).toBeTruthy();
+
+    await page.goto('/architectures');
+    // Scoped to the component's own landmark for the same reason as the
+    // eyebrow case above: the surrounding docs layout also links into
+    // /architectures/.
+    const catalogSection = page.getByRole('region', {
+      name: 'Reference architecture catalog',
+    });
+
+    const nullishCard = catalogSection.locator(
+      `a[href$="/architectures/${nullishAssets.id}"]`,
+    );
+    await expect(nullishCard).toHaveCount(1);
+    // The card still renders, and renders the no-logo shape: the chain
+    // short-circuited rather than throwing on a nullish `assets`.
+    await expect(nullishCard.locator('img')).toHaveCount(0);
+    await expect(
+      nullishCard.getByText(nullishAssets.organization, { exact: true }),
+    ).toBeVisible();
+
+    // The entered-but-unmatched arm renders the same no-logo shape from the
+    // other side of the chain, so neither arm can stand in for the other.
+    const unmatchedCard = catalogSection.locator(
+      `a[href$="/architectures/${unmatchedAssets.id}"]`,
+    );
+    await expect(unmatchedCard).toHaveCount(1);
+    await expect(unmatchedCard.locator('img')).toHaveCount(0);
+
+    // The matched arm on the same page is what makes this evidence that the
+    // chain is resolving per entry, not that every card lost its logo.
+    const matchedCard = catalogSection.locator(
+      `a[href$="/architectures/${matchedAssets.id}"]`,
+    );
+    await expect(matchedCard).toHaveCount(1);
+    await expect(matchedCard.locator('img')).toHaveCount(1);
   });
 });
