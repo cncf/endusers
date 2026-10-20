@@ -1,0 +1,92 @@
+---
+title: useFocusTrap focusable-free dialog coverage fixture
+description:
+  Mounts useFocusTrap over a dialog that contains no button and no link, the one
+  shape no shipped dialog can produce.
+---
+
+import { useRef, useState } from 'react';
+import { useFocusTrap } from '@site/src/components/hooks/useFocusTrap';
+
+# useFocusTrap focusable-free dialog coverage fixture
+
+This page exists only in the end-to-end coverage build. `useFocusTrap` guards
+its Tab handler with
+
+```js
+const focusable = dialogRef.current?.querySelectorAll('button, a[href]');
+if (!focusable?.length) return;
+```
+
+(the Tab cycling in `src/components/hooks/useFocusTrap.js`), and the right-hand
+arm — the dialog that offers nothing to cycle between — is unreachable from the
+published site by construction. The hook has exactly two consumers,
+`PersonDialog` in `src/components/CommunityPeople/index.js` and `MemberProfile`
+in `src/components/MemberDirectory/MemberProfile.js`, and both render their
+close `<button>` unconditionally, so `querySelectorAll` always matches at least
+that one element whatever `data/community-people.json` or `data/members.json`
+contain. A data overlay cannot reach the arm either: no field of either file
+decides whether the close button is rendered.
+
+So the shape gets a page of its own, following the precedent set by
+`tests/e2e/fixtures/docs/cncf-project-card.mdx` and
+`tests/e2e/fixtures/docs/community-people.mdx`. The dialog below is declared
+here rather than in `src/` because it is not a shape this site ships: it is the
+degenerate dialog the hook documents itself as tolerating, and giving it a home
+under `src/` would mean shipping a component only the coverage build renders.
+
+The close ref is deliberately left unattached, which is what a dialog with no
+focusable element means — `closeRef.current?.focus()` then has nothing to move
+focus to and the trigger keeps it. That is also why the trigger and the sentinel
+below sit either side of the dialog in document order: with the arm taken, Tab
+is never `preventDefault`ed, so focus leaves the trigger for the sentinel the
+way the browser would move it with no handler installed at all. A trapped dialog
+could not produce that, and `tests/e2e/focus-trap-empty-dialog.spec.js` asserts
+it alongside Escape still closing, so a hook that never installed its listener
+cannot be mistaken for one that took the early return.
+
+export function FocusableFreeDialog({ onClose, triggerRef }) {
+  const { dialogRef } = useFocusTrap({ onClose, triggerRef });
+  return (
+    <div
+      ref={dialogRef}
+      id="focus-trap-fixture-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Focusable-free coverage fixture dialog"
+    >
+      <p>
+        This dialog deliberately contains no <code>button</code> and no
+        <code>a[href]</code>, so the focus trap has nothing to cycle between.
+      </p>
+    </div>
+  );
+}
+
+export function EmptyFocusTrapFixture() {
+  const triggerRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        ref={triggerRef}
+        id="focus-trap-fixture-trigger"
+        type="button"
+        onClick={() => setOpen(true)}
+      >
+        Open the focusable-free dialog
+      </button>
+      {open && (
+        <FocusableFreeDialog
+          onClose={() => setOpen(false)}
+          triggerRef={triggerRef}
+        />
+      )}
+      <button id="focus-trap-fixture-sentinel" type="button">
+        Sentinel after the dialog
+      </button>
+    </div>
+  );
+}
+
+<EmptyFocusTrapFixture />
