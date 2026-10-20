@@ -187,10 +187,21 @@ test('the Referrer-Policy header matches the document meta policy', async () => 
 // free to fetch an image, stylesheet, font or <iframe> from any host. The
 // three allowances name what the committed SVGs use -- inline styles, inline
 // data: images -- plus same-origin fonts for parity with docusaurus.config.js.
+// form-action and base-uri are the same point made the other way round
+// (#1692): they are navigation directives, not fetch directives, so
+// default-src is not their fallback either. A directly-opened SVG renders the
+// HTML inside <foreignObject>, and script-src 'none' leaves that HTML inert
+// but does not constrain a <form> -- its submission, and whatever the visitor
+// typed into it, goes wherever the diagram's author pointed it while the
+// address bar reads as this origin. 'none' rather than the 'self' that
+// docusaurus.config.js sends for pages: a response under static/img submits no
+// form and resolves nothing against a <base>.
 const ASSET_HEADER_PATHS = ['/img/*', '/favicons/*'];
 
 const ASSET_CSP_DENIALS = [
   "default-src 'none'",
+  "form-action 'none'",
+  "base-uri 'none'",
   "script-src 'none'",
   "object-src 'none'",
   "img-src 'self' data:",

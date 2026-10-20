@@ -58,6 +58,24 @@ const FETCHED_ATTRIBUTES = new Set(['src', 'poster', 'background']);
 const SRCSET_ATTRIBUTE = 'srcset';
 
 /**
+ * Attributes naming where a form submission goes.
+ *
+ * A submission is not a fetch the page performs, so none of the lists above
+ * reach it, and it carries no scheme a scanner would object to -- an ordinary
+ * https URL on another host is exactly the payload. It still belongs to this
+ * module: a browser that navigates to an SVG renders the HTML inside
+ * `<foreignObject>`, so a diagram can put a rendered, interactive form on this
+ * origin whose POST -- including whatever the visitor typed into it -- goes to
+ * a host the diagram's author chose. No script is involved at any point, which
+ * is why every script-oriented check here misses it.
+ *
+ * `formaction` on a submit `<button>` or `<input>` overrides the enclosing
+ * form's `action`, so a form that reads as same-origin in a diff can still be
+ * redirected by its own button.
+ */
+const SUBMISSION_ATTRIBUTES = new Set(['action', 'formaction']);
+
+/**
  * Elements whose `href` is navigation the visitor chooses rather than a load
  * the page performs. draw.io exports legitimately carry such links, so
  * flagging them would fail the existing corpus. Every other element's `href`
@@ -382,6 +400,16 @@ export function findRemoteReferences(source) {
         if (target) {
           findings.add(
             `references a remote resource in <${element}> ${label}: ${describeTarget(target)}`,
+          );
+        }
+        continue;
+      }
+
+      if (SUBMISSION_ATTRIBUTES.has(name)) {
+        const target = remoteTarget(value);
+        if (target) {
+          findings.add(
+            `submits to a remote host in <${element}> ${label}: ${describeTarget(target)}`,
           );
         }
         continue;

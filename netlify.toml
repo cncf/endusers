@@ -65,6 +65,19 @@
 # gate is the primary control; this is the layer that has to hold when it does
 # not.
 #
+# form-action and base-uri are here for the same reason stated the other way
+# round: they are navigation directives, not fetch directives, so default-src
+# is not their fallback either -- an unnamed one of them is unrestricted no
+# matter how flat the denial above it looks. A directly-opened SVG renders the
+# HTML inside <foreignObject>, and script-src 'none' makes that HTML inert
+# without constraining a <form> at all: its submission, and whatever a visitor
+# typed into it, goes wherever the diagram's author pointed it while the
+# address bar still reads as this origin. docusaurus.config.js already sends
+# form-action for pages; 'none' rather than 'self' is correct here because a
+# response under static/img never submits a form or resolves a relative
+# reference against a <base>, so neither allowance would describe anything the
+# corpus does.
+#
 # The three allowances are what the published corpus actually uses and nothing
 # more: inline <style> blocks and style= attributes from draw.io exports,
 # inline data:image/png payloads, and (for parity with docusaurus.config.js)
@@ -79,7 +92,7 @@
   for = "/img/*"
 
   [headers.values]
-    Content-Security-Policy = "frame-ancestors 'self'; default-src 'none'; script-src 'none'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'"
+    Content-Security-Policy = "frame-ancestors 'self'; default-src 'none'; form-action 'none'; base-uri 'none'; script-src 'none'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
@@ -89,7 +102,7 @@
   for = "/favicons/*"
 
   [headers.values]
-    Content-Security-Policy = "frame-ancestors 'self'; default-src 'none'; script-src 'none'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'"
+    Content-Security-Policy = "frame-ancestors 'self'; default-src 'none'; form-action 'none'; base-uri 'none'; script-src 'none'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
