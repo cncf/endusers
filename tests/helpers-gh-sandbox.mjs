@@ -21,8 +21,7 @@ const repoRoot = resolveRepoRoot(import.meta.url);
 // pages it requested, which labels it edited, what it commented) rather than
 // only on stdout. Routes match by substring against the joined argv and are
 // consulted in declaration order, so more specific routes come first.
-const GH_STUB = `#!/usr/bin/env node
-import { appendFileSync } from 'node:fs';
+const GH_STUB_BODY = `import { appendFileSync } from 'node:fs';
 
 const argv = process.argv.slice(2);
 appendFileSync(process.env.ENDUSERS_GH_LOG, JSON.stringify(argv) + '\\n');
@@ -59,7 +58,43 @@ process.exit(route.status ?? 0);
  * @returns {{status: number, stdout: string, stderr: string,
  *   calls: string[][]}} `calls` is one argv array per gh invocation, in order
  */
-export function runWithGhStub({ script, driver, routes = [], env = {} }) {
+export function runWithGhStub({
+  script,
+  driver,
+  routes = [],
+  env = {},
+  spawnPath,
+}) {
+  return runWithStub({ tool: 'gh', script, driver, routes, env, spawnPath });
+}
+
+/**
+ * Like runWithGhStub, but stubs `curl` instead of `gh` and isolates PATH to
+ * the stub directory plus node's own directory, so a script that shells out
+ * to `gh` hits a genuine ENOENT and falls back to its `curl` path. Routes
+ * match by substring against the joined curl argv (which ends with the
+ * request URL), and invocations are logged exactly as with the gh stub.
+ */
+export function runWithCurlStub({ script, driver, routes = [], env = {} }) {
+  return runWithStub({
+    tool: 'curl',
+    script,
+    driver,
+    routes,
+    env,
+    isolatePath: true,
+  });
+}
+
+function runWithStub({
+  tool,
+  script,
+  driver,
+  routes,
+  env,
+  isolatePath = false,
+  spawnPath,
+}) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-gh-'));
   try {
     mkdirSync(join(work, 'scripts'), { recursive: true });
@@ -70,8 +105,11 @@ export function runWithGhStub({ script, driver, routes = [], env = {} }) {
 
     const binDir = join(work, '.bin');
     mkdirSync(binDir, { recursive: true });
-    const stub = join(binDir, 'gh');
-    writeFileSync(stub, GH_STUB);
+    const stub = join(binDir, tool);
+    // Shebang points at the running node directly: with an isolated PATH
+    // (curl-fallback tests) there is no `/usr/bin/env node` lookup to rely
+    // on, and no real `gh`/`curl` may leak in from node's own directory.
+    writeFileSync(stub, `#!${process.execPath}\n${GH_STUB_BODY}`);
     chmodSync(stub, 0o755);
 
     const logPath = join(work, 'gh-calls.log');
@@ -81,12 +119,17 @@ export function runWithGhStub({ script, driver, routes = [], env = {} }) {
       writeFileSync(entry, driver);
     }
 
-    const result = spawnSync('node', [entry], {
+    // spawnPath defaults to the running node by absolute path, so the child
+    // starts even with an isolated or unset PATH; tests override it to
+    // exercise the spawn-failure degradation below.
+    const result = spawnSync(spawnPath ?? process.execPath, [entry], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
-        PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}`,
+        PATH: isolatePath
+          ? binDir
+          : `${binDir}${delimiter}${process.env.PATH ?? ''}`,
         // Keep the child off any ambient credential and off the ambient repo,
         // so a run is identical whether or not the developer or CI job exports
         // GH_TOKEN or GITHUB_REPOSITORY.

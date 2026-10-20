@@ -94,10 +94,27 @@ test('runScriptWithFetchMock degrades to status 1 and empty output when the chil
   assert.equal(typeof result.outputs['data/awards.json'], 'string');
 });
 
-test('runWithGhStub prepends its stub directory even when PATH is unset, and degrades to status 1', () => {
-  // With PATH absent the helper builds `<stub dir>:` from its `?? ''`
+test('runWithGhStub degrades to status 1 and empty output when the child cannot spawn', () => {
+  // A spawn failure (bad interpreter path) reports status/stdout/stderr as
+  // null; the helper's `?? 1` / `?? ''` fallbacks keep the result shape
+  // intact and no gh invocation can have happened.
+  const result = runWithGhStub({
+    script: 'pr-queue-hygiene.mjs',
+    spawnPath: '/nonexistent/node',
+  });
+
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, '');
+  assert.equal(result.stderr, '');
+  assert.deepEqual(result.calls, []);
+});
+
+test('runWithGhStub prepends its stub directory even when PATH is unset, and the child errors cleanly', () => {
+  // With PATH absent the helper builds `<stub dir>` from its `?? ''`
   // fallback rather than interpolating "undefined" into the child's PATH —
-  // the stub directory stays first, and the empty tail finds no real `gh`.
+  // the stub directory stays first, and the child itself starts because the
+  // helper spawns node by absolute path. The script then fails fast on the
+  // sandboxed-empty REPO without ever invoking gh.
   const result = withoutPath(() =>
     runWithGhStub({
       script: 'pr-queue-hygiene.mjs',
@@ -107,10 +124,10 @@ test('runWithGhStub prepends its stub directory even when PATH is unset, and deg
 
   assert.equal(result.status, 1);
   assert.equal(result.stdout, '');
-  assert.equal(result.stderr, '');
+  assert.match(result.stderr, /REPO or GITHUB_REPOSITORY must be set/);
   assert.deepEqual(
     result.calls,
     [],
-    'a child that never started cannot have invoked gh',
+    'a child that failed before main() enumerated PRs cannot have invoked gh',
   );
 });
