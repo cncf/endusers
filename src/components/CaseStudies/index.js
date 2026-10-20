@@ -65,13 +65,13 @@ export default function CaseStudies() {
         label="cncf.io/case-studies"
         className={styles.syncStatus}
       />
-      {FilterToolbar({
-        searchId: 'case-study-search',
-        searchLabel: 'Search case studies by organization',
-        searchValue: query,
-        searchPlaceholder: 'Search by organization',
-        onSearchChange: (value) => setFilter('query', value),
-        selects: [
+      <FilterToolbar
+        searchId="case-study-search"
+        searchLabel="Search case studies by organization"
+        searchValue={query}
+        searchPlaceholder="Search by organization"
+        onSearchChange={(value) => setFilter('query', value)}
+        selects={[
           {
             id: 'case-study-project',
             label: 'Filter by CNCF project',
@@ -96,13 +96,13 @@ export default function CaseStudies() {
             options: options.countries,
             allLabel: 'All countries',
           },
-        ],
-        resultCount: filtered.length,
-        totalCount: caseStudies.length,
-        resultNoun: 'case studies',
-        activeCount,
-        onClear: clearFilters,
-      })}
+        ]}
+        resultCount={filtered.length}
+        totalCount={caseStudies.length}
+        resultNoun="case studies"
+        activeCount={activeCount}
+        onClear={clearFilters}
+      />
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>

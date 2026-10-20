@@ -11,7 +11,11 @@ import test from 'node:test';
 import React from 'react';
 
 import { renderHook } from './tools/react-hook-driver.mjs';
-import { textOf } from './tools/react-element-tree.mjs';
+import {
+  renderElement,
+  textOf,
+  walkElements,
+} from './tools/react-element-tree.mjs';
 
 test('the hook driver memoises useCallback on its dependency array', () => {
   // No component under test uses useCallback today, so the dispatcher slot is
@@ -49,6 +53,48 @@ test('textOf returns an empty string for a non-renderable child', () => {
   assert.equal(
     textOf({ type: 'p', props: { children: ['a', () => 'b', 'c'] } }),
     'ac',
+  );
+});
+
+test('renderElement rejects an element whose type is not a component', () => {
+  // Component suites only ever hand renderElement a located component
+  // element, so the guard against a mistyped call — an intrinsic element or
+  // an empty find result — would otherwise never execute.
+  assert.throws(
+    () => renderElement({ type: 'p', props: {} }),
+    /whose type is a function component/,
+  );
+  assert.throws(
+    () => renderElement(null),
+    /whose type is a function component/,
+  );
+});
+
+test('walkElements expands only the function components its predicate names', () => {
+  const Leaf = () => ({ type: 'span', props: { children: 'leaf' } });
+  const Keep = () => ({ type: 'em', props: { children: 'kept' } });
+  const tree = {
+    type: 'div',
+    props: {
+      children: [
+        { type: Leaf, props: {} },
+        { type: Keep, props: {} },
+      ],
+    },
+  };
+
+  const expanded = [...walkElements(tree, { expand: (type) => type === Leaf })];
+  assert.deepEqual(
+    expanded.map((element) => element.type),
+    ['div', Leaf, 'span', Keep],
+    'the matched component renders inline; the other stays a leaf',
+  );
+
+  const unexpanded = [...walkElements(tree)];
+  assert.deepEqual(
+    unexpanded.map((element) => element.type),
+    ['div', Leaf, Keep],
+    'without a predicate every function component stays a leaf',
   );
 });
 

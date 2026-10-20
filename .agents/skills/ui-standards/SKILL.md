@@ -43,6 +43,11 @@ claims against authoritative CNCF sources.
    can compile this into hydration-breaking code. Use `Array.from()`.
 8. Self-host images under `static/img/`; never hotlink GitHub user attachments.
    Give images explicit `width` and `height` to avoid layout shift.
+9. Render shared components under `src/components/shared/` as JSX elements
+   (`<FilterToolbar ... />`), never by calling them as plain functions. Tests
+   that need their markup expand them through the hook-free harness in
+   `tests/tools/react-element-tree.mjs` (the `expand` option on
+   `walkElements`/`findAllByType`/`findByType`, or `renderElement()`).
 
 ## Common Rationalizations
 

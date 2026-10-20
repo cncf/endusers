@@ -81,42 +81,44 @@ export default function ArchitectureFilters({
   resultCount,
   totalCount,
 }) {
-  return FilterToolbar({
-    searchId: 'architecture-search',
-    searchLabel: 'Search architectures by organization or title',
-    searchValue: filters.query,
-    searchPlaceholder: 'Search architectures by organization or title',
-    onSearchChange: setQuery,
-    selects: [
-      {
-        id: 'architecture-organization',
-        label: 'Filter by organization',
-        value: filters.organization,
-        onChange: setOrganization,
-        options: options.organizations,
-        allLabel: 'All organizations',
-      },
-      {
-        id: 'architecture-industry',
-        label: 'Filter by industry',
-        value: filters.industry,
-        onChange: setIndustry,
-        options: options.industries,
-        allLabel: 'All industries',
-      },
-      {
-        id: 'architecture-project',
-        label: 'Filter by CNCF project',
-        value: filters.project,
-        onChange: setProject,
-        options: options.projects,
-        allLabel: 'All projects',
-      },
-    ],
-    resultCount,
-    totalCount,
-    resultNoun: 'architectures',
-    activeCount,
-    onClear,
-  });
+  return (
+    <FilterToolbar
+      searchId="architecture-search"
+      searchLabel="Search architectures by organization or title"
+      searchValue={filters.query}
+      searchPlaceholder="Search architectures by organization or title"
+      onSearchChange={setQuery}
+      selects={[
+        {
+          id: 'architecture-organization',
+          label: 'Filter by organization',
+          value: filters.organization,
+          onChange: setOrganization,
+          options: options.organizations,
+          allLabel: 'All organizations',
+        },
+        {
+          id: 'architecture-industry',
+          label: 'Filter by industry',
+          value: filters.industry,
+          onChange: setIndustry,
+          options: options.industries,
+          allLabel: 'All industries',
+        },
+        {
+          id: 'architecture-project',
+          label: 'Filter by CNCF project',
+          value: filters.project,
+          onChange: setProject,
+          options: options.projects,
+          allLabel: 'All projects',
+        },
+      ]}
+      resultCount={resultCount}
+      totalCount={totalCount}
+      resultNoun="architectures"
+      activeCount={activeCount}
+      onClear={onClear}
+    />
+  );
 }

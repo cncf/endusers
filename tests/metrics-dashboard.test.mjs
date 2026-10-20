@@ -19,6 +19,7 @@ import { importSource } from './helpers-jsx.mjs';
 import {
   findAllByType,
   findByType,
+  renderElement,
   textOf,
   walkElements,
 } from './tools/react-element-tree.mjs';
@@ -39,8 +40,9 @@ function elements(tree) {
  * Locates a nested component by function name and renders it.
  *
  * The inner components are not exported, so the only handle a test has on them
- * is the element the dashboard returns; calling `element.type` with its props
- * renders one level deeper without pulling in a real renderer.
+ * is the element the dashboard returns; the harness's `renderElement` calls
+ * the component with its props, rendering one level deeper without pulling in
+ * a real renderer.
  */
 function renderNested(tree, name, propsOverride) {
   const element = elements(tree).find(
@@ -48,7 +50,7 @@ function renderNested(tree, name, propsOverride) {
       typeof candidate.type === 'function' && candidate.type.name === name,
   );
   assert.ok(element, `expected a <${name}> element in the tree`);
-  return element.type(propsOverride ?? element.props);
+  return renderElement(element, propsOverride);
 }
 
 function componentNamed(tree, name) {

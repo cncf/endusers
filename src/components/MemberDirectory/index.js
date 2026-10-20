@@ -61,13 +61,13 @@ export default function MemberDirectory() {
   return (
     <section aria-label="End User Community organization directory">
       <DirectoryFreshness />
-      {FilterToolbar({
-        searchId: 'member-search',
-        searchLabel: 'Search organizations by name',
-        searchValue: query,
-        searchPlaceholder: 'Search organizations by name',
-        onSearchChange: (value) => setFilter('query', value),
-        selects: [
+      <FilterToolbar
+        searchId="member-search"
+        searchLabel="Search organizations by name"
+        searchValue={query}
+        searchPlaceholder="Search organizations by name"
+        onSearchChange={(value) => setFilter('query', value)}
+        selects={[
           {
             id: 'member-industry',
             label: 'Filter by industry',
@@ -92,8 +92,8 @@ export default function MemberDirectory() {
             options: projects,
             allLabel: 'All projects',
           },
-        ],
-        extra: [
+        ]}
+        extra={[
           <label className={styles.toggle} key="hasArchitecture">
             <input
               type="checkbox"
@@ -112,13 +112,13 @@ export default function MemberDirectory() {
             />
             <span>Has award</span>
           </label>,
-        ],
-        resultCount: filtered.length,
-        totalCount: members.length,
-        resultNoun: 'organizations',
-        activeCount: activeFiltersCount,
-        onClear: clearFilters,
-      })}
+        ]}
+        resultCount={filtered.length}
+        totalCount={members.length}
+        resultNoun="organizations"
+        activeCount={activeFiltersCount}
+        onClear={clearFilters}
+      />
 
       {filtered.length === 0 ? (
         <div className={styles.emptyState}>

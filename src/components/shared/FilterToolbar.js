@@ -9,11 +9,12 @@ import styles from './FilterToolbar.module.css';
  * generalizes the toolbar's presentation, which was previously hand-copied
  * into three near-identical JSX trees and CSS modules.
  *
- * Called directly as a plain function (not as a JSX element) by every
- * caller so its output expands inline into the caller's own render -- the
- * repository's hook-free render tests walk the returned element tree without
- * invoking nested function components, and real React renders a function
- * component identically either way.
+ * Rendered as a JSX element (`<FilterToolbar ... />`) by every caller, like
+ * any other component. The repository's hook-free render tests walk the
+ * returned element tree without invoking nested function components, so a
+ * test that asserts on this toolbar's markup expands it through
+ * tests/tools/react-element-tree.mjs (the `expand` option on
+ * `walkElements`/`findAllByType`/`findByType`, or `renderElement()`).
  *
  * @param {object} props
  * @param {string} props.searchId
