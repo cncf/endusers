@@ -464,6 +464,54 @@ test('publishes the generated id to GITHUB_OUTPUT for the workflow', () => {
   }
 });
 
+// The other half of that contract: not just that the key is written, but that
+// nothing else can be.
+//
+// `$GITHUB_OUTPUT` is a line-oriented key=value file with no escaping for
+// newlines, so a value carrying one ends its own assignment and starts a
+// second. The value written here is `slugify()`'s output over the
+// "Organization or Team Name" field -- a string any GitHub user can put in an
+// issue body -- and the workflow that reads it,
+// .github/workflows/architecture-submission.yml, runs with `contents: write`,
+// `pull-requests: write` and `issues: write`. A forged second line would be a
+// step output of the submitter's choosing inside that job.
+//
+// `slugify()` already prevents this, by reducing everything outside
+// `[a-z0-9]` to `-`; a newline cannot survive it. Nothing held it to that.
+// Widening its character class to `[^a-z0-9\n]` makes this exact body emit
+// `id=acme\nmalicious-1\nid-pwned\n` -- three lines where the workflow expects
+// one -- and leaves the whole unit suite green, because the test above spends
+// a benign fixture name and asserts only the key spelling.
+test('refuses to let an issue body forge extra GITHUB_OUTPUT lines', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue(
+      {},
+      { 'Organization or Team Name': 'Acme\nmalicious=1\nid=pwned' },
+    ),
+    env: { GITHUB_OUTPUT: '{issuePath}.output' },
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const written = readFileSync(`${run.issuePath}.output`, 'utf8');
+
+    // Pinned exactly: the newlines collapse into the slug like any other
+    // run of disallowed characters, rather than being dropped or escaped.
+    assert.equal(written, 'id=acme-malicious-1-id-pwned\n');
+
+    // Stated structurally as well, so an id scheme that legitimately changes
+    // the slug above still has to keep the file to one assignment the
+    // workflow can read back.
+    assert.deepEqual(
+      written.split('\n').filter((line) => line !== ''),
+      [written.trimEnd()],
+      'the importer wrote more than one line to $GITHUB_OUTPUT',
+    );
+    assert.match(written, /^id=[a-z0-9-]+\n$/);
+  } finally {
+    run.cleanup();
+  }
+});
+
 test('names the unanswered required body section in the error', () => {
   const run = runImportArchitectureIssue({
     issue: fixtureIssue({}, { 'Describe your organisation': undefined }),
