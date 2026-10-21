@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { validateAwards } from '../scripts/lib/validate-awards.mjs';
 import { runScriptWithFixtures } from './helpers.mjs';
 
 const SCRIPT = 'validate-awards.mjs';
@@ -26,100 +30,136 @@ function awardsFixture(awards, overrides = {}) {
   };
 }
 
+function validateFixture(fixtures) {
+  const root = mkdtempSync(join(tmpdir(), 'endusers-awards-core-'));
+  try {
+    for (const [path, content] of Object.entries(fixtures)) {
+      const target = join(root, path);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, content);
+    }
+    return validateAwards(
+      JSON.parse(fixtures['data/awards.json']),
+      join(root, 'static'),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function assertError(errors, message) {
+  assert.ok(
+    errors.some(
+      (error) => error.severity === 'error' && message.test(error.message),
+    ),
+    JSON.stringify(errors),
+  );
+}
+
 test('accepts a valid awards file', () => {
-  const result = runScriptWithFixtures(SCRIPT, awardsFixture([validEntry]));
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Validated 1 award/);
+  assert.deepEqual(validateFixture(awardsFixture([validEntry])), []);
 });
 
 test('rejects an empty awards array', () => {
-  const result = runScriptWithFixtures(SCRIPT, awardsFixture([]));
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /non-empty array/);
+  assert.deepEqual(validateFixture(awardsFixture([])), [
+    {
+      path: 'awards.json',
+      severity: 'error',
+      message: 'awards must be a non-empty array',
+    },
+  ]);
 });
 
 test('rejects a truthy non-array awards without crashing', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture({ 1: validEntry }),
-  );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /non-empty array/);
-  assert.doesNotMatch(result.stderr, /TypeError/);
+  assert.deepEqual(validateFixture(awardsFixture({ 1: validEntry })), [
+    {
+      path: 'awards.json',
+      severity: 'error',
+      message: 'awards must be a non-empty array',
+    },
+  ]);
 });
 
 test('rejects a missing verifiedAt', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([validEntry], { verifiedAt: undefined }),
+  assert.deepEqual(
+    validateFixture(awardsFixture([validEntry], { verifiedAt: undefined })),
+    [
+      {
+        path: 'awards.json',
+        severity: 'error',
+        message:
+          'verifiedAt must be a parseable date recording the last completeness audit against verifiedAgainst',
+      },
+    ],
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /verifiedAt must be a parseable date/);
 });
 
 test('rejects a missing verifiedAgainst', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([validEntry], { verifiedAgainst: undefined }),
+  assert.deepEqual(
+    validateFixture(
+      awardsFixture([validEntry], { verifiedAgainst: undefined }),
+    ),
+    [
+      {
+        path: 'awards.json',
+        severity: 'error',
+        message:
+          'verifiedAgainst must be an https URL to the canonical award history source',
+      },
+    ],
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /verifiedAgainst must be an https URL/);
-  // The absent-value arm must report the field as missing rather than fall
-  // through to checkHttpsUrl, which would blame the URL shape instead.
-  assert.doesNotMatch(result.stderr, /absolute https URL/);
 });
 
 test('rejects a non-https verifiedAgainst', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([validEntry], {
-      verifiedAgainst: 'contribute.cncf.io/community/awards/',
-    }),
+  assert.deepEqual(
+    validateFixture(
+      awardsFixture([validEntry], {
+        verifiedAgainst: 'contribute.cncf.io/community/awards/',
+      }),
+    ),
+    [
+      {
+        path: 'awards.json',
+        severity: 'error',
+        message: 'verifiedAgainst must be an absolute https URL',
+      },
+    ],
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /verifiedAgainst must be an absolute https URL/);
 });
 
 test('rejects years before 2015', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([{ ...validEntry, year: 2014 }]),
+  assert.deepEqual(
+    validateFixture(awardsFixture([{ ...validEntry, year: 2014 }])),
+    [{ path: '2014/acme', severity: 'error', message: 'invalid year' }],
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /invalid year/);
 });
 
 test('accepts the first supported award year', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([{ ...validEntry, year: 2015 }]),
+  assert.deepEqual(
+    validateFixture(awardsFixture([{ ...validEntry, year: 2015 }])),
+    [],
   );
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Validated 1 award/);
 });
 
 test('rejects entries sorted oldest first', () => {
   const older = { ...validEntry, year: 2022, slug: 'older' };
   const newer = { ...validEntry, year: 2023, slug: 'newer' };
-  const result = runScriptWithFixtures(SCRIPT, awardsFixture([older, newer]));
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /newest first/);
+  assertError(validateFixture(awardsFixture([older, newer])), /newest first/);
 });
 
 test('accepts entries sorted newest first', () => {
   const newer = { ...validEntry, year: 2024, slug: 'newer' };
   const older = { ...validEntry, year: 2023, slug: 'older' };
-  const result = runScriptWithFixtures(SCRIPT, awardsFixture([newer, older]));
-  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(validateFixture(awardsFixture([newer, older])), []);
 });
 
 test('accepts multiple awards in the same year', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([validEntry, { ...validEntry, slug: 'second' }]),
+  assert.deepEqual(
+    validateFixture(
+      awardsFixture([validEntry, { ...validEntry, slug: 'second' }]),
+    ),
+    [],
   );
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Validated 2 award/);
 });
 
 for (const [logo, file] of [
@@ -127,43 +167,38 @@ for (const [logo, file] of [
   ['//img/awards/acme.svg', 'static/img/awards/acme.svg'],
 ]) {
   test(`rejects a logo outside the allowed URL/path boundary: ${logo}`, () => {
-    const result = runScriptWithFixtures(SCRIPT, {
-      ...awardsFixture([{ ...validEntry, logo }]),
-      [file]: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
-    });
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /logo must live under \/img\/awards\//);
+    assertError(
+      validateFixture({
+        ...awardsFixture([{ ...validEntry, logo }]),
+        [file]: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+      }),
+      /logo must live under \/img\/awards\//,
+    );
   });
 }
 
 test('rejects missing required fields', () => {
   const { citation, ...withoutCitation } = validEntry;
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([withoutCitation]),
+  assertError(
+    validateFixture(awardsFixture([withoutCitation])),
+    /missing citation/,
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /missing citation/);
 });
 
 test('rejects non-https URLs', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([
-      { ...validEntry, announcementUrl: 'http://example.com/award' },
-    ]),
+  assertError(
+    validateFixture(
+      awardsFixture([
+        { ...validEntry, announcementUrl: 'http://example.com/award' },
+      ]),
+    ),
+    /announcementUrl must use https, got http:/,
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /announcementUrl must use https, got http:/);
 });
 
-// The four link fields below are rendered as <a href>, so a value whose
-// visible prefix and real authority disagree is the vector these cases pin:
-// "https://cncf.io@evil.example" begins with "https://" but resolves to
-// evil.example, and a string prefix test cannot tell the difference.
+// The visible prefix of a userinfo URL disagrees with its real authority.
 test('rejects a link field carrying a userinfo component', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
+  const errors = validateFixture(
     awardsFixture([
       {
         ...validEntry,
@@ -171,167 +206,193 @@ test('rejects a link field carrying a userinfo component', () => {
       },
     ]),
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /announcementUrl must not carry a userinfo/);
-  assert.match(result.stderr, /evil\.example/);
+  assertError(errors, /announcementUrl must not carry a userinfo/);
+  assertError(errors, /evil\.example/);
 });
 
 test('rejects a verifiedAgainst carrying a userinfo component', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([validEntry], {
-      verifiedAgainst: 'https://contribute.cncf.io@evil.example/awards/',
-    }),
+  assertError(
+    validateFixture(
+      awardsFixture([validEntry], {
+        verifiedAgainst: 'https://contribute.cncf.io@evil.example/awards/',
+      }),
+    ),
+    /verifiedAgainst must not carry a userinfo/,
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /verifiedAgainst must not carry a userinfo/);
 });
 
 test('rejects an unparseable value that still begins with https://', () => {
   for (const announcementUrl of ['https://', 'https:// evil.example']) {
-    const result = runScriptWithFixtures(
-      SCRIPT,
-      awardsFixture([{ ...validEntry, announcementUrl }]),
-    );
-    assert.equal(
-      result.status,
-      1,
-      `accepted ${JSON.stringify(announcementUrl)}`,
-    );
-    assert.match(
-      result.stderr,
+    assertError(
+      validateFixture(awardsFixture([{ ...validEntry, announcementUrl }])),
       /announcementUrl must be an absolute https URL/,
     );
   }
 });
 
 test('rejects a javascript: URL in an optional link field', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([
-      { ...validEntry, caseStudyUrl: 'javascript:alert(document.domain)' },
-    ]),
+  assertError(
+    validateFixture(
+      awardsFixture([
+        { ...validEntry, caseStudyUrl: 'javascript:alert(document.domain)' },
+      ]),
+    ),
+    /caseStudyUrl must use https, got javascript:/,
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /caseStudyUrl must use https, got javascript:/);
 });
 
-// The link fields render as <a href> on /community/awards. Parsing alone
-// admits any https host; the allow-list holds announcements and case studies
-// to cncf.io (where winners are verified) and talks to cncf.io or YouTube.
 test('rejects a link field whose host is outside the allow-list', () => {
   for (const [field, url] of [
     ['announcementUrl', 'https://www.cncf.io.evil.example/announcements/x'],
     ['caseStudyUrl', 'https://evil.example/case-studies/acme'],
     ['talkUrl', 'https://vimeo.example/9'],
   ]) {
-    const result = runScriptWithFixtures(
-      SCRIPT,
-      awardsFixture([{ ...validEntry, [field]: url }]),
-    );
-    assert.equal(result.status, 1, `${field}: ${url} was accepted`);
-    assert.ok(
-      result.stderr.includes(field),
-      `${field}: error did not name the field: ${result.stderr}`,
+    assertError(
+      validateFixture(awardsFixture([{ ...validEntry, [field]: url }])),
+      new RegExp(`${field} must be on `),
     );
   }
 });
 
 test('accepts link fields on cncf.io subdomains and a YouTube talk', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([
-      {
-        ...validEntry,
-        caseStudyUrl: 'https://www.cncf.io/case-studies/acme/',
-        talkUrl: 'https://youtu.be/9GIQyQjs36o',
-      },
-    ]),
+  assert.deepEqual(
+    validateFixture(
+      awardsFixture([
+        {
+          ...validEntry,
+          caseStudyUrl: 'https://www.cncf.io/case-studies/acme/',
+          talkUrl: 'https://youtu.be/9GIQyQjs36o',
+        },
+      ]),
+    ),
+    [],
   );
-  assert.equal(result.status, 0, result.stderr);
 });
 
 test('rejects a verifiedAgainst outside the CNCF hosts', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([validEntry], {
-      verifiedAgainst: 'https://evil.example/community/awards/',
-    }),
+  assertError(
+    validateFixture(
+      awardsFixture([validEntry], {
+        verifiedAgainst: 'https://evil.example/community/awards/',
+      }),
+    ),
+    /verifiedAgainst/,
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /verifiedAgainst/);
 });
 
 test('rejects entries with neither announcementUrl nor talkUrl', () => {
   const { announcementUrl, ...withoutUrl } = validEntry;
-  const result = runScriptWithFixtures(SCRIPT, awardsFixture([withoutUrl]));
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /announcementUrl or talkUrl/);
+  assertError(
+    validateFixture(awardsFixture([withoutUrl])),
+    /announcementUrl or talkUrl/,
+  );
 });
 
 test('accepts a talkUrl in place of an announcementUrl', () => {
   const { announcementUrl, ...rest } = validEntry;
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([{ ...rest, talkUrl: 'https://www.youtube.com/watch?v=1' }]),
+  assert.deepEqual(
+    validateFixture(
+      awardsFixture([
+        { ...rest, talkUrl: 'https://www.youtube.com/watch?v=1' },
+      ]),
+    ),
+    [],
   );
-  assert.equal(result.status, 0, result.stderr);
 });
 
 test('rejects logos outside /img/awards/', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([{ ...validEntry, logo: '/img/other/logo.svg' }]),
+  assertError(
+    validateFixture(
+      awardsFixture([{ ...validEntry, logo: '/img/other/logo.svg' }]),
+    ),
+    /\/img\/awards\//,
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /\/img\/awards\//);
 });
 
 test('rejects a logo that escapes /img/awards/ with .. segments', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
+  const errors = validateFixture(
     awardsFixture([
       { ...validEntry, logo: '/img/awards/../../../../../etc/hostname' },
     ]),
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /logo must live under \/img\/awards\//);
-  assert.doesNotMatch(result.stderr, /logo file missing/);
+  assertError(errors, /logo must live under \/img\/awards\//);
+  assert.ok(errors.every((error) => !/logo file missing/.test(error.message)));
 });
 
 test('rejects a logo that escapes static/ entirely via .. segments', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([{ ...validEntry, logo: '/img/awards/../../package.json' }]),
+  assertError(
+    validateFixture(
+      awardsFixture([
+        { ...validEntry, logo: '/img/awards/../../package.json' },
+      ]),
+    ),
+    /logo must live under \/img\/awards\//,
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /logo must live under \/img\/awards\//);
 });
 
 test('rejects a non-string logo without crashing', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([{ ...validEntry, logo: 42 }]),
+  assertError(
+    validateFixture(awardsFixture([{ ...validEntry, logo: 42 }])),
+    /logo must be a string path/,
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /logo must be a string path/);
-  assert.doesNotMatch(result.stderr, /TypeError/);
 });
 
 test('rejects logo files missing from static/', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    awardsFixture([{ ...validEntry, logo: '/img/awards/missing.svg' }]),
+  assertError(
+    validateFixture(
+      awardsFixture([{ ...validEntry, logo: '/img/awards/missing.svg' }]),
+    ),
+    /logo file missing/,
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /logo file missing/);
 });
 
 test('accepts a logo that exists under static/img/awards/', () => {
+  assert.deepEqual(
+    validateFixture({
+      ...awardsFixture([{ ...validEntry, logo: '/img/awards/acme.svg' }]),
+      'static/img/awards/acme.svg':
+        '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    }),
+    [],
+  );
+});
+
+test('the CLI resolves input and logo fixtures and preserves its success output', () => {
   const result = runScriptWithFixtures(SCRIPT, {
     ...awardsFixture([{ ...validEntry, logo: '/img/awards/acme.svg' }]),
     'static/img/awards/acme.svg':
       '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
   });
   assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, 'Validated 1 award entries\n');
+  assert.equal(result.stderr, '');
+});
+
+test('the CLI preserves validation diagnostics and failure exit status', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([{ ...validEntry, year: 2014 }]),
+  );
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, '');
+  assert.equal(
+    result.stderr,
+    '\n1 error(s) in awards:\n  [error] 2014/acme: invalid year\n',
+  );
+});
+
+test('the CLI reports unreadable input rather than a validation success', () => {
+  const result = runScriptWithFixtures(SCRIPT);
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, '');
+  assert.match(result.stderr, /ENOENT/);
+});
+
+test('the CLI reports malformed JSON rather than a validation success', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    'data/awards.json': '{ invalid',
+  });
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, '');
+  assert.match(result.stderr, /SyntaxError/);
 });
