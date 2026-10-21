@@ -402,13 +402,11 @@ export function findActiveContent(markdown, { mdastExtensions = [] } = {}) {
   for (const form of new Set([unwrapped, rewriteAfterUnwrap(unwrapped)])) {
     if (form === text) continue;
     for (const finding of scanSource(form, mdastExtensions)) {
-      const line = sourceLine[finding.line - 1] ?? finding.line;
+      const line = sourceLine[finding.line - 1];
       findings.push({
         ...finding,
         line,
-        snippet: (sourceLines[line - 1] ?? finding.snippet)
-          .trim()
-          .slice(0, 120),
+        snippet: sourceLines[line - 1].trim().slice(0, 120),
       });
     }
   }
