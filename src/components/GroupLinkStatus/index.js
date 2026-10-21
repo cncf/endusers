@@ -1,4 +1,3 @@
-import React from 'react';
 import groupsData from '@site/data/community-groups.json';
 import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';

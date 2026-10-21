@@ -1,4 +1,3 @@
-import React from 'react';
 import data from '@site/data/radar-reports.json';
 import MirrorSyncStatus from '../shared/MirrorSyncStatus';
 import { formatDate } from '../shared/formatDate';

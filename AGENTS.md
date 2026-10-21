@@ -63,11 +63,13 @@ or CI will fail the PR.
   Specs live in `tests/e2e/`; the suite serves `build/` on `localhost:3000`
   (override with `E2E_PORT`) and does not rebuild it for you.
 - **Lint**: required "Lint repository" CI check on every PR runs
-  `npm run check:format`, `npm run check:spelling`, `npm run check:markdown` and
-  `npm run check:duplication`. The last counts exact clones with jscpd in two
-  scans, code in `tests/`, `src/` and `scripts/` (`.jscpd.json`) and CSS in
-  `src/` plus YAML in `.github/` (`.jscpd.css-yaml.json`), and fails when either
-  exceeds its ceiling (`CLONE_CEILING`, `CSS_YAML_CLONE_CEILING`) in
+  `npm run check:format`, `npm run check:spelling`, `npm run check:markdown`,
+  `npm run check:duplication` and `npm run check:lint`. `check:lint` runs ESLint
+  (`eslint.config.mjs`) over `src/`, `scripts/`, `tests/` and the root config
+  files. `check:duplication` counts exact clones with jscpd in two scans, code
+  in `tests/`, `src/` and `scripts/` (`.jscpd.json`) and CSS in `src/` plus YAML
+  in `.github/` (`.jscpd.css-yaml.json`), and fails when either exceeds its
+  ceiling (`CLONE_CEILING`, `CSS_YAML_CLONE_CEILING`) in
   `scripts/check-duplication.mjs`; extract a shared helper, CSS module or
   composite action instead of copying, and lower a ceiling (never raise it) when
   the gate reports headroom.

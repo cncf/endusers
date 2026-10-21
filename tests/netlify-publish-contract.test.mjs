@@ -172,10 +172,9 @@ test('every response carries the site-wide security headers', () => {
 test('the page Permissions-Policy denies the powerful features the site never uses', () => {
   // Only denials: the site requests no permission, so an allowlist entry here
   // would be one nothing needs.
+  const policy = headersFor('/*')['Permissions-Policy'];
   const features = new Map(
-    headersFor('/*')
-      ['Permissions-Policy'].split(',')
-      .map((entry) => entry.trim().split('=')),
+    policy.split(',').map((entry) => entry.trim().split('=')),
   );
   for (const feature of 'camera geolocation microphone payment usb'.split(
     ' ',

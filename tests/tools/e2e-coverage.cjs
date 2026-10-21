@@ -236,6 +236,7 @@ async function createManager(testInfo) {
   return manager;
 }
 
+// eslint-disable-next-line no-empty-pattern -- Playwright reads fixture dependencies from a destructured first parameter
 async function coverageManagerFixture({}, use, testInfo) {
   if (!isCoverageEnabled()) {
     await use(null);

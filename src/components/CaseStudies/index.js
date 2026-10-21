@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import data from '@site/data/case-studies.json';
 import MirrorSyncStatus from '../shared/MirrorSyncStatus';
 import { formatDate } from '../shared/formatDate';

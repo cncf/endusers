@@ -13,7 +13,6 @@ import { gfmFromMarkdown } from 'mdast-util-gfm';
 import {
   artworkMirrorPath,
   artworkPath,
-  artworkUrls,
   projectAsset,
 } from './project-assets.mjs';
 import {
@@ -145,7 +144,7 @@ export function cleanMarkdown(body, id) {
     body.replace(/{{<[\s\S]*?>}}/g, '').replace(/{{<\/?[^>]+>}}/g, ''),
     id,
   )
-    .replace(/\[\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\]/g, '[$1]($2)')
+    .replace(/\[\[([^\]]+)\]\((https?:\/\/[^)]+)\)\]/g, '[$1]($2)')
     .replace(/<>/g, '&lt;&gt;')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { resolveRepoRoot } from './helpers.mjs';
 
 const repoRoot = resolveRepoRoot(import.meta.url);

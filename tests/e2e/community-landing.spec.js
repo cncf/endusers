@@ -12,8 +12,8 @@
 // tests/e2e/footer.spec.js exercises the footer rendered around it, and
 // tests/e2e/group-link-status-variant.spec.js drives the <GroupLinkStatus />
 // banner above it — but none of them reads the cards. On the unit side
-// tests/jsx-link-hygiene.test.mjs walks `src/` only, so it never sees this
-// file, and tests/docs-contract.test.mjs reads frontmatter rather than body
+// the link-hygiene lint rules in eslint.config.mjs cover `src/` only, so they
+// never see this file, and tests/docs-contract.test.mjs reads frontmatter rather than body
 // markup.
 //
 // The sibling grids are both covered — `/` by

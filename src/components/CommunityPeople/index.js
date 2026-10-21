@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import peopleData from '@site/data/community-people.json';
 import { profileUrl, websiteUrl } from '@site/src/lib/profile-links.mjs';
 import ProfileDialogShell from '../shared/ProfileDialogShell';

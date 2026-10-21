@@ -66,8 +66,8 @@ which no Justfile recipe runs. The recipes are also **not** the same checks the
 `just build`/`just refresh` locally does **not** imply a green PR check. Before
 opening a PR, also run `npm run test:unit:coverage:check` and the local check
 scripts that match "Lint repository": `npm run check:format`,
-`npm run check:spelling`, `npm run check:markdown`, and
-`npm run check:duplication`. The "Validate repository" gate additionally runs
+`npm run check:spelling`, `npm run check:markdown`, `npm run check:duplication`,
+and `npm run check:lint`. The "Validate repository" gate additionally runs
 `npm run check:audit` (dependency advisory allowlist) — see step 5 below.
 `npm run check` also runs the lint checks, but it additionally runs
 `check:audit`, `check:links` (network-dependent) and
@@ -256,8 +256,9 @@ enough for a first contribution.
    pages, components, or navigation, also run the end-to-end suite — see
    [End-to-end tests](#end-to-end-tests) below.
 5. Run `npm run check:format`, `npm run check:spelling`,
-   `npm run check:markdown`, and `npm run check:duplication` — the required
-   "Lint repository" check runs these four on every PR. If a check fails:
+   `npm run check:markdown`, `npm run check:duplication`, and
+   `npm run check:lint` — the required "Lint repository" check runs these five
+   on every PR. If a check fails:
    - `check:format` — run `npm run fix:format` to auto-format.
    - `check:spelling` — add the flagged term to `.cspell.yml` if it's a
      legitimate project word, or fix the typo.
@@ -276,6 +277,12 @@ enough for a first contribution.
      The ceilings only ever go down: when your change removes enough clones, the
      gate fails with the new count and asks you to lower the constant to it,
      which keeps the headroom from being spent on the next copy.
+   - `check:lint` — runs [ESLint](https://eslint.org/) over `src/`, `scripts/`,
+     `tests/` and the root config files (settings in `eslint.config.mjs`),
+     including the React, React Hooks and jsx-a11y rules for `src/`. Fix the
+     reported code; `npx eslint --fix <file>` handles the auto-fixable rules. If
+     a rule is wrong for one line, disable it there with
+     `// eslint-disable-next-line <rule> -- <reason>`.
 
    The "Validate repository" check also runs `npm run check:audit` on every PR,
    which fails differently from the lint checks:

@@ -343,7 +343,6 @@ function validateSvg(path, quality) {
 }
 
 function validateAsset(path, quality, extensions) {
-  const rel = relative(root, path);
   const stats = statSync(path);
   const maxSize = 2 * 1024 * 1024; // 2 MB
   if (stats.size > maxSize) {

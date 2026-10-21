@@ -1,4 +1,3 @@
-import React from 'react';
 import { initials } from './initials';
 import styles from './OrgAvatar.module.css';
 

@@ -282,8 +282,8 @@ const docRoutes = new Set(walk(docsRoot).map(routeForDoc));
 
 test('every internal link on the page resolves to a doc route', () => {
   // Covers both idioms the page uses: `<Link to="/...">` in JSX and
-  // `[text](/...)` in markdown. tests/jsx-link-hygiene.test.mjs checks link
-  // hygiene only for sources under src/, so nothing validated these.
+  // `[text](/...)` in markdown. The link-hygiene lint rules in eslint.config.mjs
+  // cover only sources under src/, so nothing validated these.
   const targets = [
     ...[...body.matchAll(/<Link\s+[^>]*to=["'](\/[^"'#]*)/g)].map(
       ([, to]) => to,

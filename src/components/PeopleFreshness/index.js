@@ -1,4 +1,3 @@
-import React from 'react';
 import peopleData from '@site/data/community-people.json';
 import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
