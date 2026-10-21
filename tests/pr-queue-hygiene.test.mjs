@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  applySimpleJqProjection,
   findFirstConflictObservedAt,
+  ghViaCurl,
   hoursSince,
   isConflicting,
   isHeld,
@@ -10,7 +12,7 @@ import {
   MARKER_PREFIX,
   RESOLVED_MARKER_PREFIX,
 } from '../scripts/pr-queue-hygiene.mjs';
-import { runWithGhStub } from './helpers-gh-sandbox.mjs';
+import { runWithCurlStub, runWithGhStub } from './helpers-gh-sandbox.mjs';
 
 const BOT = { login: 'github-actions[bot]', type: 'Bot' };
 const HUMAN = { login: 'attacker', type: 'User' };
@@ -279,13 +281,25 @@ import { ${call.fn} } from './scripts/${SCRIPT}';
 console.log(JSON.stringify(${call.expr}));
 `;
 
+const FETCH_ALL_DRIVER = PAGE_DRIVER({
+  fn: 'fetchAllOpenPRs',
+  expr: "fetchAllOpenPRs('cncf/endusers')",
+});
+
+// A 100-item first page followed by a one-item second page, fetched in order.
+function assertTwoPagesOfPRs(result) {
+  assert.equal(result.status, 0, result.stderr);
+  const prs = JSON.parse(result.stdout);
+  assert.equal(prs.length, 101);
+  assert.equal(prs[0].number, 1);
+  assert.equal(prs[100].number, 101);
+  assert.equal(result.calls.length, 2);
+}
+
 test('fetchAllOpenPRs: returns a single short page without asking for a second', () => {
   const result = runWithGhStub({
     script: SCRIPT,
-    driver: PAGE_DRIVER({
-      fn: 'fetchAllOpenPRs',
-      expr: "fetchAllOpenPRs('cncf/endusers')",
-    }),
+    driver: FETCH_ALL_DRIVER,
     routes: [{ match: '&page=1', stdout: JSON.stringify([{ number: 1 }]) }],
   });
   assert.equal(result.status, 0, result.stderr);
@@ -297,21 +311,13 @@ test('fetchAllOpenPRs: pages past gh default limits and concatenates in order', 
   const firstPage = Array.from({ length: 100 }, (_, i) => ({ number: i + 1 }));
   const result = runWithGhStub({
     script: SCRIPT,
-    driver: PAGE_DRIVER({
-      fn: 'fetchAllOpenPRs',
-      expr: "fetchAllOpenPRs('cncf/endusers')",
-    }),
+    driver: FETCH_ALL_DRIVER,
     routes: [
       { match: '&page=2', stdout: JSON.stringify([{ number: 101 }]) },
       { match: '&page=1', stdout: JSON.stringify(firstPage) },
     ],
   });
-  assert.equal(result.status, 0, result.stderr);
-  const prs = JSON.parse(result.stdout);
-  assert.equal(prs.length, 101);
-  assert.equal(prs[0].number, 1);
-  assert.equal(prs[100].number, 101);
-  assert.equal(result.calls.length, 2);
+  assertTwoPagesOfPRs(result);
   assert.match(result.calls[0].join(' '), /state=open&per_page=100&page=1/);
   assert.match(result.calls[1].join(' '), /state=open&per_page=100&page=2/);
 });
@@ -320,10 +326,7 @@ test('fetchAllOpenPRs: stops on an empty page after an exactly-full one', () => 
   const firstPage = Array.from({ length: 100 }, (_, i) => ({ number: i + 1 }));
   const result = runWithGhStub({
     script: SCRIPT,
-    driver: PAGE_DRIVER({
-      fn: 'fetchAllOpenPRs',
-      expr: "fetchAllOpenPRs('cncf/endusers')",
-    }),
+    driver: FETCH_ALL_DRIVER,
     routes: [
       { match: '&page=2', stdout: '[]' },
       { match: '&page=1', stdout: JSON.stringify(firstPage) },
@@ -601,4 +604,184 @@ test('main: fails loudly when no repository is configured', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /REPO or GITHUB_REPOSITORY must be set/);
   assert.equal(result.calls.length, 0);
+});
+
+// --- curl fallback (runner images without the gh CLI) -----------------------
+// The self-hosted `gpus` fleet carries no `gh` binary (run 39478332070), so
+// the script falls back to the same REST endpoints through `curl`. These
+// tests run with `gh` genuinely absent from PATH and `curl` stubbed; the
+// stub records argv like the gh stub, and routes match against the request
+// URL at the end of the curl argv.
+
+test('fallback: fetchAllOpenPRs pages through the REST API when gh is missing', () => {
+  const firstPage = Array.from({ length: 100 }, (_, i) => ({ number: i + 1 }));
+  const result = runWithCurlStub({
+    script: SCRIPT,
+    driver: FETCH_ALL_DRIVER,
+    routes: [
+      {
+        match: 'state=open&per_page=100&page=2',
+        stdout: JSON.stringify([{ number: 101 }]),
+      },
+      {
+        match: 'state=open&per_page=100&page=1',
+        stdout: JSON.stringify(firstPage),
+      },
+    ],
+  });
+  assertTwoPagesOfPRs(result);
+  assert.match(
+    result.calls[0].join(' '),
+    /api\.github\.com\/repos\/cncf\/endusers\/pulls\?state=open/,
+  );
+});
+
+test('fallback: --jq projection is applied client-side for the mergeable detail', async () => {
+  const result = runWithCurlStub({
+    script: SCRIPT,
+    driver: `
+import { isConflicting } from './scripts/${SCRIPT}';
+console.log(JSON.stringify(await isConflicting('cncf/endusers', 5)));
+`,
+    routes: [
+      {
+        match: 'repos/cncf/endusers/pulls/5',
+        stdout: JSON.stringify({
+          mergeable: false,
+          mergeable_state: 'dirty',
+          unrelated: 'field the projection must drop',
+        }),
+      },
+    ],
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), 'true');
+  assert.equal(result.calls.length, 1);
+});
+
+test('fallback: main labels and comments over REST when gh is missing', () => {
+  const result = runWithCurlStub({
+    script: SCRIPT,
+    routes: [
+      openPRsRoute([{ number: 4, labels: [] }]),
+      detailRoute(4, { mergeable: false, mergeable_state: 'dirty' }),
+      commentsRoute(4, [marker(hoursAgo(50))]),
+      { match: '/labels', stdout: '' },
+      { match: '/comments', stdout: '' },
+    ],
+    env: { REPO: 'cncf/endusers' },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(
+    callsMatching(result, 'issues/4/labels', 'needs-rebase-or-close').length,
+    1,
+  );
+  assert.equal(
+    callsMatching(result, 'issues/4/comments', NAG_SNIPPET).length,
+    1,
+  );
+});
+
+test('fallback: main removes the stale label over REST when gh is missing', () => {
+  const result = runWithCurlStub({
+    script: SCRIPT,
+    routes: [
+      openPRsRoute([
+        {
+          number: 6,
+          labels: [{ name: 'needs-rebase-or-close' }],
+        },
+      ]),
+      detailRoute(6, { mergeable: true, mergeable_state: 'clean' }),
+      commentsRoute(6, [marker(hoursAgo(50))]),
+      { match: '/labels', stdout: '' },
+      { match: '/comments', stdout: '' },
+    ],
+    env: { REPO: 'cncf/endusers', GH_TOKEN: 'test-token' },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  // The label removal goes out as DELETE .../labels/needs-rebase-or-close,
+  // the resolved marker as a comment POST, and the exported GH_TOKEN rides
+  // along as an Authorization header.
+  assert.equal(
+    callsMatching(result, 'DELETE', 'issues/6/labels/needs-rebase-or-close')
+      .length,
+    1,
+  );
+  assert.equal(
+    callsMatching(result, 'issues/6/comments', 'pr-queue-hygiene:resolved')
+      .length,
+    1,
+  );
+  assert.equal(
+    callsMatching(result, 'Authorization: Bearer test-token').length > 0,
+    true,
+  );
+});
+
+test('fallback: a failing curl call surfaces its own error, not a fallback loop', () => {
+  const result = runWithCurlStub({
+    script: SCRIPT,
+    driver: FETCH_ALL_DRIVER,
+    routes: [{ match: 'state=open', status: 1, stderr: 'HTTP 422 boom' }],
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /HTTP 422 boom/);
+});
+
+test('fallback: ghViaCurl rejects shapes outside the script’s own call set', () => {
+  assert.throws(
+    () => ghViaCurl(['pr', 'edit', '1', '--repo', 'o/r']),
+    /does not support/,
+  );
+  assert.throws(() => ghViaCurl(['release', 'list']), /does not support/);
+  assert.throws(
+    () => ghViaCurl(['pr', 'comment', '1', '--body', 'x']),
+    /--repo is required/,
+  );
+  assert.throws(
+    () => ghViaCurl(['pr', 'comment', '1', '--repo', 'o/r']),
+    /--body is required/,
+  );
+});
+
+test('fallback: ghViaCurl reports when neither gh nor curl exists', () => {
+  const realPath = process.env.PATH;
+  process.env.PATH = '/nonexistent-dir';
+  try {
+    assert.throws(
+      () => ghViaCurl(['api', 'repos/o/r/pulls?state=open']),
+      /neither `gh` nor `curl`/,
+    );
+  } finally {
+    process.env.PATH = realPath;
+  }
+});
+
+test('fallback: applySimpleJqProjection projects and rejects other shapes', () => {
+  assert.equal(
+    applySimpleJqProjection(
+      JSON.stringify({ mergeable: false, mergeable_state: 'dirty', x: 1 }),
+      '{mergeable: .mergeable, mergeable_state: .mergeable_state}',
+    ),
+    JSON.stringify({ mergeable: false, mergeable_state: 'dirty' }),
+  );
+  assert.throws(
+    () => applySimpleJqProjection('{}', '.mergeable'),
+    /unsupported --jq expression/,
+  );
+  assert.throws(
+    () => applySimpleJqProjection('{}', '{a: x}'),
+    /unsupported --jq pair/,
+  );
+});
+
+test('gh CLI errors that are not ENOENT surface unchanged (no fallback)', () => {
+  const result = runWithGhStub({
+    script: SCRIPT,
+    driver: FETCH_ALL_DRIVER,
+    routes: [{ match: 'state=open', status: 1, stderr: 'gh boom' }],
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /gh boom/);
 });

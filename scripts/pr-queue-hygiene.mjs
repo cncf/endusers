@@ -39,7 +39,11 @@
 //
 // Usage: node scripts/pr-queue-hygiene.mjs
 // Requires `gh` authenticated with `pull-requests: write` on this repo (as
-// the workflow already grants). Set DRY_RUN=1 to log intended actions
+// the workflow already grants). When the runner image has no `gh` binary
+// (observed on the self-hosted `gpus` fleet, run 39478332070), the script
+// falls back to the same REST endpoints through `curl` with
+// GH_TOKEN/GITHUB_TOKEN, which every image used here carries.
+// Set DRY_RUN=1 to log intended actions
 // without labeling/commenting. Set MARKER_AUTHORS to a comma-separated list
 // of bot logins when the job comments under an identity other than
 // github-actions[bot] (a GitHub App, for example).
@@ -133,7 +137,123 @@ export function findFirstConflictObservedAt(comments, options = {}) {
 }
 
 function gh(args) {
-  return execFileSync('gh', args, { encoding: 'utf8' });
+  try {
+    return execFileSync('gh', args, { encoding: 'utf8' });
+  } catch (err) {
+    // ENOENT means the runner image has no gh binary at all (the
+    // self-hosted `gpus` fleet, run 39478332070). Every other failure is a
+    // real gh/API error and must keep surfacing as-is.
+    if (err.code !== 'ENOENT') throw err;
+    return ghViaCurl(args);
+  }
+}
+
+// Reimplements exactly the gh command shapes this script uses, over the
+// REST API via curl, so the job still runs on images without the gh CLI.
+// Intentionally narrow: anything outside these shapes throws rather than
+// guessing. Exported for the unit tests, like the helpers above.
+export function ghViaCurl(args) {
+  const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '';
+  const curl = (method, endpoint, body) => {
+    const argv = [
+      '-sf',
+      '-X',
+      method,
+      '-H',
+      'Accept: application/vnd.github+json',
+      '-H',
+      'X-GitHub-Api-Version: 2022-11-28',
+    ];
+    if (token) argv.push('-H', `Authorization: Bearer ${token}`);
+    if (body !== undefined) {
+      argv.push('-H', 'Content-Type: application/json', '--data', body);
+    }
+    argv.push(`https://api.github.com/${endpoint}`);
+    try {
+      return execFileSync('curl', argv, { encoding: 'utf8' });
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        throw new Error(
+          'neither `gh` nor `curl` is available on this runner image; ' +
+            'cannot reach the GitHub API',
+        );
+      }
+      throw err;
+    }
+  };
+
+  if (args[0] === 'api') {
+    const endpoint = args[1];
+    const out = curl('GET', endpoint);
+    const jqIdx = args.indexOf('--jq');
+    if (jqIdx === -1) return out;
+    return applySimpleJqProjection(out, args[jqIdx + 1]);
+  }
+
+  if (args[0] === 'pr' && args[1] === 'comment') {
+    const [number, body] = pickRepoArgs(args, '--body');
+    curl(
+      'POST',
+      `repos/${pickRepo(args)}/issues/${number}/comments`,
+      JSON.stringify({ body }),
+    );
+    return '';
+  }
+
+  if (args[0] === 'pr' && args[1] === 'edit') {
+    const number = args[2];
+    const repo = pickRepo(args);
+    const addIdx = args.indexOf('--add-label');
+    if (addIdx !== -1) {
+      curl(
+        'POST',
+        `repos/${repo}/issues/${number}/labels`,
+        JSON.stringify({ labels: [args[addIdx + 1]] }),
+      );
+      return '';
+    }
+    const removeIdx = args.indexOf('--remove-label');
+    if (removeIdx !== -1) {
+      curl(
+        'DELETE',
+        `repos/${repo}/issues/${number}/labels/${args[removeIdx + 1]}`,
+      );
+      return '';
+    }
+  }
+
+  throw new Error(`gh fallback does not support: gh ${args.join(' ')}`);
+}
+
+function pickRepo(args) {
+  const idx = args.indexOf('--repo');
+  if (idx === -1) throw new Error('gh fallback: --repo is required');
+  return args[idx + 1];
+}
+
+function pickRepoArgs(args, flag) {
+  const idx = args.indexOf(flag);
+  if (idx === -1) throw new Error(`gh fallback: ${flag} is required`);
+  return [args[2], args[idx + 1]];
+}
+
+// Supports only the projection shape this script passes to `gh api --jq`:
+// `{name: .path, ...}` with single-level paths. Applied client-side because
+// curl cannot evaluate jq. Exported for the unit tests.
+export function applySimpleJqProjection(raw, expr) {
+  const inner = /^\{(.+)\}$/.exec(expr.trim())?.[1];
+  if (!inner)
+    throw new Error(`gh fallback: unsupported --jq expression: ${expr}`);
+  const data = JSON.parse(raw);
+  const out = {};
+  for (const pair of inner.split(',')) {
+    const [key, path] = pair.split(':').map((s) => s.trim());
+    if (!key || !path || !path.startsWith('.')) {
+      throw new Error(`gh fallback: unsupported --jq pair: ${pair}`);
+    }
+    out[key] = data[path.slice(1)];
+  }
+  return JSON.stringify(out);
 }
 
 // Fetches every open PR, paginating past gh's default --limit 30 so a
