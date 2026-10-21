@@ -76,6 +76,7 @@
     "test:unit:coverage": "TZ=UTC node tests/tools/coverage-report.mjs",
     "test:unit:coverage:check": "TZ=UTC node tests/tools/coverage-report.mjs --check 99 --check-source 100 --check-regions 96 --check-source-regions 100 --check-source-file-regions 100 --check-harness 100 --check-harness-regions 99 --check-harness-file-regions 98 --require-source-files",
     "test:e2e": "playwright test",
+    "test:mutation": "TZ=UTC node tests/tools/mutation-run.mjs",
     "build:e2e:coverage": "npm run build:e2e:coverage:site && npm run build:e2e:coverage:fixtures",
     "build:e2e:coverage:site": "DOCUSAURUS_NO_PERSISTENT_CACHE=1 E2E_COVERAGE=1 npm run build:production",
     "build:e2e:coverage:fixtures": "node tests/tools/e2e-coverage-builds.mjs",

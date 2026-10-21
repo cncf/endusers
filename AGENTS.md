@@ -57,6 +57,13 @@ or CI will fail the PR.
   100% source / 96% regions / 100% source regions), plus separate floors for the
   `tests/tools/` harness (100% lines / 99% regions, 98% regions per harness
   file). `npm run test:unit` alone skips the coverage gate.
+- **Mutation Tests**: `npm run test:mutation` — not a CI check. Coverage only
+  shows that a line ran; this rewrites one operator at a time (`&&`/`||`, `??`,
+  `===`/`!==`, `<`/`<=`, `>`/`>=`, `true`/`false`) and reruns the unit tests
+  that name the file, so a mutant nothing fails on marks a branch no test
+  asserts. Scope a run with `--files src/a.js,scripts/lib/b.mjs`; `--help` lists
+  the rest. A source file no unit test names by path is reported as unselected
+  rather than scored.
 - **End-to-end Tests**: required "End-to-end tests" CI check on every PR. Needs
   a production build first, then a one-time browser install:
   `npm run build:production && npx playwright install --with-deps chromium && npm run test:e2e`.
