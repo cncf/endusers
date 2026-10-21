@@ -735,6 +735,27 @@ async function convertScript(scriptCoverage, root, scriptRoots) {
   };
 }
 
+// The second half of the report's provenance, beside `revision`.
+//
+// The region counts below are a V8 artifact: the same commit, suite and
+// fixture builds split into a different number of ranges on a different
+// runtime, so the denominator moves while the code does not. CONTRIBUTING.md
+// records the size of that drift (a file at 11/15 on the pinned major and
+// 9/10 on a newer one), and tests/e2e-coverage-gate.test.mjs pins the major
+// its floors were measured on. Neither reaches the artifact: a report read
+// out of the 90-day upload, or pasted into a pull request from a local
+// render, carried percentages with nothing in them to say which runtime
+// produced the denominator. Stamping it makes the numbers self-describing,
+// so a reader can tell a code change from runtime drift without having to
+// know how the report was produced.
+//
+// `v8` and not just `node` because V8 is what splits the ranges, and it moves
+// between patch releases of the same Node major -- which is exactly the
+// difference the prose warns is "runtime drift, not a code change".
+function reportRuntime() {
+  return { node: process.version, v8: process.versions.v8 };
+}
+
 function emptyReport(run, status = 'ok') {
   return {
     schemaVersion: 2,
@@ -746,6 +767,7 @@ function emptyReport(run, status = 'ok') {
     // tests/tools/e2e-coverage-run.mjs. Null when the run could not name its
     // commit, never absent, so a consumer always has the key to check.
     revision: run.revision ?? null,
+    runtime: reportRuntime(),
     scripts: { captured: 0, converted: 0, ignored: 0 },
     sources: [],
     summary: {
@@ -1004,6 +1026,14 @@ export function renderE2ECoverageReport(report) {
     // scanning the artifact for which commit these line numbers address should
     // not have to parse a parenthetical to find it.
     `Revision: ${report.revision ?? 'unknown'}`,
+    // Beside the revision for the same reason it is: both answer "what do
+    // these numbers describe?". The revision names the code, this names the
+    // runtime that chose the region denominator. Rendered even though the
+    // JSON carries it, because the step summary and the .txt artifact are
+    // what a reader comparing two runs actually opens.
+    `Runtime: node ${report.runtime?.node ?? 'unknown'} (v8 ${
+      report.runtime?.v8 ?? 'unknown'
+    })`,
     '',
     // The region column is what makes a --check-source-regions failure
     // diagnosable from the text artifact alone, mirroring the unit reporter.
@@ -1078,6 +1108,10 @@ export async function main(argv = process.argv.slice(2)) {
       runId: error.runId ?? run?.runId ?? null,
       runStatus: error.runStatus ?? run?.status ?? null,
       revision: run?.revision ?? null,
+      // Present on the failure envelope too: a tooling error that only
+      // reproduces on one runtime is the case where knowing it matters most,
+      // and this is the only artifact such a run leaves.
+      runtime: reportRuntime(),
       scripts: { captured: 0, converted: 0, ignored: 0 },
       sources: [],
       summary: {
