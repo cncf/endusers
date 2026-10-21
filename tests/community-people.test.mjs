@@ -21,6 +21,7 @@ import { importSource } from './helpers-jsx.mjs';
 import {
   findAllByType,
   findByType,
+  renderElement,
   textOf,
   walkElements,
 } from './tools/react-element-tree.mjs';
@@ -29,6 +30,9 @@ const CommunityPeople = (
   await importSource('src/components/CommunityPeople/index.js')
 ).default;
 const peopleData = (await importSource('data/community-people.json')).default;
+const ProfileDialogShell = (
+  await importSource('src/components/shared/ProfileDialogShell.js')
+).default;
 
 const Internals =
   React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
@@ -77,7 +81,11 @@ function render(Component, props = {}) {
       },
     };
     try {
-      view.tree = Component(props);
+      // ProfileDialogShell calls useFocusTrap, so a dialog rooted in it is
+      // rendered while this dispatcher is still installed.
+      const tree = Component(props);
+      view.tree =
+        tree?.type === ProfileDialogShell ? renderElement(tree) : tree;
     } finally {
       Internals.H = previousDispatcher;
     }

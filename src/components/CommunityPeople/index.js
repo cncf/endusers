@@ -1,11 +1,10 @@
 import React, { useRef, useState } from 'react';
 import peopleData from '@site/data/community-people.json';
 import { profileUrl, websiteUrl } from '@site/src/lib/profile-links.mjs';
-import { useFocusTrap } from '../hooks/useFocusTrap';
+import ProfileDialogShell from '../shared/ProfileDialogShell';
 import styles from './styles.module.css';
 
 function PersonDialog({ person, onClose, triggerRef }) {
-  const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
   const {
     name,
     company,
@@ -27,67 +26,51 @@ function PersonDialog({ person, onClose, triggerRef }) {
   ].filter(([, href]) => href);
 
   return (
-    <div
-      className={styles.backdrop}
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    <ProfileDialogShell
+      onClose={onClose}
+      triggerRef={triggerRef}
+      labelledBy="profile-name"
+      closeLabel={`Close ${name} profile`}
     >
-      <section
-        ref={dialogRef}
-        className={styles.dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="profile-name"
-      >
-        <button
-          ref={closeRef}
-          type="button"
-          className={styles.closeButton}
-          onClick={onClose}
-          aria-label={`Close ${name} profile`}
-        >
-          <span aria-hidden="true">×</span>
-        </button>
-        <div className={styles.profileHero}>
-          <img
-            src={image}
-            alt=""
-            className={styles.profileImage}
-            width="240"
-            height="240"
-          />
-          <div className={styles.profileHeading}>
-            <p className={styles.profileKicker}>CNCF end-user community</p>
-            <h3 id="profile-name">{name}</h3>
-            <p className={styles.profileRole}>
-              {[role, company].filter(Boolean).join(' · ') ||
-                'Community member'}
-            </p>
-            {location && <p className={styles.location}>{location}</p>}
-          </div>
-        </div>
-        <div className={styles.profileBody}>
-          {bio ? (
-            <p className={styles.bio}>{bio}</p>
-          ) : (
-            <p className={styles.bioMuted}>
-              Public profile details are limited. Use the links below to learn
-              more about {name}.
-            </p>
-          )}
-          <div className={styles.profileLinks}>
-            {links.map(([label, href]) => (
-              <a key={label} href={href} target="_blank" rel="noreferrer">
-                {label}
-                <span aria-hidden="true">↗</span>
-              </a>
-            ))}
-          </div>
-          <p className={styles.sourceNote}>
-            Profile details refreshed from public sources at build time.
+      <div className={styles.profileHero}>
+        <img
+          src={image}
+          alt=""
+          className={styles.profileImage}
+          width="240"
+          height="240"
+        />
+        <div className={styles.profileHeading}>
+          <p className={styles.profileKicker}>CNCF end-user community</p>
+          <h3 id="profile-name">{name}</h3>
+          <p className={styles.profileRole}>
+            {[role, company].filter(Boolean).join(' · ') || 'Community member'}
           </p>
+          {location && <p className={styles.location}>{location}</p>}
         </div>
-      </section>
-    </div>
+      </div>
+      <div className={styles.profileBody}>
+        {bio ? (
+          <p className={styles.bio}>{bio}</p>
+        ) : (
+          <p className={styles.bioMuted}>
+            Public profile details are limited. Use the links below to learn
+            more about {name}.
+          </p>
+        )}
+        <div className={styles.profileLinks}>
+          {links.map(([label, href]) => (
+            <a key={label} href={href} target="_blank" rel="noreferrer">
+              {label}
+              <span aria-hidden="true">↗</span>
+            </a>
+          ))}
+        </div>
+        <p className={styles.sourceNote}>
+          Profile details refreshed from public sources at build time.
+        </p>
+      </div>
+    </ProfileDialogShell>
   );
 }
 
