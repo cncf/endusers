@@ -1,0 +1,15 @@
+{
+  "path": ["src", ".github"],
+  "format": ["css", "yaml"],
+  "minTokens": 30,
+  "minLines": 4,
+  "gitignore": true,
+  "absolute": true,
+  "noSymlinks": true,
+  "ignore": [
+    "**/node_modules/**",
+    "**/build/**",
+    "**/.docusaurus/**",
+    "**/coverage/**"
+  ]
+}

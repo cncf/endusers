@@ -1,6 +1,11 @@
 #!/usr/bin/env node
-// Fails CI when jscpd finds more exact clones across tests/, src/ and
-// scripts/ than CLONE_CEILING allows.
+// Fails CI when jscpd finds more exact clones than a ceiling allows, in
+// either of two scans: the code in tests/, src/ and scripts/ (.jscpd.json,
+// CLONE_CEILING), and the stylesheets in src/ plus the workflow, composite
+// action and other YAML under .github/ (.jscpd.css-yaml.json,
+// CSS_YAML_CLONE_CEILING). The second scan has its own config because a
+// copied CSS rule or workflow step is far shorter than a copied function:
+// at the code scan's 50-token, 5-line minimum it sees neither.
 //
 // The repository's test suite grew by copying: fifteen contract tests each
 // carried the same workflow loader, two gates shared a hundred lines of
@@ -21,16 +26,17 @@
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
-// Exact clones jscpd reports for the paths in .jscpd.json on main at the time
-// of the last adjustment. Lower it whenever the gate reports headroom; never
-// raise it. A change that genuinely needs a new copy should instead
-// extract the shared piece, which is what the count exists to prompt.
-export const CLONE_CEILING = 264;
+// Exact clones jscpd reports for each scan on main at the time of the last
+// adjustment. Lower them whenever the gate reports headroom; never raise
+// them. A change that genuinely needs a new copy should instead extract the
+// shared piece, which is what the count exists to prompt.
+export const CLONE_CEILING = 251;
+export const CSS_YAML_CLONE_CEILING = 46;
 
 // How far below the ceiling the count may fall before the gate insists the
 // ceiling follow it down. Without this the slack left by one clean-up would
@@ -41,11 +47,21 @@ export const CEILING_SLACK = 10;
 export const REPORTED_PAIRS = 10;
 
 export const CONFIG_PATH = join(repoRoot, '.jscpd.json');
+export const CSS_YAML_CONFIG_PATH = join(repoRoot, '.jscpd.css-yaml.json');
 export const JSCPD_BIN = join(repoRoot, 'node_modules', '.bin', 'jscpd');
 export const REPORT_NAME = 'jscpd-report.json';
 
+export const SCANS = [
+  { config: CONFIG_PATH, ceiling: CLONE_CEILING, name: 'CLONE_CEILING' },
+  {
+    config: CSS_YAML_CONFIG_PATH,
+    ceiling: CSS_YAML_CLONE_CEILING,
+    name: 'CSS_YAML_CLONE_CEILING',
+  },
+];
+
 /**
- * Runs jscpd with the repository config and the JSON reporter into a
+ * Runs jscpd with one scan's config and the JSON reporter into a
  * scratch directory, returning the parsed report.
  *
  * jscpd exits non-zero only when it could not run (it is invoked without
@@ -54,16 +70,17 @@ export const REPORT_NAME = 'jscpd-report.json';
  *
  * @param {object} [options]
  * @param {typeof spawnSync} [options.spawn] test seam for the jscpd process
+ * @param {string} [options.config] jscpd config file to scan with
  * @returns {{ok: true, report: object} | {ok: false, message: string}}
  */
-export function runJscpd({ spawn = spawnSync } = {}) {
+export function runJscpd({ spawn = spawnSync, config = CONFIG_PATH } = {}) {
   const outputDir = mkdtempSync(join(tmpdir(), 'endusers-jscpd-'));
   try {
     const result = spawn(
       JSCPD_BIN,
       [
         '--config',
-        CONFIG_PATH,
+        config,
         '--reporters',
         'json',
         '--output',
@@ -173,25 +190,15 @@ function describePair(pair) {
 }
 
 /**
- * Entry point. Returns the process exit code rather than calling
- * process.exit so the unit tests can drive every arm in-process.
+ * Runs one scan and reports its verdict, returning its exit code.
  *
- * @param {object} [options]
- * @param {typeof spawnSync} [options.spawn]
- * @param {number} [options.ceiling]
- * @param {number} [options.slack]
- * @param {(line: string) => void} [options.log]
- * @param {(line: string) => void} [options.error]
+ * @param {{config: string, ceiling: number, name: string}} scan
+ * @param {object} options
  * @returns {number}
  */
-export function main({
-  spawn = spawnSync,
-  ceiling = CLONE_CEILING,
-  slack = CEILING_SLACK,
-  log = console.log,
-  error = console.error,
-} = {}) {
-  const run = runJscpd({ spawn });
+function checkScan({ config, ceiling, name }, { spawn, slack, log, error }) {
+  const configName = basename(config);
+  const run = runJscpd({ spawn, config });
   if (!run.ok) {
     error(`check-duplication: ${run.message}`);
     return 1;
@@ -201,12 +208,12 @@ export function main({
   const counts =
     `${summary.clones} exact clone(s), ${summary.duplicatedLines} ` +
     `duplicated line(s) (${summary.percentage.toFixed(2)}%) across ` +
-    `${summary.sources} file(s); ceiling ${ceiling}`;
+    `${summary.sources} file(s); ceiling ${ceiling} (${name}, ${configName})`;
 
   if (verdict === 'empty') {
     error(
       'check-duplication: jscpd scanned no files; check the path and ignore ' +
-        'settings in .jscpd.json rather than treating this as a clean tree.',
+        `settings in ${configName} rather than treating this as a clean tree.`,
     );
     return 1;
   }
@@ -218,8 +225,8 @@ export function main({
     }
     error(
       'Extract the repeated piece into a shared helper instead of adding ' +
-        'another copy. Run `npx jscpd --config .jscpd.json` for every clone ' +
-        'with its lines. CLONE_CEILING in scripts/check-duplication.mjs is ' +
+        `another copy. Run \`npx jscpd --config ${configName}\` for every ` +
+        `clone with its lines. ${name} in scripts/check-duplication.mjs is ` +
         'only ever lowered.',
     );
     return 1;
@@ -228,13 +235,40 @@ export function main({
     error(`check-duplication: ${counts}`);
     error(
       `The tree is at least ${slack} clone(s) under the ceiling. Lower ` +
-        `CLONE_CEILING in scripts/check-duplication.mjs to ${summary.clones} ` +
+        `${name} in scripts/check-duplication.mjs to ${summary.clones} ` +
         'so the headroom this clean-up earned cannot be spent on new copies.',
     );
     return 1;
   }
   log(`check-duplication: ok - ${counts}`);
   return 0;
+}
+
+/**
+ * Entry point. Runs every scan, so one failure does not hide another, and
+ * returns the process exit code rather than calling process.exit so the
+ * unit tests can drive every arm in-process.
+ *
+ * @param {object} [options]
+ * @param {typeof spawnSync} [options.spawn]
+ * @param {Array<{config: string, ceiling: number, name: string}>} [options.scans]
+ * @param {number} [options.slack]
+ * @param {(line: string) => void} [options.log]
+ * @param {(line: string) => void} [options.error]
+ * @returns {number}
+ */
+export function main({
+  spawn = spawnSync,
+  scans = SCANS,
+  slack = CEILING_SLACK,
+  log = console.log,
+  error = console.error,
+} = {}) {
+  let code = 0;
+  for (const scan of scans) {
+    code = Math.max(code, checkScan(scan, { spawn, slack, log, error }));
+  }
+  return code;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

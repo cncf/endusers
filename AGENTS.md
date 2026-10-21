@@ -64,10 +64,13 @@ or CI will fail the PR.
   (override with `E2E_PORT`) and does not rebuild it for you.
 - **Lint**: required "Lint repository" CI check on every PR runs
   `npm run check:format`, `npm run check:spelling`, `npm run check:markdown` and
-  `npm run check:duplication`. The last counts exact clones across `tests/`,
-  `src/` and `scripts/` with jscpd and fails above the `CLONE_CEILING` in
-  `scripts/check-duplication.mjs`; extract a shared helper instead of copying,
-  and lower the ceiling (never raise it) when the gate reports headroom.
+  `npm run check:duplication`. The last counts exact clones with jscpd in two
+  scans, code in `tests/`, `src/` and `scripts/` (`.jscpd.json`) and CSS in
+  `src/` plus YAML in `.github/` (`.jscpd.css-yaml.json`), and fails when either
+  exceeds its ceiling (`CLONE_CEILING`, `CSS_YAML_CLONE_CEILING`) in
+  `scripts/check-duplication.mjs`; extract a shared helper, CSS module or
+  composite action instead of copying, and lower a ceiling (never raise it) when
+  the gate reports headroom.
 - **Data Changes**: Data files under `/data/` have their own validators; see the
   data contribution model table in
   [`CONTRIBUTING.md`](CONTRIBUTING.md#data-contribution-model).
