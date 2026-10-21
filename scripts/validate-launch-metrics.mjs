@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
+  checkDuplicateOrMissingId,
   checkIsoTimestamp,
   checkUrl as checkUrlImpl,
   reportAndExit,
@@ -72,13 +73,13 @@ if (signals.length < 3 || signals.length > 5)
 const ids = new Set();
 for (const signal of signals) {
   const path = signal.id || '(missing id)';
-  if (!signal.id || ids.has(signal.id))
-    errors.push({
-      path,
-      severity: 'error',
-      message: 'duplicate or missing signal id',
-    });
-  ids.add(signal.id);
+  checkDuplicateOrMissingId(
+    errors,
+    path,
+    signal.id,
+    ids,
+    'duplicate or missing signal id',
+  );
   if (!signal.label)
     errors.push({ path, severity: 'error', message: 'missing label' });
   if (!signal.sourceUrl || !signal.collectedAt)

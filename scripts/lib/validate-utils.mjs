@@ -271,23 +271,32 @@ export function checkPublishableSourceUrl(errors, path, value) {
  * Push a "duplicate or missing id" error when `id` is falsy or already in
  * `seen`, then record `id` in `seen` regardless.
  *
- * validate-case-studies.mjs and validate-radar-reports.mjs each carried an
+ * validate-case-studies.mjs, validate-radar-reports.mjs,
+ * validate-metrics.mjs, and validate-launch-metrics.mjs each carried an
  * independent copy of this per-entry id-dedup check, byte-identical apart
- * from the `errors`/`ids` variable names.
+ * from the `errors`/`ids` variable names and the entry-type noun in the
+ * message.
  *
  * @param {Array<Object>} errors - Array to accumulate errors.
  * @param {string} path - File path or identifier used as the error's path.
  * @param {unknown} id - Candidate entry id (entry.id, not a display fallback).
  * @param {Set<unknown>} seen - Set of ids already encountered; mutated.
+ * @param {string} [message] - Error message; defaults to the generic form.
  * @returns {boolean} Whether `id` passed the check.
  */
-export function checkDuplicateOrMissingId(errors, path, id, seen) {
+export function checkDuplicateOrMissingId(
+  errors,
+  path,
+  id,
+  seen,
+  message = 'duplicate or missing id',
+) {
   const ok = Boolean(id) && !seen.has(id);
   if (!ok) {
     errors.push({
       path,
       severity: 'error',
-      message: 'duplicate or missing id',
+      message,
     });
   }
   seen.add(id);

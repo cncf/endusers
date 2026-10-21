@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
+  checkDuplicateOrMissingId,
   checkIsoTimestamp,
   checkUrl as checkUrlImpl,
   reportAndExit,
@@ -69,13 +70,13 @@ checkUrl(
 );
 const ids = new Set();
 for (const metric of data.metrics || []) {
-  if (!metric.id || ids.has(metric.id))
-    errors.push({
-      path: metric.id,
-      severity: 'error',
-      message: 'duplicate or missing metric id',
-    });
-  ids.add(metric.id);
+  checkDuplicateOrMissingId(
+    errors,
+    metric.id,
+    metric.id,
+    ids,
+    'duplicate or missing metric id',
+  );
   if (
     metric.value === undefined ||
     metric.value === null ||
