@@ -117,6 +117,74 @@ function datelines(text) {
   );
 }
 
+// The contract below reads the live page, which today carries exactly one
+// dateline: an en-dashed two-day range. Driving the parser only through that
+// one sample cannot tell a correct parser from a broken one, so the fixture
+// cases here assert the arms the page has never reached -- the single-day
+// fallback, the two dash characters nobody has typed yet, the end-of-final-day
+// instant, and the bold text in "## Past" that must stay unmatched.
+const SINGLE_DAY_END = Date.UTC(2026, 10, 9, 23, 59, 59, 999);
+const RANGE_END = Date.UTC(2026, 10, 12, 23, 59, 59, 999);
+
+test('a single-day dateline ends at the close of that day', () => {
+  // `last` is undefined here, so `Number(last ?? first)` is the only reason
+  // the end instant lands on the 9th rather than NaN.
+  const [only, ...rest] = datelines('**November 9, 2026 · Salt Lake City.**');
+
+  assert.deepEqual(rest, [], 'a single-day dateline must match exactly once');
+  assert.equal(only.endsAt, SINGLE_DAY_END);
+});
+
+test('a dateline range ends on its last day, whichever dash is used', () => {
+  // DATELINE_RE accepts an ASCII hyphen, an en dash and an em dash; the page
+  // has only ever used the en dash, so the other two are untravelled.
+  for (const dash of ['-', '\u2013', '\u2014']) {
+    const [only, ...rest] = datelines(`**November 9${dash}12, 2026 · Utah.**`);
+
+    assert.deepEqual(
+      rest,
+      [],
+      `a range written with "${dash}" must match exactly once`,
+    );
+    assert.equal(
+      only.endsAt,
+      RANGE_END,
+      `a range written with "${dash}" must end on its last day, not its first`,
+    );
+  }
+});
+
+test('an event stays upcoming through the whole of its final day', () => {
+  // The 23:59:59.999 tail is what keeps an event upcoming until its last day
+  // is over. Trimming it to midnight would retire the event a day early and
+  // the live-content contract below would not notice.
+  const [only] = datelines('**November 9–12, 2026 · Utah.**');
+
+  assert.ok(
+    only.endsAt >= Date.UTC(2026, 10, 12, 23, 59, 59, 999),
+    'an event must still be upcoming at the last millisecond of its final day',
+  );
+  assert.ok(
+    only.endsAt < Date.UTC(2026, 10, 13),
+    'an event must be past once the day after its final day begins',
+  );
+});
+
+test('bold text that is not a dateline yields no dateline', () => {
+  // "## Past" is full of bold runs like this one. If DATELINE_RE were
+  // loosened, past-section prose would start being read as upcoming events.
+  assert.deepEqual(
+    datelines('The **End User Summit** brought together practitioners.'),
+    [],
+    'only a bolded "<Month> <day>[-<day>], <year>" opening is a dateline',
+  );
+  assert.deepEqual(
+    datelines('**November 9–12** in Salt Lake City.'),
+    [],
+    'a dateline without a year is not a dateline',
+  );
+});
+
 test('the "Upcoming" section names at least one dated event', () => {
   // Guards the staleness check below from passing vacuously if the datelines
   // are ever reformatted into a shape this file cannot read.
