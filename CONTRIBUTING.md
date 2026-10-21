@@ -67,10 +67,10 @@ which no Justfile recipe runs. The recipes are also **not** the same checks the
 opening a PR, also run `npm run test:unit:coverage:check` and the local check
 scripts that match "Lint repository": `npm run check:format`,
 `npm run check:spelling`, `npm run check:markdown`, `npm run check:duplication`,
-and `npm run check:lint`. The "Validate repository" gate additionally runs
-`npm run check:audit` (dependency advisory allowlist) — see step 5 below.
-`npm run check` also runs the lint checks, but it additionally runs
-`check:audit`, `check:links` (network-dependent) and
+`npm run check:lint` and `npm run check:unused`. The "Validate repository" gate
+additionally runs `npm run check:audit` (dependency advisory allowlist) — see
+step 5 below. `npm run check` also runs the lint checks, but it additionally
+runs `check:audit`, `check:links` (network-dependent) and
 `check:community-group-links` (needs `GH_TOKEN` and rewrites
 `data/community-groups.json`) — see step 5 below before running the full
 `npm run check`. `just` is optional — the npm scripts remain the canonical
@@ -256,9 +256,9 @@ enough for a first contribution.
    pages, components, or navigation, also run the end-to-end suite — see
    [End-to-end tests](#end-to-end-tests) below.
 5. Run `npm run check:format`, `npm run check:spelling`,
-   `npm run check:markdown`, `npm run check:duplication`, and
-   `npm run check:lint` — the required "Lint repository" check runs these five
-   on every PR. If a check fails:
+   `npm run check:markdown`, `npm run check:duplication`, `npm run check:lint`
+   and `npm run check:unused` — the required "Lint repository" check runs these
+   six on every PR. If a check fails:
    - `check:format` — run `npm run fix:format` to auto-format.
    - `check:spelling` — add the flagged term to `.cspell.yml` if it's a
      legitimate project word, or fix the typo.
@@ -283,6 +283,13 @@ enough for a first contribution.
      reported code; `npx eslint --fix <file>` handles the auto-fixable rules. If
      a rule is wrong for one line, disable it there with
      `// eslint-disable-next-line <rule> -- <reason>`.
+   - `check:unused` — runs [knip](https://knip.dev/) (settings in
+     `knip.config.js`) and fails on files nothing imports, exports nothing uses,
+     and dependencies that are unused or used without being declared in
+     `package.json`. Delete the dead code or dependency, or drop the `export`
+     keyword from a value used only in its own module. If knip is wrong because
+     something is reached in a way it cannot see, add an ignore entry with a
+     one-line reason to `knip.config.js`.
 
    The "Validate repository" check also runs `npm run check:audit` on every PR,
    which fails differently from the lint checks:

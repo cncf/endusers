@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { parse } from 'yaml';
 import { cloneShallow, revParseHead } from './git-source.mjs';
 
-export const LANDSCAPE_URL = 'https://github.com/cncf/landscape.git';
+const LANDSCAPE_URL = 'https://github.com/cncf/landscape.git';
 
 /**
  * Clone cncf/landscape into `destination` and read it.

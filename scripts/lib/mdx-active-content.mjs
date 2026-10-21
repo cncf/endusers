@@ -96,7 +96,7 @@ export const MARKDOWN_NODE_TYPES = new Set([
 ]);
 
 /** MDX node types a page may contain, each checked further below. */
-export const MDX_NODE_TYPES = new Set([
+const MDX_NODE_TYPES = new Set([
   'mdxJsxFlowElement',
   'mdxJsxTextElement',
   'mdxjsEsm',
