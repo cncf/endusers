@@ -10,18 +10,23 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import {
+  adrStatuses,
+  blogRoutes,
   generatedIndexRoutes,
   isPlaceholder,
   justRecipeCitations,
   justRecipes,
   npmScriptCitations,
+  pageRoutes,
   pathCitations,
   publishedDocRoutes,
+  redirectSources,
   routeCitations,
   walk,
   routeForDoc,
   staleExemptions,
   unresolvedReferences,
+  workflowNames,
   yamlBasenames,
   yamlCitations,
 } from './helpers-markdown-references.mjs';
@@ -37,15 +42,21 @@ function fixtureRepo(files) {
   return root;
 }
 
-test('a route is read from a code span or a link target, and from nothing else', () => {
+test('a route is read from a code span, a link target, a JSX link or a site URL, and nothing else', () => {
   const text =
     'See `/community/awards` and [metrics](/resources/metrics/#top). ' +
     'The data lives in `/data/` and apt caches in `/var/cache/apt`; ' +
-    'the icon is `/img/logo.svg` and the pattern is `/img/...`. ' +
-    'Bare /events in a sentence is not a reference.';
+    'the icon is `/img/logo.svg`, the pattern `/img/...`, the glob ' +
+    '`/community/*`. ' +
+    'Bare /events in a sentence is not a reference. <Link to="/events/"> ' +
+    'and https://endusers.cncf.io/data/ are routes whatever the repo holds, ' +
+    'as is <https://endusers.netlify.app>.';
   assert.deepEqual(routeCitations(text, { repoDirs: new Set(['data']) }), [
     '/community/awards',
     '/resources/metrics',
+    '/events',
+    '/data',
+    '/',
   ]);
 });
 
@@ -86,6 +97,9 @@ test('docs routes mirror the Docusaurus derivation, including generated indexes'
       link: { type: 'generated-index' },
     }),
     'docs/resources/radar-reports.mdx': '# Radar\n',
+    'docs/resources/renamed.md': '---\nid: by-id\n---\n',
+    'docs/resources/relative.md': '---\nslug: rel\n---\n',
+    'docs/resources/empty.md': '---\n\n---\n',
   });
   try {
     const docsRoot = join(root, 'docs');
@@ -99,7 +113,7 @@ test('docs routes mirror the Docusaurus derivation, including generated indexes'
       '/category/radar-reports',
       '/community/user-groups',
     ]);
-    assert.equal(walk(docsRoot).length, 8);
+    assert.equal(walk(docsRoot).length, 11);
     assert.deepEqual([...publishedDocRoutes(docsRoot)].sort(), [
       '/',
       '/category/category',
@@ -107,8 +121,15 @@ test('docs routes mirror the Docusaurus derivation, including generated indexes'
       '/community/members',
       '/community/user-groups',
       '/events',
+      '/resources/by-id',
+      '/resources/empty',
       '/resources/radar-reports',
+      '/resources/rel',
     ]);
+    assert.equal(
+      routeForDoc(docsRoot, join(docsRoot, 'events/index.md'), '/docs/'),
+      '/docs/events',
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -141,16 +162,19 @@ test('npm scripts and just recipes are read from their invocations only', () => 
   assert.deepEqual(
     npmScriptCitations(
       'Run `npm run collect:metrics`, `npm run -s _list:check:md`, then ' +
-        '`npm run test:unit -- --watch`. `npm ci` is not a script.',
+        '`npm run test:unit -- --watch`. `npm ci` is not a script; ' +
+        '`validate:awards` is, and `og:url` and `localhost:3000` are not.',
+      { 'validate:metrics': '', build: '' },
     ),
-    ['collect:metrics', '_list:check:md', 'test:unit'],
+    ['collect:metrics', '_list:check:md', 'test:unit', 'validate:awards'],
   );
   assert.deepEqual(
     justRecipeCitations(
       'Use `just build` or `just refresh`; we just serve it. `just` alone ' +
-        'lists recipes and `npx just build` is not read.',
+        'lists recipes and `npx just build` is not read. The `lint`\n' +
+        'recipe is.\n\n```bash\njust serve\n  just e2e port=1\nnpx just no\n```\n',
     ),
-    ['build', 'refresh'],
+    ['build', 'refresh', 'serve', 'e2e', 'lint'],
   );
   assert.deepEqual(
     [
@@ -167,10 +191,11 @@ test('npm scripts and just recipes are read from their invocations only', () => 
           '    npx serve -l {{port}} build',
           '  indented: not-a-recipe',
           '_private:',
+          '@quiet:',
         ].join('\n'),
       ),
     ].sort(),
-    ['_private', 'build', 'serve'],
+    ['_private', 'build', 'quiet', 'serve'],
   );
 });
 
@@ -223,22 +248,39 @@ test('every kind is reported with its name, and an exempt token is not', () => {
     routes: new Set(['/']),
     routePrefixes: [],
     yamlFiles: new Set(['ci.yml']),
-    scripts: { build: 'docusaurus build' },
+    scripts: { build: 'docusaurus build', 'validate:x': '' },
     recipes: new Set(['build']),
+    workflows: new Set(['Refresh metrics']),
+    jobs: new Set(['Lint repository']),
+    adrStatuses: new Map([['0001', 'Accepted']]),
   };
+  // Each drift below is a shape a reader once had to report by hand: a
+  // retired workflow named across a line break, a job named as a workflow,
+  // a script said not to exist after it was added, an ADR status restated
+  // wrongly.
   const text =
     '`/gone` `gone.yml` `npm run gone` `just gone` `scripts/gone.mjs` ' +
-    '`/` `ci.yml` `npm run build` `just build`';
+    '"Import\nreference architectures" workflow, "Lint repository" workflow, ' +
+    'there is no `validate:x` script, ADR 0001 is Proposed. ' +
+    '`/` `ci.yml` `npm run build` `just build` "Refresh metrics" workflow, ' +
+    '"Lint repository" CI check, `Refresh metrics` job, `refresh.yml` ' +
+    'workflow, no `validate:y` script, ADR 0001 is Accepted.';
   assert.deepEqual(unresolvedReferences(text, repo), [
     { kind: 'route', token: '/gone' },
     { kind: 'yaml', token: 'gone.yml' },
+    { kind: 'yaml', token: 'refresh.yml' },
     { kind: 'npm script', token: 'gone' },
+    { kind: 'npm script', token: 'no validate:x script' },
     { kind: 'just recipe', token: 'gone' },
+    { kind: 'workflow name', token: 'Import reference architectures' },
+    { kind: 'workflow name', token: 'Lint repository' },
+    { kind: 'ADR status', token: 'ADR 0001 Proposed' },
     { kind: 'path', token: 'scripts/gone.mjs' },
   ]);
   assert.deepEqual(
-    unresolvedReferences(text, repo, new Set(['/gone', 'gone.yml', 'gone'])),
-    [{ kind: 'path', token: 'scripts/gone.mjs' }],
+    unresolvedReferences(text, repo, new Set(['/gone', 'gone.yml', 'gone']))
+      .length,
+    6,
   );
 });
 
@@ -264,4 +306,71 @@ test('placeholders describe a shape, not a thing', () => {
   assert.ok(isPlaceholder('blog/YYYY-MM-DD-slug.md'));
   assert.ok(isPlaceholder('docs/<section>/index.md'));
   assert.ok(!isPlaceholder('docs/community/index.md'));
+});
+
+test('pages, blog posts, tags, authors and redirects publish routes', () => {
+  const root = fixtureRepo({
+    'src/pages/index.js': '',
+    'src/pages/about.mdx': '',
+    'src/pages/team/index.tsx': '',
+    'src/pages/_hidden.js': '',
+    'src/pages/styles.module.css': '',
+    'blog/2026-07-22-welcome.md': '---\ntags: [news, 3]\n---\n',
+    'blog/2026-08-08-dated/index.md': '---\nslug: /custom\n---\n',
+    'blog/undated.md': '# Post\n',
+    'blog/tags.yml':
+      'news:\n  label: News\nmetrics:\n  permalink: /numbers\nbare:\n',
+    'blog/authors.yml': 'a:\n  page: true\nb:\n  name: B\nc:\n',
+    'empty/tags.yml': '',
+    '.github/workflows/ci.yml':
+      'name: Validate repository\njobs:\n  lint:\n    name: Lint repository\n  e2e: {}\n',
+    '.github/workflows/empty.yml': '',
+    'adr/0001-a.md': '- **Status**: Accepted\n',
+    'adr/0002-b.md': '# No status\n',
+    'adr/README.md': '- **Status**: Proposed\n',
+  });
+  try {
+    assert.deepEqual([...pageRoutes(join(root, 'src/pages'))].sort(), [
+      '/',
+      '/about',
+      '/team',
+    ]);
+    assert.equal(pageRoutes(join(root, 'absent')).size, 0);
+    assert.deepEqual([...blogRoutes(join(root, 'blog'))].sort(), [
+      '/blog',
+      '/blog/2026/07/22/welcome',
+      '/blog/archive',
+      '/blog/authors',
+      '/blog/authors/a',
+      '/blog/custom',
+      '/blog/tags',
+      '/blog/tags/bare',
+      '/blog/tags/news',
+      '/blog/tags/numbers',
+      '/blog/undated',
+    ]);
+    assert.deepEqual([...blogRoutes(join(root, 'empty'), '/news/')].sort(), [
+      '/news',
+      '/news/archive',
+      '/news/tags',
+    ]);
+    const { workflows, jobs } = workflowNames(join(root, '.github/workflows'));
+    assert.deepEqual([...workflows], ['Validate repository']);
+    assert.deepEqual([...jobs], ['Lint repository', 'e2e']);
+    assert.deepEqual(
+      [...adrStatuses(join(root, 'adr'))],
+      [['0001', 'Accepted']],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+  const redirects = redirectSources({
+    netlifyToml:
+      '[[redirects]]\n  from = "/old/"\n  to = "/new"\n' +
+      "[[redirects]]\n  from = '/legacy/*'\n",
+    clientRedirects: [{ from: '/a' }, { from: ['/b', '/c/'] }],
+  });
+  assert.deepEqual([...redirects.routes], ['/old', '/a', '/b', '/c']);
+  assert.deepEqual(redirects.prefixes, ['/legacy']);
+  assert.deepEqual(redirectSources({}).prefixes, []);
 });

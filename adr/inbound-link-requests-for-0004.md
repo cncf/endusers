@@ -24,8 +24,8 @@ are filed.
 | 1   | contribute.cncf.io | Awards nomination or recognition page         | `https://endusers.cncf.io/` - "Published end-user award winners"                                 | Winners list stays here; nomination lives there                   | Open   |
 | 2   | contribute.cncf.io | Landing or "find your role" page              | `https://endusers.cncf.io/` - "Running cloud native in production? Start with the End User site" | Routes adopters who land on the contributor site to the right one | Open   |
 | 3   | cncf.io            | End User Community page or section            | `https://endusers.cncf.io/` - "CNCF End User Community site"                                     | The site is the home for end-user content                         | Open   |
-| 4   | cncf.io            | Reference architectures or case-study pages   | `https://endusers.cncf.io/docs/architectures/` - "End user reference architectures"              | Reference architectures are end-user content                      | Open   |
-| 5   | cncf.io            | End-user events or TAB / End User Group pages | `https://endusers.cncf.io/docs/events/` - "End user events"                                      | End-user-facing events and TAB activity live here                 | Open   |
+| 4   | cncf.io            | Reference architectures or case-study pages   | `https://endusers.cncf.io/architectures/` - "End user reference architectures"                   | Reference architectures are end-user content                      | Open   |
+| 5   | cncf.io            | End-user events or TAB / End User Group pages | `https://endusers.cncf.io/events/` - "End user events"                                           | End-user-facing events and TAB activity live here                 | Open   |
 
 ## Issue body template
 

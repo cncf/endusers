@@ -15,18 +15,25 @@
 // This test reads the same prose as a reader would and asks the repository
 // whether each name resolves:
 //
-//   `/community/awards`, [text](/resources/metrics)   a route the docs publish
+//   `/community/awards`, [text](/resources/metrics)   a route the site publishes
+//   <Link to="/events">, https://endusers.cncf.io/x   (docs, pages, blog,
+//                                                     redirects)
 //   `ci.yml`, `.cspell.yml`                           a YAML file in the tree
-//   `npm run collect:metrics`                         a package.json script
-//   `just build`                                      a Justfile recipe
+//   `npm run collect:metrics`, `validate:metrics`     a package.json script
+//   `just build`, a fenced `just build` line          a Justfile recipe
+//   "Refresh metrics" workflow, "Lint repository" check
+//                                                     a workflow or job name
+//   ADR 0001 is Accepted                              the record's own Status
 //   `scripts/collect-metrics.mjs`, `data/`            a path on disk
 //
 // Decision records under adr/ are not scanned: an ADR describes the tree as
 // it was when the decision was taken, and the files it names are supposed to
-// stop existing as the decision is carried out. Architecture pages generated
-// from submission issues are not scanned either; their prose is the
-// submitter's. Everything else is, and a reference that resolves to nothing
-// is recorded in HISTORICAL_REFERENCES with the reason it is kept, or fixed.
+// stop existing as the decision is carried out. The index and the supporting
+// drafts beside them are scanned; a draft is text still waiting to be sent.
+// Architecture pages generated from submission issues are not scanned either;
+// their prose is the submitter's. Everything else is, and a reference that
+// resolves to nothing is recorded in HISTORICAL_REFERENCES with the reason it
+// is kept, or fixed.
 
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -36,11 +43,17 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import {
+  adrStatuses,
+  blogRoutes,
   justRecipes,
+  normalizeRoute,
+  pageRoutes,
   publishedDocRoutes,
+  redirectSources,
   staleExemptions,
   unresolvedReferences,
   walk,
+  workflowNames,
   yamlBasenames,
 } from './helpers-markdown-references.mjs';
 
@@ -73,7 +86,7 @@ const skipDir = (name) => UNSCANNED_DIRS.has(name);
 function isScannedMarkdown(file) {
   const rel = relative(repoRoot, file).replace(/\\/g, '/');
   if (!/\.mdx?$/.test(rel)) return false;
-  if (rel.startsWith('adr/')) return false;
+  if (/^adr\/\d{4}-/.test(rel)) return false;
   if (
     rel.startsWith('docs/architectures/') &&
     !/\/(index|submit)\.md$/.test(rel)
@@ -105,30 +118,53 @@ const GENERATED_PATHS = new Map([
   ['docs/resources/changelog.md', 'scripts/generate-changelog.mjs'],
 ]);
 
-function docsPluginRoutePrefixes() {
-  const prefixes = ['/blog'];
-  for (const plugin of config.plugins ?? []) {
-    if (!Array.isArray(plugin)) continue;
-    const [id, options] = plugin;
-    if (!String(id).includes('plugin-content-docs')) continue;
-    if (typeof options?.routeBasePath === 'string')
-      prefixes.push(`/${options.routeBasePath.replace(/^\/+|\/+$/g, '')}`);
+// Every plugin option block, preset ones included, by plugin name.
+function pluginOptions(name) {
+  const found = [];
+  for (const [id, options] of config.presets ?? []) {
+    if (id === 'classic' && options?.[name.replace(/^plugin-content-/, '')])
+      found.push(options[name.replace(/^plugin-content-/, '')]);
   }
-  return prefixes;
+  for (const plugin of config.plugins ?? []) {
+    if (Array.isArray(plugin) && String(plugin[0]).includes(name))
+      found.push(plugin[1]);
+  }
+  return found;
 }
+
+const [presetDocs, ...otherDocs] = pluginOptions('plugin-content-docs');
+const [presetBlog] = pluginOptions('plugin-content-blog');
+const redirects = redirectSources({
+  netlifyToml: readFileSync(join(repoRoot, 'netlify.toml'), 'utf8'),
+  clientRedirects: pluginOptions('plugin-client-redirects').flatMap(
+    (options) => options?.redirects ?? [],
+  ),
+});
 
 const repo = {
   repoRoot,
   repoDirs,
   routes: new Set([
-    ...publishedDocRoutes(docsRoot),
+    ...publishedDocRoutes(docsRoot, presetDocs.routeBasePath),
+    ...pageRoutes(join(repoRoot, 'src/pages')),
+    ...blogRoutes(join(repoRoot, 'blog'), presetBlog.routeBasePath),
+    ...redirects.routes,
     ...GENERATED_ROUTES.keys(),
   ]),
-  routePrefixes: docsPluginRoutePrefixes(),
+  // A docs instance outside docs/ (the e2e coverage fixtures) is mounted
+  // whole, as is a splat redirect.
+  routePrefixes: [
+    ...otherDocs.map((options) =>
+      normalizeRoute(`/${options.routeBasePath.replace(/^\/+/, '')}`),
+    ),
+    ...redirects.prefixes,
+  ],
   yamlFiles: yamlBasenames(repoRoot, { skip: skipDir }),
   scripts: JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'))
     .scripts,
   recipes: justRecipes(readFileSync(join(repoRoot, 'Justfile'), 'utf8')),
+  ...workflowNames(join(repoRoot, '.github/workflows')),
+  adrStatuses: adrStatuses(join(repoRoot, 'adr')),
 };
 
 // References that resolve to nothing on purpose, per file. Each entry is
@@ -209,6 +245,7 @@ test('the scan reaches the Markdown the build does not link-check', () => {
     !scanned.has('adr/0005-host-the-site-on-netlify.md'),
     'decision records are history and are not scanned',
   );
+  assert.ok(scanned.has('adr/README.md'), 'the ADR index was not scanned');
 });
 
 test('the repository description the scan resolves against is not empty', () => {
@@ -220,6 +257,10 @@ test('the repository description the scan resolves against is not empty', () => 
   assert.ok(repo.yamlFiles.has('ci.yml'), 'workflow files not enumerated');
   assert.ok('collect:metrics' in repo.scripts, 'npm scripts not loaded');
   assert.ok(repo.recipes.has('build'), 'Justfile recipes not parsed');
+  assert.ok(repo.routes.has('/blog/archive'), 'blog routes not derived');
+  assert.ok(repo.workflows.has('Refresh metrics'), 'workflow names not read');
+  assert.ok(repo.jobs.has('Lint repository'), 'job names not read');
+  assert.ok(repo.adrStatuses.has('0001'), 'ADR statuses not read');
   assert.ok(repo.repoDirs.has('scripts'), 'repository directories not read');
 });
 
