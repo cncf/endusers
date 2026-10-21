@@ -596,3 +596,84 @@ test('leaves ordinary fenced and inline code alone', () => {
   ].join('\n');
   assert.deepEqual(reasons(body), []);
 });
+
+// Docusaurus hands the MDX compiler the output of preprocessContent(), not the
+// file. unwrapMdxCodeBlocks() is only its first rewrite; the admonition
+// rewrite that follows turns ":::note Title" into ":::note[Title]", and the
+// bracket it inserts is the one character a run of literal text needs to its
+// left to become a link. Each body below carries no link on disk and a link to
+// a disallowed scheme once that bracket is supplied.
+const PREPROCESSED = [
+  [
+    'admonition title rewrite forms a javascript: link',
+    ':::note x](javascript:alert(document.domain))',
+    'disallowed URL scheme javascript:',
+  ],
+  [
+    'admonition title rewrite forms a data:text/html link',
+    ':::danger c](data:text/html;base64,PHNjcmlwdD4x)',
+    'disallowed URL scheme data:text/html',
+  ],
+  [
+    'the rewrite applies inside a blockquote',
+    '> :::tip c](javascript:alert(1))',
+    'disallowed URL scheme javascript:',
+  ],
+  [
+    'the rewrite applies to a four-colon directive',
+    '::::warning c](javascript:alert(1))',
+    'disallowed URL scheme javascript:',
+  ],
+  [
+    'the rewrite is not limited to the upstream keyword list',
+    ':::housekeeping c](javascript:alert(1))',
+    'disallowed URL scheme javascript:',
+  ],
+];
+
+for (const [name, body, reason] of PREPROCESSED) {
+  test(`rejects a scheme that only appears after preprocessing: ${name}`, () => {
+    assert.deepEqual(reasons(body), [reason]);
+  });
+}
+
+test('reports a preprocessing-only finding at its true source line', () => {
+  // Neither rewrite after unwrapMdxCodeBlocks() adds or removes a line, so the
+  // line a reader opens the file to is the unwrapped line mapped back to the
+  // source -- here past a deleted mdx-code-block fence.
+  const body = [
+    '## Overview',
+    '',
+    '```mdx-code-block',
+    ':::note x](javascript:alert(1))',
+    '```',
+  ].join('\n');
+  assert.deepEqual(
+    findActiveContent(body).find(
+      (finding) => finding.reason === 'disallowed URL scheme javascript:',
+    ),
+    {
+      line: 4,
+      reason: 'disallowed URL scheme javascript:',
+      snippet: ':::note x](javascript:alert(1))',
+    },
+  );
+});
+
+test('leaves an ordinary admonition and a fenced copy of the payload alone', () => {
+  // The rewrite is line-based and runs inside fenced code too, but a fence the
+  // unwrap step leaves in place still makes its body code to the MDX compiler,
+  // so neither body below publishes a link.
+  const body = [
+    ':::note A normal title',
+    '',
+    'Body prose.',
+    '',
+    ':::',
+    '',
+    '```',
+    ':::note x](javascript:alert(1))',
+    '```',
+  ].join('\n');
+  assert.deepEqual(reasons(body), []);
+});
