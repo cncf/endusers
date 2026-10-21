@@ -217,7 +217,7 @@ test('mirrors a cncf/artwork project logo and falls back for other hosts', () =>
     ),
     fetchResponses: {
       'https://raw.githubusercontent.com/cncf/artwork/main/projects/kubernetes/icon/color/kubernetes-icon-color.svg':
-        { status: 200, body: '<svg></svg>' },
+        { status: 200, body: '<svg xmlns="http://www.w3.org/2000/svg"></svg>' },
     },
   });
   try {

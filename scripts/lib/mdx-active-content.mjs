@@ -1,11 +1,10 @@
 /**
- * Active-content detection for generated Markdown that Docusaurus compiles as
- * MDX.
+ * Allowlist gate for generated Markdown that Docusaurus compiles as MDX.
  *
  * Architecture documentation is imported verbatim from a third-party
  * repository, and Docusaurus treats `.md` as MDX, so raw HTML/JSX in an
  * imported body is rendered into the published site rather than escaped. This
- * helper reports the constructs that can execute or load remote code so a
+ * helper reports everything in a body that is not on its allowlist so a
  * validator can fail the build before such a body ships.
  *
  * The body is parsed with the grammar Docusaurus compiles pages with (MDX plus
@@ -16,15 +15,24 @@
  * is a finding: Docusaurus cannot compile it either, and a scan that cannot
  * read a document cannot vouch for it.
  *
- * MDX evaluates a braced expression as JavaScript, so any expression node is a
- * finding unless it is one of the inert string-literal attributes the importer
- * emits itself.
+ * Three allowlists decide what a page may contain, so a node kind, element,
+ * attribute or URL scheme nobody has reviewed is rejected by default:
  *
- * A fenced code block is otherwise left alone, because MDX evaluates nothing
- * inside one — except for ```mdx-code-block, which Docusaurus unwraps into
- * live MDX before the compiler runs (see ./mdx-code-blocks.mjs). The importer
- * never emits one and no published page needs one, so its presence is itself a
- * finding: the body it hides is compiled, not displayed.
+ * - node types: {@link MARKDOWN_NODE_TYPES}, plus JSX elements and ESM, each
+ *   checked further. MDX evaluates a braced expression as JavaScript, and an
+ *   expression node is not on the list.
+ * - JSX: the inert elements in {@link ALLOWED_ELEMENTS}, with no attributes,
+ *   and the one component the importer emits with its
+ *   {@link COMPONENT_ATTRIBUTES}, each a string literal. The only ESM allowed
+ *   is that component's import.
+ * - URL schemes: every link, image and definition destination, and every
+ *   URL-valued component attribute, must carry a scheme on the allowlist in
+ *   `./uri-safety.mjs` (http, https, mailto, or none).
+ *
+ * A fenced code block is allowed because MDX evaluates nothing inside one --
+ * except for ```mdx-code-block, which Docusaurus unwraps into live MDX before
+ * the compiler runs (see ./mdx-code-blocks.mjs). That fence is not a code
+ * block at all, so it is a finding.
  *
  * The scan answers the second of the two questions `uri-safety.mjs` states
  * both gates must answer -- does the value make a visitor's browser contact
@@ -49,10 +57,56 @@ import { gfm } from 'micromark-extension-gfm';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { eachNode } from './mdast-walk.mjs';
 import { isUnwrappedCodeBlock } from './mdx-code-blocks.mjs';
-import { activeScheme, describeTarget, remoteTarget } from './uri-safety.mjs';
+import {
+  describeTarget,
+  disallowedScheme,
+  remoteTarget,
+} from './uri-safety.mjs';
 
-/** Inert inline elements that carry no script, network or layout capability. */
-const ALLOWED_ELEMENTS = new Set([
+/**
+ * mdast node types of CommonMark and GFM. Each compiles to inert HTML, and
+ * none of them is an MDX construct. Shared with ./mdx-escape.mjs, whose output
+ * must consist of nothing else.
+ */
+export const MARKDOWN_NODE_TYPES = new Set([
+  'blockquote',
+  'break',
+  'code',
+  'definition',
+  'delete',
+  'emphasis',
+  'footnoteDefinition',
+  'footnoteReference',
+  'heading',
+  'image',
+  'imageReference',
+  'inlineCode',
+  'link',
+  'linkReference',
+  'list',
+  'listItem',
+  'paragraph',
+  'root',
+  'strong',
+  'table',
+  'tableCell',
+  'tableRow',
+  'text',
+  'thematicBreak',
+]);
+
+/** MDX node types a page may contain, each checked further below. */
+export const MDX_NODE_TYPES = new Set([
+  'mdxJsxFlowElement',
+  'mdxJsxTextElement',
+  'mdxjsEsm',
+]);
+
+/**
+ * Inert inline elements that carry no script, network or layout capability.
+ * They take no attributes.
+ */
+export const ALLOWED_ELEMENTS = new Set([
   'b',
   'br',
   'code',
@@ -69,7 +123,27 @@ const ALLOWED_ELEMENTS = new Set([
 ]);
 
 /** The component the importer itself renders into every architecture page. */
-const ALLOWED_COMPONENT = 'CNCFProjectCard';
+export const ALLOWED_COMPONENT = 'CNCFProjectCard';
+
+/** The attributes the importer writes on {@link ALLOWED_COMPONENT}. */
+export const COMPONENT_ATTRIBUTES = new Set([
+  'description',
+  'href',
+  'logo',
+  'name',
+  'since',
+  'version',
+]);
+
+/**
+ * Component attributes that hold a URL. `logo` reaches an `<img src>` through
+ * `useBaseUrl()`, which returns a value carrying a protocol unchanged, so an
+ * absolute URL there is loaded off-origin exactly as a Markdown image
+ * destination is. `href` on the same card is remote by contract
+ * (`https://www.cncf.io/projects/...`) and is followed only on a click.
+ */
+const URL_ATTRIBUTES = new Set(['href', 'logo']);
+const REMOTE_IMAGE_ATTRIBUTES = new Set(['logo']);
 
 const ALLOWED_IMPORT =
   "import CNCFProjectCard from '@site/src/components/CNCFProjectCard';";
@@ -83,33 +157,8 @@ const ALLOWED_IMPORT =
  */
 const STRING_LITERAL_EXPRESSION = /^"(?:[^"\\\n]|\\.)*"$/;
 
-const EVENT_HANDLER_ATTRIBUTE = /^on[a-z]+$/i;
-
-/**
- * React requires `style` to be an object mapping properties to values, and
- * throws "The `style` prop expects a mapping from style properties to values,
- * not a string" when it is given a string -- so `style="..."`, and the
- * equivalent `style={"..."}` this module otherwise reads as an inert string
- * literal, both fail while Docusaurus prerenders the page. The object form
- * needs a non-literal expression and is already reported as one. The importer
- * emits no `style` at all, so nothing legitimate reaches this.
- */
-const STYLE_ATTRIBUTE = 'style';
-
 /** Link-like nodes whose `url` a browser navigates to or loads. */
 const URL_NODES = new Set(['link', 'definition', 'image']);
-
-/**
- * The only attribute of the only allowed component that reaches an `<img src>`.
- *
- * `CNCFProjectCard` renders `logo` through `useBaseUrl()`, which returns a
- * value carrying a protocol unchanged, so an absolute URL there is loaded
- * off-origin exactly as a Markdown image destination is. `href` on the same
- * card is remote by contract (`https://www.cncf.io/projects/...`) and is
- * followed only on a click, so attributes are checked by name rather than as a
- * class.
- */
-const REMOTE_IMAGE_ATTRIBUTES = new Set(['logo']);
 
 const parserOptions = {
   extensions: [mdxjs(), gfm()],
@@ -134,13 +183,17 @@ function literalValue(expression) {
 }
 
 /**
- * Scans a Markdown/MDX body for content that executes or loads remote code.
+ * Scans a Markdown/MDX body for anything outside the allowlists, and for
+ * images loaded from another host.
  *
  * @param {string} markdown - Document body to scan.
+ * @param {{ mdastExtensions?: Array<object> }} [options] - Extra mdast
+ *   extensions to parse with. A node kind they introduce is not on the
+ *   allowlist, so it is reported rather than walked past.
  * @returns {Array<{ line: number, reason: string, snippet: string }>} One entry
  *   per finding, ordered by line.
  */
-export function findActiveContent(markdown) {
+export function findActiveContent(markdown, { mdastExtensions = [] } = {}) {
   const text = String(markdown ?? '');
   const lines = text.split('\n');
   const findings = [];
@@ -153,7 +206,10 @@ export function findActiveContent(markdown) {
 
   let tree;
   try {
-    tree = fromMarkdown(text, parserOptions);
+    tree = fromMarkdown(text, {
+      ...parserOptions,
+      mdastExtensions: [...parserOptions.mdastExtensions, ...mdastExtensions],
+    });
   } catch (error) {
     report(error.line ?? 1, `MDX parse error (${error.reason})`);
     return findings;
@@ -186,72 +242,81 @@ export function findActiveContent(markdown) {
       report(line, `remote image destination ${describeTarget(target)}`);
   };
 
+  const reportScheme = (line, url) => {
+    const scheme = disallowedScheme(url);
+    if (scheme) report(line, `disallowed URL scheme ${scheme}`);
+  };
+
+  // Matched case-sensitively. MDX reads a lowercase tag name as an HTML
+  // element and any other casing as a *component* reference, so `<B>` is not
+  // the inert `<b>` the allowlist names -- it compiles to a lookup of a
+  // component named `B`, which no provider defines, and Docusaurus throws
+  // "Expected component `B` to be defined" while prerendering the page.
+  const reportElement = (line, node) => {
+    const name = node.name ?? '';
+    const attributes =
+      name === ALLOWED_COMPONENT
+        ? COMPONENT_ATTRIBUTES
+        : ALLOWED_ELEMENTS.has(name)
+          ? new Set()
+          : null;
+    if (!attributes) {
+      report(line, `disallowed element <${name}>`);
+      return;
+    }
+    for (const attribute of node.attributes) {
+      if (attribute.type === 'mdxJsxExpressionAttribute') {
+        report(line, 'MDX expression');
+        continue;
+      }
+      if (!attributes.has(attribute.name)) {
+        report(line, `disallowed attribute ${attribute.name} on <${name}>`);
+        continue;
+      }
+      let value = attribute.value;
+      if (value && typeof value === 'object') {
+        value = literalValue(value.value);
+        if (value === null) report(line, 'MDX expression');
+      }
+      if (typeof value === 'string' && URL_ATTRIBUTES.has(attribute.name)) {
+        reportScheme(line, value);
+        if (REMOTE_IMAGE_ATTRIBUTES.has(attribute.name)) {
+          reportRemoteImage(line, value);
+        }
+      }
+    }
+  };
+
   eachNode(tree, (node) => {
     const line = node.position.start.line;
 
-    if (
-      node.type === 'mdxJsxFlowElement' ||
-      node.type === 'mdxJsxTextElement'
-    ) {
-      const name = node.name ?? '';
-      // Matched case-sensitively. MDX reads a lowercase tag name as an HTML
-      // element and any other casing as a *component* reference, so `<B>` is
-      // not the inert `<b>` this set allows -- it compiles to a lookup of a
-      // component named `B`, which no provider defines, and Docusaurus throws
-      // "Expected component `B` to be defined" while prerendering the page.
-      // Lowercasing the name here vouched for a body the renderer rejects,
-      // which is the same failure this module treats a parse error as.
-      const allowed = name === ALLOWED_COMPONENT || ALLOWED_ELEMENTS.has(name);
-      if (!allowed) report(line, `disallowed element <${name}>`);
-
-      for (const attribute of node.attributes) {
-        if (attribute.type === 'mdxJsxExpressionAttribute') {
-          report(line, 'MDX expression');
-          continue;
-        }
-        if (EVENT_HANDLER_ATTRIBUTE.test(attribute.name)) {
-          report(line, 'event handler attribute');
-        }
-        let value = attribute.value;
-        if (value && typeof value === 'object') {
-          value = literalValue(value.value);
-          if (value === null) report(line, 'MDX expression');
-        }
-        if (typeof value === 'string') {
-          if (attribute.name === STYLE_ATTRIBUTE) {
-            report(line, 'string style attribute');
-          }
-          if (activeScheme(value)) {
-            report(line, 'script-capable URL scheme');
-          }
-          if (REMOTE_IMAGE_ATTRIBUTES.has(attribute.name)) {
-            reportRemoteImage(line, value);
-          }
-        }
-      }
-    } else if (
-      node.type === 'mdxFlowExpression' ||
-      node.type === 'mdxTextExpression'
-    ) {
-      report(line, 'MDX expression');
-    } else if (node.type === 'mdxjsEsm') {
-      if (node.value.trim() !== ALLOWED_IMPORT) {
-        report(line, 'unexpected ESM statement');
-      }
-    } else if (node.type === 'imageReference') {
-      const url = definitions.get(node.identifier);
-      // An unresolved reference renders as literal text and loads nothing.
-      if (url !== undefined) reportRemoteImage(line, url);
-    } else if (node.type === 'code') {
-      if (isUnwrappedCodeBlock(text, node)) {
+    if (MARKDOWN_NODE_TYPES.has(node.type)) {
+      if (node.type === 'imageReference') {
+        const url = definitions.get(node.identifier);
+        // An unresolved reference renders as literal text and loads nothing.
+        if (url !== undefined) reportRemoteImage(line, url);
+      } else if (node.type === 'code' && isUnwrappedCodeBlock(text, node)) {
         report(
           line,
           'mdx-code-block fence, whose body Docusaurus compiles as MDX rather than displaying as code',
         );
+      } else if (URL_NODES.has(node.type)) {
+        reportScheme(line, node.url);
+        if (node.type === 'image') reportRemoteImage(line, node.url);
       }
-    } else if (URL_NODES.has(node.type)) {
-      if (activeScheme(node.url)) report(line, 'script-capable URL scheme');
-      if (node.type === 'image') reportRemoteImage(line, node.url);
+    } else if (node.type === 'mdxjsEsm') {
+      if (node.value.trim() !== ALLOWED_IMPORT) {
+        report(line, 'unexpected ESM statement');
+      }
+    } else if (MDX_NODE_TYPES.has(node.type)) {
+      reportElement(line, node);
+    } else {
+      report(
+        line,
+        node.type.startsWith('mdx') && node.type.endsWith('Expression')
+          ? 'MDX expression'
+          : `disallowed node type ${node.type}`,
+      );
     }
   });
 

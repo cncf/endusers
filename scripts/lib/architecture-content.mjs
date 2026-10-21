@@ -20,7 +20,7 @@ import {
   findRemoteReferences,
   stripActiveContent,
 } from './svg-active-content.mjs';
-import { activeScheme } from './uri-safety.mjs';
+import { disallowedScheme } from './uri-safety.mjs';
 
 /**
  * A Markdown destination that carries its own authority: either an absolute
@@ -55,20 +55,21 @@ function destination(url) {
  * all seen as the parser sees them. Each image is replaced by exactly the
  * source range it occupies.
  *
- * - A script-capable destination is reduced to its alt text, and that test
- *   comes first. `javascript://%0aalert(1)` names no host, but it matches
- *   REMOTE_DESTINATION exactly as `https://host/x` does, so deciding the host
- *   question first demotes it to a *link* carrying the same scheme — `//` is a
- *   JavaScript line comment, so that link runs on click. Whether a value runs
- *   script is activeScheme()'s question (scripts/lib/uri-safety.mjs), the same
- *   source of truth the SVG and MDX gates ask, and it is asked here in the
- *   same order they ask it.
+ * - A destination whose scheme is not on the allowlist is reduced to its alt
+ *   text, and that test comes first. `javascript://%0aalert(1)` names no host,
+ *   but it matches REMOTE_DESTINATION exactly as `https://host/x` does, so
+ *   deciding the host question first demotes it to a *link* carrying the same
+ *   scheme — `//` is a JavaScript line comment, so that link runs on click.
+ *   Which schemes are allowed is disallowedScheme()'s question
+ *   (scripts/lib/uri-safety.mjs), the same source of truth the SVG and MDX
+ *   gates ask, and it is asked here in the same order they ask it.
  * - A destination that names a host (REMOTE_DESTINATION, which includes
  *   protocol-relative and any-case schemes) is mirrored when projectAsset()
  *   resolves it and otherwise demoted to a plain link, or to its alt text
  *   inside an existing link. A published `<img>` is fetched by every visitor's
  *   browser, so a third-party host would see their IP, User-Agent and Referer.
- * - Any other scheme (`data:`, `ftp:`, ...) is reduced to its alt text.
+ * - An allowed scheme that names no host (`mailto:`, `https:x`) is reduced to
+ *   its alt text.
  * - A relative path is rebased onto `/img/architectures/<id>/`.
  */
 function rewriteImages(body, id) {
@@ -102,7 +103,7 @@ function rewriteImages(body, id) {
     const { alt } = node;
     let replacement;
 
-    if (activeScheme(url)) {
+    if (disallowedScheme(url)) {
       replacement = escapeLabel(alt);
     } else if (REMOTE_DESTINATION.test(url)) {
       const asset = projectAsset(url);

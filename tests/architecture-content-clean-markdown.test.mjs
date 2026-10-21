@@ -34,13 +34,6 @@ test('an uppercase-scheme image is demoted rather than mangled', () => {
   );
 });
 
-test('an image on a scheme other than http(s) is demoted too', () => {
-  assert.equal(
-    cleanMarkdown('![beacon](ftp://evil.example/b.png)', 'demo'),
-    '[beacon](ftp://evil.example/b.png)',
-  );
-});
-
 test('an absolute http(s) image is still demoted', () => {
   assert.equal(
     cleanMarkdown('![beacon](https://evil.example/b.png)', 'demo'),
@@ -114,22 +107,20 @@ test('a script-capable image destination is reduced to alt text even with an aut
 });
 
 test('a schemed destination that names no host is reduced to alt text', () => {
-  // The HAS_SCHEME arm catches what the two arms above it do not: a scheme
-  // that runs no script and carries no authority, so it is neither a script
-  // payload nor a host to demote. It is not a usable image source either, so
-  // the alt text is all that survives.
+  // The HAS_SCHEME arm catches what the scheme allowlist lets through but
+  // REMOTE_DESTINATION does not: an allowed scheme that carries no authority.
+  // It is not a usable image source, so the alt text is all that survives.
   assert.equal(cleanMarkdown('![x](mailto:a@b.example)', 'demo'), 'x');
   assert.equal(cleanMarkdown('![x](tel:+15551234)', 'demo'), 'x');
   assert.equal(cleanMarkdown('![x](data:image/png;base64,AAAA)', 'demo'), 'x');
 });
 
-test('a non-script scheme that names a host is still demoted to a link', () => {
-  // The alt-text rule is about script capability, not about being unusual:
-  // ftp:// and //host genuinely name a host and keep their existing
-  // demotion, which is what stops them being published as a live <img>.
+test('a disallowed scheme is reduced to alt text even when it names a host', () => {
+  // Demoting ftp:// to a link would publish a scheme the publish-time gate
+  // rejects. A schemeless //host is still demoted, since it inherits https.
   assert.equal(
     cleanMarkdown('![beacon](ftp://evil.example/b.png)', 'demo'),
-    '[beacon](ftp://evil.example/b.png)',
+    'beacon',
   );
   assert.equal(
     cleanMarkdown('![beacon](//evil.example/b.png)', 'demo'),

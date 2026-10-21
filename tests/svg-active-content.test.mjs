@@ -11,413 +11,172 @@ import {
 const INERT =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><a href="https://example.com/docs"><rect width="10" height="10" fill="#fff"/></a></svg>';
 
+const SVG_OPEN =
+  '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">';
+const svg = (body) => `${SVG_OPEN}${body}</svg>`;
+
 test('reports nothing for an inert SVG', () => {
   assert.deepEqual(findActiveContent(INERT), []);
   assert.deepEqual(stripActiveContent(INERT), { source: INERT, removed: [] });
 });
 
-test('leaves ordinary http links and styling attributes alone', () => {
-  const { source } = stripActiveContent(INERT);
-  assert.match(source, /href="https:\/\/example\.com\/docs"/);
-  assert.match(source, /fill="#fff"/);
-});
+// Each row is markup the allowlist does not cover, the finding it produces and
+// what stripping removes. The bypasses the denylist this gate replaced kept
+// missing are rows here, so a regression in any of them fails by name.
+const REJECTED = [
+  [
+    'script element and its contents',
+    '<script>alert(1)</script>',
+    ['contains a disallowed element <script>'],
+    ['<script> element'],
+  ],
+  [
+    'event handler attribute',
+    '<rect onload="alert(1)"/>',
+    ['contains a disallowed attribute onload on <rect>'],
+    ['onload attribute'],
+  ],
+  [
+    'animation that installs an href at runtime',
+    '<a><set attributeName="href" to="javascript:alert(1)"/></a>',
+    ['contains a disallowed element <set>'],
+    ['<set> element'],
+  ],
+  [
+    'namespace-prefixed script element',
+    '<s:script xmlns:s="http://www.w3.org/2000/svg">alert(1)</s:script>',
+    ['contains a disallowed element <s:script>'],
+    ['<s:script> element'],
+  ],
+  [
+    'unknown namespace declaration',
+    '<g xmlns:m="http://www.w3.org/1998/Math/MathML"/>',
+    ['contains a disallowed attribute xmlns:m on <g>'],
+    ['xmlns:m attribute'],
+  ],
+  [
+    'SVG element in no namespace',
+    '<rect xmlns=""/>',
+    ['contains a disallowed element <rect> (namespace none)'],
+    ['<rect> element'],
+  ],
+  [
+    'form action on HTML in a foreignObject',
+    '<foreignObject><form xmlns="http://www.w3.org/1999/xhtml" action="https://evil.example/"/></foreignObject>',
+    [
+      'contains a disallowed element <form> (namespace http://www.w3.org/1999/xhtml)',
+    ],
+    ['<form> element'],
+  ],
+  [
+    'document-embedding attribute on HTML',
+    '<foreignObject><div xmlns="http://www.w3.org/1999/xhtml" srcdoc="x"/></foreignObject>',
+    ['contains a disallowed attribute srcdoc on <div>'],
+    ['srcdoc attribute'],
+  ],
+  [
+    'script URI in href',
+    '<a href="javascript:alert(1)"/>',
+    ['contains a disallowed URI scheme in href on <a>: javascript:'],
+    ['href attribute (javascript:)'],
+  ],
+  [
+    'unknown scheme in xlink:href',
+    '<use xlink:href="foo:bar"/>',
+    ['contains a disallowed URI scheme in xlink:href on <use>: foo:'],
+    ['xlink:href attribute (foo:)'],
+  ],
+  [
+    'markup-bearing data: URI',
+    '<image href="data:image/svg+xml,x"/>',
+    ['contains a disallowed URI scheme in href on <image>: data:image/svg+xml'],
+    ['href attribute (data:image/svg+xml)'],
+  ],
+  [
+    'script URI in a presentation attribute url()',
+    `<rect fill="url('javascript:alert(1)')"/>`,
+    ['contains a disallowed URI scheme in fill on <rect>: javascript:'],
+    ['fill attribute (javascript:)'],
+  ],
+  [
+    'malformed url() token, which this scan cannot read',
+    '<rect fill="url(javascript:alert(1))"/>',
+    ['contains a disallowed URI scheme in fill on <rect>: malformed url()'],
+    ['fill attribute (malformed url())'],
+  ],
+  [
+    'script URI in a <style> block',
+    '<style>rect{fill:url(javascript:x)}</style>',
+    ['contains a disallowed URI scheme in a <style> block: javascript:'],
+    ['<style> element (javascript:)'],
+  ],
+];
 
-test('detects and removes script elements with their contents', () => {
-  const svg = INERT.replace('<rect', '<script>alert(1)</script><rect');
-  assert.deepEqual(findActiveContent(svg), ['contains a <script> element']);
+for (const [label, body, findings, removals] of REJECTED) {
+  test(`rejects and strips ${label}`, () => {
+    const source = svg(body);
+    assert.deepEqual(findActiveContent(source), findings);
+    const stripped = stripActiveContent(source);
+    assert.deepEqual(stripped.removed, removals);
+    assert.deepEqual(findActiveContent(stripped.source), []);
+  });
+}
 
-  const { source, removed } = stripActiveContent(svg);
-  assert.doesNotMatch(source, /script/i);
-  assert.doesNotMatch(source, /alert\(1\)/);
-  assert.ok(removed.includes('<script> element'));
-  assert.deepEqual(findActiveContent(source), []);
-});
-
-test('detects and removes event handler attributes', () => {
-  const svg = INERT.replace('<rect ', '<rect onload="alert(1)" onclick="x()" ');
-  assert.deepEqual(findActiveContent(svg), [
-    'contains event handler attribute(s): onclick, onload',
-  ]);
-
-  const { source } = stripActiveContent(svg);
-  assert.doesNotMatch(source, /onload|onclick/i);
-  assert.match(source, /<rect /);
-});
-
-test('sees through entity and control-character obfuscation of javascript:', () => {
+// The scheme test runs on the value a browser decodes, so a reference or a
+// control character cannot split a scheme into something the allowlist skips.
+test('sees through entity and control-character obfuscation of a scheme', () => {
   for (const payload of [
-    'javascript:alert(1)',
     'java&#115;cript:alert(1)',
     'javascript&#58;alert(1)',
+    'java&#x73;cript:alert(1)',
+    'javascript&amp;#x3a;alert(1)',
     'java\tscript:alert(1)',
-    'JaVaScRiPt:alert(1)',
-    ' javascript:alert(1)',
+    ' JaVaScRiPt:alert(1)',
   ]) {
-    const svg = INERT.replace('https://example.com/docs', payload);
     assert.deepEqual(
-      findActiveContent(svg),
-      ['contains a script URI in href="javascript:..."'],
-      `expected detection for ${JSON.stringify(payload)}`,
+      findActiveContent(svg(`<a href="${payload}"/>`)),
+      ['contains a disallowed URI scheme in href on <a>: javascript:'],
+      JSON.stringify(payload),
     );
-    assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
   }
 });
 
-// decodeEntities has two numeric-entity branches. The test above reaches only
-// the decimal one (`&#115;`), which is also the form the module header uses as
-// its example, so the hex callback had no coverage at all -- even though hex is
-// the more usual way to hide a scheme. The last payload is double-encoded and
-// only resolves because decodeEntities is deliberately applied twice.
-test('sees through hex numeric-entity obfuscation of javascript:', () => {
-  assert.deepEqual(
-    findActiveContent(
-      INERT.replace('https://example.com/docs', 'javascript&#58;alert(1)'),
-    ),
-    ['contains a script URI in href="javascript:..."'],
-  );
-
-  for (const payload of [
-    'java&#x73;cript:alert(1)',
-    'java&#X73;cript:alert(1)',
-    'javascript&#x3a;alert(1)',
-    'javascript&amp;#x3a;alert(1)',
-  ]) {
-    const svg = INERT.replace('https://example.com/docs', payload);
-    assert.deepEqual(
-      findActiveContent(svg),
-      ['contains a script URI in href="javascript:..."'],
-      `expected detection for ${JSON.stringify(payload)}`,
-    );
-    assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
-  }
+test('accepts the corpus vocabulary: editor metadata, data-* and raster data:', () => {
+  const source =
+    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" content="&lt;mxfile/&gt;" inkscape:version="1">' +
+    '<inkscape:page x="0" width="1"><inkscape:anything/></inkscape:page>' +
+    '<g data-cell-id="1"><image href="data:image/png;base64,AA"/><use href="#a"/></g>' +
+    '<foreignObject><div xmlns="http://www.w3.org/1999/xhtml" style="color:red"><br/></div></foreignObject>' +
+    '<a href="mailto:x@example.com"/></svg>';
+  assert.deepEqual(findActiveContent(source), []);
+  assert.deepEqual(stripActiveContent(source), { source, removed: [] });
 });
 
 // An XML parser treats a character reference outside the Unicode range as a
 // fatal error, so such a document is rejected as malformed rather than decoded
-// into -- or around -- a scheme.
-test('rejects an out-of-range numeric entity as not well-formed', () => {
-  for (const reference of ['&#x110000;', '&#1114112;']) {
-    const svg = INERT.replace(
-      'https://example.com/docs',
-      `java${reference}cript:alert(1)`,
-    );
-    const findings = findActiveContent(svg);
-    assert.equal(findings.length, 1);
-    assert.match(findings[0], /^is not well-formed XML/);
-    assert.throws(() => stripActiveContent(svg), {
+// into -- or around -- a scheme. So is an unquoted or missing attribute value.
+test('rejects markup an XML parser refuses as not well-formed', () => {
+  for (const body of [
+    '<a href="java&#x110000;cript:alert(1)"/>',
+    '<a href="java&#1114112;cript:alert(1)"/>',
+    '<a href="&unknown;javascript:alert(1)"/>',
+    '<a onload=/>',
+    '<a onload=`alert(1)`/>',
+    '<a href=javascript:alert(1)/>',
+    '<rect fill=#fff/>',
+    '<x:rect/>',
+  ]) {
+    const source = svg(body);
+    assert.match(findActiveContent(source)[0], /^is not well-formed XML/, body);
+    assert.throws(() => stripActiveContent(source), {
       message: /is not well-formed XML/,
     });
   }
 });
 
-// A handler written without a quoted value is not well-formed XML, so a
-// browser never runs it; the document is rejected as malformed all the same,
-// because a scan that could not read it cannot vouch for what follows.
-test('rejects a handler with no quoted value as not well-formed', () => {
-  for (const svg of [
-    '<svg onload=></svg>',
-    '<svg onload= ></svg>',
-    '<svg onload=`alert(1)`></svg>',
-  ]) {
-    const findings = findActiveContent(svg);
-    assert.match(findings[0], /^is not well-formed XML/, JSON.stringify(svg));
-    assert.throws(() => stripActiveContent(svg), {
-      message: /is not well-formed XML/,
-    });
-  }
-});
-
-test('detects script URIs in animation targets, not just href', () => {
-  const svg = INERT.replace(
-    '<rect',
-    '<set attributeName="xlink:href" to="javascript:alert(1)"/><rect',
-  );
-  assert.deepEqual(findActiveContent(svg), [
-    'contains a script URI in to="javascript:..."',
-    'contains a <set> element that animates href (can install a script URI at runtime)',
-  ]);
-  assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
-});
-
-test('detects every markup-bearing data: media type, not just text/html', () => {
-  // A browser parses each of these as a document and runs <script> in the
-  // XHTML namespace, so the gate must treat them identically to text/html.
-  for (const mediaType of [
-    'text/html',
-    'image/svg+xml',
-    'application/xhtml+xml',
-    'text/xml',
-    'application/xml',
-  ]) {
-    const svg = INERT.replace(
-      'https://example.com/docs',
-      `data:${mediaType};base64,PHNjcmlwdD4=`,
-    );
-    assert.deepEqual(
-      findActiveContent(svg),
-      [`contains a script URI in href="data:${mediaType}..."`],
-      `${mediaType} must be reported as a script URI`,
-    );
-  }
-});
-
-test('detects an entity-obfuscated markup data: media type', () => {
-  // normalizeUri() decodes &#43; to "+" before the media-type scan, so the
-  // obfuscated spelling must not buy a bypass that the plain one does not.
-  const svg = INERT.replace(
-    'https://example.com/docs',
-    'data:application/xhtml&#43;xml;base64,PHNjcmlwdD4=',
-  );
-  assert.deepEqual(findActiveContent(svg), [
-    'contains a script URI in href="data:application/xhtml+xml..."',
-  ]);
-});
-
-test('does not flag inert data: URIs such as raster images', () => {
-  const svg = INERT.replace(
-    'https://example.com/docs',
-    'data:image/png;base64,iVBOR',
-  );
-  assert.deepEqual(findActiveContent(svg), []);
-});
-
-test('does not flag inert non-document data: URIs', () => {
-  // Guards the widened media-type list against over-matching: these are not
-  // parsed as documents and must stay publishable.
-  for (const mediaType of ['application/json', 'text/plain', 'font/woff2']) {
-    const svg = INERT.replace(
-      'https://example.com/docs',
-      `data:${mediaType};base64,AAAA`,
-    );
-    assert.deepEqual(
-      findActiveContent(svg),
-      [],
-      `${mediaType} must stay unflagged`,
-    );
-  }
-});
-
-test('detects active content nested inside foreignObject', () => {
-  const svg = INERT.replace(
-    '<rect',
-    '<foreignObject><img src="x" onerror="alert(1)"/></foreignObject><rect',
-  );
-  assert.deepEqual(findActiveContent(svg), [
-    'contains event handler attribute(s): onerror',
-  ]);
-  assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
-});
-
-test('strips every finding from a heavily obfuscated payload', () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
-    '<script type="text/ecmascript">alert(1)</script>' +
-    '<a xlink:href="java&#115;cript&#58;alert(2)"><rect onmouseover="alert(3)"/></a>' +
-    '</svg>';
-  assert.equal(findActiveContent(svg).length, 3);
-
-  const { source, removed } = stripActiveContent(svg);
-  assert.ok(removed.length >= 3);
-  assert.deepEqual(findActiveContent(source), []);
-  assert.match(source, /viewBox="0 0 10 10"/);
-});
-
-test('flags an <animate> element that installs an href at runtime', () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
-    '<a><animate attributeName="href" to="javascript:alert(1)" begin="0s"/><rect/></a>' +
-    '</svg>';
-  assert.ok(
-    findActiveContent(svg).includes(
-      'contains a <animate> element that animates href (can install a script URI at runtime)',
-    ),
-  );
-  assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
-});
-
-test('flags a paired <set> element animating xlink:href and leaves no orphan tag', () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
-    '<a><set attributeName="xlink:href" to="javascript:alert(1)"></set><rect/></a>' +
-    '</svg>';
-  assert.ok(
-    findActiveContent(svg).some((finding) => finding.includes('animates href')),
-  );
-  const { source } = stripActiveContent(svg);
-  assert.doesNotMatch(source, /<\s*\/?\s*set\b/i);
-  assert.match(source, /<rect\/>/);
-  assert.deepEqual(findActiveContent(source), []);
-});
-
-test('leaves an ordinary animation of a presentation attribute alone', () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
-    '<rect><animate attributeName="opacity" to="0.5"/></rect>' +
-    '</svg>';
-  assert.deepEqual(findActiveContent(svg), []);
-  assert.equal(stripActiveContent(svg).source, svg);
-});
-
-// Standalone SVG under static/ is served as image/svg+xml and parsed as XML,
-// where a namespace prefix is arbitrary and only the URI it binds matters:
-// <x:script xmlns:x="http://www.w3.org/2000/svg"> is a script element and runs.
-// Anchoring the element patterns on the bare local name let a one-character
-// edit walk an imported asset past both the CI gate and the import sanitizer.
-test('detects and removes namespace-prefixed active elements', () => {
-  for (const [prefix, element, finding] of [
-    ['svg', 'script', 'contains a <script> element'],
-    ['x', 'script', 'contains a <script> element'],
-    ['svg', 'handler', 'contains a <handler> element'],
-    ['ev', 'listener', 'contains a <listener> element'],
-  ]) {
-    const svg = INERT.replace(
-      '<rect',
-      `<${prefix}:${element}>alert(1)</${prefix}:${element}><rect`,
-    );
-    assert.deepEqual(
-      findActiveContent(svg),
-      [finding],
-      `expected detection for <${prefix}:${element}>`,
-    );
-
-    const { source, removed } = stripActiveContent(svg);
-    assert.doesNotMatch(source, /alert\(1\)/);
-    assert.doesNotMatch(source, new RegExp(`${prefix}:${element}`, 'i'));
-    assert.ok(removed.includes(`<${element}> element`));
-    assert.deepEqual(findActiveContent(source), []);
-  }
-});
-
-test('detects a namespace-prefixed element that animates href', () => {
-  const svg = INERT.replace(
-    '<rect',
-    '<svg:set attributeName="xlink:href" to="https://example.com/x"/><rect',
-  );
-  assert.deepEqual(findActiveContent(svg), [
-    'contains a <set> element that animates href (can install a script URI at runtime)',
-  ]);
-  assert.deepEqual(findActiveContent(stripActiveContent(svg).source), []);
-});
-
-// <foreignObject> hosts XHTML, so an embedding element reached through it
-// loads an attacker-chosen document into the origin serving the SVG. A srcdoc
-// payload is entity-encoded, so no scan of the attribute *value* would flag it.
-test('detects and removes document-embedding elements in foreignObject', () => {
-  for (const element of ['iframe', 'embed', 'object']) {
-    const svg = INERT.replace(
-      '<rect',
-      `<foreignObject><${element} src="https://evil.example/x"></${element}></foreignObject><rect`,
-    );
-    assert.deepEqual(
-      findActiveContent(svg),
-      [`contains a <${element}> element`],
-      `expected detection for <${element}>`,
-    );
-
-    const { source, removed } = stripActiveContent(svg);
-    assert.doesNotMatch(source, new RegExp(`<${element}`, 'i'));
-    assert.ok(removed.includes(`<${element}> element`));
-    assert.deepEqual(findActiveContent(source), []);
-  }
-});
-
-test('detects and removes srcdoc regardless of its value', () => {
-  const svg = INERT.replace(
-    '<rect',
-    '<foreignObject><div srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"></div></foreignObject><rect',
-  );
-  assert.deepEqual(findActiveContent(svg), [
-    'contains an embedded document attribute: srcdoc (carries markup that executes in this origin)',
-  ]);
-
-  const { source, removed } = stripActiveContent(svg);
-  assert.doesNotMatch(source, /srcdoc/i);
-  assert.ok(removed.includes('srcdoc attribute (embedded document)'));
-  assert.deepEqual(findActiveContent(source), []);
-});
-
-// draw.io and Excalidraw emit <foreignObject> for ordinary text, and imported
-// diagrams already contain it, so widening the element list must not catch it.
-test('leaves foreignObject itself untouched', () => {
-  const svg = INERT.replace(
-    '<rect',
-    '<foreignObject width="10" height="10"><div>label</div></foreignObject><rect',
-  );
-  assert.deepEqual(findActiveContent(svg), []);
-  assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
-});
-
-// ATTRIBUTE_PATTERN accepts three value forms -- double-quoted, single-quoted
-// and unquoted -- and findActiveContent/stripActiveContent read them through
-// `match[2] ?? match[3] ?? match[4]` and `dq ?? sq ?? uq`. Every case above
-// writes double-quoted markup, so only the first alternative of either
-// fallback chain was ever exercised: a regression that dropped the
-// single-quoted or unquoted alternative from the pattern, or read the wrong
-// capture group, would have left the suite green while every
-// `onclick='alert(1)'` and `href=javascript:alert(1)` an SVG editor emits
-// passed the gate unseen. Browsers accept all three forms identically.
-const QUOTING_VARIANTS = [{ article: 'a', label: 'single-quoted', quote: "'" }];
-
-for (const { article, label, quote } of QUOTING_VARIANTS) {
-  test(`detects and removes ${article} ${label} event handler attribute`, () => {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><rect onclick=${quote}alert(1)${quote}></rect></svg>`;
-    assert.deepEqual(findActiveContent(svg), [
-      'contains event handler attribute(s): onclick',
-    ]);
-
-    const { source, removed } = stripActiveContent(svg);
-    assert.doesNotMatch(source, /onclick/i);
-    assert.doesNotMatch(source, /alert\(1\)/);
-    assert.ok(removed.includes('onclick attribute'));
-    assert.deepEqual(findActiveContent(source), []);
-  });
-
-  test(`detects and removes ${article} ${label} script URI`, () => {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><a href=${quote}javascript:alert(1)${quote}><rect/></a></svg>`;
-    assert.deepEqual(findActiveContent(svg), [
-      'contains a script URI in href="javascript:..."',
-    ]);
-
-    const { source, removed } = stripActiveContent(svg);
-    assert.doesNotMatch(source, /javascript:/i);
-    assert.ok(removed.includes('href attribute (javascript:)'));
-    assert.deepEqual(findActiveContent(source), []);
-  });
-
-  test(`detects and removes ${article} ${label} embedded document attribute`, () => {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><rect srcdoc=${quote}payload${quote}></rect></svg>`;
-    assert.deepEqual(findActiveContent(svg), [
-      'contains an embedded document attribute: srcdoc (carries markup that executes in this origin)',
-    ]);
-
-    const { source, removed } = stripActiveContent(svg);
-    assert.doesNotMatch(source, /srcdoc/i);
-    assert.ok(removed.includes('srcdoc attribute (embedded document)'));
-    assert.deepEqual(findActiveContent(source), []);
-  });
-
-  test(`reads ${article} ${label} value without disturbing inert markup`, () => {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><rect fill=${quote}#fff${quote} width=${quote}10${quote}></rect></svg>`;
-    assert.deepEqual(findActiveContent(svg), []);
-    assert.deepEqual(stripActiveContent(svg), { source: svg, removed: [] });
-  });
-}
-
-// An unquoted value is a fatal error in XML, which is how a standalone SVG is
-// parsed, so each spelling is rejected as malformed rather than read leniently.
-test('rejects unquoted attribute values as not well-formed XML', () => {
-  for (const attribute of [
-    'onclick=alert(1)',
-    'href=javascript:alert(1)',
-    'srcdoc=payload',
-    'fill=#fff',
-  ]) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><a ${attribute}><rect/></a></svg>`;
-    assert.match(findActiveContent(svg)[0], /^is not well-formed XML/);
-    assert.throws(() => stripActiveContent(svg), {
-      message: /is not well-formed XML/,
-    });
-  }
+test('reads a single-quoted value without disturbing inert markup', () => {
+  const source = svg("<rect fill='#fff' width='10'/>");
+  assert.deepEqual(stripActiveContent(source), { source, removed: [] });
 });
 
 // findRemoteReferences is a separate gate from findActiveContent: a remote
@@ -455,11 +214,14 @@ for (const [label, element] of [
 }
 
 test('detects a remote xlink:href, the legacy spelling', () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg"><image xlink:href="http://evil.example/b.png"/></svg>';
-  assert.deepEqual(findRemoteReferences(svg), [
-    'references a remote resource in <image> xlink:href: http://evil.example/b.png',
-  ]);
+  assert.deepEqual(
+    findRemoteReferences(
+      svg('<image xlink:href="http://evil.example/b.png"/>'),
+    ),
+    [
+      'references a remote resource in <image> xlink:href: http://evil.example/b.png',
+    ],
+  );
 });
 
 test('detects a protocol-relative reference, which inherits https at the origin', () => {
@@ -724,16 +486,6 @@ test('an undefined named entity is rejected as not well-formed', () => {
   assert.match(findActiveContent(svg)[0], /^is not well-formed XML/);
 });
 
-test('an undefined named entity does not hide a scheme that follows it', () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg"><a href="&unknown;javascript:alert(1)">x</a></svg>';
-  const findings = findActiveContent(svg);
-  assert.match(findings[0], /^is not well-formed XML/);
-  assert.ok(
-    findings.includes('contains a script URI in href="javascript:..."'),
-  );
-});
-
 // Removal rebuilds the document from its parse instead of deleting character
 // ranges, so deleting an element cannot join the text either side of it into a
 // new one. These shapes -- a tag name split by the element being removed -- are
@@ -791,41 +543,6 @@ test('throws rather than returning a source the detector still flags', () => {
 // Asserting the post-condition over every construct the module strips keeps a
 // future change to classifyTag()'s removal set, rebuild()'s serialization or
 // findActiveContent()'s detection from silently drifting apart.
-const STRIPPABLE_CONSTRUCTS = [
-  ['<script> element', '<script>alert(1)</script>'],
-  ['<handler> element', '<handler type="text/javascript">alert(1)</handler>'],
-  ['<listener> element', '<listener handler="#h"/>'],
-  [
-    '<iframe> in foreignObject',
-    '<foreignObject><iframe src="https://evil.example/"/></foreignObject>',
-  ],
-  ['<embed> element', '<embed src="https://evil.example/x"/>'],
-  ['<object> element', '<object data="https://evil.example/x"/>'],
-  ['<base> element', '<base href="https://evil.example/"/>'],
-  [
-    '<meta> refresh',
-    '<meta http-equiv="refresh" content="0;url=https://evil.example/"/>',
-  ],
-  ['event handler attribute', '<rect width="1" height="1" onload="alert(1)"/>'],
-  [
-    'srcdoc document attribute',
-    '<foreignObject><iframe srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"/></foreignObject>',
-  ],
-  ['javascript: href', '<a href="javascript:alert(1)">x</a>'],
-  [
-    'namespace-prefixed script',
-    '<x:script xmlns:x="http://www.w3.org/2000/svg">alert(1)</x:script>',
-  ],
-  [
-    '<animate> installing an href',
-    '<a><animate attributeName="href" to="javascript:alert(1)"/></a>',
-  ],
-  [
-    '<set> installing an href',
-    '<a><set attributeName="href" to="javascript:alert(1)"/></a>',
-  ],
-];
-
 test('stripActiveContent throws instead of returning output its detector still flags', () => {
   // The default detector and the stripper agree by construction, so the
   // survival throw is only reachable through the scan seam. Drive it with a
@@ -846,30 +563,6 @@ test('stripActiveContent throws instead of returning output its detector still f
   );
   assert.equal(seen.length, 1);
   assert.doesNotMatch(seen[0], /<script/);
-});
-
-for (const [label, markup] of STRIPPABLE_CONSTRUCTS) {
-  test(`stripActiveContent returns an inert document for ${label}`, () => {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${markup}</svg>`;
-    assert.ok(
-      findActiveContent(svg).length > 0,
-      'fixture is meant to carry active content',
-    );
-    const { source, removed } = stripActiveContent(svg);
-    assert.ok(removed.length > 0, 'something should have been removed');
-    // The returned bytes, not the parse they came from: this is what the
-    // mirroring callers write to static/.
-    assert.deepEqual(findActiveContent(source), []);
-  });
-}
-
-test('stripActiveContent returns an inert document for every construct at once', () => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><?xml-stylesheet href="https://evil.example/x.xsl" type="text/xsl"?>${STRIPPABLE_CONSTRUCTS.map(
-    ([, markup]) => markup,
-  ).join('')}</svg>`;
-  assert.ok(findActiveContent(svg).length > 0);
-  const { source } = stripActiveContent(svg);
-  assert.deepEqual(findActiveContent(source), []);
 });
 
 // An XML parser expands author-defined general entities before the document
@@ -1440,18 +1133,6 @@ test('a comment is replaced by a separator, not deleted', () => {
     'rect{background:ur/* x */l("https://evil.example/fused.png")}' +
     '</style></svg>';
   assert.deepEqual(findRemoteReferences(svg), []);
-});
-
-test('detects script-capable data: types beyond text/html', () => {
-  for (const uri of [
-    'data:text/javascript,alert(1)',
-    'data:application/javascript,alert(1)',
-    'data:text/xsl,x',
-    'data:application/vnd.example+xml,x',
-  ]) {
-    const svg = INERT.replace('https://example.com/docs', uri);
-    assert.equal(findActiveContent(svg).length, 1, uri);
-  }
 });
 
 test('rejects a document with no root or more than one root element', () => {

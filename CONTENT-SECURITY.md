@@ -85,31 +85,98 @@ Two consequences matter when a submission is rejected:
   omitted: it is an effectively irreversible commitment over the apex domain and
   belongs to whoever administers `cncf.io`.
 - A parser can still disagree with a browser on exotic input. The gates fail
-  closed on anything the parser rejects, and every historical bypass is kept as
-  a regression fixture in `tests/svg-active-content.test.mjs` and
-  `tests/mdx-active-content.test.mjs`. A new bypass belongs in those fixtures
-  and, if it needs a new rule, in the parser walk, not in a new regular
-  expression.
+  closed on anything the parser rejects, and both gates are allowlists: an
+  element, attribute, node type or URL scheme is rejected unless it is listed
+  below, so a construct nobody has thought of yet fails rather than passes.
+  `tests/active-content-allowlist.test.mjs` generates arbitrary names and
+  schemes and checks that nothing outside the lists survives either gate, and
+  keeps the historical bypasses as named rows. Widening a list is a reviewed
+  change to the module that owns it and to this page, which a contract test
+  holds to the module.
+- Inside an allowed `style` attribute or `<style>` block only URLs are checked;
+  CSS properties themselves are not allowlisted.
 
 ## SVG rules (`active content: ...` findings)
 
-`validate:architecture-assets` rejects a diagram that contains any of the
-following. The scanner tolerates namespace prefixes, entity-encoded scheme
-characters, and whitespace obfuscation, so re-spelling a construct does not help
-— remove it.
+`validate:architecture-assets` accepts a diagram only if everything in it is on
+the allowlist below; anything else is a finding, whether or not it is known to
+be dangerous. The lists are the SVG and HTML vocabulary the committed diagrams
+and logos actually use, plus the closely related names editors emit for the same
+drawings. Names are matched exactly, by namespace and case, so re-spelling a
+construct or moving it under another prefix does not help -- remove it, or ask
+for it to be reviewed and added.
 
-- **Script-bearing or embedding elements**: `<script>`, `<handler>`,
-  `<listener>`, `<iframe>`, `<embed>`, `<object>`, `<base>` (re-points every
-  relative reference in the document at a host the submitter chose), `<meta>`
-  (carries an http-equiv refresh).
-- **Event-handler attributes**: any `on*` attribute (`onload`, `onclick`, ...).
-- **Script-executing URI schemes** in any attribute: `javascript:`, `vbscript:`,
-  `livescript:`, `mocha:`, and `data:` URIs carrying a markup or script media
-  type (`text/html`, `text/xml`, `application/xml`, `text/xsl`, any `+xml` type
-  such as `image/svg+xml`, and JavaScript types).
-- **Embedded-document attributes**: `srcdoc`.
-- **`<animate>`/`<set>` targeting `href`**: an animation can install a script
-  URI at runtime on an element that looks inert in the source.
+- **SVG elements**: `a`, `circle`, `clipPath`, `defs`, `desc`, `ellipse`,
+  `feBlend`, `feColorMatrix`, `feComposite`, `feDropShadow`, `feFlood`,
+  `feGaussianBlur`, `feMerge`, `feMergeNode`, `feOffset`, `filter`,
+  `foreignObject`, `g`, `image`, `line`, `linearGradient`, `marker`, `mask`,
+  `metadata`, `path`, `pattern`, `polygon`, `polyline`, `radialGradient`,
+  `rect`, `stop`, `style`, `svg`, `switch`, `symbol`, `text`, `textPath`,
+  `title`, `tspan`, `use`.
+- **SVG attributes**: `alignment-baseline`, `aria-describedby`, `aria-hidden`,
+  `aria-label`, `aria-labelledby`, `baseline-shift`, `baseProfile`, `class`,
+  `clip`, `clip-path`, `clip-rule`, `clipPathUnits`, `color`,
+  `color-interpolation`, `color-interpolation-filters`, `color-rendering`, `cx`,
+  `cy`, `d`, `direction`, `display`, `dominant-baseline`, `dx`, `dy`,
+  `enable-background`, `fill`, `fill-opacity`, `fill-rule`, `filter`,
+  `filterUnits`, `flood-color`, `flood-opacity`, `font-family`, `font-size`,
+  `font-size-adjust`, `font-stretch`, `font-style`, `font-variant`,
+  `font-weight`, `fr`, `fx`, `fy`, `gradientTransform`, `gradientUnits`,
+  `height`, `href`, `id`, `image-rendering`, `in`, `in2`, `isolation`, `k1`,
+  `k2`, `k3`, `k4`, `lang`, `lengthAdjust`, `letter-spacing`, `lighting-color`,
+  `marker-end`, `marker-mid`, `marker-start`, `markerHeight`, `markerUnits`,
+  `markerWidth`, `mask`, `maskContentUnits`, `maskUnits`, `mix-blend-mode`,
+  `mode`, `offset`, `opacity`, `operator`, `orient`, `overflow`, `paint-order`,
+  `pathLength`, `patternContentUnits`, `patternTransform`, `patternUnits`,
+  `pointer-events`, `points`, `preserveAspectRatio`, `primitiveUnits`, `r`,
+  `refX`, `refY`, `requiredExtensions`, `requiredFeatures`, `result`, `role`,
+  `rotate`, `rx`, `ry`, `shape-rendering`, `spreadMethod`, `startOffset`,
+  `stdDeviation`, `stop-color`, `stop-opacity`, `stroke`, `stroke-dasharray`,
+  `stroke-dashoffset`, `stroke-linecap`, `stroke-linejoin`, `stroke-miterlimit`,
+  `stroke-opacity`, `stroke-width`, `style`, `systemLanguage`, `target`,
+  `text-anchor`, `text-decoration`, `text-rendering`, `textLength`, `transform`,
+  `transform-origin`, `type`, `unicode-bidi`, `values`, `vector-effect`,
+  `version`, `viewBox`, `visibility`, `width`, `word-spacing`, `writing-mode`,
+  `x`, `x1`, `x2`, `y`, `y1`, `y2`, and any `data-*` attribute.
+- **Root-only SVG attributes**: `content` (the draw.io diagram source, which
+  `--fix` strips).
+- **HTML elements inside `<foreignObject>`**: `a`, `b`, `br`, `code`, `div`,
+  `em`, `font`, `hr`, `i`, `li`, `ol`, `p`, `pre`, `s`, `span`, `strike`,
+  `strong`, `sub`, `sup`, `u`, `ul`, in the XHTML namespace.
+- **HTML attributes**: `align`, `class`, `color`, `dir`, `face`, `href`, `id`,
+  `lang`, `size`, `style`, `target`, `title`, and any `data-*` attribute.
+- **Prefixed attributes**: `xlink:href`, `xlink:title`, `xml:lang`, `xml:space`.
+- **Editor metadata namespaces**: `http://creativecommons.org/ns#`,
+  `http://ns.adobe.com/AdobeIllustrator/10.0/`,
+  `http://ns.adobe.com/Extensibility/1.0/`, `http://ns.adobe.com/Graphs/1.0/`,
+  `http://ns.adobe.com/SaveForWeb/1.0/`, `http://purl.org/dc/elements/1.1/`,
+  `http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd`,
+  `http://www.inkscape.org/namespaces/inkscape`,
+  `http://www.w3.org/1999/02/22-rdf-syntax-ns#`. Any element or prefixed
+  attribute in one of these is allowed (browsers attach no behaviour to them),
+  and its descendants are still checked.
+- **Unprefixed attributes on editor metadata elements**: `bleed`, `bordercolor`,
+  `borderopacity`, `bottomLeftOrigin`, `gridtolerance`, `guidetolerance`,
+  `height`, `id`, `margin`, `objecttolerance`, `pagecolor`, `showgrid`, `units`,
+  `width`, `x`, `y`.
+- **URI schemes**: every `href` (plain or `xlink:`) and every CSS `url()`,
+  `image-set()` or `@import` target, in any attribute or `<style>` block, must
+  be relative, a `#fragment`, or use `http:`, `https:`, `mailto:`. `data:` is
+  allowed only for raster images: `data:image/avif`, `data:image/bmp`,
+  `data:image/gif`, `data:image/jpeg`, `data:image/png`, `data:image/webp`. A
+  malformed `url()` token is rejected too, because the scanner cannot tell what
+  it names.
+
+A namespace may only be declared (`xmlns:...`) if it is one of the above, the
+SVG namespace, XHTML, XLink or XML; an undeclared prefix makes the file not
+well-formed. Notably absent, because each one runs script, loads content or
+rewrites the document: `<script>`, `<animate>`, `<set>`, `<feImage>`,
+`<iframe>`, `<object>`, `<embed>`, `<base>`, `<meta>`, form controls, every
+`on*` handler, `src`, `srcset`, `srcdoc`, `action`, `formaction`, `cursor` and
+`xml:base`.
+
+The scanner also rejects, independently of the allowlist:
+
 - **Processing instructions other than the XML declaration**: for example
   `<?xml-stylesheet ...?>`, which can fetch a remote stylesheet or apply an XSLT
   program to the image.
@@ -120,17 +187,24 @@ characters, and whitespace obfuscation, so re-spelling a construct does not help
   faithfully (UTF-16, declared exotic encodings, NUL or replacement characters)
   is rejected rather than certified blind.
 
+Findings read `contains a disallowed element <name>`,
+`contains a disallowed attribute name on <element>` or
+`contains a disallowed URI scheme in name on <element>: scheme:`. When the
+importer mirrors an SVG it strips everything off the allowlist, rescans the
+result, and fails the import if anything is left.
+
 **`<foreignObject>` itself is allowed.** Editors such as draw.io emit it for
-ordinary text labels, and imported diagrams rely on it. Only the embedding
-elements listed above are banned inside it.
+ordinary text labels, and imported diagrams rely on it. The HTML inside it must
+declare the XHTML namespace and stay within the HTML lists above.
 
 ## SVG remote references (`remote reference: ...` findings)
 
 A diagram must not make a visitor's browser fetch anything from another host.
 The scanner flags, in any attribute or `<style>` block:
 
-- `href`/`src` attributes resolving to another host, including protocol-relative
-  (`//host/...`) and backslash-obfuscated (`https:\\host\...`) spellings;
+- `href` attributes (on anything but a `<a>` hyperlink) resolving to another
+  host, including protocol-relative (`//host/...`) and backslash-obfuscated
+  (`https:\\host\...`) spellings;
 - CSS `url(...)`, bare-string `@import`, and `image-set()` targets, including
   forms hidden behind CSS escapes or comments — presentation attributes such as
   `fill="url(https://...)"` count the same as `style`.
@@ -148,17 +222,31 @@ Local references (`#gradient`, `images/foo.png`, `/img/...`) are fine.
 
 ## Markdown/MDX page rules (`active content in imported page`)
 
-`validate:architectures` scans imported page bodies. Allowed:
+`validate:architectures` scans imported page bodies against three allowlists.
+Anything not on them is rejected, including node kinds, elements and schemes
+nobody has reviewed yet.
 
-- Plain CommonMark/GFM prose, tables, images, and links.
-- A small set of inert inline HTML elements: `b`, `br`, `code`, `em`, `hr`, `i`,
-  `kbd`, `p`, `small`, `strong`, `sub`, `sup`, `u`.
-- The `CNCFProjectCard` component and its import line, which the importer itself
-  emits.
+- **Markdown node types**: `blockquote`, `break`, `code`, `definition`,
+  `delete`, `emphasis`, `footnoteDefinition`, `footnoteReference`, `heading`,
+  `image`, `imageReference`, `inlineCode`, `link`, `linkReference`, `list`,
+  `listItem`, `paragraph`, `root`, `strong`, `table`, `tableCell`, `tableRow`,
+  `text`, `thematicBreak`: plain CommonMark/GFM prose, tables, images, links and
+  code.
+- **Inert inline HTML elements**: `b`, `br`, `code`, `em`, `hr`, `i`, `kbd`,
+  `p`, `small`, `strong`, `sub`, `sup`, `u`, with no attributes.
+- **Component**: the `CNCFProjectCard` component and its import line, which the
+  importer itself emits, with the attributes `description`, `href`, `logo`,
+  `name`, `since`, `version`, each a plain string.
+- **URL schemes**: every link, image and definition destination, and the card
+  `href` and `logo`, must be relative, a `#fragment`, or use `http:`, `https:`,
+  `mailto:`.
 
-Rejected: any other raw HTML/JSX element, and any braced `{expression}` (MDX
-evaluates it as JavaScript). Literal `{` in prose must be escaped or reworded;
-the check fails closed.
+Rejected: any other raw HTML/JSX element or attribute, any other import or
+export, any braced `{expression}` (MDX evaluates it as JavaScript), and any
+` ```mdx-code-block ` fence (Docusaurus compiles its body as MDX). Literal `{`
+in prose must be escaped or reworded; the check fails closed. Findings read
+`disallowed element <name>`, `disallowed attribute name on <element>`,
+`disallowed node type name` or `disallowed URL scheme scheme:`.
 
 The inline-element list above is matched exactly as written, in lower case. MDX
 reads a lower-case tag name as an HTML element and any other casing as a
@@ -166,13 +254,9 @@ _component_ reference, so `<B>` is not the inert `<b>` the list allows — it
 compiles to a lookup of a component named `B` that nothing defines, and the
 build fails while rendering the page. Write these elements in lower case.
 
-A `style` attribute is rejected on every element. React requires `style` to be
-an object rather than a string, so `style="..."` (and `style={"..."}`) fails
-while rendering, and the object form `style={{ ... }}` is a braced expression,
-which is rejected above. Use the stylesheet-backed markup instead.
-
 Image references in page bodies are rewritten during import: relative paths are
-scoped to the architecture's own asset directory, and an image whose destination
+scoped to the architecture's own asset directory, an image whose scheme is not
+on the list above is reduced to its alt text, and an image whose destination
 names any host — including protocol-relative `//host/...` — is demoted to a
 plain link unless it is a cncf/artwork URL the importer can mirror. Images are
 found in the parse tree, so reference-style images (`![alt][ref]`) follow the
