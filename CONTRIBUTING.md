@@ -58,9 +58,10 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
   `validate:projects-born`, `validate:button-contrast`,
   `validate:enduser-members`, `validate:members`) followed by `build`.
 
-These recipes are a superset of the validation steps the Netlify build
-(`npm run build:netlify`, which runs `npm run validate:all` first) and the
-"Refresh metrics" workflow run, but they are **not** the same checks the
+These recipes are a superset of the validation steps the "Refresh metrics"
+workflow runs, but not of the Netlify build's: `npm run build:netlify` runs
+`npm run validate:all` first, and `validate:all` adds `validate:end-user-talks`,
+which no Justfile recipe runs. The recipes are also **not** the same checks the
 "Validate repository" and "Lint repository" PR gates run, and a green
 `just build`/`just refresh` locally does **not** imply a green PR check. Before
 opening a PR, also run `npm run test:unit:coverage:check` and the local check
