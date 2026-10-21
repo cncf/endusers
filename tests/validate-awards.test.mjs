@@ -89,6 +89,15 @@ test('rejects years before 2015', () => {
   assert.match(result.stderr, /invalid year/);
 });
 
+test('accepts the first supported award year', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([{ ...validEntry, year: 2015 }]),
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 1 award/);
+});
+
 test('rejects entries sorted oldest first', () => {
   const older = { ...validEntry, year: 2022, slug: 'older' };
   const newer = { ...validEntry, year: 2023, slug: 'newer' };
@@ -103,6 +112,29 @@ test('accepts entries sorted newest first', () => {
   const result = runScriptWithFixtures(SCRIPT, awardsFixture([newer, older]));
   assert.equal(result.status, 0, result.stderr);
 });
+
+test('accepts multiple awards in the same year', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    awardsFixture([validEntry, { ...validEntry, slug: 'second' }]),
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 2 award/);
+});
+
+for (const [logo, file] of [
+  ['/img/awards/../outside.svg', 'static/img/outside.svg'],
+  ['//img/awards/acme.svg', 'static/img/awards/acme.svg'],
+]) {
+  test(`rejects a logo outside the allowed URL/path boundary: ${logo}`, () => {
+    const result = runScriptWithFixtures(SCRIPT, {
+      ...awardsFixture([{ ...validEntry, logo }]),
+      [file]: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /logo must live under \/img\/awards\//);
+  });
+}
 
 test('rejects missing required fields', () => {
   const { citation, ...withoutCitation } = validEntry;
