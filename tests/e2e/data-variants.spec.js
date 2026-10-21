@@ -57,8 +57,6 @@ const COVERAGE_ENV = { E2E_COVERAGE: '1' };
 // overlay fails here instead of leaving a test that asserts nothing.
 const awards = loadSiteData('awards.json', COVERAGE_ENV);
 const variantAwards = loadSiteData('awards.json', VARIANT_ENV);
-const metrics = loadSiteData('metrics.json', COVERAGE_ENV);
-const variantMetrics = loadSiteData('metrics.json', VARIANT_ENV);
 const people = loadSiteData('community-people.json', COVERAGE_ENV);
 const variantPeople = loadSiteData('community-people.json', VARIANT_ENV);
 

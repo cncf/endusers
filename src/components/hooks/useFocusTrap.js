@@ -48,6 +48,7 @@ export function useFocusTrap({ onClose, triggerRef }) {
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKeyDown);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- read at cleanup on purpose: the trigger may have remounted
       (triggerRef.current || previousFocus)?.focus?.();
     };
   }, [onClose, triggerRef]);

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './ProfileDialogShell.module.css';
 
@@ -41,6 +40,7 @@ export default function ProfileDialogShell({
   const { dialogRef, closeRef } = useFocusTrap({ onClose, triggerRef });
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- backdrop click is a mouse shortcut; Escape closes the dialog for keyboard users
     <div
       className={styles.backdrop}
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}

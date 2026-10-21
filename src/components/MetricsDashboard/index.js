@@ -1,4 +1,3 @@
-import React from 'react';
 import metricsData from '@site/data/metrics.json';
 import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';

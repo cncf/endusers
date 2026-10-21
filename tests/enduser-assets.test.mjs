@@ -20,7 +20,6 @@ import {
 
 const OLD = '/img/end-user-members/aaaaaaaaaaaaaaaa-old.svg';
 const NEW = '/img/end-user-members/bbbbbbbbbbbbbbbb-new.svg';
-const UNRELATED = '/img/end-user-members/deadbeefdeadbeef-unrelated.svg';
 
 function withRoots(run) {
   const root = mkdtempSync(join(tmpdir(), 'endusers-assets-test-'));

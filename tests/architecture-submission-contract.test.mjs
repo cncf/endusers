@@ -36,7 +36,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import { basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
 
 import { readWorkflow } from './helpers-workflows.mjs';
 
@@ -56,9 +55,7 @@ const SCRIPT_PATH = 'scripts/import-architecture-issue.mjs';
 const DOCS_DIR = 'docs/architectures';
 const NPM_SCRIPT = 'import:architecture-issue';
 
-const { source: workflowSource, doc: workflow } = readWorkflow(
-  basename(WORKFLOW_PATH),
-);
+const { doc: workflow } = readWorkflow(basename(WORKFLOW_PATH));
 const packageJson = JSON.parse(read('package.json'));
 const maintainers = read('MAINTAINERS.md');
 

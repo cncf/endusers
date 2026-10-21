@@ -1,4 +1,3 @@
-import React from 'react';
 import metrics from '@site/data/metrics.json';
 import awardsData from '@site/data/awards.json';
 import membersData from '@site/data/members.json';

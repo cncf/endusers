@@ -1,4 +1,3 @@
-import React from 'react';
 import schedule from '@site/data/end-user-talks.json';
 import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';

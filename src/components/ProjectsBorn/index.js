@@ -1,4 +1,3 @@
-import React from 'react';
 import projects from '@site/data/projects-born.json';
 import styles from './styles.module.css';
 

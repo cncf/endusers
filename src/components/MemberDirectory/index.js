@@ -1,4 +1,3 @@
-import React from 'react';
 import membersData from '@site/data/members.json';
 import { useFilterOptions } from './hooks';
 import { matchesMembership } from './utils';

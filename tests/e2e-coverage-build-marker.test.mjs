@@ -27,6 +27,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   DEFAULT_BUILD_DIR,
@@ -159,6 +160,6 @@ test('assertCoverageBuild sends a failing run to the documented build command', 
 test('the default build directory is the repository build/ directory', () => {
   assert.equal(
     DEFAULT_BUILD_DIR,
-    new URL('../build', import.meta.url).pathname,
+    fileURLToPath(new URL('../build', import.meta.url)),
   );
 });

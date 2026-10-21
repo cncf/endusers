@@ -95,6 +95,8 @@ jobs:
         run: npm run check:markdown
       - name: Check duplication
         run: npm run check:duplication
+      - name: Lint JavaScript
+        run: npm run check:lint
 
   e2e:
     name: End-to-end tests

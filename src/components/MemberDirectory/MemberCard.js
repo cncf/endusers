@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import { MemberProfile } from './MemberProfile';
 import { OrgAvatar } from '../shared/OrgAvatar';
