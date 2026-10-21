@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import {
+  checkDuplicateOrMissingId,
   checkNonEmptyArray,
   checkParseableDate,
+  checkPublishableSourceUrl,
   publishableCncfUrl,
   reportAndExit,
   CNCF_HOST_SUFFIXES,
@@ -31,12 +33,7 @@ checkParseableDate(
   'generatedAt',
   data.generatedAt,
 );
-if (!data.sourceUrl || !publishableCncfUrl(data.sourceUrl))
-  errors.push({
-    path: 'radar-reports.json',
-    severity: 'error',
-    message: `sourceUrl must be an https URL, with no userinfo, on ${CNCF_HOST_SUFFIXES.join(' or ')}`,
-  });
+checkPublishableSourceUrl(errors, 'radar-reports.json', data.sourceUrl);
 checkNonEmptyArray(
   errors,
   'radar-reports.json',
@@ -47,13 +44,7 @@ checkNonEmptyArray(
 const ids = new Set();
 for (const entry of Array.isArray(data.radarReports) ? data.radarReports : []) {
   const id = entry.id ?? entry.slug ?? 'unknown';
-  if (!entry.id || ids.has(entry.id))
-    errors.push({
-      path: String(id),
-      severity: 'error',
-      message: 'duplicate or missing id',
-    });
-  ids.add(entry.id);
+  checkDuplicateOrMissingId(errors, String(id), entry.id, ids);
   if (!entry.title)
     errors.push({
       path: String(id),

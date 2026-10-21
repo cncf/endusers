@@ -12,6 +12,8 @@
 
 import fs from 'node:fs';
 
+import { publishableCncfUrl, CNCF_HOST_SUFFIXES } from './url-safety.mjs';
+
 export {
   checkUrl,
   isSafeUrl,
@@ -236,6 +238,59 @@ export function checkNonEmptyString(errors, path, field, value) {
       message: `${field} must be a non-empty string`,
     });
   }
+  return ok;
+}
+
+/**
+ * Push a "sourceUrl must be an https URL..." error when `value` is not a
+ * CNCF-hosted, userinfo-free https URL.
+ *
+ * validate-case-studies.mjs and validate-radar-reports.mjs each carried an
+ * independent copy of this top-of-file `sourceUrl` gate with an identically
+ * worded message — the same centralize-after-drift precedent already
+ * applied here to checkNonEmptyArray() and checkParseableDate().
+ *
+ * @param {Array<Object>} errors - Array to accumulate errors.
+ * @param {string} path - File path or identifier used as the error's path.
+ * @param {unknown} value - Candidate sourceUrl.
+ * @returns {boolean} Whether `value` passed the check.
+ */
+export function checkPublishableSourceUrl(errors, path, value) {
+  const ok = Boolean(value) && Boolean(publishableCncfUrl(value));
+  if (!ok) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: `sourceUrl must be an https URL, with no userinfo, on ${CNCF_HOST_SUFFIXES.join(' or ')}`,
+    });
+  }
+  return ok;
+}
+
+/**
+ * Push a "duplicate or missing id" error when `id` is falsy or already in
+ * `seen`, then record `id` in `seen` regardless.
+ *
+ * validate-case-studies.mjs and validate-radar-reports.mjs each carried an
+ * independent copy of this per-entry id-dedup check, byte-identical apart
+ * from the `errors`/`ids` variable names.
+ *
+ * @param {Array<Object>} errors - Array to accumulate errors.
+ * @param {string} path - File path or identifier used as the error's path.
+ * @param {unknown} id - Candidate entry id (entry.id, not a display fallback).
+ * @param {Set<unknown>} seen - Set of ids already encountered; mutated.
+ * @returns {boolean} Whether `id` passed the check.
+ */
+export function checkDuplicateOrMissingId(errors, path, id, seen) {
+  const ok = Boolean(id) && !seen.has(id);
+  if (!ok) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: 'duplicate or missing id',
+    });
+  }
+  seen.add(id);
   return ok;
 }
 
