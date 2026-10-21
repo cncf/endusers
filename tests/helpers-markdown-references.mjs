@@ -20,7 +20,7 @@ const CODE_SPAN = /`([^`\n]+)`/g;
 // Matches a Markdown link target.
 const LINK_TARGET = /\]\(([^)\s]+)\)/g;
 
-export function codeSpans(text) {
+function codeSpans(text) {
   return [...text.matchAll(CODE_SPAN)].map((match) => match[1]);
 }
 
@@ -228,7 +228,7 @@ export function routeCitations(text, { repoDirs }) {
   return [...seen];
 }
 
-export function unresolvedRoutes(text, { repoDirs, routes, routePrefixes }) {
+function unresolvedRoutes(text, { repoDirs, routes, routePrefixes }) {
   return routeCitations(text, { repoDirs }).filter(
     (route) =>
       !routes.has(route) &&
@@ -263,7 +263,7 @@ export function yamlBasenames(repoRoot, { skip }) {
   );
 }
 
-export function unresolvedYaml(text, { yamlFiles }) {
+function unresolvedYaml(text, { yamlFiles }) {
   return yamlCitations(text).filter((name) => !yamlFiles.has(name));
 }
 
@@ -299,7 +299,7 @@ export function npmScriptCitations(text, scripts = {}) {
   ];
 }
 
-export function unresolvedNpmScripts(text, { scripts }) {
+function unresolvedNpmScripts(text, { scripts }) {
   const claimedAbsent = new Set(
     [...text.matchAll(NO_SCRIPT)].map((match) => match[1]),
   );
@@ -338,7 +338,7 @@ export function justRecipes(source) {
   return recipes;
 }
 
-export function unresolvedJustRecipes(text, { recipes }) {
+function unresolvedJustRecipes(text, { recipes }) {
   return justRecipeCitations(text).filter((name) => !recipes.has(name));
 }
 
@@ -369,7 +369,7 @@ export function workflowNames(workflowsDir) {
 const NAMED_RUN =
   /("|`)([A-Z][^"`\n]*(?:\n[^"`\n]+)?)\1\s+(?:(?:CI|PR|required|status|GitHub\s+Actions)\s+)?(workflow|check|job|gate)s?\b/g;
 
-export function workflowNameCitations(text) {
+function workflowNameCitations(text) {
   return [...text.matchAll(NAMED_RUN)]
     .map((match) => ({
       name: match[2].replace(/\s+/g, ' ').trim(),
@@ -378,7 +378,7 @@ export function workflowNameCitations(text) {
     .filter(({ name }) => !/\.ya?ml$/.test(name));
 }
 
-export function unresolvedWorkflowNames(text, { workflows, jobs }) {
+function unresolvedWorkflowNames(text, { workflows, jobs }) {
   return [
     ...new Set(
       workflowNameCitations(text)
@@ -416,7 +416,7 @@ export function adrStatuses(adrDir) {
 
 // "ADR 0001 is Accepted": prose that states a decision record's status has to
 // agree with the record.
-export function unresolvedAdrStatuses(text, { adrStatuses: statuses }) {
+function unresolvedAdrStatuses(text, { adrStatuses: statuses }) {
   return [...text.matchAll(ADR_CLAIM)]
     .filter(([, number, status]) => statuses.get(number) !== status)
     .map(([, number, status]) => `ADR ${number} ${status}`);
@@ -444,7 +444,7 @@ export function pathCitations(text, { repoDirs }) {
   return [...seen];
 }
 
-export function unresolvedPaths(text, { repoRoot, repoDirs }) {
+function unresolvedPaths(text, { repoRoot, repoDirs }) {
   return pathCitations(text, { repoDirs }).filter((token) => {
     const full = join(repoRoot, token);
     if (!existsSync(full)) return true;

@@ -8,7 +8,7 @@ import {
 } from 'node:fs';
 import { basename, join } from 'node:path';
 
-export const LANDSCAPE_ASSET_PREFIX = '/img/end-user-members/';
+const LANDSCAPE_ASSET_PREFIX = '/img/end-user-members/';
 
 function isSafeAssetPath(value) {
   return (

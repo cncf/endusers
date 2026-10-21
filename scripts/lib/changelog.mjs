@@ -29,9 +29,9 @@ export const MAX_ENTRIES = 200;
 
 const COMMIT_URL = 'https://github.com/cncf/endusers/commit/';
 const PULL_URL = 'https://github.com/cncf/endusers/pull/';
-export const MERGED_PRS_URL =
+const MERGED_PRS_URL =
   'https://github.com/cncf/endusers/pulls?q=is%3Apr+is%3Amerged+sort%3Aupdated-desc';
-export const COMMITS_URL = 'https://github.com/cncf/endusers/commits/main';
+const COMMITS_URL = 'https://github.com/cncf/endusers/commits/main';
 
 const MONTH_NAMES = [
   'January',

@@ -7,13 +7,9 @@
 // each of them read `step.with['node-version']` off a setup-node step; once
 // the pin moved into the action's input default, a reader that stops at the
 // workflow sees no version at all.
-import {
-  LOCAL_ACTION_PREFIX,
-  loadLocalActions,
-  localActionName,
-} from './helpers-workflows.mjs';
+import { loadLocalActions, localActionName } from './helpers-workflows.mjs';
 
-export { LOCAL_ACTION_PREFIX, loadLocalActions };
+export { loadLocalActions };
 
 const SETUP_NODE = 'actions/setup-node@';
 const ENV_REF = /^\$\{\{\s*env\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}$/;

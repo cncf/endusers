@@ -22,12 +22,7 @@ import { stepsOf, walkSteps } from './helpers-workflows.mjs';
 // it. Matched on the package.json namespaces the repository already uses for
 // that job rather than on a hand-kept list of names, so a new collector is
 // bound by this contract the moment it is added.
-export const GENERATOR_NAMESPACES = [
-  'collect:',
-  'fetch:',
-  'import:',
-  'generate:',
-];
+const GENERATOR_NAMESPACES = ['collect:', 'fetch:', 'import:', 'generate:'];
 
 // `npm run foo`, `npm run foo -- --bar`, `npm run -s foo`, `npm -s run foo`.
 export function npmRunTargets(command) {

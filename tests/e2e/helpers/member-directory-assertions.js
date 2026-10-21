@@ -27,7 +27,7 @@
 // different instance than the one its fixtures were built from.
 
 /** The accessible name of the member directory region on /community/members. */
-export const DIRECTORY_REGION = 'End User Community organization directory';
+const DIRECTORY_REGION = 'End User Community organization directory';
 
 /**
  * Asserts the member directory rendered its cards on the page as loaded.

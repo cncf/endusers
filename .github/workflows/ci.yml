@@ -97,6 +97,8 @@ jobs:
         run: npm run check:duplication
       - name: Lint JavaScript
         run: npm run check:lint
+      - name: Check unused code and dependencies
+        run: npm run check:unused
 
   e2e:
     name: End-to-end tests

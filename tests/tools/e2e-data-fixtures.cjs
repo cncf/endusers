@@ -390,7 +390,6 @@ function loadSiteData(relativePath, env = process.env) {
 
 module.exports = {
   DATA_DIR,
-  FIXTURES_ROOT,
   FIXTURE_DIR,
   applyOverlay,
   coverageBuildNames,
