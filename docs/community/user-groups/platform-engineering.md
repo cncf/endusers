@@ -7,10 +7,11 @@ slug: /community/user-groups/platform-engineering
 
 # Platform Engineering User Group
 
-The [CNCF Platform Engineering User Group](https://community.cncf.io/) focuses
-on platform engineering practices, tools, and patterns that help development
-teams self-service their infrastructure needs while maintaining consistency,
-security, and governance across an organization. See
+The
+[CNCF Platform Engineering User Group](https://www.cloudnativeplatforms.com/)
+focuses on platform engineering practices, tools, and patterns that help
+development teams self-service their infrastructure needs while maintaining
+consistency, security, and governance across an organization. See
 [Governance](../technical-advisory-board/governance.md) for how User Groups are
 formed and run.
 
@@ -37,11 +38,14 @@ formed and run.
 
 ## How to participate
 
-- Find the group's page and meeting schedule on
-  [community.cncf.io](https://community.cncf.io/)
+- Find the group's home, initiatives, and meeting details at
+  [cloudnativeplatforms.com](https://www.cloudnativeplatforms.com/) and its
+  [community repository](https://github.com/Cloud-Native-Platform-Engineering/cnpe-community)
 - Join `#platform-engineering` on [CNCF Slack](https://slack.cncf.io/)
-- Share a platform architecture, case study, or reference the group's
-  [maturity model and whitepaper work](https://community.cncf.io/)
+- Share a platform architecture or case study, or reference the group's
+  [Platform Engineering Maturity Model](https://www.cloudnativeplatforms.com/whitepapers/platform-eng-maturity-model/)
+  and
+  [Platforms White Paper](https://www.cloudnativeplatforms.com/whitepapers/platforms/)
 
 ## Related resources
 
