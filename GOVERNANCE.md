@@ -55,7 +55,19 @@ for agent-authored work:
 With green required checks, the sole maintainer may self-merge or explicitly
 delegate an agent to merge these low-risk classes:
 
-- Dependency bumps (dependabot) with passing validation and deploy.
+- Dependency bumps (dependabot) with passing validation and deploy. One narrow
+  subset is queued without a per-PR decision:
+  [`dependabot-automerge.yml`](.github/workflows/dependabot-automerge.yml) arms
+  auto-merge (`gh pr merge --auto`) on a pull request opened by Dependabot only
+  when it is an npm update, its highest semver change is patch or minor, and it
+  changes no file other than `package-lock.json` (so nothing under
+  `.github/workflows/`). The merge queue merges it only after the required
+  checks pass, including `npm run check:audit`. Security updates within those
+  bounds, the usual shape of a transitive advisory fix, take this path. Every
+  other Dependabot pull request (`package.json` range bumps, major versions,
+  GitHub Actions and dev container pins) waits for a maintainer. This standing
+  delegation is the maintainer's decision; disabling auto-merge on a pull
+  request, or the workflow, withdraws it.
 - Generated-data refreshes (metrics, architectures, community people) that pass
   their `validate:*` checks.
 - Typo and link fixes.

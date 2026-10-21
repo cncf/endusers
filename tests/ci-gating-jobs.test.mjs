@@ -64,6 +64,12 @@ const PULL_REQUEST_WORKFLOWS = new Map([
     'CodeQL analysis, path-filtered to the JS/TS sources, the package ' +
       'manifests and the workflow definitions.',
   ],
+  [
+    'dependabot-automerge.yml',
+    'Gates nothing: it only arms auto-merge on lockfile-only patch or minor ' +
+      'Dependabot updates, which then wait on the ci.yml gate in the merge ' +
+      'queue.',
+  ],
 ]);
 
 const workflows = workflowMap();
