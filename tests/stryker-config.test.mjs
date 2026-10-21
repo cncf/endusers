@@ -3,6 +3,7 @@
 // nothing, so a stale list would quietly stop explaining the run.
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
@@ -49,3 +50,30 @@ test('breakThreshold stands down for the full-tree report lanes', () => {
   assert.equal(breakThreshold('schedule'), null);
   assert.equal(breakThreshold('workflow_dispatch'), null);
 });
+
+for (const [eventName, expected] of [
+  [undefined, 83],
+  ['pull_request', 83],
+  ['merge_group', null],
+  ['schedule', null],
+  ['workflow_dispatch', null],
+]) {
+  test(`exported mutation config selects the threshold for ${eventName ?? 'local runs'}`, () => {
+    const env = { ...process.env };
+    delete env.GITHUB_EVENT_NAME;
+    if (eventName !== undefined) env.GITHUB_EVENT_NAME = eventName;
+    const run = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `import config from ${JSON.stringify(new URL('../stryker.config.mjs', import.meta.url).href)};
+console.log(JSON.stringify(config.thresholds.break));`,
+      ],
+      { encoding: 'utf8', env },
+    );
+    assert.equal(run.error, undefined);
+    assert.equal(run.status, 0, run.stderr);
+    assert.equal(JSON.parse(run.stdout), expected);
+  });
+}
