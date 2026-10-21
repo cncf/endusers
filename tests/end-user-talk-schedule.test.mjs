@@ -85,7 +85,7 @@ test('each card includes title, speakers, room, and official schedule link', () 
 
 // The badge beside each slot must come from the data file's timezone field,
 // the same source the intro sentence uses, so regenerating the snapshot for
-// an event in another timezone cannot leave a stale hardcoded label (#1594).
+// an event in another timezone cannot leave a stale hardcoded label.
 test('every slot badge renders the timezone from the data file', () => {
   const tree = EndUserTalkSchedule();
   const slotCount = schedule.days.reduce(

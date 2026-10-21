@@ -96,7 +96,7 @@ test('the footer links to the content-issue form, guarded against tabnabbing', (
   assert.match(report.props.rel, /\bnoreferrer\b/);
 });
 
-// Audience signposting (#1407, ADR 0004): a reader who landed here looking to
+// Audience signposting (ADR 0004): a reader who landed here looking to
 // contribute to a CNCF project gets a site-wide pointer to the contributor
 // portal from the one piece of chrome on every page.
 test('the footer signposts contributors to contribute.cncf.io', () => {

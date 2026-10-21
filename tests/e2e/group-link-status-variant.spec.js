@@ -41,7 +41,7 @@
 //
 // The union credits the *lines* of the plural arms; their two *regions*
 // stay listed as uncovered because the build that takes an arm records no
-// region at the arm's own span (#1256). See the comment at the union in
+// region at the arm's own span. See the comment at the union in
 // tests/tools/e2e-coverage-report.mjs before reading that residual as a gap.
 //
 // The real route is asserted alongside the variant one. On its own, an

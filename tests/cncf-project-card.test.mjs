@@ -126,7 +126,7 @@ test('the decorative arrow is hidden from assistive technology', () => {
 });
 
 test('a card without an href renders no link and no arrow', () => {
-  // Projects with no cncf.io page get no href (#1448): the arrow would
+  // Projects with no cncf.io page get no href: the arrow would
   // promise navigation the card cannot deliver.
   const tree = render({ href: undefined });
   assert.equal(tree.props.href, undefined);

@@ -8,7 +8,7 @@
 // repository. The same binding is what builds the site, so the failure reaches
 // the Netlify deploy build too.
 //
-// That is not hypothetical. Incident #1426 is exactly this failure, and it has
+// That is not hypothetical. This exact failure has
 // taken down main's deploy (run 38420644367) as well as all four ci.yml jobs on
 // a pull request (run 38543770184), both with:
 //
@@ -26,7 +26,7 @@
 // package. @swc/core then installs with no ./swc.linux-x64-gnu.node beside it,
 // falls through to the cache-root path, and throws.
 //
-// #1428 closed that half by declaring @swc/core-linux-x64-gnu as a regular
+// That half is closed by declaring @swc/core-linux-x64-gnu as a regular
 // devDependency: a *required* dependency is not skippable under npm/cli#4828
 // and is integrity-checked, so a bad install fails loudly at `npm ci` instead
 // of quietly at test time. Nothing in the suite records that this is load-
@@ -37,10 +37,9 @@
 //
 // The lockstep requirement is the sharper edge. @swc/core refuses a binding
 // built for a different version, so the two specifiers have to move together.
-// Dependabot's `dev-dependencies` group happens to move both today (#1451
-// carried 1.16.13 -> 1.16.18 for each), but grouping is a cadence convenience,
-// not a guarantee: an ungrouped security bump of @swc/core, or a local
-// `npm run update:pkgs`, moves one and leaves the other. The result is a
+// Dependabot's `dev-dependencies` group happens to move both today, but
+// grouping is a cadence convenience, not a guarantee: an ungrouped security
+// bump of @swc/core, or a local `npm run update:pkgs`, moves one and leaves the other. The result is a
 // version-mismatch at load, which looks nothing like a dependency edit.
 //
 // So this file pins the three properties that edit would break, over
@@ -102,7 +101,7 @@ function bindingPinViolation(pkg) {
   if (typeof binding !== 'string') {
     return (
       `${BINDING} is not a devDependency; @swc/core declares it only as an ` +
-      'optional dependency, which npm ci can skip (npm/cli#4828, #1426)'
+      'optional dependency, which npm ci can skip (npm/cli#4828)'
     );
   }
   for (const [name, spec] of [
@@ -139,7 +138,7 @@ function lockEntryViolation(lock, version) {
   const entry = lock.packages?.[path];
   if (!entry) return `${path} is absent from the lockfile`;
   if (entry.optional === true) {
-    return `${path} is marked optional, so npm ci may skip it (#1426)`;
+    return `${path} is marked optional, so npm ci may skip it`;
   }
   if (entry.version !== version) {
     return `${path} is ${entry.version} but package.json pins ${version}`;

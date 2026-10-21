@@ -5,10 +5,10 @@ import test from 'node:test';
 import { checkUrl } from '../scripts/lib/validate-utils.mjs';
 
 // This file is the pull-request lane's data contract for
-// data/end-user-talks.json. When it was written (#1383) the dataset was the
+// data/end-user-talks.json. When it was written the dataset was the
 // only committed one under data/ with no gate of its own, which is what the
 // rest of this header argues from; scripts/validate-end-user-talks.mjs has
-// since (#1624) put the same link allow-list on the Netlify publish path,
+// since put the same link allow-list on the Netlify publish path,
 // chained into validate:all.
 //
 // That validator is deliberately not a step in the ci.yml validate job -- the

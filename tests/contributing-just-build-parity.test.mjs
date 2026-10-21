@@ -20,8 +20,8 @@
 //
 // That is the drift-by-omission class this repository has already closed three
 // times, each time after the docs had lied for a while: the coverage
-// thresholds (#1193, after #1037 and #1169/#1189), the audit allowlist against
-// SECURITY.md (tests/audit-gate.test.mjs), and the Node major
+// thresholds (tests/docs-threshold-parity.test.mjs), the audit allowlist
+// against SECURITY.md (tests/audit-gate.test.mjs), and the Node major
 // (tests/dev-environment.test.mjs). The second claim is the one with teeth --
 // it is the only place the repository tells a contributor how to get a green
 // PR check on the first push, and a gate missing from it is a gate they find

@@ -5,7 +5,8 @@
 // carries: a wrong branch here publishes a preview that claims to be
 // production, or production that claims to be a preview, and nothing else in
 // the suite reads Netlify's CONTEXT/URL/DEPLOY_PRIME_URL variables. The step
-// runner is the #755 gate: automation pull requests never start ci.yml, so
+// runner is the automation-data gate: automation pull requests never start
+// ci.yml, so
 // "stop at the first failing validator" is what keeps bad data out of the
 // published site, and a runner that carried on to the build would publish it.
 

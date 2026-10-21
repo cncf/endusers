@@ -306,7 +306,7 @@ test('the dialog joins role and company with a separator', () => {
 });
 
 test('the dialog shows the company alone when there is no role', () => {
-  // Fixed in #516: role and company join with a separator, and the
+  // Role and company join with a separator, and the
   // 'Community member' placeholder only appears when both are missing.
   const { tree } = renderDialog({ ...FULL_PERSON, role: '' });
   assert.equal(textOf(findByClass(tree, 'profileRole')), 'Analytical Engines');

@@ -74,7 +74,7 @@ test('writes a fetchedAt envelope with sections keyed under people', () => {
   assert.equal(output.people.ambassadors[0].name, 'Grace Hopper');
 });
 
-test('leaves the file untouched when nothing changed (matches #648)', () => {
+test('leaves the file untouched when nothing changed', () => {
   const fixtures = {
     [ROSTER]: roster({
       tab: [{ name: 'Ada Lovelace', company: 'Analytical Co' }],

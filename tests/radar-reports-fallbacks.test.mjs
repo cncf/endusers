@@ -1,4 +1,4 @@
-// Fallback-branch coverage for src/components/RadarReports/index.js (#506).
+// Fallback-branch coverage for src/components/RadarReports/index.js.
 //
 // The component reads @site/data/radar-reports.json at module scope, and the
 // live corpus always has generatedAt, a populated radarReports array, and a

@@ -33,7 +33,7 @@ const SOURCE_MAPPING_URL = /(?:\/\/[#@]\s*sourceMappingURL=)(\S+)/u;
 const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 
 // Residual uncovered regions, recorded so the file's region percentage is not
-// re-investigated every cycle (#1210, #1253). The guards in the four istanbul
+// re-investigated every cycle. The guards in the four istanbul
 // readers below are reached directly by
 // tests/e2e-coverage-report-readers.test.mjs, which is what the test-only
 // export beneath `getRegionCoverage` exists for. What remains after that is
@@ -56,7 +56,7 @@ const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 // were written against each candidate and these are the ones no probe could
 // close. (The `convertScript` guards that used to sit in this list were
 // removed outright once tests/e2e-coverage-attribution.test.mjs pinned the
-// converter shape they defended against, #1304. `normalizeSourceMap`'s
+// converter shape they defended against. `normalizeSourceMap`'s
 // `?? flattened.sources ?? []` and `collectE2ECoverage`'s `converted.coverage
 // ?? {}` left the list the same way: tests/e2e-coverage-nullish-guards.test.mjs
 // pins `AnyMap(...).resolvedSources` as always an array and `toIstanbul()` as
@@ -165,7 +165,7 @@ function sourcePathFromReference(reference, mapPath, root) {
   }
 
   // Total decode: a source-map `sources` entry with a stray `%` is treated
-  // as already-decoded text rather than aborting the whole report (#1150);
+  // as already-decoded text rather than aborting the whole report;
   // containment against the root is still checked below either way.
   value = totalDecodeURIComponent(value).replaceAll('\\', '/');
   const absoluteSpecifier = value.lastIndexOf('|/');
@@ -208,7 +208,7 @@ function decodeDataUrl(value) {
     ? Buffer.from(match[2], 'base64').toString('utf8')
     : // Total decode: an inline map that was written without percent-encoding
       // contains raw `%` sequences that would make decodeURIComponent throw;
-      // the undecoded text is then the JSON itself (#1150).
+      // the undecoded text is then the JSON itself.
       totalDecodeURIComponent(match[2]);
   return JSON.parse(raw);
 }
@@ -382,7 +382,7 @@ function getLineCoverage(coverageData) {
 // endpoints land on whatever mapping precedes them, so a block that never ran
 // can be reported as a multi-line original span that demonstrably did run --
 // `useFocusTrap`'s Shift+Tab arm reported a zero-count region over lines
-// 38-40 while statement coverage put all three lines at 1 (#1035). A span
+// 38-40 while statement coverage put all three lines at 1. A span
 // cannot be unexecuted while every line it covers executed, so those spans are
 // dropped rather than counted against the file. Single-line regions are kept:
 // several of them share one line and the per-line fold cannot tell them apart,
@@ -411,11 +411,11 @@ function comparePositions(lineA, columnA, lineB, columnB) {
 // after it -- a *crossing* pair is not a shape the language can produce. When
 // the union does hold one, the two halves were mapped through source maps that
 // placed the same original branch at different spans, which is exactly how
-// #1079's drifted twins appear: `MemberProfile.js` contributes a zero region
+// drifted twins appear: `MemberProfile.js` contributes a zero region
 // at `10:40-10:48` from one artifact and a covered `10:44-15:19` from another
 // artifact of the *same* chunk, and `15:19-15:80` against `15:70-38:15`
-// likewise. Both pairs cross; neither contains the other, so neither #1051's
-// multi-line fold nor an enclosure rule reaches them.
+// likewise. Both pairs cross; neither contains the other, so neither the
+// multi-line fold above nor an enclosure rule reaches them.
 //
 // Crossing is the whole test, and it is deliberately narrower than
 // containment. A covered region that *encloses* a zero one is the ordinary
@@ -451,7 +451,7 @@ function isDriftedRegion(region, regions) {
 }
 
 // The crossing fold above needs the drifted twin to be *recorded*. One shape
-// leaves no twin at all (#1202): when an artifact executes a span at the same
+// leaves no twin at all: when an artifact executes a span at the same
 // count as its enclosing code, V8 emits no deviation range over it, so the
 // artifact carries no region -- covered or zero -- for the span.
 // `useFocusTrap`'s cleanup runs once with the trigger unmounted and the
@@ -469,7 +469,7 @@ function isDriftedRegion(region, regions) {
 // zero on any of them, the second artifact executed that text -- had it been
 // skipped there too, the identical zero mapping would reappear. Across
 // scripts the inference fails: a different bundle maps the same skipped arm
-// to a different original span (#1066's drift), so a chunk that never
+// to a different original span, so a chunk that never
 // records the zero at these coordinates says nothing about them. The witness
 // is therefore required to come from a script that produced the zero itself.
 // The exclusion test is by line rather than exact span, the conservative
@@ -548,7 +548,7 @@ function getRegionCoverage(coverageData) {
 // inputs to this module -- `convertScript` builds them from the V8 payload via
 // `v8-to-istanbul`. Reaching a guard from the public surface would require that
 // library to emit a shape it does not emit, so no capture artifact written at
-// the boundary can exercise one (#1210). Exporting the readers lets the guards
+// the boundary can exercise one. Exporting the readers lets the guards
 // be driven directly with hand-built istanbul objects instead of being carried
 // as a permanent uncovered residual.
 export {
@@ -638,7 +638,7 @@ function splitRangeAtBoundaries(range, boundaries) {
     start = cut;
   }
   // The `parts.length === 0` arm below is unreachable (see the residual note
-  // at the top of this file, #1253): every cut is strictly below
+  // at the top of this file): every cut is strictly below
   // `range.endOffset`, and `start` holds the last of them, so the tail push
   // always fires. It is kept as the statement of the invariant rather than
   // deleted, and tests/e2e-coverage-split-range.test.mjs asserts the invariant
@@ -851,7 +851,7 @@ export async function collectE2ECoverage(
         // modules this loop admitted. A converter release that started
         // emitting statement-less entries would otherwise turn every module it
         // touched from "never measured" into "100% covered", which is the one
-        // outcome (#992) the file-set gate exists to make impossible.
+        // outcome the file-set gate exists to make impossible.
         if (lineCoverage.size === 0) continue;
         const regionCoverage = getRegionCoverage(coverageData);
         const target = sources.get(relativePath) ?? {
@@ -872,10 +872,9 @@ export async function collectE2ECoverage(
         // skipped -- a different span, hence a different key -- and nothing
         // at the arm itself. The zero therefore survives the union, and
         // isContradictedRegion below cannot retire it either, because its
-        // witnesses are confined to the script that produced the zero
-        // (#1066). Lines do union across builds; regions of this shape do
-        // not. See #1256 and the ceiling recorded in
-        // tests/e2e-coverage-gate.test.mjs.
+        // witnesses are confined to the script that produced the zero.
+        // Lines do union across builds; regions of this shape do not. See the
+        // ceiling recorded in tests/e2e-coverage-gate.test.mjs.
         for (const [key, region] of regionCoverage) {
           const existing = target.regions.get(key);
           if (!existing || region.count > existing.count) {
@@ -956,7 +955,7 @@ export async function collectE2ECoverage(
   report.unmappedSources = [...unmapped].sort();
   // The summary below is a ratio over the files the run *observed*. A src
   // module the bundle dropped (or that attribution lost) contributes neither
-  // numerator nor denominator, so the percentage cannot see it (#992). The
+  // numerator nor denominator, so the percentage cannot see it. The
   // file-set comparison is the second, different guarantee: every module on
   // disk under src/ must have been measured. Enumerated with the unit
   // reporter's walker so the two gates share one definition of "a source

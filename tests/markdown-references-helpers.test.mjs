@@ -74,8 +74,8 @@ test('a route resolves against the published set or a mounted prefix', () => {
     'Links: `/community/awards`, `/blog/tags/community`, `/blog`, `/awards`, `/`.',
     repo,
   );
-  // `/awards` is the exact shape #1568 fixed: a route removed by #1552 that
-  // three root-level docs went on citing.
+  // `/awards` is the exact shape once seen: a removed route that three
+  // root-level docs went on citing.
   assert.deepEqual(found, [{ kind: 'route', token: '/awards' }]);
 });
 

@@ -54,9 +54,8 @@
 // different ones: the real build records `6:25:6:37` count 0 and
 // `24:40:24:46` count 0, while the variant records `7:2:21:1` count 0 and
 // `21:0:29:26` count 1 and emits no key matching either zero region. So the
-// union keeps both zeros. That is the region-attribution problem tracked in
-// #1066 and #1079, not something this fixture can reach; once it lands, these
-// two arms fold without any change here.
+// union keeps both zeros. That is an accepted limit of keying regions on
+// coordinates, not something this fixture can reach.
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 

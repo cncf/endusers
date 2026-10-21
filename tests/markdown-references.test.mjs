@@ -6,11 +6,10 @@
 // instructions -- or read a route, a workflow name or an npm script written
 // in backticks as anything but text.
 //
-// That is where the stale references of the last week lived. Five human
-// restructures (#1524, #1527, #1528, #1531, #1552) each renamed a route, a
-// workflow or a recipe, and each was followed a day later by a fix for the
-// prose that still used the old name: #1529, #1530, #1537, #1538, #1562,
-// #1568, #1569. Every one was found by a reader rather than a check.
+// That is where stale references have lived. Restructures that renamed a
+// route, a workflow or a recipe were each followed a day later by a fix for
+// the prose that still used the old name, and every one was found by a reader
+// rather than a check.
 //
 // This test reads the same prose as a reader would and asks the repository
 // whether each name resolves:
@@ -191,7 +190,7 @@ const HISTORICAL_REFERENCES = new Map([
       ],
       [
         'import-architectures.yml',
-        'The cncf/architecture content sync retired in #1527; the launch ' +
+        'The retired cncf/architecture content sync; the launch ' +
           'record explains what the metrics refresh used to run inside.',
       ],
     ]),

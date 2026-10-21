@@ -13,7 +13,7 @@
 //
 // Keeping the real URL is the point: V8 attributes coverage by script URL, so
 // a copy under /tmp credits its branches to a path that does not survive the
-// run (#571).
+// run.
 //
 // The baseline recorded at registration is the checked-in file's own data, so
 // `restoreFixtures` returns the module to the state an unqualified

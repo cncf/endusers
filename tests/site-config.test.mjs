@@ -267,7 +267,7 @@ test('local search is registered as a plugin', () => {
 });
 
 test('local search indexes docs at the route docs are actually served on', () => {
-  // Regression for #769: the plugin defaults docsRouteBasePath to ["docs"],
+  // Regression: the plugin defaults docsRouteBasePath to ["docs"],
   // which matches no route once docs.routeBasePath is "/" -- every docs page
   // went unindexed and search silently returned blog posts only.
   const plugin = findSearchPlugin();

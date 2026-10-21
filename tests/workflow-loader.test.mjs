@@ -1,6 +1,6 @@
 // Two things about tests/helpers-workflows.mjs. First, that it reads the
 // tree the way the fifteen loaders it replaced did, and that walkSteps()
-// descends into a local composite action -- the gap #1565 found, closed here
+// descends into a local composite action -- a gap once missed, closed here
 // for every scanner at once. Second, that it stays the only reader: a test
 // module that opens .github/workflows on its own has its own scope, and its
 // own blind spots.

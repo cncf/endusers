@@ -1,6 +1,6 @@
 // tests/tools/jsx-hooks.mjs transpiles every JSX component in memory before
 // Node ever sees it, so V8 records coverage against generated text that is
-// longer, and laid out differently, than the file on disk. Before #628 the
+// longer, and laid out differently, than the file on disk. Before the remap the
 // reporter simply withheld every such record: 17 components and
 // src/theme/Footer/index.js were silently absent from the report no matter
 // how much of them ran.

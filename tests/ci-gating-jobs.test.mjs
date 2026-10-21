@@ -37,7 +37,7 @@ import test from 'node:test';
 import { workflowMap } from './helpers-workflows.mjs';
 
 // `<workflow>#<job>` → why that job is allowed to swallow its own failure.
-// Empty since #990 made e2e-coverage gating; the map and its stale-entry test
+// Empty since e2e-coverage became gating; the map and its stale-entry test
 // stay so a future opt-out has to be recorded here with a reason.
 const NON_GATING_JOBS = new Map([]);
 

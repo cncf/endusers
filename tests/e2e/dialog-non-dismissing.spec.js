@@ -32,7 +32,7 @@
 // e2e reporter keys a region on its mapped original coordinates, and the two
 // arms here are emitted under coordinates that no browser interaction reaches,
 // so landing this spec does not clear either line from the uncovered-region
-// list (the same attribution limit tracked by #1066 and #1079).
+// list (the same accepted region-attribution limit).
 import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
 
 async function openProfile(page, path, region) {

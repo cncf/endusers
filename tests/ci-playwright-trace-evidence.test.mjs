@@ -8,7 +8,7 @@
 // attempt is the whole record, and it only survives if the workflow uploads
 // it on a run that *succeeded*. That is what `if: ${{ !cancelled() }}` on
 // ci.yml's "Upload Playwright traces" step buys, and it is why that step is
-// not `if: failure()` (#1179).
+// not `if: failure()`.
 //
 // Nothing else in the suite sees it. tests/playwright-config.test.mjs pins
 // `retries` and `trace` on the Playwright side but never reads a workflow;
@@ -17,7 +17,7 @@
 // job swallows a failure, which a discarded trace is not. Narrowing the step
 // back to `if: failure()` — one word — therefore passes the entire suite while
 // making every future flake undiagnosable, which is precisely the regression
-// #1179 was opened for.
+// this file exists to catch.
 //
 // Three properties make the upload evidence rather than decoration, and each
 // can be lost on its own:
@@ -43,8 +43,8 @@ import { join } from 'node:path';
 
 import { repoRoot, workflowMap } from './helpers-workflows.mjs';
 
-// `<workflow>#<job>` → why that job keeps no Playwright traces. Empty since
-// #1412: the e2e-coverage job runs the describeCoverage blocks that no other
+// `<workflow>#<job>` → why that job keeps no Playwright traces. Empty because
+// the e2e-coverage job runs the describeCoverage blocks that no other
 // job executes, so its allowlist reason (that the gating e2e job runs the same
 // specs) did not hold, and it now uploads traces too.
 const NO_TRACE_JOBS = new Map();

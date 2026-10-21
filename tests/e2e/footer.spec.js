@@ -117,7 +117,7 @@ test('the footer links to the changelog and the content-issue form', async ({
 }) => {
   await page.goto(ROUTES[0]);
 
-  // The public feedback loop (#1408): both links sit in the site footer so a
+  // The public feedback loop: both links sit in the site footer so a
   // visitor can reach them without knowing the repository exists.
   const footer = footerOf(page);
   const changelog = footer.getByRole('link', { name: 'Changelog' });
@@ -140,7 +140,7 @@ test('the footer signposts contributors to contribute.cncf.io', async ({
 }) => {
   await page.goto(ROUTES[0]);
 
-  // Audience boundary (#1407, ADR 0004): a visitor who landed on the end-user
+  // Audience boundary (ADR 0004): a visitor who landed on the end-user
   // site looking to contribute to a project gets the pointer on every page.
   const signpost = footerOf(page).getByRole('link', {
     name: 'Contribute to a project',

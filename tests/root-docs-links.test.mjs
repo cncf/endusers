@@ -11,7 +11,7 @@ const repoRoot = resolveRepoRoot(import.meta.url);
 //
 // `npm run check:links` does work -- it shells out to markdown-link-check with
 // .markdown-link-check.json, which tests/markdown-link-check-config.test.mjs
-// guards -- but no workflow invokes it, so it never runs on a change (#1137).
+// guards -- but no workflow invokes it, so it never runs on a change.
 // It also checks outbound http(s) URLs rather than relative paths, which is
 // the complementary half: these cases resolve targets on disk and issue no
 // request. Nothing else verifies that their relative links still resolve.

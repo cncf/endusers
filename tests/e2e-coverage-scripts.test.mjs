@@ -1,6 +1,6 @@
 // tests/tools/e2e-coverage-scripts.mjs seals a coverage run by copying every
 // build script the run referenced into the run directory, so the published
-// artifact renders without the build that produced it (#1040). No test file
+// artifact renders without the build that produced it. No test file
 // imported the module before this one: its 94.67% region coverage came from
 // whatever the e2e-coverage-run tests happened to execute on the way past, and
 // four regions were never reached at all.
@@ -184,8 +184,8 @@ test('a coverage payload carrying no result list seals without throwing', async 
 
 // A literal `%` not followed by two hex digits is a valid URL pathname
 // character that decodeURIComponent rejects. The seal step must capture such
-// a script, not crash on it: before #1150 one executed asset named 100%.js
-// failed the whole End-to-end coverage job.
+// a script, not crash on it: one executed asset named 100%.js once failed
+// the whole End-to-end coverage job.
 test('a script whose name defeats percent-decoding is still captured', async (t) => {
   const { root, buildDir, runDir } = await workspace();
   t.after(() => rm(root, { recursive: true, force: true }));

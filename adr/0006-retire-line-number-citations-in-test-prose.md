@@ -116,3 +116,14 @@ artifact.
 - The coverage ceilings and the in-repo e2e coverage harness are unchanged. If
   the ratio of test-tree work to product work does not fall after this ADR, a
   follow-up ADR should revisit option 3.
+
+## Follow-up
+
+- **2026-10-20** ([#1718](https://github.com/cncf/endusers/issues/1718), item
+  7): issue and pull request number citations are retired from test prose on the
+  same grounds. A cited issue closes, the citation goes stale, and the cleanup
+  is filed as a finding of its own. Prose under `tests/` states the reason
+  instead; issue links belong in commit messages, pull requests and ADRs. Unlike
+  the symbol form in decision 1, this one is cheap to police, so
+  `tests/test-prose-citations.test.mjs` rejects new citations, with an explicit
+  allowlist for test data that parses issue references.

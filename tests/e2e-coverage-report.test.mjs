@@ -270,7 +270,7 @@ test('collectE2ECoverage maps V8 ranges through an external source map to src li
 // at 900592b the report put a zero-count region across useFocusTrap.js lines
 // 38-40 -- the Shift+Tab wrap arm that tests/e2e/interactions.spec.js:217
 // presses and asserts -- while statement coverage put all three of those lines
-// at 1 in the same union (#1035). Those spans inflated the denominator and sent
+// at 1 in the same union. Those spans inflated the denominator and sent
 // contributors to write tests for branches that were already covered.
 test('a zero-count region spanning only covered lines is not counted against the file', async () => {
   const fixture = await fixtureRun();
@@ -363,17 +363,17 @@ test('a zero-count region spanning only covered lines is not counted against the
 // back. Measured on the published `e2e-coverage` artifact for run
 // 37412914368, GroupLinkStatus's `generatedAt` guard, DirectoryFreshness's
 // plural arms and RadarReports' empty-corpus arms are each enclosed exactly as
-// the drifted spans in #1079 are, so folding a zero region into a covered one
-// that contains it would erase real gaps that tests are still being written
-// for (#1094, #1097). Enclosure is therefore not evidence of drift.
+// drifted spans are, so folding a zero region into a covered one that
+// contains it would erase real gaps. Enclosure is therefore not evidence of
+// drift.
 //
 // The two artifacts below put one zero region, `1:6:1:12`, against three
 // covered regions that each enclose it in a different way: `1:0:3:12` from a
 // *different script* compiled from the same file (whole-span containment
 // across chunks -- RadarReports' dead arms are enclosed exactly this way by
 // the chunks that never record their zero), `1:0:1:12` (the same line), and
-// `1:6:3:12` (the same start column, differing end -- the shape #1066
-// proposed keying away). It survives all three. The enclosing script must be
+// `1:6:3:12` (the same start column, differing end -- the shape an ordinal
+// key would fold away). It survives all three. The enclosing script must be
 // a different chunk here: an artifact of the *same* script that covers the
 // arm's lines while recording no zero over them is V8's way of saying the arm
 // executed, which is the contradiction fold's evidence, pinned separately
@@ -464,13 +464,13 @@ test('a single-line zero-count region survives a covered region that encloses it
 // file either nest or stay disjoint, because both are AST extents -- so a
 // covered span that *begins inside* a zero span and *ends after* it is a
 // crossing, which no source can produce. It only appears when two artifacts of
-// the same chunk map one original branch to different spans (#1079): the
+// the same chunk map one original branch to different spans: the
 // `''` arm of `useBaseUrl(member.logo || '')` in
 // `src/components/MemberDirectory/MemberProfile.js` is reported zero at
 // `10:40-10:48` by one artifact while another reports it covered at
 // `10:44-15:19`, and `15:19-15:80` crosses `15:70-38:15` the same way. The
-// start columns differ, so the ordinal key proposed in #1066 keeps them apart,
-// and neither contains the other, so #1051's multi-line fold and the
+// start columns differ, so an ordinal key would keep them apart, and
+// neither contains the other, so the multi-line fold and the
 // enclosure rule the test above pins both leave them standing.
 //
 // Below, the zero region `1:0-1:6` is crossed by the covered `1:3-3:12`: the
@@ -545,7 +545,7 @@ test('a zero-count region crossed by a covered one is treated as source-map drif
   }
 });
 
-// Drift needs the twin *recorded*; one shape leaves none (#1202). V8 emits a
+// Drift needs the twin *recorded*; one shape leaves none. V8 emits a
 // deviation range only where a count differs from the enclosing one, so an
 // artifact that executes a branch arm at the same count as the code around it
 // carries no range over the arm at all -- `useFocusTrap`'s `previousFocus`
@@ -1058,7 +1058,7 @@ test('collectE2ECoverage accepts base64 and URI-encoded inline maps', async () =
       },
       {
         // Written without percent-encoding and containing a raw `%` that
-        // defeats decodeURIComponent: before #1150 this aborted the whole
+        // defeats decodeURIComponent: this once aborted the whole
         // report with URIError. The undecoded payload is the JSON itself.
         // The source text carries no whitespace because the
         // sourceMappingURL comment only captures up to the first space.
@@ -1911,8 +1911,8 @@ test('sourcePathFromReference handles empty and webpack source references', () =
   );
 });
 
-// Before #1150 a stray `%` in a sources entry threw URIError out of the
-// decode and aborted the entire report; the undecoded text is now treated as
+// A stray `%` in a sources entry once threw URIError out of the decode and
+// aborted the entire report; the undecoded text is now treated as
 // the already-decoded path, with containment still enforced afterwards.
 test('sourcePathFromReference tolerates a reference that defeats percent-decoding', () => {
   assert.deepEqual(

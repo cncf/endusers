@@ -404,7 +404,7 @@ test('warns on an asset larger than 2 MB but still passes', () => {
 // static/img and static/favicons hold site chrome — the footer logo, the
 // favicon set — rather than imported assets. They are served from the same
 // origin as the diagrams, so a browser that opens one of their SVGs directly
-// executes any script it carries; they were outside the gate until #690.
+// executes any script it carries, so they are inside the gate too.
 
 test('rejects active content in a site-chrome SVG under static/img', () => {
   const logo = 'static/img/cncf_logo_white.svg';

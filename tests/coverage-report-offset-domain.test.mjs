@@ -135,7 +135,7 @@ test('a JSON module wrapped by the loader is withheld rather than padding the to
   assert.deepEqual([...unmapped], ['data/x.json']);
 });
 
-test('a JSX record is remapped onto the source file it was transpiled from (#628)', () => {
+test('a JSX record is remapped onto the source file it was transpiled from', () => {
   const relPath = 'src/components/Widget/index.js';
   const source =
     'export default function Widget() {\n  return <div>{value}</div>;\n}\n';
@@ -158,7 +158,7 @@ test('a JSX record is remapped onto the source file it was transpiled from (#628
   const { source: mergedSource, counts } = merged.get(relPath);
   assert.equal(mergedSource, source);
   // Every generated line ran, so every executable original line must score
-  // covered rather than being silently dropped as it was before #628.
+  // covered rather than being silently dropped.
   assert.equal(counts[0], 1);
   assert.equal(counts[source.indexOf('<div>')], 1);
 });

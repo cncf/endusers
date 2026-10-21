@@ -182,18 +182,12 @@ test('relative links between ADR files resolve', () => {
   }
 });
 
-// Both assertions below were marked `{ todo: true }` when this file was
-// written (#282), because adr/0001-stakeholder-outreach-draft.md took the
-// 0001 prefix without being ADR 0001: the directory held two files claiming
-// that number and one of them was absent from the index. #385 resolved that
-// by renaming the draft to adr/stakeholder-outreach-draft-for-0001.md, which
-// drops it out of `numberPrefixed` entirely -- but this file was not touched
-// again, so the markers outlived the deviation they documented.
-//
-// A `todo` test still runs; node --test simply does not let its failure fail
-// the suite. Both of these have therefore been passing and inert, and the
-// contract they describe -- one file per ADR number, every numbered ADR in
-// the index -- has not actually been enforced on any pull request since #385.
+// Both assertions below were once marked `{ todo: true }` while a supporting
+// draft held the 0001 prefix; renaming it to
+// adr/stakeholder-outreach-draft-for-0001.md dropped it out of
+// `numberPrefixed`. A `todo` test still runs but cannot fail the suite, so
+// these stay plain tests: one file per ADR number, every numbered ADR in the
+// index.
 test('each ADR number is claimed by exactly one file', () => {
   const byNumber = new Map();
   for (const name of numberPrefixed) {

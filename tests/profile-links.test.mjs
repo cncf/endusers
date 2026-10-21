@@ -90,7 +90,7 @@ test('profileUrl returns null for an unrecognised type', () => {
 
 // PROFILE_BASES is a null-prototype map precisely so a `type` naming an
 // Object.prototype member (e.g. 'constructor') misses and is rejected
-// instead of resolving to an inherited value (#504).
+// instead of resolving to an inherited value.
 test('profileUrl treats an inherited Object.prototype key as unrecognised', () => {
   for (const inherited of ['constructor', 'toString', 'valueOf']) {
     assert.equal(

@@ -3,7 +3,7 @@
 // Three test files drive component branches that the checked-in data cannot
 // reach by swapping the module-scope `@site/data/**.json` import for a
 // fixture. That swap is now a mutable binding shared by every importer in the
-// process rather than a rewritten copy of the component (#571), which buys
+// process rather than a rewritten copy of the component, which buys
 // correct coverage attribution at the cost of shared state: if `cleanup()`
 // stopped restoring the checked-in data, every later live-data assertion in
 // the same file would be asserting against a fixture, and the tests that

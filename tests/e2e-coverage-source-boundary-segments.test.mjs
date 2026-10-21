@@ -2,7 +2,7 @@
 // decoded source-map segment to find the generated offsets where the original
 // source changes, and `convertScript` cuts each V8 range at those offsets so
 // that no sub-range straddles two modules. tests/e2e-coverage-source-boundary.test.mjs
-// pins the two-module case that motivated the split (#1236). These tests pin
+// pins the two-module case that motivated the split. These tests pin
 // the two shapes of that walk which a hand-rolled two-source fixture never
 // reaches, and which real bundles do:
 //

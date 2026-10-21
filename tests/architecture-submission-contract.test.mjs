@@ -16,7 +16,7 @@
 // `env.SUBMISSION_LABEL` holds — the workflow's own comment says "keep it in
 // sync with the env value above by hand". Nothing checked that by hand pairing
 // until now. tests/workflow-scripts.test.mjs only asserts the complementary
-// half: that no job-level `if:` *references* `env.` (the #813 regression). It
+// half: that no job-level `if:` *references* `env.`. It
 // cannot tell whether the inlined literal still matches, so changing
 // SUBMISSION_LABEL alone leaves the suite green while the gate keeps watching
 // the old label and the failure handler strips the new one.

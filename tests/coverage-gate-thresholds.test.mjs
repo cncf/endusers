@@ -46,7 +46,7 @@ const FLOORS = {
   '--check-source': 100,
   '--check-regions': 96,
   // scripts/ and src/ are at 2777/2777: every region executed, with no
-  // uncreditable residual of the kind that keeps the browser gate (#1256) and
+  // uncreditable residual of the kind that keeps the browser gate and
   // the harness per-file gate below their own ceilings. 100 is therefore the
   // measured floor here rather than an aspiration. A new defensive fallback in
   // either tree now has to be reached by a test or argued for by lowering this
@@ -71,17 +71,16 @@ const FLOORS = {
   //
   // That file's percentage is its ceiling, not a backlog: its uncovered
   // regions are the defensive fallbacks the note at the top of the file lists
-  // as unreachable (#1253; three more were deleted rather than listed in
-  // #1304), so no test can lift it. The per-file floor must stay at or below
-  // that ceiling until the list shrinks; a probe that lands one of them should
-  // raise the floor and shorten the list in the same change.
+  // as unreachable, so no test can lift it. The per-file floor must stay at
+  // or below that ceiling until the list shrinks; a probe that lands one of
+  // them should raise the floor and shorten the list in the same change.
   //
   // The ceiling itself is deliberately not written out here. It is asserted
   // below against the note instead, because every attempt to restate it in
   // this comment has gone stale while the note moved on: the comment said "6
   // uncovered regions" where the note said 7, and it later said the file was
-  // capped at 98.57% -- the 7-region figure -- after #1304 had deleted three
-  // of them and the note had been rewritten to 4 regions. A second test below
+  // capped at 98.57% -- the 7-region figure -- after three of them had been
+  // deleted and the note had been rewritten to 4 regions. A second test below
   // now fails on that shape directly, so the next restatement cannot drift
   // silently either.
   //
