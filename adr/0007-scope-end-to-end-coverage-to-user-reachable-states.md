@@ -76,6 +76,25 @@ Option 3.
 4. **The floors do not move.** The browser lane keeps 100% source lines, 96%
    source regions and `--require-source-files`; the unit lane keeps 100% / 100%.
 
+## Clarification: integration-boundary evidence (2026-10-21)
+
+Decision 3 requires surviving-mutant evidence for assertion gaps in production
+logic covered by the configured mutation run. It does not require inventing a
+hand-constructed mutation or another mutation harness to qualify an integration
+boundary the configured mutation scope or runner does not exercise.
+
+For such boundaries, including root configuration, Actions event environments,
+and dependency/compiler contracts, a finding may instead cite a reproducible
+integration failure or a documented historical regression. It must identify the
+production failure mode, explain why the mutation run does not exercise that
+boundary, and add a regression test against the actual consumer or exported
+configuration rather than only a helper or a duplicate parser.
+
+This clarification does not relax decisions 1, 2 or 4, or ADR 0006's
+restrictions on test-tree guards. It does not authorize data-shape browser
+fixture builds, change coverage floors, or replace surviving-mutant evidence for
+assertion gaps within mutation-covered production logic.
+
 ## Consequences
 
 - Hive `quality` findings that do not meet decision 2 are closed as not planned
