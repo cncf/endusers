@@ -1,0 +1,6 @@
+{
+  "description": "Makes sources.landscape.collectedAt unparseable so DirectoryFreshness's landscapeDate is null. It is one of the three dates that must all be absent at once before the all-absent guard in src/components/MemberDirectory/DirectoryFreshness.js -- `if (!landscapeDate && !architecturesDate && !awardsDate) return null;` -- returns null and the provenance note is dropped entirely. The value is an unparseable string rather than null because formatDate (src/components/shared/formatDate.js) runs `new Date(isoDate)`: new Date(null) is the Unix epoch, not an Invalid Date, so a null here formats as January 1, 1970 and stays truthy, which is exactly why the data-variant build cannot reach this guard.",
+  "set": {
+    "sources.landscape.collectedAt": "not a timestamp"
+  }
+}
