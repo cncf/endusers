@@ -1,7 +1,7 @@
 // scripts/check-duplication.mjs is the CI gate that fails the build when
-// jscpd counts more exact clones across tests/, src/ and scripts/ than
-// CLONE_CEILING allows, and that asks for the ceiling to come down once a
-// clean-up leaves it slack. These tests drive the script's parts in-process
+// either of its jscpd scans (code, and CSS plus .github/ YAML) counts more
+// exact clones than that scan's ceiling allows, and that asks for a ceiling
+// to come down once a clean-up leaves it slack. These tests drive the script's parts in-process
 // with the jscpd process replaced by a seam, then run the real CLI entry once
 // against a stubbed jscpd binary so the entry block is exercised as well.
 
@@ -17,7 +17,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -28,6 +28,7 @@ import {
   JSCPD_BIN,
   REPORTED_PAIRS,
   REPORT_NAME,
+  SCANS,
   judge,
   main,
   repoRoot as scriptRepoRoot,
@@ -98,9 +99,11 @@ test('the script locates the repository root, config and binary from its own pat
 });
 
 test('the ceiling and slack are positive integers with room for the slack', () => {
-  assert.ok(Number.isInteger(CLONE_CEILING) && CLONE_CEILING > 0);
+  assert.equal(SCANS[0].ceiling, CLONE_CEILING);
+  for (const { ceiling } of SCANS) {
+    assert.ok(Number.isInteger(ceiling) && CEILING_SLACK < ceiling);
+  }
   assert.ok(Number.isInteger(CEILING_SLACK) && CEILING_SLACK > 0);
-  assert.ok(CEILING_SLACK < CLONE_CEILING);
   assert.ok(Number.isInteger(REPORTED_PAIRS) && REPORTED_PAIRS > 0);
 });
 
@@ -123,6 +126,11 @@ test('runJscpd invokes the local binary with the repo config and a scratch JSON 
     'jscpd must not be asked to judge; the script owns the verdict',
   );
   assert.equal(options.cwd, scriptRepoRoot);
+
+  const other = fakeJscpd({ body });
+  runJscpd({ spawn: other.spawn, config: SCANS[1].config });
+  const [{ args: otherArgs }] = other.calls;
+  assert.equal(otherArgs[otherArgs.indexOf('--config') + 1], SCANS[1].config);
 });
 
 test('runJscpd reports a spawn error rather than a clean scan', () => {
@@ -257,12 +265,13 @@ test('judge defaults to the exported ceiling and slack', () => {
 
 // --- main ---
 
-function runMain(reportBody, options = {}) {
+function runMain(reportBody, { ceiling, ...options } = {}) {
   const out = collect();
   const err = collect();
   const jscpd = fakeJscpd({ body: JSON.stringify(reportBody) });
   const code = main({
     spawn: jscpd.spawn,
+    scans: [{ ...SCANS[0], ceiling }],
     log: out.write,
     error: err.write,
     ...options,
@@ -320,6 +329,24 @@ test('main exits 1 when jscpd scanned nothing', () => {
   assert.match(result.stderr, /\.jscpd\.json/);
 });
 
+test('main runs every scan against its own ceiling and fails if any fails', () => {
+  const duplicates = [clone('src/a.css', 'src/b.css', 5)];
+  const result = runMain(report(duplicates), {
+    slack: 5,
+    scans: [
+      { config: CONFIG_PATH, ceiling: 1, name: 'FIRST' },
+      { config: '/repo/.second.json', ceiling: 0, name: 'SECOND' },
+    ],
+  });
+  assert.equal(result.code, 1);
+  assert.match(
+    result.stdout,
+    /ok - 1 exact .* ceiling 1 \(FIRST, \.jscpd\.json\)/,
+  );
+  assert.match(result.stderr, /ceiling 0 \(SECOND, \.second\.json\)/);
+  assert.match(result.stderr, /--config \.second\.json.*SECOND in /);
+});
+
 test('main exits 1 and relays the message when jscpd could not run', () => {
   const err = collect();
   const code = main({
@@ -339,13 +366,15 @@ test('main exits 1 and relays the message when jscpd could not run', () => {
 // tests/audit-gate.test.mjs's npm stub.
 const JSCPD_STUB = `#!/usr/bin/env node
 import { writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 const args = process.argv.slice(2);
 const outputDir = args[args.indexOf('--output') + 1];
-writeFileSync(join(outputDir, ${JSON.stringify(REPORT_NAME)}), process.env.JSCPD_STUB_REPORT);
+const config = basename(args[args.indexOf('--config') + 1]);
+writeFileSync(join(outputDir, ${JSON.stringify(REPORT_NAME)}), JSON.stringify(JSON.parse(process.env.JSCPD_STUB_REPORTS)[config]));
 `;
 
-function runCli(reportBody) {
+// Takes one report per scan, in SCANS order.
+function runCli(reportBodies) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-dup-'));
   try {
     const script = join(work, 'scripts', 'check-duplication.mjs');
@@ -368,7 +397,11 @@ function runCli(reportBody) {
       env: {
         ...process.env,
         PATH: pathDir,
-        JSCPD_STUB_REPORT: JSON.stringify(reportBody),
+        JSCPD_STUB_REPORTS: JSON.stringify(
+          Object.fromEntries(
+            SCANS.map(({ config }, i) => [basename(config), reportBodies[i]]),
+          ),
+        ),
       },
     });
   } finally {
@@ -377,17 +410,22 @@ function runCli(reportBody) {
 }
 
 test('cli: exits through main() with the verdict as the process status', () => {
-  // Exactly at the ceiling: the one count that is neither over nor slack.
-  const duplicates = Array.from({ length: CLONE_CEILING }, (_, i) =>
-    clone(`tests/a${i}.mjs`, `tests/b${i}.mjs`, 5),
+  // Exactly at each ceiling: the one count that is neither over nor slack.
+  const reports = SCANS.map(({ ceiling }) =>
+    report(
+      Array.from({ length: ceiling }, (_, i) =>
+        clone(`tests/a${i}.mjs`, `tests/b${i}.mjs`, 5),
+      ),
+    ),
   );
-  const ok = runCli(report(duplicates));
+  const ok = runCli(reports);
   assert.equal(ok.status, 0, ok.stderr);
   assert.match(ok.stdout, /check-duplication: ok/);
 
-  const over = runCli(
-    report([...duplicates, clone('src/x.js', 'src/y.js', 9)]),
-  );
+  const over = runCli([
+    ...reports.slice(0, -1),
+    report([...reports.at(-1).duplicates, clone('src/x.css', 'src/y.css', 9)]),
+  ]);
   assert.equal(over.status, 1);
   assert.match(over.stderr, /Most duplicated file pairs/);
 });

@@ -9,6 +9,7 @@
     "**/node_modules/**",
     "**/build/**",
     "**/.docusaurus/**",
-    "**/coverage/**"
+    "**/coverage/**",
+    "**/*.css"
   ]
 }

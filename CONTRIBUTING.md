@@ -251,14 +251,18 @@ enough for a first contribution.
    - `check:markdown` — fix the reported issue, or add an inline disable comment
      per the rules in `.markdownlint.yaml` if the rule doesn't apply.
    - `check:duplication` — runs [jscpd](https://github.com/kucherenko/jscpd)
-     over `tests/`, `src/` and `scripts/` (settings in `.jscpd.json`) and fails
-     when it counts more exact clones than the `CLONE_CEILING` in
-     `scripts/check-duplication.mjs`. Extract the repeated piece into a shared
-     helper rather than adding another copy; `npx jscpd --config .jscpd.json`
-     lists every clone with its lines. The ceiling only ever goes down: when
-     your change removes enough clones, the gate fails with the new count and
-     asks you to lower the constant to it, which keeps the headroom from being
-     spent on the next copy.
+     twice and fails when either scan counts more exact clones than its ceiling
+     in `scripts/check-duplication.mjs`: the code in `tests/`, `src/` and
+     `scripts/` (settings in `.jscpd.json`, `CLONE_CEILING`), and the CSS in
+     `src/` plus the workflows, composite actions and other YAML in `.github/`
+     (settings in `.jscpd.css-yaml.json`, `CSS_YAML_CLONE_CEILING`). The second
+     scan uses a lower minimum clone size, because a copied CSS rule or workflow
+     step is much shorter than a copied function. Extract the repeated piece
+     into a shared helper, CSS module or composite action rather than adding
+     another copy; `npx jscpd --config <file>` lists every clone with its lines.
+     The ceilings only ever go down: when your change removes enough clones, the
+     gate fails with the new count and asks you to lower the constant to it,
+     which keeps the headroom from being spent on the next copy.
 
    The "Validate repository" check also runs `npm run check:audit` on every PR,
    which fails differently from the lint checks:
