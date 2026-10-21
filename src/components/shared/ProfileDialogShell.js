@@ -17,6 +17,12 @@ import styles from './ProfileDialogShell.module.css';
  * their hook dispatcher is installed rather than through `walkElements`'s
  * hook-free `expand` option.
  *
+ * This module also exports `ProfileHero`, `ProfileKicker`, and `ProfileBody`:
+ * the hero row, kicker label, and body wrapper were hand-copied (CSS and
+ * JSX) between the same two callers after the shell itself was extracted;
+ * these three plain wrapper components carry the shared rules so neither
+ * caller's own stylesheet needs to redeclare them.
+ *
  * @param {object} props
  * @param {() => void} props.onClose
  * @param {React.RefObject} props.triggerRef focus returns here on close
@@ -69,4 +75,39 @@ export default function ProfileDialogShell({
       </section>
     </div>
   );
+}
+
+/**
+ * Shared hero row (avatar/logo area + heading block) for a profile dialog's
+ * content, used by both `CommunityPeople`'s `PersonDialog` and
+ * `MemberDirectory`'s `MemberProfile`. Each caller still renders its own
+ * avatar/logo markup and heading level (`h3` vs `h2`) as `children`; only the
+ * byte-identical `.profileHero` wrapper rule is shared here.
+ *
+ * @param {object} props
+ * @param {React.ReactNode} props.children
+ */
+export function ProfileHero({ children }) {
+  return <div className={styles.profileHero}>{children}</div>;
+}
+
+/**
+ * Shared uppercase kicker label shown above a profile dialog's heading.
+ *
+ * @param {object} props
+ * @param {React.ReactNode} props.children
+ */
+export function ProfileKicker({ children }) {
+  return <p className={styles.profileKicker}>{children}</p>;
+}
+
+/**
+ * Shared body wrapper (padding only) for a profile dialog's content below
+ * the hero row.
+ *
+ * @param {object} props
+ * @param {React.ReactNode} props.children
+ */
+export function ProfileBody({ children }) {
+  return <div className={styles.profileBody}>{children}</div>;
 }

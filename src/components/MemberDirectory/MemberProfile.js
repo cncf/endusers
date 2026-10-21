@@ -1,6 +1,10 @@
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
-import ProfileDialogShell from '../shared/ProfileDialogShell';
+import ProfileDialogShell, {
+  ProfileHero,
+  ProfileKicker,
+  ProfileBody,
+} from '../shared/ProfileDialogShell';
 import { initials, formatCount, membershipLabel } from './utils';
 import styles from './styles.module.css';
 
@@ -16,7 +20,7 @@ export function MemberProfile({ member, onClose, triggerRef }) {
       maxWidth="720px"
       maxHeight="min(800px, 92vh)"
     >
-      <div className={styles.profileHero}>
+      <ProfileHero>
         <div className={styles.logoStage} aria-hidden="true">
           {member.logo ? (
             <img src={logoUrl} alt="" className={styles.profileLogo} />
@@ -27,9 +31,9 @@ export function MemberProfile({ member, onClose, triggerRef }) {
           )}
         </div>
         <div className={styles.profileHeading}>
-          <p className={styles.profileKicker}>
+          <ProfileKicker>
             {membershipLabel(member.membershipStatus)}
-          </p>
+          </ProfileKicker>
           <h2 id="member-profile-name">{member.name}</h2>
           <p className={styles.profileMeta}>
             {member.architectures.length > 0 && (
@@ -48,8 +52,8 @@ export function MemberProfile({ member, onClose, triggerRef }) {
             )}
           </p>
         </div>
-      </div>
-      <div className={styles.profileBody}>
+      </ProfileHero>
+      <ProfileBody>
         {member.industries.length > 0 && (
           <div className={styles.profileSection}>
             <h3>Industries</h3>
@@ -146,7 +150,7 @@ export function MemberProfile({ member, onClose, triggerRef }) {
             ))}
           </ul>
         </div>
-      </div>
+      </ProfileBody>
     </ProfileDialogShell>
   );
 }

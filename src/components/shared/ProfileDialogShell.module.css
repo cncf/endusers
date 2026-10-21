@@ -45,6 +45,36 @@
   outline-offset: 2px;
 }
 
+/*
+ * Shared hero/kicker/body layout, rendered by the `ProfileHero`,
+ * `ProfileKicker`, and `ProfileBody` components below (CommunityPeople and
+ * MemberDirectory both use them). Each caller still renders its own
+ * image/logo area and heading-level-specific element (`h2` vs `h3`) as
+ * `ProfileHero`'s children; those, and the small `.profileHeading` wrapper
+ * that groups them, stay in each caller's own styles.module.css since they
+ * are not byte-identical.
+ */
+.profileHero {
+  align-items: center;
+  background: var(--ifm-color-emphasis-100);
+  display: flex;
+  gap: 1.25rem;
+  padding: 2rem;
+}
+
+.profileKicker {
+  color: var(--ifm-color-primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.profileBody {
+  padding: 1.5rem 2rem 2rem;
+}
+
 @media (max-width: 560px) {
   .backdrop {
     align-items: flex-end;
@@ -53,5 +83,15 @@
 
   .dialog {
     max-height: 94vh;
+  }
+
+  .profileHero {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 1.5rem;
+  }
+
+  .profileBody {
+    padding: 1.25rem 1.5rem 1.5rem;
   }
 }

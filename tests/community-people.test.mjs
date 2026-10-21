@@ -33,6 +33,12 @@ const peopleData = (await importSource('data/community-people.json')).default;
 const ProfileDialogShell = (
   await importSource('src/components/shared/ProfileDialogShell.js')
 ).default;
+const { ProfileHero, ProfileKicker, ProfileBody } = await importSource(
+  'src/components/shared/ProfileDialogShell.js',
+);
+
+const SHARED_COMPONENTS = new Set([ProfileHero, ProfileKicker, ProfileBody]);
+const EXPAND_SHARED = { expand: (type) => SHARED_COMPONENTS.has(type) };
 
 const Internals =
   React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
@@ -104,7 +110,7 @@ function childComponents(tree) {
 }
 
 function findByClass(tree, className) {
-  for (const element of walkElements(tree)) {
+  for (const element of walkElements(tree, EXPAND_SHARED)) {
     if (element.props?.className === className) return element;
   }
   return undefined;

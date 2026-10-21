@@ -51,6 +51,9 @@ const { MemberProfile } = await importSource(`${DIR}/MemberProfile.js`);
 const ProfileDialogShell = (
   await importSource('src/components/shared/ProfileDialogShell.js')
 ).default;
+const { ProfileHero, ProfileKicker, ProfileBody } = await importSource(
+  'src/components/shared/ProfileDialogShell.js',
+);
 const { DirectoryFreshness } = await importSource(
   `${DIR}/DirectoryFreshness.js`,
 );
@@ -79,6 +82,9 @@ const SHARED_COMPONENTS = new Set([
   EmptyFilterState,
   OrgAvatar,
   ProjectTagList,
+  ProfileHero,
+  ProfileKicker,
+  ProfileBody,
 ]);
 const EXPAND_SHARED = { expand: (type) => SHARED_COMPONENTS.has(type) };
 

@@ -78,15 +78,9 @@
   font-size: 0.75rem;
 }
 
-/* .backdrop, .dialog, and .closeButton live in
-   ../shared/ProfileDialogShell.module.css */
-.profileHero {
-  align-items: center;
-  background: var(--ifm-color-emphasis-100);
-  display: flex;
-  gap: 1.25rem;
-  padding: 2rem;
-}
+/* .profileHero, .profileKicker, and .profileBody are now rendered by the
+   shared ProfileHero/ProfileKicker/ProfileBody components in
+   ../shared/ProfileDialogShell.js */
 .profileImage {
   border-radius: 50%;
   height: 120px;
@@ -95,14 +89,6 @@
 }
 .profileHeading {
   min-width: 0;
-}
-.profileKicker {
-  color: var(--ifm-color-primary);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  margin: 0 0 0.5rem;
-  text-transform: uppercase;
 }
 .profileHeading h3 {
   font-size: clamp(1.5rem, 4vw, 2.25rem);
@@ -118,9 +104,6 @@
   color: var(--ifm-color-emphasis-700);
   font-size: 0.8rem;
   margin: 0.25rem 0 0;
-}
-.profileBody {
-  padding: 1.5rem 2rem 2rem;
 }
 .bio {
   font-size: 1.05rem;
@@ -157,18 +140,12 @@
   margin: 1.25rem 0 0;
 }
 
+/* The hero/body breakpoint rules are shared too; only .profileImage's
+   own mobile size override stays here. */
 @media (max-width: 560px) {
-  .profileHero {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 1.5rem;
-  }
   .profileImage {
     height: 96px;
     width: 96px;
-  }
-  .profileBody {
-    padding: 1.25rem 1.5rem 1.5rem;
   }
 }
 

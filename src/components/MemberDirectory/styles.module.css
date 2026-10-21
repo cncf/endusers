@@ -139,14 +139,9 @@
 }
 
 /* Profile dialog: .backdrop, .dialog, and .closeButton live in
-   ../shared/ProfileDialogShell.module.css */
-.profileHero {
-  align-items: center;
-  background: var(--ifm-color-emphasis-100);
-  display: flex;
-  gap: 1.25rem;
-  padding: 2rem;
-}
+   ../shared/ProfileDialogShell.module.css; .profileHero, .profileKicker,
+   and .profileBody are rendered by the shared ProfileHero/ProfileKicker/
+   ProfileBody components in ../shared/ProfileDialogShell.js */
 
 .logoStage {
   align-items: center;
@@ -183,15 +178,6 @@
   min-width: 0;
 }
 
-.profileKicker {
-  color: var(--ifm-color-primary);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  margin: 0 0 0.5rem;
-  text-transform: uppercase;
-}
-
 .profileHeading h2 {
   font-size: clamp(1.5rem, 4vw, 2.25rem);
   margin: 0;
@@ -205,10 +191,6 @@
   gap: 0.75rem;
   font-size: 0.9rem;
   margin: 0.5rem 0 0;
-}
-
-.profileBody {
-  padding: 1.5rem 2rem 2rem;
 }
 
 .profileSection {
@@ -305,24 +287,16 @@
   gap: 0.35rem;
 }
 
+/* The breakpoint rules for .profileHero/.profileBody live in the shared
+   module; .logoStage keeps its own override here. */
 @media (max-width: 560px) {
   .toggle {
     width: 100%;
   }
 
-  .profileHero {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 1.5rem;
-  }
-
   .logoStage {
     height: 96px;
     width: 96px;
-  }
-
-  .profileBody {
-    padding: 1.25rem 1.5rem 1.5rem;
   }
 }
 
