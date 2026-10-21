@@ -207,6 +207,19 @@ Two consequences worth knowing:
   sections (architectures, which lists only its catalog and submission pages so
   imported architecture pages stay full-width; community which includes awards
   and members; resources) do.
+- References in Markdown prose are machine-checked by
+  `tests/markdown-references.test.mjs` across every Markdown file in the
+  repository except the numbered decision records under `adr/` and the generated
+  architecture pages. Each of these must resolve, or the "Validate repository"
+  check fails: a site route in backticks, a link, a JSX `to`/`href` or an
+  `https://endusers.cncf.io/...` URL (against docs, `src/pages`, blog and
+  redirect routes); `npm run <script>` and a bare script name such as
+  `validate:metrics` (against `package.json`); `just <recipe>`, inline or in a
+  fenced block (against the `Justfile`); a workflow file path or bare file name;
+  a workflow or job display name in quotes or backticks followed by workflow,
+  check, job or gate; and a sentence stating an ADR's status, which must match
+  the record. A deliberate historical reference goes in that test's
+  `HISTORICAL_REFERENCES` with its reason.
 
 ## Good first issues
 

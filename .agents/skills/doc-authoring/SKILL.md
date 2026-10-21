@@ -19,6 +19,10 @@ Guidelines for technical documentation within this repository.
   and `slug` as needed. `hide_table_of_contents: true` hides the right sidebar.
 - **Links**: Prefer relative internal links. External links must be verified
   before publishing. Broken links fail the build (`onBrokenLinks: 'throw'`).
+- **Named references**: routes, npm scripts, Justfile recipes, workflow files
+  and display names, and ADR statuses named anywhere in repository Markdown are
+  checked by `tests/markdown-references.test.mjs`; see "Style rules" in
+  CONTRIBUTING.md. When renaming any of them, update the prose in the same PR.
 - **Facts**: Verify CNCF facts against authoritative sources (cncf/tab,
   cncf/architecture, cncf/landscape, cncf.io announcements). Never assert counts
   or winners from memory.
