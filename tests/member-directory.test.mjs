@@ -28,6 +28,7 @@ import { importSource } from './helpers-jsx.mjs';
 import {
   findAllByType,
   findByType,
+  renderElement,
   textOf,
   walkElements,
 } from './tools/react-element-tree.mjs';
@@ -40,6 +41,9 @@ const { default: FilterToolbar } = await importSource(
 );
 const { MemberCard } = await importSource(`${DIR}/MemberCard.js`);
 const { MemberProfile } = await importSource(`${DIR}/MemberProfile.js`);
+const ProfileDialogShell = (
+  await importSource('src/components/shared/ProfileDialogShell.js')
+).default;
 const { DirectoryFreshness } = await importSource(
   `${DIR}/DirectoryFreshness.js`,
 );
@@ -126,7 +130,11 @@ function render(Component, props = {}) {
       },
     };
     try {
-      view.tree = Component(props);
+      // ProfileDialogShell calls useFocusTrap, so a dialog rooted in it is
+      // rendered while this dispatcher is still installed.
+      const tree = Component(props);
+      view.tree =
+        tree?.type === ProfileDialogShell ? renderElement(tree) : tree;
     } finally {
       Internals.H = previousDispatcher;
     }

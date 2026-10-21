@@ -25,55 +25,53 @@ function PersonDialog({ person, onClose, triggerRef }) {
     ['Website', websiteUrl(blog)],
   ].filter(([, href]) => href);
 
-  return ProfileDialogShell({
-    onClose,
-    triggerRef,
-    labelledBy: 'profile-name',
-    closeLabel: `Close ${name} profile`,
-    children: (
-      <>
-        <div className={styles.profileHero}>
-          <img
-            src={image}
-            alt=""
-            className={styles.profileImage}
-            width="240"
-            height="240"
-          />
-          <div className={styles.profileHeading}>
-            <p className={styles.profileKicker}>CNCF end-user community</p>
-            <h3 id="profile-name">{name}</h3>
-            <p className={styles.profileRole}>
-              {[role, company].filter(Boolean).join(' · ') ||
-                'Community member'}
-            </p>
-            {location && <p className={styles.location}>{location}</p>}
-          </div>
-        </div>
-        <div className={styles.profileBody}>
-          {bio ? (
-            <p className={styles.bio}>{bio}</p>
-          ) : (
-            <p className={styles.bioMuted}>
-              Public profile details are limited. Use the links below to learn
-              more about {name}.
-            </p>
-          )}
-          <div className={styles.profileLinks}>
-            {links.map(([label, href]) => (
-              <a key={label} href={href} target="_blank" rel="noreferrer">
-                {label}
-                <span aria-hidden="true">↗</span>
-              </a>
-            ))}
-          </div>
-          <p className={styles.sourceNote}>
-            Profile details refreshed from public sources at build time.
+  return (
+    <ProfileDialogShell
+      onClose={onClose}
+      triggerRef={triggerRef}
+      labelledBy="profile-name"
+      closeLabel={`Close ${name} profile`}
+    >
+      <div className={styles.profileHero}>
+        <img
+          src={image}
+          alt=""
+          className={styles.profileImage}
+          width="240"
+          height="240"
+        />
+        <div className={styles.profileHeading}>
+          <p className={styles.profileKicker}>CNCF end-user community</p>
+          <h3 id="profile-name">{name}</h3>
+          <p className={styles.profileRole}>
+            {[role, company].filter(Boolean).join(' · ') || 'Community member'}
           </p>
+          {location && <p className={styles.location}>{location}</p>}
         </div>
-      </>
-    ),
-  });
+      </div>
+      <div className={styles.profileBody}>
+        {bio ? (
+          <p className={styles.bio}>{bio}</p>
+        ) : (
+          <p className={styles.bioMuted}>
+            Public profile details are limited. Use the links below to learn
+            more about {name}.
+          </p>
+        )}
+        <div className={styles.profileLinks}>
+          {links.map(([label, href]) => (
+            <a key={label} href={href} target="_blank" rel="noreferrer">
+              {label}
+              <span aria-hidden="true">↗</span>
+            </a>
+          ))}
+        </div>
+        <p className={styles.sourceNote}>
+          Profile details refreshed from public sources at build time.
+        </p>
+      </div>
+    </ProfileDialogShell>
+  );
 }
 
 function PersonCard({ person }) {

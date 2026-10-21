@@ -12,11 +12,11 @@ import styles from './ProfileDialogShell.module.css';
  * into two near-identical JSX trees and CSS modules -- the same shape of
  * duplication already extracted once for `FilterToolbar` (#1658/#1659).
  *
- * Called directly as a plain function (not as a JSX element) by every
- * caller so its output expands inline into the caller's own render -- the
- * repository's hook-free render tests walk the returned element tree without
- * invoking nested function components, and real React renders a function
- * component identically either way.
+ * Rendered as a JSX element (`<ProfileDialogShell ... />`) by every caller,
+ * per the shared-component rule in .agents/skills/ui-standards/SKILL.md. It
+ * calls `useFocusTrap`, so render tests expand it with `renderElement()` while
+ * their hook dispatcher is installed rather than through `walkElements`'s
+ * hook-free `expand` option.
  *
  * @param {object} props
  * @param {() => void} props.onClose
