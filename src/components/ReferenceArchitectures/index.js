@@ -76,12 +76,13 @@ export default function ReferenceArchitectures() {
         totalCount={catalog.length}
       />
       {filtered.length === 0 ? (
-        EmptyFilterState({
-          heading: 'No architectures match',
-          onClear: clearFilters,
-          children:
-            'Try clearing filters or searching for a different organization or title.',
-        })
+        <EmptyFilterState
+          heading="No architectures match"
+          onClear={clearFilters}
+        >
+          Try clearing filters or searching for a different organization or
+          title.
+        </EmptyFilterState>
       ) : (
         <div className={styles.grid}>
           {filtered.map((architecture) => (

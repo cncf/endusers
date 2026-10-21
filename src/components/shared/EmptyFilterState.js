@@ -9,9 +9,10 @@ import styles from './EmptyFilterState.module.css';
  * ReferenceArchitectures) -- previously hand-copied as an identical
  * `.emptyState`/`.clearButton` JSX tree and CSS pair into each.
  *
- * Called directly as a plain function (not as a JSX element), matching the
- * FilterToolbar/ProfileDialogShell convention, so its output expands inline
- * into the caller's own render for the hook-free render tests.
+ * Rendered as a JSX element (`<EmptyFilterState ... />`) by every caller,
+ * per the shared-component rule in .agents/skills/ui-standards/SKILL.md. It
+ * is hook-free, so render tests reach its markup through the harness's
+ * `expand` option.
  *
  * @param {object} props
  * @param {string} props.heading

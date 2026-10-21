@@ -122,12 +122,12 @@ export default function MemberDirectory() {
       />
 
       {filtered.length === 0 ? (
-        EmptyFilterState({
-          heading: 'No organizations match',
-          onClear: clearFilters,
-          children:
-            'Try clearing filters or searching for a different organization name.',
-        })
+        <EmptyFilterState
+          heading="No organizations match"
+          onClear={clearFilters}
+        >
+          Try clearing filters or searching for a different organization name.
+        </EmptyFilterState>
       ) : (
         <ul className={styles.grid}>
           {filtered.map((member) => (
