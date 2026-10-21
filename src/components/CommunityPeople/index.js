@@ -1,7 +1,11 @@
 import React, { useRef, useState } from 'react';
 import peopleData from '@site/data/community-people.json';
 import { profileUrl, websiteUrl } from '@site/src/lib/profile-links.mjs';
-import ProfileDialogShell from '../shared/ProfileDialogShell';
+import ProfileDialogShell, {
+  ProfileHero,
+  ProfileKicker,
+  ProfileBody,
+} from '../shared/ProfileDialogShell';
 import styles from './styles.module.css';
 
 function PersonDialog({ person, onClose, triggerRef }) {
@@ -32,7 +36,7 @@ function PersonDialog({ person, onClose, triggerRef }) {
       labelledBy="profile-name"
       closeLabel={`Close ${name} profile`}
     >
-      <div className={styles.profileHero}>
+      <ProfileHero>
         <img
           src={image}
           alt=""
@@ -41,15 +45,15 @@ function PersonDialog({ person, onClose, triggerRef }) {
           height="240"
         />
         <div className={styles.profileHeading}>
-          <p className={styles.profileKicker}>CNCF end-user community</p>
+          <ProfileKicker>CNCF end-user community</ProfileKicker>
           <h3 id="profile-name">{name}</h3>
           <p className={styles.profileRole}>
             {[role, company].filter(Boolean).join(' · ') || 'Community member'}
           </p>
           {location && <p className={styles.location}>{location}</p>}
         </div>
-      </div>
-      <div className={styles.profileBody}>
+      </ProfileHero>
+      <ProfileBody>
         {bio ? (
           <p className={styles.bio}>{bio}</p>
         ) : (
@@ -69,7 +73,7 @@ function PersonDialog({ person, onClose, triggerRef }) {
         <p className={styles.sourceNote}>
           Profile details refreshed from public sources at build time.
         </p>
-      </div>
+      </ProfileBody>
     </ProfileDialogShell>
   );
 }
