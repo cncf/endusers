@@ -32,6 +32,35 @@ actions (the `actions` language) on pushes to main, pull requests that touch
 either, and a weekly schedule. Report all vulnerabilities in third-party
 dependencies here, including ones with no fixed version available yet.
 
+## Response headers
+
+The site is served by Netlify, and [`netlify.toml`](netlify.toml) sets every
+security response header; Netlify adds none of its own.
+
+- **Every page (`/*`)**: a complete `Content-Security-Policy` (`default-src`,
+  `script-src`, `style-src`, `img-src`, `font-src`, `connect-src`,
+  `frame-src 'none'`, `media-src 'none'`, `manifest-src`, `object-src 'none'`,
+  `base-uri`, `form-action`, `frame-ancestors 'self'` and
+  `upgrade-insecure-requests`), a `Permissions-Policy` that turns off powerful
+  browser features the site does not use (camera, microphone, geolocation,
+  payment, USB and others), `Strict-Transport-Security`,
+  `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff` and
+  `Referrer-Policy: same-origin`.
+- **Static images and favicons (`/img/*`, `/favicons/*`)**: the same headers,
+  with a CSP that denies script and every fetch except inline styles, `data:`
+  images and same-origin fonts, so an SVG opened directly renders inert.
+
+`script-src` and `style-src` allow `'unsafe-inline'` because Docusaurus emits an
+inline color-mode bootstrap script and inline styles on every page, and the
+script's content varies with each deploy URL, so a hash cannot cover it. Both
+still refuse every off-origin script and stylesheet. The page policy restates
+the `<meta>` policy in `docusaurus.config.js`, which the dev server and other
+hosts use. `tests/netlify-publish-contract.test.mjs` fails if the two drift
+apart, or if a block that sends a CSP omits `default-src`, `object-src 'none'`,
+`base-uri`, `form-action` or `frame-ancestors`.
+[CONTENT-SECURITY.md](CONTENT-SECURITY.md) explains how these headers back up
+the import gates.
+
 ## Known unpatched dependency advisories
 
 `npm audit` currently reports 28 high-severity packages. They all resolve to the

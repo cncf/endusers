@@ -16,13 +16,35 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# Response headers (#1494). These are the controls the <meta> policy in
-# docusaurus.config.js cannot deliver: browsers ignore frame-ancestors in a
-# meta tag, and no meta tag reaches a .svg or .json opened directly. The
-# fetch directives (img-src, script-src and the rest) deliberately stay in
-# docusaurus.config.js, where they are built from the host allowlists shared
-# with scripts/lib/; restating them here would give one policy two sources of
-# truth. tests/netlify-publish-contract.test.mjs pins this block.
+# Response headers. The HTML catch-all sends the complete page policy as a
+# header rather than leaving the fetch directives to the <meta> tag in
+# docusaurus.config.js alone: a meta policy cannot carry frame-ancestors, does
+# not reach a .svg or .json opened directly, and only starts to apply once the
+# parser reaches it. The fetch and navigation directives below restate the
+# production meta policy word for word -- tests/netlify-publish-contract.test.mjs
+# fails if the two disagree, and requires every block that sends a CSP to name
+# a fixed baseline (default-src, object-src 'none', base-uri, form-action,
+# frame-ancestors), so a missing directive fails CI instead of being found in
+# production one header at a time.
+#
+# The header adds what the meta tag does not have:
+# - default-src 'self', so a fetch directive neither policy names inherits
+#   this origin instead of being unrestricted;
+# - frame-ancestors 'self' (with X-Frame-Options for older browsers), which
+#   browsers ignore in a meta tag;
+# - upgrade-insecure-requests, so an http:// subresource that reaches a page is
+#   fetched over HTTPS rather than refused or sent in cleartext.
+#
+# script-src keeps 'unsafe-inline' because hashes cannot describe it. Docusaurus
+# inlines a color-mode bootstrap on every page whose localStorage key carries a
+# hash of the site URL, and scripts/netlify-build.mjs gives every deploy
+# preview its own URL, so one static hash here would match production and block
+# the script on every preview (or the reverse). 'self' still refuses every
+# off-origin script. 'unsafe-eval' is not needed by the production bundle.
+#
+# Permissions-Policy turns off powerful features the site never uses, so a
+# script that reached a page could not ask for them. clipboard-write is left
+# alone: the code-block copy button uses it.
 #
 # Strict-Transport-Security is the one control here that protects the response
 # rather than constrains it. Netlify does not send it on its own -- its HTTPS
@@ -41,7 +63,8 @@
   for = "/*"
 
   [headers.values]
-    Content-Security-Policy = "frame-ancestors 'self'"
+    Content-Security-Policy = "frame-ancestors 'self'; default-src 'self'; base-uri 'self'; object-src 'none'; frame-src 'none'; media-src 'none'; connect-src 'self'; font-src 'self'; manifest-src 'self'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://raw.githubusercontent.com https://avatars.githubusercontent.com https://github.com https://www.github.com https://cncf.io https://*.cncf.io; upgrade-insecure-requests"
+    Permissions-Policy = "accelerometer=(), autoplay=(), browsing-topics=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
@@ -93,6 +116,7 @@
 
   [headers.values]
     Content-Security-Policy = "frame-ancestors 'self'; default-src 'none'; form-action 'none'; base-uri 'none'; script-src 'none'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'"
+    Permissions-Policy = "accelerometer=(), autoplay=(), browsing-topics=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
@@ -103,6 +127,7 @@
 
   [headers.values]
     Content-Security-Policy = "frame-ancestors 'self'; default-src 'none'; form-action 'none'; base-uri 'none'; script-src 'none'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'"
+    Permissions-Policy = "accelerometer=(), autoplay=(), browsing-topics=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"

@@ -49,19 +49,22 @@ Two consequences matter when a submission is rejected:
 
 ### Residual risks and compensating controls
 
-- The site's fetch directives (`img-src`, `script-src` and the rest) are
-  delivered as a `<meta>` tag, which browsers do not apply to a file opened
-  directly (for example a `.svg` URL). The parser-based gates above are
-  therefore the primary control, and the CSP is defense in depth. The controls
-  that need a real response header -- `frame-ancestors` with `X-Frame-Options`
-  against clickjacking, `X-Content-Type-Options: nosniff`, and `Referrer-Policy`
-  for non-HTML responses -- are sent by the `[[headers]]` block in
-  `netlify.toml` and pinned by `tests/netlify-publish-contract.test.mjs`; the
-  fetch directives are kept out of that block so the policy has one source of
-  truth. For the directly-opened-asset case the meta tag can never reach,
-  asset-scoped `[[headers]]` rules (`/img/*` and `/favicons/*`, the only paths
-  that serve an SVG) add a flat denial, so a directly-opened SVG renders as an
-  inert document even if a parser gate is bypassed. The denial leads with
+- The site's page policy (`img-src`, `script-src` and the rest) is built in
+  `docusaurus.config.js` and delivered as a `<meta>` tag, which browsers do not
+  apply to a file opened directly (for example a `.svg` URL). The parser-based
+  gates above are therefore the primary control, and the CSP is defense in
+  depth. On Netlify the `/*` `[[headers]]` block in `netlify.toml` sends the
+  same policy as a response header, adding what a meta tag cannot carry --
+  `frame-ancestors` (with `X-Frame-Options`) against clickjacking, a
+  `default-src 'self'` fallback and `upgrade-insecure-requests` -- alongside
+  `Permissions-Policy`, `X-Content-Type-Options: nosniff` and `Referrer-Policy`.
+  `tests/netlify-publish-contract.test.mjs` fails if the header and the
+  production meta policy disagree on any directive, and if any block that sends
+  a CSP omits `default-src`, `object-src 'none'`, `base-uri`, `form-action` or
+  `frame-ancestors`. For the directly-opened-asset case the meta tag can never
+  reach, asset-scoped `[[headers]]` rules (`/img/*` and `/favicons/*`, the only
+  paths that serve an SVG) add a flat denial, so a directly-opened SVG renders
+  as an inert document even if a parser gate is bypassed. The denial leads with
   `default-src 'none'` on purpose: a fetch directive a header does not name is
   unrestricted rather than inherited, so `script-src 'none'; object-src 'none'`
   on their own stopped such an SVG from running script while leaving it free to
