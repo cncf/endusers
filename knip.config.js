@@ -38,9 +38,6 @@ const config = {
     // Run through `npx` inside xargs pipelines in package.json scripts.
     'markdown-link-check',
     'markdownlint-cli',
-    // Type-only JSDoc import in docusaurus.config.js and sidebars.js; installed
-    // by @docusaurus/preset-classic.
-    '@docusaurus/plugin-content-docs',
   ],
   ignoreIssues: {
     // Tests load it through importSource(), a dynamic import knip cannot follow.
