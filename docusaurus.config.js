@@ -54,6 +54,14 @@ const IMAGE_HOST_SOURCES = [
 function endusersE2ESourceMaps() {
   return {
     name: 'endusers-e2e-source-maps',
+    async postBuild({ outDir }) {
+      const { writeFile } = require('node:fs/promises');
+      const { join } = require('node:path');
+      await writeFile(
+        join(outDir, 'e2e-coverage-runtime.json'),
+        JSON.stringify({ node: process.version, v8: process.versions.v8 }),
+      );
+    },
     configureWebpack(config, isServer) {
       if (isServer) return {};
       return { devtool: 'source-map' };

@@ -31,9 +31,21 @@ function info(testId = 'fixture-test') {
   };
 }
 
-function fakePage({ result = [], startError, stopError } = {}) {
+function fakePage({ result = [], startError, stopError, versionError } = {}) {
   let started = false;
   return {
+    context: () => ({
+      async newCDPSession() {
+        return {
+          async send(method) {
+            assert.equal(method, 'Browser.getVersion');
+            if (versionError) throw versionError;
+            return { product: 'Chrome/123.0', jsVersion: '12.3' };
+          },
+          async detach() {},
+        };
+      },
+    }),
     coverage: {
       async startJSCoverage() {
         if (startError) throw startError;
@@ -111,6 +123,13 @@ test('CoverageManager writes a raw artifact with source identity metadata', asyn
     const payload = JSON.parse(await readFile(join(runDir, artifact), 'utf8'));
     assert.equal(payload.result[0].sourceLength, 3);
     assert.match(payload.result[0].sourceSha256, /^[a-f0-9]{64}$/);
+    assert.equal(payload.runtime.browser, 'Chrome/123.0');
+    assert.equal(payload.runtime.browserV8, '12.3');
+    assert.equal(payload.runtime.node, process.version);
+    assert.equal(
+      payload.runtime.playwright,
+      require('@playwright/test/package.json').version,
+    );
   } finally {
     await rm(runDir, { recursive: true, force: true });
   }
@@ -184,15 +203,7 @@ test('CoverageManager writes honest error artifacts for start and stop failures'
   try {
     await initCoverageRun(runDir, 'errors-1');
     const manager = new CoverageManager(info(), runDir, 'errors-1');
-    await assert.rejects(() =>
-      manager.startPage({
-        coverage: {
-          async startJSCoverage() {
-            throw {};
-          },
-        },
-      }),
-    );
+    await assert.rejects(() => manager.startPage(fakePage({ startError: {} })));
     await assert.rejects(
       () => manager.startPage({ coverage: {} }),
       (error) => {
@@ -213,6 +224,26 @@ test('CoverageManager writes honest error artifacts for start and stop failures'
   } finally {
     await rm(runDir, { recursive: true, force: true });
   }
+});
+
+test('CoverageManager records browser-version failures as capture errors', async (t) => {
+  const runDir = await mkdtemp(join(tmpdir(), 'endusers-fixture-version-'));
+  t.after(() => rm(runDir, { recursive: true, force: true }));
+  await initCoverageRun(runDir, 'version-error');
+  const manager = new CoverageManager(info(), runDir, 'version-error');
+  await assert.rejects(
+    () =>
+      manager.startPage(
+        fakePage({ versionError: new Error('version failed') }),
+      ),
+    /version failed/,
+  );
+  const artifact = (await readdir(runDir)).find((name) =>
+    name.endsWith('-error.json'),
+  );
+  const payload = JSON.parse(await readFile(join(runDir, artifact), 'utf8'));
+  assert.equal(payload.runtime, null);
+  assert.equal(payload.error.message, 'version failed');
 });
 
 test('CoverageManager aggregates manual-context cleanup errors', async () => {
