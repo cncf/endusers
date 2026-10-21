@@ -21,7 +21,7 @@ function ArchitectureCard({ architecture }) {
     <Link to={`/architectures/${id}`} className={styles.card}>
       {/* No wrapperClassName override: this card's avatar sizing matches
           OrgAvatar's own defaults (see shared/OrgAvatar.module.css). */}
-      {OrgAvatar({ logoUrl: logoAsset ? logoUrl : null, name: organization })}
+      <OrgAvatar logoUrl={logoAsset ? logoUrl : null} name={organization} />
       <div className={styles.cardContent}>
         <p className={styles.eyebrow}>
           {industries.join(' · ') || 'Reference architecture'}
@@ -29,7 +29,7 @@ function ArchitectureCard({ architecture }) {
         <h2 className={styles.orgName}>{organization}</h2>
         <p className={styles.title}>{title}</p>
         <p className={styles.summary}>{summary}</p>
-        {ProjectTagList({ projects })}
+        <ProjectTagList projects={projects} />
         <span className={styles.link}>View architecture →</span>
       </div>
     </Link>

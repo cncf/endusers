@@ -33,10 +33,20 @@ const catalog = (await importSource('data/architectures/catalog.json')).default;
 const { default: EmptyFilterState } = await importSource(
   'src/components/shared/EmptyFilterState.js',
 );
+const { OrgAvatar } = await importSource('src/components/shared/OrgAvatar.js');
+const { ProjectTagList } = await importSource(
+  'src/components/shared/ProjectTagList.js',
+);
 
-// The empty state renders as an <EmptyFilterState> element, an opaque leaf to
-// the tree walker; the empty-state tests expand it (it is hook-free).
-const EXPAND_EMPTY_STATE = { expand: (type) => type === EmptyFilterState };
+// The empty state, card avatar and tag list render as elements of hook-free
+// components under src/components/shared/, opaque leaves to the tree walker;
+// queries that reach into them pass this option so the harness expands them.
+const SHARED_COMPONENTS = new Set([
+  EmptyFilterState,
+  OrgAvatar,
+  ProjectTagList,
+]);
+const EXPAND_SHARED = { expand: (type) => SHARED_COMPONENTS.has(type) };
 
 // React routes useState/useMemo through a per-render "dispatcher" slot.
 // Swapping that slot lets a plain Node test render a stateful component with
@@ -183,7 +193,7 @@ test('a query that matches nothing swaps the grid for the empty state', () => {
     'no organization headings survive an empty result set',
   );
   assert.equal(
-    textOf(findByType(view.tree, 'h3', EXPAND_EMPTY_STATE)),
+    textOf(findByType(view.tree, 'h3', EXPAND_SHARED)),
     'No architectures match',
   );
   assert.equal(toolbarProps(view.tree).resultCount, 0);
@@ -198,13 +208,13 @@ test('the empty state clear button restores the full grid', () => {
   const view = render(ReferenceArchitectures);
   toolbarProps(view.tree).setQuery('no architecture is named this');
 
-  const button = findByType(view.tree, 'button', EXPAND_EMPTY_STATE);
+  const button = findByType(view.tree, 'button', EXPAND_SHARED);
   assert.equal(textOf(button), 'Clear filters');
   assert.equal(button.props.type, 'button');
   button.props.onClick();
 
   assert.equal(
-    findAllByType(view.tree, 'h3', EXPAND_EMPTY_STATE).length,
+    findAllByType(view.tree, 'h3', EXPAND_SHARED).length,
     0,
     'the empty state is gone once the filters are cleared',
   );
@@ -226,7 +236,7 @@ test('a card shows the logo asset when one is mirrored', () => {
     },
   });
 
-  const image = findByType(card, 'img');
+  const image = findByType(card, 'img', EXPAND_SHARED);
   assert.equal(image.props.src, '/img/acme/logo.svg');
   assert.equal(
     image.props.alt,
@@ -234,7 +244,7 @@ test('a card shows the logo asset when one is mirrored', () => {
     'the logo is decorative: the organization name is already in the heading',
   );
   assert.equal(
-    findAllByType(card, 'span').some((s) => textOf(s) === 'AC'),
+    findAllByType(card, 'span', EXPAND_SHARED).some((s) => textOf(s) === 'AC'),
     false,
     'the initials fallback is not rendered alongside a logo',
   );
@@ -254,7 +264,10 @@ test('a wordmark asset is accepted as the logo, case-insensitively', () => {
       assets: ['/img/acme/Wordmark.svg'],
     },
   });
-  assert.equal(findByType(card, 'img').props.src, '/img/acme/Wordmark.svg');
+  assert.equal(
+    findByType(card, 'img', EXPAND_SHARED).props.src,
+    '/img/acme/Wordmark.svg',
+  );
 });
 
 test('a card with no logo asset falls back to two-letter initials', () => {
@@ -272,9 +285,9 @@ test('a card with no logo asset falls back to two-letter initials', () => {
     },
   });
 
-  assert.equal(findByType(card, 'img'), undefined);
+  assert.equal(findByType(card, 'img', EXPAND_SHARED), undefined);
   assert.equal(
-    textOf(findByType(card, 'div')),
+    textOf(findByType(card, 'div', EXPAND_SHARED)),
     'AT',
     'initials take the first letter of at most the first two words, uppercased',
   );
@@ -293,8 +306,8 @@ test('a card with no assets array at all still renders initials', () => {
       projects: [],
     },
   });
-  assert.equal(findByType(card, 'img'), undefined);
-  assert.equal(textOf(findByType(card, 'div')), 'A');
+  assert.equal(findByType(card, 'img', EXPAND_SHARED), undefined);
+  assert.equal(textOf(findByType(card, 'div', EXPAND_SHARED)), 'A');
 });
 
 test('the card eyebrow joins industries and falls back when there are none', () => {
@@ -339,7 +352,7 @@ test('a card tags at most four projects', () => {
     },
   });
 
-  const tags = findAllByType(card, 'span').filter((span) =>
+  const tags = findAllByType(card, 'span', EXPAND_SHARED).filter((span) =>
     projects.includes(textOf(span)),
   );
   assert.deepEqual(
@@ -364,15 +377,15 @@ test('a card renders the organization, title, summary and call to action', () =>
     },
   });
 
-  assert.equal(textOf(findByType(card, 'h2')), 'Acme');
-  const paragraphs = findAllByType(card, 'p').map(textOf);
+  assert.equal(textOf(findByType(card, 'h2', EXPAND_SHARED)), 'Acme');
+  const paragraphs = findAllByType(card, 'p', EXPAND_SHARED).map(textOf);
   assert.deepEqual(paragraphs, [
     'Software',
     'Scaling Acme',
     'How Acme scaled.',
   ]);
   assert.ok(
-    findAllByType(card, 'span').some(
+    findAllByType(card, 'span', EXPAND_SHARED).some(
       (span) => textOf(span) === 'View architecture →',
     ),
     'the card ends with its call to action',
@@ -393,5 +406,8 @@ test('the logo wrapper is hidden from assistive technology', () => {
       assets: [],
     },
   });
-  assert.equal(findByType(card, 'div').props['aria-hidden'], 'true');
+  assert.equal(
+    findByType(card, 'div', EXPAND_SHARED).props['aria-hidden'],
+    'true',
+  );
 });

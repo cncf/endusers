@@ -14,12 +14,12 @@ export function MemberCard({ member }) {
   return (
     <article className={styles.card}>
       <div className={styles.cardBody}>
-        {OrgAvatar({
-          logoUrl: member.logo ? logoUrl : null,
-          name: member.name,
-          wrapperClassName: styles.logoWrapper,
-          lazy: true,
-        })}
+        <OrgAvatar
+          logoUrl={member.logo ? logoUrl : null}
+          name={member.name}
+          wrapperClassName={styles.logoWrapper}
+          lazy
+        />
         <div className={styles.cardContent}>
           <h3 className={styles.orgName}>{member.name}</h3>
           {member.membershipStatus && (
@@ -52,8 +52,9 @@ export function MemberCard({ member }) {
               {member.industries.slice(0, 3).join(' · ')}
             </p>
           )}
-          {member.projects.length > 0 &&
-            ProjectTagList({ projects: member.projects })}
+          {member.projects.length > 0 && (
+            <ProjectTagList projects={member.projects} />
+          )}
           <span className={styles.viewLink}>View profile →</span>
         </div>
       </div>
