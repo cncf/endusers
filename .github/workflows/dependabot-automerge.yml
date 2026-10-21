@@ -1,0 +1,63 @@
+name: Dependabot auto-merge
+
+# Queues the narrow low-risk class of Dependabot pull request described in
+# GOVERNANCE.md ("Low-risk merge classes"): a lockfile-only npm update whose
+# highest semver change is patch or minor. `gh pr merge --auto` only arms
+# auto-merge; the PR still joins the merge queue after the required checks
+# ("Validate repository", "Lint repository", including `npm run check:audit`)
+# pass, and leaves the queue if any of them fail. Anything else, including
+# every package.json, workflow or major-version change, waits for a maintainer.
+#
+# `pull_request`, not `pull_request_target`: Dependabot branches live in this
+# repository, so the event already carries a token the job-level permissions
+# can raise, without running against a base-branch context.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group:
+    dependabot-automerge-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  automerge:
+    name: Queue low-risk Dependabot update
+    if: >-
+      github.actor == 'dependabot[bot]' && github.event.pull_request.user.login
+      == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name ==
+      github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Read Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      - name: Enable auto-merge for a lockfile-only patch or minor update
+        if: >-
+          steps.metadata.outputs.package-ecosystem == 'npm_and_yarn' &&
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch'
+          || steps.metadata.outputs.update-type ==
+          'version-update:semver-minor')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+          files="$(gh pr diff "$PR_URL" --name-only)"
+          printf 'Changed files:\n%s\n' "$files"
+          if grep -q '^\.github/workflows/' <<<"$files"; then
+            echo "Touches .github/workflows; leaving it for maintainer review."
+            exit 0
+          fi
+          if [ "$files" != 'package-lock.json' ]; then
+            echo "Not lockfile-only; leaving it for maintainer review."
+            exit 0
+          fi
+          gh pr merge --auto "$PR_URL"

@@ -24,9 +24,10 @@ maintained by volunteers, so timelines for fixes vary with severity.
 
 This policy covers the site source, build scripts, and GitHub Actions workflows
 and composite actions (`.github/actions/`) in this repository.
-[Dependabot](.github/dependabot.yml) opens pull requests for routine npm and
-GitHub Actions version updates, and [CodeQL](.github/workflows/codeql.yml) scans
-the JavaScript/TypeScript source and the GitHub Actions workflows and composite
+[Dependabot](.github/dependabot.yml) opens pull requests for routine npm, GitHub
+Actions and dev container version updates, Dependabot security updates are
+enabled for npm advisories, and [CodeQL](.github/workflows/codeql.yml) scans the
+JavaScript/TypeScript source and the GitHub Actions workflows and composite
 actions (the `actions` language) on pushes to main, pull requests that touch
 either, and a weekly schedule. Report all vulnerabilities in third-party
 dependencies here, including ones with no fixed version available yet.
@@ -73,3 +74,12 @@ above, so a new lockfile advisory cannot land silently. When an advisory listed
 here gains a patched release, apply the fix and remove both the table row and
 the matching allowlist entry in `scripts/audit-gate.mjs` — a unit test keeps the
 two in sync.
+
+A new advisory that does have a patched release turns the gate red on `main`
+until the lockfile moves. Dependabot security updates open that lockfile bump,
+and when it changes only `package-lock.json` with a patch or minor version
+change, [`dependabot-automerge.yml`](.github/workflows/dependabot-automerge.yml)
+queues it to merge once the required checks, including `npm run check:audit`,
+pass (see "Low-risk merge classes" in [`GOVERNANCE.md`](GOVERNANCE.md)). Check
+for that pull request before hand-filing a lockfile bump. A fix that needs a
+`package.json` change or a major version still waits for a maintainer.
