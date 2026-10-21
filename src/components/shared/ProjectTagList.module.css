@@ -1,0 +1,13 @@
+.projectsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: auto;
+}
+
+.projectTag {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.45rem;
+}

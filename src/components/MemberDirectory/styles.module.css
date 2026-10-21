@@ -81,33 +81,15 @@
   outline-offset: -3px;
 }
 
+/* Sizing override for the shared OrgAvatar (see
+   src/components/shared/OrgAvatar.module.css): this card's avatar is larger
+   than ReferenceArchitectures' and sits on a plain white background. */
 .logoWrapper {
-  align-items: center;
-  background: #fff;
-  display: flex;
-  height: 110px;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.logo {
-  max-height: 56px;
-  max-width: 72%;
-  object-fit: contain;
-}
-
-.initials {
-  align-items: center;
-  background: var(--cncf-button-background);
-  border-radius: 50%;
-  color: #fff;
-  display: flex;
-  font-size: 1.1rem;
-  font-weight: 700;
-  height: 52px;
-  justify-content: center;
-  letter-spacing: 0.08em;
-  width: 52px;
+  composes: wrapper from '../shared/OrgAvatar.module.css';
+  --org-avatar-bg: #fff;
+  --org-avatar-size: 110px;
+  --org-avatar-font-size: 1.1rem;
+  --org-avatar-initials-size: 52px;
 }
 
 .cardContent {
@@ -146,20 +128,6 @@
   letter-spacing: 0.04em;
   margin: 0 0 0.75rem;
   text-transform: uppercase;
-}
-
-.projectsList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: auto;
-}
-
-.projectTag {
-  border: 1px solid var(--ifm-color-emphasis-300);
-  color: var(--ifm-color-emphasis-700);
-  font-size: 0.72rem;
-  padding: 0.2rem 0.45rem;
 }
 
 .viewLink {

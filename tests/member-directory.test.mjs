@@ -42,6 +42,10 @@ const { default: FilterToolbar } = await importSource(
 const { default: EmptyFilterState } = await importSource(
   'src/components/shared/EmptyFilterState.js',
 );
+const { OrgAvatar } = await importSource('src/components/shared/OrgAvatar.js');
+const { ProjectTagList } = await importSource(
+  'src/components/shared/ProjectTagList.js',
+);
 const { MemberCard } = await importSource(`${DIR}/MemberCard.js`);
 const { MemberProfile } = await importSource(`${DIR}/MemberProfile.js`);
 const ProfileDialogShell = (
@@ -65,14 +69,18 @@ const awardsData = (await importSource('data/awards.json')).default;
 
 const MEMBERS = membersData.members;
 
-// The directory renders the shared toolbar and empty state as <FilterToolbar>
-// and <EmptyFilterState> elements, which the tree walker treats as opaque
-// leaves; every query below passes this option so the harness expands them
-// (both are hook-free) while genuinely nested hook-bearing components stay
-// leaves.
-const EXPAND_SHARED = {
-  expand: (type) => type === FilterToolbar || type === EmptyFilterState,
-};
+// The directory renders the shared toolbar, empty state, avatar and tag list
+// as elements of hook-free components under src/components/shared/, which
+// the tree walker treats as opaque leaves; every query below passes this
+// option so the harness expands them while genuinely nested hook-bearing
+// components stay leaves.
+const SHARED_COMPONENTS = new Set([
+  FilterToolbar,
+  EmptyFilterState,
+  OrgAvatar,
+  ProjectTagList,
+]);
+const EXPAND_SHARED = { expand: (type) => SHARED_COMPONENTS.has(type) };
 
 const Internals =
   React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;

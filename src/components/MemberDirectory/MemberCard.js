@@ -1,7 +1,9 @@
 import React, { useRef, useState } from 'react';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import { MemberProfile } from './MemberProfile';
-import { initials, formatCount, membershipLabel } from './utils';
+import { OrgAvatar } from '../shared/OrgAvatar';
+import { ProjectTagList } from '../shared/ProjectTagList';
+import { formatCount, membershipLabel } from './utils';
 import styles from './styles.module.css';
 
 export function MemberCard({ member }) {
@@ -12,13 +14,12 @@ export function MemberCard({ member }) {
   return (
     <article className={styles.card}>
       <div className={styles.cardBody}>
-        <div className={styles.logoWrapper} aria-hidden="true">
-          {member.logo ? (
-            <img src={logoUrl} alt="" className={styles.logo} loading="lazy" />
-          ) : (
-            <span className={styles.initials}>{initials(member.name)}</span>
-          )}
-        </div>
+        <OrgAvatar
+          logoUrl={member.logo ? logoUrl : null}
+          name={member.name}
+          wrapperClassName={styles.logoWrapper}
+          lazy
+        />
         <div className={styles.cardContent}>
           <h3 className={styles.orgName}>{member.name}</h3>
           {member.membershipStatus && (
@@ -52,13 +53,7 @@ export function MemberCard({ member }) {
             </p>
           )}
           {member.projects.length > 0 && (
-            <div className={styles.projectsList}>
-              {member.projects.slice(0, 4).map((project) => (
-                <span key={project} className={styles.projectTag}>
-                  {project}
-                </span>
-              ))}
-            </div>
+            <ProjectTagList projects={member.projects} />
           )}
           <span className={styles.viewLink}>View profile →</span>
         </div>
