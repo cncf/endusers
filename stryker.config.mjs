@@ -38,7 +38,7 @@ const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // and trains everyone to ignore the lane (issue #1743). Actions sets
 // GITHUB_EVENT_NAME on every run; a local run has no event name and keeps the
 // gate.
-export function breakThreshold(eventName = process.env.GITHUB_EVENT_NAME) {
+export function breakThreshold(eventName) {
   return !eventName || eventName === 'pull_request' ? 83 : null;
 }
 
@@ -65,5 +65,9 @@ export default {
   // `break` fails the run below this mutation score. It was set from the full
   // baseline on main (83.81% when the gate was added) and must never sit above
   // the score main actually has.
-  thresholds: { high: 90, low: 83, break: breakThreshold() },
+  thresholds: {
+    high: 90,
+    low: 83,
+    break: breakThreshold(process.env.GITHUB_EVENT_NAME),
+  },
 };
