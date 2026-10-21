@@ -2,31 +2,34 @@
  * URI classification shared by the SVG scanner and the MDX scanner.
  *
  * Both gates decide the same two questions about a value they have already
- * extracted from a grammar-aware parse -- does it run script, and does it make
- * a visitor's browser contact another host -- so the answers live in one place.
- * A scheme the SVG gate rejects and the MDX gate accepts (or the reverse) is a
- * bypass of whichever gate is more permissive.
+ * extracted from a grammar-aware parse -- is its scheme on the allowlist, and
+ * does it make a visitor's browser contact another host -- so the answers live
+ * in one place. A scheme the SVG gate rejects and the MDX gate accepts (or the
+ * reverse) is a bypass of whichever gate is more permissive.
  */
-
-/** URI schemes that execute script when navigated to or rendered. */
-const ACTIVE_SCHEMES = ['javascript', 'vbscript', 'livescript', 'mocha'];
 
 /**
- * `data:` media types a browser parses as a document or script rather than as
- * an image or font. Anything ending in `+xml` is a document type (XHTML, SVG,
- * MathML, RSS, XSLT), and a bare XML type runs `<script>` in the XHTML
- * namespace just as `text/html` does.
+ * URI schemes a gated value may carry. This is an allowlist: every other
+ * scheme, including ones no browser implements yet, is rejected. A value with
+ * no scheme at all is a relative reference or a fragment, which resolves on
+ * this origin. Whether an allowed `http:`/`https:` value makes the browser
+ * contact another host is a separate question, answered by
+ * {@link remoteTarget}.
  */
-const ACTIVE_DATA_TYPES = new Set([
-  'text/html',
-  'text/xml',
-  'application/xml',
-  'text/xsl',
-  'text/javascript',
-  'application/javascript',
-  'application/x-javascript',
-  'text/ecmascript',
-  'application/ecmascript',
+export const ALLOWED_SCHEMES = new Set(['http', 'https', 'mailto']);
+
+/**
+ * `data:` media types a caller may opt into for embedded images: raster
+ * formats a browser only ever decodes as pixels. Every other `data:` type --
+ * SVG, HTML, XML, script, or a type invented later -- is rejected.
+ */
+export const RASTER_DATA_TYPES = new Set([
+  'image/avif',
+  'image/bmp',
+  'image/gif',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
 ]);
 
 const NAMED_ENTITIES = {
@@ -86,27 +89,27 @@ export function normalizeUri(value) {
 }
 
 /**
- * Report whether a value carries a script-executing or document-bearing URI.
+ * Report the scheme of a value when it is not on the allowlist.
+ *
+ * The value is normalized the way {@link normalizeUri} describes before its
+ * scheme is read, so an entity-encoded or whitespace-split scheme is seen as
+ * the browser sees it. Normalizing removes characters a browser would keep,
+ * which can only make a scheme appear where the browser sees a relative
+ * reference -- an over-rejection, never a miss.
  *
  * @param {string} value - Raw value.
- * @returns {string|null} The offending scheme or `data:` media type, or null.
+ * @param {{ rasterData?: boolean }} [options] - `rasterData` also admits
+ *   `data:` URIs of a {@link RASTER_DATA_TYPES} media type.
+ * @returns {string|null} The rejected scheme (`foo:`) or `data:` media type
+ *   (`data:text/html`), or null when the value is allowed.
  */
-export function activeScheme(value) {
+export function disallowedScheme(value, { rasterData = false } = {}) {
   const normalized = normalizeUri(value);
-  for (const scheme of ACTIVE_SCHEMES) {
-    if (new RegExp(`(?:^|[^a-z0-9+.-])${scheme}:`).test(normalized)) {
-      return `${scheme}:`;
-    }
-  }
-
-  const data = normalized.match(/(?:^|[^a-z0-9+.-])data:([^,;]*)/);
-  if (data) {
-    const type = data[1];
-    if (ACTIVE_DATA_TYPES.has(type) || type.endsWith('+xml')) {
-      return `data:${type}`;
-    }
-  }
-  return null;
+  const scheme = /^([a-z][a-z0-9+.-]*):/.exec(normalized)?.[1];
+  if (scheme === undefined || ALLOWED_SCHEMES.has(scheme)) return null;
+  if (scheme !== 'data') return `${scheme}:`;
+  const type = /^data:([^,;]*)/.exec(normalized)[1];
+  return rasterData && RASTER_DATA_TYPES.has(type) ? null : `data:${type}`;
 }
 
 /**

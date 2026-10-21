@@ -32,6 +32,12 @@ actions (the `actions` language) on pushes to main, pull requests that touch
 either, and a weekly schedule. Report all vulnerabilities in third-party
 dependencies here, including ones with no fixed version available yet.
 
+Imported architecture pages and diagrams pass allowlist gates before they are
+published: an SVG element, attribute or namespace, an MDX node type or element,
+or a URL scheme that is not explicitly listed is rejected or stripped.
+[CONTENT-SECURITY.md](CONTENT-SECURITY.md) lists every allowlist and the
+residual risks. A way to publish anything outside those lists is in scope.
+
 ## Response headers
 
 The site is served by Netlify, and [`netlify.toml`](netlify.toml) sets every

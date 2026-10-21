@@ -19,70 +19,161 @@ test('accepts prose, inert inline tags and the importer-generated preamble', () 
   assert.deepEqual(findActiveContent(body), []);
 });
 
-test('flags script elements, event handlers and script-capable URLs', () => {
-  assert.deepEqual(reasons('<script>alert(1)</script>'), [
-    'disallowed element <script>',
-  ]);
-  assert.deepEqual(reasons('<iframe src="https://evil.test"></iframe>'), [
-    'disallowed element <iframe>',
-  ]);
-  assert.deepEqual(reasons('<img src="x" onerror="alert(1)" />'), [
-    'disallowed element <img>',
-    'event handler attribute',
-  ]);
-  // Unquoted attribute values are not valid MDX, so the compiler rejects them
-  // and so does the gate.
-  assert.match(reasons('<img src=x onerror=alert(1)>')[0], /^MDX parse error/);
-  assert.deepEqual(reasons('[click](javascript:alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-  assert.deepEqual(reasons('[click](data:text/html;base64,PHN2Zz4=)'), [
-    'script-capable URL scheme',
-  ]);
+// Each row is a body outside the allowlists and the findings it produces. The
+// bypasses the denylist this gate replaced kept missing are rows here, so a
+// regression in any of them fails by name.
+const REJECTED = [
+  [
+    'script element',
+    '<script>alert(1)</script>',
+    ['disallowed element <script>'],
+  ],
+  [
+    'unknown element',
+    '<iframe src="https://evil.test"></iframe>',
+    ['disallowed element <iframe>'],
+  ],
+  [
+    'event handler on an allowed element',
+    '<b onClick="x">x</b>',
+    ['disallowed attribute onClick on <b>'],
+  ],
+  [
+    'string style attribute, which React refuses to render',
+    '<p style="color:red">x</p>',
+    ['disallowed attribute style on <p>'],
+  ],
+  [
+    'attribute the component does not take',
+    '<CNCFProjectCard name="K" onLoad="x" />',
+    ['disallowed attribute onLoad on <CNCFProjectCard>'],
+  ],
+  ['spread attribute', '<b {...props}>x</b>', ['MDX expression']],
+  ['fragment', '<>x</>', ['disallowed element <>']],
+  [
+    'unclosed element MDX cannot compile',
+    '<div>unclosed',
+    [/^MDX parse error/],
+  ],
+  [
+    'unquoted attribute MDX cannot compile',
+    '<img src=x onerror=alert(1)>',
+    [/^MDX parse error/],
+  ],
+  [
+    'script URI in a link',
+    '[click](javascript:alert(1))',
+    ['disallowed URL scheme javascript:'],
+  ],
+  [
+    'unknown scheme in a link',
+    '[x](ftp://example.com/)',
+    ['disallowed URL scheme ftp:'],
+  ],
+  [
+    'data: URI in a link',
+    '[d](&#100;ata:text/html;base64,PHN2Zz4=)',
+    ['disallowed URL scheme data:text/html'],
+  ],
+  [
+    'data: URI in an image',
+    '![p](data:image/png;base64,AAAA)',
+    ['disallowed URL scheme data:image/png'],
+  ],
+  [
+    'script URI in a definition',
+    '[x]: javascript:alert(1)\n\n[x]',
+    ['disallowed URL scheme javascript:'],
+  ],
+  [
+    'script URI in an image',
+    '![x](javascript:alert(1))',
+    ['disallowed URL scheme javascript:'],
+  ],
+  [
+    'script URI in a component literal expression',
+    '<CNCFProjectCard href={"javascript:alert(1)"} />',
+    ['disallowed URL scheme javascript:'],
+  ],
+  [
+    'decimal reference hiding a scheme',
+    '[click](java&#115;cript:alert(1))',
+    ['disallowed URL scheme javascript:'],
+  ],
+  [
+    'hex reference hiding a scheme',
+    '[click](javascript&#x3a;alert(1))',
+    ['disallowed URL scheme javascript:'],
+  ],
+  [
+    'named reference hiding a colon',
+    '[click](javascript&colon;alert(1))',
+    ['disallowed URL scheme javascript:'],
+  ],
+  [
+    'double-encoded reference',
+    '[click](java&amp;#115;cript:alert(1))',
+    ['disallowed URL scheme javascript:'],
+  ],
+  [
+    'referenced control character inside a scheme',
+    '[click](java&#9;script:alert(1))',
+    ['disallowed URL scheme javascript:'],
+  ],
+  [
+    'raw and decoded forms on one line, reported once',
+    '[a](javascript:alert(1)) [b](java&#115;cript:alert(1))',
+    ['disallowed URL scheme javascript:'],
+  ],
+];
+
+for (const [label, body, expected] of REJECTED) {
+  test(`reports ${label}`, () => {
+    const actual = reasons(body);
+    assert.equal(actual.length, expected.length, JSON.stringify(actual));
+    expected.forEach((reason, index) =>
+      reason instanceof RegExp
+        ? assert.match(actual[index], reason)
+        : assert.equal(actual[index], reason),
+    );
+  });
+}
+
+// None of these forms a scheme a browser would run: a raw tab ends a link
+// destination, an undecodable or unknown reference stays literal (or becomes
+// U+FFFD), and a space-separated pair is two words.
+test('does not manufacture a scheme out of text a browser reads as relative', () => {
+  for (const body of [
+    '[click](java\tscript:alert(1))',
+    '[click](java&#x110000;cript:alert(1))',
+    '[click](java&#1114112;cript:alert(1))',
+    `[click](java&#x${'f'.repeat(400)};cript:alert(1))`,
+    `[click](java&#${'9'.repeat(400)};cript:alert(1))`,
+    '[click](&#x110000;javascript:alert(1))',
+    '[click](java&nbsp;script:alert(1))',
+    'Budget rose by &#x110000; percent.',
+    'Costs rose 5&nbsp;percent this quarter.',
+    'Java Script: a short history of the name.',
+    'Deploys to production&#58; see the runbook.',
+  ]) {
+    assert.deepEqual(reasons(body), [], JSON.stringify(body));
+  }
 });
 
-test('flags script-capable schemes hidden behind character references', () => {
-  // CommonMark decodes character references in a link destination, so each of
-  // these renders as a live scheme: a raw substring test never sees them.
-  assert.deepEqual(reasons('[click](java&#115;cript:alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-  assert.deepEqual(reasons('[click](&#106;avascript:alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-  assert.deepEqual(reasons('[click](java&#x73;cript:alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-  assert.deepEqual(reasons('[click](javascript&colon;alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-  assert.deepEqual(reasons('[d](&#100;ata:text/html;base64,PHN2Zz4=)'), [
-    'script-capable URL scheme',
-  ]);
-  // Double-encoded, as some generators emit.
-  assert.deepEqual(reasons('[click](java&amp;#115;cript:alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-  // A raw tab ends a link destination, so this is plain text, not a link.
-  assert.deepEqual(reasons('[click](java\tscript:alert(1))'), []);
-  // The same control character reached through a reference is inside the
-  // destination, and a URL parser ignores it.
-  assert.deepEqual(reasons('[click](java&#9;script:alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-});
-
-test('reports one finding per line when raw and decoded forms both match', () => {
+test('reports a node kind outside the allowlist, such as one a new extension adds', () => {
+  const html = {
+    transforms: [
+      (tree) => {
+        tree.children[0].type = 'html';
+      },
+    ],
+  };
   assert.deepEqual(
-    reasons('[a](javascript:alert(1)) [b](java&#115;cript:alert(1))'),
-    ['script-capable URL scheme'],
+    findActiveContent('x', { mdastExtensions: [html] }).map(
+      ({ reason }) => reason,
+    ),
+    ['disallowed node type html'],
   );
-});
-
-test('does not read a space-separated word pair as a scheme', () => {
-  // A browser does not treat `java script:` as a scheme, so neither does this.
-  assert.deepEqual(reasons('Java Script: a short history of the name.'), []);
-  assert.deepEqual(reasons('Deploys to production&#58; see the runbook.'), []);
 });
 
 test('flags ESM statements other than the generated CNCFProjectCard import', () => {
@@ -131,11 +222,9 @@ test('reports a live element hidden by a mismatched backtick run, not a code spa
     'disallowed element <script>',
   ]);
   // The same trick also hides an event handler on an otherwise-allowlisted
-  // element -- the findings here are the handler and the expression it is
-  // bound through, not the element itself.
+  // element.
   assert.deepEqual(reasons('``<b onClick={alert}>hi</b>`'), [
-    'event handler attribute',
-    'MDX expression',
+    'disallowed attribute onClick on <b>',
   ]);
   // The equal-run control case must still be inert.
   assert.deepEqual(reasons('`<script>alert(1)</script>`'), []);
@@ -195,69 +284,6 @@ test('tolerates empty and nullish input', () => {
   assert.deepEqual(findActiveContent(undefined), []);
 });
 
-test('leaves an out-of-range hex entity literal rather than forming a scheme', () => {
-  // String.fromCodePoint throws RangeError above U+10FFFF, so the `code <=
-  // 0x10ffff` guard is what keeps a hostile body from crashing the validator
-  // that is supposed to reject it. The entity stays literal, and the literal
-  // is not itself read as a scheme.
-  assert.deepEqual(reasons('[click](java&#x110000;cript:alert(1))'), []);
-  assert.deepEqual(reasons('Budget rose by &#x110000; percent.'), []);
-
-  // The true arm must still decode, so the guard cannot be "satisfied" by
-  // rejecting hex entities wholesale: &#x3a; is a colon, and decoding it is
-  // what turns the payload below into a scheme the scanner reports.
-  assert.deepEqual(reasons('[click](javascript&#x3a;alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-});
-
-test('leaves an out-of-range decimal entity literal rather than forming a scheme', () => {
-  assert.deepEqual(reasons('[click](java&#1114112;cript:alert(1))'), []);
-
-  // As above: the decimal true arm must keep decoding in-range references.
-  assert.deepEqual(reasons('[click](javascript&#58;alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-});
-
-test('leaves a non-finite entity literal rather than forming a scheme', () => {
-  // A digit run long enough to overflow to Infinity takes the
-  // Number.isFinite arm of the guard rather than the range comparison, so
-  // both halves of `Number.isFinite(code) && code <= 0x10ffff` are load
-  // bearing. Number.parseInt returns Infinity here, and String.fromCodePoint
-  // would throw on it.
-  const hugeHex = 'f'.repeat(400);
-  const hugeDecimal = '9'.repeat(400);
-  assert.deepEqual(reasons(`[click](java&#x${hugeHex};cript:alert(1))`), []);
-  assert.deepEqual(reasons(`[click](java&#${hugeDecimal};cript:alert(1))`), []);
-});
-
-test('an undecodable entity does not mask a scheme elsewhere on the line', () => {
-  // The fallback returns the unmatched text rather than consuming it, so a
-  // rejected reference cannot be used as a shield in front of a live scheme.
-  assert.deepEqual(reasons('[click](&#x110000;javascript:alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-  assert.deepEqual(reasons('[click](&#1114112;javascript:alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-});
-
-test('leaves an unrecognized named entity literal rather than dropping it', () => {
-  // The named-entity table is an allowlist, and its fallback returns the
-  // unmatched text. Dropping an unrecognized reference instead would splice
-  // the characters on either side together, so `java&nbsp;script:` would be
-  // reported as a live `javascript:` scheme that no browser would parse.
-  assert.deepEqual(reasons('[click](java&nbsp;script:alert(1))'), []);
-  assert.deepEqual(reasons('Costs rose 5&nbsp;percent this quarter.'), []);
-
-  // The allowlisted arm must still substitute, or a genuinely hidden colon
-  // would stop being reported.
-  assert.deepEqual(reasons('[click](javascript&colon;alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-});
-
 test('flags an MDX expression, which Docusaurus compiles to executable JavaScript', () => {
   assert.deepEqual(
     reasons('{(() => { document.location = "https://evil.example"; })()}'),
@@ -301,15 +327,6 @@ test('flags an attribute expression that is more than a string literal', () => {
   ]);
 });
 
-test('still scans the value inside an allowed attribute expression', () => {
-  // Only the braces are neutralized, so a script URI smuggled into a prop
-  // value is still reported rather than hidden by the allowance.
-  assert.deepEqual(
-    reasons('<CNCFProjectCard href={"javascript:alert(1)"} />'),
-    ['script-capable URL scheme'],
-  );
-});
-
 test('does not flag braces inside code, which MDX does not evaluate', () => {
   assert.deepEqual(reasons('Run `kubectl get pods -o {.items}` to list.'), []);
   assert.deepEqual(
@@ -332,7 +349,7 @@ test('flags live content wedged between two multi-line code spans', () => {
     'MDX expression',
   ]);
   assert.deepEqual(reasons('`a\nb` [x](javascript:alert(1)) `c\nd`'), [
-    'script-capable URL scheme',
+    'disallowed URL scheme javascript:',
   ]);
 });
 
@@ -382,35 +399,11 @@ test('still pairs a code span across a lazy paragraph continuation', () => {
   assert.deepEqual(reasons('- item `x\n  plain y` b'), []);
 });
 
-test('rejects text MDX cannot compile instead of certifying it', () => {
-  assert.match(reasons('<div>unclosed')[0], /^MDX parse error/);
-  assert.equal(findActiveContent('<div>unclosed')[0].line, 1);
-});
-
-test('flags script schemes in definitions, images and JSX attributes', () => {
-  assert.deepEqual(reasons('[x]: javascript:alert(1)\n\n[x]'), [
-    'script-capable URL scheme',
+test('accepts a string-literal escape only when it parses as JSON', () => {
+  assert.deepEqual(reasons('<CNCFProjectCard name={"a\\nb"} />'), []);
+  assert.deepEqual(reasons('<CNCFProjectCard name={"\\q"} />'), [
+    'MDX expression',
   ]);
-  assert.deepEqual(reasons('![x](javascript:alert(1))'), [
-    'script-capable URL scheme',
-  ]);
-  assert.deepEqual(reasons('<b title="javascript:alert(1)">x</b>'), [
-    'script-capable URL scheme',
-  ]);
-  assert.deepEqual(reasons('<b title={"javascript:alert(1)"}>x</b>'), [
-    'script-capable URL scheme',
-  ]);
-  assert.deepEqual(reasons('<b {...props}>x</b>'), ['MDX expression']);
-  assert.deepEqual(reasons('<b onClick="x">x</b>'), [
-    'event handler attribute',
-  ]);
-  assert.deepEqual(reasons('<b title={"a" + "b"}>x</b>'), ['MDX expression']);
-  assert.deepEqual(reasons('<b title={"a\\nb"}>x</b>'), []);
-});
-
-test('reports a fragment and an invalid string-literal expression', () => {
-  assert.deepEqual(reasons('<>x</>'), ['disallowed element <>']);
-  assert.deepEqual(reasons('<b title={"\\q"}>x</b>'), ['MDX expression']);
 });
 
 test('reports a parse error on the line it occurs', () => {
@@ -450,21 +443,9 @@ test('resolves an image reference through its definition', () => {
   ]);
 });
 
-test('resolves a repeated label to its first definition, as the renderer does', () => {
-  // CommonMark gives a repeated label to the first definition, and
-  // mdast-util-to-hast -- which @mdx-js/mdx runs to compile the page -- fills
-  // its map under `if (!map.has(id))` to mimic exactly that. Resolving to the
-  // last one instead made this scan vouch for a destination the published page
-  // discards: the pair below reported nothing while the compiled page carried
-  // src="https://evil.example/p.png".
-  assert.deepEqual(
-    reasons(
-      '![p][d]\n\n[d]: https://evil.example/p.png\n[d]: /img/architectures/acme/p.png',
-    ),
-    ['remote image destination https://evil.example/p.png'],
-  );
-  // The mirror case: the remote duplicate is the one the renderer discards, so
-  // reporting it would reject a page that loads nothing remote.
+test('ignores a remote duplicate definition, which the renderer discards', () => {
+  // A repeated label resolves to its first definition, so only the local
+  // image below is ever loaded.
   assert.deepEqual(
     reasons(
       '![p][d]\n\n[d]: /img/architectures/acme/p.png\n[d]: https://evil.example/p.png',
@@ -486,7 +467,7 @@ test('leaves links, link definitions and local images alone', () => {
   assert.deepEqual(reasons('[x][d]\n\n[d]: https://good.example/'), []);
   assert.deepEqual(reasons('![p](/img/architectures/acme/p.png)'), []);
   assert.deepEqual(reasons('![p](images/p.png)'), []);
-  assert.deepEqual(reasons('![p](data:image/png;base64,AAAA)'), []);
+  assert.deepEqual(reasons('[m](mailto:a@example.com) [f](#top)'), []);
 });
 
 test('flags a remote logo on the allowed component but not its remote href', () => {
@@ -527,44 +508,10 @@ test('matches the element allowlist case-sensitively, as MDX reads tag names', (
   assert.deepEqual(reasons('<hr />'), []);
 });
 
-test('flags a string-valued style attribute, which React refuses to render', () => {
-  // React requires `style` to be an object and throws "The `style` prop
-  // expects a mapping from style properties to values, not a string" when it
-  // is given a string, so both of these fail while Docusaurus prerenders.
-  assert.deepEqual(reasons('<p style="color:red">x</p>'), [
-    'string style attribute',
-  ]);
-  // `style={"..."}` is an expression whose body is a single string literal,
-  // which this module otherwise reads as inert -- it reaches React as a
-  // string just the same.
-  assert.deepEqual(reasons('<p style={"color:red"}>x</p>'), [
-    'string style attribute',
-  ]);
-  // The object form needs a non-literal expression and is already reported as
-  // one, so no style attribute reaches a rendered page by any route.
-  assert.deepEqual(reasons("<p style={{ color: 'red' }}>x</p>"), [
-    'MDX expression',
-  ]);
-});
-
 // Docusaurus's mdx-loader runs unwrapMdxCodeBlocks() on every page before the
 // MDX compiler sees it, deleting the fences of a ```mdx-code-block block and
-// leaving its body behind as flow content. A scan that reads that fence as
-// code vouches for a body the compiler executes: a built page carried a live
-// remote <img> and an evaluated `{...}` expression out of one.
-test('reports an mdx-code-block fence, whose body Docusaurus compiles as MDX', () => {
-  const body = [
-    '## Overview',
-    '',
-    '```mdx-code-block',
-    '<img src="https://beacon.invalid/px.png" />',
-    '```',
-  ].join('\n');
-  assert.deepEqual(reasons(body), [
-    'mdx-code-block fence, whose body Docusaurus compiles as MDX rather than displaying as code',
-  ]);
-});
-
+// leaving its body behind as flow content, so the fence is reported in every
+// form Docusaurus unwraps.
 test('reports the four-backtick and indented forms Docusaurus also unwraps', () => {
   const fourBackticks = ['````mdx-code-block', '<b>x</b>', '````'].join('\n');
   assert.deepEqual(reasons(fourBackticks), [

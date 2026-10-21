@@ -39,6 +39,7 @@ import { mdxFromMarkdown } from 'mdast-util-mdx';
 import { gfm } from 'micromark-extension-gfm';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { eachNode } from './mdast-walk.mjs';
+import { MARKDOWN_NODE_TYPES } from './mdx-active-content.mjs';
 import {
   isUnwrappedCodeBlock,
   unwrapMdxCodeBlocks,
@@ -50,15 +51,6 @@ const ESCAPES = new Map([
   ['&lt;', '<'],
   ['&#105;', 'i'],
   ['&#101;', 'e'],
-]);
-
-/** The node types MDX compiles to live JavaScript rather than to text. */
-const MDX_ACTIVE_TYPES = new Set([
-  'mdxjsEsm',
-  'mdxFlowExpression',
-  'mdxTextExpression',
-  'mdxJsxFlowElement',
-  'mdxJsxTextElement',
 ]);
 
 /**
@@ -174,6 +166,10 @@ function codeRanges(text) {
 /**
  * Whether `text` still carries anything MDX would execute.
  *
+ * Decided by allowlist: any node outside the CommonMark and GFM types the
+ * publish-time gate accepts as inert counts as live, so a node kind a future
+ * grammar introduces is escaped rather than passed through.
+ *
  * Text that any candidate grammar cannot parse as MDX counts as live: that
  * grammar rejected it, so nothing here can claim to know what it compiles to.
  * A construct only has to be active under one grammar to be active on the
@@ -196,7 +192,7 @@ function hasActiveMdx(text) {
       }
       let active = false;
       eachNode(tree, (node) => {
-        if (MDX_ACTIVE_TYPES.has(node.type)) active = true;
+        if (!MARKDOWN_NODE_TYPES.has(node.type)) active = true;
       });
       if (active) return true;
     }

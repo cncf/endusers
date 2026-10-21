@@ -51,7 +51,7 @@ test('mirrors and sanitizes a local landscape SVG', () => {
   withRoots(({ sourceRoot, destinationRoot }) => {
     writeFileSync(
       join(sourceRoot, 'hosted_logos/acme.svg'),
-      '<svg><script>alert(1)</script><rect /></svg>',
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script><rect /></svg>',
     );
     const result = mirrorLandscapeLogo({
       record: RECORD,
@@ -147,7 +147,7 @@ test('rejects a logo that would fetch remote resources', () => {
   withRoots(({ sourceRoot, destinationRoot }) => {
     writeFileSync(
       join(sourceRoot, 'hosted_logos/acme.svg'),
-      '<svg><image href="https://evil.example/pixel" /></svg>',
+      '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://evil.example/pixel" /></svg>',
     );
     const result = mirrorLandscapeLogo({
       record: RECORD,

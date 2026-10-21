@@ -1,18 +1,26 @@
 /**
- * Detection and removal of active (script-executing) content in SVG files.
+ * Allowlist gate for active (script-executing) content in SVG files.
  *
  * SVG is a document format, not just an image format. A browser that loads an
  * SVG directly (for example `/img/architectures/example/diagram.svg`) executes
  * any script it contains in the origin that served it. Assets imported from
  * third-party repositories therefore have to be treated as untrusted input.
  *
- * This module reads SVG the way a browser does: as XML, through a real XML
- * parser (`sax`, strict mode), and reads embedded CSS through the CSS Syntax
- * tokenizer (`css-tree`). Detection asks the resulting element and attribute
- * tree, and the resulting token stream, what they contain. It never pattern
- * matches over source text, so comments, CDATA sections, entity and character
- * references, CSS escapes and quote pairing are resolved by the parsers rather
- * than guessed at here.
+ * The gate is an allowlist. Every element and attribute is resolved to its
+ * namespace and local name and must appear in one of the lists below; every
+ * URL a browser would follow or fetch (an `href`, a CSS `url()`) must carry a
+ * scheme on the allowlist in `./uri-safety.mjs`. Anything else is a finding,
+ * and {@link stripActiveContent} removes it. A construct nobody has thought of
+ * yet -- a new element, a new attribute, a new scheme -- is rejected by
+ * default rather than waiting to be added to a list of known-bad patterns.
+ *
+ * This module reads SVG the way a browser does: as namespace-aware XML,
+ * through a real XML parser (`sax`, strict mode), and reads embedded CSS
+ * through the CSS Syntax tokenizer (`css-tree`). Detection asks the resulting
+ * element and attribute tree, and the resulting token stream, what they
+ * contain. It never pattern matches over source text, so comments, CDATA
+ * sections, entity and character references, CSS escapes, quote pairing and
+ * namespace prefixes are resolved by the parsers rather than guessed at here.
  *
  * The scan fails closed. A document the XML parser rejects, or that declares
  * entities or a non-UTF-8 encoding, is itself a finding: this module cannot
@@ -21,67 +29,337 @@
 
 import sax from 'sax';
 import { ident, string, tokenize, tokenTypes, url } from 'css-tree';
-import { activeScheme, describeTarget, remoteTarget } from './uri-safety.mjs';
+import {
+  describeTarget,
+  disallowedScheme,
+  remoteTarget,
+} from './uri-safety.mjs';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const XHTML_NS = 'http://www.w3.org/1999/xhtml';
+const XLINK_NS = 'http://www.w3.org/1999/xlink';
+const XML_NS = 'http://www.w3.org/XML/1998/namespace';
+const XMLNS_NS = 'http://www.w3.org/2000/xmlns/';
 
 /**
- * Elements that execute or bind script, embed a separate document, or change
- * how the page resolves or leaves itself.
+ * SVG elements a diagram may contain: shapes, text, grouping and reuse,
+ * paint servers, clipping and masking, and the filter primitives editors emit
+ * for shadows and blurs. Every element that runs script, loads a document,
+ * animates, or loads a font is absent (`script`, `animate`, `set`, `feImage`,
+ * `font-face`, `cursor`, `view`, ...), and so is everything SVG adds later.
  *
- * `iframe`, `embed` and `object` are only reachable inside `<foreignObject>`,
- * where they load an attacker-chosen document into the origin serving the SVG.
- * `foreignObject` itself stays allowed: editors such as draw.io emit it for
- * ordinary text, and imported diagrams already rely on it. `base` re-points
- * every relative reference, and `meta` carries `http-equiv="refresh"`.
+ * `foreignObject` is allowed because draw.io emits it for ordinary text
+ * labels; what it may contain is governed by {@link XHTML_ELEMENTS}.
  */
-const ACTIVE_ELEMENTS = new Set([
-  'script',
-  'handler',
-  'listener',
-  'iframe',
-  'embed',
-  'object',
-  'base',
-  'meta',
+export const SVG_ELEMENTS = new Set([
+  'a',
+  'circle',
+  'clipPath',
+  'defs',
+  'desc',
+  'ellipse',
+  'feBlend',
+  'feColorMatrix',
+  'feComposite',
+  'feDropShadow',
+  'feFlood',
+  'feGaussianBlur',
+  'feMerge',
+  'feMergeNode',
+  'feOffset',
+  'filter',
+  'foreignObject',
+  'g',
+  'image',
+  'line',
+  'linearGradient',
+  'marker',
+  'mask',
+  'metadata',
+  'path',
+  'pattern',
+  'polygon',
+  'polyline',
+  'radialGradient',
+  'rect',
+  'stop',
+  'style',
+  'svg',
+  'switch',
+  'symbol',
+  'text',
+  'textPath',
+  'title',
+  'tspan',
+  'use',
 ]);
 
 /**
- * Attributes that carry a whole document as their value. `srcdoc` markup is
- * entity-encoded, so no scheme scan of the value would ever flag it; the
- * attribute name is the finding.
+ * Unprefixed attributes allowed on the root `<svg>` element only, beyond
+ * {@link SVG_ATTRIBUTES}. draw.io writes its editable diagram source, as
+ * escaped XML text, into `content`; browsers attach no behaviour to it, and the
+ * asset validator warns on it and strips it under `--fix`.
  */
-const DOCUMENT_ATTRIBUTES = new Set(['srcdoc']);
-
-/** Attributes whose value is a single URL the browser fetches. */
-const FETCHED_ATTRIBUTES = new Set(['src', 'poster', 'background']);
-
-/** `srcset` holds a list of candidates, each a URL and an optional descriptor. */
-const SRCSET_ATTRIBUTE = 'srcset';
+export const SVG_ROOT_ATTRIBUTES = new Set(['content']);
 
 /**
- * Attributes naming where a form submission goes.
- *
- * A submission is not a fetch the page performs, so none of the lists above
- * reach it, and it carries no scheme a scanner would object to -- an ordinary
- * https URL on another host is exactly the payload. It still belongs to this
- * module: a browser that navigates to an SVG renders the HTML inside
- * `<foreignObject>`, so a diagram can put a rendered, interactive form on this
- * origin whose POST -- including whatever the visitor typed into it -- goes to
- * a host the diagram's author chose. No script is involved at any point, which
- * is why every script-oriented check here misses it.
- *
- * `formaction` on a submit `<button>` or `<input>` overrides the enclosing
- * form's `action`, so a form that reads as same-origin in a diff can still be
- * redirected by its own button.
+ * Unprefixed attributes allowed on an SVG element: geometry, paint, text and
+ * filter parameters, and the SVG presentation attributes. None of them names a
+ * handler, carries markup, or animates another attribute. `href` and every
+ * presentation attribute that takes `url()` are additionally checked value by
+ * value (see {@link findActiveContent}). `cursor` is absent because it loads
+ * an image of its own.
  */
-const SUBMISSION_ATTRIBUTES = new Set(['action', 'formaction']);
+export const SVG_ATTRIBUTES = new Set([
+  'alignment-baseline',
+  'aria-describedby',
+  'aria-hidden',
+  'aria-label',
+  'aria-labelledby',
+  'baseProfile',
+  'baseline-shift',
+  'class',
+  'clip',
+  'clip-path',
+  'clip-rule',
+  'clipPathUnits',
+  'color',
+  'color-interpolation',
+  'color-interpolation-filters',
+  'color-rendering',
+  'cx',
+  'cy',
+  'd',
+  'direction',
+  'display',
+  'dominant-baseline',
+  'dx',
+  'dy',
+  'enable-background',
+  'fill',
+  'fill-opacity',
+  'fill-rule',
+  'filter',
+  'filterUnits',
+  'flood-color',
+  'flood-opacity',
+  'font-family',
+  'font-size',
+  'font-size-adjust',
+  'font-stretch',
+  'font-style',
+  'font-variant',
+  'font-weight',
+  'fr',
+  'fx',
+  'fy',
+  'gradientTransform',
+  'gradientUnits',
+  'height',
+  'href',
+  'id',
+  'image-rendering',
+  'in',
+  'in2',
+  'isolation',
+  'k1',
+  'k2',
+  'k3',
+  'k4',
+  'lang',
+  'lengthAdjust',
+  'letter-spacing',
+  'lighting-color',
+  'marker-end',
+  'marker-mid',
+  'marker-start',
+  'markerHeight',
+  'markerUnits',
+  'markerWidth',
+  'mask',
+  'maskContentUnits',
+  'maskUnits',
+  'mix-blend-mode',
+  'mode',
+  'offset',
+  'opacity',
+  'operator',
+  'orient',
+  'overflow',
+  'paint-order',
+  'pathLength',
+  'patternContentUnits',
+  'patternTransform',
+  'patternUnits',
+  'pointer-events',
+  'points',
+  'preserveAspectRatio',
+  'primitiveUnits',
+  'r',
+  'refX',
+  'refY',
+  'requiredExtensions',
+  'requiredFeatures',
+  'result',
+  'role',
+  'rotate',
+  'rx',
+  'ry',
+  'shape-rendering',
+  'spreadMethod',
+  'startOffset',
+  'stdDeviation',
+  'stop-color',
+  'stop-opacity',
+  'stroke',
+  'stroke-dasharray',
+  'stroke-dashoffset',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'stroke-miterlimit',
+  'stroke-opacity',
+  'stroke-width',
+  'style',
+  'systemLanguage',
+  'target',
+  'text-anchor',
+  'text-decoration',
+  'text-rendering',
+  'textLength',
+  'transform',
+  'transform-origin',
+  'type',
+  'unicode-bidi',
+  'values',
+  'vector-effect',
+  'version',
+  'viewBox',
+  'visibility',
+  'width',
+  'word-spacing',
+  'writing-mode',
+  'x',
+  'x1',
+  'x2',
+  'y',
+  'y1',
+  'y2',
+]);
+
+/**
+ * XHTML elements allowed inside `<foreignObject>`: the rich-text markup
+ * draw.io writes for labels. No form, frame, embed, media, link, meta or base
+ * element is listed, so a label cannot submit, load or navigate anything.
+ */
+export const XHTML_ELEMENTS = new Set([
+  'a',
+  'b',
+  'br',
+  'code',
+  'div',
+  'em',
+  'font',
+  'hr',
+  'i',
+  'li',
+  'ol',
+  'p',
+  'pre',
+  's',
+  'span',
+  'strike',
+  'strong',
+  'sub',
+  'sup',
+  'u',
+  'ul',
+]);
+
+/** Unprefixed attributes allowed on an XHTML element. */
+export const XHTML_ATTRIBUTES = new Set([
+  'align',
+  'class',
+  'color',
+  'dir',
+  'face',
+  'href',
+  'id',
+  'lang',
+  'size',
+  'style',
+  'target',
+  'title',
+]);
+
+/**
+ * Attributes allowed in the XLink and XML namespaces, by local name.
+ * `xml:base` is absent: it re-points every relative reference below it.
+ */
+export const XLINK_ATTRIBUTES = new Set(['href', 'title']);
+export const XML_ATTRIBUTES = new Set(['lang', 'space']);
+
+/**
+ * Editor and metadata namespaces (RDF/Dublin Core/Creative Commons licence
+ * blocks, Inkscape, Sodipodi, Adobe Illustrator). A browser implements no
+ * behaviour for any element or attribute in these namespaces: it renders
+ * nothing, runs no handler and fetches nothing, so every element and every
+ * prefixed attribute in them is allowed. Their descendants are still checked
+ * one by one, so an SVG element nested in a metadata element is held to the
+ * lists above.
+ */
+export const METADATA_NAMESPACES = new Set([
+  'http://creativecommons.org/ns#',
+  'http://ns.adobe.com/AdobeIllustrator/10.0/',
+  'http://ns.adobe.com/Extensibility/1.0/',
+  'http://ns.adobe.com/Graphs/1.0/',
+  'http://ns.adobe.com/SaveForWeb/1.0/',
+  'http://purl.org/dc/elements/1.1/',
+  'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd',
+  'http://www.inkscape.org/namespaces/inkscape',
+  'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+]);
+
+/** Unprefixed attributes the editors write on their own metadata elements. */
+export const METADATA_ATTRIBUTES = new Set([
+  'bleed',
+  'bordercolor',
+  'borderopacity',
+  'bottomLeftOrigin',
+  'gridtolerance',
+  'guidetolerance',
+  'height',
+  'id',
+  'margin',
+  'objecttolerance',
+  'pagecolor',
+  'showgrid',
+  'units',
+  'width',
+  'x',
+  'y',
+]);
+
+/** Namespaces a document may declare. */
+const NAMESPACES = new Set([
+  SVG_NS,
+  XHTML_NS,
+  XLINK_NS,
+  XML_NS,
+  ...METADATA_NAMESPACES,
+]);
+
+/**
+ * `data-*` attributes are author storage: the platform gives them no
+ * behaviour, and nothing in an allowed document can read them. Illustrator
+ * writes `data-name` and draw.io `data-cell-id`.
+ */
+const DATA_ATTRIBUTE = /^data-[a-z0-9._-]+$/;
 
 /**
  * Elements whose `href` is navigation the visitor chooses rather than a load
  * the page performs. draw.io exports legitimately carry such links, so
  * flagging them would fail the existing corpus. Every other element's `href`
- * is treated as a fetch: that fails closed for elements this module does not
- * enumerate (`use`, `image`, `feImage`, `filter`, `script`, `link`, `pattern`,
- * gradients, `textPath`, and whatever SVG adds next).
+ * is treated as a fetch by {@link findRemoteReferences}.
  */
 const NAVIGATION_ELEMENTS = new Set(['a']);
 
@@ -165,16 +443,16 @@ function startsWithDoctype(source) {
 }
 
 /**
- * Parse `source` as XML into a flat event list.
+ * Parse `source` as namespace-aware XML into a flat event list.
  *
  * `sax` is run in strict mode, with errors recorded and parsing resumed so a
  * malformed document still yields whatever it recovered: the scans below then
- * report both the malformation and anything active they can still see.
- * Namespace prefixes are deliberately not resolved. Every name is compared by
- * local name, whatever namespace it binds, because the prefix is arbitrary
- * (`<x:script xmlns:x="http://www.w3.org/2000/svg">` is a script element) and
- * a name that is only dangerous in one namespace is not worth distinguishing
- * in an image.
+ * report both the malformation and anything they can still see. Namespace
+ * prefixes are resolved, so each element and attribute carries the namespace
+ * URI and local name a browser assigns it: the prefix is arbitrary
+ * (`<x:script xmlns:x="http://www.w3.org/2000/svg">` is an SVG script
+ * element), and an unbound prefix is a well-formedness error, as it is to a
+ * browser.
  *
  * @param {string} source - SVG file contents.
  * @returns {{ events: object[], errors: string[] }}
@@ -182,7 +460,7 @@ function startsWithDoctype(source) {
 function parseXml(source) {
   const events = [];
   const errors = [];
-  const parser = sax.parser(true);
+  const parser = sax.parser(true, { xmlns: true });
   // sax resolves the HTML named entities even in strict mode. XML defines
   // five, and a browser parsing a standalone SVG treats any other reference as
   // a fatal error, so `&nbsp;` must not quietly become U+00A0 here.
@@ -201,7 +479,11 @@ function parseXml(source) {
       type: 'open',
       depth,
       name: tag.name,
-      attributes: Object.entries(tag.attributes),
+      uri: tag.uri,
+      local: tag.local,
+      attributes: Object.values(tag.attributes).map(
+        ({ name, value, uri, local }) => ({ name, value, uri, local }),
+      ),
       selfClosing: tag.isSelfClosing,
     });
     depth += 1;
@@ -235,13 +517,13 @@ function parseXml(source) {
 }
 
 /**
- * The CSS text of every `<style>` element, in document order.
+ * Every `<style>` element with its CSS text, in document order.
  *
  * The XML parser has already resolved CDATA sections and character references,
  * so a `</style>` inside CDATA is data and `&#117;rl(` is `url(`.
  *
  * @param {object[]} events
- * @returns {string[]}
+ * @returns {Array<{ event: object, css: string }>}
  */
 function styleBlocks(events) {
   const blocks = [];
@@ -249,21 +531,21 @@ function styleBlocks(events) {
   for (const event of events) {
     if (event.type === 'open' && localName(event.name) === 'style') {
       open.push(blocks.length);
-      blocks.push('');
+      blocks.push({ event, css: '' });
     } else if (event.type === 'close' && localName(event.name) === 'style') {
       open.pop();
     } else if (
       (event.type === 'text' || event.type === 'cdata') &&
       open.length
     ) {
-      blocks[open.at(-1)] += event.value;
+      blocks[open.at(-1)].css += event.value;
     }
   }
   return blocks;
 }
 
 /**
- * Collect the remote targets in a fragment of CSS.
+ * Collect every URL a fragment of CSS makes the browser fetch.
  *
  * The fragment is read through the CSS Syntax tokenizer, which is the same
  * tokenization a browser performs before it interprets anything: comments are
@@ -281,13 +563,13 @@ function styleBlocks(events) {
  * reported rather than ignored.
  *
  * @param {string} css
- * @returns {{ targets: string[], malformed: boolean }}
+ * @returns {{ urls: string[], malformed: boolean }}
  */
-function cssTargets(css) {
+function cssUrls(css) {
   // Every fetching construct needs a literal `(` or `@`, which no escape can
   // supply, so a value without either cannot contain one. This only avoids
   // tokenizing large `d` and base64 attribute values for nothing.
-  if (!/[(@]/.test(css)) return { targets: [], malformed: false };
+  if (!/[(@]/.test(css)) return { urls: [], malformed: false };
 
   const tokens = [];
   tokenize(css, (type, start, end) => {
@@ -296,12 +578,9 @@ function cssTargets(css) {
     }
   });
 
-  const targets = [];
+  const urls = [];
   let malformed = false;
-  const add = (value) => {
-    const target = remoteTarget(value);
-    if (target) targets.push(target);
-  };
+  const add = (value) => urls.push(value);
 
   for (let index = 0; index < tokens.length; index += 1) {
     const { type, text } = tokens[index];
@@ -350,7 +629,7 @@ function cssTargets(css) {
       add(string.decode(tokens[index + 1].text));
     }
   }
-  return { targets, malformed };
+  return { urls, malformed };
 }
 
 /**
@@ -373,8 +652,8 @@ export function findRemoteReferences(source) {
   for (const error of errors.slice(0, 1)) findings.add(notWellFormed(error));
 
   const report = (css, subject) => {
-    const { targets, malformed } = cssTargets(css);
-    for (const target of targets) {
+    const { urls, malformed } = cssUrls(css);
+    for (const target of urls.map(remoteTarget).filter(Boolean)) {
       findings.add(
         `references a remote resource in ${subject}: ${describeTarget(target)}`,
       );
@@ -388,41 +667,19 @@ export function findRemoteReferences(source) {
     if (event.type !== 'open') continue;
     const element = localName(event.name);
 
-    for (const [rawName, value] of event.attributes) {
+    for (const { name: rawName, value } of event.attributes) {
       const name = localName(rawName);
       const label = rawName.toLowerCase();
 
-      if (
-        (name === 'href' && !NAVIGATION_ELEMENTS.has(element)) ||
-        FETCHED_ATTRIBUTES.has(name)
-      ) {
+      // `src`, `srcset`, `action` and the like are not on the attribute
+      // allowlist at all, so findActiveContent() rejects them whatever their
+      // value; only `href` is both allowed and fetched.
+      if (name === 'href' && !NAVIGATION_ELEMENTS.has(element)) {
         const target = remoteTarget(value);
         if (target) {
           findings.add(
             `references a remote resource in <${element}> ${label}: ${describeTarget(target)}`,
           );
-        }
-        continue;
-      }
-
-      if (SUBMISSION_ATTRIBUTES.has(name)) {
-        const target = remoteTarget(value);
-        if (target) {
-          findings.add(
-            `submits to a remote host in <${element}> ${label}: ${describeTarget(target)}`,
-          );
-        }
-        continue;
-      }
-
-      if (name === SRCSET_ATTRIBUTE) {
-        for (const candidate of value.split(/[\s,]+/)) {
-          const target = remoteTarget(candidate);
-          if (target) {
-            findings.add(
-              `references a remote resource in <${element}> ${label}: ${describeTarget(target)}`,
-            );
-          }
         }
         continue;
       }
@@ -441,7 +698,7 @@ export function findRemoteReferences(source) {
     }
   }
 
-  for (const block of styleBlocks(events)) report(block, 'a <style> block');
+  for (const { css } of styleBlocks(events)) report(css, 'a <style> block');
 
   return [...findings].sort();
 }
@@ -557,62 +814,119 @@ function structuralFindings(source, { events, errors }) {
   return findings;
 }
 
+/** URLs in an SVG may also embed a raster image as a `data:` URI. */
+const RASTER = { rasterData: true };
+
 /**
- * Classify one element start tag.
+ * Whether an element is on the allowlist, by namespace and local name.
  *
- * @param {object} event - An `open` event.
- * @returns {{ element: string|null, animated: boolean, attributes: Array<{ name: string, finding: string|null, removal: string|null, handler: boolean }> }}
+ * @param {{ uri: string, local: string }} element
+ * @returns {boolean}
  */
-function classifyTag(event) {
-  const local = localName(event.name);
-  const attributes = event.attributes.map(([rawName, value]) => {
-    const name = rawName.toLowerCase();
-    const attribute = localName(rawName);
-
-    if (/^on[a-z]+$/.test(attribute)) {
-      return { name: attribute, kind: 'handler', removal: `${name} attribute` };
-    }
-    if (DOCUMENT_ATTRIBUTES.has(attribute)) {
-      return {
-        name,
-        kind: 'document',
-        removal: `${name} attribute (embedded document)`,
-      };
-    }
-    const scheme = activeScheme(value);
-    if (scheme) {
-      return {
-        name,
-        kind: 'scheme',
-        scheme,
-        removal: `${name} attribute (${scheme})`,
-      };
-    }
-    return { name, kind: null, removal: null };
-  });
-
-  // `<animate>`/`<set>` can assign a value to `href` at runtime, so an element
-  // that is inert in the source becomes a javascript: link once the animation
-  // begins. The element itself is the finding: its `to`/`values`/`from`
-  // payloads are ordinary attribute values that no scheme scan would flag on
-  // an element that is not itself a link.
-  const animated =
-    (local === 'animate' || local === 'set') &&
-    event.attributes.some(
-      ([rawName, value]) =>
-        localName(rawName) === 'attributename' &&
-        localName(value.trim()) === 'href',
-    );
-
-  return {
-    element: ACTIVE_ELEMENTS.has(local) ? local : null,
-    animated,
-    attributes,
-  };
+function elementAllowed({ uri, local }) {
+  if (uri === SVG_NS) return SVG_ELEMENTS.has(local);
+  if (uri === XHTML_NS) return XHTML_ELEMENTS.has(local);
+  return METADATA_NAMESPACES.has(uri);
 }
 
 /**
- * Describe every piece of active content found in an SVG source string.
+ * Whether an attribute is on the allowlist for the element carrying it.
+ *
+ * A namespace declaration is an attribute too: it may only bind a namespace
+ * this module knows, so no element or attribute can be moved into MathML,
+ * XSLT, XML Events or a namespace a future browser gives meaning to.
+ *
+ * @param {{ uri: string }} element
+ * @param {{ uri: string, local: string, value: string }} attribute
+ * @returns {boolean}
+ */
+function attributeAllowed(element, { uri, local, value }) {
+  if (uri === XMLNS_NS) return NAMESPACES.has(value);
+  if (uri === XLINK_NS) return XLINK_ATTRIBUTES.has(local);
+  if (uri === XML_NS) return XML_ATTRIBUTES.has(local);
+  if (uri !== '') return METADATA_NAMESPACES.has(uri);
+  if (DATA_ATTRIBUTE.test(local)) return true;
+  if (element.uri === SVG_NS) {
+    return (
+      SVG_ATTRIBUTES.has(local) ||
+      (element.local === 'svg' && SVG_ROOT_ATTRIBUTES.has(local))
+    );
+  }
+  if (element.uri === XHTML_NS) return XHTML_ATTRIBUTES.has(local);
+  return METADATA_ATTRIBUTES.has(local);
+}
+
+/**
+ * The first URL in a {@link cssUrls} result whose scheme is not on the
+ * allowlist, or null. A malformed url() token counts: no browser fetches one
+ * today, but this scan cannot say what it names, so it is not vouched for.
+ *
+ * @param {{ urls: string[], malformed: boolean }} css
+ * @returns {string|null}
+ */
+function firstDisallowed({ urls, malformed }) {
+  if (malformed) return 'malformed url()';
+  for (const value of urls) {
+    const scheme = disallowedScheme(value, RASTER);
+    if (scheme) return scheme;
+  }
+  return null;
+}
+
+/**
+ * Classify one element start tag against the allowlist.
+ *
+ * An attribute fails either by name or by value. Two kinds of value are URLs a
+ * browser follows or fetches: an `href` (plain or `xlink:`), and a CSS
+ * `url()` in any attribute value -- SVG presentation attributes (`fill`,
+ * `filter`, `mask`, `clip-path`, `marker-*`, ...) take the same `url(...)`
+ * syntax as the CSS property of the same name.
+ *
+ * @param {object} event - An `open` event.
+ * @returns {{ allowed: boolean, attributes: Array<{ finding: string, removal: string } | null> }}
+ */
+function classifyTag(event) {
+  const attributes = event.attributes.map((attribute) => {
+    const { name, value, local } = attribute;
+    if (!attributeAllowed(event, attribute)) {
+      return {
+        finding: `a disallowed attribute ${name} on <${event.name}>`,
+        removal: `${name} attribute`,
+      };
+    }
+    const css = cssUrls(value);
+    const scheme = firstDisallowed({
+      ...css,
+      urls: local === 'href' ? [value, ...css.urls] : css.urls,
+    });
+    return scheme
+      ? {
+          finding: `a disallowed URI scheme in ${name} on <${event.name}>: ${scheme}`,
+          removal: `${name} attribute (${scheme})`,
+        }
+      : null;
+  });
+  return { allowed: elementAllowed(event), attributes };
+}
+
+/**
+ * The `<style>` elements whose CSS fetches a URL with a disallowed scheme,
+ * mapped to that scheme.
+ *
+ * @param {object[]} events
+ * @returns {Map<object, string>}
+ */
+function disallowedStyles(events) {
+  const styles = new Map();
+  for (const { event, css } of styleBlocks(events)) {
+    const scheme = firstDisallowed(cssUrls(css));
+    if (scheme) styles.set(event, scheme);
+  }
+  return styles;
+}
+
+/**
+ * Describe everything in an SVG source string that is not on the allowlist.
  * @param {string} source - SVG file contents.
  * @returns {string[]} Human-readable descriptions, empty when the SVG is inert.
  */
@@ -620,13 +934,9 @@ export function findActiveContent(source) {
   const text = String(source);
   const parsed = parseXml(text);
   const findings = structuralFindings(text, parsed);
-
   const instructions = new Set();
-  const elements = new Set();
-  const handlers = new Set();
-  const schemes = new Set();
-  const documents = new Set();
-  const animated = new Set();
+  const content = new Set();
+  const styles = disallowedStyles(parsed.events);
 
   for (const event of parsed.events) {
     if (event.type === 'pi' && event.name.toLowerCase() !== 'xml') {
@@ -635,14 +945,22 @@ export function findActiveContent(source) {
     if (event.type !== 'open') continue;
 
     const tag = classifyTag(event);
-    if (tag.element) elements.add(tag.element);
-    if (tag.animated) animated.add(localName(event.name));
+    // A disallowed element is removed with its attributes, so they are not
+    // findings of their own.
+    if (!tag.allowed) {
+      content.add(
+        `contains a disallowed element <${event.name}>` +
+          (event.uri === SVG_NS ? '' : ` (namespace ${event.uri || 'none'})`),
+      );
+      continue;
+    }
     for (const attribute of tag.attributes) {
-      if (attribute.kind === 'handler') handlers.add(attribute.name);
-      if (attribute.kind === 'document') documents.add(attribute.name);
-      if (attribute.kind === 'scheme') {
-        schemes.add(`${attribute.name}="${attribute.scheme}..."`);
-      }
+      if (attribute) content.add(`contains ${attribute.finding}`);
+    }
+    if (styles.has(event)) {
+      content.add(
+        `contains a disallowed URI scheme in a <style> block: ${styles.get(event)}`,
+      );
     }
   }
 
@@ -657,28 +975,7 @@ export function findActiveContent(source) {
         '(can load a remote stylesheet or apply an XSLT program to the image)',
     );
   }
-  for (const element of elements) {
-    findings.push(`contains a <${element}> element`);
-  }
-  if (handlers.size) {
-    findings.push(
-      `contains event handler attribute(s): ${[...handlers].sort().join(', ')}`,
-    );
-  }
-  for (const scheme of [...schemes].sort()) {
-    findings.push(`contains a script URI in ${scheme}`);
-  }
-  for (const attribute of [...documents].sort()) {
-    findings.push(
-      `contains an embedded document attribute: ${attribute} (carries markup that executes in this origin)`,
-    );
-  }
-  for (const element of [...animated].sort()) {
-    findings.push(
-      `contains a <${element}> element that animates href (can install a script URI at runtime)`,
-    );
-  }
-
+  findings.push(...content);
   return findings;
 }
 
@@ -709,6 +1006,7 @@ const escapeAttribute = (value) =>
  */
 function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
   const removed = [];
+  const styles = strip ? disallowedStyles(events) : new Map();
   const bom = source.startsWith('\uFEFF') ? '\uFEFF' : '';
   let output = bom;
   let skipDepth = null;
@@ -730,26 +1028,23 @@ function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
     }
 
     if (event.type === 'open') {
-      const tag = classifyTag(event);
-      if (strip && (tag.element || tag.animated)) {
+      const tag = strip ? classifyTag(event) : null;
+      if (tag && (!tag.allowed || styles.has(event))) {
         removed.push(
-          tag.element
-            ? `<${tag.element}> element`
-            : `<${localName(event.name)}> element animating href`,
+          tag.allowed
+            ? `<${event.name}> element (${styles.get(event)})`
+            : `<${event.name}> element`,
         );
         skipDepth = event.depth;
         continue;
       }
       const attributes = event.attributes
         .filter((_, index) => {
-          const { removal } = tag.attributes[index];
-          if (strip && removal) {
-            removed.push(removal);
-            return false;
-          }
-          return true;
+          const verdict = tag?.attributes[index];
+          if (verdict) removed.push(verdict.removal);
+          return !verdict;
         })
-        .map(([name, value]) => ` ${name}="${escapeAttribute(value)}"`)
+        .map(({ name, value }) => ` ${name}="${escapeAttribute(value)}"`)
         .join('');
       selfClosing.push(event.selfClosing);
       emit(
@@ -785,10 +1080,12 @@ function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
 }
 
 /**
- * Remove active content from an SVG source string.
+ * Remove everything that is not on the allowlist from an SVG source string.
  *
- * Removes script-bearing elements outright and drops offending attributes
- * while leaving inert markup untouched. A source with nothing to remove is
+ * Removes each disallowed element together with its subtree, and each
+ * `<style>` element whose CSS fetches a disallowed scheme; drops each
+ * disallowed attribute, and each allowed one whose URL has a disallowed
+ * scheme; and leaves allowed markup untouched. A source with nothing to remove is
  * returned byte for byte; otherwise the document is rebuilt from its parse
  * (see {@link rebuild}).
  *

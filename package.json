@@ -116,6 +116,7 @@
     "@swc/core": "1.16.18",
     "@swc/core-linux-x64-gnu": "1.16.18",
     "cspell": "^10.4.0",
+    "fast-check": "^4.10.2",
     "jscpd": "^5.4.1",
     "markdown-link-check": "3.15.0",
     "markdownlint": "^0.42.0",
