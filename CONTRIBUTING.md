@@ -238,7 +238,12 @@ enough for a first contribution.
    source but reported in its own `harness files` row, so a gap in the test
    apparatus cannot be paid for out of `src/`'s slack. `npm run test:unit` alone
    skips the coverage gate, so a green `test:unit` locally does not guarantee a
-   green PR check.
+   green PR check. Coverage proves a line ran, not that a test would fail if it
+   changed. To measure the second property for a file you touched, run
+   `npm run test:mutation -- <path>` (for example
+   `npm run test:mutation -- scripts/lib/uri-safety.mjs`): it rewrites one
+   operator or boolean literal at a time, runs the unit tests that name the
+   file, and reports how many mutants the suite killed.
 4. Verify with `npm run build` before opening a PR. If your change touches
    pages, components, or navigation, also run the end-to-end suite — see
    [End-to-end tests](#end-to-end-tests) below.
