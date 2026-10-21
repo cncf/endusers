@@ -116,7 +116,7 @@ const { svgTree } = fc.letrec((tie) => ({
 
 const SVG_OPEN = `<svg xmlns="${SVG_NS}" xmlns:xlink="${XLINK_NS}">`;
 // Declares the `p:` prefix the generators use, which is itself off the list.
-const SVG_OPEN_P = SVG_OPEN.replace('>', ' xmlns:p="http://evil.example/p">');
+const SVG_OPEN_P = `<svg xmlns="${SVG_NS}" xmlns:xlink="${XLINK_NS}" xmlns:p="http://evil.example/p">`;
 
 function attributeAllowed(element, { uri, local, value }) {
   if (uri === 'http://www.w3.org/2000/xmlns/') return true;
