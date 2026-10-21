@@ -6,7 +6,10 @@ import { mdxFromMarkdown } from 'mdast-util-mdx';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { mdxjs } from 'micromark-extension-mdxjs';
 import { escapeMdx, unescapeMdx } from '../scripts/lib/mdx-escape.mjs';
-import { unwrapMdxCodeBlocks } from '../scripts/lib/mdx-code-blocks.mjs';
+import {
+  isUnwrappedCodeBlock,
+  unwrapMdxCodeBlocks,
+} from '../scripts/lib/mdx-code-blocks.mjs';
 
 // Pages under docs/ compile as MDX (@docusaurus/core 3 defaults
 // markdown.format to 'mdx' and docusaurus.config.js sets no override), so
@@ -413,4 +416,18 @@ test('still passes ordinary code blocks and spans through verbatim', () => {
   const escaped = escapeMdx(body);
   assert.ok(escaped.includes('spec: { replicas: 3 }'), escaped);
   assert.ok(escaped.includes('`<div onClick={x}>`'), escaped);
+});
+
+test('isUnwrappedCodeBlock treats a code node without a full source range as inert', () => {
+  const source = '```mdx-code-block\n<Live />\n```\n';
+  const end = { offset: source.length - 1 };
+  assert.equal(
+    isUnwrappedCodeBlock(source, { position: { start: { offset: 0 }, end } }),
+    true,
+  );
+  assert.equal(isUnwrappedCodeBlock(source, {}), false);
+  assert.equal(
+    isUnwrappedCodeBlock(source, { position: { start: { offset: 0 } } }),
+    false,
+  );
 });
