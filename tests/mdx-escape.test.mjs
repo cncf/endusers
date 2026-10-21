@@ -6,6 +6,10 @@ import { mdxFromMarkdown } from 'mdast-util-mdx';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { mdxjs } from 'micromark-extension-mdxjs';
 import { escapeMdx, unescapeMdx } from '../scripts/lib/mdx-escape.mjs';
+import {
+  isUnwrappedCodeBlock,
+  unwrapMdxCodeBlocks,
+} from '../scripts/lib/mdx-code-blocks.mjs';
 
 // Pages under docs/ compile as MDX (@docusaurus/core 3 defaults
 // markdown.format to 'mdx' and docusaurus.config.js sets no override), so
@@ -368,4 +372,62 @@ test('re-escapes everything when a CommonMark code range hides a live expression
   const escaped = escapeMdx('<Foo>\n\n    {1 + 1}\n');
   assert.equal(escaped, '&lt;Foo>\n\n    &#123;1 + 1&#125;\n');
   await assertCompilesAsText(escaped, '{1 + 1}');
+});
+
+// Docusaurus preprocesses every page with unwrapMdxCodeBlocks() before the
+// MDX compiler runs, so a ```mdx-code-block fence is not a code block at all:
+// its fences are deleted and its body is compiled. Handing that body through
+// verbatim, the way every other code block is handed through, published live
+// JSX and an evaluated `{...}` expression out of a submitted issue body.
+test('escapes the body of an mdx-code-block fence, which Docusaurus compiles', async () => {
+  const body = [
+    '```mdx-code-block',
+    '<img src="https://beacon.invalid/px.png" />',
+    '',
+    '<span>{globalThis.marker = 1}</span>',
+    '```',
+  ].join('\n');
+  const escaped = escapeMdx(body);
+
+  assert.ok(!escaped.includes('<img'), escaped);
+  assert.ok(!escaped.includes('<span'), escaped);
+  assert.ok(!/[{}]/.test(unwrapMdxCodeBlocks(escaped)), escaped);
+
+  // The characters the author typed still read back, so an escaped snippet
+  // displays as written.
+  assert.ok(
+    unescapeMdx(escaped).includes(
+      '<img src="https://beacon.invalid/px.png" />',
+    ),
+  );
+
+  // And the form Docusaurus actually compiles carries nothing active.
+  await assertCompilesAsText(unwrapMdxCodeBlocks(escaped));
+});
+
+test('still passes ordinary code blocks and spans through verbatim', () => {
+  const body = [
+    '```yaml',
+    'spec: { replicas: 3 }',
+    '```',
+    '',
+    'Inline `<div onClick={x}>` too.',
+  ].join('\n');
+  const escaped = escapeMdx(body);
+  assert.ok(escaped.includes('spec: { replicas: 3 }'), escaped);
+  assert.ok(escaped.includes('`<div onClick={x}>`'), escaped);
+});
+
+test('isUnwrappedCodeBlock treats a code node without a full source range as inert', () => {
+  const source = '```mdx-code-block\n<Live />\n```\n';
+  const end = { offset: source.length - 1 };
+  assert.equal(
+    isUnwrappedCodeBlock(source, { position: { start: { offset: 0 }, end } }),
+    true,
+  );
+  assert.equal(isUnwrappedCodeBlock(source, {}), false);
+  assert.equal(
+    isUnwrappedCodeBlock(source, { position: { start: { offset: 0 } } }),
+    false,
+  );
 });

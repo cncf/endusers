@@ -13,6 +13,13 @@
  * so those are passed through untouched: an architecture description that
  * shows a YAML or JSON snippet must keep its braces verbatim.
  *
+ * With one exception, and it is not an MDX rule: Docusaurus rewrites the page
+ * before MDX ever sees it. `unwrapMdxCodeBlocks()` deletes the fences of a
+ * ```mdx-code-block block and inlines its body, so that one fence is not a
+ * code block at all — it is live MDX wearing a code block's syntax. Those
+ * ranges are therefore escaped like any other prose; see
+ * ./mdx-code-blocks.mjs.
+ *
  * Which spans of the text are code is decided by parsing it with the grammars
  * the site compiles with, not by scanning lines here. A hand-rolled scanner
  * has to re-derive fence rules, tab stops and lazy continuation, and every
@@ -32,6 +39,10 @@ import { mdxFromMarkdown } from 'mdast-util-mdx';
 import { gfm } from 'micromark-extension-gfm';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { eachNode } from './mdast-walk.mjs';
+import {
+  isUnwrappedCodeBlock,
+  unwrapMdxCodeBlocks,
+} from './mdx-code-blocks.mjs';
 
 const ESCAPES = new Map([
   ['&#123;', '{'],
@@ -96,13 +107,18 @@ function parseWith(text, grammar) {
 }
 
 /** The code-node offset ranges in one parsed tree, merged and in order. */
-function treeCodeRanges(tree) {
+function treeCodeRanges(text, tree) {
   const ranges = [];
   eachNode(tree, (node) => {
     if (
       (node.type === 'code' || node.type === 'inlineCode') &&
       node.position?.start?.offset !== undefined
     ) {
+      // A ```mdx-code-block fence is code to this parser and to every other
+      // one, and is still compiled as live MDX, because Docusaurus deletes
+      // its fences before the compiler runs. Leaving it verbatim would hand
+      // the body straight through.
+      if (node.type === 'code' && isUnwrappedCodeBlock(text, node)) return;
       ranges.push([node.position.start.offset, node.position.end.offset]);
     }
   });
@@ -144,10 +160,13 @@ function intersectRanges(left, right) {
  * escapeMdx() verifies it before trusting it.
  */
 function codeRanges(text) {
-  let ranges = treeCodeRanges(parseWith(text, GRAMMARS[0]));
+  let ranges = treeCodeRanges(text, parseWith(text, GRAMMARS[0]));
   for (const grammar of GRAMMARS.slice(1)) {
     if (!ranges.length) break;
-    ranges = intersectRanges(ranges, treeCodeRanges(parseWith(text, grammar)));
+    ranges = intersectRanges(
+      ranges,
+      treeCodeRanges(text, parseWith(text, grammar)),
+    );
   }
   return ranges;
 }
@@ -159,20 +178,28 @@ function codeRanges(text) {
  * grammar rejected it, so nothing here can claim to know what it compiles to.
  * A construct only has to be active under one grammar to be active on the
  * published site, so this reports the union rather than any single view.
+ *
+ * Both the text as written and the text as Docusaurus preprocesses it are
+ * checked, for the same reason: the compiler never sees the former, and a
+ * ```mdx-code-block fence hides an active construct from every grammar until
+ * `unwrapMdxCodeBlocks()` has removed it.
  */
 function hasActiveMdx(text) {
-  for (const grammar of GRAMMARS) {
-    let tree;
-    try {
-      tree = fromMarkdown(text, grammar.mdx());
-    } catch {
-      return true;
+  const sources = new Set([text, unwrapMdxCodeBlocks(text)]);
+  for (const source of sources) {
+    for (const grammar of GRAMMARS) {
+      let tree;
+      try {
+        tree = fromMarkdown(source, grammar.mdx());
+      } catch {
+        return true;
+      }
+      let active = false;
+      eachNode(tree, (node) => {
+        if (MDX_ACTIVE_TYPES.has(node.type)) active = true;
+      });
+      if (active) return true;
     }
-    let active = false;
-    eachNode(tree, (node) => {
-      if (MDX_ACTIVE_TYPES.has(node.type)) active = true;
-    });
-    if (active) return true;
   }
   return false;
 }
