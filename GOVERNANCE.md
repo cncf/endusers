@@ -63,7 +63,9 @@ delegate an agent to merge these low-risk classes:
   `src/`, `scripts/`, `docs/`, `data/`, `static/` or `.github/workflows/` would
   regress undetected without them
   ([ADR 0006](./adr/0006-retire-line-number-citations-in-test-prose.md)). Guards
-  over the test tree itself are not in this class.
+  over the test tree itself are not in this class, nor are new end-to-end
+  fixture builds that only reach a data-shape guard
+  ([ADR 0007](./adr/0007-scope-end-to-end-coverage-to-user-reachable-states.md)).
 
 The following use the independent-review rule above rather than the low-risk
 path:
