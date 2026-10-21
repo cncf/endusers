@@ -113,34 +113,53 @@ test('validate:all stops at the first failing validator', () => {
   }
 });
 
-// Response headers (#1494). The <meta http-equiv> policy in docusaurus.config.js
-// cannot deliver these: browsers ignore frame-ancestors in a meta tag, and no
-// meta tag reaches a .svg or .json opened directly. They are the only part of
-// the site's security policy that lives outside the build, so a missing block
-// here is a live regression the unit suite would not otherwise see.
+// Response headers. They are the only part of the site's security policy that
+// lives outside the build, so a missing block here is a live regression the
+// unit suite would not otherwise see.
 //
-// Strict-Transport-Security is pinned here for a reason the other four do not
-// have: it is the only header in the set whose absence is invisible from a
-// response. The others are missing controls on a response the visitor did
-// receive; this one is the difference between a browser that refuses to speak
-// http:// to this host at all and one that makes a strippable cleartext
-// request first. Netlify sends nothing by default, so the value in
-// netlify.toml is the whole control.
+// Strict-Transport-Security is pinned for a reason the others do not have: it
+// is the only header in the set whose absence is invisible from a response.
+// The others are missing controls on a response the visitor did receive; this
+// one is the difference between a browser that refuses to speak http:// to
+// this host at all and one that makes a strippable cleartext request first.
+// Netlify sends nothing by default, so the value in netlify.toml is the whole
+// control.
 const SECURITY_HEADERS = {
-  'Content-Security-Policy': "frame-ancestors 'self'",
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'X-Frame-Options': 'SAMEORIGIN',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'same-origin',
 };
 
-function siteWideHeaders() {
-  const rules = Array.isArray(netlify.headers) ? netlify.headers : [];
-  return rules.find((rule) => rule.for === '/*')?.values ?? {};
+const headerRules = Array.isArray(netlify.headers) ? netlify.headers : [];
+
+function headersFor(path) {
+  return headerRules.find((rule) => rule.for === path)?.values ?? {};
 }
 
-test('every response carries the security headers a meta policy cannot', () => {
-  const values = siteWideHeaders();
+function cspDirectives(policy) {
+  return new Map(
+    policy
+      .split(';')
+      .map((directive) => directive.trim().split(/\s+/))
+      .filter(([name]) => name)
+      .map(([name, ...sources]) => [name, sources.join(' ')]),
+  );
+}
+
+// Directives no policy may leave out: the fetch fallback (default-src), the
+// ones default-src does not cover (base-uri, form-action, frame-ancestors) and
+// a flat object-src denial. A block missing one fails here, not in production.
+const CSP_BASELINE = {
+  'default-src': null,
+  'object-src': "'none'",
+  'base-uri': null,
+  'form-action': null,
+  'frame-ancestors': "'self'",
+};
+
+test('every response carries the site-wide security headers', () => {
+  const values = headersFor('/*');
   for (const [header, expected] of Object.entries(SECURITY_HEADERS)) {
     assert.equal(
       values[header],
@@ -150,29 +169,75 @@ test('every response carries the security headers a meta policy cannot', () => {
   }
 });
 
-test('the response-header CSP carries only frame-ancestors', () => {
-  // The fetch directives are built in docusaurus.config.js from the host
-  // allowlists shared with scripts/lib/. A second copy here would drift from
-  // the first and the stricter of the two would silently win at runtime.
-  const directives = siteWideHeaders()
-    ['Content-Security-Policy'].split(';')
-    .map((directive) => directive.trim().split(/\s+/)[0])
-    .filter(Boolean);
-  assert.deepEqual(directives, ['frame-ancestors']);
+test('the page Permissions-Policy denies the powerful features the site never uses', () => {
+  // Only denials: the site requests no permission, so an allowlist entry here
+  // would be one nothing needs.
+  const features = new Map(
+    headersFor('/*')
+      ['Permissions-Policy'].split(',')
+      .map((entry) => entry.trim().split('=')),
+  );
+  for (const feature of 'camera geolocation microphone payment usb'.split(
+    ' ',
+  )) {
+    assert.ok(features.has(feature), `Permissions-Policy leaves ${feature} on`);
+  }
+  for (const [feature, allowlist] of features) {
+    assert.equal(allowlist, '()', `Permissions-Policy grants ${feature}`);
+  }
+});
+
+test('every [[headers]] block that sends a CSP names the baseline directives', () => {
+  const withCsp = headerRules.filter(
+    (rule) => rule.values?.['Content-Security-Policy'],
+  );
+  assert.ok(
+    withCsp.some((rule) => rule.for === '/*'),
+    'no CSP for "/*"',
+  );
+  for (const rule of withCsp) {
+    const directives = cspDirectives(rule.values['Content-Security-Policy']);
+    for (const [name, value] of Object.entries(CSP_BASELINE)) {
+      assert.ok(directives.get(name), `"${rule.for}" CSP lacks ${name}`);
+      if (value) assert.equal(directives.get(name), value, rule.for);
+    }
+  }
+});
+
+test('the page CSP header is the production meta policy plus header-only directives', async () => {
+  // Both copies are enforced, so a directive widened in only one of them
+  // would silently lose to the other. The production config is the one that
+  // ships; the dev policy adds 'unsafe-eval' for the webpack dev server.
+  // docusaurus.config.js calls require.resolve() for its plugin list.
+  globalThis.require ??= createRequire(import.meta.url);
+  const previous = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'production';
+  const config = (await import('../docusaurus.config.js?production')).default;
+  if (previous === undefined) delete process.env.NODE_ENV;
+  else process.env.NODE_ENV = previous;
+  const meta = config.headTags.find(
+    (tag) => tag.attributes?.['http-equiv'] === 'Content-Security-Policy',
+  );
+  const expected = new Map([
+    ['frame-ancestors', "'self'"],
+    ['default-src', "'self'"],
+    ...cspDirectives(meta.attributes.content),
+    ['upgrade-insecure-requests', ''],
+  ]);
+  const header = cspDirectives(headersFor('/*')['Content-Security-Policy']);
+  assert.deepEqual(Object.fromEntries(header), Object.fromEntries(expected));
 });
 
 test('the Referrer-Policy header matches the document meta policy', async () => {
   // Two policies for one site would have the header win on non-HTML
   // responses and the meta tag win on documents; keeping them equal means
   // the two tests that reason about referrer leakage reason about one value.
-  // docusaurus.config.js is ESM but calls require.resolve() for its plugin
-  // list, as tests/site-config.test.mjs also provides for.
   globalThis.require ??= createRequire(import.meta.url);
   const config = (await import('../docusaurus.config.js')).default;
   const meta = config.headTags.find(
     (tag) => tag.tagName === 'meta' && tag.attributes?.name === 'referrer',
   );
-  assert.equal(siteWideHeaders()['Referrer-Policy'], meta.attributes.content);
+  assert.equal(headersFor('/*')['Referrer-Policy'], meta.attributes.content);
 });
 
 // Asset-scoped rules (#1501). A browser that navigates to an SVG renders it
@@ -209,22 +274,20 @@ const ASSET_CSP_DENIALS = [
   "font-src 'self'",
 ];
 
-function assetHeaders(path) {
-  const rules = Array.isArray(netlify.headers) ? netlify.headers : [];
-  return rules.find((rule) => rule.for === path)?.values ?? {};
-}
-
 test('asset paths deny script and object without dropping a site-wide header', () => {
   // Every site-wide value is restated, derived from SECURITY_HEADERS so the
-  // two can never drift; only the CSP gains the flat denials.
-  const assetCsp = [
-    SECURITY_HEADERS['Content-Security-Policy'],
-    ...ASSET_CSP_DENIALS,
-  ].join('; ');
+  // two can never drift; the CSP is the flat denial instead of the page policy.
+  const expected = {
+    ...SECURITY_HEADERS,
+    'Permissions-Policy': headersFor('/*')['Permissions-Policy'],
+    'Content-Security-Policy': [
+      "frame-ancestors 'self'",
+      ...ASSET_CSP_DENIALS,
+    ].join('; '),
+  };
   for (const path of ASSET_HEADER_PATHS) {
-    const values = assetHeaders(path);
-    for (const [header, expected] of Object.entries(SECURITY_HEADERS)) {
-      const want = header === 'Content-Security-Policy' ? assetCsp : expected;
+    const values = headersFor(path);
+    for (const [header, want] of Object.entries(expected)) {
       assert.equal(
         values[header],
         want,

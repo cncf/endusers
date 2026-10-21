@@ -246,11 +246,13 @@ const config = {
         // directive constrains Docusaurus hydration or local search. See
         // SCRIPT_SOURCES above for why 'unsafe-eval' is dev-only.
         // frame-ancestors is omitted here because browsers ignore it when
-        // delivered via <meta http-equiv>; netlify.toml sends it as a response
-        // header instead (with X-Frame-Options for older browsers), and
-        // tests/netlify-publish-contract.test.mjs pins that the header policy
-        // carries nothing but frame-ancestors, so the fetch directives below
-        // have exactly one source.
+        // delivered via <meta http-equiv>. On Netlify the HTML catch-all in
+        // netlify.toml sends the complete policy as a response header: every
+        // directive below restated verbatim, plus frame-ancestors, default-src
+        // and upgrade-insecure-requests. tests/netlify-publish-contract.test.mjs
+        // fails if the header and this production policy disagree on any
+        // directive, so a change here has to be made there too. This tag stays
+        // for the dev server and any host that does not read netlify.toml.
         // img-src, by contrast, is honoured in a meta policy, and it is the
         // directive that actually backs this project's remote-image host gates
         // (scripts/lib/profile-image.mjs, scripts/lib/project-assets.mjs, the

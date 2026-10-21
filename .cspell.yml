@@ -17,6 +17,8 @@ ignorePaths:
   # Rendered from git history on every build; gitignored and not editable.
   - docs/resources/changelog.md
 words:
+  - geolocation
+  - SAMEORIGIN
   - ACMM
   - Agones
   - FESTIBATTLE
