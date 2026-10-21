@@ -521,7 +521,9 @@ adds or modifies, and fails when their combined mutation score is below the
 `break` threshold in `stryker.config.mjs`. That threshold was set from the full
 baseline on `main` and never sits above it. A weekly scheduled run (also
 available through "Run workflow") mutates everything and keeps the report as the
-`mutation-report` artifact. The check is not required for merging.
+`mutation-report` artifact; the `break` threshold stands down there, because a
+red cron over the standing backlog gates nothing — the report is the signal. The
+check is not required for merging.
 
 Reading the result:
 
