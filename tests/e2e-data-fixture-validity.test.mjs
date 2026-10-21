@@ -139,6 +139,13 @@ const EXPECTED = new Map([
     },
   ],
   [
+    'data-no-revision/community-groups.json',
+    {
+      why: "clears the groups collection to reach GroupLinkStatus's `groupsData?.groups || []` fallback; the gate requires a non-empty collection, which is exactly the document an interrupted link-check run leaves behind",
+      adds: ['community-groups.json: groups must be a non-empty array'],
+    },
+  ],
+  [
     'data-no-revision/members.json',
     {
       why: "clears sources.landscape.sourceUrl to reach DirectoryFreshness's plain-text 'cncf/landscape' arm; validate-members.mjs holds that field to the pinned landscape snapshot",

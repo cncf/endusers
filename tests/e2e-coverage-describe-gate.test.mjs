@@ -54,6 +54,7 @@ const COVERAGE_GATED = [
   'data-fixtures.spec.js',
   'data-variants.spec.js',
   'focus-trap-empty-dialog.spec.js',
+  'group-link-status-absent-groups.spec.js',
   'group-link-status-variant.spec.js',
   'member-directory-freshness-all-absent.spec.js',
   'member-directory-freshness-unlinked.spec.js',

@@ -1,0 +1,6 @@
+{
+  "description": "Clears the groups collection so GroupLinkStatus takes the `groupsData?.groups || []` fallback in src/components/GroupLinkStatus/index.js instead of filtering a real array. That arm is the component's guard against a partial data/community-groups.json -- `npm run check:community-group-links` writes the file in one pass, so an interrupted or failed run can leave the document without its collection -- and it is the only arm of the component no build reaches: the ordinary coverage build and tests/e2e/fixtures/data-variant/community-groups.json both carry groups, and a cleared collection cannot go in the variant build, which appends a second drifted group to reach the plural stale.length arms. It is set to null rather than [] because an empty array is truthy and would take the left operand, leaving the fallback unreached. It rides this build because nothing the no-revision build already covers reads community-groups.json, so it costs no additional Docusaurus compile (see the preamble of tests/tools/e2e-data-fixtures.cjs).",
+  "set": {
+    "groups": null
+  }
+}
