@@ -82,11 +82,13 @@ async function writePageCoverage(
   pageIndex,
   ranges,
   url = 'http://localhost:3000/assets/js/app.js',
+  runtime,
 ) {
   await writeCoverageArtifact(fixture.runDir, `worker-0-page-${pageIndex}`, {
     schemaVersion: 1,
     kind: 'endusers.playwright.v8-coverage',
     runId: 'run-1',
+    runtime,
     result: [
       {
         url,
@@ -204,6 +206,13 @@ test('main surfaces recorded capture-error artifacts instead of treating them as
 
 test('collectE2ECoverage maps V8 ranges through an external source map to src lines', async () => {
   const fixture = await fixtureRun();
+  const runtime = {
+    node: 'v20',
+    v8: '11',
+    playwright: '1.64',
+    browser: 'Chrome/123',
+    browserV8: '12.3',
+  };
   try {
     const source = 'const hit = 1;\nconst miss = 2;\n';
     const generated = source;
@@ -230,14 +239,20 @@ test('collectE2ECoverage maps V8 ranges through an external source map to src li
         ]),
       }),
     );
-    await writePageCoverage(fixture, 0, [
-      {
-        startOffset: generated.indexOf('const miss'),
-        endOffset: scriptText.length,
-        count: 0,
-      },
-      { startOffset: 0, endOffset: scriptText.length, count: 1 },
-    ]);
+    await writePageCoverage(
+      fixture,
+      0,
+      [
+        {
+          startOffset: generated.indexOf('const miss'),
+          endOffset: scriptText.length,
+          count: 0,
+        },
+        { startOffset: 0, endOffset: scriptText.length, count: 1 },
+      ],
+      undefined,
+      runtime,
+    );
     await sealCoverageRun(fixture.runDir, 'passed');
 
     const report = await collectE2ECoverage(fixture.runDir, {
@@ -245,6 +260,13 @@ test('collectE2ECoverage maps V8 ranges through an external source map to src li
       buildDir: fixture.buildDir,
     });
     assert.equal(report.status, 'ok');
+    assert.deepEqual(report.captureRuntimes, [runtime]);
+    assert.equal(report.reporterRuntime.node, process.version);
+    const rerendered = await collectE2ECoverage(fixture.runDir, {
+      root: fixture.root,
+      buildDir: fixture.buildDir,
+    });
+    assert.deepEqual(rerendered.captureRuntimes, [runtime]);
     assert.deepEqual(report.sources, [
       {
         file: 'src/components/Example/index.js',

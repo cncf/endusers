@@ -95,6 +95,33 @@ restrictions on test-tree guards. It does not authorize data-shape browser
 fixture builds, change coverage floors, or replace surviving-mutant evidence for
 assertion gaps within mutation-covered production logic.
 
+## Clarification: measurement attribution and provenance (2026-10-21)
+
+The calibration in [#1752](https://github.com/cncf/endusers/issues/1752) and
+provenance repair in [#1748](https://github.com/cncf/endusers/pull/1748)
+motivate these evidence requirements.
+
+A mutation result of `NoCoverage` means the configured run did not attribute
+execution to that mutant; it does not by itself prove an assertion gap.
+Calibrate the runner and any subprocess boundary, including active-mutant
+selection and child-to-parent coverage reporting, before treating those results
+as missing assertions or using them to justify mutation-scope or threshold
+changes. Assertion gaps within mutation-covered production logic still require
+the surviving-mutant evidence in decision 3.
+
+Browser-coverage artifacts preserve producer identities separately from the
+current reporter runtime: build-process Node/V8 identity, and capture-process
+Node/V8, Playwright and browser product/V8 identities. Record producer metadata
+when building or capturing and preserve it when sealing the run. Later renders,
+including failure reports, retain those identities and identify the current
+reporter separately. Missing legacy producer metadata remains explicitly
+unknown, not inferred from the renderer. The reporter's runtime alone is not
+evidence of which browser produced the raw ranges or why region counts differ.
+
+This clarification selects no new mutation-runner architecture, expands no
+mutation scope, changes no thresholds, and does not relax the existing
+browser-fixture or test-tree restrictions.
+
 ## Consequences
 
 - Hive `quality` findings that do not meet decision 2 are closed as not planned

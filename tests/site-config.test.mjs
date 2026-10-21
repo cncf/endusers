@@ -299,6 +299,18 @@ test('e2e coverage source maps are opt-in and client-only', async () => {
     devtool: 'source-map',
   });
   assert.deepEqual(plugin.configureWebpack({}, true), {});
+  const outDir = mkdtempSync(join(tmpdir(), 'endusers-build-runtime-'));
+  try {
+    await plugin.postBuild({ outDir });
+    assert.deepEqual(
+      JSON.parse(
+        readFileSync(join(outDir, 'e2e-coverage-runtime.json'), 'utf8'),
+      ),
+      { node: process.version, v8: process.versions.v8 },
+    );
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
 });
 
 test('the e2e data fixtures are opt-in and scoped to the site data directory', async () => {

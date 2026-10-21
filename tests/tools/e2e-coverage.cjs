@@ -1,6 +1,7 @@
 const { createHash } = require('node:crypto');
 
 const { test: baseTest, expect } = require('@playwright/test');
+const { version: playwrightVersion } = require('@playwright/test/package.json');
 
 const managers = new Map();
 const runModulePromise = import('./e2e-coverage-run.mjs');
@@ -71,6 +72,7 @@ class CoverageManager {
       parallelIndex: this.testInfo.parallelIndex,
       retry: this.testInfo.retry,
       pageIndex: pageInfo.pageIndex,
+      runtime: pageInfo.runtime ?? null,
       error: errorDetails(error),
     });
   }
@@ -85,24 +87,33 @@ class CoverageManager {
       pageIndex: this.pageIndex,
     };
     this.pageIndex += 1;
-    if (empty) {
-      const record = { info, page, empty: true };
-      this.pages.set(page, record);
-      return record;
-    }
     try {
-      if (typeof page.coverage?.startJSCoverage !== 'function') {
+      if (!empty && typeof page.coverage?.startJSCoverage !== 'function') {
         throw new Error('Playwright JavaScript coverage is unavailable');
       }
-      await page.coverage.startJSCoverage({
-        reportAnonymousScripts: false,
-        resetOnNavigation: false,
-      });
+      const session = await page.context().newCDPSession(page);
+      try {
+        const version = await session.send('Browser.getVersion');
+        info.runtime = {
+          node: process.version,
+          v8: process.versions.v8,
+          playwright: playwrightVersion,
+          browser: version.product,
+          browserV8: version.jsVersion,
+        };
+      } finally {
+        await session.detach();
+      }
+      if (!empty)
+        await page.coverage.startJSCoverage({
+          reportAnonymousScripts: false,
+          resetOnNavigation: false,
+        });
     } catch (error) {
       await this.writeError(info, error);
       throw error;
     }
-    const record = { info, page };
+    const record = { info, page, empty };
     this.pages.set(page, record);
     return record;
   }
@@ -135,6 +146,7 @@ class CoverageManager {
           parallelIndex: this.testInfo.parallelIndex,
           retry: this.testInfo.retry,
           pageIndex: record.info.pageIndex,
+          runtime: record.info.runtime,
           result: normalized,
         },
       );

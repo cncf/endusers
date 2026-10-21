@@ -145,6 +145,64 @@ export async function readCoverageRun(runDir) {
   return validateManifest(JSON.parse(raw));
 }
 
+async function readProvenance(runDir, runId, buildDir) {
+  const captures = new Map();
+  const warnings = [];
+  for (const entry of await readdir(runDir)) {
+    if (!entry.endsWith('.json') || entry === 'manifest.json') continue;
+    const raw = await readFile(join(runDir, entry), 'utf8');
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error;
+      warnings.push(
+        `Capture runtime unavailable for ${entry}: ${error.message}`,
+      );
+      continue;
+    }
+    if (
+      payload?.runId === runId &&
+      [
+        COVERAGE_ARTIFACT_KIND,
+        'endusers.playwright.v8-coverage-error',
+      ].includes(payload.kind)
+    ) {
+      const runtime = payload.runtime ?? null;
+      captures.set(JSON.stringify(runtime), runtime);
+    }
+  }
+  const builds = [];
+  if (buildDir && (await exists(buildDir))) {
+    const variants = (await readdir(buildDir, { withFileTypes: true }))
+      .filter(
+        (entry) =>
+          entry.isDirectory() && entry.name.startsWith('e2e-coverage-'),
+      )
+      .map((entry) => entry.name)
+      .sort();
+    for (const build of ['.', ...variants]) {
+      const path = join(buildDir, build, 'e2e-coverage-runtime.json');
+      const hasRuntime = await exists(path);
+      if (
+        build !== '.' &&
+        !hasRuntime &&
+        !(await exists(join(buildDir, build, 'assets/js')))
+      )
+        continue;
+      builds.push({
+        build,
+        runtime: hasRuntime ? JSON.parse(await readFile(path, 'utf8')) : null,
+      });
+    }
+  }
+  return {
+    captureRuntimes: Array.from(captures.values()),
+    buildRuntimes: builds,
+    provenanceWarnings: warnings,
+  };
+}
+
 export async function sealCoverageRun(
   runDir,
   status,
@@ -171,6 +229,7 @@ export async function sealCoverageRun(
     : null;
   const sealed = {
     ...manifest,
+    ...(await readProvenance(runDir, manifest.runId, buildDir)),
     status,
     sealedAt: new Date().toISOString(),
     ...(scripts

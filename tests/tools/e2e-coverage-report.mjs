@@ -735,6 +735,16 @@ async function convertScript(scriptCoverage, root, scriptRoots) {
   };
 }
 
+// Producer identity belongs to the sealed artifacts, not the process that
+// happens to render them later.
+function reportProvenance(run) {
+  return {
+    reporterRuntime: { node: process.version, v8: process.versions.v8 },
+    buildRuntimes: run?.buildRuntimes ?? null,
+    captureRuntimes: run?.captureRuntimes ?? null,
+  };
+}
+
 function emptyReport(run, status = 'ok') {
   return {
     schemaVersion: 2,
@@ -746,6 +756,7 @@ function emptyReport(run, status = 'ok') {
     // tests/tools/e2e-coverage-run.mjs. Null when the run could not name its
     // commit, never absent, so a consumer always has the key to check.
     revision: run.revision ?? null,
+    ...reportProvenance(run),
     scripts: { captured: 0, converted: 0, ignored: 0 },
     sources: [],
     summary: {
@@ -758,7 +769,7 @@ function emptyReport(run, status = 'ok') {
     },
     unmappedSources: [],
     missingSourceFiles: [],
-    diagnostics: { warnings: [], errors: [] },
+    diagnostics: { warnings: run.provenanceWarnings ?? [], errors: [] },
   };
 }
 
@@ -996,6 +1007,10 @@ export async function collectE2ECoverage(
   return report;
 }
 
+function nodeRuntime(runtime) {
+  return `node ${runtime?.node ?? 'unknown'} (v8 ${runtime?.v8 ?? 'unknown'})`;
+}
+
 export function renderE2ECoverageReport(report) {
   const lines = [
     `E2E coverage: ${report.status} (run ${report.runId}; status ${report.runStatus ?? 'unknown'})`,
@@ -1004,6 +1019,9 @@ export function renderE2ECoverageReport(report) {
     // scanning the artifact for which commit these line numbers address should
     // not have to parse a parenthetical to find it.
     `Revision: ${report.revision ?? 'unknown'}`,
+    `Build runtimes: ${report.buildRuntimes?.map(({ build, runtime }) => `${build}: ${nodeRuntime(runtime)}`).join('; ') || 'unknown'}`,
+    `Capture runtimes: ${report.captureRuntimes?.map((runtime) => `${nodeRuntime(runtime)}, Playwright ${runtime?.playwright ?? 'unknown'}, browser ${runtime?.browser ?? 'unknown'} (v8 ${runtime?.browserV8 ?? 'unknown'})`).join('; ') || 'unknown'}`,
+    `Reporter runtime: ${nodeRuntime(report.reporterRuntime)}`,
     '',
     // The region column is what makes a --check-source-regions failure
     // diagnosable from the text artifact alone, mirroring the unit reporter.
@@ -1078,6 +1096,7 @@ export async function main(argv = process.argv.slice(2)) {
       runId: error.runId ?? run?.runId ?? null,
       runStatus: error.runStatus ?? run?.status ?? null,
       revision: run?.revision ?? null,
+      ...reportProvenance(run),
       scripts: { captured: 0, converted: 0, ignored: 0 },
       sources: [],
       summary: {
@@ -1096,7 +1115,10 @@ export async function main(argv = process.argv.slice(2)) {
       // reader gets of why the gate failed, and publishing `null` there would
       // be worse than publishing the coerced text.
       // tests/e2e-coverage-error-arms.test.mjs pins the premise.
-      diagnostics: { warnings: [], errors: [error.message ?? String(error)] },
+      diagnostics: {
+        warnings: run?.provenanceWarnings ?? [],
+        errors: [error.message ?? String(error)],
+      },
     };
     await writeE2ECoverageReport(failure, {
       jsonPath: options.json,
