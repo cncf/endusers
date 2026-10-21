@@ -32,8 +32,19 @@ import { unwrapMdxCodeBlocks } from '@docusaurus/utils';
  *
  * The node's own source range is passed to `unwrapMdxCodeBlocks()`: the range
  * begins at the opening fence and ends at the closing one, which is exactly
- * the `^`/`$` anchoring its patterns allow, so the answer for the slice is the
- * answer for the block in the whole document.
+ * the `^`/`$` anchoring its patterns allow, so a block that reads as unwrapped
+ * on its own slice is reported at its own line.
+ *
+ * The converse does not hold, so `false` here is not a clearance. mdast ends
+ * the node at the closing fence *CommonMark* chooses -- any run of three or
+ * more backticks -- while the unwrap pattern requires a closer of exactly
+ * three and searches on with `.*?` under `s` when it meets a longer one. An
+ * opener whose CommonMark closer is four backticks therefore pairs, in the
+ * full document, with a later bare fence outside this slice entirely. Callers
+ * must not read `false` as "Docusaurus leaves this page alone":
+ * `findActiveContent()` (./mdx-active-content.mjs) and `hasActiveMdx()`
+ * (./mdx-escape.mjs) both also scan `unwrapMdxCodeBlocks()` output, for this
+ * reason.
  *
  * @param {string} source Full document text.
  * @param {{ position?: { start?: { offset?: number }, end?: { offset?: number } } }} node

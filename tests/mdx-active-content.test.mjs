@@ -530,6 +530,55 @@ test('reports the four-backtick and indented forms Docusaurus also unwraps', () 
   ]);
 });
 
+test('reports active content exposed only when the whole document is unwrapped', () => {
+  // The two fence grammars disagree about which closer pairs with the opener.
+  // CommonMark ends the code node at the four-backtick line, so the node's own
+  // slice is not something unwrapMdxCodeBlocks() rewrites and the per-node
+  // check clears it. Docusaurus's pattern needs a closer of exactly three
+  // backticks, skips the four-backtick line under `.*?`/`s`, and pairs the
+  // opener with the bare fence at the end -- unwrapping the <img> into live
+  // MDX. Before the whole-document pass this body scanned clean, validated,
+  // and built to HTML carrying the remote <img> plus a preload link for it.
+  const body = [
+    '```mdx-code-block',
+    '<img src="https://beacon.invalid/px.png" />',
+    '````',
+    '',
+    '```',
+  ].join('\n');
+  assert.deepEqual(findActiveContent(body), [
+    {
+      line: 2,
+      reason: 'disallowed element <img>',
+      snippet: '<img src="https://beacon.invalid/px.png" />',
+    },
+  ]);
+});
+
+test('maps an unwrapped-pass finding back to its true source line', () => {
+  // Only the fence lines are deleted, so the unwrapped document's lines are a
+  // subsequence of the source's and the reported line must be the one a reader
+  // can open the file to, not the shifted line of the rewritten text.
+  const body = [
+    '## Overview',
+    '',
+    'Prose.',
+    '',
+    '```mdx-code-block',
+    '<iframe src="https://evil.test"></iframe>',
+    '````',
+    '',
+    '```',
+  ].join('\n');
+  assert.deepEqual(findActiveContent(body), [
+    {
+      line: 6,
+      reason: 'disallowed element <iframe>',
+      snippet: '<iframe src="https://evil.test"></iframe>',
+    },
+  ]);
+});
+
 test('leaves ordinary fenced and inline code alone', () => {
   // The exemption is for the one info string Docusaurus rewrites, not for
   // code blocks in general: an architecture page showing a YAML snippet with
