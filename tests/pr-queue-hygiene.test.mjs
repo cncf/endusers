@@ -281,13 +281,25 @@ import { ${call.fn} } from './scripts/${SCRIPT}';
 console.log(JSON.stringify(${call.expr}));
 `;
 
+const FETCH_ALL_DRIVER = PAGE_DRIVER({
+  fn: 'fetchAllOpenPRs',
+  expr: "fetchAllOpenPRs('cncf/endusers')",
+});
+
+// A 100-item first page followed by a one-item second page, fetched in order.
+function assertTwoPagesOfPRs(result) {
+  assert.equal(result.status, 0, result.stderr);
+  const prs = JSON.parse(result.stdout);
+  assert.equal(prs.length, 101);
+  assert.equal(prs[0].number, 1);
+  assert.equal(prs[100].number, 101);
+  assert.equal(result.calls.length, 2);
+}
+
 test('fetchAllOpenPRs: returns a single short page without asking for a second', () => {
   const result = runWithGhStub({
     script: SCRIPT,
-    driver: PAGE_DRIVER({
-      fn: 'fetchAllOpenPRs',
-      expr: "fetchAllOpenPRs('cncf/endusers')",
-    }),
+    driver: FETCH_ALL_DRIVER,
     routes: [{ match: '&page=1', stdout: JSON.stringify([{ number: 1 }]) }],
   });
   assert.equal(result.status, 0, result.stderr);
@@ -299,21 +311,13 @@ test('fetchAllOpenPRs: pages past gh default limits and concatenates in order', 
   const firstPage = Array.from({ length: 100 }, (_, i) => ({ number: i + 1 }));
   const result = runWithGhStub({
     script: SCRIPT,
-    driver: PAGE_DRIVER({
-      fn: 'fetchAllOpenPRs',
-      expr: "fetchAllOpenPRs('cncf/endusers')",
-    }),
+    driver: FETCH_ALL_DRIVER,
     routes: [
       { match: '&page=2', stdout: JSON.stringify([{ number: 101 }]) },
       { match: '&page=1', stdout: JSON.stringify(firstPage) },
     ],
   });
-  assert.equal(result.status, 0, result.stderr);
-  const prs = JSON.parse(result.stdout);
-  assert.equal(prs.length, 101);
-  assert.equal(prs[0].number, 1);
-  assert.equal(prs[100].number, 101);
-  assert.equal(result.calls.length, 2);
+  assertTwoPagesOfPRs(result);
   assert.match(result.calls[0].join(' '), /state=open&per_page=100&page=1/);
   assert.match(result.calls[1].join(' '), /state=open&per_page=100&page=2/);
 });
@@ -322,10 +326,7 @@ test('fetchAllOpenPRs: stops on an empty page after an exactly-full one', () => 
   const firstPage = Array.from({ length: 100 }, (_, i) => ({ number: i + 1 }));
   const result = runWithGhStub({
     script: SCRIPT,
-    driver: PAGE_DRIVER({
-      fn: 'fetchAllOpenPRs',
-      expr: "fetchAllOpenPRs('cncf/endusers')",
-    }),
+    driver: FETCH_ALL_DRIVER,
     routes: [
       { match: '&page=2', stdout: '[]' },
       { match: '&page=1', stdout: JSON.stringify(firstPage) },
@@ -616,10 +617,7 @@ test('fallback: fetchAllOpenPRs pages through the REST API when gh is missing', 
   const firstPage = Array.from({ length: 100 }, (_, i) => ({ number: i + 1 }));
   const result = runWithCurlStub({
     script: SCRIPT,
-    driver: PAGE_DRIVER({
-      fn: 'fetchAllOpenPRs',
-      expr: "fetchAllOpenPRs('cncf/endusers')",
-    }),
+    driver: FETCH_ALL_DRIVER,
     routes: [
       {
         match: 'state=open&per_page=100&page=2',
@@ -631,11 +629,7 @@ test('fallback: fetchAllOpenPRs pages through the REST API when gh is missing', 
       },
     ],
   });
-  assert.equal(result.status, 0, result.stderr);
-  const prs = JSON.parse(result.stdout);
-  assert.equal(prs.length, 101);
-  assert.equal(prs[100].number, 101);
-  assert.equal(result.calls.length, 2);
+  assertTwoPagesOfPRs(result);
   assert.match(
     result.calls[0].join(' '),
     /api\.github\.com\/repos\/cncf\/endusers\/pulls\?state=open/,
@@ -728,10 +722,7 @@ test('fallback: main removes the stale label over REST when gh is missing', () =
 test('fallback: a failing curl call surfaces its own error, not a fallback loop', () => {
   const result = runWithCurlStub({
     script: SCRIPT,
-    driver: PAGE_DRIVER({
-      fn: 'fetchAllOpenPRs',
-      expr: "fetchAllOpenPRs('cncf/endusers')",
-    }),
+    driver: FETCH_ALL_DRIVER,
     routes: [{ match: 'state=open', status: 1, stderr: 'HTTP 422 boom' }],
   });
   assert.equal(result.status, 1);
@@ -788,10 +779,7 @@ test('fallback: applySimpleJqProjection projects and rejects other shapes', () =
 test('gh CLI errors that are not ENOENT surface unchanged (no fallback)', () => {
   const result = runWithGhStub({
     script: SCRIPT,
-    driver: PAGE_DRIVER({
-      fn: 'fetchAllOpenPRs',
-      expr: "fetchAllOpenPRs('cncf/endusers')",
-    }),
+    driver: FETCH_ALL_DRIVER,
     routes: [{ match: 'state=open', status: 1, stderr: 'gh boom' }],
   });
   assert.equal(result.status, 1);
