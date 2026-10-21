@@ -14,6 +14,7 @@ import { renderHook } from './tools/react-hook-driver.mjs';
 import {
   findAllByType,
   findByType,
+  renderElement,
   textOf,
 } from './tools/react-element-tree.mjs';
 
@@ -22,6 +23,9 @@ const {
   useArchitectureFilterOptions,
   useArchitectureFilters,
 } = await importSource('src/components/ArchitectureFilters/index.js');
+const { default: FilterToolbar } = await importSource(
+  'src/components/shared/FilterToolbar.js',
+);
 
 function architecture(overrides = {}) {
   return {
@@ -169,7 +173,7 @@ const NO_FILTERS = {
 function render(overrides = {}) {
   const calls = [];
   const record = (name) => (value) => calls.push([name, value]);
-  const tree = ArchitectureFilters({
+  const element = ArchitectureFilters({
     options: OPTIONS,
     filters: NO_FILTERS,
     setQuery: record('setQuery'),
@@ -182,8 +186,17 @@ function render(overrides = {}) {
     totalCount: 7,
     ...overrides,
   });
-  return { tree, calls };
+  // The component composes the shared toolbar as a <FilterToolbar> element;
+  // expand it through the harness so the assertions below see its markup.
+  return { element, tree: renderElement(element), calls };
 }
+
+test('the toolbar is composed as a <FilterToolbar> JSX element', () => {
+  const { element } = render();
+
+  assert.equal(element.type, FilterToolbar);
+  assert.equal(element.props.searchId, 'architecture-search');
+});
 
 function selectById(tree, id) {
   return findAllByType(tree, 'select').find(

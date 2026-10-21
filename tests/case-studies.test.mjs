@@ -22,7 +22,16 @@ import {
 
 const CaseStudies = (await importSource('src/components/CaseStudies/index.js'))
   .default;
+const { default: FilterToolbar } = await importSource(
+  'src/components/shared/FilterToolbar.js',
+);
 const data = (await importSource('data/case-studies.json')).default;
+
+// The component renders the shared toolbar as a <FilterToolbar> element,
+// which the tree walker treats as an opaque leaf; every query below passes
+// this option so the harness expands it (it is hook-free) while genuinely
+// nested hook-bearing components stay leaves.
+const EXPAND_TOOLBAR = { expand: (type) => type === FilterToolbar };
 
 const STUDIES = data.caseStudies ?? [];
 
@@ -96,7 +105,7 @@ function render(Component) {
 }
 
 function elementById(tree, id) {
-  for (const element of walkElements(tree)) {
+  for (const element of walkElements(tree, EXPAND_TOOLBAR)) {
     if (element.props?.id === id) return element;
   }
   return undefined;
@@ -109,34 +118,36 @@ function change(element, value) {
 
 /** Every option value a <select> offers, excluding its "all" placeholder. */
 function optionValues(select) {
-  return findAllByType(select, 'option')
+  return findAllByType(select, 'option', EXPAND_TOOLBAR)
     .map((option) => option.props.value)
     .filter(Boolean);
 }
 
 /** The title cell (row header) of every rendered body row, in document order. */
 function renderedTitles(view) {
-  const body = findByType(view.tree, 'tbody');
-  return findAllByType(body, 'tr').map((row) => textOf(findByType(row, 'th')));
+  const body = findByType(view.tree, 'tbody', EXPAND_TOOLBAR);
+  return findAllByType(body, 'tr', EXPAND_TOOLBAR).map((row) =>
+    textOf(findByType(row, 'th', EXPAND_TOOLBAR)),
+  );
 }
 
 /** The organization cell of every rendered body row, in document order. */
 function renderedOrganizations(view) {
-  const body = findByType(view.tree, 'tbody');
-  return findAllByType(body, 'tr').map((row) =>
-    textOf(findAllByType(row, 'td')[0]),
+  const body = findByType(view.tree, 'tbody', EXPAND_TOOLBAR);
+  return findAllByType(body, 'tr', EXPAND_TOOLBAR).map((row) =>
+    textOf(findAllByType(row, 'td', EXPAND_TOOLBAR)[0]),
   );
 }
 
 function resultsText(view) {
-  const live = [...walkElements(view.tree)].find(
+  const live = [...walkElements(view.tree, EXPAND_TOOLBAR)].find(
     (element) => element.props?.['aria-live'] === 'polite',
   );
   return textOf(live);
 }
 
 function clearButton(view) {
-  return findAllByType(view.tree, 'button').find(
+  return findAllByType(view.tree, 'button', EXPAND_TOOLBAR).find(
     (button) => textOf(button) === 'Clear filters',
   );
 }
@@ -163,20 +174,20 @@ test('renders one table row per case study, newest first by default', () => {
 
 test('each row links to the case study URL via its title and cannot reach back via opener', () => {
   const view = render(CaseStudies);
-  const body = findByType(view.tree, 'tbody');
-  const rows = findAllByType(body, 'tr');
+  const body = findByType(view.tree, 'tbody', EXPAND_TOOLBAR);
+  const rows = findAllByType(body, 'tr', EXPAND_TOOLBAR);
   assert.equal(rows.length, SORTED_STUDIES.length);
 
   rows.forEach((row, index) => {
     const study = SORTED_STUDIES[index];
-    const link = findByType(row, 'a');
+    const link = findByType(row, 'a', EXPAND_TOOLBAR);
     assert.equal(link.props.href, study.url);
     assert.equal(textOf(link), study.title);
     assert.equal(link.props.target, '_blank');
     assert.equal(link.props.rel, 'noreferrer');
-    assert.equal(findByType(row, 'th').props.scope, 'row');
+    assert.equal(findByType(row, 'th', EXPAND_TOOLBAR).props.scope, 'row');
 
-    const cells = findAllByType(row, 'td');
+    const cells = findAllByType(row, 'td', EXPAND_TOOLBAR);
     assert.deepEqual(cells.map(textOf), [
       study.organization,
       study.publishedAt
@@ -212,12 +223,12 @@ test('case studies default to descending order by published date', () => {
 
 test('row headers are scoped so screen readers announce the case study title', () => {
   const view = render(CaseStudies);
-  const body = findByType(view.tree, 'tbody');
-  for (const row of findAllByType(body, 'tr')) {
-    assert.equal(findByType(row, 'th').props.scope, 'row');
+  const body = findByType(view.tree, 'tbody', EXPAND_TOOLBAR);
+  for (const row of findAllByType(body, 'tr', EXPAND_TOOLBAR)) {
+    assert.equal(findByType(row, 'th', EXPAND_TOOLBAR).props.scope, 'row');
   }
-  const head = findByType(view.tree, 'thead');
-  assert.deepEqual(findAllByType(head, 'th').map(textOf), [
+  const head = findByType(view.tree, 'thead', EXPAND_TOOLBAR);
+  assert.deepEqual(findAllByType(head, 'th', EXPAND_TOOLBAR).map(textOf), [
     'Title',
     'Organization',
     'Date',
@@ -240,7 +251,7 @@ test('each filter select offers the deduplicated, sorted values from the data', 
       uniqueSorted(STUDIES.flatMap((study) => study[key])),
       `${id} options do not match the ${key} in the data`,
     );
-    const [placeholder] = findAllByType(select, 'option');
+    const [placeholder] = findAllByType(select, 'option', EXPAND_TOOLBAR);
     assert.equal(placeholder.props.value, '');
   }
 });
@@ -248,7 +259,9 @@ test('each filter select offers the deduplicated, sorted values from the data', 
 test('every control is labelled by a label bound to its id', () => {
   const view = render(CaseStudies);
   const labelled = new Set(
-    findAllByType(view.tree, 'label').map((label) => label.props.htmlFor),
+    findAllByType(view.tree, 'label', EXPAND_TOOLBAR).map(
+      (label) => label.props.htmlFor,
+    ),
   );
   for (const id of [
     'case-study-search',
@@ -348,7 +361,7 @@ test('an unmatchable query renders the empty state and no rows', () => {
     resultsText(view),
     `Showing 0 of ${STUDIES.length} case studies`,
   );
-  const empty = [...walkElements(view.tree)].find(
+  const empty = [...walkElements(view.tree, EXPAND_TOOLBAR)].find(
     (element) =>
       element.type === 'p' && textOf(element).startsWith('No case studies'),
   );
@@ -357,7 +370,7 @@ test('an unmatchable query renders the empty state and no rows', () => {
 
 test('the empty state is absent while at least one row matches', () => {
   const view = render(CaseStudies);
-  const empty = [...walkElements(view.tree)].find(
+  const empty = [...walkElements(view.tree, EXPAND_TOOLBAR)].find(
     (element) =>
       element.type === 'p' && textOf(element).startsWith('No case studies'),
   );
@@ -393,7 +406,7 @@ test('Clear filters appears only once a filter is active and resets every contro
 
 test('the sync status credits the upstream source with a safe outbound link', () => {
   const view = render(CaseStudies);
-  const syncStatus = [...walkElements(view.tree)].find(
+  const syncStatus = [...walkElements(view.tree, EXPAND_TOOLBAR)].find(
     (element) => typeof element.type === 'function',
   );
   assert.ok(syncStatus, 'the sync status component was not rendered');
@@ -404,7 +417,7 @@ test('the sync status credits the upstream source with a safe outbound link', ()
     return;
   }
 
-  const link = findByType(rendered, 'a');
+  const link = findByType(rendered, 'a', EXPAND_TOOLBAR);
   assert.equal(link.props.href, data.sourceUrl);
   assert.equal(link.props.target, '_blank');
   assert.equal(link.props.rel, 'noreferrer');
