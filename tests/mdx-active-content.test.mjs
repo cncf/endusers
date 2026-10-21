@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { loadSiteConfig } from '@docusaurus/core/lib/server/config.js';
+import { compileToJSX } from '@docusaurus/mdx-loader/lib/utils.js';
+import { DEFAULT_OPTIONS } from '@docusaurus/plugin-content-docs/lib/options.js';
+import { parseSync } from '@swc/core';
 import { findActiveContent } from '../scripts/lib/mdx-active-content.mjs';
 
 const reasons = (markdown) => findActiveContent(markdown).map((f) => f.reason);
@@ -676,4 +682,139 @@ test('leaves an ordinary admonition and a fenced copy of the payload alone', () 
     '```',
   ].join('\n');
   assert.deepEqual(reasons(body), []);
+});
+
+const siteDir = fileURLToPath(new URL('../', import.meta.url));
+const { siteConfig } = await loadSiteConfig({ siteDir });
+const classicPreset = siteConfig.presets.find(
+  (preset) => Array.isArray(preset) && preset[0] === 'classic',
+);
+const compilerOptions = {
+  ...DEFAULT_OPTIONS,
+  ...classicPreset[1].docs,
+  siteDir,
+  staticDirs: siteConfig.staticDirectories.map((dir) => resolve(siteDir, dir)),
+  markdownConfig: siteConfig.markdown,
+};
+
+// Inspect the real compiler's JavaScript, not the gate's parser or rewrite
+// helpers. Rejected MDX is compiled but never evaluated.
+async function compiledContent(body, options = compilerOptions) {
+  const result = await compileToJSX({
+    fileContent: body,
+    filePath: resolve(siteDir, 'docs/architectures/_security-regression.md'),
+    frontMatter: {},
+    options,
+    compilerName: 'server',
+  });
+  const urls = [];
+  const text = [];
+  function visit(node) {
+    if (!node || typeof node !== 'object') return;
+    if (node.type === 'StringLiteral') text.push(node.value);
+    if (
+      node.type === 'KeyValueProperty' &&
+      ['href', 'src'].includes(node.key.value) &&
+      node.value.type === 'StringLiteral'
+    )
+      urls.push([node.key.value, node.value.value]);
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) value.forEach(visit);
+      else visit(value);
+    }
+  }
+  visit(parseSync(result.content, { syntax: 'ecmascript' }));
+  return { urls, text };
+}
+
+const COMPILER_REJECTED = [
+  [
+    'whole-document fence pairing exposes a remote image',
+    '```mdx-code-block\n<img src="https://beacon.invalid/px.png" />\n````\n\n```',
+    ['src', 'https://beacon.invalid/px.png'],
+    'disallowed element <img>',
+  ],
+  [
+    'unwrapping exposes an encoded URL in an admonition below a heading',
+    '## Overview\n\n```mdx-code-block\n:::note[x](&#106;avascript:alert(1))\n```',
+    ['href', 'javascript:alert(1)'],
+    'disallowed URL scheme javascript:',
+  ],
+  [
+    'GFM table delimiters expose an image inside an apparent code span',
+    '| a | b |\n| - | - |\n| `x | <img src="https://beacon.invalid/px.png" /> ` |',
+    ['src', 'https://beacon.invalid/px.png'],
+    'disallowed element <img>',
+  ],
+  [
+    'duplicate definitions resolve to the first destination',
+    '[x][d]\n\n[d]: javascript:alert(1)\n[d]: https://www.cncf.io/',
+    ['href', 'javascript:alert(1)'],
+    'disallowed URL scheme javascript:',
+  ],
+];
+
+for (const [name, body, url, reason] of COMPILER_REJECTED) {
+  test(`the publish gate rejects what Docusaurus makes active: ${name}`, async () => {
+    assert.deepEqual((await compiledContent(body)).urls, [url]);
+    assert.ok(reasons(body).includes(reason));
+  });
+}
+
+const COMPILER_ACCEPTED = [
+  [
+    'headings, modern admonitions and reference links',
+    '## Overview\n\n:::note[Safe title]\n\n[Read more][d]\n\n:::\n\n[d]: https://www.cncf.io/',
+    [['href', 'https://www.cncf.io/']],
+    'Read more',
+  ],
+  [
+    'ordinary fences keep a legacy admonition payload inert',
+    '```\n:::note x](javascript:alert(1))\n```',
+    [],
+    ':::note x](javascript:alert(1))',
+  ],
+  [
+    'inline code preserves JSX as text',
+    'Use `<img src="https://beacon.invalid/px.png" />` as an example.',
+    [],
+    '<img src="https://beacon.invalid/px.png" />',
+  ],
+  [
+    'YAML fences preserve braces and angle brackets',
+    '```yaml\nkey: {a: 1}\nexample: <b>\n```',
+    [],
+    'key: {a: 1}\nexample: <b>',
+  ],
+];
+
+for (const [name, body, urls, text] of COMPILER_ACCEPTED) {
+  test(`the publish gate and Docusaurus preserve valid content: ${name}`, async () => {
+    assert.deepEqual(reasons(body), []);
+    const compiled = await compiledContent(body);
+    assert.deepEqual(compiled.urls, urls);
+    assert.ok(compiled.text.some((value) => value.includes(text)));
+  });
+}
+
+test('the gate also rejects a composed bypass when legacy compatibility is enabled', async () => {
+  // future.v4 disables these rewrites on the current site. Exercise opt-in
+  // compatibility explicitly rather than claiming legacy titles are live now.
+  const options = {
+    ...compilerOptions,
+    markdownConfig: {
+      ...siteConfig.markdown,
+      mdx1Compat: {
+        ...siteConfig.markdown.mdx1Compat,
+        headingIds: true,
+        admonitions: true,
+      },
+    },
+  };
+  const body =
+    '## Overview {#overview}\n\n```mdx-code-block\n:::note x](&#106;avascript:alert(1))\n````\n\n```';
+  assert.deepEqual((await compiledContent(body, options)).urls, [
+    ['href', 'javascript:alert(1)'],
+  ]);
+  assert.ok(reasons(body).includes('disallowed URL scheme javascript:'));
 });
