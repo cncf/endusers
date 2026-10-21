@@ -32,7 +32,9 @@
  * A fenced code block is allowed because MDX evaluates nothing inside one --
  * except for ```mdx-code-block, which Docusaurus unwraps into live MDX before
  * the compiler runs (see ./mdx-code-blocks.mjs). That fence is not a code
- * block at all, so it is a finding.
+ * block at all, so it is a finding. Because that unwrap decides for itself
+ * which fences pair, the scan is run over its output as well as over the text
+ * on disk; see `findActiveContent()`.
  *
  * The scan answers the second of the two questions `uri-safety.mjs` states
  * both gates must answer -- does the value make a visitor's browser contact
@@ -56,7 +58,10 @@ import { mdxFromMarkdown } from 'mdast-util-mdx';
 import { gfm } from 'micromark-extension-gfm';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { eachNode } from './mdast-walk.mjs';
-import { isUnwrappedCodeBlock } from './mdx-code-blocks.mjs';
+import {
+  isUnwrappedCodeBlock,
+  unwrapMdxCodeBlocks,
+} from './mdx-code-blocks.mjs';
 import {
   describeTarget,
   disallowedScheme,
@@ -183,18 +188,13 @@ function literalValue(expression) {
 }
 
 /**
- * Scans a Markdown/MDX body for anything outside the allowlists, and for
- * images loaded from another host.
+ * Scans one source text, reporting each finding at its line within that text.
  *
- * @param {string} markdown - Document body to scan.
- * @param {{ mdastExtensions?: Array<object> }} [options] - Extra mdast
- *   extensions to parse with. A node kind they introduce is not on the
- *   allowlist, so it is reported rather than walked past.
- * @returns {Array<{ line: number, reason: string, snippet: string }>} One entry
- *   per finding, ordered by line.
+ * @param {string} text - Document body to scan.
+ * @param {Array<object>} mdastExtensions - Extra mdast extensions.
+ * @returns {Array<{ line: number, reason: string, snippet: string }>}
  */
-export function findActiveContent(markdown, { mdastExtensions = [] } = {}) {
-  const text = String(markdown ?? '');
+function scanSource(text, mdastExtensions) {
   const lines = text.split('\n');
   const findings = [];
   const report = (line, reason) =>
@@ -319,6 +319,70 @@ export function findActiveContent(markdown, { mdastExtensions = [] } = {}) {
       );
     }
   });
+
+  return findings;
+}
+
+/**
+ * Maps each line of `unwrapped` back to its line number in `text`.
+ *
+ * `unwrapMdxCodeBlocks()` keeps a block's body verbatim and deletes only the
+ * opening and closing fence lines, so every line of the unwrapped document is
+ * a line of the source, in order, and a greedy forward walk recovers the
+ * original line numbers without restating the upstream patterns.
+ *
+ * @param {string} text - Source document.
+ * @param {string} unwrapped - `unwrapMdxCodeBlocks(text)`.
+ * @returns {number[]} Source line number for each line of `unwrapped`.
+ */
+function mapUnwrappedLines(text, unwrapped) {
+  const sourceLines = text.split('\n');
+  const mapping = [];
+  let cursor = 0;
+  for (const line of unwrapped.split('\n')) {
+    while (cursor < sourceLines.length && sourceLines[cursor] !== line) {
+      cursor += 1;
+    }
+    // Unreachable for a pure deletion; fall back to the last line rather than
+    // throw if the upstream rewrite ever changes shape.
+    mapping.push(Math.min(cursor + 1, sourceLines.length));
+    cursor += 1;
+  }
+  return mapping;
+}
+
+/**
+ * Scans a Markdown/MDX body for anything outside the allowlists, and for
+ * images loaded from another host.
+ *
+ * The body is scanned as written and again as `unwrapMdxCodeBlocks()` leaves
+ * it, because that rewritten text is what the MDX compiler is handed. The
+ * per-node `mdx-code-block` check only sees the span mdast gave the node, and
+ * the fence grammars disagree about where it ends: CommonMark closes a
+ * three-backtick fence with any run of three or more, while Docusaurus
+ * requires exactly three and pairs the opener with a later bare fence. A
+ * payload between those two closers sits inside a `code` node the scan trusts.
+ * Scanning the unwrapped text closes that gap for any such disagreement. This
+ * mirrors `hasActiveMdx()` in ./mdx-escape.mjs.
+ *
+ * @param {string} markdown - Document body to scan.
+ * @param {{ mdastExtensions?: Array<object> }} [options] - Extra mdast
+ *   extensions to parse with. A node kind they introduce is not on the
+ *   allowlist, so it is reported rather than walked past.
+ * @returns {Array<{ line: number, reason: string, snippet: string }>} One entry
+ *   per finding, ordered by line.
+ */
+export function findActiveContent(markdown, { mdastExtensions = [] } = {}) {
+  const text = String(markdown ?? '');
+  const findings = scanSource(text, mdastExtensions);
+
+  const unwrapped = unwrapMdxCodeBlocks(text);
+  if (unwrapped !== text) {
+    const sourceLine = mapUnwrappedLines(text, unwrapped);
+    for (const finding of scanSource(unwrapped, mdastExtensions)) {
+      findings.push({ ...finding, line: sourceLine[finding.line - 1] });
+    }
+  }
 
   const seen = new Set();
   return findings

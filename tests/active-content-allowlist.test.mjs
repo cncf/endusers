@@ -356,6 +356,7 @@ const BYPASSES = [
     ),
     [
       'mdx-code-block fence, whose body Docusaurus compiles as MDX rather than displaying as code',
+      'disallowed element <img>',
     ],
   ],
   [
