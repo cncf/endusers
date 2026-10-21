@@ -235,3 +235,8 @@ dist
 # (package.json `_build`); committing it would freeze a stale copy.
 /docs/resources/changelog.md
 
+
+### Mutation testing ###
+# StrykerJS sandbox and report output (stryker.config.mjs, npm run test:mutation)
+/.stryker-tmp/
+/reports/

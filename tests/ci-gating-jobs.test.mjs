@@ -70,6 +70,12 @@ const PULL_REQUEST_WORKFLOWS = new Map([
       'Dependabot updates, which then wait on the ci.yml gate in the merge ' +
       'queue.',
   ],
+  [
+    'mutation.yml',
+    'StrykerJS mutation testing of the src/ and scripts/lib/ files the ' +
+      'pull request changes, against the break threshold in ' +
+      'stryker.config.mjs.',
+  ],
 ]);
 
 const workflows = workflowMap();
