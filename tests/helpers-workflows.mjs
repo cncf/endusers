@@ -3,7 +3,7 @@
 // their own readdir-filter-sort-parse loader and their own idea of a job or a
 // step, and none of them looked inside a local composite action: a `run:` step
 // moved into .github/actions/<name>/action.yml left every scanner's scope at
-// once (#1565). `walkSteps()` follows `uses: ./.github/actions/<name>` so a
+// once. `walkSteps()` follows `uses: ./.github/actions/<name>` so a
 // step is in scope wherever it sits.
 //
 // tests/workflow-loader.test.mjs forbids any other test module from reading

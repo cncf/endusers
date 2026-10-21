@@ -16,8 +16,8 @@
 // stopped consulting still parses. So each denied extension is also pushed
 // through the two mirror entry points that read the set at runtime, and the
 // consumers are held to importing it rather than redeclaring a copy -- the
-// arrangement endusers#1431 replaced, where five independent lists were kept
-// in step by convention.
+// arrangement this module replaced, where five independent lists were kept in
+// step by convention.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -142,9 +142,8 @@ test('the landscape logo mirror refuses every executable extension', () => {
   }
 });
 
-// endusers#1431 collapsed five hand-synchronised copies of this list into one
-// module. A consumer that reintroduces its own literal drifts out of the
-// boundary silently -- the tests above would still pass, against a set it no
+// This module replaced five hand-synchronised copies of the list. A consumer
+// that reintroduces its own literal drifts out of the boundary silently -- the tests above would still pass, against a set it no
 // longer reads.
 test('every consumer imports the allowlist instead of redeclaring it', () => {
   const consumers = [

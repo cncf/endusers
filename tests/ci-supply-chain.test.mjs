@@ -115,7 +115,7 @@ test('every Node setup step pins the same Node major version', () => {
 // Checkout leaves GITHUB_TOKEN in .git/config unless credential persistence is
 // disabled, so every later step in the job -- including `npm ci` and any build
 // that executes third-party dependency code -- can read a token scoped to this
-// repository. All workflows now opt out (see #598, fixed in #657).
+// repository. All workflows now opt out.
 //
 // KNOWN_PERSISTING_CHECKOUTS is a retiring baseline, not an allowance. The
 // companion test below fails once an entry becomes compliant, so fixing a
@@ -150,9 +150,9 @@ test('the persist-credentials baseline retires itself', () => {
 // so the next run does not supersede a stuck one either.
 //
 // KNOWN_UNBOUNDED_JOBS is a retiring baseline, not an allowance: it recorded
-// the jobs unbounded as of #743, and the companion test below fails once an
+// the jobs that were unbounded, and the companion test below fails once an
 // entry gains a timeout, so bounding a job forces its exception to be removed
-// in the same change. The baseline retired fully in #969: every boundable job
+// in the same change. The baseline has retired fully: every boundable job
 // now declares timeout-minutes, and this set stays empty so the gap cannot
 // reopen silently.
 const KNOWN_UNBOUNDED_JOBS = new Set([]);

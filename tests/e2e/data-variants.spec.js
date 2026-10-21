@@ -33,7 +33,7 @@
 // span (its deviation is the alternative it skipped), so the real build's
 // zero at the arm survives. PeopleFreshness's `!fetchedAt` guard
 // is therefore still listed as an uncovered region even though this spec
-// drives it; see #1256 and the comment at the union in
+// drives it; see the comment at the union in
 // tests/tools/e2e-coverage-report.mjs. The build still exists for the lines.
 //
 // Each case asserts the real route as well. On its own, an assertion that a

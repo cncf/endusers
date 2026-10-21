@@ -163,8 +163,8 @@ export function resolve(specifier, context, nextResolve) {
 // Transpiles JSX source with @swc/core and returns the generated code plus
 // its source map as a JSON string. Exported so tests/tools/coverage-report.mjs
 // can reproduce the exact same transform outside the loader and remap V8
-// offsets recorded against the generated text back onto the file on disk
-// (#628); the loader below embeds the map inline instead, since Node reads it
+// offsets recorded against the generated text back onto the file on disk;
+// the loader below embeds the map inline instead, since Node reads it
 // from the module text rather than from a side channel.
 export function transpileJsx(source, filename) {
   return transformSync(source, {

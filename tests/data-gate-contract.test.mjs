@@ -9,8 +9,8 @@
 // that demanded a validator would be wrong about the repository as it stands.
 //
 // What nothing checks today is the case neither kind covers: a dataset that
-// lands with *no* reader at all. That is not hypothetical. Until #1383,
-// data/end-user-talks.json was exactly that -- no validator, and the only
+// lands with *no* reader at all. That is not hypothetical. Until it gained
+// one, data/end-user-talks.json was exactly that -- no validator, and the only
 // tests that read it were rendering contracts, as the header of
 // tests/end-user-talks-data.test.mjs records. It shipped, was rendered on
 // /events, and nothing in the suite objected -- because nothing in the suite

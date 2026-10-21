@@ -44,8 +44,8 @@ test('every workflow parses as YAML and declares at least one job', () => {
 // GitHub silently drops a job-level `if:` that references a context it
 // doesn't expose there rather than failing loudly: `env` (populated only once
 // a job's steps start running) isn't among them, so `jobs.<id>.if` referencing
-// it never evaluates truthy and the job never runs, on any trigger. This bit
-// #813: an `architecture-ready` label never started the submission job.
+// it never evaluates truthy and the job never runs, on any trigger. This once
+// meant an `architecture-ready` label never started the submission job.
 // https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
 function envContextJobs(parsed) {
   return jobEntries(parsed)
@@ -148,7 +148,7 @@ test('every config file passed to a linter in package.json exists', () => {
 // defect it exists to catch, and with a clean one, so a detector that silently
 // stopped matching fails here instead of passing everywhere.
 test('the env-context guard names the job whose `if:` reads env', () => {
-  // The shape of #813: a job gated on a label it reads through `env`, which
+  // The regression shape: a job gated on a label it reads through `env`, which
   // GitHub does not expose to `jobs.<id>.if`.
   const broken = parse(`
 jobs:
@@ -289,7 +289,7 @@ test('the unit suite runs in every workflow that runs a validator', () => {
 });
 
 test('the Playwright end-to-end suite runs in some workflow', () => {
-  // Regression for #672: tests/e2e/ existed, wired as `npm run test:e2e`,
+  // Regression: tests/e2e/ once existed, wired as `npm run test:e2e`,
   // and no workflow ever ran it, so it contributed no CI signal and could
   // break, bit-rot, or start asserting stale behaviour silently.
   const runsIt = workflows.some(({ doc }) =>
@@ -304,8 +304,8 @@ test('browser coverage is isolated in a visible gating job with a source floor',
   const coverage = workflow.jobs?.['e2e-coverage'];
   assert.ok(required, 'required e2e job is missing');
   assert.ok(coverage, 'e2e coverage job is missing');
-  // #990: the reporter supports --check-source, but an unwired threshold and a
-  // continue-on-error job meant browser coverage was measured and never
+  // The reporter supports --check-source, but an unwired threshold and a
+  // continue-on-error job once meant browser coverage was measured and never
   // enforced. The job must fail the run, and the report command must carry
   // the floor, or the gate is a summary nobody has to read.
   assert.equal(
@@ -326,32 +326,26 @@ test('browser coverage is isolated in a visible gating job with a source floor',
     /--check-source\s+100\b/,
     'the e2e coverage report must gate on --check-source 100',
   );
-  // #1026: the line map folds every statement on a line to one bit, so an
+  // The line map folds every statement on a line to one bit, so an
   // uncovered ternary arm or short-circuit that shares a line with covered
   // code is invisible to --check-source. The region floor is the granularity
-  // the line gate cannot give. The gate landed at 80, just under the 81.43%
-  // a full run of the suite measured at the time, was ratcheted to 91
-  // under the 91.63% measured after the 2026-10-07 coverage merges (#1105),
-  // to 95 under the 95.22% measured after #1163 folded the crossing-region
-  // source-map drift (#1079), and to 96 under the 97.26% measured when the
-  // per-file floor landed (#1232) -- the same ratchet pattern as the unit
-  // lane's region floors.
+  // the line gate cannot give; it is ratcheted up under measured coverage,
+  // the same pattern as the unit lane's region floors.
   assert.match(
     coverageCommands,
     /--check-source-regions\s+96\b/,
     'the e2e coverage report must gate on --check-source-regions 96',
   );
-  // #1232 added a per-file floor here so the aggregate could not let its slack
-  // concentrate in one file. It was removed in #1593: the browser lane's
+  // There is deliberately no per-file floor here: the browser lane's
   // per-file region counts carry a cross-build attribution artifact that left
   // files with every arm executed sitting on the floor, and the unit lane
   // already holds --check-source-file-regions 100 on the same files.
   assert.doesNotMatch(
     coverageCommands,
     /--check-source-file-regions/,
-    'the e2e coverage report must not gate per file; that floor measures a reporting artifact (#1593)',
+    'the e2e coverage report must not gate per file; that floor measures a reporting artifact',
   );
-  // #992: the ratio is computed over observed files only, so a src module the
+  // The ratio is computed over observed files only, so a src module the
   // bundle drops vanishes from numerator and denominator alike. The file-set
   // gate is the guarantee the percentage cannot give.
   assert.match(

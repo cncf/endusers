@@ -2,7 +2,7 @@
 // `e2e-coverage` job in .github/workflows/ci.yml actually enforces.
 //
 // tests/docs-threshold-parity.test.mjs closed this drift class for the *unit*
-// lane (#1193): the gate's numbers live in package.json, the documented numbers
+// lane: the gate's numbers live in package.json, the documented numbers
 // live in prose, and nothing tied them together, so every ratchet opened a
 // window where the docs lied. The e2e lane has the same split and was left
 // open. Its enforced numbers live in the reporter invocation inside ci.yml's
@@ -25,7 +25,7 @@
 // renders a report that passes locally and fails in CI — the one thing the
 // recipe is there to rule out. That the number does drift is not hypothetical:
 // tests/e2e-coverage-report-file-region-floor.test.mjs described the job as
-// asking for 95% source regions long after #1232's gate moved to 96.
+// asking for 95% source regions long after the gate moved to 96.
 //
 // The parsers below are pure functions of their input text so the fixtures at
 // the bottom can prove each assertion actually goes red. A parity check nobody

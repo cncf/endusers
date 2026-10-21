@@ -3,7 +3,7 @@
 //
 // The component reports 100.00% lines and 100.00% regions in the browser
 // coverage report, but that number is incidental: tests/e2e/events.spec.js
-// predates the component (it was added with the schedule in #1369) and
+// predates the component (it was added with the schedule) and
 // asserts only the page's Markdown-sourced headings, hero photo, figcaption
 // link and outbound hosts. Loading /events for any of those executes every
 // line of the component, so the schedule is *executed* by the suite without a

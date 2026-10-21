@@ -199,7 +199,7 @@ test('ignores fenced code blocks and inline code spans, which MDX does not evalu
 });
 
 test('ignores a fenced block spanning several content lines, not just one', () => {
-  // Regression for #611 defect 2: a lazy regex ended the fence match at the
+  // Regression: a lazy regex ended the fence match at the
   // first content line instead of the closing fence, so a legitimate
   // multi-line block reported findings from its third line onward.
   const body = [
@@ -213,7 +213,7 @@ test('ignores a fenced block spanning several content lines, not just one', () =
 });
 
 test('reports a live element hidden by a mismatched backtick run, not a code span', () => {
-  // Regression for #611 defect 1: CommonMark forms a code span only when the
+  // Regression: CommonMark forms a code span only when the
   // closing backtick run has exactly the same length as the opening run, so
   // `` `` `` + payload + ` `` is live text, not a span -- but the old regex
   // (`` `+...`+ ``) blanked it as one anyway and hid the payload from every

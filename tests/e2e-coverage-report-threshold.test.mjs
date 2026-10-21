@@ -239,7 +239,7 @@ test('--check-source rejects thresholds that are not a percentage', async () => 
 // The percentage above is a ratio over the files the run observed. A src
 // module the bundle drops -- or that attribution loses -- contributes neither
 // numerator nor denominator, so `--check-source 100` keeps passing while a
-// whole file goes unmeasured (#992). `--require-source-files` is the file-set
+// whole file goes unmeasured. `--require-source-files` is the file-set
 // guarantee: every module on disk under the root's src/ must appear in the
 // run, and the report records the gap either way.
 test('the report lists a src file on disk the run never measured', async () => {

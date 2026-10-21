@@ -22,7 +22,7 @@
 //
 // goes on to skip *every* source of that script. Coverage that a browser
 // genuinely executed is dropped on the floor, which is what made fixture pages
-// and variant builds added to reach a rare arm buy nothing measurable (#1236).
+// and variant builds added to reach a rare arm buy nothing measurable.
 //
 // These tests pin the two halves of the contract: a range that spans a source
 // boundary credits both modules, and a 1:1 bundle -- which has no boundaries to

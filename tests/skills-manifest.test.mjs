@@ -8,7 +8,7 @@
 // was renamed or removed sends one to a path that does not exist. Both
 // directions are a hand-maintained markdown table away from the tree they
 // describe, and both are silent in a green build -- adding the submission
-// skill required a separate manual edit to this table (#1368), and nothing
+// skill required a separate manual edit to this table, and nothing
 // would have failed had that edit been forgotten.
 //
 // The tree follows the Agent Skills layout (https://agentskills.io): one

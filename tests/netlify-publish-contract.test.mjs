@@ -239,20 +239,20 @@ test('the Referrer-Policy header matches the document meta policy', async () => 
   assert.equal(headersFor('/*')['Referrer-Policy'], meta.attributes.content);
 });
 
-// Asset-scoped rules (#1501). A browser that navigates to an SVG renders it
+// Asset-scoped rules. A browser that navigates to an SVG renders it
 // as a document in this origin and executes any script it carries; the <meta>
 // policy never reaches that response, so this flat denial is the second layer
 // behind the validate:architecture-assets parser gates. The denial needs no
 // host list, so it cannot drift from the allowlists in docusaurus.config.js.
 //
-// default-src 'none' is part of that denial (#1684): a fetch directive this
+// default-src 'none' is part of that denial: a fetch directive this
 // header does not name is unrestricted rather than inherited, so before it the
 // rules stopped a directly-opened SVG from running script while leaving it
 // free to fetch an image, stylesheet, font or <iframe> from any host. The
 // three allowances name what the committed SVGs use -- inline styles, inline
 // data: images -- plus same-origin fonts for parity with docusaurus.config.js.
-// form-action and base-uri are the same point made the other way round
-// (#1692): they are navigation directives, not fetch directives, so
+// form-action and base-uri are the same point made the other way round:
+// they are navigation directives, not fetch directives, so
 // default-src is not their fallback either. A directly-opened SVG renders the
 // HTML inside <foreignObject>, and script-src 'none' leaves that HTML inert
 // but does not constrain a <form> -- its submission, and whatever the visitor

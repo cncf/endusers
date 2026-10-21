@@ -290,7 +290,7 @@ async function newCoverageContext(browser, options = {}, testInfoOverride) {
 // visible and enabled, but no state update follows. Every spec that clicks a
 // React-rendered control waits on this first; it is a timing helper, so it is
 // defined once here rather than per spec, where a changed poll or predicate
-// would reach some specs and leave the rest to flake (#1534).
+// would reach some specs and leave the rest to flake.
 async function waitForHydration(locator) {
   await locator.waitFor({ state: 'visible' });
   await locator.evaluate(async (element) => {

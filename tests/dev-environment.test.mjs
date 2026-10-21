@@ -539,7 +539,7 @@ test('the documented Node prerequisite matches the pinned Node major', () => {
 });
 
 // node_modules once entered the tree as a symlink to one developer's absolute
-// path (#447). A tracked node_modules makes `npm ci` — the first documented
+// path. A tracked node_modules makes `npm ci` — the first documented
 // setup step — mutate tracked state, so every contributor's tree is dirty
 // before they have written a line. .gitignore alone cannot undo that: it never
 // applies to paths git already tracks.
@@ -559,7 +559,7 @@ test('no node_modules path is tracked by git', () => {
 });
 
 // A trailing slash only matches directories, so `node_modules/` lets a stray
-// node_modules *symlink* be staged without a warning — exactly how #447
+// node_modules *symlink* be staged without a warning — exactly how that
 // happened. The slashless rule matches both shapes.
 test('.gitignore ignores node_modules as a file as well as a directory', () => {
   const rules = readFileSync(join(root, '.gitignore'), 'utf8')

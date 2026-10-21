@@ -84,7 +84,7 @@ test.describe('member profile dialog without a logo', () => {
     // The card's own fallback is server-rendered, so it is readable before the
     // dialog exists. It sits in the card body beside the trigger rather than
     // inside it: the trigger is the stretched, textless button that keeps the
-    // whole card clickable (#1630). Comparing the dialog against it keeps this
+    // whole card clickable. Comparing the dialog against it keeps this
     // spec from restating the initials() rule that utils.js owns and the unit
     // suite already pins.
     const card = trigger.locator('..');

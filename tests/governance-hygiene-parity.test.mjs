@@ -8,7 +8,7 @@
 // the committed, scheduled workflow file. scripts/pr-queue-hygiene.mjs
 // hardcodes the same label set and threshold independently, and
 // .github/workflows/pr-queue-hygiene.yml owns the schedule. Nothing tied the
-// prose to either, so the drift that #1329 and #1335 found in AGENTS.md and
+// prose to either, so the drift already seen in AGENTS.md and
 // CONTRIBUTING.md (a ratchet landing in code while the documented number
 // stayed put) could land here with the suite green.
 //

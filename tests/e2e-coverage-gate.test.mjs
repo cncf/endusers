@@ -45,7 +45,7 @@ const localActions = loadLocalActions(repoRoot);
 // local render. They are deliberately not copied here: an earlier revision of
 // this file carried a per-line record of one run's ceiling, and every src/**
 // edit or added spec stranded it, so it was re-measured by hand roughly once
-// a day (#1444, #1447, #1468, #1471, #1497, #1535, #1563) while guarding
+// a day while guarding
 // nothing the gate itself did not already enforce.
 //
 // The aggregate region floor sits a few regions under what the job records.
@@ -58,7 +58,7 @@ const localActions = loadLocalActions(repoRoot);
 // coverage-variant overlay), and the union cannot always credit an arm one
 // build executed when the other recorded a zero over it: MirrorSyncStatus.js
 // and profile-links.mjs both sat on the old 66 floor with every uncovered arm
-// demonstrably reached in a browser (#1593, same class as #1066 and #1079).
+// demonstrably reached in a browser.
 // Per-file region accuracy is the unit lane's job, where
 // --check-source-file-regions 100 measures the same files without that
 // artifact.

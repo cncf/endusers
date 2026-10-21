@@ -69,7 +69,7 @@ test.describe('reference architecture detail pages', () => {
 
       // Each declared project is rendered by <CNCFProjectCard>. A card links
       // to cncf.io/projects/... only when the upstream source carried that
-      // link; the importer no longer guesses one from the name (#1448), so
+      // link; the importer no longer guesses one from the name, so
       // the rest render as href-less anchors. Both counts are read from the
       // imported page so that a card that fails to hydrate, or a fabricated
       // link that creeps back in, is visible as a mismatch.

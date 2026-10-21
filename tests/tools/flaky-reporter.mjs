@@ -5,7 +5,7 @@
 // passes on the retry exits the job green. The 'github' reporter annotates
 // the run, but annotations are not artifacts and are not queryable; the trace
 // of the failed first attempt survives only because ci.yml's "Upload
-// Playwright traces" step runs on green runs too (#1179, guarded by
+// Playwright traces" step runs on green runs too (guarded by
 // tests/ci-playwright-trace-evidence.test.mjs). That trace is a binary blob
 // in a directory of hashed names: it proves *a* flake happened, and says
 // nothing about which spec it was without downloading the artifact and

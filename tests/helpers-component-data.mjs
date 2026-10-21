@@ -13,7 +13,7 @@
 // of the test. `cleanup()` restores the checked-in data, so live-data
 // assertions and fixture-driven assertions can share one process — and the
 // branches driven here are credited to the component's own file rather than to
-// a temporary copy (#571).
+// a temporary copy.
 //
 // Usage:
 //

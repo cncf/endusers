@@ -7,10 +7,10 @@
 // from the captured V8 payload with `v8-to-istanbul`, so a guard can only be
 // reached if that library emits a shape it does not emit. No capture artifact
 // written at the public boundary (`collectE2ECoverage`) can produce one, which
-// is why 18 regions survived every probe written against the public surface in
-// #1208/#1209 and were recorded as unreachable in #1210.
+// is why 18 regions survived every probe written against the public surface
+// and were recorded as unreachable.
 //
-// The resolution chosen there is to drive the readers directly with hand-built
+// The resolution chosen then is to drive the readers directly with hand-built
 // istanbul objects rather than carry the residual forever. These tests are the
 // only consumer of the test-only exports added for that purpose, and they are
 // deliberately written against hand-built shapes: a fixture produced by

@@ -768,7 +768,7 @@ test('generates members from the current repository data', () => {
 
 // A catalog record's `organization` is submitter-controlled text (the issue
 // importer copies it from the submission form), so the override maps and slug
-// indexes are keyed by strings this repository does not choose. Before #564 an
+// indexes are keyed by strings this repository does not choose. Unguarded, an
 // organisation named after an Object.prototype member inherited that member as
 // its slug and lost its name entirely (a function-valued property that
 // JSON.stringify drops), publishing a nameless member card.

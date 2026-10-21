@@ -28,7 +28,7 @@
 // through the installed validator pins what the build actually does, and
 // keeps doing so across the migration.
 //
-// The migration itself is tracked separately, on #1307: `future: { v4: true }`
+// The migration itself is separate work: `future: { v4: true }`
 // is already set in docusaurus.config.js, so the repository has opted into v4
 // compatibility while still declaring the option v4 removes. That edit is to
 // production config rather than to a test, so it is not made here;

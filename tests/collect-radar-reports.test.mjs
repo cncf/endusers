@@ -253,7 +253,7 @@ test('treats a 400 past the last page as the end of the catalog', () => {
   );
 });
 
-test('leaves the catalog untouched when nothing changed (#648)', () => {
+test('leaves the catalog untouched when nothing changed', () => {
   const routes = [
     { match: POSTS_ROUTE, body: [post({ id: 1, slug: 'stable' })] },
     { match: TYPES_ROUTE, body: [radarTypeTerm()] },

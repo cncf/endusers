@@ -504,7 +504,7 @@ async function renderWith(data, nested) {
 test('an unparseable generatedAt renders no meta line instead of throwing', async () => {
   // formatDate returns null for a timestamp that does not parse; the
   // dashboard must drop the meta line in that case rather than throw a
-  // RangeError during static site generation (#1656).
+  // RangeError during static site generation.
   const tree = await renderWith(baseData({ generatedAt: 'not a timestamp' }));
   assert.equal(
     elements(tree).filter((element) => textOf(element).includes('Last updated'))

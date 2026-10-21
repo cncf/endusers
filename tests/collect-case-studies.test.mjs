@@ -305,7 +305,7 @@ test('stops paginating when a page returns an empty batch', () => {
   );
 });
 
-test('leaves the catalog untouched when nothing changed (matches #648)', () => {
+test('leaves the catalog untouched when nothing changed', () => {
   const routes = [
     {
       match: CASE_STUDY_ROUTE,

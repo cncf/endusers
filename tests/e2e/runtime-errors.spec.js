@@ -67,9 +67,8 @@ const paths = sitemapPaths();
 // unexpectedly, Playwright reports that as a failure and this entry has to be
 // deleted.
 const KNOWN_FAILURES = new Map([
-  // cncf/endusers#891 (the /metrics/ SVG-title hydration mismatch) was fixed
-  // and closed; no entries remain. Add new ones here only alongside a filed,
-  // open defect — see the contract above.
+  // No entries remain. Add new ones here only alongside a filed, open
+  // defect, described in prose in the annotation — see the contract above.
 ]);
 
 // A guard on the fixture itself: if the sitemap ever fails to parse, the

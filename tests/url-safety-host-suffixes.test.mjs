@@ -30,7 +30,7 @@ const KNOWN_CALL_SITES = [
   'scripts/validate-case-studies.mjs',
   'scripts/validate-radar-reports.mjs',
   'scripts/validate-metrics.mjs',
-  // The two non-validator copies (#1446, #1455): the project-card link gate
+  // The two non-validator copies: the project-card link gate
   // passed the literal inline, and the profile-image host gate named it
   // ALLOWED_DOMAIN_SUFFIXES.
   'scripts/lib/project-card-links.mjs',

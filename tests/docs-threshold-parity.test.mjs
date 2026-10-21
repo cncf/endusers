@@ -7,13 +7,12 @@
 // measured floors). The *documented* numbers live in prose — CONTRIBUTING.md
 // and AGENTS.md both spell out "99% lines / 100% source / ... regions / ...
 // source regions" — and nothing tied the two together. Every ratchet of the
-// gate therefore opened a window where the docs lied: #1037 (docs said no e2e
-// thresholds existed while CI gated them), then #1169/#1189 (docs said 94%
-// regions after #1152 enforced 95%). The same drift-by-omission class was
-// closed for the audit allowlist by tests/audit-gate.test.mjs ("the allowlist
+// gate therefore opened a window where the docs lied (for example, docs said
+// 94% regions after the gate enforced 95%). The same drift-by-omission class
+// was closed for the audit allowlist by tests/audit-gate.test.mjs ("the allowlist
 // matches the advisories SECURITY.md documents") and for the Node major by
 // tests/dev-environment.test.mjs; this test closes it for the coverage
-// thresholds. See #1193.
+// thresholds.
 //
 // The assertion is deliberately phrased against the full four-number phrase
 // rather than individual numbers: a doc that drops one clause or reorders the

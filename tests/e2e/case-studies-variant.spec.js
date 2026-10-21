@@ -59,10 +59,8 @@
 // if it did — but tests/tools/e2e-coverage-report.mjs keys a region on its
 // exact original `line:column:endLine:endColumn`, and the two builds' generated
 // code maps back to different coordinates, so the union keeps the real build's
-// zeros. That is the region-attribution problem tracked in #1066 and #1079,
-// measured on this same shape in #1097; it is not something this fixture can
-// reach, and once the union folds the coordinates these two arms fold with no
-// change here.
+// zeros. That is an accepted limit of keying regions on coordinates, not
+// something this fixture can reach.
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 

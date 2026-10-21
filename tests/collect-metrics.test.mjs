@@ -248,9 +248,9 @@ test('collect-metrics tolerates a landscape with no projects', () => {
   assert.equal(cardValue(data, 'median-pr-cycle'), 0);
 });
 
-// #1276: Dirent.isDirectory() is false for a symlink, so a symlinked
-// architecture directory upstream fell out of the "Reference architectures"
-// count silently. The skip is now explicit (#1267) and says so in the log.
+// Dirent.isDirectory() is false for a symlink, so a symlinked architecture
+// directory upstream once fell out of the "Reference architectures" count
+// silently. The skip is now explicit and says so in the log.
 test('collect-metrics skips a symlinked architecture directory and warns', () => {
   const result = run({
     architectures: ['acme-platform', 'globex-edge'],

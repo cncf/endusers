@@ -1,4 +1,4 @@
-// Minimal end-to-end smoke tests (#641). These run against the real
+// Minimal end-to-end smoke tests. These run against the real
 // production build output (see playwright.config.js's webServer, which
 // serves `build/` via `docusaurus serve`), not the fake DOM used by the unit
 // suite. The goal is only to catch "build succeeds but renders an empty or

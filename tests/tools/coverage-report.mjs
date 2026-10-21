@@ -350,7 +350,7 @@ function lineStartOffsets(text) {
 // offset, and this reporter otherwise has no way to attribute it to the file
 // on disk; going only to line granularity keeps the remap simple and robust
 // against a JSX transform that changes column positions and inserted tokens
-// on every line, while still restoring exactly what was lost (#628): a real
+// on every line, while still restoring exactly what was lost: a real
 // per-file line percentage, and an unreachable line showing as uncovered.
 //
 // A generated line is credited to the source line of the first mapping
@@ -460,7 +460,7 @@ export function summarizeLines(source, counts) {
 // merge in collect()). Line coverage marks a line covered when any character
 // on it ran, so a `||` default, a `??` fallback, or a ternary arm that never
 // executed is invisible there whenever the rest of its line did run; scoring
-// at region granularity instead surfaces exactly those sub-line gaps (#640).
+// at region granularity instead surfaces exactly those sub-line gaps.
 // A region counts as executable only when it contains non-whitespace source,
 // so padding between two same-count ranges is not scored as its own gap.
 export function summarizeRegions(source, counts) {
@@ -748,7 +748,7 @@ export function collect(coverageDir, root = repoRoot) {
       // this file directly. A JSX component transpiles to exactly the text
       // tests/tools/jsx-hooks.mjs recorded coverage against, so try to
       // reconstruct that text and remap its offsets back onto the source
-      // before giving up on the record (#628).
+      // before giving up on the record.
       let counts;
       if (recordedSourceLength(scriptCoverage) !== source.length) {
         counts = tryRemapJsx(scriptCoverage, relPath, source, root);
