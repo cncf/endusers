@@ -251,7 +251,8 @@ enough for a first contribution.
    source but reported in its own `harness files` row, so a gap in the test
    apparatus cannot be paid for out of `src/`'s slack. `npm run test:unit` alone
    skips the coverage gate, so a green `test:unit` locally does not guarantee a
-   green PR check.
+   green PR check. If you changed a file under `src/` or `scripts/lib/`, also
+   run its mutation tests — see [Mutation testing](#mutation-testing) below.
 4. Verify with `npm run build` before opening a PR. If your change touches
    pages, components, or navigation, also run the end-to-end suite — see
    [End-to-end tests](#end-to-end-tests) below.
@@ -491,6 +492,56 @@ unaffected: nothing outside `E2E_COVERAGE=1` registers the overlay. The coverage
 build opts out of the bundler's persistent cache for the same reason — the cache
 is keyed on neither the loader nor `E2E_COVERAGE`, so sharing it would replay
 overlaid data into the next production build in the same working tree.
+
+## Mutation testing
+
+The unit coverage gate shows that a line ran under test, not that any test would
+notice if it changed. Mutation testing checks the second part:
+[StrykerJS](https://stryker-mutator.io/docs/stryker-js/introduction/) makes
+small changes ("mutants") to the source, such as flipping a condition, emptying
+a string or deleting a block, and reruns the unit tests that executed that code.
+A mutant that makes a test fail is **killed**. A mutant every test still passes
+with has **survived**: the code it changed is behaviour no test asserts.
+
+```bash
+npm run test:mutation                     # every file in src/ and scripts/lib/
+npm run test:mutation -- --mutate scripts/lib/url-safety.mjs
+npm run test:mutation -- --mutate 'src/components/shared/*.js,scripts/lib/changelog.mjs'
+```
+
+A full run takes about five minutes with the configured four workers; a run over
+one or two files takes about a minute, most of it the initial test run that
+records which test files reach which mutants. Configuration lives in
+`stryker.config.mjs`. Stryker runs the suite in a copy of the repository under
+`.stryker-tmp/` and writes its report to `reports/mutation/` (both gitignored).
+
+The "Mutation testing" workflow (`.github/workflows/mutation.yml`) runs on every
+pull request, but only over the `src/` and `scripts/lib/` files the pull request
+adds or modifies, and fails when their combined mutation score is below the
+`break` threshold in `stryker.config.mjs`. That threshold was set from the full
+baseline on `main` and never sits above it. A weekly scheduled run (also
+available through "Run workflow") mutates everything and keeps the report as the
+`mutation-report` artifact. The check is not required for merging.
+
+Reading the result:
+
+- The terminal table gives each file's score: killed and timed-out mutants over
+  all valid mutants. "No cov" counts mutants that no in-process test executes;
+  code reached only through a spawned `node scripts/...` child process shows up
+  here, because Stryker cannot see coverage in a child process.
+- Each surviving mutant is printed as a diff of the original and mutated line,
+  for example `-  if (!url) return null;` / `+  if (false) return null;`. Open
+  `reports/mutation/mutation.html` for the same list highlighted in the source.
+- Kill a survivor by adding or tightening an assertion that fails under the
+  mutated code. If the mutant cannot change observable behaviour (an equivalent
+  mutant, such as a redundant guard), simplify the code instead, or as a last
+  resort disable that mutator on the line with a
+  `// Stryker disable next-line <mutator>: <reason>` comment.
+
+The tests run in Stryker's instrumented copy of the source, so a test that reads
+a `src/` or `scripts/lib/` file as text fails there for reasons unrelated to any
+mutant. `stryker.config.mjs` lists those test files and test names to leave out;
+add a new source-text test to that list if the initial test run fails on it.
 
 ## Agent contributors
 

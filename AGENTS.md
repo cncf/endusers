@@ -62,6 +62,13 @@ or CI will fail the PR.
   `npm run build:production && npx playwright install --with-deps chromium && npm run test:e2e`.
   Specs live in `tests/e2e/`; the suite serves `build/` on `localhost:3000`
   (override with `E2E_PORT`) and does not rebuild it for you.
+- **Mutation Tests**: `npm run test:mutation` runs StrykerJS over `src/` and
+  `scripts/lib/` (config in `stryker.config.mjs`; report in
+  `reports/mutation/`). The "Mutation testing" workflow mutates only the files a
+  PR changes and fails below the `break` score; it is not a required check. Run
+  `npm run test:mutation -- --mutate <file>[,<file>]` before pushing a change to
+  those files, and kill the survivors it lists instead of filing them one by
+  one. See [`CONTRIBUTING.md`](CONTRIBUTING.md#mutation-testing).
 - **Lint**: required "Lint repository" CI check on every PR runs
   `npm run check:format`, `npm run check:spelling`, `npm run check:markdown`,
   `npm run check:duplication`, `npm run check:lint` and `npm run check:unused`.

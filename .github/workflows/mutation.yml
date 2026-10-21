@@ -1,0 +1,80 @@
+# Mutation testing with StrykerJS (stryker.config.mjs). The unit coverage gate
+# in ci.yml proves a line ran under test; this proves a test would fail if the
+# line changed. A surviving mutant is a branch or value no assertion pins.
+#
+# - pull_request: mutates only the src/ and scripts/lib/ files the pull request
+#   adds or modifies, and fails when their mutation score is below the `break`
+#   threshold in stryker.config.mjs. Pull requests that touch neither tree skip
+#   the run.
+# - schedule and workflow_dispatch: mutate the full set and keep the HTML and
+#   JSON report as an artifact, so the backlog of surviving mutants stays
+#   visible between pull requests.
+#
+# See "Mutation testing" in CONTRIBUTING.md for running it locally and reading
+# the report.
+name: Mutation testing
+
+on:
+  pull_request:
+  schedule:
+    # Wednesday, clear of the Monday audit, CodeQL and link-check crons.
+    - cron: '17 6 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mutation:
+    name: Mutation testing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # The pull_request ref is a merge commit whose first parent is the
+          # base branch tip, so one extra commit is enough to diff against it.
+          fetch-depth: 2
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/actions/setup-node-deps
+      - name: Mutate the source files this pull request changes
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git diff --name-only --diff-filter=AMR HEAD^1 HEAD -- 'src/*.js' 'src/*.mjs' 'scripts/lib/*.mjs')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo 'No src/ or scripts/lib/ source file changed; nothing to mutate.' | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # Stryker takes a comma-separated --mutate list, and git quotes a
+          # path holding unusual characters; refuse anything outside the
+          # characters this repository's source paths use.
+          for file in "${files[@]}"; do
+            case "$file" in
+              *[!A-Za-z0-9._/-]*)
+                echo "::error::Refusing to mutate an unexpected path: $file"
+                exit 1
+                ;;
+            esac
+          done
+          mutate="$(IFS=,; echo "${files[*]}")"
+          echo "Mutating: $mutate"
+          npm run test:mutation -- --mutate "$mutate"
+      - name: Mutate src/ and scripts/lib/
+        if: github.event_name != 'pull_request'
+        run: npm run test:mutation
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          if-no-files-found: ignore
+          retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
