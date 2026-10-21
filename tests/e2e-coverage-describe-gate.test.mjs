@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { isCoverageEnabled } from './tools/e2e-coverage.cjs';
 
-// Twelve end-to-end specs hold cases that only the coverage build can satisfy
+// Thirteen end-to-end specs hold cases that only the coverage build can satisfy
 // -- they navigate a route that exists only under E2E_COVERAGE=1, or they
 // assert against the fixture overlay that only that build layers in. Each one
 // gates itself by hand:
@@ -53,6 +53,7 @@ const COVERAGE_GATED = [
   'community-people-unknown-section.spec.js',
   'data-fixtures.spec.js',
   'data-variants.spec.js',
+  'focus-trap-empty-dialog.spec.js',
   'group-link-status-variant.spec.js',
   'member-directory-freshness-unlinked.spec.js',
   'member-directory-freshness-variant.spec.js',
