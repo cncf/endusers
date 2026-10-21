@@ -12,8 +12,8 @@ name: Dependency audit
 # A red run on this workflow is the notification; it opens nothing.
 on:
   schedule:
-    # Monday, offset from codeql.yml's 07:31 so the two do not contend.
-    - cron: '47 7 * * 1'
+    # Daily, offset from codeql.yml's 07:31 so the two do not contend.
+    - cron: '47 7 * * *'
   workflow_dispatch:
 
 permissions:
