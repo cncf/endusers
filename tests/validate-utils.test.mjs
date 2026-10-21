@@ -616,6 +616,25 @@ test('checkDuplicateOrMissingId reports a missing id and a repeat of one already
   }
 });
 
+test('checkDuplicateOrMissingId uses a caller-supplied message when given one', () => {
+  const errors = [];
+  const seen = new Set();
+  checkDuplicateOrMissingId(
+    errors,
+    'display-path',
+    undefined,
+    seen,
+    'duplicate or missing metric id',
+  );
+  assert.deepEqual(errors, [
+    {
+      path: 'display-path',
+      severity: 'error',
+      message: 'duplicate or missing metric id',
+    },
+  ]);
+});
+
 test('checkIsoTimestamp accepts a strict ISO 8601 UTC value and pushes no error', () => {
   const errors = [];
   const ok = checkIsoTimestamp(
