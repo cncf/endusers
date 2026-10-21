@@ -4,10 +4,12 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+  checkDuplicateOrMissingId,
   checkIsoTimestamp,
   checkNonEmptyArray,
   checkNonEmptyString,
   checkParseableDate,
+  checkPublishableSourceUrl,
   checkUrl,
   collectError,
   isSafeUrl,
@@ -558,6 +560,57 @@ test('checkNonEmptyArray reports an empty array, a non-array and a missing value
         path: 'data/awards.json',
         severity: 'error',
         message: 'awards must be a non-empty array',
+      },
+    ]);
+  }
+});
+
+test('checkPublishableSourceUrl accepts a trimmed https URL on a CNCF host and pushes no error', () => {
+  const errors = [];
+  const ok = checkPublishableSourceUrl(
+    errors,
+    'case-studies.json',
+    'https://www.cncf.io/case-studies/',
+  );
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+});
+
+test('checkPublishableSourceUrl reports a missing or off-list sourceUrl', () => {
+  for (const value of [undefined, null, '', 'https://evil.example/']) {
+    const errors = [];
+    const ok = checkPublishableSourceUrl(errors, 'radar-reports.json', value);
+    assert.equal(ok, false, String(value));
+    assert.deepEqual(errors, [
+      {
+        path: 'radar-reports.json',
+        severity: 'error',
+        message: 'sourceUrl must be an https URL, with no userinfo, on cncf.io',
+      },
+    ]);
+  }
+});
+
+test('checkDuplicateOrMissingId accepts a new truthy id and records it as seen', () => {
+  const errors = [];
+  const seen = new Set();
+  const ok = checkDuplicateOrMissingId(errors, 'swisscom', 'swisscom', seen);
+  assert.equal(ok, true);
+  assert.deepEqual(errors, []);
+  assert.equal(seen.has('swisscom'), true);
+});
+
+test('checkDuplicateOrMissingId reports a missing id and a repeat of one already seen', () => {
+  const seen = new Set(['swisscom']);
+  for (const id of [undefined, null, '', 'swisscom']) {
+    const errors = [];
+    const ok = checkDuplicateOrMissingId(errors, 'display-path', id, seen);
+    assert.equal(ok, false, String(id));
+    assert.deepEqual(errors, [
+      {
+        path: 'display-path',
+        severity: 'error',
+        message: 'duplicate or missing id',
       },
     ]);
   }
