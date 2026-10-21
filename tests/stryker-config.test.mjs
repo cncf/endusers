@@ -7,6 +7,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
+  breakThreshold,
   SOURCE_TEXT_TEST_FILES,
   SOURCE_TEXT_TEST_NAMES,
 } from '../stryker.config.mjs';
@@ -29,4 +30,20 @@ test('every test name the mutation run skips names a test in the suite', () => {
     (name) => !suite.includes(`test('${name}'`),
   );
   assert.deepEqual(missing, []);
+});
+
+// The break threshold gates the pull_request lane and a local run, and stands
+// down for the scheduled and workflow_dispatch full-tree lanes (issue #1743).
+test('breakThreshold gates pull_request runs', () => {
+  assert.equal(breakThreshold('pull_request'), 83);
+});
+
+test('breakThreshold keeps the gate for a local run with no event name', () => {
+  assert.equal(breakThreshold(undefined), 83);
+  assert.equal(breakThreshold(''), 83);
+});
+
+test('breakThreshold stands down for the full-tree report lanes', () => {
+  assert.equal(breakThreshold('schedule'), null);
+  assert.equal(breakThreshold('workflow_dispatch'), null);
 });
