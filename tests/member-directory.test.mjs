@@ -39,6 +39,9 @@ const MemberDirectory = (await importSource(`${DIR}/index.js`)).default;
 const { default: FilterToolbar } = await importSource(
   'src/components/shared/FilterToolbar.js',
 );
+const { default: EmptyFilterState } = await importSource(
+  'src/components/shared/EmptyFilterState.js',
+);
 const { MemberCard } = await importSource(`${DIR}/MemberCard.js`);
 const { MemberProfile } = await importSource(`${DIR}/MemberProfile.js`);
 const ProfileDialogShell = (
@@ -62,11 +65,14 @@ const awardsData = (await importSource('data/awards.json')).default;
 
 const MEMBERS = membersData.members;
 
-// The directory renders the shared toolbar as a <FilterToolbar> element,
-// which the tree walker treats as an opaque leaf; every query below passes
-// this option so the harness expands it (it is hook-free) while genuinely
-// nested hook-bearing components stay leaves.
-const EXPAND_TOOLBAR = { expand: (type) => type === FilterToolbar };
+// The directory renders the shared toolbar and empty state as <FilterToolbar>
+// and <EmptyFilterState> elements, which the tree walker treats as opaque
+// leaves; every query below passes this option so the harness expands them
+// (both are hook-free) while genuinely nested hook-bearing components stay
+// leaves.
+const EXPAND_SHARED = {
+  expand: (type) => type === FilterToolbar || type === EmptyFilterState,
+};
 
 const Internals =
   React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
@@ -146,38 +152,38 @@ function render(Component, props = {}) {
 }
 
 function findByClass(tree, className) {
-  for (const element of walkElements(tree, EXPAND_TOOLBAR)) {
+  for (const element of walkElements(tree, EXPAND_SHARED)) {
     if (element.props?.className === className) return element;
   }
   return undefined;
 }
 
 function findAllByClass(tree, className) {
-  return [...walkElements(tree, EXPAND_TOOLBAR)].filter(
+  return [...walkElements(tree, EXPAND_SHARED)].filter(
     (element) => element.props?.className === className,
   );
 }
 
 /** Every function-typed element in the tree, i.e. the nested components. */
 function childComponents(tree) {
-  return [...walkElements(tree, EXPAND_TOOLBAR)].filter(
+  return [...walkElements(tree, EXPAND_SHARED)].filter(
     (element) => typeof element.type === 'function',
   );
 }
 
 /** Every `<li>` under an element, in document order. */
 function liItems(node) {
-  return [...walkElements(node, EXPAND_TOOLBAR)].filter(
+  return [...walkElements(node, EXPAND_SHARED)].filter(
     (element) => element.type === 'li',
   );
 }
 
 /** The `<select>` whose id is `id`, with its option values in order. */
 function optionValues(tree, id) {
-  const select = [...walkElements(tree, EXPAND_TOOLBAR)].find(
+  const select = [...walkElements(tree, EXPAND_SHARED)].find(
     (element) => element.type === 'select' && element.props?.id === id,
   );
-  return findAllByType(select, 'option', EXPAND_TOOLBAR).map(
+  return findAllByType(select, 'option', EXPAND_SHARED).map(
     (option) => option.props.value,
   );
 }
@@ -188,19 +194,19 @@ function renderDirectory() {
   return {
     view,
     search(value) {
-      findByType(view.tree, 'input', EXPAND_TOOLBAR).props.onChange({
+      findByType(view.tree, 'input', EXPAND_SHARED).props.onChange({
         target: { value },
       });
     },
     select(id, value) {
-      const element = [...walkElements(view.tree, EXPAND_TOOLBAR)].find(
+      const element = [...walkElements(view.tree, EXPAND_SHARED)].find(
         (node) => node.type === 'select' && node.props?.id === id,
       );
       element.props.onChange({ target: { value } });
     },
     toggle(label, checked) {
       const box = findAllByClass(view.tree, 'toggle')
-        .map((wrapper) => findByType(wrapper, 'input', EXPAND_TOOLBAR))
+        .map((wrapper) => findByType(wrapper, 'input', EXPAND_SHARED))
         .find(
           (input, index) =>
             input &&
@@ -429,7 +435,7 @@ test('the freshness note dates both upstream sources and links the repo', () => 
     ),
   );
 
-  const links = findAllByType(tree, 'a', EXPAND_TOOLBAR);
+  const links = findAllByType(tree, 'a', EXPAND_SHARED);
   assert.equal(links[0].props.href, membersData.sources.landscape.sourceUrl);
   assert.equal(links[0].props.target, '_blank');
   assert.match(links[0].props.rel, /noreferrer/);
@@ -445,7 +451,7 @@ test('the freshness note is plain text when no upstream repository is known', ()
     { sources: {} },
     () => {
       const tree = DirectoryFreshness();
-      assert.equal(findByType(tree, 'a', EXPAND_TOOLBAR), undefined);
+      assert.equal(findByType(tree, 'a', EXPAND_SHARED), undefined);
       const text = textOf(tree);
       assert.ok(text.includes('cncf/architecture'));
       assert.ok(text.includes('January 2, 2026'));
@@ -491,7 +497,7 @@ test('the directory labels itself and opens with the freshness note', () => {
 
 test('each filter control carries a label that names it', () => {
   const { view } = renderDirectory();
-  const labels = findAllByType(view.tree, 'label', EXPAND_TOOLBAR);
+  const labels = findAllByType(view.tree, 'label', EXPAND_SHARED);
   const forIds = labels.map((label) => label.props.htmlFor).filter(Boolean);
   assert.deepEqual(forIds, [
     'member-search',
@@ -500,7 +506,7 @@ test('each filter control carries a label that names it', () => {
     'member-project',
   ]);
   assert.equal(
-    findByType(view.tree, 'input', EXPAND_TOOLBAR).props.placeholder,
+    findByType(view.tree, 'input', EXPAND_SHARED).props.placeholder,
     'Search organizations by name',
   );
 });
@@ -544,7 +550,7 @@ test('every member gets one list item, keyed by its id', () => {
   );
   assert.equal(new Set(items.map((item) => item.key)).size, MEMBERS.length);
   for (const [index, item] of items.entries()) {
-    const card = findByType(item, MemberCard, EXPAND_TOOLBAR);
+    const card = findByType(item, MemberCard, EXPAND_SHARED);
     assert.equal(card.props.member, MEMBERS[index]);
   }
 });
@@ -563,7 +569,7 @@ test('searching by name is case-insensitive and trims surrounding space', () => 
       .listItems()
       .some(
         (item) =>
-          findByType(item, MemberCard, EXPAND_TOOLBAR).props.member === target,
+          findByType(item, MemberCard, EXPAND_SHARED).props.member === target,
       ),
   );
   assert.equal(directory.clearButtons().length, 1);
@@ -584,7 +590,7 @@ test('the industry filter keeps only members carrying that industry', () => {
       findByType(
         item,
         MemberCard,
-        EXPAND_TOOLBAR,
+        EXPAND_SHARED,
       ).props.member.industries.includes(industry),
     );
   }
@@ -642,12 +648,12 @@ test('Clear filters resets every control and restores the full list', () => {
   assert.equal(directory.shownCount(), MEMBERS.length);
   assert.equal(directory.clearButtons().length, 0);
   assert.equal(
-    findByType(directory.view.tree, 'input', EXPAND_TOOLBAR).props.value,
+    findByType(directory.view.tree, 'input', EXPAND_SHARED).props.value,
     '',
   );
   assert.deepEqual(
     findAllByClass(directory.view.tree, 'toggle')
-      .map((toggle) => findByType(toggle, 'input', EXPAND_TOOLBAR))
+      .map((toggle) => findByType(toggle, 'input', EXPAND_SHARED))
       .map((input) => input.props.checked),
     [false, false],
   );
@@ -661,7 +667,7 @@ test('a search that matches nothing shows the empty state, not the grid', () => 
   assert.equal(findByClass(directory.view.tree, 'grid'), undefined);
   const empty = findByClass(directory.view.tree, 'emptyState');
   assert.equal(
-    textOf(findByType(empty, 'h3', EXPAND_TOOLBAR)),
+    textOf(findByType(empty, 'h3', EXPAND_SHARED)),
     'No organizations match',
   );
 
@@ -675,7 +681,7 @@ test('a search that matches nothing shows the empty state, not the grid', () => 
 
 test('a card starts closed, with no dialog in the tree', () => {
   const { tree } = render(MemberCard, { member: RICH_MEMBER });
-  assert.equal(findByType(tree, MemberProfile, EXPAND_TOOLBAR), undefined);
+  assert.equal(findByType(tree, MemberProfile, EXPAND_SHARED), undefined);
 });
 
 test('the card names the member and labels its trigger', () => {
@@ -702,7 +708,7 @@ test('the card trigger carries no visible text of its own', () => {
 
 test('a card with a logo renders a lazy, decorative image at the base URL', () => {
   const { tree } = render(MemberCard, { member: MEMBER_WITH_LOGO });
-  const image = findByType(tree, 'img', EXPAND_TOOLBAR);
+  const image = findByType(tree, 'img', EXPAND_SHARED);
   assert.equal(image.props.alt, '');
   assert.equal(image.props.loading, 'lazy');
   assert.equal(
@@ -716,7 +722,7 @@ test('a card with a logo renders a lazy, decorative image at the base URL', () =
 
 test('a card without a logo falls back to the member initials', () => {
   const { tree } = render(MemberCard, { member: MEMBER_WITHOUT_LOGO });
-  assert.equal(findByType(tree, 'img', EXPAND_TOOLBAR), undefined);
+  assert.equal(findByType(tree, 'img', EXPAND_SHARED), undefined);
   assert.equal(
     textOf(findByClass(tree, 'initials')),
     initials(MEMBER_WITHOUT_LOGO.name),
@@ -759,13 +765,13 @@ test('the card shows at most three industries and four project tags', () => {
 
 test('clicking the card mounts the profile dialog, and closing removes it', () => {
   const card = openProfile(RICH_MEMBER);
-  const dialog = findByType(card.tree, MemberProfile, EXPAND_TOOLBAR);
+  const dialog = findByType(card.tree, MemberProfile, EXPAND_SHARED);
   assert.equal(dialog.props.member, RICH_MEMBER);
   assert.equal(typeof dialog.props.onClose, 'function');
   assert.ok(dialog.props.triggerRef);
 
   dialog.props.onClose();
-  assert.equal(findByType(card.tree, MemberProfile, EXPAND_TOOLBAR), undefined);
+  assert.equal(findByType(card.tree, MemberProfile, EXPAND_SHARED), undefined);
 });
 
 // --- MemberProfile --------------------------------------------------------
@@ -777,7 +783,7 @@ test('the dialog is a labelled modal with a named close button', () => {
   assert.equal(dialog.props['aria-modal'], 'true');
   assert.equal(dialog.props['aria-labelledby'], 'member-profile-name');
   assert.equal(
-    findByType(tree, 'h2', EXPAND_TOOLBAR).props.id,
+    findByType(tree, 'h2', EXPAND_SHARED).props.id,
     dialog.props['aria-labelledby'],
   );
 
@@ -805,7 +811,7 @@ test('the close button and a backdrop click both invoke onClose', () => {
 
 test('the dialog lists industries, projects, architectures and awards', () => {
   const { tree } = renderProfile(RICH_MEMBER);
-  const headings = findAllByType(tree, 'h3', EXPAND_TOOLBAR).map((h) =>
+  const headings = findAllByType(tree, 'h3', EXPAND_SHARED).map((h) =>
     textOf(h),
   );
   assert.deepEqual(headings, [
@@ -838,7 +844,7 @@ test('each architecture links to its own detail page', () => {
   for (const [index, item] of items.entries()) {
     const architecture = MEMBER_WITH_ARCHITECTURES.architectures[index];
     // Rendered by `@docusaurus/Link`, which maps `to` onto the href.
-    const link = [...walkElements(item, EXPAND_TOOLBAR)].find(
+    const link = [...walkElements(item, EXPAND_SHARED)].find(
       (node) => node.props?.to !== undefined,
     );
     assert.equal(link.props.to, `/architectures/${architecture.id}`);
@@ -886,7 +892,7 @@ test('an award omits the links it has no URL for', () => {
 test('a member with no details still exposes its source section', () => {
   const { tree } = renderProfile(BARE_MEMBER);
   assert.deepEqual(
-    findAllByType(tree, 'h3', EXPAND_TOOLBAR).map((h) => textOf(h)),
+    findAllByType(tree, 'h3', EXPAND_SHARED).map((h) => textOf(h)),
     ['Sources'],
   );
   assert.equal(findByClass(tree, 'bioMuted'), undefined);
@@ -905,7 +911,7 @@ test('sources are listed with the scheme and trailing slash stripped', () => {
   for (const [index, item] of items.entries()) {
     const url = MEMBER_WITH_AWARDS.sourceAttribution[index];
     assert.equal(item.key, url);
-    const anchor = findByType(item, 'a', EXPAND_TOOLBAR);
+    const anchor = findByType(item, 'a', EXPAND_SHARED);
     assert.equal(anchor.props.href, url);
     assert.equal(
       textOf(anchor),
@@ -952,7 +958,7 @@ test('every outbound link in a card or dialog is safely targeted', () => {
 
   let checked = 0;
   for (const tree of trees) {
-    for (const anchor of findAllByType(tree, 'a', EXPAND_TOOLBAR)) {
+    for (const anchor of findAllByType(tree, 'a', EXPAND_SHARED)) {
       const { href, target, rel } = anchor.props;
       if (!/^https?:/.test(href ?? '')) continue;
       checked += 1;

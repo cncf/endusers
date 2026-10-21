@@ -30,6 +30,13 @@ const ReferenceArchitectures = (
   await importSource('src/components/ReferenceArchitectures/index.js')
 ).default;
 const catalog = (await importSource('data/architectures/catalog.json')).default;
+const { default: EmptyFilterState } = await importSource(
+  'src/components/shared/EmptyFilterState.js',
+);
+
+// The empty state renders as an <EmptyFilterState> element, an opaque leaf to
+// the tree walker; the empty-state tests expand it (it is hook-free).
+const EXPAND_EMPTY_STATE = { expand: (type) => type === EmptyFilterState };
 
 // React routes useState/useMemo through a per-render "dispatcher" slot.
 // Swapping that slot lets a plain Node test render a stateful component with
@@ -175,7 +182,10 @@ test('a query that matches nothing swaps the grid for the empty state', () => {
     0,
     'no organization headings survive an empty result set',
   );
-  assert.equal(textOf(findByType(view.tree, 'h3')), 'No architectures match');
+  assert.equal(
+    textOf(findByType(view.tree, 'h3', EXPAND_EMPTY_STATE)),
+    'No architectures match',
+  );
   assert.equal(toolbarProps(view.tree).resultCount, 0);
   assert.equal(
     toolbarProps(view.tree).totalCount,
@@ -188,13 +198,13 @@ test('the empty state clear button restores the full grid', () => {
   const view = render(ReferenceArchitectures);
   toolbarProps(view.tree).setQuery('no architecture is named this');
 
-  const button = findByType(view.tree, 'button');
+  const button = findByType(view.tree, 'button', EXPAND_EMPTY_STATE);
   assert.equal(textOf(button), 'Clear filters');
   assert.equal(button.props.type, 'button');
   button.props.onClick();
 
   assert.equal(
-    findAllByType(view.tree, 'h3').length,
+    findAllByType(view.tree, 'h3', EXPAND_EMPTY_STATE).length,
     0,
     'the empty state is gone once the filters are cleared',
   );
