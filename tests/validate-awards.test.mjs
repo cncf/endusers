@@ -242,14 +242,22 @@ test('rejects a javascript: URL in an optional link field', () => {
 });
 
 test('rejects a link field whose host is outside the allow-list', () => {
-  for (const [field, url] of [
-    ['announcementUrl', 'https://www.cncf.io.evil.example/announcements/x'],
-    ['caseStudyUrl', 'https://evil.example/case-studies/acme'],
-    ['talkUrl', 'https://vimeo.example/9'],
+  for (const [field, url, message] of [
+    [
+      'announcementUrl',
+      'https://www.cncf.io.evil.example/announcements/x',
+      /announcementUrl must be on /,
+    ],
+    [
+      'caseStudyUrl',
+      'https://evil.example/case-studies/acme',
+      /caseStudyUrl must be on /,
+    ],
+    ['talkUrl', 'https://vimeo.example/9', /talkUrl must be on /],
   ]) {
     assertError(
       validateFixture(awardsFixture([{ ...validEntry, [field]: url }])),
-      new RegExp(`${field} must be on `),
+      message,
     );
   }
 });
