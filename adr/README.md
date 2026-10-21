@@ -9,14 +9,15 @@ agent fleet can currently write to (see `AGENTS.md`).
 Each ADR captures the context, options considered, and the decision made (or
 still pending) so future contributors understand why, not just what.
 
-| ADR                                                          | Title                                                                        | Status   |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------- | -------- |
-| [0001](./0001-site-ownership-and-cutover-path.md)            | Site ownership and cutover path for endusers.cncf.io                         | Accepted |
-| [0002](./0002-peoplehub-fleet-status.md)                     | peoplehub fleet status — pause agent work                                    | Accepted |
-| [0003](./0003-public-changelog-mechanism.md)                 | Public changelog generated from git history at build time                    | Accepted |
-| [0004](./0004-audience-boundaries-across-cncf-properties.md) | Audience boundaries across endusers.cncf.io, contribute.cncf.io, and cncf.io | Accepted |
-| [0005](./0005-host-the-site-on-netlify.md)                   | Host the site on Netlify instead of GitHub Pages                             | Accepted |
-| [0006](./0006-retire-line-number-citations-in-test-prose.md) | Retire line-number citations in test prose and narrow test-only agent work   | Accepted |
+| ADR                                                                  | Title                                                                        | Status   |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------- |
+| [0001](./0001-site-ownership-and-cutover-path.md)                    | Site ownership and cutover path for endusers.cncf.io                         | Accepted |
+| [0002](./0002-peoplehub-fleet-status.md)                             | peoplehub fleet status — pause agent work                                    | Accepted |
+| [0003](./0003-public-changelog-mechanism.md)                         | Public changelog generated from git history at build time                    | Accepted |
+| [0004](./0004-audience-boundaries-across-cncf-properties.md)         | Audience boundaries across endusers.cncf.io, contribute.cncf.io, and cncf.io | Accepted |
+| [0005](./0005-host-the-site-on-netlify.md)                           | Host the site on Netlify instead of GitHub Pages                             | Accepted |
+| [0006](./0006-retire-line-number-citations-in-test-prose.md)         | Retire line-number citations in test prose and narrow test-only agent work   | Accepted |
+| [0007](./0007-scope-end-to-end-coverage-to-user-reachable-states.md) | Scope end-to-end coverage findings to user-reachable states                  | Accepted |
 
 Supporting material is not part of the numbered ADR sequence and is not assigned
 an ADR number, but is listed here for discoverability:

@@ -1,0 +1,88 @@
+# ADR 0007: Scope end-to-end coverage findings to user-reachable states
+
+- **Status**: Accepted
+- **Date**: 2026-10-20
+- **Tracking issue**: [#1718](https://github.com/cncf/endusers/issues/1718)
+  (missing gates behind recurring Hive findings, class 2)
+
+## Context
+
+Two coverage lanes measure the shipped sources:
+
+- The unit lane (`npm run test:unit:coverage:check`) requires 100% of source
+  lines and 100% of source regions.
+- The browser lane (the "End-to-end coverage" job in `ci.yml`) requires 100% of
+  source lines and 96% of source regions, and `--require-source-files` insists
+  every source file is measured. Per-file region floors were dropped in #1617.
+
+The 4% region allowance in the browser lane is deliberate: some branches only
+run when the data files are absent or malformed, and a production build never
+contains that data. Reaching them in a browser means building a dedicated
+fixture site for each one.
+
+Hive's `quality` agent nevertheless treats every region the browser lane does
+not reach as a defect. In the 100 issues before 2026-10-21 this produced a
+steady run of "unit-covered but reached by no e2e fixture build" findings
+(#1469, #1486, #1593, #1654, #1656, #1692) and pull requests that add fixture
+builds or specs to reach a single defensive arm (#1688, #1693, #1717). Each one
+is correct on its own terms, and each one is already pinned by a unit test.
+Fixture builds are the most expensive artifact in the test tree: every one adds
+a full Docusaurus build to the "End-to-end coverage" job.
+
+A second, related shape is "branch X runs under test but nothing asserts its
+outcome" (#1620, #1670, #1674, #1676, #1682, #1705). That is a real gap, but
+finding it by hand one branch at a time is the work mutation testing automates,
+which #1718 proposes adding.
+
+ADR 0006 anticipated this: if test-tree work did not fall after narrowing
+test-only agent work, a follow-up should revisit the coverage incentives.
+
+## Decision drivers
+
+- Maintainer attention is still the scarce resource (ADR 0006).
+- The unit lane already guarantees every source branch executes and, once
+  mutation testing lands, that its outcome is asserted.
+- The browser lane exists to prove that pages and interactions work in a real
+  browser, not to re-prove data-shape guards.
+- Fixture builds have a recurring CI cost that unit tests do not.
+
+## Options considered
+
+1. **Keep accepting browser-reach work case by case.** No policy change; the
+   series continues until every region is reached or the region floor is raised
+   to 100%, at a fixture build per arm.
+2. **Raise the browser region floor to 100%.** Makes the series mandatory for
+   every future guard.
+3. **Scope browser-lane findings to user-reachable states.** Keep the current
+   floors, and state which unreached regions are worth an issue.
+
+## Decision
+
+Option 3.
+
+1. **The unit lane is authoritative for branch behaviour.** A branch that is
+   unit-covered, and whose outcome a unit test asserts, needs no browser
+   coverage when it is selected only by the shape of build-time data (absent,
+   null, empty or malformed files and fields).
+2. **Browser-lane findings must name a user-reachable state.** An issue or pull
+   request about a region the browser lane does not reach must show that an end
+   user can put the page into that state through input, navigation, keyboard,
+   pointer or viewport changes on a production build. Data-shape guards do not
+   qualify, and no new fixture build is added to reach one.
+3. **"Nothing asserts this" findings come from mutation testing.** Once the
+   mutation gate proposed in #1718 is in place, an issue of the "nothing asserts
+   this outcome" shape cites a surviving mutant from that report rather than a
+   hand-constructed mutation.
+4. **The floors do not move.** The browser lane keeps 100% source lines, 96%
+   source regions and `--require-source-files`; the unit lane keeps 100% / 100%.
+
+## Consequences
+
+- Hive `quality` findings that do not meet decision 2 are closed as not planned
+  with a pointer to this ADR.
+- Existing fixture builds stay. No fixture build is removed by this ADR; one
+  that only reaches a data-shape guard may be removed later if it becomes a
+  maintenance cost.
+- If the browser lane's region percentage approaches its 96% floor because new
+  data-shape guards accumulate, that is a signal to revisit the floor in a new
+  ADR, not to add fixture builds.

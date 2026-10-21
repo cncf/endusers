@@ -84,6 +84,11 @@ or CI will fail the PR.
   pins, listing reach, harness-of-harness tests) are out of agent remit unless a
   maintainer files the issue
   ([ADR 0006](./adr/0006-retire-line-number-citations-in-test-prose.md)).
+- **Browser-coverage work**: A region the end-to-end coverage lane does not
+  reach is only worth an issue or PR when an end user can reach that state on a
+  production build. Data-shape guards (absent, null or malformed data) are
+  covered by unit tests and get no new fixture build
+  ([ADR 0007](./adr/0007-scope-end-to-end-coverage-to-user-reachable-states.md)).
 - **Audience**: Content is for CNCF end users (adopters), not project
   contributors. Contributor-facing material belongs on contribute.cncf.io.
 - **Documentation Standards**: Follow GFM (GitHub Flavored Markdown).
