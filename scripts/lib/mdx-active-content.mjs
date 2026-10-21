@@ -62,6 +62,7 @@ import {
   isUnwrappedCodeBlock,
   unwrapMdxCodeBlocks,
 } from './mdx-code-blocks.mjs';
+import { rewriteAfterUnwrap } from './mdx-preprocess.mjs';
 import {
   describeTarget,
   disallowedScheme,
@@ -355,15 +356,29 @@ function mapUnwrappedLines(text, unwrapped) {
  * Scans a Markdown/MDX body for anything outside the allowlists, and for
  * images loaded from another host.
  *
- * The body is scanned as written and again as `unwrapMdxCodeBlocks()` leaves
- * it, because that rewritten text is what the MDX compiler is handed. The
- * per-node `mdx-code-block` check only sees the span mdast gave the node, and
- * the fence grammars disagree about where it ends: CommonMark closes a
- * three-backtick fence with any run of three or more, while Docusaurus
- * requires exactly three and pairs the opener with a later bare fence. A
- * payload between those two closers sits inside a `code` node the scan trusts.
- * Scanning the unwrapped text closes that gap for any such disagreement. This
- * mirrors `hasActiveMdx()` in ./mdx-escape.mjs.
+ * The body is scanned as written and again in each form Docusaurus's
+ * `preprocessContent()` produces, because that rewritten text, not the file,
+ * is what the MDX compiler is handed.
+ *
+ * `unwrapMdxCodeBlocks()` is the first of those rewrites. The per-node
+ * `mdx-code-block` check only sees the span mdast gave the node, and the fence
+ * grammars disagree about where it ends: CommonMark closes a three-backtick
+ * fence with any run of three or more, while Docusaurus requires exactly three
+ * and pairs the opener with a later bare fence. A payload between those two
+ * closers sits inside a `code` node the scan trusts. Scanning the unwrapped
+ * text closes that gap for any such disagreement. This mirrors
+ * `hasActiveMdx()` in ./mdx-escape.mjs.
+ *
+ * `rewriteAfterUnwrap()` (./mdx-preprocess.mjs) is the rest of the chain. The
+ * admonition rewrite in it inserts a bracket pair around a `:::note` title,
+ * which is the one character a run of literal text needs to its left to become
+ * a link: `:::note x](javascript:alert(1))` carries no link until Docusaurus
+ * supplies the `[`.
+ *
+ * Every form is scanned and the findings unioned rather than the last form
+ * being scanned alone, because a rewrite can also take capability away -- the
+ * heading-id escape inerts a `{...}` expression -- and a construct that is
+ * active in any form the compiler sees has to be reported.
  *
  * @param {string} markdown - Document body to scan.
  * @param {{ mdastExtensions?: Array<object> }} [options] - Extra mdast
@@ -376,11 +391,25 @@ export function findActiveContent(markdown, { mdastExtensions = [] } = {}) {
   const text = String(markdown ?? '');
   const findings = scanSource(text, mdastExtensions);
 
+  // Both rewrites below operate line by line and neither adds nor removes a
+  // line, so a line of either rewritten form is the same line of `unwrapped`
+  // and maps back through the same table. The snippet is re-read from the
+  // source as well, so a finding quotes the text a reader can open the file
+  // to rather than the rewritten line it was spotted in.
+  const sourceLines = text.split('\n');
   const unwrapped = unwrapMdxCodeBlocks(text);
-  if (unwrapped !== text) {
-    const sourceLine = mapUnwrappedLines(text, unwrapped);
-    for (const finding of scanSource(unwrapped, mdastExtensions)) {
-      findings.push({ ...finding, line: sourceLine[finding.line - 1] });
+  const sourceLine = mapUnwrappedLines(text, unwrapped);
+  for (const form of new Set([unwrapped, rewriteAfterUnwrap(unwrapped)])) {
+    if (form === text) continue;
+    for (const finding of scanSource(form, mdastExtensions)) {
+      const line = sourceLine[finding.line - 1] ?? finding.line;
+      findings.push({
+        ...finding,
+        line,
+        snippet: (sourceLines[line - 1] ?? finding.snippet)
+          .trim()
+          .slice(0, 120),
+      });
     }
   }
 
