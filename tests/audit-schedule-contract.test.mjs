@@ -39,7 +39,7 @@
 //     scheduled cost as "an `npm ci` plus one `npm audit --package-lock-only`",
 //     explicitly not ci.yml's full validate job. Adding `npm test` here is a
 //     one-line change that nothing would report, and it would quietly put the
-//     weekly cron on the same footing as the gate it was kept apart from.
+//     daily cron on the same footing as the gate it was kept apart from.
 //
 //   * Its cron is offset from the other scheduled workflows "so the two do not
 //     contend" -- the comment names codeql.yml's 07:31, sixteen minutes
@@ -82,7 +82,7 @@ function workflow(name) {
 // and the bare `npm test` lifecycle spelling. The first four are the pattern
 // tests/automation-workflow-ordering.test.mjs reads workflow steps with; the
 // fifth is added here because `npm test` is the single cheapest way to put
-// ci.yml's whole validate lane on this workflow's weekly cron without ever
+// ci.yml's whole validate lane on this workflow's daily cron without ever
 // typing `npm run`.
 const NPM_RUN =
   /\bnpm\s+(?:-\S+\s+)*(?:run\s+(?:-\S+\s+)*((?!-)[\w:*.-]+)|(test)\b)/gu;
@@ -129,19 +129,19 @@ test(`${PR_WORKFLOW} runs ${AUDIT_GATE} on every pre-merge trigger`, () => {
     assert.ok(
       triggers.includes(trigger),
       `${PR_WORKFLOW} no longer runs on ${trigger}, so a lockfile change can ` +
-        `reach main without ${AUDIT_GATE}; ${AUDIT_WORKFLOW} is weekly and ` +
+        `reach main without ${AUDIT_GATE}; ${AUDIT_WORKFLOW} is daily and ` +
         'does not close that window',
     );
   }
   assert.ok(
     npmRunTargets(doc).includes(AUDIT_GATE),
     `${PR_WORKFLOW} no longer runs ${AUDIT_GATE}; the only remaining audit ` +
-      `is ${AUDIT_WORKFLOW}'s weekly cron, which cannot fail the pull ` +
+      `is ${AUDIT_WORKFLOW}'s daily cron, which cannot fail the pull ` +
       'request that introduced the advisory',
   );
 });
 
-test(`${AUDIT_WORKFLOW} re-runs ${AUDIT_GATE} on a schedule and on demand`, () => {
+test(`${AUDIT_WORKFLOW} re-runs ${AUDIT_GATE} daily and on demand`, () => {
   const doc = workflow(AUDIT_WORKFLOW);
   const triggers = Object.keys(doc.on);
   assert.ok(
@@ -149,12 +149,11 @@ test(`${AUDIT_WORKFLOW} re-runs ${AUDIT_GATE} on a schedule and on demand`, () =
     `${AUDIT_WORKFLOW} can no longer be run on demand; a maintainer ` +
       'reacting to a published advisory has to wait for the cron',
   );
-  assert.ok(
-    crons(doc).length > 0,
-    `${AUDIT_WORKFLOW} declares no schedule.cron, so nothing re-runs ` +
-      `${AUDIT_GATE} while main is quiet -- which is the entire reason this ` +
-      'workflow exists separately from ' +
-      PR_WORKFLOW,
+  assert.deepEqual(
+    crons(doc),
+    ['47 7 * * *'],
+    `${AUDIT_WORKFLOW} must re-run ${AUDIT_GATE} every day at 07:47 UTC ` +
+      'so advisory detection does not wait for a weekly run or a pull request',
   );
 });
 
@@ -165,7 +164,7 @@ test(`${AUDIT_WORKFLOW} runs ${AUDIT_GATE} and nothing else`, () => {
     `${AUDIT_WORKFLOW} justifies its scheduled cost as an 'npm ci' plus one ` +
       "'npm audit --package-lock-only', deliberately not " +
       `${PR_WORKFLOW}'s validate job; adding another gate here makes that ` +
-      'header false and the weekly run arbitrarily expensive',
+      'header false and the daily run arbitrarily expensive',
   );
 });
 

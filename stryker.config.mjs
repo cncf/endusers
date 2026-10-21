@@ -30,6 +30,18 @@ export const SOURCE_TEXT_TEST_NAMES = [
 
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// The `break` threshold applies to the pull_request lane, which mutates only
+// the files a pull request changes and gates them. The scheduled and
+// workflow_dispatch lanes mutate the whole tree to keep the surviving-mutant
+// backlog visible in the report artifact (see .github/workflows/mutation.yml),
+// so the standing backlog must not fail them: a red weekly cron gates nothing
+// and trains everyone to ignore the lane (issue #1743). Actions sets
+// GITHUB_EVENT_NAME on every run; a local run has no event name and keeps the
+// gate.
+export function breakThreshold(eventName) {
+  return !eventName || eventName === 'pull_request' ? 83 : null;
+}
+
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
   testRunner: 'tap',
@@ -53,5 +65,9 @@ export default {
   // `break` fails the run below this mutation score. It was set from the full
   // baseline on main (83.81% when the gate was added) and must never sit above
   // the score main actually has.
-  thresholds: { high: 90, low: 83, break: 83 },
+  thresholds: {
+    high: 90,
+    low: 83,
+    break: breakThreshold(process.env.GITHUB_EVENT_NAME),
+  },
 };
