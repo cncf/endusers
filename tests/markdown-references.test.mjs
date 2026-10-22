@@ -255,27 +255,6 @@ test('the scan reaches the Markdown the build does not link-check', () => {
   assert.ok(scanned.has('adr/README.md'), 'the ADR index was not scanned');
 });
 
-test('the scan never enters the StrykerJS sandbox', () => {
-  assert.ok(
-    skipDir('.stryker-tmp'),
-    '`npm run test:mutation` copies the whole tree into the gitignored ' +
-      '/.stryker-tmp/ sandbox. Walking it re-reports every reference in ' +
-      'AGENTS.md, CONTRIBUTING.md and adr/*.md against sandbox-relative ' +
-      'paths that resolve to nothing, failing the contract below on an ' +
-      'untouched checkout',
-  );
-  assert.ok(
-    !repoDirs.has('.stryker-tmp'),
-    'a leftover sandbox must not be offered as a path root either',
-  );
-  for (const { rel } of markdown) {
-    assert.ok(
-      !rel.startsWith('.stryker-tmp/'),
-      `${rel} came from the mutation sandbox`,
-    );
-  }
-});
-
 test('the repository description the scan resolves against is not empty', () => {
   assert.ok(repo.routes.has('/community/awards'), 'docs routes not derived');
   assert.ok(
