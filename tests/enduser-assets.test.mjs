@@ -161,3 +161,101 @@ test('collects references from both the snapshot and member membership sources',
   ]);
   assert.deepEqual([...references].sort(), [NEW, OLD].sort());
 });
+
+const UNSAFE = '/img/end-user-members/../outside.svg';
+
+// isSafeAssetPath is the only gate between a manifest or snapshot path and an
+// rmSync call, so each clause is pinned with an input that fails only it: a
+// non-string, a path outside the asset prefix, a nested path under it and a
+// traversal segment. An excluded record's logo is not a current reference
+// even when the file still exists.
+test('keeps only safe, prefixed, flat paths from included records', () => {
+  const localLogos = [
+    42,
+    '/other/aaaaaaaaaaaaaaaa-old.svg',
+    '/img/end-user-members/nested/aaaaaaaaaaaaaaaa-old.svg',
+    UNSAFE,
+    '/img/end-user-members/..hidden.svg',
+    NEW,
+  ];
+  const references = currentLandscapeAssetReferences(
+    {
+      records: [
+        ...localLogos.map((localLogo) => ({ included: true, localLogo })),
+        { included: false, localLogo: OLD },
+      ],
+    },
+    [{ membershipSources: [{ localLogo: UNSAFE }, { localLogo: 7 }] }],
+  );
+  assert.deepEqual([...references], [NEW]);
+});
+
+test('an absent ownership manifest owns nothing', () => {
+  withRoots(({ manifestPath }) => {
+    assert.deepEqual(readOwnedAssetManifest(manifestPath), []);
+  });
+});
+
+test('rejects each malformed manifest shape and any unsafe entry', () => {
+  withRoots(({ manifestPath }) => {
+    const invalid = [
+      'null',
+      JSON.stringify({ generated: false, assets: [] }),
+      JSON.stringify({ generated: true, assets: NEW }),
+    ];
+    for (const content of invalid) {
+      writeFileSync(manifestPath, content);
+      assert.throws(
+        () => readOwnedAssetManifest(manifestPath),
+        new Error('end-user asset manifest is invalid'),
+      );
+    }
+    writeFileSync(
+      manifestPath,
+      JSON.stringify({ generated: true, assets: [NEW, UNSAFE] }),
+    );
+    assert.throws(
+      () => readOwnedAssetManifest(manifestPath),
+      new Error('end-user asset manifest contains an unsafe path'),
+    );
+    writeFileSync(
+      manifestPath,
+      JSON.stringify({ generated: true, assets: [NEW, OLD, NEW] }),
+    );
+    assert.deepEqual(readOwnedAssetManifest(manifestPath), [NEW, OLD]);
+  });
+});
+
+// The manifest is committed, so its bytes are pinned: sorted, de-duplicated,
+// two-space indented and newline-terminated, with unsafe previous references
+// left out of the seed.
+test('seeds and rewrites the manifest as sorted, de-duplicated, newline-terminated JSON', () => {
+  const expected = (assets) =>
+    JSON.stringify({ generated: true, assets }, null, 2) + '\n';
+  withRoots(({ assetRoot, manifestPath }) => {
+    ensureOwnedAssetManifest(manifestPath, {
+      records: [NEW, UNSAFE, OLD, NEW].map((localLogo) => ({
+        included: true,
+        localLogo,
+      })),
+    });
+    assert.equal(readFileSync(manifestPath, 'utf8'), expected([OLD, NEW]));
+
+    // The old asset is owned but no longer referenced and is already gone
+    // from disk: a stale manifest entry is skipped, not an error, and the
+    // rewrite still lands with only the current references.
+    const stillOwned = '/img/end-user-members/cccccccccccccccc-kept.svg';
+    pruneOwnedLandscapeAssets({
+      assetRoot,
+      manifestPath,
+      snapshot: snapshot(NEW),
+      members: [
+        { membershipSources: [{ localLogo: NEW }, { localLogo: stillOwned }] },
+      ],
+    });
+    assert.equal(
+      readFileSync(manifestPath, 'utf8'),
+      expected([NEW, stillOwned]),
+    );
+  });
+});

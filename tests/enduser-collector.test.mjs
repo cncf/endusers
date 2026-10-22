@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
@@ -7,7 +8,9 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   symlinkSync,
+  utimesSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -305,6 +308,12 @@ test('reports unsafe snapshot classifications before publication', () => {
     ],
   };
   assert.doesNotThrow(() => assertLandscapeSnapshotReady(base));
+  assert.doesNotThrow(() =>
+    assertLandscapeSnapshotReady({
+      ...base,
+      records: [{ ...base.records[0], sourceRole: 'contributor' }],
+    }),
+  );
   assert.throws(
     () =>
       assertLandscapeSnapshotReady({
@@ -784,5 +793,217 @@ test('rejects differing bytes at an existing content-addressed destination', () 
       readFileSync(join(destinationRoot, 'bbbbbbbbbbbbbbbb-new.svg'), 'utf8'),
       'old',
     );
+  });
+});
+
+const REVISION = 'bc9d1b5c87904d9430fc3377938f38192bab3ad0';
+
+function publishedSnapshot(records) {
+  return {
+    generated: true,
+    source: {
+      revision: REVISION,
+      sourceUrl: `https://github.com/cncf/landscape/blob/${REVISION}/landscape.yml`,
+    },
+    records,
+  };
+}
+
+function publishPaths(root) {
+  const dataDir = join(root, 'data');
+  mkdirSync(dataDir, { recursive: true });
+  return {
+    dataDir,
+    outputPath: join(dataDir, 'members.json'),
+    outputTempPath: join(root, 'staged-members.json'),
+    stagedAssets: join(root, 'staged-assets'),
+  };
+}
+
+const NEW_ASSET = 'bbbbbbbbbbbbbbbb-new.svg';
+const NEW_RECORD = {
+  sourceId: 'source',
+  sourceRole: 'member',
+  included: true,
+  logoFilename: 'new.svg',
+  localLogo: `/img/end-user-members/${NEW_ASSET}`,
+  logoWarning: null,
+};
+
+// The mirrored name is the first 16 hex characters of the SHA-256 of the
+// bytes written, so a reader can verify the file against its name, and the
+// bytes are the sanitized source with trailing whitespace removed from every
+// line and from the end of the file.
+test('names the mirrored logo after the sanitized bytes it writes', () => {
+  withRoots(({ sourceRoot, destinationRoot }) => {
+    writeFileSync(
+      join(sourceRoot, 'hosted_logos/acme.svg'),
+      '<svg xmlns="http://www.w3.org/2000/svg">  \n  <rect />\t\n</svg>\n\n',
+    );
+    const expected =
+      '<svg xmlns="http://www.w3.org/2000/svg">\n  <rect />\n</svg>';
+    const digest = createHash('sha256').update(expected).digest('hex');
+    const result = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.deepEqual(result, {
+      ...RECORD,
+      localLogo: `/img/end-user-members/${digest.slice(0, 16)}-acme.svg`,
+      logoWarning: null,
+    });
+    const file = join(destinationRoot, `${digest.slice(0, 16)}-acme.svg`);
+    assert.equal(readFileSync(file, 'utf8'), expected);
+
+    // An identical destination is left alone rather than rewritten.
+    const past = new Date('2020-01-01T00:00:00Z');
+    utimesSync(file, past, past);
+    mirrorLandscapeLogo({ record: RECORD, sourceRoot, destinationRoot });
+    assert.equal(statSync(file).mtime.getTime(), past.getTime());
+  });
+});
+
+test('reports a hosted_logos directory that is missing or is a file', () => {
+  withRoots(({ sourceRoot, destinationRoot }) => {
+    const logoRoot = join(sourceRoot, 'hosted_logos');
+    const expected = `${RECORD.sourceId}: landscape hosted_logos is not a real directory`;
+    rmSync(logoRoot, { recursive: true, force: true });
+    for (const prepare of [() => {}, () => writeFileSync(logoRoot, 'file')]) {
+      prepare();
+      const result = mirrorLandscapeLogo({
+        record: RECORD,
+        sourceRoot,
+        destinationRoot,
+      });
+      assert.equal(result.localLogo, null);
+      assert.equal(result.logoWarning, expected);
+    }
+  });
+});
+
+// The provenance and selection blocks are what downstream readers and
+// reviewers see in the committed snapshot, so they are pinned verbatim.
+test('records the landscape provenance and selection rules verbatim', () => {
+  withRoots(({ sourceRoot, destinationRoot }) => {
+    const snapshot = buildLandscapeSnapshot({
+      document: {
+        landscape: [
+          {
+            name: 'CNCF Members',
+            subcategories: [
+              {
+                name: 'Gold',
+                items: [{ name: 'Acme (member)', enduser: true }],
+              },
+              { name: 'End User Supporter and Contributor', items: [] },
+            ],
+          },
+        ],
+      },
+      revision: REVISION,
+      collectedAt: '2026-10-01T00:00:00.000Z',
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.deepEqual(snapshot.source, {
+      repository: 'https://github.com/cncf/landscape',
+      revision: REVISION,
+      file: 'landscape.yml',
+      sourceUrl: `https://github.com/cncf/landscape/blob/${REVISION}/landscape.yml`,
+    });
+    assert.deepEqual(snapshot.selection, {
+      member: 'CNCF Members item.enduser === true and name suffix "(member)"',
+      contributor:
+        'CNCF Members / End User Supporter and Contributor name suffix "(contributor)"',
+      supporter: 'audit-only',
+    });
+    assert.equal(snapshot.collectedAt, '2026-10-01T00:00:00.000Z');
+  });
+});
+
+test('refuses to publish a snapshot that fails the readiness gate', () => {
+  withRoots(({ root, destinationRoot }) => {
+    const paths = publishPaths(root);
+    writeFileSync(paths.outputTempPath, '{"new":true}\n');
+    assert.throws(
+      () =>
+        publishLandscapeSnapshot({
+          snapshot: { ...publishedSnapshot([NEW_RECORD]), generated: false },
+          ...paths,
+          assetDestination: destinationRoot,
+        }),
+      /not marked generated/,
+    );
+    assert.equal(existsSync(paths.outputPath), false);
+  });
+});
+
+// First publication: no previous output to back up and no staged assets
+// directory at all. Then a second run moves a new asset into place and leaves
+// no backup behind.
+test('publishes a first snapshot and moves new assets without leaving a backup', () => {
+  withRoots(({ root, destinationRoot }) => {
+    const paths = publishPaths(root);
+    const publish = () =>
+      publishLandscapeSnapshot({
+        snapshot: publishedSnapshot([NEW_RECORD]),
+        ...paths,
+        assetDestination: destinationRoot,
+      });
+
+    writeFileSync(paths.outputTempPath, '{"first":true}\n');
+    publish();
+    assert.equal(readFileSync(paths.outputPath, 'utf8'), '{"first":true}\n');
+    assert.deepEqual(readdirSync(paths.dataDir), ['members.json']);
+
+    mkdirSync(paths.stagedAssets);
+    writeFileSync(join(paths.stagedAssets, NEW_ASSET), 'new');
+    writeFileSync(paths.outputTempPath, '{"second":true}\n');
+    publish();
+    assert.equal(readFileSync(paths.outputPath, 'utf8'), '{"second":true}\n');
+    assert.equal(readFileSync(join(destinationRoot, NEW_ASSET), 'utf8'), 'new');
+    assert.deepEqual(readdirSync(paths.stagedAssets), []);
+    assert.deepEqual(readdirSync(paths.dataDir), ['members.json']);
+  });
+});
+
+// A staged directory is not a regular file either, and a failure before any
+// output exists must surface its own error rather than one from restoring a
+// backup that was never taken.
+test('rejects a staged directory and reports the original failure without a prior output', () => {
+  withRoots(({ root, destinationRoot }) => {
+    const paths = publishPaths(root);
+    mkdirSync(join(paths.stagedAssets, 'nested-dir'), { recursive: true });
+    writeFileSync(paths.outputTempPath, '{"new":true}\n');
+    assert.throws(
+      () =>
+        publishLandscapeSnapshot({
+          snapshot: publishedSnapshot([NEW_RECORD]),
+          ...paths,
+          assetDestination: destinationRoot,
+        }),
+      new Error('staged asset is not a regular file: nested-dir'),
+    );
+    assert.equal(existsSync(join(destinationRoot, 'nested-dir')), false);
+    assert.deepEqual(readdirSync(paths.dataDir), []);
+  });
+});
+
+test('removes the output backup after a failed publication is rolled back', () => {
+  withRoots(({ root, destinationRoot }) => {
+    const paths = publishPaths(root);
+    writeFileSync(paths.outputPath, '{"old":true}\n');
+    assert.throws(
+      () =>
+        publishLandscapeSnapshot({
+          snapshot: publishedSnapshot([NEW_RECORD]),
+          ...paths,
+          assetDestination: destinationRoot,
+        }),
+      /ENOENT/,
+    );
+    assert.equal(readFileSync(paths.outputPath, 'utf8'), '{"old":true}\n');
+    assert.deepEqual(readdirSync(paths.dataDir), ['members.json']);
   });
 });
