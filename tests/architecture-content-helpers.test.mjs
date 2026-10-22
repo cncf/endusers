@@ -25,3 +25,28 @@ test('firstParagraph caps the summary at 240 characters', () => {
   const long = `${'x'.repeat(300)}`;
   assert.equal(firstParagraph(long).length, 240);
 });
+
+const PARAGRAPHS = [
+  [
+    'splits paragraphs on a blank line that carries whitespace',
+    '# H\n  \nText',
+    'Text',
+  ],
+  [
+    'trims a part before testing its first character',
+    '# H\n\n  # Sub\n\nReal',
+    'Real',
+  ],
+  [
+    'rejects only a leading markup character, not one mid-sentence',
+    'Uses GitOps - and <tools> | more',
+    'Uses GitOps - and <tools> | more',
+  ],
+  ['collapses a whitespace run to one space', 'a  b\n\tc', 'a b c'],
+];
+
+for (const [label, body, expected] of PARAGRAPHS) {
+  test(`firstParagraph ${label}`, () => {
+    assert.equal(firstParagraph(body), expected);
+  });
+}

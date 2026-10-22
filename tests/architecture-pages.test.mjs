@@ -267,3 +267,41 @@ test('treats a non-string id as unreserved rather than throwing', () => {
   assert.equal(isReservedPageId(null), false);
   assert.equal(isReservedPageId(42), false);
 });
+
+// readdirSync() hands back entries sorted by name, so the walk meets the
+// directory `b` before the page `b.md` and pushes `b/z.md` first. In a sorted
+// listing `b.md` precedes `b/z.md` ('.' sorts before '/'), so the result has
+// to be sorted after the walk rather than echoed in walk order.
+test('sorts pages and irregular entries rather than echoing walk order', () => {
+  withDocsDir(
+    (docsDir) => {
+      mkdirSync(join(docsDir, 'b'), { recursive: true });
+      writeFileSync(join(docsDir, 'b/z.md'), '# Nested\n');
+      writeFileSync(join(docsDir, 'b.md'), '# Page\n');
+      symlinkSync(join(docsDir, 'gone'), join(docsDir, 'b/z.mdx'));
+      symlinkSync(join(docsDir, 'gone'), join(docsDir, 'b.mdx'));
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, ['b.md', 'b/z.md']);
+      assert.deepEqual(irregular, ['b.mdx', 'b/z.mdx']);
+    },
+  );
+});
+
+// The page extension has to end the name: a backup or editor artefact such as
+// `adobe.md.bak` is not routed by Docusaurus and has no catalog id.
+test('ignores a file whose page extension is not at the end of its name', () => {
+  withDocsDir(
+    (docsDir) => {
+      writeFileSync(join(docsDir, 'adobe.md.bak'), '# Adobe\n');
+      writeFileSync(join(docsDir, 'adobe.mdx.orig'), '# Adobe\n');
+      symlinkSync(join(docsDir, 'gone'), join(docsDir, 'dangling.md.bak'));
+    },
+    ({ pages, irregular }) => {
+      assert.deepEqual(pages, []);
+      assert.deepEqual(irregular, []);
+    },
+  );
+  assert.equal(pageCatalogId('adobe.md.bak'), null);
+  assert.equal(pageCatalogId('adobe.mdx.orig'), null);
+});

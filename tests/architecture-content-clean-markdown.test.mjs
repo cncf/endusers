@@ -201,3 +201,73 @@ test('cleanMarkdown rewrites several references in one body', () => {
     '![a](/img/architectures/demo/a.png) text [b](https://evil.example/b.png) more ![c](/img/architectures/demo/c.png)',
   );
 });
+
+// Each row pins one character of the rewrite that a neighbouring input would
+// not: an anchor, a quantifier, a scheme alternative or a replacement string.
+const PINNED_REWRITES = [
+  [
+    'a "//" inside a relative path does not make it remote',
+    '![x](sub//b.png)',
+    '![x](/img/architectures/demo/sub//b.png)',
+  ],
+  [
+    'a ":" inside a relative path is not a scheme',
+    '![x](images/a:b.png)',
+    '![x](/img/architectures/demo/a:b.png)',
+  ],
+  [
+    'only a leading "./" and "images/" are stripped from a relative path',
+    '![x](a/./b.png) ![y](sub/images/b.png)',
+    '![x](/img/architectures/demo/a/./b.png) ![y](/img/architectures/demo/sub/images/b.png)',
+  ],
+  [
+    'a bracket in alt text is escaped when the image is demoted',
+    '![a\\]b](https://evil.example/x.png)',
+    '[a\\]b](https://evil.example/x.png)',
+  ],
+  [
+    'a remote image inside a reference-style link is reduced to alt text',
+    '[![logo](https://evil.example/l.png)][r]\n\n[r]: https://example.com',
+    '[logo][r]\n\n[r]: https://example.com',
+  ],
+  [
+    'a site-absolute image keeps its title untouched',
+    '![a](/img/a.png "title")',
+    '![a](/img/a.png "title")',
+  ],
+  [
+    'an image inside a GFM footnote is seen through the GFM grammar',
+    '[^1]: ![x](https://evil.example/b.png)\n\nt[^1]',
+    '[^1]: [x](https://evil.example/b.png)\n\nt[^1]',
+  ],
+  [
+    'a footnote call inside alt text is dropped as the GFM tree does',
+    '![a[^1]b](https://evil.example/x.png)\n\n[^1]: n',
+    '[ab](https://evil.example/x.png)\n\n[^1]: n',
+  ],
+  [
+    'a shortcode whose body contains ">" is removed whole',
+    'a {{< a > b >}} c',
+    'a  c',
+  ],
+  [
+    'a shortcode uncovered by removing a nested one is removed too',
+    'before {{{{< a >}}< b >}} after',
+    'before  after',
+  ],
+  ['a closing shortcode is removed', 'a {{</ tabs >}} c', 'a  c'],
+  [
+    'a double-bracketed http link is unwrapped',
+    '[[docs](http://example.com/d)]',
+    '[docs](http://example.com/d)',
+  ],
+  ['an empty angle-bracket pair is escaped', 'a <> b', 'a &lt;&gt; b'],
+  ['runs of blank lines collapse to one', 'a\n\n\n\nb', 'a\n\nb'],
+  ['surrounding whitespace is trimmed', '\n\n x \n\n', 'x'],
+];
+
+for (const [label, body, expected] of PINNED_REWRITES) {
+  test(`cleanMarkdown: ${label}`, () => {
+    assert.equal(cleanMarkdown(body, 'demo'), expected);
+  });
+}
