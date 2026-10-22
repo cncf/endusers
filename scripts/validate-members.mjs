@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import { checkDuplicateValue } from './lib/duplicate-check.mjs';
 import {
   checkNonEmptyArray,
   checkNonEmptyString,
@@ -149,10 +150,11 @@ for (const member of members) {
     checkNonEmptyString(errors, path, field, member?.[field]);
   }
 
-  if (typeof member?.id === 'string' && ids.has(member.id)) {
-    errors.push({ path, severity: 'error', message: 'duplicate id' });
+  if (typeof member?.id === 'string') {
+    checkDuplicateValue(errors, path, member.id, ids, 'duplicate id');
+  } else {
+    ids.add(member?.id);
   }
-  ids.add(member?.id);
 
   for (const field of REQUIRED_ARRAY_FIELDS) {
     if (!Array.isArray(member?.[field])) {

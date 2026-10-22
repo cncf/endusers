@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
+import { checkDuplicateValue } from './lib/duplicate-check.mjs';
 import {
   checkIsoTimestamp,
   checkNonEmptyArray,
@@ -49,9 +50,7 @@ for (const group of Array.isArray(data.groups) ? data.groups : []) {
     );
   }
   if (group.slug) {
-    if (slugs.has(group.slug))
-      collectError(errors, label, 'error', 'duplicate slug');
-    slugs.add(group.slug);
+    checkDuplicateValue(errors, label, group.slug, slugs, 'duplicate slug');
   }
   if (group.repository && !publishableRepositoryUrl(group.repository)) {
     collectError(
