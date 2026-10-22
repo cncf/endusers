@@ -1191,3 +1191,186 @@ test('rejects an unterminated DOCTYPE after a prolog, in linear time', () => {
   }
   assert.ok(Date.now() - started < 5000);
 });
+
+// These fixtures are independent of the production Sets: removing a supported
+// name must fail its acceptance case, not silently remove the test as well.
+// Benign values isolate name acceptance from the URI checks above.
+
+// `<g>` hosts the unprefixed and prefixed attribute checks: it is a plain
+// container, so no finding can come from the element itself.
+const onGroup = (attribute) => svg(`<g ${attribute}="1"/>`);
+
+// XHTML entries are only reachable inside `<foreignObject>`, and only in the
+// XHTML namespace -- that namespace is what selects XHTML_ELEMENTS over
+// SVG_ELEMENTS, so it has to be declared on the element itself.
+const inForeignObject = (markup) =>
+  svg(`<foreignObject>${markup}</foreignObject>`);
+const XHTML_DECL = 'xmlns="http://www.w3.org/1999/xhtml"';
+
+// `svg` is excluded: it is the root this helper already writes, and nesting a
+// second one would test the wrapper rather than the entry.
+for (const element of `
+  a circle clipPath defs desc ellipse feBlend feColorMatrix feComposite
+  feDropShadow feFlood feGaussianBlur feMerge feMergeNode feOffset filter
+  foreignObject g image line linearGradient marker mask metadata path pattern
+  polygon polyline radialGradient rect stop style svg switch symbol text
+  textPath title tspan use
+`
+  .trim()
+  .split(/\s+/)) {
+  if (element === 'svg') continue;
+  test(`allows the SVG element <${element}>`, () => {
+    assert.deepEqual(findActiveContent(svg(`<${element}/>`)), []);
+  });
+}
+
+for (const attribute of `
+  alignment-baseline aria-describedby aria-hidden aria-label aria-labelledby
+  baseProfile baseline-shift class clip clip-path clip-rule clipPathUnits color
+  color-interpolation color-interpolation-filters color-rendering cx cy d
+  direction display dominant-baseline dx dy enable-background fill fill-opacity
+  fill-rule filter filterUnits flood-color flood-opacity font-family font-size
+  font-size-adjust font-stretch font-style font-variant font-weight fr fx fy
+  gradientTransform gradientUnits height href id image-rendering in in2
+  isolation k1 k2 k3 k4 lang lengthAdjust letter-spacing lighting-color
+  marker-end marker-mid marker-start markerHeight markerUnits markerWidth mask
+  maskContentUnits maskUnits mix-blend-mode mode offset opacity operator orient
+  overflow paint-order pathLength patternContentUnits patternTransform
+  patternUnits pointer-events points preserveAspectRatio primitiveUnits r refX
+  refY requiredExtensions requiredFeatures result role rotate rx ry
+  shape-rendering spreadMethod startOffset stdDeviation stop-color stop-opacity
+  stroke stroke-dasharray stroke-dashoffset stroke-linecap stroke-linejoin
+  stroke-miterlimit stroke-opacity stroke-width style systemLanguage target
+  text-anchor text-decoration text-rendering textLength transform
+  transform-origin type unicode-bidi values vector-effect version viewBox
+  visibility width word-spacing writing-mode x x1 x2 y y1 y2
+`
+  .trim()
+  .split(/\s+/)) {
+  test(`allows the SVG attribute ${attribute}`, () => {
+    assert.deepEqual(findActiveContent(onGroup(attribute)), []);
+  });
+}
+
+// Root-only attributes are allowed on `<svg>` and nowhere else, so each entry
+// is asserted on both sides: accepted on the root, still a finding below it.
+// Blanking the entry would otherwise be invisible -- the root check would stop
+// mattering while the rejection carried on passing for the wrong reason.
+for (const attribute of ['content']) {
+  test(`allows the root-only SVG attribute ${attribute} on <svg> only`, () => {
+    assert.deepEqual(
+      findActiveContent(
+        `<svg xmlns="http://www.w3.org/2000/svg" ${attribute}="x"/>`,
+      ),
+      [],
+    );
+    assert.deepEqual(findActiveContent(onGroup(attribute)), [
+      `contains a disallowed attribute ${attribute} on <g>`,
+    ]);
+  });
+}
+
+for (const element of `
+  a b br code div em font hr i li ol p pre s span strike strong sub sup u ul
+`
+  .trim()
+  .split(/\s+/)) {
+  test(`allows the XHTML element <${element}> in a foreignObject`, () => {
+    assert.deepEqual(
+      findActiveContent(inForeignObject(`<${element} ${XHTML_DECL}/>`)),
+      [],
+    );
+  });
+}
+
+for (const attribute of `
+  align class color dir face href id lang size style target title
+`
+  .trim()
+  .split(/\s+/)) {
+  test(`allows the XHTML attribute ${attribute}`, () => {
+    assert.deepEqual(
+      findActiveContent(
+        inForeignObject(`<div ${XHTML_DECL} ${attribute}="1"/>`),
+      ),
+      [],
+    );
+  });
+}
+
+for (const attribute of ['href', 'title']) {
+  test(`allows the XLink attribute xlink:${attribute}`, () => {
+    assert.deepEqual(findActiveContent(onGroup(`xlink:${attribute}`)), []);
+  });
+}
+
+for (const attribute of ['lang', 'space']) {
+  test(`allows the XML attribute xml:${attribute}`, () => {
+    assert.deepEqual(findActiveContent(onGroup(`xml:${attribute}`)), []);
+  });
+}
+
+// Every element in a metadata namespace is allowed whatever it is called, so
+// the entry under test is the namespace URI, not the element name.
+for (const namespace of `
+  http://creativecommons.org/ns#
+  http://ns.adobe.com/AdobeIllustrator/10.0/
+  http://ns.adobe.com/Extensibility/1.0/
+  http://ns.adobe.com/Graphs/1.0/
+  http://ns.adobe.com/SaveForWeb/1.0/
+  http://purl.org/dc/elements/1.1/
+  http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd
+  http://www.inkscape.org/namespaces/inkscape
+  http://www.w3.org/1999/02/22-rdf-syntax-ns#
+`
+  .trim()
+  .split(/\s+/)) {
+  test(`allows elements in the metadata namespace ${namespace}`, () => {
+    assert.deepEqual(
+      findActiveContent(svg(`<m:thing xmlns:m="${namespace}"/>`)),
+      [],
+    );
+  });
+}
+
+for (const attribute of `
+  bleed bordercolor borderopacity bottomLeftOrigin gridtolerance guidetolerance
+  height id margin objecttolerance pagecolor showgrid units width x y
+`
+  .trim()
+  .split(/\s+/)) {
+  test(`allows the metadata attribute ${attribute}`, () => {
+    assert.deepEqual(
+      findActiveContent(
+        svg(
+          '<m:thing xmlns:m="http://www.inkscape.org/namespaces/inkscape" ' +
+            `${attribute}="1"/>`,
+        ),
+      ),
+      [],
+    );
+  });
+}
+
+// The CSS functions that take a bare string as a URL. Unlike the allowlists
+// above, an unrecognized entry here fails *open*: the gate stops reading the
+// argument as a URL, and a `javascript:` payload written through that function
+// passes. Each entry is asserted to still be read as a URL.
+for (const fn of [
+  'url',
+  'src',
+  'image',
+  'image-set',
+  '-webkit-image-set',
+  'cross-fade',
+  '-webkit-cross-fade',
+]) {
+  test(`reads a quoted ${fn}() argument in CSS as a URL`, () => {
+    assert.deepEqual(
+      findActiveContent(
+        svg(`<style>a{background:${fn}("javascript:alert(1)")}</style>`),
+      ),
+      ['contains a disallowed URI scheme in a <style> block: javascript:'],
+    );
+  });
+}
