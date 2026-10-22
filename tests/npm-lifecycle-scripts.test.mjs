@@ -14,7 +14,16 @@
 // one-token edit, and both leave every workflow green. These tests are what
 // makes removing it an argument rather than an oversight.
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import test from 'node:test';
 
@@ -55,9 +64,15 @@ function readNpmConfig(source) {
   return config;
 }
 
+// Directories the walk never enters. `.stryker-tmp` holds StrykerJS's copy of
+// the whole tree, root `.npmrc` included; reporting that copy would fail the
+// contract below over a gitignored scratch directory rather than over a real
+// second npm config.
+const UNWALKED_DIRS = new Set(['node_modules', '.git', '.stryker-tmp']);
+
 function findNpmrcFiles(dir, found = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.git') continue;
+    if (UNWALKED_DIRS.has(entry.name)) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) findNpmrcFiles(full, found);
     else if (entry.isFile() && entry.name === '.npmrc')
@@ -137,6 +152,33 @@ test('.npmrc is tracked at the repository root and is the only npm config in the
     statSync(join(repoRoot, '.npmrc')).isFile(),
     '.npmrc must be a regular file',
   );
+});
+
+test('the .npmrc scan skips the StrykerJS sandbox', () => {
+  const work = mkdtempSync(join(tmpdir(), 'endusers-npmrc-walk-'));
+  try {
+    writeFileSync(join(work, '.npmrc'), 'ignore-scripts=true\n');
+    mkdirSync(join(work, '.stryker-tmp', 'sandbox-1'), { recursive: true });
+    writeFileSync(
+      join(work, '.stryker-tmp', 'sandbox-1', '.npmrc'),
+      'ignore-scripts=true\n',
+    );
+    const found = findNpmrcFiles(work);
+    assert.equal(
+      found.length,
+      1,
+      '`npm run test:mutation` copies the whole tree, root .npmrc included, ' +
+        'into the gitignored /.stryker-tmp/ sandbox. Walking it reports that ' +
+        'copy as a second npm config and fails the contract above on an ' +
+        'untouched checkout',
+    );
+    assert.ok(
+      !found[0].includes('.stryker-tmp'),
+      'the surviving entry must be the real .npmrc, not the sandbox copy',
+    );
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
 });
 
 test('the root .npmrc disables dependency lifecycle scripts', () => {

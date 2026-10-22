@@ -67,11 +67,14 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const docsRoot = join(repoRoot, 'docs');
 const config = (await import('../docusaurus.config.js')).default;
 
-// Directories the walk never enters: dependencies, build output, and the
-// test tree, whose Markdown is fixture data rather than prose about the repo.
+// Directories the walk never enters: dependencies, build output, the
+// StrykerJS sandbox (a whole copy of the tree, so every file in it would be
+// reported a second time), and the test tree, whose Markdown is fixture data
+// rather than prose about the repo.
 const UNSCANNED_DIRS = new Set([
   '.docusaurus',
   '.git',
+  '.stryker-tmp',
   'build',
   'coverage',
   'node_modules',
@@ -99,9 +102,14 @@ const repoDirs = new Set(
     .filter(
       (entry) =>
         entry.isDirectory() &&
-        !['node_modules', 'build', '.docusaurus', '.git', 'coverage'].includes(
-          entry.name,
-        ),
+        ![
+          'node_modules',
+          'build',
+          '.docusaurus',
+          '.git',
+          '.stryker-tmp',
+          'coverage',
+        ].includes(entry.name),
     )
     .map((entry) => entry.name),
 );
@@ -245,6 +253,27 @@ test('the scan reaches the Markdown the build does not link-check', () => {
     'decision records are history and are not scanned',
   );
   assert.ok(scanned.has('adr/README.md'), 'the ADR index was not scanned');
+});
+
+test('the scan never enters the StrykerJS sandbox', () => {
+  assert.ok(
+    skipDir('.stryker-tmp'),
+    '`npm run test:mutation` copies the whole tree into the gitignored ' +
+      '/.stryker-tmp/ sandbox. Walking it re-reports every reference in ' +
+      'AGENTS.md, CONTRIBUTING.md and adr/*.md against sandbox-relative ' +
+      'paths that resolve to nothing, failing the contract below on an ' +
+      'untouched checkout',
+  );
+  assert.ok(
+    !repoDirs.has('.stryker-tmp'),
+    'a leftover sandbox must not be offered as a path root either',
+  );
+  for (const { rel } of markdown) {
+    assert.ok(
+      !rel.startsWith('.stryker-tmp/'),
+      `${rel} came from the mutation sandbox`,
+    );
+  }
 });
 
 test('the repository description the scan resolves against is not empty', () => {
