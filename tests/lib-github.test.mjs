@@ -262,12 +262,9 @@ test('githubAllPages throws with the status and the page URL on a non-2xx respon
       { body: { message: 'boom' }, ok: false, status: 502 },
     ]),
     async () => {
-      await assert.rejects(
-        githubAllPages(FIRST_PAGE, {}),
-        new RegExp(
-          `^Error: GitHub API 502: ${SECOND_PAGE.replace(/[?.]/g, '\\$&')}$`,
-        ),
-      );
+      await assert.rejects(githubAllPages(FIRST_PAGE, {}), {
+        message: `GitHub API 502: ${SECOND_PAGE}`,
+      });
     },
   );
 });
