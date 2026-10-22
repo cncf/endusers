@@ -39,7 +39,7 @@ const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // GITHUB_EVENT_NAME on every run; a local run has no event name and keeps the
 // gate.
 export function breakThreshold(eventName) {
-  return !eventName || eventName === 'pull_request' ? 83 : null;
+  return !eventName || eventName === 'pull_request' ? 90 : null;
 }
 
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
@@ -63,11 +63,13 @@ export default {
   concurrency: 4,
   reporters: ['clear-text', 'progress', 'html', 'json'],
   // `break` fails the run below this mutation score. It was set from the full
-  // baseline on main (83.81% when the gate was added) and must never sit above
-  // the score main actually has.
+  // baseline on main (83.81% when the gate was added; 96.24% after the
+  // surviving-mutant backlog was cleared in #1788) and must never sit above
+  // the score main actually has. The pull_request lane scores only the files a
+  // change touches, so it also has to clear the weakest file on main.
   thresholds: {
-    high: 90,
-    low: 83,
+    high: 95,
+    low: 90,
     break: breakThreshold(process.env.GITHUB_EVENT_NAME),
   },
 };
