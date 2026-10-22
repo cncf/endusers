@@ -14,11 +14,11 @@ metrics, events, and pathways to participate.
 
 The launch is gated on readiness, not on a date or event. Earlier revisions
 named a specific conference as the announcement window (issue #104); the dated
-countdown slipped twice (#966, #1271) and was replaced by the ordered, dateless
-milestone checklist in `LAUNCH.md`. Conferences and End User TAB meetings that
-fall near readiness are amplification opportunities, not deadlines. The
-ownership decision has landed (ADR 0001 is Accepted; issue #99 closed); the
-remaining pre-launch dependency is the DNS cutover tracked in issue #1433.
+countdown slipped twice (#966, #1271) and was replaced by readiness gates on the
+Phase 1 content pillars below. Conferences and End User TAB meetings that fall
+near readiness are amplification opportunities, not deadlines. The ownership
+decision has landed (ADR 0001 is Accepted; issue #99 closed); the remaining
+pre-launch dependency is the DNS cutover tracked in issue #1433.
 
 ## Guiding principles
 
@@ -58,7 +58,7 @@ Goal: every pillar section is accurate, current, and self-maintaining.
 - [x] Metrics: refresh of data/metrics.json with validation gating the build —
       issue #74 closed not-planned at the time; the on-demand
       `refresh-metrics.yml` workflow now runs
-      `collect:metrics`/`validate:metrics` (documented in `LAUNCH.md`)
+      `collect:metrics`/`validate:metrics`
 - [x] Awards: complete historical winner list, each entry verified against its
       cncf.io announcement (issue #77)
 - [x] Community: current TAB membership, End User Groups, and engagement
@@ -88,8 +88,8 @@ shipped silently. Content completeness alone is not a launch plan.
       Refresh with `npm run collect:launch-metrics`, validate with
       `npm run validate:launch-metrics`. The committed file is the milestone-8
       baseline (captured 2026-10-02 under the `W-6` label the earlier dated plan
-      used); re-run it immediately before launch (see `LAUNCH.md`) so the 90-day
-      comparison starts from the numbers the announcement went out on.
+      used); re-run it immediately before launch so the 90-day comparison starts
+      from the numbers the announcement went out on.
 - [ ] **DNS cutover dependency**: the Phase 2 ownership decision (issue #46,
       ADR 0001) is resolved — the repository has been transferred to the `cncf`
       GitHub org — so cutover to `endusers.cncf.io` itself (Phase 3) is what

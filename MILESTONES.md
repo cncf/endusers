@@ -62,13 +62,12 @@ Tag issues/PRs covering:
 ## Milestone: Launch
 
 **Description**: Cross-cutting launch milestone: the site is announced when
-every readiness gate in LAUNCH.md is satisfied, not on a calendar date.
+every readiness gate is satisfied, not on a calendar date.
 
-See `LAUNCH.md` for the ordered, dateless milestone checklist. This milestone
-tracks launch-specific coordination. GitHub supports one milestone per issue, so
-the six content-pillar issues (#74, #75, #76, #77, #79, and #80) remain in Phase
-1; the launch milestone depends on that phase instead of duplicating those
-assignments.
+This milestone tracks launch-specific coordination. GitHub supports one
+milestone per issue, so the six content-pillar issues (#74, #75, #76, #77, #79,
+and #80) remain in Phase 1; the launch milestone depends on that phase instead
+of duplicating those assignments.
 
 Tag these issues:
 
@@ -80,8 +79,8 @@ Tag these issues:
 - #104 (the original launch-window finding; the dated countdown it opened has
   since been replaced by the readiness checklist)
 
-Depends on: the Phase 1 milestone and `LAUNCH.md`, which provides the readiness
-gates this milestone tracks.
+Depends on: the Phase 1 milestone, whose content pillars are the readiness gates
+this milestone tracks.
 
 ## How to apply this plan
 
