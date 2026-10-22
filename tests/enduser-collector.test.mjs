@@ -322,10 +322,85 @@ test('reports unsafe snapshot classifications before publication', () => {
     /not marked generated/,
   );
   assert.throws(
+    () => assertLandscapeSnapshotReady(undefined),
+    /not marked generated/,
+  );
+  assert.throws(
+    () => assertLandscapeSnapshotReady(null),
+    /not marked generated/,
+  );
+  // Each provenance case below holds the other two arms of the condition
+  // satisfied, so exactly one reason to reject the snapshot remains: a case
+  // that trips several arms at once only proves that something rejected it.
+  // pinnedSource() derives the sourceUrl from the revision under test, which
+  // keeps the sourceUrl arm satisfied for every revision-shape case.
+  const pinnedSource = (revision) => ({
+    revision,
+    sourceUrl: `https://github.com/cncf/landscape/blob/${revision}/landscape.yml`,
+  });
+  assert.throws(
     () =>
       assertLandscapeSnapshotReady({
         ...base,
-        source: { revision: 'bad', sourceUrl: 'https://example.test/' },
+        source: undefined,
+      }),
+    /source provenance is incomplete/,
+  );
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        source: pinnedSource(42),
+      }),
+    /source provenance is incomplete/,
+  );
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        source: pinnedSource('bad'),
+      }),
+    /source provenance is incomplete/,
+  );
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        source: pinnedSource('g'.repeat(40)),
+      }),
+    /source provenance is incomplete/,
+  );
+  // 41 hex characters: the revision is rejected only because the pattern is
+  // anchored at the end.
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        source: pinnedSource(`${'a'.repeat(40)}b`),
+      }),
+    /source provenance is incomplete/,
+  );
+  // 40 hex characters behind a non-hex prefix: rejected only because the
+  // pattern is anchored at the start.
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        source: pinnedSource(`z${'a'.repeat(40)}`),
+      }),
+    /source provenance is incomplete/,
+  );
+  // A well-formed revision paired with a sourceUrl that does not derive from
+  // it: rejected only by the sourceUrl arm.
+  assert.throws(
+    () =>
+      assertLandscapeSnapshotReady({
+        ...base,
+        source: {
+          revision: base.source.revision,
+          sourceUrl:
+            'https://github.com/cncf/landscape/blob/main/landscape.yml',
+        },
       }),
     /source provenance is incomplete/,
   );
