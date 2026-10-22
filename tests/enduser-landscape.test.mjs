@@ -244,3 +244,142 @@ test('handles sparse items and empty subcategory collections', () => {
   assert.equal(result.records[0].logoFilename, null);
   assert.equal(result.records[0].joined, null);
 });
+
+// ROLE_SUFFIX is anchored to the end of the name on purpose: the landscape
+// carries the role as a trailing parenthetical, and an organization whose
+// legal name happens to contain "(member)" mid-string is not a member record.
+// Without the anchor the suffix is stripped from the middle and the record is
+// classified off a substring match.
+test('only a trailing role parenthetical is treated as the role suffix', () => {
+  assert.throws(
+    () =>
+      classifyLandscapeDocument(
+        landscapeDocument([
+          subcategory('Gold', [
+            item('Acme (member) Holdings', { enduser: true }),
+          ]),
+          subcategory(END_USER_SUPPORTER_SUBCATEGORY, []),
+        ]),
+      ),
+    /enduser record without a member role suffix/,
+  );
+
+  const result = classifyLandscapeDocument(
+    landscapeDocument([
+      subcategory('Gold', [
+        item('Acme (member) Holdings (member)', { enduser: true }),
+      ]),
+      subcategory(END_USER_SUPPORTER_SUBCATEGORY, []),
+    ]),
+  );
+  assert.equal(result.records[0].displayName, 'Acme (member) Holdings');
+});
+
+// The unnamed-item error names the subcategory it came from so a landscape
+// maintainer can find the entry. A subcategory with no name of its own falls
+// back to '<unknown>' rather than interpolating `undefined`.
+test('the unnamed-item error names the subcategory, or <unknown>', () => {
+  assert.throws(
+    () =>
+      classifyLandscapeDocument(
+        landscapeDocument([
+          subcategory('Gold', [{ enduser: true }]),
+          subcategory(END_USER_SUPPORTER_SUBCATEGORY, []),
+        ]),
+      ),
+    /landscape item in CNCF Members\/Gold has no name/,
+  );
+  assert.throws(
+    () =>
+      classifyLandscapeDocument(
+        landscapeDocument([
+          { items: [{ enduser: true }] },
+          subcategory(END_USER_SUPPORTER_SUBCATEGORY, []),
+        ]),
+      ),
+    /landscape item in CNCF Members\/<unknown> has no name/,
+  );
+});
+
+// A name of nothing but whitespace is the shape a hand-edited YAML entry
+// carries, and it is as unusable as an absent name: it would produce a blank
+// directory card and a sourceId no one can match back to the landscape.
+test('rejects a whitespace-only item name', () => {
+  assert.throws(
+    () =>
+      classifyLandscapeDocument(
+        landscapeDocument([
+          subcategory('Gold', [item('   ')]),
+          subcategory(END_USER_SUPPORTER_SUBCATEGORY, []),
+        ]),
+      ),
+    /has no name/,
+  );
+});
+
+// landscape.yml is community-edited YAML, so a stray list entry parses as
+// null. Each level is read through optional chaining so a null is skipped (or
+// reported as a data error) instead of crashing the collector with a
+// TypeError that names no entry.
+test('skips null landscape categories, subcategories and reports null items', () => {
+  const result = classifyLandscapeDocument({
+    landscape: [
+      null,
+      {
+        name: 'CNCF Members',
+        subcategories: [
+          null,
+          subcategory('Gold', [item('Acme (member)', { enduser: true })]),
+          subcategory(END_USER_SUPPORTER_SUBCATEGORY, []),
+        ],
+      },
+    ],
+  });
+  assert.equal(result.records.length, 1);
+  assert.equal(result.records[0].displayName, 'Acme');
+
+  assert.throws(
+    () =>
+      classifyLandscapeDocument(
+        landscapeDocument([
+          subcategory('Gold', [null]),
+          subcategory(END_USER_SUPPORTER_SUBCATEGORY, []),
+        ]),
+      ),
+    /has no name/,
+  );
+});
+
+// The supporter role is audited only where it is authoritative. A '(supporter)'
+// suffix in an ordinary membership tier is not an End User Supporter record,
+// so it is neither included nor carried through as an audit-only row.
+test('ignores a supporter suffix outside the authoritative subcategory', () => {
+  const result = classifyLandscapeDocument(
+    landscapeDocument([
+      subcategory('Gold', [item('Legacy Co (supporter)')]),
+      subcategory(END_USER_SUPPORTER_SUBCATEGORY, []),
+    ]),
+  );
+  assert.deepEqual(result.records, []);
+});
+
+// `enduser` is mirrored onto every emitted record, and it is the landscape's
+// own flag rather than a restatement of `included`: a contributor record is
+// included without the flag, so the two must be asserted apart.
+test('mirrors the landscape enduser flag onto each record', () => {
+  const result = classifyLandscapeDocument(
+    landscapeDocument([
+      subcategory('Gold', [item('Acme (member)', { enduser: true })]),
+      subcategory(END_USER_SUPPORTER_SUBCATEGORY, [
+        item('Contributor Co (contributor)'),
+      ]),
+    ]),
+  );
+  assert.deepEqual(
+    result.records.map((record) => [record.displayName, record.enduser]),
+    [
+      ['Acme', true],
+      ['Contributor Co', false],
+    ],
+  );
+});
