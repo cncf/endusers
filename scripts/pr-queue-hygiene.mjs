@@ -148,6 +148,50 @@ function gh(args) {
   }
 }
 
+// curl's --config parser reads a double-quoted value with backslash escapes,
+// so a credential containing a quote or a backslash would otherwise truncate
+// the header or arrive altered. GitHub's tokens use neither character today;
+// escaping here means this does not quietly depend on that staying true.
+function escapeCurlConfigValue(value) {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+// The curl invocation for one REST call, as argv plus the stdin curl reads
+// its remaining options from.
+//
+// The credential is deliberately NOT in argv. argv is readable by every other
+// process on the machine through /proc/<pid>/cmdline for as long as the call
+// runs, and execFileSync() builds its `Command failed: ...` error message out
+// of that same argv -- and `-sf` makes curl exit non-zero on any 4xx/5xx, so a
+// single 403 threw an error whose message carried the token verbatim. Actions
+// masks the token in its own log, so what that left exposed is whatever else
+// shares the runner, which is precisely the self-hosted fleet this fallback
+// exists for. `--config -` takes the header from stdin instead: not argv, and
+// not a file on disk either.
+//
+// Exported so the tests can assert the token's absence from argv directly,
+// rather than inferring it from a call that would have to reach the network.
+export function curlInvocation({ method, endpoint, body, token }) {
+  const argv = [
+    '-sf',
+    '-X',
+    method,
+    '-H',
+    'Accept: application/vnd.github+json',
+    '-H',
+    'X-GitHub-Api-Version: 2022-11-28',
+  ];
+  if (body !== undefined) {
+    argv.push('-H', 'Content-Type: application/json', '--data', body);
+  }
+  argv.push(`https://api.github.com/${endpoint}`);
+  if (!token) return { argv, input: '' };
+  return {
+    argv: ['--config', '-', ...argv],
+    input: `header = "Authorization: Bearer ${escapeCurlConfigValue(token)}"\n`,
+  };
+}
+
 // Reimplements exactly the gh command shapes this script uses, over the
 // REST API via curl, so the job still runs on images without the gh CLI.
 // Intentionally narrow: anything outside these shapes throws rather than
@@ -155,22 +199,9 @@ function gh(args) {
 export function ghViaCurl(args) {
   const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '';
   const curl = (method, endpoint, body) => {
-    const argv = [
-      '-sf',
-      '-X',
-      method,
-      '-H',
-      'Accept: application/vnd.github+json',
-      '-H',
-      'X-GitHub-Api-Version: 2022-11-28',
-    ];
-    if (token) argv.push('-H', `Authorization: Bearer ${token}`);
-    if (body !== undefined) {
-      argv.push('-H', 'Content-Type: application/json', '--data', body);
-    }
-    argv.push(`https://api.github.com/${endpoint}`);
+    const { argv, input } = curlInvocation({ method, endpoint, body, token });
     try {
-      return execFileSync('curl', argv, { encoding: 'utf8' });
+      return execFileSync('curl', argv, { encoding: 'utf8', input });
     } catch (err) {
       if (err.code === 'ENOENT') {
         throw new Error(

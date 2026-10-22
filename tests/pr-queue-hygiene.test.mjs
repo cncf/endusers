@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   applySimpleJqProjection,
+  curlInvocation,
   findFirstConflictObservedAt,
   ghViaCurl,
   hoursSince,
@@ -702,7 +703,10 @@ test('fallback: main removes the stale label over REST when gh is missing', () =
   assert.equal(result.status, 0, result.stderr);
   // The label removal goes out as DELETE .../labels/needs-rebase-or-close,
   // the resolved marker as a comment POST, and the exported GH_TOKEN rides
-  // along as an Authorization header.
+  // along as an Authorization header -- on stdin, via `curl --config -`,
+  // because argv is readable by anything else on the runner through
+  // /proc/<pid>/cmdline and is also what execFileSync() puts in its
+  // "Command failed: ..." error message.
   assert.equal(
     callsMatching(result, 'DELETE', 'issues/6/labels/needs-rebase-or-close')
       .length,
@@ -713,9 +717,15 @@ test('fallback: main removes the stale label over REST when gh is missing', () =
       .length,
     1,
   );
-  assert.equal(
-    callsMatching(result, 'Authorization: Bearer test-token').length > 0,
-    true,
+  assert.ok(
+    result.stdins.some((input) =>
+      input.includes('Authorization: Bearer test-token'),
+    ),
+    'the exported token never reached curl on stdin',
+  );
+  assert.ok(
+    !result.calls.some((argv) => argv.join(' ').includes('test-token')),
+    'the token appeared in curl argv, where other processes can read it',
   );
 });
 
@@ -727,6 +737,64 @@ test('fallback: a failing curl call surfaces its own error, not a fallback loop'
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /HTTP 422 boom/);
+});
+
+// The credential must never reach argv. argv is world-readable through
+// /proc/<pid>/cmdline while the call runs, and execFileSync() builds its
+// "Command failed: ..." error message out of argv too, so with `-sf` -- which
+// makes curl exit non-zero on any 4xx/5xx -- a single 403 was enough to put
+// the token into a thrown error. Asserted over the whole invocation rather
+// than one element, so a future option that interpolates the token anywhere
+// in argv fails here.
+test('fallback: the token travels on stdin, never in curl argv', () => {
+  const token = 'ghs_TOKEN_THAT_MUST_NOT_APPEAR';
+  for (const call of [
+    { method: 'GET', endpoint: 'repos/o/r/pulls?state=open', token },
+    {
+      method: 'POST',
+      endpoint: 'repos/o/r/issues/1/comments',
+      body: JSON.stringify({ body: 'hi' }),
+      token,
+    },
+  ]) {
+    const { argv, input } = curlInvocation(call);
+    assert.ok(
+      !argv.some((arg) => arg.includes(token)),
+      `token found in curl argv for ${call.method} ${call.endpoint}`,
+    );
+    assert.ok(
+      !argv.some((arg) => arg.startsWith('Authorization')),
+      'an Authorization header reached argv',
+    );
+    assert.equal(argv[0], '--config');
+    assert.equal(argv[1], '-');
+    assert.equal(input, `header = "Authorization: Bearer ${token}"\n`);
+  }
+});
+
+// Without a token there is nothing to hide, and asking curl to read a config
+// from an empty stdin would make it parse one for no reason.
+test('fallback: no token means no --config and no stdin', () => {
+  const { argv, input } = curlInvocation({
+    method: 'GET',
+    endpoint: 'repos/o/r/pulls?state=open',
+    token: '',
+  });
+  assert.equal(input, '');
+  assert.ok(!argv.includes('--config'));
+  assert.equal(argv[0], '-sf');
+});
+
+// curl's config parser reads the value as a quoted string with backslash
+// escapes, so an unescaped quote in a credential would end the header early
+// and send a different one than intended.
+test('fallback: a quote or backslash in the token is escaped for --config', () => {
+  const { input } = curlInvocation({
+    method: 'GET',
+    endpoint: 'repos/o/r/pulls',
+    token: 'a"b\\c',
+  });
+  assert.equal(input, 'header = "Authorization: Bearer a\\"b\\\\c"\n');
 });
 
 test('fallback: ghViaCurl rejects shapes outside the script’s own call set', () => {
