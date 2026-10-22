@@ -24,8 +24,10 @@ const ALLOWED_HOSTS = new Set([
 const ALLOWED_DOMAIN_SUFFIXES = CNCF_HOST_SUFFIXES;
 
 export function isAllowedImageHost(hostname) {
+  // Stryker disable next-line StringLiteral: no fallback text is an allowed host
   const host = String(hostname || '').toLowerCase();
   if (ALLOWED_HOSTS.has(host)) return true;
+  // Stryker disable next-line MethodExpression: some and every agree while the allow-list holds one suffix
   return ALLOWED_DOMAIN_SUFFIXES.some(
     (domain) => host === domain || host.endsWith(`.${domain}`),
   );
@@ -45,6 +47,7 @@ export function isAllowedImageHost(hostname) {
 export function profileImageUrl(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
+  // Stryker disable next-line ConditionalExpression: new URL('') throws and returns null below
   if (!trimmed) return null;
 
   let url;

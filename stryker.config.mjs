@@ -16,6 +16,7 @@ export const SOURCE_TEXT_TEST_FILES = [
   'content-security-contract',
   'coverage-report',
   'coverage-report-cli',
+  'coverage-report-file-region-floor',
   'coverage-report-source-files',
   'dev-environment',
 ];

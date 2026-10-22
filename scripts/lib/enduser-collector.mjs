@@ -50,6 +50,7 @@ export function assertLandscapeSnapshotReady(snapshot) {
     throw new Error('landscape snapshot is not marked generated');
   }
   if (
+    // Stryker disable next-line OptionalChaining: the generated check above already rejected a nullish snapshot
     typeof snapshot?.source?.revision !== 'string' ||
     !/^[0-9a-f]{40}$/.test(snapshot.source.revision) ||
     snapshot.source.sourceUrl !==
@@ -160,6 +161,7 @@ export function mirrorLandscapeLogo({
   try {
     let content;
     if (extension === '.svg') {
+      // Stryker disable next-line StringLiteral: a Buffer decodes to the same utf8 text in stripActiveContent
       const original = readFileSync(source, 'utf8');
       const stripped = stripActiveContent(original);
       const cleaned = stripDoctype(stripped.source)
@@ -173,6 +175,7 @@ export function mirrorLandscapeLogo({
           `landscape logo contains remote resource references: ${filename}`,
         );
       }
+      // Stryker disable next-line StringLiteral: an empty encoding defaults to utf8
       content = Buffer.from(cleaned, 'utf8');
     } else {
       content = readFileSync(source);
@@ -254,6 +257,7 @@ export function publishLandscapeSnapshot({
   mkdirSync(assetDestination, { recursive: true });
   const outputBackup = `${outputPath}.backup-${process.pid}-${Date.now()}`;
   const movedAssets = [];
+  // Stryker disable next-line BooleanLiteral: removing a backup that was never taken is a forced no-op
   let outputBackedUp = false;
 
   try {
@@ -299,15 +303,21 @@ export function publishLandscapeSnapshot({
 
     renameSync(outputTempPath, outputPath);
   } catch (error) {
+    // Stryker disable next-line LogicalOperator: the backup only exists when outputBackedUp is set
     if (outputBackedUp && existsSync(outputBackup)) {
+      // Stryker disable next-line CallExpression: renameSync is atomic, so the output is unchanged when it fails
       copyFileSync(outputBackup, outputPath);
+      // Stryker disable next-line ObjectLiteral,BooleanLiteral: existsSync just confirmed the backup is there
       rmSync(outputBackup, { force: true });
     }
+    // Stryker disable next-line MethodExpression: removal order of independent files does not matter
     for (const path of movedAssets.reverse()) {
+      // Stryker disable next-line ObjectLiteral,BooleanLiteral: every moved asset exists until this removes it
       rmSync(path, { force: true });
     }
     throw error;
   }
 
+  // Stryker disable next-line ConditionalExpression,ObjectLiteral,BooleanLiteral: the backup exists exactly when outputBackedUp is set, and a forced removal of a missing one is a no-op
   if (outputBackedUp) rmSync(outputBackup, { force: true });
 }

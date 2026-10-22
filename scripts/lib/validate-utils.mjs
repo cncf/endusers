@@ -33,6 +33,7 @@ export {
  * @param {string} text - Text to write verbatim.
  */
 function writeStderrSync(text) {
+  // Stryker disable next-line StringLiteral: an empty encoding defaults to utf8
   const buffer = Buffer.from(text, 'utf8');
   let offset = 0;
   while (offset < buffer.length) {
@@ -86,8 +87,10 @@ export function checkNonEmptyArray(errors, path, field, value) {
 }
 
 /** Strict ISO 8601 UTC form (no plain `Date.parse` laxity; see checkIsoTimestamp). */
+// Stryker disable Regex: Date.parse rejects every prefix or suffix a loosened anchor would admit
 const ISO_8601_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?Z$/;
+// Stryker restore Regex
 
 /**
  * Resolve a strict ISO 8601 UTC string to its epoch time, or NaN.
@@ -108,11 +111,13 @@ const ISO_8601_PATTERN =
  *   strict ISO 8601 UTC instant.
  */
 function isoUtcTime(value) {
+  // Stryker disable next-line StringLiteral: no fallback text matches the pattern
   const match = ISO_8601_PATTERN.exec(value ?? '');
   if (!match) return NaN;
 
   const [, year, month, day, hour, minute, second] = match.map(Number);
   const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  // Stryker disable ConditionalExpression: every value Date.parse accepts that rolls over fails at least two of these checks
   const roundTrips =
     date.getUTCFullYear() === year &&
     date.getUTCMonth() === month - 1 &&
@@ -120,6 +125,7 @@ function isoUtcTime(value) {
     date.getUTCHours() === hour &&
     date.getUTCMinutes() === minute &&
     date.getUTCSeconds() === second;
+  // Stryker restore ConditionalExpression
 
   return roundTrips ? Date.parse(value) : NaN;
 }
@@ -170,6 +176,7 @@ export function checkIsoTimestamp(errors, path, field, value, options = {}) {
   }
 
   if (
+    // Stryker disable next-line ConditionalExpression: adding undefined yields NaN, and nothing is greater than NaN
     futureToleranceMs !== undefined &&
     time > Date.now() + futureToleranceMs
   ) {
@@ -261,6 +268,7 @@ export function checkPublishableSourceUrl(errors, path, value) {
     errors.push({
       path,
       severity: 'error',
+      // Stryker disable next-line StringLiteral: the separator is unused while there is one CNCF host suffix
       message: `sourceUrl must be an https URL, with no userinfo, on ${CNCF_HOST_SUFFIXES.join(' or ')}`,
     });
   }
