@@ -224,6 +224,21 @@ test('unescapeMdx leaves unrelated text alone', () => {
   assert.equal(unescapeMdx(undefined), '');
 });
 
+// The guard is `typeof text !== 'string' || !text`, and a nullish argument
+// satisfies both arms at once, so it cannot show that the type arm carries its
+// own weight. A truthy non-string does: it is rejected only by the type check,
+// and reaching String.prototype.replace with it would throw rather than return
+// a value the caller can store.
+test('unescapeMdx rejects a truthy non-string on the type arm alone', () => {
+  assert.equal(unescapeMdx(123), '');
+  assert.equal(unescapeMdx(['&lt;']), '');
+  assert.equal(unescapeMdx({}), '');
+});
+
+test('unescapeMdx rejects an empty string on the falsy arm alone', () => {
+  assert.equal(unescapeMdx(''), '');
+});
+
 // unescapeMdx() reverses the escaping by scanning for a fixed alternation of
 // character references and looking each one up in the ESCAPES table. The two
 // lists are written out separately, so they can drift: an alternative added to
