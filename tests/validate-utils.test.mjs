@@ -101,6 +101,24 @@ test('checkUrl allowEmpty treats null, undefined, and the empty string as valid'
   }
 });
 
+// allowEmpty exempts an absent value from the checks below it, not a present
+// one. Without this, emptying the rest of the guard -- so that allowEmpty
+// alone returns early -- leaves every suite green while every field declared
+// optional stops being checked at all.
+test('checkUrl allowEmpty still applies every check to a value that is present', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', 'http://cncf.io', { allowEmpty: true });
+  assert.equal(errors.length, 1);
+  assert.match(errors[0].message, /must use https, got http:/);
+
+  const spoofed = [];
+  checkUrl(spoofed, 'path', 'field', 'https://cncf.io@evil.example/', {
+    allowEmpty: true,
+  });
+  assert.equal(spoofed.length, 1);
+  assert.match(spoofed[0].message, /must not carry a userinfo component/);
+});
+
 test('checkUrl without allowEmpty rejects an empty value as unparseable', () => {
   const errors = [];
   checkUrl(errors, 'path', 'field', '');
@@ -132,6 +150,36 @@ test('checkUrl requireNonEmptyString trims the value before parsing', () => {
     requireNonEmptyString: true,
   });
   assert.deepEqual(errors, []);
+});
+
+// The ASCII spaces above are a weak witness for the trim: the URL parser
+// strips those itself, so the value parses whether or not checkUrl trimmed
+// it. A non-breaking space is whitespace to String.prototype.trim and an
+// ordinary character to the URL parser, so only a value trimmed here parses
+// -- which is what makes it the input that tells the two apart.
+const NON_BREAKING_SPACE = '\u00a0';
+
+test('checkUrl requireNonEmptyString trims whitespace the URL parser keeps', () => {
+  const errors = [];
+  checkUrl(
+    errors,
+    'path',
+    'field',
+    `${NON_BREAKING_SPACE}https://cncf.io/x${NON_BREAKING_SPACE}`,
+    { requireNonEmptyString: true },
+  );
+  assert.deepEqual(errors, []);
+});
+
+// The mirror of the test above: trimming is part of what requireNonEmptyString
+// asks for, so a caller that did not ask for it gets the value as written.
+// A pair of validators disagreeing on whether " https://x" is a URL is the
+// drift this module was extracted to end, so each half is pinned.
+test('checkUrl leaves the value untrimmed without requireNonEmptyString', () => {
+  const errors = [];
+  checkUrl(errors, 'path', 'field', `${NON_BREAKING_SPACE}https://cncf.io/x`);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0].message, /must be an absolute https URL/);
 });
 
 test('checkUrl rejects a protocol outside the allowed set', () => {
@@ -521,11 +569,41 @@ test('checkUrl reports the parse failure message for a schemeless value without 
   assert.deepEqual(coerced, []);
 });
 
+// "Has a scheme of its own" means a scheme at the start of the value. A colon
+// anywhere else -- a path segment, a port, a query -- belongs to the host
+// being named, so the default scheme still has to be applied. Without the
+// anchor the value is handed to the URL parser as written, and a bare host
+// carrying a colon later on is reported as unparseable instead of resolving.
+test('checkUrl applies defaultScheme to a bare host carrying a later colon', () => {
+  for (const value of [
+    'example.test/path:extra',
+    'example.test/search?q=a:b',
+  ]) {
+    const errors = [];
+    checkUrl(errors, 'p', 'site', value, { defaultScheme: 'https:' });
+    assert.deepEqual(errors, [], value);
+  }
+});
+
 // The predicate the case-studies and radar-reports validators share for the
 // cncf.io links they publish: a trimmed https URL on a CNCF host, or null.
 test('publishableCncfUrl accepts a trimmed https URL on a CNCF host', () => {
   assert.equal(
     publishableCncfUrl(' https://www.cncf.io/reports/x/ ').href,
+    'https://www.cncf.io/reports/x/',
+  );
+});
+
+// Same distinction as the checkUrl trim tests: the ASCII spaces above would
+// be stripped by the URL parser anyway, so they do not show that this
+// predicate trims. A non-breaking space does -- untrimmed it makes the value
+// unparseable, and the mirrored link would be dropped from the site rather
+// than published.
+test('publishableCncfUrl trims whitespace the URL parser keeps', () => {
+  assert.equal(
+    publishableCncfUrl(
+      `${NON_BREAKING_SPACE}https://www.cncf.io/reports/x/${NON_BREAKING_SPACE}`,
+    ).href,
     'https://www.cncf.io/reports/x/',
   );
 });
