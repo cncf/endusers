@@ -147,7 +147,7 @@ test('the landscape logo mirror refuses every executable extension', () => {
 // longer reads.
 test('every consumer imports the allowlist instead of redeclaring it', () => {
   const consumers = [
-    'scripts/validate-architecture-assets.mjs',
+    'scripts/lib/validate-architecture-assets.mjs',
     'scripts/validate-enduser-members.mjs',
     'scripts/lib/enduser-collector.mjs',
     'scripts/lib/project-assets.mjs',
