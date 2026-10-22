@@ -288,7 +288,7 @@ test('an accepted region the run now covers is stale and fails main() after writ
     await assert.rejects(
       main(reportArgs(fixture)),
       new RegExp(
-        `1 accepted region\\(s\\) in ${ACCEPTED_REGIONS_PATH} are stale; remove them:\\n` +
+        `1 accepted region\\(s\\) in ${ACCEPTED_REGIONS_PATH} no longer match this run; re-point the ones whose span moved and remove the rest:\\n` +
           `  ${FILE} ${covered}: covered by this run \\(count 1\\)`,
       ),
     );
@@ -336,8 +336,38 @@ test('an accepted region the run never reports is stale, including one in a file
     );
     await assert.rejects(
       main(reportArgs(fixture)),
-      /2 accepted region\(s\) in .* are stale; remove them:\n {2}src\/components\/Label\/index\.js 1:0-1:1: not a region this run reports\n {2}src\/components\/Other\/index\.js 7:40-7:46: not a region this run reports/u,
+      /2 accepted region\(s\) in .* no longer match this run; re-point the ones whose span moved and remove the rest:\n {2}src\/components\/Label\/index\.js 1:0-1:1: not a region this run reports\n {2}src\/components\/Other\/index\.js 7:40-7:46: not a region this run reports/u,
     );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a stale entry whose span only moved names the span it moved to', async () => {
+  // The registry entry sits one line above the arm the run actually reports,
+  // with the arm's columns -- the shape an edit above an accepted region
+  // leaves behind. Deleting such an entry drops a still-true rationale and
+  // returns the arm to the uncovered list, so the failure has to say that the
+  // region moved rather than went away.
+  const moved = entry('1:41-1:45');
+  const fixture = await fixtureRun({ registry: { entries: [moved] } });
+  try {
+    const report = await collect(fixture);
+    assert.deepEqual(report.staleAcceptedRegions, [
+      {
+        ...moved,
+        cause:
+          `not a region this run reports; the same span is uncovered at ${SPANS.no}` +
+          ' -- re-point this entry rather than deleting it',
+        shiftedSpan: SPANS.no,
+      },
+    ]);
+    assert.deepEqual(report.acceptedRegions, []);
+    await assert.rejects(main(reportArgs(fixture)), (error) => {
+      assert.match(error.message, /re-point the ones whose span moved/u);
+      assert.ok(error.message.includes(`uncovered at ${SPANS.no}`));
+      return true;
+    });
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }

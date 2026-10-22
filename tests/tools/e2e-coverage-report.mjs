@@ -501,6 +501,57 @@ function regionSpan(region) {
   return `${region.line}:${region.column}-${region.endLine}:${region.endColumn}`;
 }
 
+// Splits a span the way `regionSpan` spells it into its four numbers, or
+// returns null for anything that is not in that shape.
+function parseSpan(span) {
+  const match = /^(\d+):(\d+)-(\d+):(\d+)$/.exec(span);
+  if (!match) return null;
+  const [, line, column, endLine, endColumn] = match;
+  return {
+    line: Number(line),
+    column: Number(column),
+    endLine: Number(endLine),
+    endColumn: Number(endColumn),
+  };
+}
+
+// Finds the span an accepted entry most likely moved to.
+//
+// An edit above an accepted region -- a comment inserted, an expression
+// hoisted -- shifts the region's line while leaving its columns and its height
+// alone, so the entry stops matching and the registry reports it stale. The
+// region itself is still there, still uncovered, and still unreachable for the
+// reason the entry records, but a bare "remove them" reads as an instruction
+// to delete the rationale rather than to re-point it, and deleting it puts the
+// region back in the "Uncovered regions" list the ADR 0007 amendment exists to
+// keep it out of.
+//
+// The match is deliberately strict: identical start and end columns, identical
+// height, and exactly one candidate in the file. Anything looser would guess,
+// and a wrong span in this registry silently excuses the wrong region.
+//
+// @param {object} entry stale registry entry
+// @param {object[]} sources per-file rows carrying `uncoveredRegionSpans`
+// @returns {string|null} the shifted span, or null when there is no sure match
+function shiftedSpanFor(entry, sources) {
+  const from = parseSpan(entry.span);
+  if (!from) return null;
+  const row = sources.find((source) => source.file === entry.file);
+  if (!row) return null;
+  const height = from.endLine - from.line;
+  const candidates = (row.uncoveredRegionSpans ?? []).filter((span) => {
+    const to = parseSpan(span);
+    return (
+      to !== null &&
+      to.line !== from.line &&
+      to.column === from.column &&
+      to.endColumn === from.endColumn &&
+      to.endLine - to.line === height
+    );
+  });
+  return candidates.length === 1 ? candidates[0] : null;
+}
+
 // tests/e2e/fixtures/accepted-regions.json holds the zero-count regions ADR 0007
 // classifies as needing no browser coverage: `data-shape-guard` for an arm
 // selected only by absent, null, empty or malformed build-time data, and
@@ -630,6 +681,7 @@ export {
   getRegionCoverage,
   isPhantomRegion,
   isContradictedRegion,
+  shiftedSpanFor,
   splitRangeAtBoundaries,
 };
 
@@ -1073,7 +1125,14 @@ export async function collectE2ECoverage(
     .filter((row) => row.executableLines > 0)
     .sort((a, b) => a.file.localeCompare(b.file));
   for (const entry of pendingAccepted.values()) {
-    stale.push({ ...entry, cause: 'not a region this run reports' });
+    const shifted = shiftedSpanFor(entry, report.sources);
+    stale.push({
+      ...entry,
+      cause: shifted
+        ? `not a region this run reports; the same span is uncovered at ${shifted} -- re-point this entry rather than deleting it`
+        : 'not a region this run reports',
+      ...(shifted ? { shiftedSpan: shifted } : {}),
+    });
   }
   // Spans order by position, not text, so `21:7` lists before `21:24`.
   const spanStart = (span) => span.split('-', 1)[0].split(':').map(Number);
@@ -1285,12 +1344,15 @@ export async function main(argv = process.argv.slice(2)) {
   // the summary and artifact behind for the CI step that publishes them.
   //
   // A stale registry entry fails the lane whether or not any floor is being
-  // checked: an entry that no longer names a zero this run reports is either
-  // a region the suite now reaches or a span the build no longer emits, and
-  // in both cases the fix is to delete it, not to keep rendering around it.
+  // checked: an entry that no longer names a zero this run reports is a region
+  // the suite now reaches, a span the build no longer emits, or the same
+  // region moved by an edit above it. The first two are deleted; the third is
+  // re-pointed, because the reason it records is still true and dropping it
+  // would return the region to the uncovered list. `shiftedSpanFor` tells the
+  // three apart in the failure text so the reader does not have to guess.
   if (report.staleAcceptedRegions.length > 0) {
     throw new Error(
-      `${report.staleAcceptedRegions.length} accepted region(s) in ${ACCEPTED_REGIONS_PATH} are stale; remove them:\n` +
+      `${report.staleAcceptedRegions.length} accepted region(s) in ${ACCEPTED_REGIONS_PATH} no longer match this run; re-point the ones whose span moved and remove the rest:\n` +
         report.staleAcceptedRegions
           .map((entry) => `  ${entry.file} ${entry.span}: ${entry.cause}`)
           .join('\n'),
