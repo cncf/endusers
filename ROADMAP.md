@@ -17,8 +17,8 @@ named a specific conference as the announcement window (issue #104); the dated
 countdown slipped twice (#966, #1271) and was replaced by readiness gates on the
 Phase 1 content pillars below. Conferences and End User TAB meetings that fall
 near readiness are amplification opportunities, not deadlines. The ownership
-decision has landed (ADR 0001 is Accepted; issue #99 closed); the remaining
-pre-launch dependency is the DNS cutover tracked in issue #1433.
+decision has landed (ADR 0001 is Accepted; issue #99 closed) and the DNS cutover
+to `endusers.cncf.io` completed on 2026-10-22 (issue #1433).
 
 ## Guiding principles
 
@@ -90,10 +90,10 @@ shipped silently. Content completeness alone is not a launch plan.
       baseline (captured 2026-10-02 under the `W-6` label the earlier dated plan
       used); re-run it immediately before launch so the 90-day comparison starts
       from the numbers the announcement went out on.
-- [ ] **DNS cutover dependency**: the Phase 2 ownership decision (issue #46,
+- [x] **DNS cutover dependency**: the Phase 2 ownership decision (issue #46,
       ADR 0001) is resolved — the repository has been transferred to the `cncf`
-      GitHub org — so cutover to `endusers.cncf.io` itself (Phase 3) is what
-      remains gating this item.
+      GitHub org — and the cutover to `endusers.cncf.io` (Phase 3) completed on
+      2026-10-22 (#1433).
 - [ ] **90-day check-in**: re-run `npm run collect:launch-metrics` 90 days after
       launch and compare each signal against its `data/launch-metrics.json`
       baseline to record whether the launch moved the needle.
@@ -118,18 +118,18 @@ Goal: the project can outlive any single maintainer.
 
 Goal: endusers.cncf.io becomes the authoritative end-user destination.
 
-- [ ] DNS cutover to endusers.cncf.io (depends on Phase 2 ownership decision;
-      tracked in #1433, blocked on the external DNS record — the remaining ADR
-      0001 step-3 action is adding the custom domain to the Netlify site and
-      pointing DNS at it; see ADR 0005)
+- [x] DNS cutover to endusers.cncf.io (#1433): `endusers.cncf.io` is the Netlify
+      custom domain and DNS points at it as of 2026-10-22; the canonical URL and
+      `robots.txt` sitemap line followed without a repository change (ADR 0001
+      step 3, ADR 0005)
 - [ ] Cross-linking with contribute.cncf.io and cncf.io (clear audience
       boundaries) (#1407). Audience boundary decided: ADR 0004. Outbound
       signposts shipped (site footer, architecture submission flow, community
       resources). Inbound-link requests against contribute.cncf.io and cncf.io
       remain open: ready-to-file drafts are in
       `adr/inbound-link-requests-for-0004.md` (origin issue #1434, closed once
-      the drafts shipped), but filing is deliberately held until the DNS cutover
-      (#1433) completes so requests do not point at a non-resolving URL.
+      the drafts shipped); with the DNS cutover (#1433) complete they are ready
+      to file.
 - [x] Public feedback loop: content-issue templates and a visible changelog
       (#1408). Shipped: the `content-issue.yml` report form and a changelog
       generated at build time (`adr/0003-public-changelog-mechanism.md`), both

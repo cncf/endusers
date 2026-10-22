@@ -9,10 +9,9 @@ needs a maintainer with access to those repositories; this repository's agents
 cannot file them. Target pages are suggestions, to be confirmed against each
 site's current structure before filing.
 
-Do not file these requests until the DNS cutover to `endusers.cncf.io` has
-completed ([#1433](https://github.com/cncf/endusers/issues/1433)): the domain
-does not resolve yet — the site is served from `endusers.netlify.app` in the
-interim — so a request filed today would ask for links to a non-resolving URL.
+The DNS cutover to `endusers.cncf.io` completed on 2026-10-22
+([#1433](https://github.com/cncf/endusers/issues/1433)), so the requested URLs
+resolve and these requests can be filed.
 
 Origin issue: [#1434](https://github.com/cncf/endusers/issues/1434) (closed once
 these drafts shipped). Live status is the Status column below: when a request is

@@ -4,10 +4,11 @@
 - **Status note**: Option A — the repository has been transferred to the `cncf`
   GitHub org, which is the fact GitHub's own repository metadata now confirms.
   This ADR is not aware of a separate, minuted CNCF TOC/TAB vote; if one exists,
-  link it here. The remaining DNS cutover to `endusers.cncf.io` is still open —
-  see "Consequences" below. Amended 2026-10-14: hosting moved from GitHub Pages
-  to Netlify ([ADR 0005](./0005-host-the-site-on-netlify.md)), which changes
-  what step 3 below involves; the restated step is authoritative.
+  link it here. The DNS cutover to `endusers.cncf.io` completed on 2026-10-22
+  ([#1433](https://github.com/cncf/endusers/issues/1433)); the ADR's steps are
+  all executed. Amended 2026-10-14: hosting moved from GitHub Pages to Netlify
+  ([ADR 0005](./0005-host-the-site-on-netlify.md)), which changes what step 3
+  below involves; the restated step is authoritative.
 - **Date**: 2026-08-08
 - **Tracking issue**: [#46](https://github.com/cncf/endusers/issues/46)
 
