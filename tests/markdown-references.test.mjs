@@ -67,11 +67,14 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const docsRoot = join(repoRoot, 'docs');
 const config = (await import('../docusaurus.config.js')).default;
 
-// Directories the walk never enters: dependencies, build output, and the
-// test tree, whose Markdown is fixture data rather than prose about the repo.
+// Directories the walk never enters: dependencies, build output, the
+// StrykerJS sandbox (a whole copy of the tree, so every file in it would be
+// reported a second time), and the test tree, whose Markdown is fixture data
+// rather than prose about the repo.
 const UNSCANNED_DIRS = new Set([
   '.docusaurus',
   '.git',
+  '.stryker-tmp',
   'build',
   'coverage',
   'node_modules',
@@ -99,9 +102,14 @@ const repoDirs = new Set(
     .filter(
       (entry) =>
         entry.isDirectory() &&
-        !['node_modules', 'build', '.docusaurus', '.git', 'coverage'].includes(
-          entry.name,
-        ),
+        ![
+          'node_modules',
+          'build',
+          '.docusaurus',
+          '.git',
+          '.stryker-tmp',
+          'coverage',
+        ].includes(entry.name),
     )
     .map((entry) => entry.name),
 );

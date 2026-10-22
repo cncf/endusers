@@ -55,9 +55,15 @@ function readNpmConfig(source) {
   return config;
 }
 
+// Directories the walk never enters. `.stryker-tmp` holds StrykerJS's copy of
+// the whole tree, root `.npmrc` included; reporting that copy would fail the
+// contract below over a gitignored scratch directory rather than over a real
+// second npm config.
+const UNWALKED_DIRS = new Set(['node_modules', '.git', '.stryker-tmp']);
+
 function findNpmrcFiles(dir, found = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.git') continue;
+    if (UNWALKED_DIRS.has(entry.name)) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) findNpmrcFiles(full, found);
     else if (entry.isFile() && entry.name === '.npmrc')
