@@ -4,8 +4,17 @@ import {
   findActiveContent,
   findRemoteReferences,
   hasDoctype,
+  METADATA_ATTRIBUTES,
+  METADATA_NAMESPACES,
   stripActiveContent,
   stripDoctype,
+  SVG_ATTRIBUTES,
+  SVG_ELEMENTS,
+  SVG_ROOT_ATTRIBUTES,
+  XHTML_ATTRIBUTES,
+  XHTML_ELEMENTS,
+  XLINK_ATTRIBUTES,
+  XML_ATTRIBUTES,
 } from '../scripts/lib/svg-active-content.mjs';
 
 const INERT =
@@ -1191,3 +1200,145 @@ test('rejects an unterminated DOCTYPE after a prolog, in linear time', () => {
   }
   assert.ok(Date.now() - started < 5000);
 });
+
+// The allowlists are the gate's policy, and until these tests existed almost
+// none of their entries was exercised by name. Nothing above reaches them:
+// `Set` membership is data, not a branch, so a handful of SVGs walk every
+// branch of findActiveContent -- 100% lines and regions -- while leaving most
+// of the tables those branches consult unread. The mutation gate is what sees
+// it: blanking any one entry left the whole suite green.
+//
+// Each loop below turns one entry into one named assertion, generated from the
+// set rather than copied out of it, so an entry added later is covered the
+// moment it is added and an entry deleted fails by its own name. What they
+// protect against is the silent false positive: drop or mistype `'textPath'`
+// and the validator starts rejecting ordinary draw.io and Inkscape exports
+// with nothing to say which entry went missing.
+//
+// A permitted element and a benign value are used throughout, because the
+// claim under test is only that the name is on the list. The value-level
+// checks (`href`, `style`, URI schemes) have their own tests above.
+
+// `<g>` hosts the unprefixed and prefixed attribute checks: it is a plain
+// container, so no finding can come from the element itself.
+const onGroup = (attribute) => svg(`<g ${attribute}="1"/>`);
+
+// XHTML entries are only reachable inside `<foreignObject>`, and only in the
+// XHTML namespace -- that namespace is what selects XHTML_ELEMENTS over
+// SVG_ELEMENTS, so it has to be declared on the element itself.
+const inForeignObject = (markup) =>
+  svg(`<foreignObject>${markup}</foreignObject>`);
+const XHTML_DECL = 'xmlns="http://www.w3.org/1999/xhtml"';
+
+// `svg` is excluded: it is the root this helper already writes, and nesting a
+// second one would test the wrapper rather than the entry.
+for (const element of SVG_ELEMENTS) {
+  if (element === 'svg') continue;
+  test(`allows the SVG element <${element}>`, () => {
+    assert.deepEqual(findActiveContent(svg(`<${element}/>`)), []);
+  });
+}
+
+for (const attribute of SVG_ATTRIBUTES) {
+  test(`allows the SVG attribute ${attribute}`, () => {
+    assert.deepEqual(findActiveContent(onGroup(attribute)), []);
+  });
+}
+
+// Root-only attributes are allowed on `<svg>` and nowhere else, so each entry
+// is asserted on both sides: accepted on the root, still a finding below it.
+// Blanking the entry would otherwise be invisible -- the root check would stop
+// mattering while the rejection carried on passing for the wrong reason.
+for (const attribute of SVG_ROOT_ATTRIBUTES) {
+  test(`allows the root-only SVG attribute ${attribute} on <svg> only`, () => {
+    assert.deepEqual(
+      findActiveContent(
+        `<svg xmlns="http://www.w3.org/2000/svg" ${attribute}="x"/>`,
+      ),
+      [],
+    );
+    assert.deepEqual(findActiveContent(onGroup(attribute)), [
+      `contains a disallowed attribute ${attribute} on <g>`,
+    ]);
+  });
+}
+
+for (const element of XHTML_ELEMENTS) {
+  test(`allows the XHTML element <${element}> in a foreignObject`, () => {
+    assert.deepEqual(
+      findActiveContent(inForeignObject(`<${element} ${XHTML_DECL}/>`)),
+      [],
+    );
+  });
+}
+
+for (const attribute of XHTML_ATTRIBUTES) {
+  test(`allows the XHTML attribute ${attribute}`, () => {
+    assert.deepEqual(
+      findActiveContent(
+        inForeignObject(`<div ${XHTML_DECL} ${attribute}="1"/>`),
+      ),
+      [],
+    );
+  });
+}
+
+for (const attribute of XLINK_ATTRIBUTES) {
+  test(`allows the XLink attribute xlink:${attribute}`, () => {
+    assert.deepEqual(findActiveContent(onGroup(`xlink:${attribute}`)), []);
+  });
+}
+
+for (const attribute of XML_ATTRIBUTES) {
+  test(`allows the XML attribute xml:${attribute}`, () => {
+    assert.deepEqual(findActiveContent(onGroup(`xml:${attribute}`)), []);
+  });
+}
+
+// Every element in a metadata namespace is allowed whatever it is called, so
+// the entry under test is the namespace URI, not the element name.
+for (const namespace of METADATA_NAMESPACES) {
+  test(`allows elements in the metadata namespace ${namespace}`, () => {
+    assert.deepEqual(
+      findActiveContent(svg(`<m:thing xmlns:m="${namespace}"/>`)),
+      [],
+    );
+  });
+}
+
+for (const attribute of METADATA_ATTRIBUTES) {
+  test(`allows the metadata attribute ${attribute}`, () => {
+    assert.deepEqual(
+      findActiveContent(
+        svg(
+          '<m:thing xmlns:m="http://www.inkscape.org/namespaces/inkscape" ' +
+            `${attribute}="1"/>`,
+        ),
+      ),
+      [],
+    );
+  });
+}
+
+// The CSS functions that take a bare string as a URL. Unlike the allowlists
+// above, an unrecognized entry here fails *open*: the gate stops reading the
+// argument as a URL, and a `javascript:` payload written through that function
+// passes. Each entry is asserted to still be read as a URL.
+for (const fn of [
+  'url',
+  'src',
+  'image',
+  'image-set',
+  '-webkit-image-set',
+  'cross-fade',
+  '-webkit-cross-fade',
+]) {
+  test(`reads a quoted ${fn}() argument in CSS as a URL`, () => {
+    assert.deepEqual(
+      findActiveContent(
+        svg(`<style>a{background:${fn}("javascript:alert(1)")}</style>`),
+      ),
+      ['contains a disallowed URI scheme in a <style> block: javascript:'],
+    );
+  });
+}
