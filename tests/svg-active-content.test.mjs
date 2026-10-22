@@ -11,6 +11,8 @@ import {
 const INERT =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><a href="https://example.com/docs"><rect width="10" height="10" fill="#fff"/></a></svg>';
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
 const SVG_OPEN =
   '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">';
 const svg = (body) => `${SVG_OPEN}${body}</svg>`;
@@ -1374,3 +1376,270 @@ for (const fn of [
     );
   });
 }
+
+// --- Parser and scan edges ----------------------------------------------------
+//
+// Each test below pins one branch of the scan that a mutation of the source
+// would flip without any of the tests above noticing.
+
+const NOT_WELL_FORMED = (message) =>
+  `is not well-formed XML (${message}); this scan cannot see what a browser would parse`;
+
+test('names the parser error on its own line, not the first character of it', () => {
+  // sax formats its message as "reason\nLine: n\nColumn: n"; only the reason
+  // is reported.
+  assert.deepEqual(findActiveContent(svg('<a onload=/>')), [
+    NOT_WELL_FORMED('Unquoted attribute value'),
+    'contains a disallowed attribute onload on <a>',
+  ]);
+});
+
+test('an empty document and a document with two roots are each named', () => {
+  assert.deepEqual(findActiveContent(''), [NOT_WELL_FORMED('No root element')]);
+  assert.deepEqual(findActiveContent(`${SVG_OPEN}</svg><svg/>`), [
+    NOT_WELL_FORMED('Multiple root elements'),
+    'contains a disallowed element <svg> (namespace none)',
+  ]);
+});
+
+test('a cascade of parser errors is reported as one finding', () => {
+  const source = svg('<a onload=/><b x=/><c y=/>');
+  const wellFormedness = (findings) =>
+    findings.filter((finding) => finding.startsWith('is not well-formed'));
+  assert.deepEqual(wellFormedness(findActiveContent(source)), [
+    NOT_WELL_FORMED('Unquoted attribute value'),
+  ]);
+  assert.deepEqual(wellFormedness(findRemoteReferences(source)), [
+    NOT_WELL_FORMED('Unquoted attribute value'),
+  ]);
+});
+
+test('a DOCTYPE without an entity declaration is not an entity finding', () => {
+  assert.deepEqual(findActiveContent(`<!DOCTYPE svg>${INERT}`), []);
+});
+
+test('hasDoctype does not count a well-formed document that mentions one in a comment', () => {
+  assert.equal(hasDoctype(svg('<!-- <!DOCTYPE svg> -->')), false);
+});
+
+test('stripDoctype returns a document without a DOCTYPE byte for byte', () => {
+  // Rebuilding would normalize the blank line and the single quotes.
+  const source = `<?xml version="1.0"?>\n\n<svg xmlns='${SVG_NS}' />`;
+  assert.equal(stripDoctype(source), source);
+});
+
+test('rebuilding escapes text and attribute values exactly', () => {
+  const body =
+    '<text title="&amp;&lt;&quot;&#9;&#10;&#13;>">&amp;&lt;&gt;</text>';
+  assert.equal(stripDoctype(`<!DOCTYPE svg>${svg(body)}`), svg(body));
+});
+
+test('stripping a disallowed element removes its whole subtree', () => {
+  assert.deepEqual(
+    stripActiveContent(svg('<script><g/><g><g/></g>alert(1)</script><rect/>')),
+    { source: svg('<rect/>'), removed: ['<script> element'] },
+  );
+});
+
+test('processing instruction findings are sorted by target', () => {
+  const instruction = (target) =>
+    `contains a <?${target}?> processing instruction ` +
+    '(can load a remote stylesheet or apply an XSLT program to the image)';
+  assert.deepEqual(findActiveContent(`<?zzz?><?aaa?>${INERT}`), [
+    instruction('aaa'),
+    instruction('zzz'),
+  ]);
+});
+
+test('the strip errors carry their fixed prefixes', () => {
+  assert.throws(() => stripActiveContent(svg('<a onload=/>')), {
+    message: `Could not strip active content from SVG: ${NOT_WELL_FORMED('Unquoted attribute value')}; contains a disallowed attribute onload on <a>`,
+  });
+  assert.throws(
+    () => stripActiveContent(svg('<script/>'), { scan: () => ['x'] }),
+    { message: 'Active content survived stripping from SVG: x' },
+  );
+});
+
+test('the mis-decoding finding names what the scan could not see', () => {
+  assert.deepEqual(findActiveContent(svg('<text>\u0000</text>')), [
+    'contains NUL or replacement characters ' +
+      '(the file is not UTF-8, so this scan did not see what a browser decodes)',
+  ]);
+});
+
+// --- data-* attributes --------------------------------------------------------
+
+test('a data-* attribute is matched on the whole name, lowercase only', () => {
+  for (const name of ['xdata-foo', 'data-fooBar']) {
+    assert.deepEqual(findActiveContent(svg(`<rect ${name}="1"/>`)), [
+      `contains a disallowed attribute ${name} on <rect>`,
+    ]);
+  }
+  assert.deepEqual(findActiveContent(svg('<rect data-foo.bar_1="1"/>')), []);
+});
+
+// --- Encoding declarations ------------------------------------------------------
+
+test('a single-byte ASCII encoding is matched on the whole name', () => {
+  const declared = (encoding) =>
+    findActiveContent(`<?xml version="1.0" encoding="${encoding}"?>${INERT}`);
+  for (const encoding of ['iso-8859-15', 'latin1', 'latin9', 'windows-1258']) {
+    assert.deepEqual(declared(encoding), [], encoding);
+  }
+  for (const encoding of ['xiso-8859-1', 'iso-8859-1x', 'iso-8859-100']) {
+    assert.deepEqual(
+      declared(encoding),
+      [
+        `declares a non-UTF-8 encoding (${encoding}) ` +
+          '(an XML parser honoring it reads different bytes than this scan did)',
+      ],
+      encoding,
+    );
+  }
+});
+
+test('whitespace around a declared encoding is ignored', () => {
+  assert.deepEqual(
+    findActiveContent(`<?xml version="1.0" encoding=" UTF-8 "?>${INERT}`),
+    [],
+  );
+});
+
+test('a pseudo-attribute that merely starts with "encoding" is not the encoding', () => {
+  assert.deepEqual(
+    findActiveContent(`<?xml version="1.0" encodingx="utf-16"?>${INERT}`),
+    [],
+  );
+});
+
+// --- Namespace prefixes ---------------------------------------------------------
+
+test('a one-character prefix is stripped from element and attribute names', () => {
+  assert.deepEqual(
+    findRemoteReferences(
+      `<s:svg xmlns:s="${SVG_NS}"><s:style>url(https://evil.example/x.css)</s:style></s:svg>`,
+    ),
+    [
+      'references a remote resource in a <style> block: https://evil.example/x.css',
+    ],
+  );
+  assert.deepEqual(
+    findRemoteReferences(
+      `<svg xmlns="${SVG_NS}" xmlns:x="http://www.w3.org/1999/xlink"><image x:href="https://evil.example/a.png"/></svg>`,
+    ),
+    [
+      'references a remote resource in <image> x:href: https://evil.example/a.png',
+    ],
+  );
+});
+
+// --- <style> block boundaries -----------------------------------------------------
+
+test('text outside a <style> block is not CSS', () => {
+  assert.deepEqual(
+    findRemoteReferences(
+      svg('<style>a{}</style><text>url(https://evil.example/x)</text>'),
+    ),
+    [],
+  );
+});
+
+test('a <style> block split around a child element is still one block', () => {
+  assert.deepEqual(
+    findRemoteReferences(
+      svg('<style><g/>url(https://evil.example/x.css)</style>'),
+    ),
+    [
+      'references a remote resource in a <style> block: https://evil.example/x.css',
+    ],
+  );
+});
+
+// --- CSS url reading ----------------------------------------------------------------
+
+const remoteIn = (css) =>
+  findRemoteReferences(svg(`<style>${css}</style>`)).map((finding) =>
+    finding.replace('references a remote resource in a <style> block: ', ''),
+  );
+
+test('an escaped url( at the end of a value reads as nothing', () => {
+  for (const css of ['\\75rl(', 'url( ']) {
+    assert.deepEqual(findRemoteReferences(svg(`<rect fill="${css}"/>`)), []);
+    assert.deepEqual(findActiveContent(svg(`<rect fill="${css}"/>`)), []);
+  }
+});
+
+test('an escaped url( reads up to its closing parenthesis or the end, trimmed', () => {
+  const attribute = (css) =>
+    findRemoteReferences(svg(`<rect fill="${css}"/>`)).map((finding) =>
+      finding.replace(
+        'references a remote resource in a fill presentation attribute: ',
+        '',
+      ),
+    );
+  assert.deepEqual(attribute('\\75rl(https://evil.example/a) b'), [
+    'https://evil.example/a',
+  ]);
+  assert.deepEqual(attribute('\\75rl(https://evil.example/a'), [
+    'https://evil.example/a',
+  ]);
+  assert.deepEqual(attribute('\\75rl( https://evil.example/a )'), [
+    'https://evil.example/a',
+  ]);
+});
+
+test('a string inside a nested function argument is still read', () => {
+  assert.deepEqual(
+    remoteIn(
+      'a{background:image-set(var(--x), "https://evil.example/x.png" 1x)}',
+    ),
+    ['https://evil.example/x.png'],
+  );
+});
+
+test('a string after the URL function closes is not its argument', () => {
+  assert.deepEqual(
+    remoteIn(
+      'a{background:image-set("a.png" 1x);content:"https://evil.example/x"}',
+    ),
+    [],
+  );
+});
+
+test('only @import takes a string as a URL, and only when one follows', () => {
+  assert.deepEqual(remoteIn('@media "https://evil.example/x" {}'), []);
+  assert.deepEqual(remoteIn('@import'), []);
+  assert.deepEqual(remoteIn('@import "https://evil.example/x"'), [
+    'https://evil.example/x',
+  ]);
+});
+
+test('an entity declaration is only read from the DOCTYPE, not from text', () => {
+  assert.deepEqual(
+    findActiveContent(svg('<text>&lt;!ENTITY x "y"&gt;</text>')),
+    [],
+  );
+});
+
+test('an identifier ending in "import" followed by a string is not an @import', () => {
+  // `rgb()` keeps the block past the no-`(`/`@` fast path so the token loop runs.
+  assert.deepEqual(
+    remoteIn('a{content:ximport "https://evil.example/x";fill:rgb(0,0,0)}'),
+    [],
+  );
+});
+
+test('a parenthesized group inside a URL function does not end its argument list', () => {
+  assert.deepEqual(
+    remoteIn('a{background:image-set((1) "https://evil.example/x.png")}'),
+    ['https://evil.example/x.png'],
+  );
+});
+
+test('every residual finding is listed when stripping fails', () => {
+  assert.throws(
+    () => stripActiveContent(svg('<script/>'), { scan: () => ['x', 'y'] }),
+    { message: 'Active content survived stripping from SVG: x; y' },
+  );
+});
