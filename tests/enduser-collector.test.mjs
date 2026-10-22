@@ -1007,3 +1007,31 @@ test('removes the output backup after a failed publication is rolled back', () =
     assert.deepEqual(readdirSync(paths.dataDir), ['members.json']);
   });
 });
+
+// The previous output is backed up before anything moves. A directory sitting
+// at the output path cannot be copied, so the failure is the backup copy's own
+// and arrives before any staged asset has been renamed: the staged file is
+// still where it was, nothing reached the destination and no backup was left.
+// Deferring the backup would instead move the asset first and lose it to the
+// rollback, which removes the moved copy without restoring the staged one.
+test('backs up the previous output before moving any staged asset', () => {
+  withRoots(({ root, destinationRoot }) => {
+    const paths = publishPaths(root);
+    mkdirSync(paths.outputPath);
+    mkdirSync(paths.stagedAssets);
+    writeFileSync(join(paths.stagedAssets, NEW_ASSET), 'new');
+    writeFileSync(paths.outputTempPath, '{"new":true}\n');
+    assert.throws(
+      () =>
+        publishLandscapeSnapshot({
+          snapshot: publishedSnapshot([NEW_RECORD]),
+          ...paths,
+          assetDestination: destinationRoot,
+        }),
+      { code: 'EISDIR', syscall: 'copyfile' },
+    );
+    assert.deepEqual(readdirSync(paths.stagedAssets), [NEW_ASSET]);
+    assert.equal(existsSync(join(destinationRoot, NEW_ASSET)), false);
+    assert.deepEqual(readdirSync(paths.dataDir), ['members.json']);
+  });
+});
