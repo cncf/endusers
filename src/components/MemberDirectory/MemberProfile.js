@@ -9,6 +9,7 @@ import { initials, formatCount, membershipLabel } from './utils';
 import styles from './styles.module.css';
 
 export function MemberProfile({ member, onClose, triggerRef }) {
+  // Stryker disable next-line StringLiteral: the fallback URL is never rendered when the logo is absent
   const logoUrl = useBaseUrl(member.logo || '');
 
   return (

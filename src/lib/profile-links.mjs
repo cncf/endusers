@@ -59,6 +59,7 @@ export function profileUrl(value, type) {
 export function websiteUrl(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
+  // Stryker disable next-line ConditionalExpression: an empty trimmed value fails every later pattern and returns null
   if (!trimmed) return null;
 
   const url = isSafeUrl(trimmed, {

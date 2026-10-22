@@ -31,6 +31,7 @@ export function filterArchitectures(architectures, filters) {
   const { query, industry, project, organization } = filters;
   const normalizedQuery = query.trim().toLowerCase();
   return architectures.filter((architecture) => {
+    // Stryker disable next-line ConditionalExpression: an empty query matches every architecture
     if (normalizedQuery) {
       const searchable =
         `${architecture.organization} ${architecture.title} ${architecture.summary}`.toLowerCase();

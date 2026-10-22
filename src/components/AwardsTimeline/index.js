@@ -15,6 +15,7 @@ function WinnerCard({ entry }) {
     talkUrl,
   } = entry;
   const primaryUrl = announcementUrl || talkUrl;
+  // Stryker disable next-line StringLiteral: the fallback URL is never rendered when logo is absent
   const logoUrl = useBaseUrl(logo || '');
   return (
     <article className={styles.card}>

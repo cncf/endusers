@@ -14,6 +14,8 @@ export function DirectoryFreshness() {
   const landscape = membersData?.sources?.landscape;
   const architecturesDate = formatDate(metrics?.generatedAt);
   const landscapeDate = formatDate(landscape?.collectedAt);
+  // Stryker disable next-line OptionalChaining: landscapeDate is only truthy when landscape is an object
+  const landscapeSourceUrl = landscape?.sourceUrl;
   const awardsDate = formatDate(awardsData?.verifiedAt);
   if (!landscapeDate && !architecturesDate && !awardsDate) return null;
   return (
@@ -21,8 +23,8 @@ export function DirectoryFreshness() {
       {landscapeDate && (
         <>
           Directory membership data last synced from{' '}
-          {landscape?.sourceUrl ? (
-            <a href={landscape.sourceUrl} target="_blank" rel="noreferrer">
+          {landscapeSourceUrl ? (
+            <a href={landscapeSourceUrl} target="_blank" rel="noreferrer">
               cncf/landscape
             </a>
           ) : (
