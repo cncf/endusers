@@ -131,6 +131,7 @@ const EXPECTED = {
   coveredRegions: 2,
   regionPercent: 100,
   uncoveredRegions: [],
+  uncoveredRegionSpans: [],
 };
 
 async function reportFor(fixture) {

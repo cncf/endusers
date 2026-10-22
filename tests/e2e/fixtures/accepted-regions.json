@@ -1,0 +1,130 @@
+{
+  "$comment": "Zero-count regions the browser coverage lane reports that ADR 0007 (adr/0007-scope-end-to-end-coverage-to-user-reachable-states.md) triages out of browser coverage. tests/tools/e2e-coverage-report.mjs counts each entry as neither covered nor uncovered and lists it in its own section; an entry whose span the run no longer reports, or now reports covered, is stale and fails the lane. Only the two ADR 0007 classes qualify: data-shape-guard for an arm selected solely by absent, null, empty or malformed build-time data, and span-drift for a zero that is a source-map artifact of a span another chunk or build records as executed. Spans are quoted from the report's Uncovered regions section.",
+  "measured": {
+    "revision": "49ec39005daaea37762c6a75455baf46a9d5abda",
+    "node": "v26.11.1",
+    "date": "2026-10-22"
+  },
+  "entries": [
+    {
+      "file": "src/components/CaseStudies/index.js",
+      "span": "52:38-52:44",
+      "class": "data-shape-guard",
+      "reason": "`|| []` fallback taken only when data/case-studies.json has no caseStudies array."
+    },
+    {
+      "file": "src/components/CommunityPeople/index.js",
+      "span": "121:43-121:49",
+      "class": "data-shape-guard",
+      "reason": "`|| []` fallback taken only when a people section is missing from data/people.json."
+    },
+    {
+      "file": "src/components/GroupLinkStatus/index.js",
+      "span": "13:29-13:40",
+      "class": "data-shape-guard",
+      "reason": "`|| []` fallback taken only when the groups file has no groups array."
+    },
+    {
+      "file": "src/components/MemberDirectory/DirectoryFreshness.js",
+      "span": "18:66-18:71",
+      "class": "data-shape-guard",
+      "reason": "`return null` when landscape, architecture and award dates are all absent; the all-absent fixture build records its deviation at the alternative span, so the zero never unions away."
+    },
+    {
+      "file": "src/components/MemberDirectory/DirectoryFreshness.js",
+      "span": "29:12-29:28",
+      "class": "data-shape-guard",
+      "reason": "Plain-text `cncf/landscape` arm rendered only when the landscape source has no sourceUrl."
+    },
+    {
+      "file": "src/components/MemberDirectory/DirectoryFreshness.js",
+      "span": "43:12-43:31",
+      "class": "data-shape-guard",
+      "reason": "Plain-text `cncf/architecture` arm rendered only when metrics name no architecture repository."
+    },
+    {
+      "file": "src/components/MemberDirectory/DirectoryFreshness.js",
+      "span": "48:8-48:41",
+      "class": "span-drift",
+      "reason": "Zero mapped onto the operands of the separator expression on a line statement coverage reports executed; the shipped data always has an award date so the separator renders."
+    },
+    {
+      "file": "src/components/MetricsDashboard/index.js",
+      "span": "65:21-65:31",
+      "class": "data-shape-guard",
+      "reason": "`|| []` fallback taken only when data/metrics.json lifecycle has no cards array."
+    },
+    {
+      "file": "src/components/MetricsDashboard/index.js",
+      "span": "85:21-85:33",
+      "class": "data-shape-guard",
+      "reason": "`|| []` fallback taken only when data/metrics.json lifecycle has no omitted array."
+    },
+    {
+      "file": "src/components/PeopleFreshness/index.js",
+      "span": "12:25-12:30",
+      "class": "data-shape-guard",
+      "reason": "`return null` when data/people.json carries no fetchedAt."
+    },
+    {
+      "file": "src/components/RadarReports/index.js",
+      "span": "7:40-7:46",
+      "class": "data-shape-guard",
+      "reason": "`|| []` fallback taken only when data/radar-reports.json has no radarReports array."
+    },
+    {
+      "file": "src/components/shared/MirrorSyncStatus.js",
+      "span": "19:20-19:32",
+      "class": "data-shape-guard",
+      "reason": "`return null` when the mirror file carries no generatedAt."
+    },
+    {
+      "file": "src/components/shared/MirrorSyncStatus.js",
+      "span": "21:7-21:29",
+      "class": "data-shape-guard",
+      "reason": "`return null` when generatedAt is an unparseable date; the mapped span also covers the condition operand."
+    },
+    {
+      "file": "src/components/shared/MirrorSyncStatus.js",
+      "span": "21:24-21:29",
+      "class": "data-shape-guard",
+      "reason": "Inner `null` of the unparseable-date guard above, reported as its own region."
+    },
+    {
+      "file": "src/components/shared/OrgAvatar.js",
+      "span": "30:20-30:56",
+      "class": "span-drift",
+      "reason": "`wrapperClassName || styles.wrapper` spans both arms; MemberCard passes a class and ArchitectureCard does not, in different chunks, so the zero never meets a covered twin at the same key."
+    },
+    {
+      "file": "src/components/shared/OrgAvatar.js",
+      "span": "36:26-36:45",
+      "class": "span-drift",
+      "reason": "`lazy ? 'lazy' : undefined` spans both arms; MemberCard passes lazy and ArchitectureCard does not, in different chunks."
+    },
+    {
+      "file": "src/components/shared/ProfileDialogShell.js",
+      "span": "61:14-61:68",
+      "class": "span-drift",
+      "reason": "`maxWidth && {...}` spans both operands; MemberProfile sets maxWidth and the people dialog does not, in different chunks."
+    },
+    {
+      "file": "src/components/shared/ProfileDialogShell.js",
+      "span": "62:14-62:71",
+      "class": "span-drift",
+      "reason": "`maxHeight && {...}` spans both operands; MemberProfile sets maxHeight and the people dialog does not, in different chunks."
+    },
+    {
+      "file": "src/lib/profile-links.mjs",
+      "span": "68:9-68:23",
+      "class": "span-drift",
+      "reason": "`url.href` arm reported zero while statement coverage shows line 68 executed; the ternary's other arm is reported zero too, so at least one span is a mapping artifact."
+    },
+    {
+      "file": "src/lib/profile-links.mjs",
+      "span": "68:23-68:31",
+      "class": "span-drift",
+      "reason": "`: null` arm of websiteUrl, reported zero alongside its sibling arm on an executed line."
+    }
+  ]
+}

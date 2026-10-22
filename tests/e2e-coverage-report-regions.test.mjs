@@ -18,6 +18,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { reportArgs, vlq } from './tools/e2e-coverage-identity-fixture.mjs';
 import {
   collectE2ECoverage,
   main,
@@ -28,21 +29,6 @@ import {
   sealCoverageRun,
   writeCoverageArtifact,
 } from './tools/e2e-coverage-run.mjs';
-
-const VLQ_CHARS =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-function vlq(value) {
-  let encoded = value < 0 ? (-value << 1) | 1 : value << 1;
-  let output = '';
-  do {
-    let digit = encoded & 31;
-    encoded >>>= 5;
-    if (encoded > 0) digit |= 32;
-    output += VLQ_CHARS[digit];
-  } while (encoded > 0);
-  return output;
-}
 
 // Generated line 1 is byte-for-byte the original line 1, so the map is the
 // identity over the columns a segment is needed at. Column granularity is the
@@ -153,22 +139,6 @@ async function subLineGapRun(
   return { root, runDir, buildDir };
 }
 
-function reportArgs(fixture, extra = []) {
-  return [
-    '--input',
-    fixture.runDir,
-    '--root',
-    fixture.root,
-    '--build',
-    fixture.buildDir,
-    '--json',
-    join(fixture.root, 'report.json'),
-    '--text',
-    join(fixture.root, 'report.txt'),
-    ...extra,
-  ];
-}
-
 test('a sub-line gap scores 100% lines and less than 100% regions', async () => {
   const fixture = await subLineGapRun();
   try {
@@ -187,6 +157,7 @@ test('a sub-line gap scores 100% lines and less than 100% regions', async () => 
         coveredRegions: 2,
         regionPercent: 66.67,
         uncoveredRegions: [1],
+        uncoveredRegionSpans: ['1:43-1:49'],
       },
     ]);
     assert.deepEqual(report.summary, {

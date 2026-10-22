@@ -12,6 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 
+import { vlq } from './tools/e2e-coverage-identity-fixture.mjs';
 import {
   collectE2ECoverage,
   main,
@@ -24,21 +25,6 @@ import {
   writeCoverageArtifact,
 } from './tools/e2e-coverage-run.mjs';
 import { transpileJsx } from './tools/jsx-hooks.mjs';
-
-const VLQ_CHARS =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-function vlq(value) {
-  let encoded = value < 0 ? (-value << 1) | 1 : value << 1;
-  let output = '';
-  do {
-    let digit = encoded & 31;
-    encoded >>>= 5;
-    if (encoded > 0) digit |= 32;
-    output += VLQ_CHARS[digit];
-  } while (encoded > 0);
-  return output;
-}
 
 function mapLines(entries) {
   let previousSource = 0;
@@ -278,6 +264,7 @@ test('collectE2ECoverage maps V8 ranges through an external source map to src li
         coveredRegions: 1,
         regionPercent: 50,
         uncoveredRegions: [2],
+        uncoveredRegionSpans: ['2:0-2:15'],
       },
     ]);
   } finally {
@@ -816,6 +803,7 @@ test('collectE2ECoverage unions the two builds of one source file', async () => 
         coveredRegions: 2,
         regionPercent: 100,
         uncoveredRegions: [],
+        uncoveredRegionSpans: [],
       },
     ]);
   } finally {
@@ -1767,6 +1755,7 @@ test('collectE2ECoverage attributes a real JSX source map to original lines', as
         coveredRegions: 0,
         regionPercent: 100,
         uncoveredRegions: [],
+        uncoveredRegionSpans: [],
       },
     ]);
   } finally {
@@ -1839,6 +1828,7 @@ test('collectE2ECoverage attributes a real mjs source map to exact lines', async
         coveredRegions: 1,
         regionPercent: 100,
         uncoveredRegions: [],
+        uncoveredRegionSpans: [],
       },
     ]);
   } finally {
@@ -2493,6 +2483,7 @@ test('collectE2ECoverage reads original content from disk when the map omits sou
         coveredRegions: 1,
         regionPercent: 50,
         uncoveredRegions: [2],
+        uncoveredRegionSpans: ['2:0-2:15'],
       },
     ]);
   } finally {
