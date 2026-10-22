@@ -16,21 +16,5 @@
 }
 
 .clearButton {
-  background: transparent;
-  border: 1px solid var(--ifm-color-emphasis-300);
-  border-radius: 8px;
-  color: var(--ifm-color-primary);
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0.45rem 0.85rem;
-}
-
-.clearButton:hover {
-  border-color: var(--ifm-color-primary);
-}
-
-.clearButton:focus-visible {
-  outline: 3px solid var(--ifm-color-primary-light);
-  outline-offset: 2px;
+  composes: clearButton from './FilterToolbar.module.css';
 }
