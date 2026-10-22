@@ -503,6 +503,35 @@ process.stdout.write(step.stdout);
 process.exit(step.status);
 `;
 
+// Capture the actual CLI's subprocess options and synthesize deadline errors
+// without making the suite wait a minute for each timed-out attempt.
+const SPAWN_PRELOAD = `import childProcess from 'node:child_process';
+import { appendFileSync } from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
+
+const spawn = childProcess.spawnSync;
+let timeouts = Number(process.env.AUDIT_STUB_TIMEOUTS);
+childProcess.spawnSync = (command, args, options) => {
+  appendFileSync(process.env.AUDIT_STUB_SPAWNS, JSON.stringify({
+    timeout: options.timeout,
+    killSignal: options.killSignal,
+  }) + '\\n');
+  if (timeouts > 0) {
+    timeouts -= 1;
+    return {
+      error: Object.assign(new Error('spawnSync npm ETIMEDOUT'), {
+        code: 'ETIMEDOUT',
+      }),
+      status: null,
+      stdout: '{"vulnerabilities":{}}',
+      stderr: '',
+    };
+  }
+  return spawn(command, args, options);
+};
+syncBuiltinESMExports();
+`;
+
 /**
  * Runs scripts/audit-gate.mjs in a sandbox that mirrors the repo layout
  * (so coverage maps back to the real source) with `npm` stubbed.
@@ -515,15 +544,17 @@ process.exit(step.status);
  *   Overrides `stdout`/`status` when given.
  * @param {boolean} [options.withNpm] install the stub at all; false makes
  *   spawnSync fail with ENOENT to exercise the spawn-error arm
+ * @param {number} [options.timeouts] deadline errors before npm can run
  * @returns {{status: number, stdout: string, stderr: string,
- *   attempts: number, argv: string[]}} `argv` holds one entry per npm
- *   invocation, each the flags the gate passed that time.
+ *   attempts: number, argv: string[], spawns: object[]}} `argv` holds the
+ *   invocations that reached npm; `spawns` includes timed-out attempts.
  */
 function runGate({
   stdout = '',
   status = '0',
   responses,
   withNpm = true,
+  timeouts = 0,
 } = {}) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-audit-'));
   try {
@@ -542,13 +573,18 @@ function runGate({
     }
 
     const argvLog = join(work, 'npm-argv');
-    const result = spawnSync(process.execPath, [script], {
+    const spawnLog = join(work, 'npm-spawns');
+    const preload = join(work, 'spawn-preload.mjs');
+    writeFileSync(preload, SPAWN_PRELOAD);
+    const result = spawnSync(process.execPath, ['--import', preload, script], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
         PATH: binDir,
         AUDIT_STUB_ARGV: argvLog,
+        AUDIT_STUB_SPAWNS: spawnLog,
+        AUDIT_STUB_TIMEOUTS: String(timeouts),
         AUDIT_STUB_RESPONSES: JSON.stringify(
           responses ?? [{ stdout, status: Number(status) }],
         ),
@@ -559,12 +595,16 @@ function runGate({
     const argv = existsSync(argvLog)
       ? readFileSync(argvLog, 'utf8').split('\n').filter(Boolean)
       : [];
+    const spawns = existsSync(spawnLog)
+      ? readFileSync(spawnLog, 'utf8').trim().split('\n').map(JSON.parse)
+      : [];
     return {
       status: result.status ?? 1,
       stdout: result.stdout ?? '',
       stderr: result.stderr ?? '',
-      attempts: argv.length,
+      attempts: spawns.length,
       argv,
+      spawns,
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -753,12 +793,7 @@ test('cli: a clean run asks npm exactly once', () => {
   assert.doesNotMatch(result.stderr, /retrying/);
 });
 
-test("cli: every attempt caps npm's own network wait", () => {
-  // npm defaults fetch-timeout to 300000, and one hung bulk-advisory request
-  // really did spend all of it. Three attempts at that default would outlast
-  // the 15-minute timeout on the job that runs this gate, so a registry fault
-  // would become a timed-out job with no diagnostic. Dropping the flag would
-  // reintroduce that silently, because the gate still behaves correctly.
+test('cli: every attempt bounds the subprocess as well as each request', () => {
   const result = runGate({
     responses: [{ stdout: QUICK_ENDPOINT_FAILURE, status: 1 }],
   });
@@ -767,6 +802,29 @@ test("cli: every attempt caps npm's own network wait", () => {
     assert.match(argv, /--fetch-timeout=60000/);
     assert.match(argv, /^audit --package-lock-only --json\b/);
   }
+  for (const options of result.spawns) {
+    assert.equal(options.timeout, 60000);
+    assert.equal(options.killSignal, 'SIGKILL');
+  }
+});
+
+test('cli: a timed-out partial report is retried before accepting a report', () => {
+  const result = runGate({ timeouts: 1, stdout: ALLOWLISTED_REPORT });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.attempts, 2);
+  assert.equal(result.argv.length, 1);
+  assert.match(result.stderr, /retrying \(attempt 2 of 3\)/);
+  assert.match(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: exhausted deadlines fail closed with an explicit timeout', () => {
+  const result = runGate({ timeouts: 3 });
+  assert.equal(result.status, 1);
+  assert.equal(result.attempts, 3);
+  assert.equal(result.argv.length, 0);
+  assert.match(result.stderr, /60000ms subprocess deadline/);
+  assert.match(result.stderr, /ETIMEDOUT/);
+  assert.doesNotMatch(result.stdout, /audit-gate: ok/);
 });
 
 test('cli: a missing npm is retried too, then reported as a spawn failure', () => {

@@ -198,13 +198,9 @@ const AUDIT_ATTEMPTS = 3;
 // already backs off inside a single attempt, so this only has to outlast a
 // momentary fault, not schedule around a long outage.
 const AUDIT_RETRY_DELAY_MS = 2000;
-// Per-attempt cap on npm's own network wait. npm defaults `fetch-timeout` to
-// 300000, and a single hung bulk-advisory request really did spend all of it
-// before falling back (run 39711213506, 02:25:19 -> 02:30:21). Three attempts
-// at that default would exceed the 15-minute timeout on the job that runs
-// this gate, turning a registry fault into a timed-out job with no diagnostic
-// at all. At 60s the whole loop costs at most ~3 minutes, which is less than
-// one attempt costs today.
+// npm's request timeout does not bound its internal retries or fallback.
+// Bound the subprocess too: three 60s attempts and two 2s sleeps budget
+// approximately 184s, plus process launch and reporting overhead.
 const AUDIT_FETCH_TIMEOUT_MS = 60000;
 
 /**
@@ -253,13 +249,18 @@ function runAudit() {
     {
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
+      timeout: AUDIT_FETCH_TIMEOUT_MS,
+      killSignal: 'SIGKILL',
     },
   );
   if (result.error) {
     return {
       report: null,
       failure: 'spawn',
-      output: String(result.error),
+      output:
+        result.error.code === 'ETIMEDOUT'
+          ? `npm audit exceeded its ${AUDIT_FETCH_TIMEOUT_MS}ms subprocess deadline: ${result.error}`
+          : String(result.error),
       status: result.status,
     };
   }
