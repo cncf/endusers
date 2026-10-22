@@ -80,6 +80,17 @@ test('the full form prints every project description', () => {
   }
 });
 
+test('the footer note wraps the TAB link in one spaced sentence', () => {
+  const note = [...walkElements(ProjectsBorn({}))].find(
+    (element) => element.props?.className === 'footerNote',
+  );
+  assert.equal(
+    textOf(note),
+    'Running something your peers would benefit from? Talk to the End User TAB about sharing projects and architectures.',
+  );
+  assert.equal(findByType(note, 'a').props.href, 'https://github.com/cncf/tab');
+});
+
 test('the section labels its heading with the stable id', () => {
   const sectionId = headingIdOf(ProjectsBorn({}));
   assert.equal(sectionId, 'projects-born-title-section');

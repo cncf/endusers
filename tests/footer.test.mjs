@@ -97,6 +97,16 @@ test('the footer links to the content-issue form, guarded against tabnabbing', (
 });
 
 // Audience signposting (ADR 0004): a reader who landed here looking to
+test('the feedback links are separated by a spaced pipe', () => {
+  const row = [...walkElements(Footer())].find(
+    (element) => element.props?.className === 'feedbackLinks',
+  );
+  assert.equal(
+    textOf(row),
+    'Changelog | Report a content issue | Contribute to a project',
+  );
+});
+
 // contribute to a CNCF project gets a site-wide pointer to the contributor
 // portal from the one piece of chrome on every page.
 test('the footer signposts contributors to contribute.cncf.io', () => {
