@@ -256,9 +256,16 @@ test('a gating check dropped from the qualifying paragraph is caught', () => {
   // it twice, once for this gate and once for what `npm run check` adds, so
   // dropping either mention leaves the other standing -- which is the
   // paragraph being right, not the guard being weak.
+  //
+  // The anchor is the bare code span rather than a phrase around it: prose
+  // rewrapping moves the surrounding words across line breaks, which would
+  // make this fixture match nothing and fail as "the fixture edit matched
+  // nothing" on an unrelated edit. Prettier never breaks inside a code span,
+  // and this paragraph holds the first of the file's two mentions, so
+  // replacing the first occurrence still lands here.
   const drifted = CONTRIBUTING.replace(
-    'also run `npm run test:unit:coverage:check`',
-    'also run the unit coverage gate',
+    '`npm run test:unit:coverage:check`',
+    'the unit coverage gate',
   );
   assert.notEqual(drifted, CONTRIBUTING, 'the fixture edit matched nothing');
   const { missing } = uncompensatedGates(drifted, JUSTFILE, WORKFLOW);
