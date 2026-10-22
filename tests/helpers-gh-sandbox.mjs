@@ -21,10 +21,25 @@ const repoRoot = resolveRepoRoot(import.meta.url);
 // pages it requested, which labels it edited, what it commented) rather than
 // only on stdout. Routes match by substring against the joined argv and are
 // consulted in declaration order, so more specific routes come first.
-const GH_STUB_BODY = `import { appendFileSync } from 'node:fs';
+const GH_STUB_BODY = `import { appendFileSync, readFileSync } from 'node:fs';
 
 const argv = process.argv.slice(2);
 appendFileSync(process.env.ENDUSERS_GH_LOG, JSON.stringify(argv) + '\\n');
+
+// stdin is logged separately from argv because it is where a credential is
+// supposed to be: curl is invoked as \`curl --config -\` so the Authorization
+// header never reaches argv, and a test that wants to prove the token did
+// travel has nowhere else to look. Read unconditionally so the stub drains
+// the pipe the caller wrote to, and JSON-encoded one line per invocation so
+// an empty stdin is still a recorded entry and the indexes line up with the
+// argv log.
+let stdin = '';
+try {
+  stdin = readFileSync(0, 'utf8');
+} catch {
+  stdin = '';
+}
+appendFileSync(process.env.ENDUSERS_GH_STDIN_LOG, JSON.stringify(stdin) + '\\n');
 
 const routes = JSON.parse(process.env.ENDUSERS_GH_ROUTES ?? '[]');
 const joined = argv.join(' ');
@@ -56,7 +71,9 @@ process.exit(route.status ?? 0);
  *   status?: number}>} [options.routes] gh responses, matched in order
  * @param {Record<string, string>} [options.env] extra environment variables
  * @returns {{status: number, stdout: string, stderr: string,
- *   calls: string[][]}} `calls` is one argv array per gh invocation, in order
+ *   calls: string[][], stdins: string[]}} `calls` is one argv array per gh
+ *   invocation, in order; `stdins` is what each of those invocations was
+ *   given on stdin, in the same order
  */
 export function runWithGhStub({
   script,
@@ -113,6 +130,7 @@ function runWithStub({
     chmodSync(stub, 0o755);
 
     const logPath = join(work, 'gh-calls.log');
+    const stdinLogPath = join(work, 'gh-stdin.log');
     let entry = join(work, 'scripts', script);
     if (driver) {
       entry = join(work, 'driver.mjs');
@@ -139,23 +157,28 @@ function runWithStub({
         DRY_RUN: '',
         MARKER_AUTHORS: '',
         ENDUSERS_GH_LOG: logPath,
+        ENDUSERS_GH_STDIN_LOG: stdinLogPath,
         ENDUSERS_GH_ROUTES: JSON.stringify(routes),
         ...env,
       },
     });
 
-    const calls = existsSync(logPath)
-      ? readFileSync(logPath, 'utf8')
-          .split('\n')
-          .filter(Boolean)
-          .map((line) => JSON.parse(line))
-      : [];
+    const readJsonLines = (path) =>
+      existsSync(path)
+        ? readFileSync(path, 'utf8')
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => JSON.parse(line))
+        : [];
+    const calls = readJsonLines(logPath);
+    const stdins = readJsonLines(stdinLogPath);
 
     return {
       status: result.status ?? 1,
       stdout: result.stdout ?? '',
       stderr: result.stderr ?? '',
       calls,
+      stdins,
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
