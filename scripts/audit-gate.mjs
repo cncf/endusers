@@ -188,48 +188,143 @@ export function describeFix(fixAvailable) {
   return 'a fix is available';
 }
 
-function main() {
-  // --package-lock-only audits the lockfile without needing node_modules,
-  // which is also what keeps the result identical between a fresh CI
-  // checkout and a developer tree. npm exits non-zero whenever any
-  // vulnerability exists (including the allowlisted ones), so a non-zero
-  // exit on its own cannot mean failure; the report's shape is what
-  // separates a completed audit from one that never ran.
-  const result = spawnSync('npm', ['audit', '--package-lock-only', '--json'], {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-  });
+// How many times an npm answer that carries no report is retried before the
+// gate gives up. The registry is the one input to this check nobody here
+// controls, and a single bad answer from it reds a required check on every
+// open PR at once, so the gate asks again rather than reporting a repository
+// problem that does not exist.
+const AUDIT_ATTEMPTS = 3;
+// Delay before each retry. Linear rather than exponential: npm-registry-fetch
+// already backs off inside a single attempt, so this only has to outlast a
+// momentary fault, not schedule around a long outage.
+const AUDIT_RETRY_DELAY_MS = 2000;
+// Per-attempt cap on npm's own network wait. npm defaults `fetch-timeout` to
+// 300000, and a single hung bulk-advisory request really did spend all of it
+// before falling back (run 39711213506, 02:25:19 -> 02:30:21). Three attempts
+// at that default would exceed the 15-minute timeout on the job that runs
+// this gate, turning a registry fault into a timed-out job with no diagnostic
+// at all. At 60s the whole loop costs at most ~3 minutes, which is less than
+// one attempt costs today.
+const AUDIT_FETCH_TIMEOUT_MS = 60000;
+
+/**
+ * Blocks the calling thread for `ms` milliseconds.
+ *
+ * The gate is a synchronous script whose only job is to pick an exit code, so
+ * there is nothing to yield to; Atomics.wait sleeps without the CPU a spin
+ * loop would burn.
+ *
+ * @param {number} ms how long to sleep
+ */
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Runs `npm audit` once.
+ *
+ * --package-lock-only audits the lockfile without needing node_modules, which
+ * is also what keeps the result identical between a fresh CI checkout and a
+ * developer tree. npm exits non-zero whenever any vulnerability exists
+ * (including the allowlisted ones), so a non-zero exit on its own cannot mean
+ * failure; the report's shape is what separates a completed audit from one
+ * that never ran.
+ *
+ * A successful `npm audit --json` always carries a `vulnerabilities` object
+ * (empty on a clean tree). When the audit cannot run — registry outage, proxy
+ * error, rate limit — npm still prints parseable JSON, but an error document
+ * with no such key. Judging that as "no vulnerabilities" would turn every
+ * audit outage into a silent pass, so anything that is not a report is
+ * reported here as an absent one and the caller fails the gate.
+ *
+ * @returns {{report: object|null, failure: string|null, output: string,
+ *   status: number|null}} `failure` names the arm that produced no report, so
+ *   the caller can keep the three causes apart in its diagnostic.
+ */
+function runAudit() {
+  const result = spawnSync(
+    'npm',
+    [
+      'audit',
+      '--package-lock-only',
+      '--json',
+      `--fetch-timeout=${AUDIT_FETCH_TIMEOUT_MS}`,
+    ],
+    {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    },
+  );
   if (result.error) {
-    console.error(`audit-gate: failed to run npm audit: ${result.error}`);
-    process.exit(1);
+    return {
+      report: null,
+      failure: 'spawn',
+      output: String(result.error),
+      status: result.status,
+    };
   }
+  const output = result.stderr || result.stdout;
   let report;
   try {
     report = JSON.parse(result.stdout);
   } catch {
-    console.error('audit-gate: npm audit did not produce parseable JSON:');
-    console.error(result.stderr || result.stdout);
-    process.exit(1);
+    return {
+      report: null,
+      failure: 'unparseable',
+      output,
+      status: result.status,
+    };
   }
-
-  // A successful `npm audit --json` always carries a `vulnerabilities` object
-  // (empty on a clean tree). When the audit cannot run — registry outage,
-  // proxy error, rate limit — npm still prints parseable JSON, but an error
-  // document with no such key. Judging that as "no vulnerabilities" would turn
-  // every audit outage into a silent pass, so anything that is not a report
-  // fails the gate instead.
   if (
     !report ||
     typeof report.vulnerabilities !== 'object' ||
     report.vulnerabilities === null
   ) {
+    return {
+      report: null,
+      failure: 'no-report',
+      output,
+      status: result.status,
+    };
+  }
+  return { report, failure: null, output, status: result.status };
+}
+
+function main() {
+  // Retries only the answers that carry no report. A parsed report is final
+  // whatever it says: a genuinely new advisory must never be retried away.
+  let last = runAudit();
+  for (
+    let attempt = 2;
+    last.failure !== null && attempt <= AUDIT_ATTEMPTS;
+    attempt += 1
+  ) {
     console.error(
-      'audit-gate: npm audit did not return a report (exit code ' +
-        `${result.status}); refusing to treat that as a clean audit:`,
+      `audit-gate: npm audit produced no report (${last.failure}); retrying ` +
+        `(attempt ${attempt} of ${AUDIT_ATTEMPTS})`,
     );
-    console.error(result.stderr || result.stdout);
+    sleepSync(AUDIT_RETRY_DELAY_MS);
+    last = runAudit();
+  }
+  if (last.failure === 'spawn') {
+    console.error(`audit-gate: failed to run npm audit: ${last.output}`);
     process.exit(1);
   }
+  if (last.failure === 'unparseable') {
+    console.error('audit-gate: npm audit did not produce parseable JSON:');
+    console.error(last.output);
+    process.exit(1);
+  }
+  if (last.failure === 'no-report') {
+    console.error(
+      'audit-gate: npm audit did not return a report (exit code ' +
+        `${last.status}) in ${AUDIT_ATTEMPTS} attempts; refusing to treat ` +
+        'that as a clean audit:',
+    );
+    console.error(last.output);
+    process.exit(1);
+  }
+  const report = last.report;
 
   const { blocked, allowlisted } = classifyAudit(report);
   if (blocked.length > 0) {
