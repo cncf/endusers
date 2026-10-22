@@ -557,7 +557,16 @@ Reading the result:
   mutated code. If the mutant cannot change observable behaviour (an equivalent
   mutant, such as a redundant guard), simplify the code instead, or as a last
   resort disable that mutator on the line with a
-  `// Stryker disable next-line <mutator>: <reason>` comment.
+  `// Stryker disable next-line <mutator>: <reason>` comment. The directive
+  attaches to the statement, declaration or expression that starts on the next
+  line; for an `else if` test put the comment inline inside the parentheses, and
+  for a node in the middle of a call chain or template literal wrap the
+  enclosing statement in `// Stryker disable <mutator>: <reason>` and
+  `// Stryker restore <mutator>` instead. A mutant that is already Ignored in
+  the report has been triaged this way and does not need an issue.
+- `stryker.config.mjs` excludes the `ArrayDeclaration` mutator (`[]` to
+  `["Stryker was here"]`): every instance that survived on main seeded an
+  accumulator or fallback whose contents are unobservable.
 
 The tests run in Stryker's instrumented copy of the source, so a test that reads
 a `src/` or `scripts/lib/` file as text fails there for reasons unrelated to any

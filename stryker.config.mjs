@@ -60,6 +60,13 @@ export default {
   },
   coverageAnalysis: 'perTest',
   mutate: ['src/**/*.{js,mjs}', 'scripts/lib/**/*.mjs'],
+  // Replacing an empty literal with `["Stryker was here"]` is the only mutation
+  // of this kind that survives on main: every surviving instance was an
+  // accumulator or fallback whose seed contents are unobservable. The mutants
+  // that did pin behavior are already covered by the type checks and
+  // assertions on the populated arrays, so the whole kind is excluded instead
+  // of annotating each site.
+  mutator: { excludedMutations: ['ArrayDeclaration'] },
   concurrency: 4,
   reporters: ['clear-text', 'progress', 'html', 'json'],
   // `break` fails the run below this mutation score. It was set from the full
