@@ -6,7 +6,11 @@ import styles from './EmptyFilterState.module.css';
  * copy, and a "Clear filters" button. Used by every catalog page that can
  * filter itself into an empty result set (MemberDirectory,
  * ReferenceArchitectures) -- previously hand-copied as an identical
- * `.emptyState`/`.clearButton` JSX tree and CSS pair into each.
+ * `.emptyState`/`.clearButton` JSX tree and CSS pair into each. The button's
+ * style now composes `.clearButton` from
+ * `./FilterToolbar.module.css` (`composes: clearButton from
+ * './FilterToolbar.module.css'`) rather than carrying its own identical
+ * copy of the rule.
  *
  * Rendered as a JSX element (`<EmptyFilterState ... />`) by every caller,
  * per the shared-component rule in .agents/skills/ui-standards/SKILL.md. It

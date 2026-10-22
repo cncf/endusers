@@ -76,6 +76,9 @@
   margin: 0;
 }
 
+/* Composed into EmptyFilterState.module.css's own `.clearButton`
+   (`composes: clearButton from './FilterToolbar.module.css'`) -- keep both
+   button styles in sync here. */
 .clearButton {
   background: transparent;
   border: 1px solid var(--ifm-color-emphasis-300);
