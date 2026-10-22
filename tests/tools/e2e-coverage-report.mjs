@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { readFile, readdir, realpath, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -29,6 +30,15 @@ import {
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const REPORT_KIND = 'endusers.e2e.coverage-report';
 const ERROR_KIND = 'endusers.e2e.coverage-report-error';
+// Residual zero-count regions ADR 0007 has triaged out of the browser lane.
+// Read from the root the report is rendered against, so a fixture root with no
+// registry renders exactly as it did before the registry existed.
+export const ACCEPTED_REGIONS_PATH = 'tests/e2e/fixtures/accepted-regions.json';
+export const ACCEPTED_REGION_CLASSES = Object.freeze([
+  'data-shape-guard',
+  'span-drift',
+]);
+const REGION_SPAN = /^[1-9]\d*:\d+-[1-9]\d*:\d+$/u;
 const SOURCE_MAPPING_URL = /(?:\/\/[#@]\s*sourceMappingURL=)(\S+)/u;
 const ORIGINAL_SCRIPT = /\.(?:c|m)?(?:js|jsx|ts|tsx)$/u;
 
@@ -485,6 +495,70 @@ function regionKey(region) {
   );
 }
 
+// The span as the registry and the text report spell it, so an entry can be
+// written by copying a line out of the "Uncovered regions" section.
+function regionSpan(region) {
+  return `${region.line}:${region.column}-${region.endLine}:${region.endColumn}`;
+}
+
+// tests/e2e/fixtures/accepted-regions.json holds the zero-count regions ADR 0007
+// classifies as needing no browser coverage: `data-shape-guard` for an arm
+// selected only by absent, null, empty or malformed build-time data, and
+// `span-drift` for a zero that is a source-map artifact of a span some other
+// chunk or build records as executed. Each entry names its file, its span
+// exactly as the report prints it, its class and a one-line reason. An
+// accepted region is dropped from the numerator and the denominator alike --
+// it is neither covered nor uncovered -- and is listed in its own section so
+// the information stays visible without being re-filed as a finding.
+//
+// Entries are checked against the run that renders them, not trusted: one
+// whose span the run never reports, or reports with a positive count, is
+// stale, and `main()` fails the lane on it so the registry cannot rot.
+function parseAcceptedRegions(raw) {
+  if (!Array.isArray(raw?.entries)) {
+    throw new Error(
+      `${ACCEPTED_REGIONS_PATH} must be an object with an "entries" array`,
+    );
+  }
+  const seen = new Set();
+  return raw.entries.map((entry, index) => {
+    const reject = (what) => {
+      throw new Error(
+        `${ACCEPTED_REGIONS_PATH} entry ${index} ${what} (file ${JSON.stringify(entry?.file ?? null)}, span ${JSON.stringify(entry?.span ?? null)})`,
+      );
+    };
+    if (typeof entry?.file !== 'string' || !entry.file.startsWith('src/')) {
+      reject('must name a src/ file');
+    }
+    if (typeof entry.span !== 'string' || !REGION_SPAN.test(entry.span)) {
+      reject('must give its span as startLine:startCol-endLine:endCol');
+    }
+    if (!ACCEPTED_REGION_CLASSES.includes(entry.class)) {
+      reject(`must have class ${ACCEPTED_REGION_CLASSES.join(' or ')}`);
+    }
+    if (typeof entry.reason !== 'string' || entry.reason.trim() === '') {
+      reject('must give a reason');
+    }
+    const key = `${entry.file} ${entry.span}`;
+    if (seen.has(key)) reject('is listed twice');
+    seen.add(key);
+    return {
+      file: entry.file,
+      span: entry.span,
+      class: entry.class,
+      reason: entry.reason,
+    };
+  });
+}
+
+async function loadAcceptedRegions(root) {
+  const path = join(root, ACCEPTED_REGIONS_PATH);
+  if (!existsSync(path)) return [];
+  return parseAcceptedRegions(JSON.parse(await readFile(path, 'utf8')));
+}
+
+export { parseAcceptedRegions };
+
 function isContradictedRegion(region, witnesses) {
   if (region.count > 0) return false;
   const key = regionKey(region);
@@ -769,6 +843,8 @@ function emptyReport(run, status = 'ok') {
     },
     unmappedSources: [],
     missingSourceFiles: [],
+    acceptedRegions: [],
+    staleAcceptedRegions: [],
     diagnostics: { warnings: run.provenanceWarnings ?? [], errors: [] },
   };
 }
@@ -800,6 +876,7 @@ export async function collectE2ECoverage(
   const scriptRoots = [join(runDir, COVERAGE_SCRIPTS_DIR), buildDir];
 
   const report = emptyReport(run);
+  const acceptedRegions = await loadAcceptedRegions(root);
   const sources = new Map();
   const unmapped = new Set();
   for (const entry of entries) {
@@ -912,6 +989,15 @@ export async function collectE2ECoverage(
     }
   }
 
+  // Registry entries are matched by file and span against the regions that
+  // survive the folds above. An entry is consumed by the zero it accepts;
+  // one that meets a positive count was reached by this run and one that
+  // meets no region at all names a span the build no longer reports. Both are
+  // stale, and `main()` fails on them so the registry tracks the lane.
+  const pendingAccepted = new Map(
+    acceptedRegions.map((entry) => [`${entry.file} ${entry.span}`, entry]),
+  );
+  const stale = [];
   report.sources = [...sources.entries()]
     .map(([file, coverage]) => {
       const uncoveredLines = [...coverage.lines]
@@ -923,12 +1009,28 @@ export async function collectE2ECoverage(
         (count) => count > 0,
       ).length;
       const allRegions = [...coverage.regions.values()];
-      const regionValues = allRegions.filter(
-        (region) =>
-          !isPhantomRegion(region, coverage.lines) &&
-          !isDriftedRegion(region, allRegions) &&
-          !isContradictedRegion(region, coverage.witnesses),
-      );
+      const regionValues = allRegions
+        .filter(
+          (region) =>
+            !isPhantomRegion(region, coverage.lines) &&
+            !isDriftedRegion(region, allRegions) &&
+            !isContradictedRegion(region, coverage.witnesses),
+        )
+        .filter((region) => {
+          const key = `${file} ${regionSpan(region)}`;
+          const entry = pendingAccepted.get(key);
+          if (!entry) return true;
+          pendingAccepted.delete(key);
+          if (region.count > 0) {
+            stale.push({
+              ...entry,
+              cause: `covered by this run (count ${region.count})`,
+            });
+            return true;
+          }
+          report.acceptedRegions.push(entry);
+          return false;
+        });
       const regions = regionValues.length;
       const coveredRegions = regionValues.filter(
         (region) => region.count > 0,
@@ -945,10 +1047,14 @@ export async function collectE2ECoverage(
       // with the plural drift-warning ternaries' multiplicity by hand. Repeating the line keeps
       // `uncoveredRegions.length` equal to `regions - coveredRegions`, which
       // is the invariant anyone reading the two numbers together assumes.
-      const uncoveredRegions = regionValues
+      const uncoveredRegionValues = regionValues
         .filter((region) => region.count <= 0)
-        .map((region) => region.line)
-        .sort((a, b) => a - b);
+        .sort((a, b) =>
+          a.line === b.line ? a.column - b.column : a.line - b.line,
+        );
+      const uncoveredRegions = uncoveredRegionValues.map(
+        (region) => region.line,
+      );
       return {
         file,
         executableLines,
@@ -959,10 +1065,26 @@ export async function collectE2ECoverage(
         coveredRegions,
         regionPercent: linePercent(coveredRegions, regions),
         uncoveredRegions,
+        // The spans behind `uncoveredRegions`, spelled the way an
+        // accepted-regions entry is written.
+        uncoveredRegionSpans: uncoveredRegionValues.map(regionSpan),
       };
     })
     .filter((row) => row.executableLines > 0)
     .sort((a, b) => a.file.localeCompare(b.file));
+  for (const entry of pendingAccepted.values()) {
+    stale.push({ ...entry, cause: 'not a region this run reports' });
+  }
+  // Spans order by position, not text, so `21:7` lists before `21:24`.
+  const spanStart = (span) => span.split('-', 1)[0].split(':').map(Number);
+  const byFileAndSpan = (a, b) => {
+    if (a.file !== b.file) return a.file.localeCompare(b.file);
+    const [lineA, columnA] = spanStart(a.span);
+    const [lineB, columnB] = spanStart(b.span);
+    return lineA === lineB ? columnA - columnB : lineA - lineB;
+  };
+  report.acceptedRegions.sort(byFileAndSpan);
+  report.staleAcceptedRegions = stale.sort(byFileAndSpan);
   report.unmappedSources = [...unmapped].sort();
   // The summary below is a ratio over the files the run *observed*. A src
   // module the bundle dropped (or that attribution lost) contributes neither
@@ -1050,6 +1172,36 @@ export function renderE2ECoverageReport(report) {
       ...report.missingSourceFiles.map((file) => `- ${file}`),
     );
   }
+  // Spans, not lines: the table's region column folds to lines, and an
+  // accepted-regions entry has to quote the span exactly.
+  const uncoveredSpans = report.sources.flatMap((row) =>
+    (row.uncoveredRegionSpans ?? []).map((span) => `- ${row.file} ${span}`),
+  );
+  if (uncoveredSpans.length > 0) {
+    lines.push('', 'Uncovered regions:', ...uncoveredSpans);
+  }
+  const accepted = report.acceptedRegions ?? [];
+  if (accepted.length > 0) {
+    lines.push(
+      '',
+      `Accepted regions (ADR 0007, ${ACCEPTED_REGIONS_PATH}; counted as neither covered nor uncovered):`,
+      ...accepted.map(
+        (entry) =>
+          `- ${entry.file} ${entry.span} [${entry.class}] ${entry.reason}`,
+      ),
+    );
+  }
+  const stale = report.staleAcceptedRegions ?? [];
+  if (stale.length > 0) {
+    lines.push(
+      '',
+      `Stale accepted regions (remove from ${ACCEPTED_REGIONS_PATH}):`,
+      ...stale.map(
+        (entry) =>
+          `- ${entry.file} ${entry.span} [${entry.class}] ${entry.cause}`,
+      ),
+    );
+  }
   if (report.diagnostics.errors.length > 0) {
     lines.push(
       '',
@@ -1109,6 +1261,8 @@ export async function main(argv = process.argv.slice(2)) {
       },
       unmappedSources: [],
       missingSourceFiles: [],
+      acceptedRegions: [],
+      staleAcceptedRegions: [],
       // `?? String(error)` is unreachable today: everything the `try` above
       // can raise is an Error, whose `message` is a string even when empty.
       // Kept rather than deleted because the artifact is the only record a CI
@@ -1129,6 +1283,19 @@ export async function main(argv = process.argv.slice(2)) {
 
   // Evaluated after the report is on disk: a threshold failure must still leave
   // the summary and artifact behind for the CI step that publishes them.
+  //
+  // A stale registry entry fails the lane whether or not any floor is being
+  // checked: an entry that no longer names a zero this run reports is either
+  // a region the suite now reaches or a span the build no longer emits, and
+  // in both cases the fix is to delete it, not to keep rendering around it.
+  if (report.staleAcceptedRegions.length > 0) {
+    throw new Error(
+      `${report.staleAcceptedRegions.length} accepted region(s) in ${ACCEPTED_REGIONS_PATH} are stale; remove them:\n` +
+        report.staleAcceptedRegions
+          .map((entry) => `  ${entry.file} ${entry.span}: ${entry.cause}`)
+          .join('\n'),
+    );
+  }
   const { linePercent: sourcePercent, regionPercent: sourceRegionPercent } =
     report.summary;
   if (

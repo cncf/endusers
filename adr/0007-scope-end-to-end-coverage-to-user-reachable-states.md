@@ -1,6 +1,10 @@
 # ADR 0007: Scope end-to-end coverage findings to user-reachable states
 
 - **Status**: Accepted
+- **Status note**: Amended 2026-10-22: the data-shape guards of decision 1 and
+  the span-drift artifacts the reporter cannot fold are now recorded in
+  `tests/e2e/fixtures/accepted-regions.json`; see
+  [Amendment: accepted regions](#amendment-accepted-regions-2026-10-22).
 - **Date**: 2026-10-20
 - **Tracking issue**: [#1718](https://github.com/cncf/endusers/issues/1718)
   (missing gates behind recurring Hive findings, class 2)
@@ -121,6 +125,30 @@ evidence of which browser produced the raw ranges or why region counts differ.
 This clarification selects no new mutation-runner architecture, expands no
 mutation scope, changes no thresholds, and does not relax the existing
 browser-fixture or test-tree restrictions.
+
+## Amendment: accepted regions (2026-10-22)
+
+Decisions 1 and 2 said which unreached regions are not findings, but the browser
+lane kept printing them, and each report was read as a fresh list of defects
+([#1676](https://github.com/cncf/endusers/issues/1676),
+[#1692](https://github.com/cncf/endusers/issues/1692),
+[#1736](https://github.com/cncf/endusers/issues/1736)). The triage is now
+machine-readable. `tests/e2e/fixtures/accepted-regions.json` lists each residual
+region by file and span, with one of two classes and a one-line reason:
+
+- `data-shape-guard`: an arm selected only by absent, null, empty or malformed
+  build-time data, which decision 1 leaves to the unit lane.
+- `span-drift`: a zero that is a source-map artifact, typically a span another
+  chunk or build records as executed under a different key.
+
+No other class qualifies, and a region an end user can reach is never added. The
+reporter (`tests/tools/e2e-coverage-report.mjs`) counts an accepted region as
+neither covered nor uncovered, dropping it from the numerator and the
+denominator alike, and prints the entries in their own section so the
+information stays visible. The floors in decision 4 do not move. An entry the
+run no longer supports, because its span is now covered or is no longer reported
+at all, is stale and fails the lane until it is removed, so the registry cannot
+outlive the regions it describes.
 
 ## Consequences
 

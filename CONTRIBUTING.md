@@ -426,6 +426,16 @@ that omits them passes where CI fails; `tests/e2e-coverage-gate.test.mjs` holds
 floors under them. Invalid maps, stale manifests, and empty aggregate
 attribution fail visibly and leave their raw artifacts for review.
 
+The report's "Uncovered regions" section lists each zero-count region by span. A
+region that
+[ADR 0007](adr/0007-scope-end-to-end-coverage-to-user-reachable-states.md)
+classes as a `data-shape-guard` or `span-drift` may be recorded in
+`tests/e2e/fixtures/accepted-regions.json` with that span, its class and a
+one-line reason; the reporter then counts it as neither covered nor uncovered
+and lists it under "Accepted regions" instead. Nothing else qualifies, and the
+floors do not change. An entry whose span the run now covers, or no longer
+reports, is stale and fails the report until it is removed.
+
 Compare percentages from equivalent build, browser and reporting toolchains,
 including the Node major CI pins. These are _region_ counts: the denominator can
 move between toolchains even when the code and suite do not. The same commit
