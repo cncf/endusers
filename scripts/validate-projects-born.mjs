@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
+import { checkDuplicateValue } from './lib/duplicate-check.mjs';
 import {
   checkNonEmptyArray,
   checkNonEmptyString,
@@ -53,14 +54,11 @@ for (const entry of Array.isArray(data) ? data : []) {
     checkNonEmptyString(errors, path, field, entry?.[field]);
   }
 
-  if (typeof entry?.name === 'string' && names.has(entry.name)) {
-    errors.push({
-      path,
-      severity: 'error',
-      message: 'duplicate name',
-    });
+  if (typeof entry?.name === 'string') {
+    checkDuplicateValue(errors, path, entry.name, names, 'duplicate name');
+  } else {
+    names.add(entry?.name);
   }
-  names.add(entry?.name);
 
   if (
     typeof entry?.name === 'string' &&

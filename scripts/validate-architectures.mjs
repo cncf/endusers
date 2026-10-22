@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkDuplicateValue } from './lib/duplicate-check.mjs';
 import { isSafeUrl, reportAndExit } from './lib/validate-utils.mjs';
 import { findActiveContent } from './lib/mdx-active-content.mjs';
 import {
@@ -66,13 +67,7 @@ for (const record of records) {
         'id is reserved for a repo-authored page; a record claiming it overwrites docs/architectures/' +
         `${record.id}.md, which the active-content scan below skips — so the imported body would publish unscanned`,
     });
-  if (ids.has(record.id))
-    errors.push({
-      path: record.id,
-      severity: 'error',
-      message: 'duplicate id',
-    });
-  ids.add(record.id);
+  checkDuplicateValue(errors, record.id, record.id, ids, 'duplicate id');
   if (!isHttpsUrl(record.sourceUrl))
     errors.push({
       path: record.id || '<unknown>',
