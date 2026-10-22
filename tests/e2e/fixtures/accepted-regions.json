@@ -25,30 +25,6 @@
       "reason": "`|| []` fallback taken only when the groups file has no groups array."
     },
     {
-      "file": "src/components/MemberDirectory/DirectoryFreshness.js",
-      "span": "18:66-18:71",
-      "class": "data-shape-guard",
-      "reason": "`return null` when landscape, architecture and award dates are all absent; the all-absent fixture build records its deviation at the alternative span, so the zero never unions away."
-    },
-    {
-      "file": "src/components/MemberDirectory/DirectoryFreshness.js",
-      "span": "29:12-29:28",
-      "class": "data-shape-guard",
-      "reason": "Plain-text `cncf/landscape` arm rendered only when the landscape source has no sourceUrl."
-    },
-    {
-      "file": "src/components/MemberDirectory/DirectoryFreshness.js",
-      "span": "43:12-43:31",
-      "class": "data-shape-guard",
-      "reason": "Plain-text `cncf/architecture` arm rendered only when metrics name no architecture repository."
-    },
-    {
-      "file": "src/components/MemberDirectory/DirectoryFreshness.js",
-      "span": "48:8-48:41",
-      "class": "span-drift",
-      "reason": "Zero mapped onto the operands of the separator expression on a line statement coverage reports executed; the shipped data always has an award date so the separator renders."
-    },
-    {
       "file": "src/components/MetricsDashboard/index.js",
       "span": "65:21-65:31",
       "class": "data-shape-guard",
@@ -113,18 +89,6 @@
       "span": "62:14-62:71",
       "class": "span-drift",
       "reason": "`maxHeight && {...}` spans both operands; MemberProfile sets maxHeight and the people dialog does not, in different chunks."
-    },
-    {
-      "file": "src/lib/profile-links.mjs",
-      "span": "68:9-68:23",
-      "class": "span-drift",
-      "reason": "`url.href` arm reported zero while statement coverage shows line 68 executed; the ternary's other arm is reported zero too, so at least one span is a mapping artifact."
-    },
-    {
-      "file": "src/lib/profile-links.mjs",
-      "span": "68:23-68:31",
-      "class": "span-drift",
-      "reason": "`: null` arm of websiteUrl, reported zero alongside its sibling arm on an executed line."
     }
   ]
 }
