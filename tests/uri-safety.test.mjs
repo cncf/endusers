@@ -8,9 +8,12 @@
 // only ever reached incidentally, through whichever values those documents
 // happened to carry.
 //
-// These tests exercise the exported API directly. `remoteTarget` is covered
-// through the SVG gate in tests/svg-active-content.test.mjs and is deliberately
-// left alone here.
+// These tests exercise the exported API directly. `remoteTarget`'s positive
+// cases are covered through the SVG gate in tests/svg-active-content.test.mjs
+// and tests/svg-remote-subresources.test.mjs; what is asserted here is only
+// what those documents cannot reach -- that its two authority patterns are
+// anchored, so a value carrying `http:` or `https://` further along a relative
+// path is not reported as a fetch.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
@@ -18,6 +21,7 @@ import {
   disallowedScheme,
   describeTarget,
   normalizeUri,
+  remoteTarget,
 } from '../scripts/lib/uri-safety.mjs';
 
 test('decodeEntities resolves hexadecimal references with or without the semicolon', () => {
@@ -50,6 +54,26 @@ test('decodeEntities resolves the named references the scanner cares about', () 
 
 test('decodeEntities leaves an unrecognised name as written', () => {
   assert.equal(decodeEntities('&nope;'), '&nope;');
+});
+
+// The upper bound is inclusive: U+10FFFF is a real code point, and the
+// comparison that lets it through is the only thing separating it from the
+// out-of-range values above.
+test('decodeEntities resolves the highest valid code point', () => {
+  const max = String.fromCodePoint(0x10ffff);
+  assert.equal(decodeEntities('&#x10ffff;'), max);
+  assert.equal(decodeEntities('&#1114111;'), max);
+});
+
+// Browsers resolve a named reference whose semicolon is missing, so the
+// scanner has to as well: `&colon` hides a scheme just as `&colon;` does.
+test('decodeEntities resolves a named reference without its semicolon', () => {
+  assert.equal(decodeEntities('&colon'), ':');
+  assert.equal(decodeEntities('&sol'), '/');
+  assert.equal(
+    normalizeUri('java&#115;cript&colon alert(1)'),
+    'javascript:alert(1)',
+  );
 });
 
 // The reason the module decodes twice: one pass turns `&amp;#58;` into
@@ -113,4 +137,21 @@ test('describeTarget truncates a longer value to the same 120 characters', () =>
   const described = describeTarget(target);
   assert.equal(described.length, 120);
   assert.equal(described, `${target.slice(0, 117)}...`);
+});
+
+// Both authority patterns in remoteTarget are anchored to the start of the
+// normalized value. Without the anchors a relative reference that merely
+// *contains* `http:` or `https://` further along its path is reported as a
+// fetch to another host -- a false finding against a local asset, which the
+// SVG and MDX gates turn into a build failure the author cannot act on. Every
+// remote case the suite has is absolute, so nothing else reaches past the
+// anchors.
+test('remoteTarget ignores http: further along a relative path', () => {
+  assert.equal(remoteTarget('/img/http:logo.png'), null);
+  assert.equal(remoteTarget('./notes/http:1.svg'), null);
+});
+
+test('remoteTarget ignores an absolute-looking authority mid-path', () => {
+  assert.equal(remoteTarget('/img/https://evil.example/a.png'), null);
+  assert.equal(remoteTarget('./a/http://evil.example/a.png'), null);
 });
