@@ -9,6 +9,7 @@ import { spawnSync } from 'node:child_process';
 import {
   chmodSync,
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -481,9 +482,54 @@ test('describeFix falls back to a generic phrase when npm names no release', () 
 // Stub placed first on PATH so the script under test never reaches the real
 // npm or the network. It prints a canned report and exits with a canned
 // status, mirroring tests/helpers-gh-sandbox.mjs.
+//
+// The gate retries an npm answer that carries no report, so the stub answers
+// from a list rather than a single canned value. It appends its own argv to a
+// log file per invocation; the line count is both the attempt counter and the
+// index into the list, and the log is what lets a test assert which flags the
+// gate passed. The last entry repeats once the list runs out, which is what
+// makes a single-entry list behave exactly like the fixed stub it replaces.
 const NPM_STUB = `#!/usr/bin/env node
-process.stdout.write(process.env.AUDIT_STUB_STDOUT ?? '');
-process.exit(Number(process.env.AUDIT_STUB_STATUS ?? '0'));
+const { appendFileSync, readFileSync } = require('node:fs');
+const log = process.env.AUDIT_STUB_ARGV;
+const responses = JSON.parse(process.env.AUDIT_STUB_RESPONSES);
+let seen = 0;
+try {
+  seen = readFileSync(log, 'utf8').split('\\n').filter(Boolean).length;
+} catch {}
+appendFileSync(log, process.argv.slice(2).join(' ') + '\\n');
+const step = responses[Math.min(seen, responses.length - 1)];
+process.stdout.write(step.stdout);
+process.exit(step.status);
+`;
+
+// Capture the actual CLI's subprocess options and synthesize deadline errors
+// without making the suite wait a minute for each timed-out attempt.
+const SPAWN_PRELOAD = `import childProcess from 'node:child_process';
+import { appendFileSync } from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
+
+const spawn = childProcess.spawnSync;
+let timeouts = Number(process.env.AUDIT_STUB_TIMEOUTS);
+childProcess.spawnSync = (command, args, options) => {
+  appendFileSync(process.env.AUDIT_STUB_SPAWNS, JSON.stringify({
+    timeout: options.timeout,
+    killSignal: options.killSignal,
+  }) + '\\n');
+  if (timeouts > 0) {
+    timeouts -= 1;
+    return {
+      error: Object.assign(new Error('spawnSync npm ETIMEDOUT'), {
+        code: 'ETIMEDOUT',
+      }),
+      status: null,
+      stdout: '{"vulnerabilities":{}}',
+      stderr: '',
+    };
+  }
+  return spawn(command, args, options);
+};
+syncBuiltinESMExports();
 `;
 
 /**
@@ -493,11 +539,23 @@ process.exit(Number(process.env.AUDIT_STUB_STATUS ?? '0'));
  * @param {object} options
  * @param {string} [options.stdout] what the npm stub prints
  * @param {string} [options.status] the npm stub's exit code
+ * @param {Array<{stdout: string, status: number}>} [options.responses] one
+ *   entry per npm invocation, for the retry arms; the last entry repeats.
+ *   Overrides `stdout`/`status` when given.
  * @param {boolean} [options.withNpm] install the stub at all; false makes
  *   spawnSync fail with ENOENT to exercise the spawn-error arm
- * @returns {{status: number, stdout: string, stderr: string}}
+ * @param {number} [options.timeouts] deadline errors before npm can run
+ * @returns {{status: number, stdout: string, stderr: string,
+ *   attempts: number, argv: string[], spawns: object[]}} `argv` holds the
+ *   invocations that reached npm; `spawns` includes timed-out attempts.
  */
-function runGate({ stdout = '', status = '0', withNpm = true } = {}) {
+function runGate({
+  stdout = '',
+  status = '0',
+  responses,
+  withNpm = true,
+  timeouts = 0,
+} = {}) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-audit-'));
   try {
     const script = join(work, 'scripts', 'audit-gate.mjs');
@@ -514,20 +572,39 @@ function runGate({ stdout = '', status = '0', withNpm = true } = {}) {
       chmodSync(stub, 0o755);
     }
 
-    const result = spawnSync(process.execPath, [script], {
+    const argvLog = join(work, 'npm-argv');
+    const spawnLog = join(work, 'npm-spawns');
+    const preload = join(work, 'spawn-preload.mjs');
+    writeFileSync(preload, SPAWN_PRELOAD);
+    const result = spawnSync(process.execPath, ['--import', preload, script], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
         PATH: binDir,
-        AUDIT_STUB_STDOUT: stdout,
-        AUDIT_STUB_STATUS: status,
+        AUDIT_STUB_ARGV: argvLog,
+        AUDIT_STUB_SPAWNS: spawnLog,
+        AUDIT_STUB_TIMEOUTS: String(timeouts),
+        AUDIT_STUB_RESPONSES: JSON.stringify(
+          responses ?? [{ stdout, status: Number(status) }],
+        ),
       },
     });
+    // The stub never runs when it was not installed, so an absent log is a
+    // legitimate record of zero invocations rather than an error to swallow.
+    const argv = existsSync(argvLog)
+      ? readFileSync(argvLog, 'utf8').split('\n').filter(Boolean)
+      : [];
+    const spawns = existsSync(spawnLog)
+      ? readFileSync(spawnLog, 'utf8').trim().split('\n').map(JSON.parse)
+      : [];
     return {
       status: result.status ?? 1,
       stdout: result.stdout ?? '',
       stderr: result.stderr ?? '',
+      attempts: spawns.length,
+      argv,
+      spawns,
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -632,4 +709,130 @@ test('cli: exits 1 when the report carries a non-object vulnerabilities key', ()
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /did not return a report/);
+});
+
+// --- retrying an npm answer that carries no report ---
+
+// npm bundled with Node 22 asks the bulk advisory endpoint first and, on any
+// failure, falls back to `/-/npm/v1/security/audits/quick`. That endpoint is
+// retired and answers 400, so a momentary fault on the bulk endpoint surfaces
+// as this error document. It is the exact payload that reddened `Validate
+// repository` on every open PR at once, and nothing about it says the
+// lockfile changed, so the gate must ask again before blaming the repository.
+const QUICK_ENDPOINT_FAILURE = JSON.stringify({
+  message:
+    '400 Bad Request - POST https://registry.npmjs.org/-/npm/v1/security/audits/quick',
+  statusCode: 400,
+  error: { summary: 'audit endpoint returned an error', detail: '' },
+});
+
+const ALLOWLISTED_REPORT = JSON.stringify({
+  vulnerabilities: {
+    braces: entry('high', [advisory(BRACES)]),
+    micromatch: entry('high', ['braces']),
+  },
+});
+
+test('cli: a transient no-report answer is retried and the next report decides', () => {
+  // The first answer carries no report and the second is the ordinary
+  // allowlisted-findings report. Without the retry this exits 1 and reports a
+  // repository problem that does not exist.
+  const result = runGate({
+    responses: [
+      { stdout: QUICK_ENDPOINT_FAILURE, status: 1 },
+      { stdout: ALLOWLISTED_REPORT, status: 1 },
+    ],
+  });
+  assert.equal(result.status, 0);
+  assert.equal(result.attempts, 2);
+  assert.match(result.stderr, /retrying \(attempt 2 of 3\)/);
+  assert.match(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: retrying stops at the attempt limit and still fails closed', () => {
+  // Every attempt fails, so the gate must exit 1 rather than retry forever or
+  // let a never-run audit pass. The attempt count is asserted because an
+  // unbounded loop would otherwise look identical from the exit code alone.
+  const result = runGate({
+    responses: [{ stdout: QUICK_ENDPOINT_FAILURE, status: 1 }],
+  });
+  assert.equal(result.status, 1);
+  assert.equal(result.attempts, 3);
+  assert.match(result.stderr, /did not return a report/);
+  assert.match(result.stderr, /in 3 attempts/);
+  assert.doesNotMatch(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: a report naming a new advisory is never retried away', () => {
+  // The dangerous failure mode of a retry is treating a real finding as a
+  // blip. A parsed report is final whatever it says, so npm must be asked
+  // exactly once here even though the gate goes red.
+  const report = {
+    vulnerabilities: {
+      newdep: entry('critical', [advisory(NEW_BAD)]),
+    },
+  };
+  const result = runGate({
+    responses: [
+      { stdout: JSON.stringify(report), status: 1 },
+      { stdout: ALLOWLISTED_REPORT, status: 1 },
+    ],
+  });
+  assert.equal(result.status, 1);
+  assert.equal(result.attempts, 1);
+  assert.match(result.stderr, new RegExp(`newdep \\(critical\\): ${NEW_BAD}`));
+});
+
+test('cli: a clean run asks npm exactly once', () => {
+  // The retry must not cost a second registry round trip on the happy path.
+  const result = runGate({
+    responses: [{ stdout: ALLOWLISTED_REPORT, status: 1 }],
+  });
+  assert.equal(result.status, 0);
+  assert.equal(result.attempts, 1);
+  assert.doesNotMatch(result.stderr, /retrying/);
+});
+
+test('cli: every attempt bounds the subprocess as well as each request', () => {
+  const result = runGate({
+    responses: [{ stdout: QUICK_ENDPOINT_FAILURE, status: 1 }],
+  });
+  assert.equal(result.attempts, 3);
+  for (const argv of result.argv) {
+    assert.match(argv, /--fetch-timeout=60000/);
+    assert.match(argv, /^audit --package-lock-only --json\b/);
+  }
+  for (const options of result.spawns) {
+    assert.equal(options.timeout, 60000);
+    assert.equal(options.killSignal, 'SIGKILL');
+  }
+});
+
+test('cli: a timed-out partial report is retried before accepting a report', () => {
+  const result = runGate({ timeouts: 1, stdout: ALLOWLISTED_REPORT });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.attempts, 2);
+  assert.equal(result.argv.length, 1);
+  assert.match(result.stderr, /retrying \(attempt 2 of 3\)/);
+  assert.match(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: exhausted deadlines fail closed with an explicit timeout', () => {
+  const result = runGate({ timeouts: 3 });
+  assert.equal(result.status, 1);
+  assert.equal(result.attempts, 3);
+  assert.equal(result.argv.length, 0);
+  assert.match(result.stderr, /60000ms subprocess deadline/);
+  assert.match(result.stderr, /ETIMEDOUT/);
+  assert.doesNotMatch(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: a missing npm is retried too, then reported as a spawn failure', () => {
+  // ENOENT here is a stripped PATH, but the same arm catches a runner that
+  // momentarily cannot fork. The spawn diagnostic must survive the retry
+  // loop rather than collapsing into the generic no-report message.
+  const result = runGate({ withNpm: false });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /failed to run npm audit/);
+  assert.doesNotMatch(result.stderr, /did not return a report/);
 });
