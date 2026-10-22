@@ -305,3 +305,39 @@ test('mirrorArtworkUrls ignores URLs that are not mirrorable artwork', async () 
     cleanup();
   }
 });
+
+// The two warnings carry their findings as a joined list, so a reader of the
+// import log can see every removal or remote reference, not just the first.
+test('mirrorArtworkUrls lists each distinct removal once in its warning', async () => {
+  const { root, cleanup } = sandbox();
+  try {
+    const warnings = await captureWarnings(() =>
+      withStubbedFetch(
+        '<svg xmlns="http://www.w3.org/2000/svg"><script>a</script><script>b</script><rect onload="x" width="1" height="1"/></svg>',
+        () => mirrorArtworkUrls(root, [SVG_URL]),
+      ),
+    );
+    assert.deepEqual(warnings, [
+      `Removed active content from mirrored asset ${artworkPath(SVG_URL)}: <script> element, onload attribute`,
+    ]);
+  } finally {
+    cleanup();
+  }
+});
+
+test('mirrorArtworkUrls lists every remote reference it refused to write', async () => {
+  const { root, cleanup } = sandbox();
+  try {
+    const warnings = await captureWarnings(() =>
+      withStubbedFetch(
+        '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><image xlink:href="https://evil.example/a.png"/><rect fill="url(https://evil.example/b.svg#g)"/></svg>',
+        () => mirrorArtworkUrls(root, [SVG_URL]),
+      ),
+    );
+    assert.deepEqual(warnings, [
+      `Could not mirror CNCF project asset: ${artworkPath(SVG_URL)}: remote resource references: references a remote resource in <image> xlink:href: https://evil.example/a.png; references a remote resource in a fill presentation attribute: https://evil.example/b.svg#g`,
+    ]);
+  } finally {
+    cleanup();
+  }
+});
