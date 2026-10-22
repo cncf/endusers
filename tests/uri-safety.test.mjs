@@ -8,9 +8,9 @@
 // only ever reached incidentally, through whichever values those documents
 // happened to carry.
 //
-// These tests exercise the exported API directly. `remoteTarget` is covered
-// through the SVG gate in tests/svg-active-content.test.mjs and is deliberately
-// left alone here.
+// These tests exercise the exported API directly. `remoteTarget` is also
+// covered through the SVG gate in tests/svg-active-content.test.mjs; its own
+// boundary cases are pinned at the bottom of this file.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
@@ -18,6 +18,7 @@ import {
   disallowedScheme,
   describeTarget,
   normalizeUri,
+  remoteTarget,
 } from '../scripts/lib/uri-safety.mjs';
 
 test('decodeEntities resolves hexadecimal references with or without the semicolon', () => {
@@ -113,4 +114,47 @@ test('describeTarget truncates a longer value to the same 120 characters', () =>
   const described = describeTarget(target);
   assert.equal(described.length, 120);
   assert.equal(described, `${target.slice(0, 117)}...`);
+});
+
+// The Unicode maximum itself is a valid code point; only the one past it is
+// handed back as written.
+test('decodeEntities decodes the highest code point in either notation', () => {
+  assert.equal(decodeEntities('&#x10ffff;'), '\u{10ffff}');
+  assert.equal(decodeEntities('&#1114111;'), '\u{10ffff}');
+});
+
+test('decodeEntities resolves a named reference without its semicolon', () => {
+  assert.equal(decodeEntities('&colon'), ':');
+  assert.equal(decodeEntities('java&Tab;script&colon'), 'java\tscript:');
+});
+
+// remoteTarget's own boundaries, each row an input that differs from its
+// neighbour by the one character the classifier has to get right. The SVG
+// gate in tests/svg-active-content.test.mjs covers it through whole
+// documents; these pin the predicate directly.
+const REMOTE_TARGETS = [
+  ['https://evil.test/a.png', 'https://evil.test/a.png'],
+  ['HTTPS:\\\\evil.test/a.png', 'https://evil.test/a.png'],
+  ['//evil.test/a.png', '//evil.test/a.png'],
+  ['\\/evil.test/a.png', '//evil.test/a.png'],
+  ['http:evil.test/a.png', 'http://evil.test/a.png'],
+  ['http:\\evil.test/a.png', 'http://evil.test/a.png'],
+  // Nothing after the separators is not a host, so the value falls through
+  // to the separator rewrite and is reported as it stands.
+  ['http:\\\\', 'http://'],
+  ['http://?x', 'http://?x'],
+  // A scheme or separator run that is not at the very start stays local.
+  ['/img/http:a.png', null],
+  ['/img/https://evil.test/a.png', null],
+  ['/a//b.png', null],
+  ['\\host/a.png', null],
+  ['https:local.png', null],
+  ['#fragment', null],
+  ['data:image/png;base64,AA', null],
+];
+
+test('remoteTarget reports only values that reach another host', () => {
+  for (const [value, expected] of REMOTE_TARGETS) {
+    assert.equal(remoteTarget(value), expected, JSON.stringify(value));
+  }
 });
