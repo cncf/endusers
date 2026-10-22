@@ -38,12 +38,12 @@ test('every test name the mutation run skips names a test in the suite', () => {
 // score reflects the whole repository, not the diff under review, so it must
 // not block on a threshold tuned for incremental work.
 test('breakThreshold gates pull_request runs', () => {
-  assert.equal(breakThreshold('pull_request'), 83);
+  assert.equal(breakThreshold('pull_request'), 90);
 });
 
 test('breakThreshold keeps the gate for a local run with no event name', () => {
-  assert.equal(breakThreshold(undefined), 83);
-  assert.equal(breakThreshold(''), 83);
+  assert.equal(breakThreshold(undefined), 90);
+  assert.equal(breakThreshold(''), 90);
 });
 
 test('breakThreshold stands down for the full-tree report lanes', () => {
@@ -52,8 +52,8 @@ test('breakThreshold stands down for the full-tree report lanes', () => {
 });
 
 for (const [eventName, expected] of [
-  [undefined, 83],
-  ['pull_request', 83],
+  [undefined, 90],
+  ['pull_request', 90],
   ['merge_group', null],
   ['schedule', null],
   ['workflow_dispatch', null],
