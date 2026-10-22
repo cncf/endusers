@@ -219,6 +219,21 @@ test('unescapeMdx round-trips every character reference escapeMdx adds', () => {
   assert.equal(unescapeMdx(escapeMdx(source)), source);
 });
 
+// The block-initial import/export escapes are the only entries in the table
+// that the round-trip above cannot reach: escapeMdx() emits them for a line
+// start, and the round-trip text keeps both words mid-line. Each decoded
+// letter is pinned on its own, so a table row that decodes to the wrong
+// letter, or to nothing, fails here rather than displaying through.
+test('unescapeMdx decodes the import and export character references', () => {
+  for (const [escaped, expected] of [
+    ['&#105;mport fs from "x";', 'import fs from "x";'],
+    ['&#101;xport const a = 1;', 'export const a = 1;'],
+    ['&#105;&#101;', 'ie'],
+  ]) {
+    assert.equal(unescapeMdx(escaped), expected);
+  }
+});
+
 test('unescapeMdx leaves unrelated text alone', () => {
   assert.equal(unescapeMdx('plain &amp; simple'), 'plain &amp; simple');
   assert.equal(unescapeMdx(undefined), '');
@@ -365,6 +380,16 @@ test('keeps a code span verbatim in text MDX cannot parse', () => {
   assert.equal(escapeMdx('`{a}` and { b'), '`{a}` and &#123; b');
 });
 
+// Code is decided by the MDX grammar, not CommonMark's. A `<div>` block is an
+// HTML block to CommonMark, and nothing inside an HTML block is a code span,
+// so a CommonMark view of this text finds no code at all and the braces in the
+// span would be escaped. MDX parses the same lines as a JSX flow element whose
+// child paragraph holds a genuine inline code span, which stays verbatim while
+// the element's own tags are escaped around it.
+test('keeps a code span inside a JSX flow element verbatim', () => {
+  assert.equal(escapeMdx('<div>\n`{x}`\n</div>'), '&lt;div>\n`{x}`\n&lt;/div>');
+});
+
 // escapeMdx() verifies its own code-preserving result and throws it away when
 // anything MDX would execute survived. Reaching that check requires a text
 // whose code ranges came from CommonMark — MDX's grammar threw, so codeRanges()
@@ -418,6 +443,18 @@ test('escapes the body of an mdx-code-block fence, which Docusaurus compiles', a
 
   // And the form Docusaurus actually compiles carries nothing active.
   await assertCompilesAsText(unwrapMdxCodeBlocks(escaped));
+});
+
+// Skipping the unwrapped fence must not cost the code around it. The fence
+// body is escaped in place, while an inline code span elsewhere in the same
+// text is still handed through verbatim: had the fence been preserved and
+// caught only by the verification pass, the whole text would have been
+// re-escaped and the span's braces lost with it.
+test('escapes only the mdx-code-block body and keeps surrounding code verbatim', () => {
+  assert.equal(
+    escapeMdx('`{a}`\n\n```mdx-code-block\n<Live />\n```\n'),
+    '`{a}`\n\n```mdx-code-block\n&lt;Live />\n```\n',
+  );
 });
 
 test('still passes ordinary code blocks and spans through verbatim', () => {

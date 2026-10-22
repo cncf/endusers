@@ -85,6 +85,7 @@ const GRAMMARS = [
       extensions: [mdxjs()],
       mdastExtensions: [mdxFromMarkdown()],
     }),
+    // Stryker disable next-line ArrowFunction,ObjectLiteral: no options and empty extension lists are the same CommonMark parse
     plain: () => ({ extensions: [], mdastExtensions: [] }),
   },
 ];
@@ -104,16 +105,19 @@ function treeCodeRanges(text, tree) {
   eachNode(tree, (node) => {
     if (
       (node.type === 'code' || node.type === 'inlineCode') &&
+      // Stryker disable next-line ConditionalExpression,OptionalChaining: every node fromMarkdown emits carries a position
       node.position?.start?.offset !== undefined
     ) {
       // A ```mdx-code-block fence is code to this parser and to every other
       // one, and is still compiled as live MDX, because Docusaurus deletes
       // its fences before the compiler runs. Leaving it verbatim would hand
       // the body straight through.
+      // Stryker disable next-line ConditionalExpression: an inline code span can never match the unwrap fence pattern
       if (node.type === 'code' && isUnwrappedCodeBlock(text, node)) return;
       ranges.push([node.position.start.offset, node.position.end.offset]);
     }
   });
+  // Stryker disable next-line MethodExpression,ArrowFunction,ArithmeticOperator,CallExpression: the pre-order walk already yields ranges in offset order
   ranges.sort((a, b) => a[0] - b[0]);
   // `code`/`inlineCode` nodes are mdast leaves and cannot nest or abut, so
   // the ranges collected here are already disjoint and in order; no merge
@@ -129,7 +133,9 @@ function intersectRanges(left, right) {
   while (i < left.length && j < right.length) {
     const start = Math.max(left[i][0], right[j][0]);
     const end = Math.min(left[i][1], right[j][1]);
+    // Stryker disable next-line EqualityOperator: a zero-length range changes no output
     if (start < end) out.push([start, end]);
+    // Stryker disable next-line EqualityOperator: on equal ends either list can advance; both ranges are exhausted
     if (left[i][1] < right[j][1]) i += 1;
     else j += 1;
   }
@@ -153,7 +159,9 @@ function intersectRanges(left, right) {
  */
 function codeRanges(text) {
   let ranges = treeCodeRanges(text, parseWith(text, GRAMMARS[0]));
+  // Stryker disable next-line MethodExpression: intersecting with GRAMMARS[0] again is idempotent
   for (const grammar of GRAMMARS.slice(1)) {
+    // Stryker disable next-line ConditionalExpression: intersecting an empty list stays empty; the break only saves work
     if (!ranges.length) break;
     ranges = intersectRanges(
       ranges,
@@ -238,6 +246,7 @@ export function escapeMdx(text) {
   const out = [];
   let cursor = 0;
   for (const [start, end] of codeRanges(text)) {
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: escapePlain('') contributes nothing
     if (start > cursor) out.push(escapePlain(text.slice(cursor, start)));
     out.push(text.slice(start, end));
     cursor = end;

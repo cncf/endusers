@@ -27,6 +27,7 @@ function refsFromSnapshot(snapshot) {
 
 function refsFromMembers(members) {
   return (members || []).flatMap((member) =>
+    // Stryker disable next-line MethodExpression: isSafeAssetPath drops the falsy entries the filter removes
     (member.membershipSources || [])
       .map((source) => source.localLogo)
       .filter(Boolean),
@@ -50,6 +51,7 @@ function manifestValue(assets) {
 
 export function readOwnedAssetManifest(manifestPath) {
   if (!existsSync(manifestPath)) return [];
+  // Stryker disable next-line StringLiteral: JSON.parse decodes a Buffer as the same utf8 text
   const data = JSON.parse(readFileSync(manifestPath, 'utf8'));
   if (data?.generated !== true || !Array.isArray(data.assets)) {
     throw new Error('end-user asset manifest is invalid');
@@ -86,6 +88,7 @@ export function pruneOwnedLandscapeAssets({
     const target = join(assetRoot, basename(asset));
     const stat = lstatSync(target, { throwIfNoEntry: false });
     if (stat?.isFile() && !stat.isSymbolicLink()) {
+      // Stryker disable next-line ObjectLiteral,BooleanLiteral: lstat just confirmed the target is a file
       rmSync(target, { force: true });
     }
   }

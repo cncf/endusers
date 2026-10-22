@@ -94,3 +94,82 @@ test('an ordinary GFM table is left untouched', () => {
   const source = `${TABLE_HEAD}| 1 | 2 |\n`;
   assert.equal(escapeMdx(source), source);
 });
+
+// Each case below is a text whose code spans differ between the GFM and
+// non-GFM views, chosen so that the preserved result is inert under every
+// grammar: the verification pass therefore cannot paper over a wrong code
+// decision, and the exact output pins which grammar made it.
+const GRAMMAR_CASES = [
+  {
+    name: 'a split code span is escaped even when a genuine span precedes it',
+    // Both views agree on `{a}`; only the non-GFM view also calls the table
+    // cell content one code span, and it must not win the intersection.
+    source: `\`{a}\`\n\n${TABLE_HEAD}| \`x | {y}\` |\n`,
+    expected: `\`{a}\`\n\n${TABLE_HEAD}| \`x | &#123;y&#125;\` |\n`,
+  },
+  {
+    name: 'a code span that only the GFM cell split creates is not preserved',
+    // GFM sees the middle cell "b` } `c" as text around a code span holding
+    // the brace; the non-GFM view sees two other spans. Neither view alone
+    // decides, so the brace is escaped.
+    source: '| h | i | j |\n| - | - | - |\n| `a | b` } `c | d` |\n',
+    expected: '| h | i | j |\n| - | - | - |\n| `a | b` &#125; `c | d` |\n',
+  },
+  {
+    name: 'the GFM fallback grammar still splits table cells',
+    // The unclosed brace makes every MDX grammar throw, so code ranges come
+    // from the fallback grammars, and the GFM one must still see a table
+    // rather than a paragraph holding one code span.
+    source: `{\n\n${TABLE_HEAD}| \`x | } y\` |\n`,
+    expected: `&#123;\n\n${TABLE_HEAD}| \`x | &#125; y\` |\n`,
+  },
+];
+
+for (const { name, source, expected } of GRAMMAR_CASES) {
+  test(name, () => {
+    const escaped = escapeMdx(source);
+    assert.equal(escaped, expected);
+    assert.deepEqual(activeNodesUnderGfm(escaped), []);
+  });
+}
+
+// When code ranges come from the fallback grammars, an indented block is code
+// to both of them and is handed through verbatim. The verification pass is
+// what catches an element hiding inside it, and it has to look with both
+// grammars: inside a list item the indented lines are a table to MDX+GFM, so
+// the cell split exposes `<b>` that the non-GFM view hides in a code span, and
+// the reverse layout hides `<b>` in a GFM-only span that only the non-GFM view
+// sees as an element.
+const INDENTED_TABLE_CASES = [
+  {
+    name: 're-escapes an indented table row whose cell split exposes an element',
+    rows: ['| h | i |', '| - | - |', '| `x | <b>y</b>` |'],
+    expectedRow: '| `x | &lt;b>y&lt;/b>` |',
+  },
+  {
+    name: 're-escapes an indented table row whose element is live without GFM',
+    rows: ['| h | i | j |', '| - | - | - |', '| `a | b` <b>x</b> `c | d` |'],
+    expectedRow: '| `a | b` &lt;b>x&lt;/b> `c | d` |',
+  },
+];
+
+for (const { name, rows, expectedRow } of INDENTED_TABLE_CASES) {
+  test(name, () => {
+    const indent = (row) => `      ${row}`;
+    const source = ['{', '', '- x', '', ...rows.map(indent), ''].join('\n');
+    const escaped = escapeMdx(source);
+    assert.equal(
+      escaped,
+      [
+        '&#123;',
+        '',
+        '- x',
+        '',
+        ...rows.slice(0, -1).map(indent),
+        indent(expectedRow),
+        '',
+      ].join('\n'),
+    );
+    assert.deepEqual(activeNodesUnderGfm(escaped), []);
+  });
+}

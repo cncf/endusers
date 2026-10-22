@@ -72,6 +72,7 @@ export function classifyLandscapeDocument(document) {
       }
 
       if (
+        // Stryker disable next-line OptionalChaining: the name check above already rejected a nullish item
         item?.enduser === true &&
         role !== 'member' &&
         subcategoryName !== END_USER_SUPPORTER_SUBCATEGORY
@@ -82,12 +83,15 @@ export function classifyLandscapeDocument(document) {
       }
 
       const included =
+        // Stryker disable next-line OptionalChaining: the name check above already rejected a nullish item
         (role === 'member' && item?.enduser === true) ||
         (role === 'contributor' &&
+          // Stryker disable next-line ConditionalExpression: a contributor outside this subcategory was rejected above
           subcategoryName === END_USER_SUPPORTER_SUBCATEGORY);
 
       const relevant =
         included ||
+        // Stryker disable next-line ConditionalExpression: this subcategory only holds contributors, already included, and supporters
         (role === 'supporter' &&
           subcategoryName === END_USER_SUPPORTER_SUBCATEGORY);
       if (!relevant) continue;
@@ -98,6 +102,7 @@ export function classifyLandscapeDocument(document) {
       }
       seen.add(id);
 
+      // Stryker disable OptionalChaining: the name check above already rejected a nullish item
       records.push({
         sourceId: id,
         sourceRole: role,
@@ -114,6 +119,7 @@ export function classifyLandscapeDocument(document) {
         joined: item?.joined ?? null,
         logoFilename: item?.logo ?? null,
       });
+      // Stryker restore OptionalChaining
     }
   }
 

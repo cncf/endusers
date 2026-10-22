@@ -104,6 +104,7 @@ export function validateArchitectureAssets(root, shouldFix = false) {
       'fonts',
       {
         reason:
+          // Stryker disable next-line StringLiteral: the reason is documentation for reviewers, never read
           'holds only font files (.ttf/.woff/.woff2); never SVG or markup',
         extensions: FONT_EXTENSIONS,
       },
@@ -116,8 +117,16 @@ export function validateArchitectureAssets(root, shouldFix = false) {
   // that is not an asset at all is named here with the reason a reviewer needs to
   // approve a new exemption.
   const exemptTopLevelFiles = new Map([
-    ['manifest.json', 'web app manifest; JSON data, never parsed as markup'],
-    ['robots.txt', 'crawler directives; plain text, never parsed as markup'],
+    [
+      'manifest.json',
+      // Stryker disable next-line StringLiteral: the reason is documentation for reviewers; only the key is read
+      'web app manifest; JSON data, never parsed as markup',
+    ],
+    [
+      'robots.txt',
+      // Stryker disable next-line StringLiteral: the reason is documentation for reviewers; only the key is read
+      'crawler directives; plain text, never parsed as markup',
+    ],
   ]);
 
   const issues = [];
@@ -149,6 +158,7 @@ export function validateArchitectureAssets(root, shouldFix = false) {
           // and validateAsset() rejects every extension outside the exemption, so
           // nothing executable can reach the origin through an exempt directory.
           for (const file of walk(path)) {
+            // Stryker disable next-line BooleanLiteral: quality only reaches validateSvg, and the font allow-list rejects .svg first
             validateAsset(file, false, exemption.extensions);
           }
           continue;
@@ -265,6 +275,7 @@ export function validateArchitectureAssets(root, shouldFix = false) {
 
     if (!quality) {
       if (shouldFix && source !== original) {
+        // Stryker disable next-line StringLiteral: an empty encoding defaults to utf8
         writeFileSync(path, source, 'utf8');
       }
       return;
@@ -345,6 +356,7 @@ export function validateArchitectureAssets(root, shouldFix = false) {
         );
         return;
       }
+      // Stryker disable next-line StringLiteral: an empty encoding defaults to utf8
       writeFileSync(path, source, 'utf8');
     }
   }
@@ -414,9 +426,13 @@ export function validateArchitectureAssets(root, shouldFix = false) {
   // --fix.
   function assetRootKind(dir) {
     const stats = lstatSync(dir, { throwIfNoEntry: false });
+    // Stryker disable next-line StringLiteral: callers only distinguish 'symlink' and 'directory'
     if (!stats) return 'missing';
     if (stats.isSymbolicLink()) return 'symlink';
-    return stats.isDirectory() ? 'directory' : 'other';
+    return stats.isDirectory()
+      ? 'directory'
+      : // Stryker disable next-line StringLiteral: callers only distinguish 'symlink' and 'directory'
+        'other';
   }
 
   return { issues, fixed, assetCount: assets.length };
