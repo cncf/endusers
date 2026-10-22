@@ -60,6 +60,19 @@ function withCapturedStderr(fn, { writeSync } = {}) {
   return { warnings, errors, exitCodes, chunks };
 }
 
+// checkIsoTimestamp's future-skew check compares against Date.now(), so a
+// boundary assertion needs the clock pinned: a value computed from a live
+// Date.now() is already in the past by the time the comparison runs.
+function withFixedNow(now, fn) {
+  const originalNow = Date.now;
+  Date.now = () => now;
+  try {
+    return fn();
+  } finally {
+    Date.now = originalNow;
+  }
+}
+
 test('checkUrl accepts a valid https URL and pushes no error', () => {
   const errors = [];
   checkUrl(errors, 'data/awards.json', 'announcementUrl', 'https://cncf.io/x');
@@ -826,6 +839,48 @@ test('checkIsoTimestamp rejects out-of-range parts Date.parse would roll over', 
   }
 });
 
+// ISO_8601_PATTERN is anchored at both ends. Without the anchors a value that
+// merely contains a strict instant would be accepted, and `Date.parse` of the
+// whole string — not of the matched part — is what the accepted value would
+// then be resolved to.
+test('checkIsoTimestamp rejects text wrapped around an otherwise valid instant', () => {
+  for (const value of [
+    'x2026-01-01T00:00:00Z',
+    ' 2026-01-01T00:00:00Z',
+    '2026-01-01T00:00:00Zjunk',
+    '2026-01-01T00:00:00Z junk',
+  ]) {
+    const errors = [];
+    assert.equal(
+      checkIsoTimestamp(errors, 'data/metrics.json', 'generatedAt', value),
+      false,
+      value,
+    );
+    assert.deepEqual(errors, [
+      {
+        path: 'data/metrics.json',
+        severity: 'error',
+        message: 'generatedAt must be ISO 8601',
+      },
+    ]);
+  }
+});
+
+// `Date.UTC` remaps years 0-99 into 1900-1999, so a four-digit year below 0100
+// yields an instant whose year is not the one that was written. Only the
+// year arm of the round-trip check rejects it.
+test('checkIsoTimestamp rejects a year Date.UTC would remap into the 1900s', () => {
+  for (const value of ['0026-01-01T00:00:00Z', '0099-12-31T23:59:59Z']) {
+    const errors = [];
+    assert.equal(
+      checkIsoTimestamp(errors, 'data/metrics.json', 'generatedAt', value),
+      false,
+      value,
+    );
+    assert.equal(errors.length, 1);
+  }
+});
+
 test('checkIsoTimestamp accepts a real leap day and a fractional-second value', () => {
   for (const value of ['2024-02-29T00:00:00Z', '2026-09-21T00:00:00.123Z']) {
     const errors = [];
@@ -849,6 +904,46 @@ test('checkIsoTimestamp accepts a value inside the future-tolerance window', () 
   );
   assert.equal(ok, true);
   assert.deepEqual(errors, []);
+});
+
+// The window is inclusive: a value exactly `futureToleranceMs` ahead of the
+// clock is still inside the skew allowance, so only a value strictly past it
+// is reported.
+test('checkIsoTimestamp accepts a value exactly on the future-tolerance boundary and rejects the next millisecond', () => {
+  const now = Date.parse('2026-09-21T00:00:00.000Z');
+  withFixedNow(now, () => {
+    const onBoundary = [];
+    assert.equal(
+      checkIsoTimestamp(
+        onBoundary,
+        'data/community-groups.json',
+        'checkedAt',
+        new Date(now + 60_000).toISOString(),
+        { futureToleranceMs: 60_000 },
+      ),
+      true,
+    );
+    assert.deepEqual(onBoundary, []);
+
+    const pastBoundary = [];
+    assert.equal(
+      checkIsoTimestamp(
+        pastBoundary,
+        'data/community-groups.json',
+        'checkedAt',
+        new Date(now + 60_001).toISOString(),
+        { futureToleranceMs: 60_000 },
+      ),
+      false,
+    );
+    assert.deepEqual(pastBoundary, [
+      {
+        path: 'data/community-groups.json',
+        severity: 'error',
+        message: 'checkedAt cannot be in the future',
+      },
+    ]);
+  });
 });
 
 test('checkIsoTimestamp rejects a value beyond the future-tolerance window with the default message', () => {
