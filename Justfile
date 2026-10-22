@@ -20,6 +20,7 @@ build:
     npm run validate:case-studies
     npm run validate:radar-reports
     npm run validate:projects-born
+    npm run validate:end-user-talks
     npm run validate:button-contrast
     npm run validate:enduser-members
     npm run validate:members

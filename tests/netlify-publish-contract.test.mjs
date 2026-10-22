@@ -6,8 +6,8 @@
 // which never starts ci.yml (#755), so the Netlify build is the only gate
 // their data passes before it publishes. The validator set is asserted as
 // parity with ci.yml's validate job rather than as a second hand-maintained
-// list -- a validator added to ci.yml must be added to validate:all too, or
-// this test names the gap.
+// list -- adding a validator to either lane must add it to the other too,
+// or these tests name the gap.
 //
 // The remaining assertions pin the shape Netlify reads: the build command has
 // to be the script that runs validate:all, the publish directory has to be
@@ -55,6 +55,14 @@ function ciValidators() {
   );
 }
 
+function allValidators() {
+  return new Set(
+    npmRunTargets(scripts['validate:all'] ?? '').filter((target) =>
+      target.startsWith('validate:'),
+    ),
+  );
+}
+
 test('the Netlify build command is the validating build script', () => {
   assert.equal(netlify.build?.command, 'npm run build:netlify');
   assert.equal(
@@ -81,11 +89,7 @@ test('validate:all runs everything the PR lane validates', () => {
   const expected = ciValidators();
   assert.ok(expected.size > 0, 'ci.yml validate job runs no validators');
 
-  const actual = new Set(
-    npmRunTargets(scripts['validate:all'] ?? '').filter((target) =>
-      target.startsWith('validate:'),
-    ),
-  );
+  const actual = allValidators();
   const missing = [...expected].filter((target) => !actual.has(target));
   assert.deepEqual(
     missing,
@@ -100,6 +104,17 @@ test('validate:all runs everything the PR lane validates', () => {
       `validate:all names "${target}", which package.json does not define`,
     );
   }
+});
+
+test('the PR lane validates everything validate:all does', () => {
+  const expected = allValidators();
+  assert.ok(expected.size > 0, 'validate:all runs no validators');
+  const actual = ciValidators();
+  assert.deepEqual(
+    [...expected].filter((target) => !actual.has(target)),
+    [],
+    'validators validate:all runs that the required PR validation job does not',
+  );
 });
 
 test('validate:all stops at the first failing validator', () => {

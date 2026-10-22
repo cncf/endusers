@@ -67,6 +67,8 @@ jobs:
         run: npm run validate:radar-reports
       - name: Validate projects-born data
         run: npm run validate:projects-born
+      - name: Validate End User talks data
+        run: npm run validate:end-user-talks
       - name: Validate button contrast
         run: npm run validate:button-contrast
       - name: Validate End User landscape data
