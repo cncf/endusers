@@ -12,6 +12,7 @@ import test from 'node:test';
 
 import React from 'react';
 
+import { importWithData } from './helpers-component-data.mjs';
 import { importSource } from './helpers-jsx.mjs';
 import {
   findAllByType,
@@ -441,4 +442,92 @@ test('the region is labelled and the result count is announced politely', () => 
   assert.equal(view.tree.type, 'section');
   assert.equal(view.tree.props['aria-label'], 'CNCF case studies');
   assert.match(resultsText(view), /^Showing \d+ of \d+ case studies$/);
+});
+
+test('each select names its facet and offers an "all" option first', () => {
+  const view = render(CaseStudies);
+  const labels = new Map(
+    findAllByType(view.tree, 'label', EXPAND_TOOLBAR).map((label) => [
+      label.props.htmlFor,
+      textOf(label),
+    ]),
+  );
+  assert.equal(
+    labels.get('case-study-search'),
+    'Search case studies by organization',
+  );
+  for (const [id, label, allLabel] of [
+    ['case-study-project', 'Filter by CNCF project', 'All projects'],
+    ['case-study-industry', 'Filter by industry', 'All industries'],
+    ['case-study-country', 'Filter by country', 'All countries'],
+  ]) {
+    assert.equal(labels.get(id), label);
+    const [first] = findAllByType(
+      elementById(view.tree, id),
+      'option',
+      EXPAND_TOOLBAR,
+    );
+    assert.equal(first.props.value, '');
+    assert.equal(textOf(first), allLabel);
+  }
+});
+
+// The mirrored file always carries a dated, non-empty `caseStudies` list, so
+// the two fallbacks in the component -- a file with no list at all, and a
+// study with no publishedAt -- are driven through a fixture swapped into the
+// component's own data import.
+const DATA_SPECIFIER = '@site/data/case-studies.json';
+
+function study(overrides = {}) {
+  return {
+    id: 'acme',
+    title: 'Acme on Kubernetes',
+    organization: 'Acme',
+    url: 'https://www.cncf.io/case-studies/acme/',
+    publishedAt: '2024-05-01',
+    projects: ['Kubernetes'],
+    industries: ['Retail'],
+    countries: ['Canada'],
+    ...overrides,
+  };
+}
+
+async function renderWithData(fixture) {
+  const module = await importWithData('src/components/CaseStudies/index.js', {
+    [DATA_SPECIFIER]: fixture,
+  });
+  try {
+    return render(module.default);
+  } finally {
+    module.cleanup();
+  }
+}
+
+test('a mirror with no case-studies list renders an empty table', async () => {
+  const view = await renderWithData({ generatedAt: '2026-01-02' });
+  assert.deepEqual(renderedTitles(view), []);
+  assert.equal(resultsText(view), 'Showing 0 of 0 case studies');
+});
+
+test('studies without a published date sort after every dated study', async () => {
+  // Two undated entries, one on each side of a dated one, so the comparator
+  // meets a missing date as both its first and its second argument.
+  const view = await renderWithData({
+    caseStudies: [
+      study({ id: 'older', title: 'Older', publishedAt: '2023-01-01' }),
+      study({ id: 'undated-a', title: 'Undated A', publishedAt: undefined }),
+      study({ id: 'newer', title: 'Newer', publishedAt: '2025-01-01' }),
+      study({ id: 'undated-b', title: 'Undated B', publishedAt: undefined }),
+    ],
+  });
+  assert.deepEqual(renderedTitles(view), [
+    'Newer',
+    'Older',
+    'Undated A',
+    'Undated B',
+  ]);
+  const body = findByType(view.tree, 'tbody', EXPAND_TOOLBAR);
+  for (const row of findAllByType(body, 'tr', EXPAND_TOOLBAR).slice(-2)) {
+    assert.equal(textOf(findAllByType(row, 'td', EXPAND_TOOLBAR)[1]), '');
+  }
 });

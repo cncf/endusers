@@ -376,3 +376,34 @@ test('each card shows the award, organization, citation and event', () => {
     'the organization is the card heading',
   );
 });
+
+test('the audit banner reads as one sentence around its link', () => {
+  const banner = elements(timeline).find(
+    (element) => element.props?.className === 'verification',
+  );
+  const expected = new Date(awardsData.verifiedAt).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  assert.equal(
+    textOf(banner),
+    `Winner history audited for completeness against contribute.cncf.io/community/awards on ${expected}.`,
+  );
+});
+
+test('years are ordered numerically, newest first, whatever order the file uses', () => {
+  const saved = awardsData.awards;
+  try {
+    awardsData.awards = [2024, 2026, 2025, 2026].map((year, index) =>
+      sampleEntry({ year, slug: `org-${index}` }),
+    );
+    const rendered = [...walkElements(AwardsTimeline())]
+      .filter((element) => element.props?.className === 'yearBadge')
+      .map((element) => Number(textOf(element)));
+    assert.deepEqual(rendered, [2026, 2025, 2024]);
+  } finally {
+    awardsData.awards = saved;
+  }
+});

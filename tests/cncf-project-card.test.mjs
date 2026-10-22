@@ -135,3 +135,32 @@ test('a card without an href renders no link and no arrow', () => {
   );
   assert.equal(arrows.length, 0, 'the ↗ affordance requires a live href');
 });
+
+test('the fallback is exactly the first character of the name', () => {
+  const fallback = findAllByType(render({ name: 'Prometheus' }), 'span').find(
+    (span) => span.props.className === 'fallback',
+  );
+  assert.equal(textOf(fallback), 'P');
+});
+
+function metaRow(tree) {
+  return findAllByType(tree, 'div').find(
+    (div) => div.props.className === 'meta',
+  );
+}
+
+test('the metadata row renders one span per supplied field, or not at all', () => {
+  assert.equal(metaRow(render()), undefined);
+  for (const [props, expected] of [
+    [{ since: '2016' }, ['Since 2016']],
+    [{ version: 'v1.31' }, ['v1.31']],
+    [{ since: '2016', version: 'v1.31' }, ['Since 2016', 'v1.31']],
+  ]) {
+    const row = metaRow(render(props));
+    assert.deepEqual(
+      findAllByType(row, 'span').map(textOf),
+      expected,
+      JSON.stringify(props),
+    );
+  }
+});

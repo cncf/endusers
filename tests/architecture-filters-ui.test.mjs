@@ -331,3 +331,52 @@ test('the clear button appears once a filter is active and calls onClear', () =>
   button.props.onClick();
   assert.deepEqual(calls, [['onClear', undefined]]);
 });
+
+test('organizations are sorted even when the corpus lists them out of order', () => {
+  const { result } = renderHook(() =>
+    useArchitectureFilterOptions([
+      architecture({
+        organization: 'Zeta',
+        industries: ['b'],
+        projects: ['y'],
+      }),
+      architecture({
+        organization: 'Alpha',
+        industries: ['a'],
+        projects: ['x'],
+      }),
+      architecture({
+        organization: 'Alpha',
+        industries: ['a'],
+        projects: ['x'],
+      }),
+    ]),
+  );
+  assert.deepEqual(result.organizations, ['Alpha', 'Zeta']);
+  assert.deepEqual(result.industries, ['a', 'b']);
+  assert.deepEqual(result.projects, ['x', 'y']);
+});
+
+test('each hook setter writes its own filter field', () => {
+  for (const [setter, field, value, expected] of [
+    ['setIndustry', 'industry', 'Manufacturing', ['Globex']],
+    ['setProject', 'project', 'Prometheus', ['Initech']],
+    ['setOrganization', 'organization', 'Acme Corp', ['Acme Corp']],
+    ['setQuery', 'query', 'traces', ['Initech']],
+  ]) {
+    const hook = renderHook(() => useArchitectureFilters(CORPUS));
+    hook.result[setter](value);
+    assert.deepEqual(hook.result.filters, {
+      query: '',
+      industry: '',
+      project: '',
+      organization: '',
+      [field]: value,
+    });
+    assert.deepEqual(
+      hook.result.filtered.map((a) => a.organization),
+      expected,
+      setter,
+    );
+  }
+});

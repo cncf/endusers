@@ -89,6 +89,12 @@ test('missing groups data renders without throwing', async () => {
   assert.doesNotMatch(textOf(tree), /archived or unreachable/);
 });
 
+test('an empty data file renders the note with neither line', async () => {
+  const tree = await renderWith(null);
+  assert.equal(tree.props.className, 'freshnessNote');
+  assert.equal(textOf(tree), '');
+});
+
 test('an archived upstream repository is named in the warning', async () => {
   const text = textOf(
     await renderWith({

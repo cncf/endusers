@@ -103,3 +103,56 @@ test('every slot badge renders the timezone from the data file', () => {
     assert.equal(textOf(badge), schedule.timezone);
   }
 });
+
+test('the intro sentence spaces the count, track and timezone correctly', () => {
+  const tree = EndUserTalkSchedule();
+  const [intro] = findAllByType(tree, 'p');
+  assert.equal(
+    textOf(intro),
+    `${schedule.talkCount} sessions in End User Programming → End User Talk. All times are ${schedule.timezone}, local to Salt Lake City. Some sessions overlap; talks in the same time slot run concurrently.`,
+  );
+});
+
+test('the source line links the API and the live schedule in one sentence', () => {
+  const tree = EndUserTalkSchedule();
+  const source = findAllByType(tree, 'p').find(
+    (node) => node.props.className === 'source',
+  );
+  const verified = new Date(schedule.generatedAt).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  assert.equal(
+    textOf(source),
+    `Source: official Sessionize API · Verified ${verified}. Times, rooms, and speakers may change; check the live official schedule for updates.`,
+  );
+  assert.deepEqual(
+    findAllByType(source, 'a').map((node) => node.props.href),
+    [schedule.apiUrl, schedule.sourceUrl],
+  );
+});
+
+test('each slot is keyed by its time range and its list names the day and slot', () => {
+  const tree = EndUserTalkSchedule();
+  const expectedSlots = schedule.days.flatMap((day) =>
+    day.slots.map((slot) => ({ day, slot })),
+  );
+  const slots = findAllByType(tree, 'div').filter(
+    (node) => node.props.className === 'slot',
+  );
+  assert.equal(slots.length, expectedSlots.length);
+  slots.forEach((node, index) => {
+    const { day, slot } = expectedSlots[index];
+    assert.equal(node.key, `${slot.start}/${slot.end}`);
+    const list = findByType(node, 'ul');
+    assert.equal(
+      list.props['aria-label'],
+      `${day.label}, ${slot.startLabel}–${slot.endLabel}`,
+    );
+    const [start, end] = findAllByType(node, 'time');
+    assert.equal(start.props.dateTime, slot.start);
+    assert.equal(end.props.dateTime, slot.end);
+  });
+});

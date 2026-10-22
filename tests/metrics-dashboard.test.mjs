@@ -613,3 +613,70 @@ test('the empty-series chart still carries its accessible label and source link'
   assert.equal(svg.props['aria-label'], 'Adopters over time');
   assert.equal(svg.props.role, 'img');
 });
+
+test('a three-point series spreads evenly across the 20..500 plot width', async () => {
+  const values = [
+    { date: '2024-01', value: 2 },
+    { date: '2024-02', value: 8 },
+    { date: '2024-03', value: 4 },
+  ];
+  const tree = await renderWith(
+    baseData({
+      series: {
+        adopters: {
+          label: 'Adopters',
+          source: 'cncf/endusers',
+          sourceUrl: 'https://example.invalid/adopters',
+          values,
+        },
+      },
+    }),
+  );
+  const expected = [
+    { x: 20, y: 150 },
+    { x: 260, y: 30 },
+    { x: 500, y: 110 },
+  ];
+  assert.deepEqual(
+    parsePoints(findByType(tree, 'polyline').props.points),
+    expected,
+  );
+  const circles = findAllByType(tree, 'circle');
+  assert.deepEqual(
+    circles.map((circle) => ({ x: circle.props.cx, y: circle.props.cy })),
+    expected,
+  );
+  assert.deepEqual(
+    circles.map((circle) => circle.key),
+    ['2024-01-0', '2024-02-1', '2024-03-2'],
+  );
+});
+
+test('each breakdown chart is labelled by its own heading', () => {
+  const sections = elements(dashboard).filter(
+    (element) => element.props?.className === 'chart',
+  );
+  const ids = Object.keys(metricsData.breakdowns ?? {});
+  assert.ok(ids.length > 0, 'the checked-in metrics.json has no breakdowns');
+  for (const [index, id] of ids.entries()) {
+    assert.equal(sections[index].props['aria-labelledby'], `${id}-title`);
+    const heading = findByType(sections[index], 'h2');
+    assert.equal(heading.props.id, `${id}-title`);
+    assert.equal(textOf(heading), metricsData.breakdowns[id].label);
+  }
+});
+
+test('a three-sample sparkline places its middle point at half width', () => {
+  const tree = Sparkline({
+    values: [
+      { date: '2025-01', value: 0 },
+      { date: '2025-02', value: 10 },
+      { date: '2025-03', value: 5 },
+    ],
+  });
+  assert.deepEqual(parsePoints(findByType(tree, 'polyline').props.points), [
+    { x: 0, y: 24 },
+    { x: 50, y: 4 },
+    { x: 100, y: 14 },
+  ]);
+});

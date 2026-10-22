@@ -244,6 +244,11 @@ test('a card shows the logo asset when one is mirrored', () => {
     'the logo is decorative: the organization name is already in the heading',
   );
   assert.equal(
+    image.props.loading,
+    undefined,
+    'the catalog grid is short enough that its logos are not lazy-loaded',
+  );
+  assert.equal(
     findAllByType(card, 'span', EXPAND_SHARED).some((s) => textOf(s) === 'AC'),
     false,
     'the initials fallback is not rendered alongside a logo',

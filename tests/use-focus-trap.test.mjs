@@ -337,3 +337,12 @@ test('unmount does not throw when there is nothing to restore focus to', () => {
     dom.restore();
   }
 });
+
+test('unmounting tolerates a trigger that cannot take focus', () => {
+  const { dom, hook } = mountTrap({ trigger: { tagName: 'SVG' } });
+  try {
+    assert.doesNotThrow(() => hook.unmount());
+  } finally {
+    dom.restore();
+  }
+});

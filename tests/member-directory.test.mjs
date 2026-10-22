@@ -26,6 +26,12 @@ import React from 'react';
 
 import { importSource } from './helpers-jsx.mjs';
 import {
+  applyFixtures,
+  restoreFixtures,
+} from './tools/component-data-store.mjs';
+import { installFakeDom } from './tools/fake-dom.mjs';
+import { renderHook } from './tools/react-hook-driver.mjs';
+import {
   findAllByType,
   findByType,
   renderElement,
@@ -322,6 +328,11 @@ test('initials ignores whitespace padding around a name', () => {
   assert.equal(initials('Acme  Corp'), 'AC');
 });
 
+test('initials is empty for an empty or blank name', () => {
+  assert.equal(initials(''), '');
+  assert.equal(initials('   '), '');
+});
+
 test('formatCount picks the singular only for exactly one', () => {
   assert.equal(formatCount(1, 'award', 'awards'), '1 award');
   assert.equal(formatCount(2, 'award', 'awards'), '2 awards');
@@ -402,6 +413,19 @@ test('useFilterOptions returns the sorted distinct industries and projects', () 
   );
 });
 
+test('useFilterOptions recomputes its options when the member list changes', () => {
+  let input = [RICH_MEMBER];
+  const hook = renderHook(() => useFilterOptions(input));
+  const first = hook.result;
+  assert.equal(hook.rerender(), first);
+
+  input = [BARE_MEMBER];
+  const second = hook.rerender();
+  assert.notEqual(second, first);
+  assert.deepEqual(second.industries, []);
+  assert.deepEqual(second.projects, []);
+});
+
 // --- DirectoryFreshness ---------------------------------------------------
 
 // `DirectoryFreshness` reads `@site/data/metrics.json` and
@@ -425,7 +449,7 @@ function withFreshnessData(
   const membersSourcesBackup = membersData.sources;
   Object.assign(metrics, metricsPatch);
   Object.assign(awardsData, awardsPatch);
-  if (membersPatch?.sources !== undefined) {
+  if (Object.hasOwn(membersPatch, 'sources')) {
     membersData.sources = membersPatch.sources;
   }
   try {
@@ -439,14 +463,14 @@ function withFreshnessData(
 
 test('the freshness note dates both upstream sources and links the repo', () => {
   const tree = DirectoryFreshness();
-  const text = textOf(tree);
-  assert.match(text, /Architecture-derived profiles last synced from/);
-  assert.ok(text.includes(formatDate(metrics.generatedAt)));
-  assert.ok(text.includes(formatDate(awardsData.verifiedAt)));
-  assert.ok(
-    text.includes(
-      `${formatDate(membersData.sources.landscape.collectedAt)}. Architecture-derived`,
-    ),
+  assert.equal(tree.props.className, 'freshnessNote');
+  assert.equal(
+    textOf(tree),
+    `Directory membership data last synced from cncf/landscape on ${formatDate(
+      membersData.sources.landscape.collectedAt,
+    )}. Architecture-derived profiles last synced from cncf/architecture on ${formatDate(
+      metrics.generatedAt,
+    )}. Award data last verified on ${formatDate(awardsData.verifiedAt)}.`,
   );
 
   const links = findAllByType(tree, 'a', EXPAND_SHARED);
@@ -458,18 +482,63 @@ test('the freshness note dates both upstream sources and links the repo', () => 
   assert.equal(textOf(links[1]), 'cncf/architecture');
 });
 
+// One sentence per upstream source, in a fixed order, joined by single
+// spaces: the matrix below renders every non-empty subset of the three dates
+// so that a stray or missing separator between any pair is caught.
+const FRESHNESS_SENTENCES = {
+  landscape:
+    'Directory membership data last synced from cncf/landscape on January 2, 2026.',
+  architectures:
+    'Architecture-derived profiles last synced from cncf/architecture on February 3, 2026.',
+  awards: 'Award data last verified on March 4, 2026.',
+};
+
+function freshnessTextFor(present) {
+  let text;
+  withFreshnessData(
+    {
+      generatedAt: present.includes('architectures')
+        ? '2026-02-03T00:00:00.000Z'
+        : undefined,
+      sources: undefined,
+    },
+    { verifiedAt: present.includes('awards') ? '2026-03-04' : undefined },
+    {
+      sources: present.includes('landscape')
+        ? { landscape: { collectedAt: '2026-01-02T00:00:00.000Z' } }
+        : undefined,
+    },
+    () => {
+      text = textOf(DirectoryFreshness());
+    },
+  );
+  return text;
+}
+
+test('the freshness note joins exactly the sentences it has dates for', () => {
+  const sources = Object.keys(FRESHNESS_SENTENCES);
+  for (let mask = 1; mask < 1 << sources.length; mask += 1) {
+    const present = sources.filter((_, index) => mask & (1 << index));
+    assert.equal(
+      freshnessTextFor(present),
+      present.map((source) => FRESHNESS_SENTENCES[source]).join(' '),
+      `sources present: ${present.join(', ')}`,
+    );
+  }
+});
+
 test('the freshness note is plain text when no upstream repository is known', () => {
   withFreshnessData(
     { generatedAt: '2026-01-02T00:00:00.000Z', sources: {} },
     { verifiedAt: '2026-03-04' },
-    { sources: {} },
+    { sources: { landscape: { collectedAt: '2026-01-01T00:00:00.000Z' } } },
     () => {
       const tree = DirectoryFreshness();
       assert.equal(findByType(tree, 'a', EXPAND_SHARED), undefined);
-      const text = textOf(tree);
-      assert.ok(text.includes('cncf/architecture'));
-      assert.ok(text.includes('January 2, 2026'));
-      assert.ok(text.includes('March 4, 2026'));
+      assert.equal(
+        textOf(tree),
+        'Directory membership data last synced from cncf/landscape on January 1, 2026. Architecture-derived profiles last synced from cncf/architecture on January 2, 2026. Award data last verified on March 4, 2026.',
+      );
     },
   );
 });
@@ -485,17 +554,18 @@ test('the freshness note renders nothing when neither date is usable', () => {
   );
 });
 
-test('the freshness note keeps the award date when the metrics date is absent', () => {
-  withFreshnessData(
-    { generatedAt: undefined },
-    { verifiedAt: '2026-03-04' },
-    { sources: {} },
-    () => {
-      const text = textOf(DirectoryFreshness());
-      assert.equal(text.includes('last synced'), false);
-      assert.match(text, /Award data last verified on March 4, 2026\./);
-    },
-  );
+test('the freshness note renders nothing when every data file is empty', () => {
+  const fixtures = {
+    '@site/data/metrics.json': null,
+    '@site/data/awards.json': null,
+    '@site/data/members.json': null,
+  };
+  applyFixtures(fixtures);
+  try {
+    assert.equal(DirectoryFreshness(), null);
+  } finally {
+    restoreFixtures(Object.keys(fixtures));
+  }
 });
 
 // --- MemberDirectory ------------------------------------------------------
@@ -523,6 +593,30 @@ test('each filter control carries a label that names it', () => {
     findByType(view.tree, 'input', EXPAND_SHARED).props.placeholder,
     'Search organizations by name',
   );
+});
+
+test('each select names its facet and offers an "all" option first', () => {
+  const { view } = renderDirectory();
+  const labels = new Map(
+    findAllByType(view.tree, 'label', EXPAND_SHARED).map((label) => [
+      label.props.htmlFor,
+      textOf(label),
+    ]),
+  );
+  assert.equal(labels.get('member-search'), 'Search organizations by name');
+  for (const [id, label, allLabel] of [
+    ['member-industry', 'Filter by industry', 'All industries'],
+    ['member-membership', 'Filter by membership status', 'All organizations'],
+    ['member-project', 'Filter by CNCF project', 'All projects'],
+  ]) {
+    assert.equal(labels.get(id), label);
+    const select = [...walkElements(view.tree, EXPAND_SHARED)].find(
+      (element) => element.type === 'select' && element.props?.id === id,
+    );
+    const [first] = findAllByType(select, 'option', EXPAND_SHARED);
+    assert.equal(first.props.value, '');
+    assert.equal(textOf(first), allLabel);
+  }
 });
 
 test('the industry and project selects list every distinct value, sorted', () => {
@@ -749,6 +843,51 @@ test('card meta counts architectures and awards, pluralised', () => {
   assert.equal(textOf(findByClass(tree, 'cardMeta')), '2 architectures1 award');
 });
 
+/** RICH_MEMBER with exactly `architectures` architectures and `awards` awards. */
+function memberWithCounts(architectures, awards) {
+  return {
+    ...RICH_MEMBER,
+    architectures: Array.from({ length: architectures }, (_, i) => ({
+      id: `arch-${i}`,
+      title: `Architecture ${i}`,
+    })),
+    awards: Array.from({ length: awards }, () => RICH_MEMBER.awards[0]),
+  };
+}
+
+// Each count picks its own singular or plural and the membership label only
+// stands in when both counts are zero; the card and the dialog meta line
+// share the rule, so both are rendered for every row.
+const META_CASES = [
+  [1, 0, '1 architecture'],
+  [0, 1, '1 award'],
+  [2, 2, '2 architectures2 awards'],
+  [1, 2, '1 architecture2 awards'],
+];
+
+test('card meta pluralises each count and names membership only without either', () => {
+  for (const [architectures, awards, expected] of META_CASES) {
+    const { tree } = render(MemberCard, {
+      member: memberWithCounts(architectures, awards),
+    });
+    assert.equal(textOf(findByClass(tree, 'cardMeta')), expected);
+  }
+  const { tree } = render(MemberCard, { member: memberWithCounts(0, 0) });
+  assert.equal(textOf(findByClass(tree, 'cardMeta')), 'End User Member');
+});
+
+test('the card shows the membership role only when the member has one', () => {
+  const labelled = render(MemberCard, { member: RICH_MEMBER });
+  const role = findByClass(labelled.tree, 'roleLabel');
+  assert.equal(role.type, 'p');
+  assert.equal(textOf(role), 'End User Member');
+
+  const unlabelled = render(MemberCard, {
+    member: { ...RICH_MEMBER, membershipStatus: '' },
+  });
+  assert.equal(findByClass(unlabelled.tree, 'roleLabel'), undefined);
+});
+
 test('card meta falls back to the explicit unknown membership status', () => {
   const { tree } = render(MemberCard, { member: BARE_MEMBER });
   assert.equal(
@@ -851,6 +990,34 @@ test('the dialog lists industries, projects, architectures and awards', () => {
   assert.equal(textOf(findByClass(tree, 'profileKicker')), 'End User Member');
 });
 
+test('dialog meta pluralises each count and is empty without either', () => {
+  for (const [architectures, awards, expected] of META_CASES) {
+    const { tree } = renderProfile(memberWithCounts(architectures, awards));
+    assert.equal(textOf(findByClass(tree, 'profileMeta')), expected);
+  }
+  const { tree } = renderProfile(memberWithCounts(0, 0));
+  assert.equal(textOf(findByClass(tree, 'profileMeta')), '');
+});
+
+test('the dialog sizes itself through the shell custom properties', () => {
+  const { tree } = renderProfile(RICH_MEMBER);
+  assert.deepEqual(findByClass(tree, 'dialog').props.style, {
+    '--profile-dialog-max-width': '720px',
+    '--profile-dialog-max-height': 'min(800px, 92vh)',
+  });
+});
+
+test('the shell leaves the dialog unsized when no dimensions are given', () => {
+  const { tree } = render(ProfileDialogShell, {
+    onClose: () => {},
+    triggerRef: { current: null },
+    labelledBy: 'x',
+    closeLabel: 'Close',
+    children: null,
+  });
+  assert.deepEqual(findByClass(tree, 'dialog').props.style, {});
+});
+
 test('each architecture links to its own detail page', () => {
   const { tree } = renderProfile(MEMBER_WITH_ARCHITECTURES);
   const items = liItems(findAllByClass(tree, 'linkList')[0]);
@@ -934,6 +1101,14 @@ test('sources are listed with the scheme and trailing slash stripped', () => {
   }
 });
 
+test('only a leading https scheme is stripped from a source', () => {
+  const url = 'http://archive.example/https://www.cncf.io/';
+  const { tree } = renderProfile({ ...BARE_MEMBER, sourceAttribution: [url] });
+  const anchor = findByType(findAllByClass(tree, 'linkList').at(-1), 'a');
+  assert.equal(anchor.props.href, url);
+  assert.equal(textOf(anchor), 'http://archive.example/https://www.cncf.io↗');
+});
+
 test('the dialog logo uses the base URL, or initials when there is none', () => {
   const withLogo = renderProfile(RICH_MEMBER);
   assert.equal(
@@ -956,6 +1131,28 @@ test('the dialog installs a focus trap that is wired to the close button', () =>
   assert.equal(effects.length, 1, 'useFocusTrap registers exactly one effect');
   assert.ok(findByClass(tree, 'dialog').props.ref);
   assert.ok(findByClass(tree, 'closeButton').props.ref);
+});
+
+test('the dialog focus trap closes on Escape and returns focus on unmount', () => {
+  const dom = installFakeDom();
+  try {
+    const trigger = dom.createElement('button');
+    let closed = 0;
+    const { effects } = render(MemberProfile, {
+      member: RICH_MEMBER,
+      onClose: () => {
+        closed += 1;
+      },
+      triggerRef: { current: trigger },
+    });
+    const cleanup = effects[0]();
+    dom.dispatchKeyDown({ key: 'Escape' });
+    assert.equal(closed, 1);
+    cleanup();
+    assert.equal(trigger.focusCount, 1);
+  } finally {
+    dom.restore();
+  }
 });
 
 // --- link hygiene ---------------------------------------------------------
