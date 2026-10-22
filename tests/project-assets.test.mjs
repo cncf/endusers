@@ -262,3 +262,34 @@ test('an empty name segment in a URL is still rejected before mirroring', () => 
     null,
   );
 });
+
+// The image-syntax pattern on its own: a query string keeps the URL out of
+// the second, extension-anchored pattern, so only the first can collect it.
+test('artworkUrls reads image syntax with any alt text, including none', () => {
+  const url =
+    'https://raw.githubusercontent.com/cncf/artwork/main/projects/flux/icon/color/flux-icon-color.svg?raw=1';
+  for (const alt of ['', 'F', 'Flux logo', 'Flux (v2)']) {
+    assert.deepEqual(artworkUrls(`Intro ![${alt}](${url}) outro`), [url], alt);
+  }
+});
+
+test('artworkUrls stops an image URL at whitespace or a closing parenthesis', () => {
+  const url =
+    'https://raw.githubusercontent.com/cncf/artwork/main/projects/flux/icon/color/flux-icon-color.svg?v=2';
+  assert.deepEqual(artworkUrls(`![Flux](${url} "title")`), []);
+  assert.deepEqual(artworkUrls(`![Flux](${url})(after)`), [url]);
+});
+
+test('artworkUrls collects each distinct artwork URL once', () => {
+  const url =
+    'https://raw.githubusercontent.com/cncf/artwork/main/projects/flux/icon/color/flux-icon-color.svg';
+  assert.deepEqual(artworkUrls(`![a](${url})\n[b](${url})\n![c](${url})`), [
+    url,
+  ]);
+});
+
+test('projectAsset refuses non-string input rather than throwing', () => {
+  for (const value of [null, 42, 0, {}, ['x'], true]) {
+    assert.equal(projectAsset(value), null, String(value));
+  }
+});

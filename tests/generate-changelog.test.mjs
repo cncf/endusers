@@ -338,3 +338,116 @@ test('the lib renders real git log output without massaging', () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('toEntry keeps every reader-visible type, perf included', () => {
+  for (const type of ['feat', 'fix', 'docs', 'perf']) {
+    assert.deepEqual(
+      toEntry({
+        hash: 'x',
+        date: '2026-10-01T00:00:00Z',
+        subject: `${type}: visible (#7)`,
+      }),
+      { month: '2026-10', summary: 'visible', pr: '7', hash: 'x' },
+      type,
+    );
+  }
+});
+
+// The pull-request suffix is recognised only at the end of the subject, with
+// any (or no) whitespace before and after it. Each row differs from the
+// canonical "summary (#N)" shape by one character the regex has to get right.
+test('toEntry reads the pull-request suffix only at the end of the subject', () => {
+  const cases = [
+    ['feat: one (#1) more', { summary: 'one (#1) more', pr: null }],
+    ['feat: one(#1)', { summary: 'one', pr: '1' }],
+    ['feat: one (#1)  ', { summary: 'one', pr: '1' }],
+    ['feat: one (#1) x(#2)', { summary: 'one (#1) x', pr: '2' }],
+  ];
+  for (const [subject, expected] of cases) {
+    const entry = toEntry({ hash: 'h', date: '2026-10-01T00:00:00Z', subject });
+    assert.deepEqual(
+      { summary: entry.summary, pr: entry.pr },
+      expected,
+      subject,
+    );
+  }
+});
+
+// A conventional prefix is recognised only at the very start of the subject
+// and with any amount of whitespace after the colon; a multi-line subject is
+// not conventional at all.
+test('toEntry anchors the conventional-commit prefix to the whole subject', () => {
+  const cases = [
+    ['See feat: one', 'See feat: one'],
+    ['feat:one', 'one'],
+    ['feat:   one', 'one'],
+    ['feat: one\nchore: two', 'feat: one\nchore: two'],
+    ['chore!: one', null],
+    ['Chore(scope)!: one', null],
+  ];
+  for (const [subject, summary] of cases) {
+    const entry = toEntry({ hash: 'h', date: '2026-10-01T00:00:00Z', subject });
+    assert.equal(entry === null ? null : entry.summary, summary, subject);
+  }
+});
+
+test('monthHeading names all twelve months', () => {
+  const names = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  names.forEach((name, index) => {
+    const month = `2025-${String(index + 1).padStart(2, '0')}`;
+    assert.equal(monthHeading(month), `${name} 2025`);
+  });
+});
+
+test('renderChangelog separates the overflow note from the last entry with a blank line', () => {
+  const entries = Array.from({ length: MAX_ENTRIES + 1 }, (_, index) => ({
+    month: '2026-10',
+    summary: `change ${index}`,
+    pr: null,
+    hash: `h${index}`,
+  }));
+  const markdown = renderChangelog(entries);
+  assert.ok(
+    markdown.endsWith(
+      `- [change ${MAX_ENTRIES - 1}](https://github.com/cncf/endusers/commit/h${MAX_ENTRIES - 1})\n` +
+        '\n' +
+        'Older changes: see the [commit history](https://github.com/cncf/endusers/commits/main).',
+    ),
+    markdown.slice(-300),
+  );
+});
+
+test('renderChangelog omits the overflow note at exactly MAX_ENTRIES', () => {
+  const entries = Array.from({ length: MAX_ENTRIES }, (_, index) => ({
+    month: '2026-10',
+    summary: `change ${index}`,
+    pr: null,
+    hash: `h${index}`,
+  }));
+  assert.ok(!renderChangelog(entries).includes('Older changes'));
+});
+
+test('FALLBACK_BODY links the live merged-PR and commit views on GitHub', () => {
+  assert.equal(
+    FALLBACK_BODY,
+    'This site is built from a shallow checkout, so the changelog cannot be\n' +
+      'rendered from git history here. GitHub keeps the live record:\n' +
+      '\n' +
+      '- [Recently merged pull requests](https://github.com/cncf/endusers/pulls?q=is%3Apr+is%3Amerged+sort%3Aupdated-desc) — every change to the\n' +
+      '  site, newest first.\n' +
+      '- [Commit history](https://github.com/cncf/endusers/commits/main) — the same record commit by commit.\n',
+  );
+});

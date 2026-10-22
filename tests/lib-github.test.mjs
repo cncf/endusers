@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { makeGitHubHeaders, githubFetch } from '../scripts/lib/github.mjs';
+import {
+  makeGitHubHeaders,
+  githubAllPages,
+  githubFetch,
+} from '../scripts/lib/github.mjs';
 
 const DEFAULT_USER_AGENT = 'cncf-endusers-site-build';
 
@@ -19,9 +23,37 @@ async function withStubbedFetch(impl, fn) {
   }
 }
 
-function jsonResponse(body, { ok = true, status = 200 } = {}) {
-  return { ok, status, json: async () => body };
+function jsonResponse(body, { ok = true, status = 200, headers = {} } = {}) {
+  return { ok, status, headers: new Headers(headers), json: async () => body };
 }
+
+// Answers each fetch call from `pages` in order, refusing anything unscripted.
+function pagedFetch(pages) {
+  let index = 0;
+  return () => {
+    const page = pages[index];
+    index += 1;
+    if (!page) throw new Error('unexpected request');
+    return jsonResponse(page.body, page);
+  };
+}
+
+// Captures console.warn for the duration of fn.
+async function withCapturedWarnings(fn) {
+  const original = console.warn;
+  const warnings = [];
+  console.warn = (...args) => warnings.push(args.join(' '));
+  try {
+    await fn(warnings);
+  } finally {
+    console.warn = original;
+  }
+}
+
+const FIRST_PAGE = 'https://api.github.com/orgs/cncf/repos?per_page=100';
+const SECOND_PAGE =
+  'https://api.github.com/orgs/cncf/repos?per_page=100&page=2';
+const nextLink = (url, separator = '; ') => `<${url}>${separator}rel="next"`;
 
 test('makeGitHubHeaders requests the GitHub JSON media type', () => {
   const headers = makeGitHubHeaders();
@@ -143,4 +175,133 @@ test('githubFetch does not swallow network failures', async () => {
       );
     },
   );
+});
+
+test('githubAllPages follows rel="next" and concatenates every page in order', async () => {
+  const headers = makeGitHubHeaders('ghp_example', 'ua-pages');
+  await withStubbedFetch(
+    pagedFetch([
+      {
+        body: [{ id: 1 }, { id: 2 }],
+        headers: {
+          link: `<https://api.github.com/x?page=9>; rel="prev", ${nextLink(SECOND_PAGE)}, <https://api.github.com/x?page=3>; rel="last"`,
+        },
+      },
+      { body: [{ id: 3 }] },
+    ]),
+    async (calls) => {
+      assert.deepEqual(await githubAllPages(FIRST_PAGE, headers), [
+        { id: 1 },
+        { id: 2 },
+        { id: 3 },
+      ]);
+      assert.deepEqual(
+        calls.map(({ url }) => url),
+        [FIRST_PAGE, SECOND_PAGE],
+      );
+      for (const call of calls) assert.deepEqual(call.options, { headers });
+    },
+  );
+});
+
+test('githubAllPages accepts a Link header with no space before rel', async () => {
+  await withStubbedFetch(
+    pagedFetch([
+      { body: ['a'], headers: { link: nextLink(SECOND_PAGE, ';') } },
+      { body: ['b'] },
+    ]),
+    async (calls) => {
+      assert.deepEqual(await githubAllPages(FIRST_PAGE, {}), ['a', 'b']);
+      assert.equal(calls.length, 2);
+    },
+  );
+});
+
+test('githubAllPages stops after a page without a Link header', async () => {
+  await withStubbedFetch(pagedFetch([{ body: ['only'] }]), async (calls) => {
+    assert.deepEqual(await githubAllPages(FIRST_PAGE, {}), ['only']);
+    assert.equal(calls.length, 1);
+  });
+});
+
+test('githubAllPages ignores a Link header that has no rel="next"', async () => {
+  await withStubbedFetch(
+    pagedFetch([
+      {
+        body: ['x'],
+        headers: { link: `<${SECOND_PAGE}>; rel="last"` },
+      },
+    ]),
+    async (calls) => {
+      assert.deepEqual(await githubAllPages(FIRST_PAGE, {}), ['x']);
+      assert.equal(calls.length, 1);
+    },
+  );
+});
+
+test('githubAllPages resolves a relative rel="next" against the first origin', async () => {
+  await withStubbedFetch(
+    pagedFetch([
+      { body: [1], headers: { link: nextLink('/orgs/cncf/repos?page=2') } },
+      { body: [2] },
+    ]),
+    async (calls) => {
+      assert.deepEqual(await githubAllPages(FIRST_PAGE, {}), [1, 2]);
+      assert.equal(
+        calls[1].url,
+        'https://api.github.com/orgs/cncf/repos?page=2',
+      );
+    },
+  );
+});
+
+test('githubAllPages throws with the status and the page URL on a non-2xx response', async () => {
+  await withStubbedFetch(
+    pagedFetch([
+      { body: [1], headers: { link: nextLink(SECOND_PAGE) } },
+      { body: { message: 'boom' }, ok: false, status: 502 },
+    ]),
+    async () => {
+      await assert.rejects(githubAllPages(FIRST_PAGE, {}), {
+        message: `GitHub API 502: ${SECOND_PAGE}`,
+      });
+    },
+  );
+});
+
+test('githubAllPages refuses to carry the token to a cross-origin rel="next"', async () => {
+  await withCapturedWarnings(async (warnings) => {
+    await withStubbedFetch(
+      pagedFetch([
+        {
+          body: ['kept'],
+          headers: { link: nextLink('https://evil.example/orgs/cncf/repos') },
+        },
+      ]),
+      async (calls) => {
+        assert.deepEqual(await githubAllPages(FIRST_PAGE, {}), ['kept']);
+        assert.equal(calls.length, 1);
+      },
+    );
+    assert.deepEqual(warnings, [
+      'Ignoring cross-origin Link rel="next" target: https://evil.example',
+    ]);
+  });
+});
+
+test('githubAllPages stops on an unparseable rel="next" target', async () => {
+  await withCapturedWarnings(async (warnings) => {
+    await withStubbedFetch(
+      pagedFetch([
+        { body: ['kept'], headers: { link: nextLink('https://[') } },
+      ]),
+      async (calls) => {
+        assert.deepEqual(await githubAllPages(FIRST_PAGE, {}), ['kept']);
+        assert.equal(calls.length, 1);
+      },
+    );
+    assert.deepEqual(warnings, [
+      'Ignoring unparseable Link rel="next" target: https://[',
+    ]);
+  });
 });
