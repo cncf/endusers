@@ -189,21 +189,6 @@ const HISTORICAL_REFERENCES = new Map([
     ]),
   ],
   [
-    'LAUNCH.md',
-    new Map([
-      [
-        'deploy-gh-pages.yml',
-        'The GitHub Pages deployment retired by the Netlify move (ADR 0005); ' +
-          'the launch record cites it as what was replaced.',
-      ],
-      [
-        'import-architectures.yml',
-        'The retired cncf/architecture content sync; the launch ' +
-          'record explains what the metrics refresh used to run inside.',
-      ],
-    ]),
-  ],
-  [
     '.agents/skills/ui-standards/SKILL.md',
     new Map([
       [
