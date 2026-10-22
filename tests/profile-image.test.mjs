@@ -48,6 +48,28 @@ test('rejects a userinfo component that disguises the real host', () => {
   );
 });
 
+test('rejects a userinfo component on an allowlisted host', () => {
+  // The existing userinfo cases all name a host the allowlist rejects anyway,
+  // so they pass whether or not the userinfo check runs. These do not: the
+  // host is allowlisted, so only the userinfo check can reject them.
+  assert.equal(profileImageUrl('https://user@github.com/ada.png'), null);
+  assert.equal(profileImageUrl('https://:pw@github.com/ada.png'), null);
+  assert.equal(profileImageUrl('https://user:pw@www.cncf.io/ada.png'), null);
+});
+
+test('trims whitespace the URL parser would otherwise encode', () => {
+  // U+00A0 is whitespace to String.prototype.trim but not to the URL parser,
+  // which percent-encodes it into the path instead of dropping it.
+  assert.equal(
+    profileImageUrl('https://github.com/ada.png\u00a0'),
+    'https://github.com/ada.png',
+  );
+  assert.equal(
+    profileImageUrl('\u00a0https://github.com/ada.png'),
+    'https://github.com/ada.png',
+  );
+});
+
 test('rejects empty, blank and non-string values', () => {
   for (const value of ['', '   ', null, undefined, 42, {}, ['x']]) {
     assert.equal(profileImageUrl(value), null, String(value));
