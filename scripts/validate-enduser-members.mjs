@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import { checkDuplicateValue } from './lib/duplicate-check.mjs';
 import {
   checkIsoTimestamp,
   checkUrl as checkUrlImpl,
@@ -130,10 +131,13 @@ for (const [index, record] of records.entries()) {
   nonEmpty(`${path}.category`, record?.category);
   nonEmpty(`${path}.subcategory`, record?.subcategory);
 
-  if (sourceIds.has(record?.sourceId)) {
-    error(path, 'duplicate sourceId');
-  }
-  sourceIds.add(record?.sourceId);
+  checkDuplicateValue(
+    errors,
+    path,
+    record?.sourceId,
+    sourceIds,
+    'duplicate sourceId',
+  );
 
   if (!allowedRoles.has(role)) {
     error(`${path}.sourceRole`, `unsupported role: ${String(role)}`);
@@ -242,8 +246,13 @@ if (existsSync(assetManifestPath)) {
       const seenAssets = new Set();
       for (const [index, asset] of manifest.assets.entries()) {
         const path = `enduser-landscape-assets.json.assets[${index}]`;
-        if (seenAssets.has(asset)) error(path, 'duplicate owned asset');
-        seenAssets.add(asset);
+        checkDuplicateValue(
+          errors,
+          path,
+          asset,
+          seenAssets,
+          'duplicate owned asset',
+        );
         if (!asset.startsWith('/img/end-user-members/')) {
           error(path, 'owned asset must be under /img/end-user-members/');
         }
