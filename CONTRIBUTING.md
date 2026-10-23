@@ -528,11 +528,11 @@ npm run test:mutation -- --mutate 'src/components/shared/*.js,scripts/lib/change
 ```
 
 A full run takes about twenty minutes with the configured four workers (the
-weekly CI run mutates the full tree in roughly that time); a run over one or
-two files takes about a minute, most of it the initial test run that
-records which test files reach which mutants. Configuration lives in
-`stryker.config.mjs`. Stryker runs the suite in a copy of the repository under
-`.stryker-tmp/` and writes its report to `reports/mutation/` (both gitignored).
+weekly CI run mutates the full tree in roughly that time); a run over one or two
+files takes about a minute, most of it the initial test run that records which
+test files reach which mutants. Configuration lives in `stryker.config.mjs`.
+Stryker runs the suite in a copy of the repository under `.stryker-tmp/` and
+writes its report to `reports/mutation/` (both gitignored).
 
 The "Mutation testing" workflow (`.github/workflows/mutation.yml`) runs on every
 pull request, but only over the `src/` and `scripts/lib/` files the pull request
