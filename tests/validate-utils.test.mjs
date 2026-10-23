@@ -730,7 +730,7 @@ test('checkIsoTimestamp accepts a strict ISO 8601 UTC value and pushes no error'
   const errors = [];
   const ok = checkIsoTimestamp(
     errors,
-    'data/launch-metrics.json',
+    'data/metrics.json',
     'generatedAt',
     '2026-09-21T00:00:00.000Z',
   );
@@ -742,14 +742,14 @@ test('checkIsoTimestamp rejects a loose Date.parse-able value with the default m
   const errors = [];
   const ok = checkIsoTimestamp(
     errors,
-    'data/launch-metrics.json',
+    'data/metrics.json',
     'generatedAt',
     'March 1, 2026',
   );
   assert.equal(ok, false);
   assert.deepEqual(errors, [
     {
-      path: 'data/launch-metrics.json',
+      path: 'data/metrics.json',
       severity: 'error',
       message: 'generatedAt must be ISO 8601',
     },
@@ -778,14 +778,14 @@ test('checkIsoTimestamp treats a missing value as a format failure, not a crash'
   const errors = [];
   const ok = checkIsoTimestamp(
     errors,
-    'data/launch-metrics.json',
+    'data/metrics.json',
     'generatedAt',
     undefined,
   );
   assert.equal(ok, false);
   assert.deepEqual(errors, [
     {
-      path: 'data/launch-metrics.json',
+      path: 'data/metrics.json',
       severity: 'error',
       message: 'generatedAt must be ISO 8601',
     },

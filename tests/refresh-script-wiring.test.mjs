@@ -17,12 +17,12 @@
 // dataset stops being refreshed, and its validator keeps passing -- because
 // stale data is still valid data. The site just serves last year's numbers.
 //
-// `collect:case-studies` and `collect:launch-metrics` are in that state on
-// purpose today. That decision currently lives only in prose
-// (scripts/collect-case-studies.mjs, docs/resources/case-studies.md,
-// CONTRIBUTING.md), where no test can tell it apart from an accident. The
-// table below puts it on the record, and the staleness guards force each
-// entry to be deleted as its collector is scheduled.
+// `collect:case-studies` is in that state on purpose today. That decision
+// currently lives only in prose (scripts/collect-case-studies.mjs,
+// docs/resources/case-studies.md, CONTRIBUTING.md), where no test can tell it
+// apart from an accident. The table below puts it on the record, and the
+// staleness guards force each entry to be deleted as its collector is
+// scheduled.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -53,12 +53,6 @@ const REFRESH_NOT_RUN_BY_CI = new Map([
       'yet, so a maintainer re-runs it manually and commits the refreshed ' +
       'data/case-studies.json (scripts/collect-case-studies.mjs, ' +
       'docs/resources/case-studies.md).',
-  ],
-  [
-    'collect:launch-metrics',
-    'records a one-time launch baseline rather than a recurring dataset, and ' +
-      'needs GH_TOKEN; CONTRIBUTING.md schedules its re-runs ' +
-      'against launch milestones, not against a cron.',
   ],
   [
     'collect:end-user-talks',

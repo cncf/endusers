@@ -59,8 +59,6 @@ jobs:
         run: npm run validate:community-people
       - name: Validate community group links
         run: npm run validate:community-groups
-      - name: Validate launch metrics data
-        run: npm run validate:launch-metrics
       - name: Validate case studies data
         run: npm run validate:case-studies
       - name: Validate radar reports data
