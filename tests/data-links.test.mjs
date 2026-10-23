@@ -55,6 +55,81 @@ test('collects the three award links rendered beside a member profile', () => {
       'https://example.com/talk',
     ],
   );
+  // The citation names which of the three anchors rotted, so a maintainer
+  // reading the report knows where to look without opening the data file.
+  assert.deepEqual(links.get('https://example.com/announce'), [
+    'Acme award announcement',
+  ]);
+  assert.deepEqual(links.get('https://example.com/case'), [
+    'Acme award case study',
+  ]);
+  assert.deepEqual(links.get('https://example.com/talk'), ['Acme award talk']);
+});
+
+test('a plain http member link is collected alongside https', () => {
+  // MemberProfile renders whatever scheme the data carries, and an http
+  // homepage rots the same way, so the gate must not be https-only.
+  const links = collectRenderedMemberLinks({
+    members: [{ name: 'Acme', sourceAttribution: ['http://example.com/a'] }],
+  });
+  assert.deepEqual([...links.keys()], ['http://example.com/a']);
+});
+
+test('a scheme that only appears mid-string is not a link', () => {
+  // A stray leading space, or a relative path that happens to contain the
+  // scheme, is not something a browser resolves as an absolute URL; probing
+  // it would report rot against a host the site never requests.
+  const links = collectRenderedMemberLinks({
+    members: [
+      {
+        name: 'Acme',
+        sourceAttribution: [
+          ' https://example.com/leading-space',
+          '/img/http://example.com/not-a-url',
+          'mailto:hi@example.com?body=https://example.com',
+        ],
+      },
+    ],
+  });
+  assert.equal(links.size, 0);
+});
+
+test('a non-string entry is skipped even when it stringifies to a URL', () => {
+  // data/members.json is generated, and a nested array reaches String() as a
+  // bare URL. Collecting it would key the map on an object the probe cannot
+  // request and the report cannot print.
+  const links = collectRenderedMemberLinks({
+    members: [
+      {
+        name: 'Acme',
+        sourceAttribution: [
+          ['https://example.com/nested'],
+          { toString: () => 'https://example.com/coerced' },
+        ],
+        awards: [{ announcementUrl: ['https://example.com/nested-award'] }],
+      },
+    ],
+  });
+  assert.equal(links.size, 0);
+});
+
+test('a null member or award is skipped without failing the whole run', () => {
+  // A hole in the generated array must not abort collection: the remaining
+  // members still have links worth resolving.
+  const links = collectRenderedMemberLinks({
+    members: [
+      null,
+      {
+        name: 'Acme',
+        sourceAttribution: ['https://example.com/a'],
+        awards: [null, { announcementUrl: 'https://example.com/announce' }],
+      },
+    ],
+  });
+  assert.deepEqual(
+    [...links.keys()],
+    ['https://example.com/a', 'https://example.com/announce'],
+  );
 });
 
 test('a URL cited by several members is probed once and reports every citation', () => {
