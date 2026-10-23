@@ -13,7 +13,7 @@
 // That hook's effect is already covered at 100% by tests/use-focus-trap.test.mjs.
 
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { before } from 'node:test';
 
 import React from 'react';
 
@@ -118,10 +118,16 @@ function findByClass(tree, className) {
 
 // `PersonCard` and `PersonDialog` are private, so they are taken from the tree
 // the exported component produces rather than imported.
+//
+// Rendering at module scope would let a change that breaks the render throw
+// before node:test starts, so the process dies with an uncaught exception
+// instead of a failing test. A root `before` hook runs the same code inside
+// the runner, so the failure is reported as a test failure and is attributed
+// to whatever caused it.
 const SECTIONS = Object.keys(peopleData.people);
 const SAMPLE_SECTION = SECTIONS[0];
-const PersonCard = CommunityPeople({ section: SAMPLE_SECTION }).props
-  .children[0].type;
+let PersonCard;
+let PersonDialog;
 
 const FULL_PERSON = {
   name: 'Ada Lovelace',
@@ -143,8 +149,11 @@ function openDialog(person) {
   return { card, dialogElement };
 }
 
-const { dialogElement: SAMPLE_DIALOG } = openDialog(FULL_PERSON);
-const PersonDialog = SAMPLE_DIALOG.type;
+before(() => {
+  PersonCard = CommunityPeople({ section: SAMPLE_SECTION }).props.children[0]
+    .type;
+  PersonDialog = openDialog(FULL_PERSON).dialogElement.type;
+});
 
 function renderDialog(person, onClose = () => {}) {
   return render(PersonDialog, {

@@ -13,7 +13,7 @@
 // calling the unexported WinnerCard with a synthetic entry.
 
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { before } from 'node:test';
 
 import { importSource } from './helpers-jsx.mjs';
 import {
@@ -27,7 +27,18 @@ const { default: AwardsTimeline } = await importSource(
 );
 const { default: awardsData } = await importSource('data/awards.json');
 
-const timeline = AwardsTimeline();
+// Rendering at module scope would let a change that breaks the render throw
+// before node:test starts, so the process dies with an uncaught exception
+// instead of a failing test. A root `before` hook runs the same code inside
+// the runner, so the failure is reported as a test failure and is attributed
+// to whatever caused it.
+let timeline;
+let WinnerCard;
+
+before(() => {
+  timeline = AwardsTimeline();
+  WinnerCard = componentNamed(timeline, 'WinnerCard');
+});
 
 /** @returns {any[]} every element in the tree, in document order */
 function elements(tree) {
@@ -49,8 +60,6 @@ function componentNamed(tree, name) {
   assert.ok(element, `expected a <${name}> element in the tree`);
   return element.type;
 }
-
-const WinnerCard = componentNamed(timeline, 'WinnerCard');
 
 function cardElements(tree = timeline) {
   return elements(tree).filter((element) => element.type === WinnerCard);

@@ -11,7 +11,7 @@
 // than as snapshots of today's numbers.
 
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { before } from 'node:test';
 
 import { formatDate } from '../src/components/shared/formatDate.js';
 import { importWithData } from './helpers-component-data.mjs';
@@ -29,7 +29,20 @@ const { default: MetricsDashboard } = await importSource(
 );
 const { default: metricsData } = await importSource('data/metrics.json');
 
-const dashboard = MetricsDashboard();
+// Rendering at module scope would let a change that breaks the render throw
+// before node:test starts, so the process dies with an uncaught exception
+// instead of a failing test. A root `before` hook runs the same code inside
+// the runner, so the failure is reported as a test failure and is attributed
+// to whatever caused it.
+let dashboard;
+let lifecycle;
+let Sparkline;
+
+before(() => {
+  dashboard = MetricsDashboard();
+  lifecycle = renderNested(dashboard, 'LifecycleSection');
+  Sparkline = componentNamed(lifecycle, 'Sparkline');
+});
 
 /** @returns {any[]} every element in the tree, in document order */
 function elements(tree) {
@@ -74,9 +87,6 @@ function parsePoints(value) {
     return { x, y };
   });
 }
-
-const lifecycle = renderNested(dashboard, 'LifecycleSection');
-const Sparkline = componentNamed(lifecycle, 'Sparkline');
 
 test('the freshness line states when the data was collected', () => {
   const meta = elements(dashboard).find((element) =>
