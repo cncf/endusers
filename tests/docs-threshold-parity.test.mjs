@@ -71,7 +71,7 @@ const HARNESS_PHRASE =
 // A doc that starts stating them must be added here; a doc listed here that
 // stops stating them fails the at-least-one-match assertion rather than
 // passing vacuously.
-const DOCS_STATING_THRESHOLDS = ['CONTRIBUTING.md', 'AGENTS.md'];
+const DOCS_STATING_THRESHOLDS = ['CONTRIBUTING.md'];
 
 test('the coverage gate script defines all four thresholds', () => {
   assert.equal(

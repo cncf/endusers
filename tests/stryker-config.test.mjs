@@ -34,9 +34,10 @@ test('every test name the mutation run skips names a test in the suite', () => {
 });
 
 // The break threshold gates the pull_request lane and a local run, and stands
-// down for the scheduled and workflow_dispatch full-tree lanes: a full-tree
-// score reflects the whole repository, not the diff under review, so it must
-// not block on a threshold tuned for incremental work.
+// down for any other event (workflow_dispatch today; a schedule if one ever
+// returns): a full-tree score reflects the whole repository, not the diff
+// under review, so it must not block on a threshold tuned for incremental
+// work.
 test('breakThreshold gates pull_request runs', () => {
   assert.equal(breakThreshold('pull_request'), 90);
 });
@@ -46,7 +47,7 @@ test('breakThreshold keeps the gate for a local run with no event name', () => {
   assert.equal(breakThreshold(''), 90);
 });
 
-test('breakThreshold stands down for the full-tree report lanes', () => {
+test('breakThreshold stands down for a full-tree report lane', () => {
   assert.equal(breakThreshold('schedule'), null);
   assert.equal(breakThreshold('workflow_dispatch'), null);
 });

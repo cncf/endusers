@@ -6,9 +6,10 @@
 #   adds or modifies, and fails when their mutation score is below the `break`
 #   threshold in stryker.config.mjs. Pull requests that touch neither tree skip
 #   the run.
-# - schedule and workflow_dispatch: mutate the full set and keep the HTML and
-#   JSON report as an artifact, so the backlog of surviving mutants stays
-#   visible between pull requests.
+# - workflow_dispatch: mutates the full set on request and keeps the HTML and
+#   JSON report as an artifact for the maintainer who asked for it. There is
+#   no scheduled full-tree run: the standing list of surviving mutants is not
+#   a work queue (ADR 0008), so nothing publishes one unasked.
 #
 # See "Mutation testing" in CONTRIBUTING.md for running it locally and reading
 # the report.
@@ -16,9 +17,6 @@ name: Mutation testing
 
 on:
   pull_request:
-  schedule:
-    # Wednesday, clear of the Monday audit, CodeQL and link-check crons.
-    - cron: '17 6 * * 3'
   workflow_dispatch:
 
 permissions:

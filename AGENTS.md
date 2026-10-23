@@ -51,35 +51,35 @@ or CI will fail the PR.
 - **Start Dev Server**: `npm run docus:start`
 - **Build**: `npm run build`
 - **Unit Tests**: `npm run test:unit:coverage:check` — required "Validate
-  repository" CI check on every PR; enforces coverage thresholds (99% lines /
-  100% source / 96% regions / 100% source regions), plus separate floors for the
-  `tests/tools/` harness (100% lines / 99% regions, 98% regions per harness
-  file). `npm run test:unit` alone skips the coverage gate.
+  repository" CI check on every PR; it runs the suite under the coverage gate
+  whose thresholds are listed in
+  [`CONTRIBUTING.md`](CONTRIBUTING.md#making-changes). The thresholds are frozen
+  regression gates, not targets
+  ([ADR 0008](./adr/0008-scope-agent-findings-to-user-observable-change.md)).
+  `npm run test:unit` alone skips the gate.
 - **End-to-end Tests**: required "End-to-end tests" CI check on every PR. Needs
   a production build first, then a one-time browser install:
   `npm run build:production && npx playwright install --with-deps chromium && npm run test:e2e`.
   Specs live in `tests/e2e/`; the suite serves `build/` on `localhost:3000`
   (override with `E2E_PORT`) and does not rebuild it for you.
-- **Mutation Tests**: `npm run test:mutation` runs StrykerJS over `src/` and
-  `scripts/lib/` (config in `stryker.config.mjs`; report in
-  `reports/mutation/`). The "Mutation testing" workflow mutates only the files a
-  PR changes and fails below the `break` score; it is not a required check. Run
+- **Mutation Tests**: the "Mutation testing" workflow mutates only the `src/`
+  and `scripts/lib/` files a PR changes and fails below the `break` score in
+  `stryker.config.mjs`; it is not a required check. Run
   `npm run test:mutation -- --mutate <file>[,<file>]` before pushing a change to
-  those files, and kill the survivors it lists instead of filing them one by
-  one. See [`CONTRIBUTING.md`](CONTRIBUTING.md#mutation-testing).
+  those files and tighten the assertions for any survivor it lists. A survivor
+  in a file a PR does not touch is not a finding. See
+  [`CONTRIBUTING.md`](CONTRIBUTING.md#mutation-testing).
 - **Lint**: required "Lint repository" CI check on every PR runs
   `npm run check:format`, `npm run check:spelling`, `npm run check:markdown`,
   `npm run check:duplication`, `npm run check:lint` and `npm run check:unused`.
   `check:lint` runs ESLint (`eslint.config.mjs`) over `src/`, `scripts/`,
   `tests/` and the root config files. `check:unused` runs knip
   (`knip.config.js`) and fails on unused files, exports and dependencies, and on
-  undeclared dependencies. `check:duplication` counts exact clones with jscpd in
-  two scans, code in `tests/`, `src/` and `scripts/` (`.jscpd.json`) and CSS in
-  `src/` plus YAML in `.github/` (`.jscpd.css-yaml.json`), and fails when either
-  exceeds its ceiling (`CLONE_CEILING`, `CSS_YAML_CLONE_CEILING`) in
-  `scripts/check-duplication.mjs`; extract a shared helper, CSS module or
-  composite action instead of copying, and lower a ceiling (never raise it) when
-  the gate reports headroom.
+  undeclared dependencies. `check:duplication` fails when a change adds exact
+  clones (jscpd, ceilings in `scripts/check-duplication.mjs`); extract a shared
+  helper, CSS module or composite action instead of copying. If the gate asks
+  you to lower a ceiling after a change, do so in the same PR. A clone that is
+  already under the ceiling is not a finding.
 - **Data Changes**: Data files under `/data/` have their own validators; see the
   data contribution model table in
   [`CONTRIBUTING.md`](CONTRIBUTING.md#data-contribution-model).
@@ -96,6 +96,9 @@ or CI will fail the PR.
   comment on the advisory issue (#23), never an issue or PR. The coverage,
   mutation and clone thresholds are frozen regression gates, not targets
   ([ADR 0008](./adr/0008-scope-agent-findings-to-user-observable-change.md)).
+  State the effect as a `Remit: <effect>` line in the PR description; the PR
+  queue hygiene job labels an agent PR without one `needs-human` and leaves the
+  label for a maintainer to clear.
 - **Decided questions stay decided**: A decision in an ADR, or by a maintainer
   on a closed issue or PR, binds every later finding on the same rule, file or
   component however it is worded. Comment on the original; do not re-file

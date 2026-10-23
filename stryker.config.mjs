@@ -32,13 +32,12 @@ export const SOURCE_TEXT_TEST_NAMES = [
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // The `break` threshold applies to the pull_request lane, which mutates only
-// the files a pull request changes and gates them. The scheduled and
-// workflow_dispatch lanes mutate the whole tree to keep the surviving-mutant
-// backlog visible in the report artifact (see .github/workflows/mutation.yml),
-// so the standing backlog must not fail them: a red weekly cron gates nothing
-// and trains everyone to ignore the lane (issue #1743). Actions sets
-// GITHUB_EVENT_NAME on every run; a local run has no event name and keeps the
-// gate.
+// the files a pull request changes and gates them. The workflow_dispatch lane
+// mutates the whole tree for a maintainer who asks for the report (see
+// .github/workflows/mutation.yml), so the standing backlog must not fail it:
+// a red full-tree run gates nothing and trains everyone to ignore the lane
+// (issue #1743). Actions sets GITHUB_EVENT_NAME on every run; a local run has
+// no event name and keeps the gate.
 export function breakThreshold(eventName) {
   return !eventName || eventName === 'pull_request' ? 90 : null;
 }
