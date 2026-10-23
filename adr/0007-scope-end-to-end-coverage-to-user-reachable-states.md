@@ -5,6 +5,10 @@
   the span-drift artifacts the reporter cannot fold are now recorded in
   `tests/e2e/fixtures/accepted-regions.json`; see
   [Amendment: accepted regions](#amendment-accepted-regions-2026-10-22).
+  Narrowed 2026-10-23 by
+  [ADR 0008](./0008-scope-agent-findings-to-user-observable-change.md): a
+  surviving mutant is evidence for a finding that already names a
+  user-observable or security effect, not a finding on its own.
 - **Date**: 2026-10-20
 - **Tracking issue**: [#1718](https://github.com/cncf/endusers/issues/1718)
   (missing gates behind recurring Hive findings, class 2)
