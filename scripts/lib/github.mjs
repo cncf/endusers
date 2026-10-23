@@ -58,6 +58,11 @@ export async function githubAllPages(url, headers) {
     const response = await fetch(next, { headers });
     if (!response.ok) throw new Error(`GitHub API ${response.status}: ${next}`);
     results.push(...(await response.json()));
+    // Stryker disable next-line StringLiteral: equivalent. The fallback is
+    // read only by the `rel="next"` match below, so any value without that
+    // shape ends pagination exactly as the empty string does. Pinned by "a
+    // GitHub response with no Link header ends pagination" in
+    // tests/mutation-equivalence-premises.test.mjs.
     const link = response.headers.get('link') || '';
     const match = link.match(/<([^>]+)>;\s*rel="next"/);
     next = match ? sameOriginNext(match[1], origin) : null;

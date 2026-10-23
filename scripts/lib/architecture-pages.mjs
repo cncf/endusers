@@ -41,6 +41,11 @@ export const REPO_AUTHORED_PAGES = new Set(['index.md', 'submit.md']);
  * path, so the ids are reserved here and rejected by the validator.
  */
 export const RESERVED_PAGE_IDS = new Set(
+  // Stryker disable next-line Regex: equivalent. Dropping the `$` only matters
+  // for a name carrying `.md` somewhere other than its final extension, and
+  // every repo-authored page name is a single stem plus one trailing
+  // extension. Pinned by "every repo-authored page name carries exactly one
+  // trailing .md/.mdx" in tests/mutation-equivalence-premises.test.mjs.
   [...REPO_AUTHORED_PAGES].map((page) => page.replace(/\.mdx?$/, '')),
 );
 
@@ -75,6 +80,17 @@ const PAGE_EXTENSION = /\.mdx?$/;
 function resolvesToDirectory(path) {
   try {
     return statSync(path).isDirectory();
+    // The surviving BlockStatement mutant on the `catch` below (emptying it,
+    // so the function returns `undefined` instead of `false`) is equivalent:
+    // this helper is module-private and its result is read only as the right
+    // operand of an `||`, so both values are the same decision. It is left
+    // un-annotated deliberately. A `disable next-line` comment cannot reach
+    // the catch clause from inside the try block, and a `disable`/`restore`
+    // pair wide enough to cover it would also suppress the mutant on the try
+    // block itself, which is killable and killed today. The decision it rests
+    // on is pinned instead by "a symlink whose target cannot be stat-ed is
+    // not treated as a directory" in
+    // tests/mutation-equivalence-premises.test.mjs.
   } catch {
     return false;
   }
