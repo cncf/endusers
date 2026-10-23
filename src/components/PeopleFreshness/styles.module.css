@@ -1,3 +1,6 @@
+/* Composed into GroupLinkStatus.module.css's own `.freshnessNote`
+   (`composes: freshnessNote from '../PeopleFreshness/styles.module.css'`) --
+   keep both freshness-note styles in sync here. */
 .freshnessNote {
   color: var(--ifm-color-emphasis-700);
   font-size: 0.85rem;

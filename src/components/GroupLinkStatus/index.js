@@ -7,6 +7,11 @@ import styles from './styles.module.css';
  * data/community-groups.json (set by `npm run check:community-group-links`).
  * Surfaces any group whose upstream repository is archived or unreachable so
  * that drift is visible on the page, not just in a CI log.
+ *
+ * `.freshnessNote`'s style composes it from
+ * `../PeopleFreshness/styles.module.css` (`composes: freshnessNote from
+ * '../PeopleFreshness/styles.module.css'`) rather than carrying its own
+ * identical copy of the rule.
  */
 export default function GroupLinkStatus() {
   const generatedAt = formatDate(groupsData?.generatedAt);
