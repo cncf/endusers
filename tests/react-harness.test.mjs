@@ -208,6 +208,189 @@ test('an omitted dependency array re-runs the memo and the effect', () => {
   assert.deepEqual(effectLog, ['setup', 'cleanup', 'setup']);
 });
 
+test('a dependency whose value changes recomputes the memo', () => {
+  // The suites above only ever rerender with deps that stayed identical, so
+  // nothing yet distinguishes "compares the arrays" from "any two arrays are
+  // equal". A driver with the second behaviour would hand every component
+  // suite a permanently stale memo and still look green.
+  let dependency = 'a';
+  let memoCalls = 0;
+  const api = renderHook(() =>
+    React.useMemo(() => {
+      memoCalls += 1;
+      return `${dependency}-${memoCalls}`;
+    }, [dependency]),
+  );
+
+  assert.equal(api.result, 'a-1');
+
+  api.rerender();
+  assert.equal(memoCalls, 1, 'an unchanged dependency must reuse the value');
+
+  dependency = 'b';
+  api.rerender();
+  assert.equal(memoCalls, 2, 'a changed dependency must recompute');
+  assert.equal(api.result, 'b-2');
+});
+
+test('deps that appear and disappear between renders are never equal', () => {
+  // sameDeps has to reject the comparison when either side is undefined, and
+  // in both directions: a render that drops its dependency array, and the
+  // render after it that brings one back. Comparing an array against
+  // undefined by length is a TypeError, so a driver that got this wrong would
+  // crash the suite rather than quietly misbehave.
+  let withDeps = true;
+  let memoCalls = 0;
+  const api = renderHook(() =>
+    React.useMemo(
+      () => {
+        memoCalls += 1;
+        return memoCalls;
+      },
+      withDeps ? ['stable'] : undefined,
+    ),
+  );
+
+  assert.equal(api.result, 1);
+
+  withDeps = false;
+  api.rerender();
+  assert.equal(api.result, 2, 'dropping the deps must recompute');
+
+  withDeps = true;
+  api.rerender();
+  assert.equal(api.result, 3, 'restoring the deps must recompute');
+});
+
+test('two state slots stay independent of each other', () => {
+  // Every slot index is handed out by call order. A driver that walked the
+  // state list in the wrong direction still works for a hook with a single
+  // useState -- which is all the suites above have -- and breaks on the
+  // second one.
+  let setSecond;
+  const api = renderHook(() => {
+    const [first] = React.useState('first');
+    const [second, set] = React.useState('second');
+    setSecond = set;
+    return `${first}|${second}`;
+  });
+
+  assert.equal(api.result, 'first|second');
+
+  api.rerender();
+  assert.equal(api.result, 'first|second', 'neither slot may be reassigned');
+
+  setSecond('changed');
+  assert.equal(api.result, 'first|changed');
+});
+
+test('unmount runs the cleanup of every effect, not just the first', () => {
+  // Same argument as the state slots, for the effect list: a hook with one
+  // effect cannot tell a correctly indexed effect list from one whose later
+  // entries are stored where the unmount walk never looks.
+  const log = [];
+  const api = renderHook(() => {
+    React.useEffect(() => () => log.push('first'), []);
+    React.useEffect(() => () => log.push('second'), []);
+  });
+
+  api.unmount();
+
+  assert.deepEqual(log, ['first', 'second']);
+});
+
+test('an effect that returns no cleanup is replaced and unmounted safely', () => {
+  // useEffect may return nothing at all, and both the re-run path and the
+  // unmount path have to tolerate the missing cleanup. Every effect in the
+  // suites above returns one, so neither guard is exercised.
+  let dependency = 'a';
+  let setups = 0;
+  const api = renderHook(() => {
+    React.useEffect(() => {
+      setups += 1;
+    }, [dependency]);
+  });
+
+  assert.equal(setups, 1);
+
+  dependency = 'b';
+  api.rerender();
+  assert.equal(setups, 2, 'replacing an effect with no cleanup must not throw');
+
+  api.unmount();
+  assert.equal(
+    setups,
+    2,
+    'unmounting an effect with no cleanup must not throw',
+  );
+});
+
+test('a setter called after unmount does not re-run the hook body', () => {
+  // Suites unmount and then let a pending callback fire. Re-rendering a
+  // torn-down hook would run the body against collaborators the test has
+  // already disposed of.
+  let setValue;
+  let renders = 0;
+  const api = renderHook(() => {
+    const [value, set] = React.useState('before');
+    setValue = set;
+    renders += 1;
+    return value;
+  });
+
+  api.unmount();
+  setValue('after');
+
+  assert.equal(renders, 1, 'an unmounted hook must not render again');
+  assert.equal(api.result, 'before');
+});
+
+test('a setter called during the render does not re-enter the hook body', () => {
+  // React defers an update queued from inside the render body to the next
+  // render rather than recursing. Without the same guard the driver would
+  // re-enter runHookBody from inside itself, with the dispatcher still
+  // swapped in and the slot counters half-consumed.
+  let renders = 0;
+  const api = renderHook(() => {
+    const [value, set] = React.useState('initial');
+    renders += 1;
+    if (value === 'initial') set('settled');
+    return value;
+  });
+
+  assert.equal(renders, 1, 'the body must not re-enter itself');
+  assert.equal(api.result, 'initial');
+
+  api.rerender();
+  assert.equal(renders, 2);
+  assert.equal(
+    api.result,
+    'settled',
+    'the queued value is seen on the next render',
+  );
+});
+
+test('a dependency array that grew is not equal to the one it replaced', () => {
+  // A hook may render a variable number of dependencies. Comparing only the
+  // entries the shorter array has would call ['a'] and ['a', 'b'] equal and
+  // leave the memo pinned to the value it computed before the dependency was
+  // added.
+  let dependencies = ['a'];
+  let memoCalls = 0;
+  const api = renderHook(() =>
+    React.useMemo(() => {
+      memoCalls += 1;
+      return memoCalls;
+    }, dependencies),
+  );
+
+  assert.equal(api.result, 1);
+
+  dependencies = ['a', 'b'];
+  api.rerender();
+  assert.equal(api.result, 2, 'an added dependency must recompute');
+});
+
 test('unmounting twice runs each cleanup only once', () => {
   // Suites unmount in a test body and again in an after hook. A second pass
   // over the effect list would call a cleanup on an already-torn-down
