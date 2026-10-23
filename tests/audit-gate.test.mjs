@@ -33,8 +33,12 @@ import {
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
+// A retired advisory (withdrawn upstream on 2026-10-23) reused as a fixture
+// id. The shipped allowlist is empty, so every case that needs an allowlisted
+// advisory passes its own Set rather than leaning on the default.
 const BRACES = 'GHSA-vfj7-8cjw-p6xm';
 const NEW_BAD = 'GHSA-aaaa-bbbb-cccc';
+const ALLOWLIST = new Set([BRACES]);
 
 /** @returns {object} a minimal advisory `via` object for the given GHSA id */
 function advisory(id, severity = 'high') {
@@ -73,7 +77,7 @@ test('an entry whose only advisory is allowlisted is not blocked', () => {
   const report = {
     vulnerabilities: { braces: entry('high', [advisory(BRACES)]) },
   };
-  const { blocked, allowlisted } = classifyAudit(report);
+  const { blocked, allowlisted } = classifyAudit(report, ALLOWLIST);
   assert.deepEqual(blocked, []);
   assert.deepEqual(allowlisted, ['braces']);
 });
@@ -110,7 +114,7 @@ test('an allowlisted advisory clears its whole bubbled chain', () => {
       '@docusaurus/utils': entry('high', ['micromatch']),
     },
   };
-  const { blocked, allowlisted } = classifyAudit(report);
+  const { blocked, allowlisted } = classifyAudit(report, ALLOWLIST);
   assert.deepEqual(blocked, []);
   assert.deepEqual(allowlisted.sort(), [
     '@docusaurus/utils',
@@ -134,12 +138,15 @@ test('moderate and low findings never block, even unallowlisted', () => {
 test('a via cycle terminates and is judged by its advisories', () => {
   // npm emits mutual references when two packages each bubble the other.
   // With only an allowlisted advisory in the cycle, both clear...
-  const clean = classifyAudit({
-    vulnerabilities: {
-      a: entry('high', [advisory(BRACES), 'b']),
-      b: entry('high', ['a']),
+  const clean = classifyAudit(
+    {
+      vulnerabilities: {
+        a: entry('high', [advisory(BRACES), 'b']),
+        b: entry('high', ['a']),
+      },
     },
-  });
+    ALLOWLIST,
+  );
   assert.deepEqual(clean.blocked, []);
   // ...and with a non-allowlisted one, both block.
   const dirty = classifyAudit({
@@ -545,6 +552,9 @@ syncBuiltinESMExports();
  * @param {boolean} [options.withNpm] install the stub at all; false makes
  *   spawnSync fail with ENOENT to exercise the spawn-error arm
  * @param {number} [options.timeouts] deadline errors before npm can run
+ * @param {Iterable<string>} [options.allowlist] GHSA ids to run the gate
+ *   with, through a wrapper entry that calls main(); omitted, the script runs
+ *   as the CLI does with its shipped allowlist
  * @returns {{status: number, stdout: string, stderr: string,
  *   attempts: number, argv: string[], spawns: object[]}} `argv` holds the
  *   invocations that reached npm; `spawns` includes timed-out attempts.
@@ -555,12 +565,23 @@ function runGate({
   responses,
   withNpm = true,
   timeouts = 0,
+  allowlist,
 } = {}) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-audit-'));
   try {
     const script = join(work, 'scripts', 'audit-gate.mjs');
     mkdirSync(dirname(script), { recursive: true });
     cpSync(join(repoRoot, 'scripts', 'audit-gate.mjs'), script);
+
+    let entrypoint = script;
+    if (allowlist) {
+      entrypoint = join(work, 'run-gate.mjs');
+      writeFileSync(
+        entrypoint,
+        `import { main } from './scripts/audit-gate.mjs';\n` +
+          `main(new Set(${JSON.stringify([...allowlist])}));\n`,
+      );
+    }
 
     const binDir = join(work, '.bin');
     mkdirSync(binDir, { recursive: true });
@@ -576,20 +597,24 @@ function runGate({
     const spawnLog = join(work, 'npm-spawns');
     const preload = join(work, 'spawn-preload.mjs');
     writeFileSync(preload, SPAWN_PRELOAD);
-    const result = spawnSync(process.execPath, ['--import', preload, script], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        PATH: binDir,
-        AUDIT_STUB_ARGV: argvLog,
-        AUDIT_STUB_SPAWNS: spawnLog,
-        AUDIT_STUB_TIMEOUTS: String(timeouts),
-        AUDIT_STUB_RESPONSES: JSON.stringify(
-          responses ?? [{ stdout, status: Number(status) }],
-        ),
+    const result = spawnSync(
+      process.execPath,
+      ['--import', preload, entrypoint],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          PATH: binDir,
+          AUDIT_STUB_ARGV: argvLog,
+          AUDIT_STUB_SPAWNS: spawnLog,
+          AUDIT_STUB_TIMEOUTS: String(timeouts),
+          AUDIT_STUB_RESPONSES: JSON.stringify(
+            responses ?? [{ stdout, status: Number(status) }],
+          ),
+        },
       },
-    });
+    );
     // The stub never runs when it was not installed, so an absent log is a
     // legitimate record of zero invocations rather than an error to swallow.
     const argv = existsSync(argvLog)
@@ -611,20 +636,30 @@ function runGate({
   }
 }
 
-test('cli: exits 1 on a clean report, because the allowlist is then stale', () => {
+test('cli: exits 1 on a clean report when the allowlist still has entries', () => {
   // A report with no vulnerabilities at all means every allowlisted advisory
   // has left the lockfile. The suppression is then pointless and, worse,
   // still live for a future reintroduction, so the gate asks for it to be
-  // removed rather than reporting a green audit over a dead exemption. The
-  // "exits 0 when every finding is allowlisted" test below covers the ok
-  // path, which is what a clean *and* empty allowlist would also produce.
+  // removed rather than reporting a green audit over a dead exemption.
   const result = runGate({
     stdout: JSON.stringify({ vulnerabilities: {} }),
+    allowlist: ALLOWLIST,
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /no longer present in the lockfile/);
   assert.match(result.stderr, new RegExp(BRACES));
   assert.doesNotMatch(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: exits 0 on a clean report with the shipped allowlist', () => {
+  // The repository's current state: nothing to suppress and nothing
+  // suppressed. Runs the script directly, so this is the CLI entry and the
+  // default allowlist that CI exercises, not the wrapper the other cases use.
+  const result = runGate({
+    stdout: JSON.stringify({ vulnerabilities: {} }),
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /audit-gate: ok — 0 high\/critical finding/);
 });
 
 test('cli: exits 0 when every finding is allowlisted, despite npm exiting 1', () => {
@@ -634,7 +669,11 @@ test('cli: exits 0 when every finding is allowlisted, despite npm exiting 1', ()
       micromatch: entry('high', ['braces']),
     },
   };
-  const result = runGate({ stdout: JSON.stringify(report), status: '1' });
+  const result = runGate({
+    stdout: JSON.stringify(report),
+    status: '1',
+    allowlist: ALLOWLIST,
+  });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /2 high\/critical finding/);
 });
@@ -653,7 +692,11 @@ test('cli: exits 1 when npm reports a fix for an allowlisted advisory', () => {
       },
     },
   };
-  const result = runGate({ stdout: JSON.stringify(report), status: '1' });
+  const result = runGate({
+    stdout: JSON.stringify(report),
+    status: '1',
+    allowlist: ALLOWLIST,
+  });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /now reports as fixable/);
   assert.match(result.stderr, new RegExp(`${BRACES} via braces`));
@@ -742,6 +785,7 @@ test('cli: a transient no-report answer is retried and the next report decides',
       { stdout: QUICK_ENDPOINT_FAILURE, status: 1 },
       { stdout: ALLOWLISTED_REPORT, status: 1 },
     ],
+    allowlist: ALLOWLIST,
   });
   assert.equal(result.status, 0);
   assert.equal(result.attempts, 2);
@@ -787,6 +831,7 @@ test('cli: a clean run asks npm exactly once', () => {
   // The retry must not cost a second registry round trip on the happy path.
   const result = runGate({
     responses: [{ stdout: ALLOWLISTED_REPORT, status: 1 }],
+    allowlist: ALLOWLIST,
   });
   assert.equal(result.status, 0);
   assert.equal(result.attempts, 1);
@@ -809,7 +854,11 @@ test('cli: every attempt bounds the subprocess as well as each request', () => {
 });
 
 test('cli: a timed-out partial report is retried before accepting a report', () => {
-  const result = runGate({ timeouts: 1, stdout: ALLOWLISTED_REPORT });
+  const result = runGate({
+    timeouts: 1,
+    stdout: ALLOWLISTED_REPORT,
+    allowlist: ALLOWLIST,
+  });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.attempts, 2);
   assert.equal(result.argv.length, 1);

@@ -2,10 +2,10 @@
 // Fails CI when `npm audit` reports a high or critical advisory that is not
 // explicitly allowlisted.
 //
-// A plain `npm audit --audit-level=high` cannot be a gate here: the lockfile
-// carries one unfixable high advisory (see SECURITY.md, "Known unpatched
-// dependency advisories"), so the naive gate would be permanently red and
-// train everyone to ignore it. This script instead allowlists exactly the
+// A plain `npm audit --audit-level=high` cannot be a gate here: whenever the
+// lockfile carries an unfixable high advisory (see SECURITY.md, "Known
+// unpatched dependency advisories"), the naive gate would be permanently red
+// and train everyone to ignore it. This script instead allowlists exactly the
 // advisories SECURITY.md documents as unpatched upstream, and exits 1 the
 // moment any *other* high or critical advisory lands in the lockfile.
 //
@@ -23,17 +23,16 @@ import { spawnSync } from 'node:child_process';
 // Advisories npm cannot fix because no patched release exists. Every entry
 // must correspond to a row in SECURITY.md's "Known unpatched dependency
 // advisories" table; remove the entry the moment upstream publishes a fix
-// (for braces: when `npm view braces versions` lists a release above 3.0.3),
-// so the gate starts enforcing it. unusedAllowlistEntries() below fails the
-// gate once an entry stops matching anything in the lockfile, and
+// (check `npm view <package> versions` for a release outside the vulnerable
+// range), so the gate starts enforcing it. unusedAllowlistEntries() below
+// fails the gate once an entry stops matching anything in the lockfile, and
 // fixableAllowlistedAdvisories() fails it once npm reports a fix while the
 // advisory is still present, so that removal is prompted rather than left to
 // be noticed.
-export const ALLOWLISTED_ADVISORIES = new Set([
-  // braces <= 3.0.3 via micromatch in @docusaurus/utils globbing; build-time
-  // only, never shipped to the published site.
-  'GHSA-vfj7-8cjw-p6xm',
-]);
+//
+// Empty as of 2026-10-23: the last entry, GHSA-vfj7-8cjw-p6xm against
+// braces <= 3.0.3, was withdrawn upstream and npm audit stopped reporting it.
+export const ALLOWLISTED_ADVISORIES = new Set([]);
 
 // `npm audit --audit-level=high` semantics: moderate and low findings are
 // reported but do not gate the merge.
@@ -291,7 +290,10 @@ function runAudit() {
   return { report, failure: null, output, status: result.status };
 }
 
-function main() {
+// The allowlist is a parameter so the unit tests can drive every arm of the
+// gate whatever the shipped allowlist happens to contain; the CLI entry below
+// always runs with ALLOWLISTED_ADVISORIES.
+export function main(allowlist = ALLOWLISTED_ADVISORIES) {
   // Retries only the answers that carry no report. A parsed report is final
   // whatever it says: a genuinely new advisory must never be retried away.
   let last = runAudit();
@@ -327,7 +329,7 @@ function main() {
   }
   const report = last.report;
 
-  const { blocked, allowlisted } = classifyAudit(report);
+  const { blocked, allowlisted } = classifyAudit(report, allowlist);
   if (blocked.length > 0) {
     console.error(
       'audit-gate: high/critical advisories outside the allowlist:',
@@ -346,7 +348,7 @@ function main() {
   }
   // Reported after the blocked check: a live advisory outside the allowlist is
   // the more urgent signal, and naming a dead exemption first would bury it.
-  const unused = unusedAllowlistEntries(report);
+  const unused = unusedAllowlistEntries(report, allowlist);
   if (unused.length > 0) {
     console.error(
       'audit-gate: allowlisted advisories no longer present in the lockfile:',
@@ -364,7 +366,7 @@ function main() {
   // Reported last: the two checks above describe advisories the gate is
   // currently letting through, while this one describes a suppression whose
   // stated reason ("no patched release exists") npm now contradicts.
-  const fixable = fixableAllowlistedAdvisories(report);
+  const fixable = fixableAllowlistedAdvisories(report, allowlist);
   if (fixable.length > 0) {
     console.error(
       'audit-gate: allowlisted advisories npm now reports as fixable:',
