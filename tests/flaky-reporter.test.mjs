@@ -132,6 +132,37 @@ test('renders the summary as a list naming each flaky spec', () => {
   assert.ok(markdown.endsWith('\n'));
 });
 
+// The list above names which specs flaked; this block is why a reader should
+// care about it at all. A green job hides the failure, so the summary has to
+// say that the failure was real and where the trace of it lives. Asserting the
+// whole rendering rather than a phrase of it keeps that explanation, and the
+// blank lines that separate it from the heading and the list, from being
+// dropped or reworded without a test noticing.
+test('explains in the summary that a green job still hid a real failure', () => {
+  const markdown = summaryMarkdown([
+    {
+      title: 'chromium > a.spec.js > one',
+      file: 'a.spec.js',
+      line: 3,
+      attempts: 2,
+    },
+  ]);
+
+  assert.equal(
+    markdown,
+    [
+      '## Flaky end-to-end specs',
+      '',
+      'These specs failed and then passed on retry, so the job is green and the',
+      'failure is real. The trace of each failed first attempt is in the',
+      '`playwright-traces` artifact.',
+      '',
+      '- `a.spec.js:3` — chromium > a.spec.js > one (passed on attempt 2)',
+      '',
+    ].join('\n'),
+  );
+});
+
 // Property 3 of tests/ci-playwright-trace-evidence.test.mjs: a green,
 // non-flaky run leaves Playwright's output directory empty, so the upload
 // step can stay tolerant of an empty directory. A report written
