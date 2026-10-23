@@ -22,17 +22,15 @@ import { spawnSync } from 'node:child_process';
 
 // Advisories npm cannot fix because no patched release exists. Every entry
 // must correspond to a row in SECURITY.md's "Known unpatched dependency
-// advisories" table; remove the entry the moment upstream publishes a fix
-// (for braces: when `npm view braces versions` lists a release above 3.0.3),
-// so the gate starts enforcing it. unusedAllowlistEntries() below fails the
-// gate once an entry stops matching anything in the lockfile, and
-// fixableAllowlistedAdvisories() fails it once npm reports a fix while the
-// advisory is still present, so that removal is prompted rather than left to
-// be noticed.
+// advisories" table; remove the entry the moment upstream publishes a fix or
+// withdraws the advisory, so the gate starts enforcing it.
+// unusedAllowlistEntries() below fails the gate once an entry stops matching
+// anything in the lockfile, and fixableAllowlistedAdvisories() fails it once
+// npm reports a fix while the advisory is still present, so that removal is
+// prompted rather than left to be noticed.
 export const ALLOWLISTED_ADVISORIES = new Set([
-  // braces <= 3.0.3 via micromatch in @docusaurus/utils globbing; build-time
-  // only, never shipped to the published site.
-  'GHSA-vfj7-8cjw-p6xm',
+  // Empty at present: GHSA-vfj7-8cjw-p6xm (braces <= 3.0.3, via micromatch in
+  // @docusaurus/utils globbing) was withdrawn upstream on 2026-10-23.
 ]);
 
 // `npm audit --audit-level=high` semantics: moderate and low findings are
