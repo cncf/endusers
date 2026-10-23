@@ -24,6 +24,49 @@ export function resolveRepoRoot(moduleUrl) {
 
 const repoRoot = resolveRepoRoot(import.meta.url);
 
+const STRYKER_NAMESPACE = process.env.STRYKER_NAMESPACE || '__stryker__';
+
+// Only true under Stryker, which preloads a hook that creates this object
+// before any test runs. Outside a mutation run the spawned scripts stay
+// exactly as they were: no extra preload, no extra environment entry.
+function strykerNamespace() {
+  return globalThis[STRYKER_NAMESPACE];
+}
+
+const childCoverageHook = fileURLToPath(
+  new URL('./tools/stryker-child-coverage.cjs', import.meta.url),
+);
+
+// Folds one spawned script's mutant counters into this process's, so Stryker
+// attributes them to the test file that ran the script. The tap runner never
+// sets `currentTestId`, so the child's `static` bucket and ours describe the
+// same test file and add together directly.
+export function mergeStrykerChildCoverage(payload) {
+  const ns = strykerNamespace();
+  if (!ns || !payload) return;
+  const { mutantCoverage, hitCount } = payload;
+  if (mutantCoverage) {
+    const coverage = (ns.mutantCoverage ??= { static: {}, perTest: {} });
+    for (const [id, count] of Object.entries(mutantCoverage.static ?? {})) {
+      coverage.static[id] = (coverage.static[id] ?? 0) + count;
+    }
+    for (const [testId, counts] of Object.entries(
+      mutantCoverage.perTest ?? {},
+    )) {
+      const bucket = (coverage.perTest[testId] ??= {});
+      for (const [id, count] of Object.entries(counts)) {
+        bucket[id] = (bucket[id] ?? 0) + count;
+      }
+    }
+  }
+  // The child enforces its own hit limit and exits; carrying the count back
+  // keeps a mutant that loops across several spawns visible to Stryker's
+  // limit rather than letting each child start again from zero.
+  if (typeof hitCount === 'number' && typeof ns.hitCount === 'number') {
+    ns.hitCount += hitCount;
+  }
+}
+
 // Runs a script from scripts/ against fixture data by mirroring the repo
 // layout in a temp directory. The scripts resolve inputs relative to their
 // own import.meta.url (../data, ../src/css, ../static), so a copy placed in
@@ -67,14 +110,33 @@ export function runScriptWithFixtures(scriptName, fixtures = {}, options = {}) {
       symlinkSync(linkTarget, link);
     }
     if (setup) setup(work);
+    // Kept outside `work` so a script that walks the sandbox never sees it.
+    const childCoverageFile = strykerNamespace()
+      ? `${work}.stryker-coverage.json`
+      : null;
     const result = spawnSync(
       'node',
-      [join(work, 'scripts', scriptName), ...args],
+      [
+        ...(childCoverageFile ? ['-r', childCoverageHook] : []),
+        join(work, 'scripts', scriptName),
+        ...args,
+      ],
       {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
+        env: childCoverageFile
+          ? { ...process.env, STRYKER_CHILD_COVERAGE_FILE: childCoverageFile }
+          : process.env,
       },
     );
+    if (childCoverageFile) {
+      if (existsSync(childCoverageFile)) {
+        mergeStrykerChildCoverage(
+          JSON.parse(readFileSync(childCoverageFile, 'utf8')),
+        );
+      }
+      rmSync(childCoverageFile, { force: true });
+    }
     const files = {};
     for (const relativePath of readBack) {
       const target = join(work, relativePath);
