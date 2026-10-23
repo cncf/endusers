@@ -37,7 +37,15 @@ const { default: RadarReports } = await importSource(
 const { default: data } = await importSource('data/radar-reports.json');
 const reports = data.radarReports || [];
 
-const LONG_DATE = { year: 'numeric', month: 'long', day: 'numeric' };
+// formatDate (src/components/shared) pins timeZone: 'UTC' because a
+// date-only value parses as UTC midnight; the expectation must use the same
+// pin or it computes the previous day on any host west of UTC (#1858).
+const LONG_DATE = {
+  timeZone: 'UTC',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+};
 
 /**
  * `<MirrorSyncStatus />` (src/components/shared) is a nested component
