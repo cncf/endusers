@@ -600,3 +600,33 @@ test('collect-metrics files projects from an unnamed category under "Other"', ()
     { name: 'Other', value: 1 },
   ]);
 });
+
+test('collect-metrics counts a category or maturity named after an inherited Object property', () => {
+  const data = metricsFrom(
+    run({
+      landscape: `landscape:
+  - name: __proto__
+    subcategories:
+      - name: Scheduling
+        items:
+          - name: Kubernetes
+            project: constructor
+  - name: constructor
+    subcategories:
+      - name: Scheduling
+        items:
+          - name: Linkerd
+            project: toString
+`,
+    }),
+  );
+
+  assert.deepEqual(data.breakdowns.projectCategories.values, [
+    { name: '__proto__', value: 1 },
+    { name: 'constructor', value: 1 },
+  ]);
+  assert.deepEqual(data.breakdowns.projectMaturity.values, [
+    { name: 'constructor', value: 1 },
+    { name: 'tostring', value: 1 },
+  ]);
+});
