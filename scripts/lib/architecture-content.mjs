@@ -227,6 +227,11 @@ export async function mirrorArtworkUrls(root, urls) {
         if (remote.length) {
           throw new Error(`remote resource references: ${remote.join('; ')}`);
         }
+        // Stryker disable next-line StringLiteral: equivalent. Node resolves
+        // an empty encoding argument to the default, which is utf8, so
+        // emptying the literal writes the same bytes; it records the contract
+        // rather than selecting it. Pinned by "a mirrored SVG is written as
+        // UTF-8 bytes" in tests/mutation-equivalence-premises.test.mjs.
         writeFileSync(destination, source, 'utf8');
       } else {
         writeFileSync(destination, fetched);

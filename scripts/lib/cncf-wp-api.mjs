@@ -29,6 +29,12 @@ export async function fetchAllPages(api, path) {
     }
     const batch = await response.json();
     results.push(...batch);
+    // Stryker disable next-line StringLiteral: equivalent. Emptying the
+    // fallback makes `totalPages` 0 instead of 1, and neither value can change
+    // the walk: `page` starts at 1 and the loop breaks on `page >= totalPages`,
+    // which is already true for both. Pinned by "a WordPress response with no
+    // x-wp-totalpages header is fetched once" in
+    // tests/mutation-equivalence-premises.test.mjs.
     const totalPages = Number(response.headers.get('x-wp-totalpages') || '1');
     if (page >= totalPages || !batch.length) break;
     page += 1;
