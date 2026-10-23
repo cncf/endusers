@@ -18,8 +18,8 @@ const validData = {
   generatedAt: '2026-09-21T00:00:00.000Z',
   capturedAt: '2026-09-21T00:00:00.000Z',
   checkpoint: {
-    label: 'W-6 pre-launch checkpoint (LAUNCH.md)',
-    targetDate: '2026-09-28',
+    label: 'Post-cutover launch baseline (2026-10-22)',
+    targetDate: '2026-10-22',
   },
   source: 'https://api.github.com/repos/cncf/endusers',
   signals: [

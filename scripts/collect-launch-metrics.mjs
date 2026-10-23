@@ -8,12 +8,8 @@
 // is live GitHub API data, refreshed by re-running this script — the same
 // generated/never-hand-edited pattern as data/metrics.json.
 //
-// LAUNCH.md is an undated readiness checklist. The committed baseline was
-// captured at its "success-metrics baseline" milestone; the checkpoint label
-// and targetDate below are retained verbatim because tests and the committed
-// data pin them, and because they name the checkpoint the capture was taken
-// under at the time. Re-run this script immediately before launch and record
-// capturedAt so the 90-day comparison starts from the announcement-day numbers.
+// The checkpoint records the DNS cutover date; capturedAt records when this
+// post-cutover baseline was actually collected and starts the 90-day comparison.
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -70,9 +66,9 @@ async function main() {
     generatedAt: capturedAt,
     capturedAt,
     checkpoint: {
-      label: 'W-6 pre-launch checkpoint (LAUNCH.md)',
-      targetDate: '2026-09-28',
-      note: 'Re-run npm run collect:launch-metrics on or after targetDate and commit the refreshed file before this baseline is treated as final for the launch retrospective.',
+      label: 'Post-cutover launch baseline (2026-10-22)',
+      targetDate: '2026-10-22',
+      note: 'Captured after the 2026-10-22 DNS cutover to endusers.cncf.io. Use capturedAt as the starting point for the 90-day post-launch comparison.',
     },
     source: `https://api.github.com/repos/${REPO}`,
     signals: [
