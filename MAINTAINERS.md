@@ -17,7 +17,7 @@ process below, not the roster above.
 ## What maintainers do
 
 - Review and merge pull requests, including automated (hive/agent) PRs.
-- Triage issues and keep the roadmap (`ROADMAP.md`) current.
+- Triage issues.
 - Make project-direction decisions and record lasting ownership or site
   architecture decisions in `adr/`.
 

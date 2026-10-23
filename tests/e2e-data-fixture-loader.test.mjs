@@ -135,12 +135,9 @@ test('a data file with no committed overlay is returned byte-for-byte', () => {
   // Chosen from the data directory at run time rather than named here: which
   // files carry an overlay changes as fixtures are added, and this case is
   // about the absence of one, not about a particular document.
-  const unoverlaid = [
-    'projects-born.json',
-    'milestones.json',
-    'metrics.json',
-    'awards.json',
-  ].find((name) => overlayPathsFor(join(DATA_DIR, name), {}).length === 0);
+  const unoverlaid = ['projects-born.json', 'metrics.json', 'awards.json'].find(
+    (name) => overlayPathsFor(join(DATA_DIR, name), {}).length === 0,
+  );
   assert.ok(unoverlaid, 'every candidate data file now carries a base overlay');
 
   const { source, patched, context } = run(unoverlaid);

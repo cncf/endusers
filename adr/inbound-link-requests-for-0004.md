@@ -15,8 +15,7 @@ resolve and these requests can be filed.
 
 Origin issue: [#1434](https://github.com/cncf/endusers/issues/1434) (closed once
 these drafts shipped). Live status is the Status column below: when a request is
-filed, record its link there and tick the ROADMAP.md cross-linking item once all
-are filed.
+filed, record its link there and close #1407 once all are filed.
 
 | #   | Target property    | Suggested page                                | Requested link and anchor text                                                                   | Why (ADR 0004)                                                    | Status |
 | --- | ------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------ |
