@@ -10,7 +10,13 @@ import {
   isHeld,
   isTrustedMarkerComment,
   isTrustedResolvedComment,
+  hasRemitLine,
+  hasRemitNag,
+  isAgentAuthored,
   MARKER_PREFIX,
+  REMIT_LABEL,
+  REMIT_MARKER,
+  remitStatus,
   RESOLVED_MARKER_PREFIX,
 } from '../scripts/pr-queue-hygiene.mjs';
 import { runWithCurlStub, runWithGhStub } from './helpers-gh-sandbox.mjs';
@@ -605,6 +611,202 @@ test('main: fails loudly when no repository is configured', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /REPO or GITHUB_REPOSITORY must be set/);
   assert.equal(result.calls.length, 0);
+});
+
+// --- remit check (ADR 0008) --------------------------------------------------
+// An agent PR must state, in a `Remit:` line, the effect that justifies it.
+// The job labels one that does not and tells it once; it never clears the
+// label, so a maintainer sees every PR the rule caught.
+
+const HIVE = { login: 'hivecommons-hive[bot]', type: 'Bot' };
+
+function agentPR(body, labels = []) {
+  return { number: 7, labels, user: HIVE, body };
+}
+
+const CLEAN_DETAIL = { mergeable: true, mergeable_state: 'clean' };
+
+function remitNag(user = BOT) {
+  return { body: `${REMIT_MARKER}\nplease add one`, user };
+}
+
+test('hasRemitLine: accepts the line plain, bold, upper-case or indented', () => {
+  for (const body of [
+    'Remit: required check failing on main',
+    'Summary\n\n**Remit:** user-observable defect on /community',
+    '_remit_: dependency refresh',
+    'REMIT : security exposure in the static server',
+    '  Remit:\tmaintainer-filed accessibility issue',
+  ]) {
+    assert.ok(hasRemitLine(body), body);
+  }
+});
+
+test('hasRemitLine: rejects a missing, empty or mid-sentence remit', () => {
+  for (const body of [
+    undefined,
+    '',
+    'Remit:',
+    'Remit:   \n\nnext paragraph',
+    'this is within the remit: of the agent',
+    'Remits: everything',
+  ]) {
+    assert.ok(!hasRemitLine(body), String(body));
+  }
+});
+
+test('isAgentAuthored: only a Bot whose login is in the agent set counts', () => {
+  assert.ok(isAgentAuthored({ user: HIVE }));
+  assert.ok(
+    isAgentAuthored({ user: { login: 'HiveCommons-Hive[bot]', type: 'Bot' } }),
+  );
+  assert.ok(
+    !isAgentAuthored({
+      user: { login: 'hivecommons-hive[bot]', type: 'User' },
+    }),
+  );
+  assert.ok(!isAgentAuthored({ user: BOT }));
+  assert.ok(!isAgentAuthored({ user: HUMAN }));
+  assert.ok(!isAgentAuthored({}));
+  assert.ok(!isAgentAuthored(undefined));
+  assert.ok(!isAgentAuthored({ user: { type: 'Bot' } }));
+  assert.ok(isAgentAuthored({ user: BOT }, new Set(['github-actions[bot]'])));
+});
+
+test('remitStatus: distinguishes human, compliant and non-compliant PRs', () => {
+  assert.equal(remitStatus({ user: HUMAN, body: '' }), 'not-agent');
+  assert.equal(remitStatus(agentPR('Remit: data refresh')), 'present');
+  assert.equal(remitStatus(agentPR('no line here')), 'missing');
+  assert.equal(remitStatus(agentPR(null)), 'missing');
+});
+
+test('hasRemitNag: finds only a trusted copy of the remit marker', () => {
+  assert.ok(hasRemitNag([{ body: 'hi', user: HUMAN }, remitNag()]));
+  assert.ok(!hasRemitNag([remitNag(HUMAN)]));
+  assert.ok(!hasRemitNag([{ body: 'no marker', user: BOT }, { user: BOT }]));
+  assert.ok(!hasRemitNag([]));
+});
+
+// Runs main() over one agent PR (or the given list) with gh write routes
+// stubbed, and returns the result plus the number of label and nag writes.
+function runRemit({
+  body,
+  labels = [],
+  comments = [],
+  env = {},
+  detail = CLEAN_DETAIL,
+  prs = [agentPR(body, labels)],
+}) {
+  const result = runMain({
+    env,
+    routes: [
+      openPRsRoute(prs),
+      ...prs.flatMap((pr) => [
+        detailRoute(pr.number, detail),
+        commentsRoute(pr.number, comments),
+      ]),
+      { match: 'pr edit', stdout: '' },
+      { match: 'pr comment', stdout: '' },
+    ],
+  });
+  assert.equal(result.status, 0, result.stderr);
+  return {
+    result,
+    labelled: callsMatching(result, 'pr edit', '--add-label', REMIT_LABEL)
+      .length,
+    nagged: callsMatching(result, 'pr comment', REMIT_MARKER).length,
+  };
+}
+
+test('main: labels and nags an agent PR with no Remit line', () => {
+  const { result, labelled, nagged } = runRemit({ body: 'Tightens three.' });
+  assert.match(result.stdout, /PR #7: agent-authored with no Remit line/);
+  assert.equal(labelled, 1);
+  assert.equal(nagged, 1);
+  const nag = callsMatching(result, 'pr comment', REMIT_MARKER)[0].join(' ');
+  assert.match(nag, /ADR 0008/);
+  assert.match(nag, /`Remit: <effect>`/);
+});
+
+test('main: DRY_RUN reports a missing remit without labelling or commenting', () => {
+  const { result, labelled, nagged } = runRemit({
+    body: 'Tightens three.',
+    env: { DRY_RUN: '1' },
+  });
+  assert.match(result.stdout, /PR #7: agent-authored with no Remit line/);
+  assert.equal(labelled + nagged, 0);
+});
+
+test('main: nags once and re-adds only the label if a human removed it', () => {
+  const { labelled, nagged } = runRemit({
+    body: 'still no line',
+    comments: [remitNag()],
+  });
+  assert.equal(labelled, 1);
+  assert.equal(nagged, 0);
+});
+
+test('main: adds no comment when the label is on but the nag was never posted', () => {
+  const { labelled, nagged } = runRemit({
+    body: 'still no line',
+    labels: [{ name: REMIT_LABEL }],
+    comments: [remitNag(HUMAN)],
+  });
+  assert.equal(labelled, 0);
+  assert.equal(nagged, 1);
+});
+
+test('main: leaves an already labelled and nagged agent PR alone', () => {
+  const { result, labelled, nagged } = runRemit({
+    body: 'still no line',
+    labels: [{ name: REMIT_LABEL }],
+    comments: [remitNag()],
+  });
+  assert.doesNotMatch(result.stdout, /no Remit line/);
+  assert.equal(labelled + nagged, 0);
+});
+
+test('main: an agent PR that states its remit is not flagged', () => {
+  const { result, labelled, nagged } = runRemit({
+    body: 'Remit: required check failing on main',
+  });
+  assert.doesNotMatch(result.stdout, /no Remit line/);
+  assert.equal(labelled + nagged, 0);
+});
+
+test('main: a human PR without a Remit line is not flagged', () => {
+  const result = runMain({
+    routes: [
+      openPRsRoute([{ number: 7, labels: [], user: HUMAN, body: 'no line' }]),
+      detailRoute(7, CLEAN_DETAIL),
+      commentsRoute(7, []),
+    ],
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /no Remit line/);
+  assert.equal(callsMatching(result, 'pr edit').length, 0);
+});
+
+test('main: honours AGENT_AUTHORS for a fleet under another login', () => {
+  const otherBot = { login: 'other-fleet[bot]', type: 'Bot' };
+  const { result, labelled } = runRemit({
+    env: { AGENT_AUTHORS: 'other-fleet[bot], HiveCommons-Hive[bot]' },
+    prs: [
+      { number: 7, labels: [], user: otherBot, body: 'no line' },
+      { number: 8, labels: [], user: HIVE, body: 'no line' },
+    ],
+  });
+  assert.equal(labelled, 2);
+  assert.equal(callsMatching(result, 'pr edit', '7', '--add-label').length, 1);
+});
+
+test('main: the remit check still runs on a PR that is also conflicting', () => {
+  const { result, nagged } = runRemit({
+    body: 'no line',
+    detail: { mergeable: false, mergeable_state: 'dirty' },
+  });
+  assert.equal(nagged, 1);
+  assert.equal(callsMatching(result, 'pr comment', MARKER_PREFIX).length, 1);
 });
 
 // --- curl fallback (runner images without the gh CLI) -----------------------

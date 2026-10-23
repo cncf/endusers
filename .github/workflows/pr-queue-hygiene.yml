@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   hygiene:
-    name: Flag stale conflicting PRs
+    name: Flag stale conflicting PRs and agent PRs without a remit
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

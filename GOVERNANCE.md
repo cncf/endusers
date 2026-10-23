@@ -154,6 +154,15 @@ committed, is closed. See the `Hive App workflow-permission gap` section above
 for the current status of that separate, ongoing constraint on agent-pushed
 workflow changes.
 
+The same job applies the remit rule of
+[ADR 0008](adr/0008-scope-agent-findings-to-user-observable-change.md): an
+agent-authored PR whose description has no `Remit:` line naming the effect that
+justifies it is labelled `needs-human` and told once, in a comment, what is
+missing. The job does not judge the claim and does not close the PR; the label
+stays until a maintainer clears it or closes the PR under the ADR. Which bot
+logins count as agents is set by the `AGENT_AUTHORS` environment variable of the
+workflow (default `hivecommons-hive[bot]`).
+
 ### Cross-agent duplicate prevention
 
 Fleet-wide sweeps have repeatedly found duplicate PRs opening the same fix from

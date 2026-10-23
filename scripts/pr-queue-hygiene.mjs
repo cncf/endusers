@@ -37,6 +37,10 @@
 //    instead of relying on a single `per_page=100` call, so a marker
 //    posted early in a PR with a long comment thread is still found.
 //
+// The same pass also applies the ADR 0008 remit check: an agent-authored PR
+// whose description has no `Remit:` line is labelled `needs-human` and told
+// once, in a comment, what is missing (see REMIT_LABEL below).
+//
 // Usage: node scripts/pr-queue-hygiene.mjs
 // Requires `gh` authenticated with `pull-requests: write` on this repo (as
 // the workflow already grants). When the runner image has no `gh` binary
@@ -46,7 +50,9 @@
 // Set DRY_RUN=1 to log intended actions
 // without labeling/commenting. Set MARKER_AUTHORS to a comma-separated list
 // of bot logins when the job comments under an identity other than
-// github-actions[bot] (a GitHub App, for example).
+// github-actions[bot] (a GitHub App, for example). Set AGENT_AUTHORS to a
+// comma-separated list of bot logins whose PRs the remit check applies to
+// (default hivecommons-hive[bot]).
 
 import { execFileSync } from 'node:child_process';
 
@@ -74,6 +80,65 @@ export const TRUSTED_MARKER_AUTHORS = new Set(
     .map((login) => login.trim().toLowerCase())
     .filter(Boolean),
 );
+
+// Remit check (ADR 0008). An agent-authored PR must say, in a `Remit:` line
+// of its description, which effect justifies it: a user-observable defect, a
+// security or supply-chain exposure, a required check failing, a data or
+// dependency refresh, or maintainer-filed work. The job does not judge the
+// claim; it makes sure one is stated, so a maintainer can read it in one
+// glance and close the PR under the ADR if it does not hold. A PR without
+// the line is labelled for a human and told once what is missing. The label
+// is left for the maintainer to clear, so a body edit cannot silently
+// un-flag a PR nobody has looked at.
+export const REMIT_LABEL = 'needs-human';
+export const REMIT_MARKER = '<!-- pr-queue-hygiene:remit-missing -->';
+export const AGENT_AUTHORS = new Set(
+  (process.env.AGENT_AUTHORS || 'hivecommons-hive[bot]')
+    .split(',')
+    .map((login) => login.trim().toLowerCase())
+    .filter(Boolean),
+);
+// A line that starts with "Remit:" (optionally bold or italic) and says
+// something after the colon. Case-insensitive so "REMIT:" counts too.
+const REMIT_LINE_RE = /^[ \t]*[*_]{0,2}remit[*_]{0,2}[ \t]*:[ \t]*\S/im;
+export const REMIT_NAG =
+  'This pull request was opened by an agent and its description has no ' +
+  '`Remit:` line. Under [ADR 0008](../../blob/main/adr/0008-scope-agent-findings-to-user-observable-change.md) ' +
+  'an agent-filed PR must name the effect that justifies it: a defect an end ' +
+  'user can observe on the production site, a security or supply-chain ' +
+  'exposure, a required check failing, a generated-data or dependency ' +
+  'refresh, or an issue a maintainer filed for agent work. Add a line of the ' +
+  'form `Remit: <effect>` to the description. A change whose only effect is ' +
+  'to move a metric (coverage, mutation score, clone count, test shape) is ' +
+  'out of remit and will be closed. Flagged automatically by the PR queue ' +
+  `hygiene workflow; the \`${REMIT_LABEL}\` label stays until a maintainer ` +
+  'clears it.';
+
+export function isAgentAuthored(pr, agentLogins = AGENT_AUTHORS) {
+  const user = pr?.user;
+  if (!user || user.type !== 'Bot') return false;
+  return agentLogins.has(String(user.login || '').toLowerCase());
+}
+
+export function hasRemitLine(body) {
+  return REMIT_LINE_RE.test(body || '');
+}
+
+// 'not-agent' for a human PR, 'present' when the line is there, 'missing'
+// when an agent PR lacks it.
+export function remitStatus(pr, agentLogins = AGENT_AUTHORS) {
+  if (!isAgentAuthored(pr, agentLogins)) return 'not-agent';
+  return hasRemitLine(pr.body) ? 'present' : 'missing';
+}
+
+// True when this job has already told the PR what is missing; the nag is
+// posted once per PR, under the same trust rule as the conflict markers.
+export function hasRemitNag(comments, isTrusted = isTrustedMarkerComment) {
+  return comments.some(
+    (comment) =>
+      (comment.body || '').includes(REMIT_MARKER) && isTrusted(comment),
+  );
+}
 
 // A marker is this job's own only if a bot account on the allowlist wrote
 // it. GitHub reports App and Actions comments with user.type === 'Bot' and a
@@ -373,6 +438,40 @@ function defaultFetchDetail(repo, number) {
   );
 }
 
+// Labels an agent PR that states no remit and tells it once what is missing.
+// Idempotent: a PR already labelled and already nagged costs no API write.
+function enforceRemit(pr, comments) {
+  if (remitStatus(pr) !== 'missing') return;
+  const number = pr.number;
+  const needsLabel = !labelNames(pr).includes(REMIT_LABEL);
+  const needsNag = !hasRemitNag(comments);
+  if (!needsLabel && !needsNag) return;
+  console.log(`PR #${number}: agent-authored with no Remit line, flagging`);
+  if (DRY_RUN) return;
+  if (needsLabel) {
+    gh([
+      'pr',
+      'edit',
+      String(number),
+      '--repo',
+      REPO,
+      '--add-label',
+      REMIT_LABEL,
+    ]);
+  }
+  if (needsNag) {
+    gh([
+      'pr',
+      'comment',
+      String(number),
+      '--repo',
+      REPO,
+      '--body',
+      `${REMIT_MARKER}\n${REMIT_NAG}`,
+    ]);
+  }
+}
+
 async function main() {
   if (!REPO) throw new Error('REPO or GITHUB_REPOSITORY must be set');
 
@@ -391,6 +490,7 @@ async function main() {
     const conflicting = await isConflicting(REPO, number);
 
     const comments = fetchAllIssueComments(REPO, number);
+    enforceRemit(pr, comments);
     const firstObservedAt = findFirstConflictObservedAt(comments);
 
     if (!conflicting) {
