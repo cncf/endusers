@@ -123,6 +123,9 @@ export function checkUrl(errors, path, field, value, options = {}) {
   try {
     parsed = new URL(
       applyDefaultScheme(
+        // Stryker disable next-line ConditionalExpression: the guard above
+        // returns when `requireNonEmptyString` is set and `value` is not a
+        // string, so `typeof value === 'string'` is always true here.
         requireNonEmptyString && typeof value === 'string'
           ? value.trim()
           : value,
@@ -135,6 +138,8 @@ export function checkUrl(errors, path, field, value, options = {}) {
   }
 
   if (!protocols.includes(parsed.protocol)) {
+    // Stryker disable Regex: message text only -- no protocol string contains
+    // an interior colon, so /:/ and /:$/ strip the same character.
     errors.push({
       path,
       severity: 'error',
@@ -142,6 +147,7 @@ export function checkUrl(errors, path, field, value, options = {}) {
         .map((protocol) => protocol.replace(/:$/, ''))
         .join(' or ')}, got ${parsed.protocol}`,
     });
+    // Stryker restore Regex
     return;
   }
 
@@ -189,6 +195,8 @@ export function checkUrl(errors, path, field, value, options = {}) {
  */
 export function isSafeUrl(value, options = {}) {
   const errors = [];
+  // Stryker disable next-line StringLiteral: `path` and `field` feed message
+  // strings only; this caller branches on `errors.length` and discards them.
   checkUrl(errors, '', '', value, options);
   return errors.length
     ? null

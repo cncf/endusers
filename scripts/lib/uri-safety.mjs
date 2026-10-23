@@ -80,12 +80,15 @@ export function decodeEntities(value) {
  * @returns {string}
  */
 export function normalizeUri(value) {
+  // Stryker disable Regex: `+` is redundant under /g -- replacing each control
+  // character individually yields the same string as replacing runs.
   return (
     decodeEntities(decodeEntities(String(value)))
       // eslint-disable-next-line no-control-regex
       .replace(/[\u0000-\u0020\u007f]+/g, '')
       .toLowerCase()
   );
+  // Stryker restore Regex
 }
 
 /**
@@ -108,6 +111,9 @@ export function disallowedScheme(value, { rasterData = false } = {}) {
   const scheme = /^([a-z][a-z0-9+.-]*):/.exec(normalized)?.[1];
   if (scheme === undefined || ALLOWED_SCHEMES.has(scheme)) return null;
   if (scheme !== 'data') return `${scheme}:`;
+  // Stryker disable next-line Regex: reachable only once the anchored scheme
+  // match proved `normalized` starts with `data:`, so the leftmost unanchored
+  // match is already at index 0.
   const type = /^data:([^,;]*)/.exec(normalized)[1];
   return rasterData && RASTER_DATA_TYPES.has(type) ? null : `data:${type}`;
 }
@@ -160,6 +166,9 @@ export function remoteTarget(value) {
   // keeps the value on this origin (`\host` is the path `/host`), and an
   // interior backslash is an ordinary path character.
   const authority = normalized.replace(
+    // Stryker disable next-line Regex: the replacement rewrites a separator run
+    // to exactly `//` and never moves content forward, so a match at a non-zero
+    // index keeps its prefix and cannot newly satisfy the test below.
     /^(https?:)?[/\\]{2,}/,
     (match, scheme) => `${scheme ?? ''}//`,
   );
