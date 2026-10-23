@@ -121,12 +121,15 @@ test('star, watcher and fork baselines come from the repository payload', () => 
   assert.equal(signalById(baseline, 'github-forks').baseline, 6);
 });
 
-test('the checkpoint block records the LAUNCH.md W-6 date', () => {
+test('the checkpoint block records the post-cutover launch date', () => {
   const baseline = readBaseline(collect(routes()));
 
-  assert.equal(baseline.checkpoint.targetDate, '2026-09-28');
-  assert.match(baseline.checkpoint.label, /W-6/);
-  assert.match(baseline.checkpoint.note, /collect:launch-metrics/);
+  assert.equal(baseline.checkpoint.targetDate, '2026-10-22');
+  assert.equal(
+    baseline.checkpoint.label,
+    'Post-cutover launch baseline (2026-10-22)',
+  );
+  assert.match(baseline.checkpoint.note, /capturedAt/);
 });
 
 test('capturedAt is a single ISO timestamp shared by every signal', () => {
