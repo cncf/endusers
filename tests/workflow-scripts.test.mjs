@@ -500,12 +500,6 @@ const REFRESH_SCRIPTS_NOT_RUN_BY_CI = new Map([
       'than a continuously moving upstream; scripts/collect-end-user-talks.mjs ' +
       'documents `npm run collect:end-user-talks` as the manual refresh.',
   ],
-  [
-    'collect:launch-metrics',
-    'A point-in-time capture, not a feed: scripts/collect-launch-metrics.mjs ' +
-      'records the launch-day baseline the 90-day comparison measures from, ' +
-      'so a schedule would overwrite the very baseline it exists to preserve.',
-  ],
 ]);
 
 function refreshScripts() {
