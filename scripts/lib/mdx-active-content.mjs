@@ -105,6 +105,11 @@ export const MARKDOWN_NODE_TYPES = new Set([
 const MDX_NODE_TYPES = new Set([
   'mdxJsxFlowElement',
   'mdxJsxTextElement',
+  // Stryker disable next-line StringLiteral: equivalent. `scanSource()` tests
+  // `node.type === 'mdxjsEsm'` in an arm above the `MDX_NODE_TYPES.has()` one,
+  // so this entry is never what admits an ESM node and emptying it changes
+  // nothing. Pinned by "a disallowed ESM statement is reported by the ESM arm"
+  // in tests/mdx-active-content-equivalence-premises.test.mjs.
   'mdxjsEsm',
 ]);
 
@@ -161,6 +166,13 @@ const ALLOWED_IMPORT =
  * string literal evaluates to that string and has no call, member access or
  * identifier reference available to it, so it is inert wherever it appears.
  */
+// Stryker disable next-line Regex: equivalent in both directions. Dropping
+// either anchor lets the pattern match a string literal inside a larger
+// expression, but `literalValue()` then runs `JSON.parse` over the whole
+// trimmed text, which rejects anything that is not exactly one JSON string —
+// so the wider pattern admits no extra value. Pinned by the
+// "…is reported, not treated as an inert literal" cases in
+// tests/mdx-active-content-equivalence-premises.test.mjs.
 const STRING_LITERAL_EXPRESSION = /^"(?:[^"\\\n]|\\.)*"$/;
 
 /** Link-like nodes whose `url` a browser navigates to or loads. */
@@ -279,7 +291,17 @@ function scanSource(text, mdastExtensions) {
         value = literalValue(value.value);
         if (value === null) report(line, 'MDX expression');
       }
-      if (typeof value === 'string' && URL_ATTRIBUTES.has(attribute.name)) {
+      if (
+        // Stryker disable next-line ConditionalExpression: equivalent. An
+        // attribute value is a string or it is null — written with no value it
+        // is null, and an expression is replaced by `literalValue()`, whose
+        // null case was already reported above. `reportScheme(line, null)`
+        // finds no scheme, so dropping this test reports nothing new. Pinned
+        // by "a URL attribute written with no value loads nothing" in
+        // tests/mdx-active-content-equivalence-premises.test.mjs.
+        typeof value === 'string' &&
+        URL_ATTRIBUTES.has(attribute.name)
+      ) {
         reportScheme(line, value);
         if (REMOTE_IMAGE_ATTRIBUTES.has(attribute.name)) {
           reportRemoteImage(line, value);
@@ -295,13 +317,27 @@ function scanSource(text, mdastExtensions) {
       if (node.type === 'imageReference') {
         const url = definitions.get(node.identifier);
         // An unresolved reference renders as literal text and loads nothing.
+        // Stryker disable next-line ConditionalExpression: equivalent.
+        // `definitions.get()` misses with `undefined`, and
+        // `reportRemoteImage(line, undefined)` finds no host in it, so this
+        // test records intent rather than deciding anything. Pinned by "an
+        // image reference with no definition is not a remote image" in
+        // tests/mdx-active-content-equivalence-premises.test.mjs.
         if (url !== undefined) reportRemoteImage(line, url);
       } else if (node.type === 'code' && isUnwrappedCodeBlock(text, node)) {
         report(
           line,
           'mdx-code-block fence, whose body Docusaurus compiles as MDX rather than displaying as code',
         );
-      } else if (URL_NODES.has(node.type)) {
+      } else if (
+        // Stryker disable next-line ConditionalExpression: equivalent. Every
+        // other allowed Markdown node reaching this arm has no `url`, and
+        // `reportScheme(line, undefined)` reports nothing; the `image` check
+        // below keeps its own guard. Pinned by "allowed Markdown with no
+        // destination produces no finding" in
+        // tests/mdx-active-content-equivalence-premises.test.mjs.
+        URL_NODES.has(node.type)
+      ) {
         reportScheme(line, node.url);
         if (node.type === 'image') reportRemoteImage(line, node.url);
       }
@@ -341,7 +377,18 @@ function mapUnwrappedLines(text, unwrapped) {
   const mapping = [];
   let cursor = 0;
   for (const line of unwrapped.split('\n')) {
-    while (cursor < sourceLines.length && sourceLines[cursor] !== line) {
+    while (
+      // Stryker disable next-line ConditionalExpression,EqualityOperator:
+      // equivalent both ways. `unwrapMdxCodeBlocks()` only deletes lines, so
+      // every line of `unwrapped` is a line of `text` and they arrive in
+      // order — the scan always finds its line and never reaches this bound.
+      // The `<=` form would take one extra iteration past the end, which the
+      // `Math.min` below clamps. Pinned by "a fence body that repeats a line
+      // outside it still maps forward" in
+      // tests/mdx-active-content-equivalence-premises.test.mjs.
+      cursor < sourceLines.length &&
+      sourceLines[cursor] !== line
+    ) {
       cursor += 1;
     }
     // Unreachable for a pure deletion; fall back to the last line rather than
@@ -388,6 +435,11 @@ function mapUnwrappedLines(text, unwrapped) {
  *   per finding, ordered by line.
  */
 export function findActiveContent(markdown, { mdastExtensions = [] } = {}) {
+  // Stryker disable next-line StringLiteral: equivalent. This seed only ever
+  // reaches the parser, and any prose substituted for it parses to allowed
+  // text nodes, so the scan is empty either way. Pinned by "a nullish or empty
+  // body produces no findings" in
+  // tests/mdx-active-content-equivalence-premises.test.mjs.
   const text = String(markdown ?? '');
   const findings = scanSource(text, mdastExtensions);
 
@@ -400,6 +452,12 @@ export function findActiveContent(markdown, { mdastExtensions = [] } = {}) {
   const unwrapped = unwrapMdxCodeBlocks(text);
   const sourceLine = mapUnwrappedLines(text, unwrapped);
   for (const form of new Set([unwrapped, rewriteAfterUnwrap(unwrapped)])) {
+    // Stryker disable next-line ConditionalExpression: equivalent. Scanning a
+    // rewritten form that came back identical to the source repeats findings
+    // the first scan already produced, and the dedupe below keeps the first of
+    // each `line:reason` pair — so skipping it is an optimisation, not a
+    // decision. Pinned by "a finding in a document with no fence is reported
+    // exactly once" in tests/mdx-active-content-equivalence-premises.test.mjs.
     if (form === text) continue;
     for (const finding of scanSource(form, mdastExtensions)) {
       const line = sourceLine[finding.line - 1];
