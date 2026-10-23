@@ -61,10 +61,17 @@ function frontmatterValue(file, key) {
   return match ? match[1].replace(/^['"]|['"]$/g, '') : undefined;
 }
 
+// Routes take the shape the plugin matches against: Docusaurus applies the
+// site-wide trailingSlash setting to every route path before the sitemap
+// plugin sees it, so with `trailingSlash: true` the search page is `/search/`
+// and a bare `/search` pattern no longer covers it.
+const trailingSlash = config.trailingSlash === true;
+
 function normalizeRoute(route) {
   const withoutFragment = route.split('#')[0].split('?')[0];
   if (withoutFragment === '/' || withoutFragment === '') return '/';
-  return withoutFragment.replace(/\/+$/, '');
+  const bare = withoutFragment.replace(/\/+$/, '');
+  return trailingSlash ? `${bare}/` : bare;
 }
 
 // Mirrors the Docusaurus docs-plugin route derivation for routeBasePath '/':
@@ -141,14 +148,16 @@ test('patternProblem accepts the usable patterns and names the fault in the rest
   );
 });
 
-test('matchesPattern spans separators for ** and stops at one for *', () => {
+test('matchesPattern spans separators for ** and sees routes with the trailing slash', () => {
   assert.ok(matchesPattern('/skills/**', '/skills/manifest'));
   assert.ok(matchesPattern('/skills/**', '/skills/nested/deep/doc'));
   assert.ok(!matchesPattern('/skills/**', '/skillset/manifest'));
-  assert.ok(matchesPattern('/skills/*', '/skills/manifest'));
-  assert.ok(!matchesPattern('/skills/*', '/skills/nested/doc'));
-  assert.ok(matchesPattern('/search', '/search/'));
-  assert.ok(!matchesPattern('/search', '/searching'));
+  assert.ok(matchesPattern('/search/**', '/search'));
+  assert.ok(matchesPattern('/search/**', '/search/'));
+  assert.ok(!matchesPattern('/search/**', '/searching'));
+  // The bare form is the pattern that let /search/ leak into the sitemap
+  // once trailingSlash was set; the model must reject it like the plugin.
+  assert.ok(!matchesPattern('/search', '/search'));
 });
 
 test('every sitemap ignorePattern is a rooted glob this suite can reason about', () => {

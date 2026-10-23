@@ -144,7 +144,7 @@ test.describe('reference architecture detail pages', () => {
     await page.goto('/architectures');
     // The listing is rendered by src/components/ArchitectureFilters after
     // hydration, so wait for the entry rather than reading the static HTML.
-    const link = page.locator(`a[href$="/architectures/${first.id}"]`).first();
+    const link = page.locator(`a[href$="/architectures/${first.id}/"]`).first();
     await expect(link).toBeVisible();
 
     await link.click();

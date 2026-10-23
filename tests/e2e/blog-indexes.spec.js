@@ -142,7 +142,7 @@ test.describe('blog archive', () => {
       // The link text is "<Month> <day> - <title>", so the accessible name is
       // not the title alone; match on the href and assert the title is part of
       // the rendered text.
-      const link = page.locator(`main a[href$="/blog/${post.slug}"]`);
+      const link = page.locator(`main a[href$="/blog/${post.slug}/"]`);
 
       await expect(
         link,
@@ -159,7 +159,7 @@ test.describe('blog archive', () => {
       });
 
       await expect(
-        section.locator(`a[href$="/blog/${post.slug}"]`),
+        section.locator(`a[href$="/blog/${post.slug}/"]`),
         `${post.file} should be grouped under ${post.year}`,
       ).toHaveCount(1);
     });
@@ -188,7 +188,9 @@ test.describe('blog authors index', () => {
     test(`lists ${key} with a link to their page`, async ({ page }) => {
       await gotoIndex(page, '/blog/authors');
 
-      const link = page.locator(`main a[href$="/blog/authors/${key}"]`).first();
+      const link = page
+        .locator(`main a[href$="/blog/authors/${key}/"]`)
+        .first();
 
       await expect(
         link,
@@ -212,7 +214,7 @@ test.describe('blog authors index', () => {
       // link and their count badge.
       const entry = page
         .locator('main li')
-        .filter({ has: page.locator(`a[href$="/blog/authors/${key}"]`) })
+        .filter({ has: page.locator(`a[href$="/blog/authors/${key}/"]`) })
         .first();
 
       await expect(

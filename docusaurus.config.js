@@ -176,6 +176,10 @@ const config = {
   // On Netlify, scripts/netlify-build.mjs derives SITE_URL from the deploy context.
   url: siteUrl,
   baseUrl,
+  // Netlify serves every page under its trailing-slash URL and 301s the bare
+  // form. Generate the same shape, so the canonical URL and sitemap name the
+  // document that answers 200 rather than a redirect to it.
+  trailingSlash: true,
 
   // Preserve broken-link enforcement; do not weaken.
   onBrokenLinks: 'throw',
@@ -389,8 +393,9 @@ const config = {
         sitemap: {
           // /search is thin duplicate content; the plugin's own opt-out is
           // emitted as property="robots", which neither Docusaurus nor a
-          // crawler honours.
-          ignorePatterns: ['/search'],
+          // crawler honours. The pattern is matched against the route after
+          // trailingSlash is applied, so it must cover `/search/`.
+          ignorePatterns: ['/search/**'],
         },
       }),
     ],
