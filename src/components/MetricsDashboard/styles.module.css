@@ -9,6 +9,7 @@
   gap: 1rem;
 }
 .card {
+  composes: cardLift from '../shared/InteractiveCard.module.css';
   border: 1px solid var(--ifm-color-emphasis-200);
   color: inherit;
   display: flex;
@@ -20,17 +21,6 @@
     border-color 160ms ease,
     transform 160ms ease,
     box-shadow 160ms ease;
-}
-.card:hover,
-.card:focus-visible {
-  border-color: var(--ifm-color-primary);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
-  color: inherit;
-  transform: translateY(-2px);
-}
-.card:focus-visible {
-  outline: 3px solid var(--ifm-color-primary-light);
-  outline-offset: 2px;
 }
 .label {
   font-weight: 700;

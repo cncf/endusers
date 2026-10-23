@@ -152,13 +152,24 @@ test('no CSS Module class is declared without a reader', () => {
     if (hasComputedLookup(source, binding)) unresolvable.add(stylesheet);
   }
 
+  // A class reached only through `composes` has no JS reader by design.
+  // `composes: foo;` (no `from`) reaches a class declared in this same
+  // stylesheet; `composes: foo from './x.css'` reaches one declared in the
+  // target stylesheet instead, so the "seen" mark belongs there, not here.
+  for (const stylesheet of cssModules) {
+    const css = readFileSync(stylesheet, 'utf8');
+    for (const { name, from } of composedNamesIn(css)) {
+      const target = from ? resolve(dirname(stylesheet), from) : stylesheet;
+      if (!referenced.has(target)) referenced.set(target, new Set());
+      referenced.get(target).add(name);
+    }
+  }
+
   const orphans = [];
   for (const stylesheet of cssModules) {
     if (unresolvable.has(stylesheet)) continue;
     const css = readFileSync(stylesheet, 'utf8');
     const seen = referenced.get(stylesheet) ?? new Set();
-    // A class reached only through `composes` has no JS reader by design.
-    for (const { name } of composedNamesIn(css)) seen.add(name);
     for (const name of declaredClassesIn(css)) {
       if (seen.has(name)) continue;
       if (KNOWN_ORPHANS.has(key(stylesheet, name))) continue;

@@ -1,4 +1,6 @@
 .card {
+  composes: cardLift from '../shared/InteractiveCard.module.css';
+  --card-lift-shadow: 0 4px 12px rgb(0 0 0 / 8%);
   align-items: center;
   aspect-ratio: 1 / 1;
   background: var(--ifm-background-surface-color);
@@ -21,19 +23,6 @@
     transform 160ms ease;
   vertical-align: top;
   width: 120px;
-}
-
-.card:hover,
-.card:focus-visible {
-  border-color: var(--ifm-color-primary);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 8%);
-  color: inherit;
-  transform: translateY(-2px);
-}
-
-.card:focus-visible {
-  outline: 3px solid var(--ifm-color-primary-light);
-  outline-offset: 2px;
 }
 
 .header {

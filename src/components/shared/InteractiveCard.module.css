@@ -1,0 +1,21 @@
+/*
+ * Shared hover/focus-lift interaction for clickable "card" components
+ * (CNCFProjectCard, MetricsDashboard, ReferenceArchitectures). Each consumer's
+ * `.card` carries its own box geometry (sizing, layout, border-radius), but
+ * all three repeat the same lift-on-hover/focus treatment: border-color and
+ * transform on hover/focus-visible, plus a focus-visible outline. Shadow
+ * depth and outline-offset vary slightly by consumer, so `.cardLift` reads
+ * them from custom properties set by the consumer's own `.card` rule.
+ */
+.cardLift:hover,
+.cardLift:focus-visible {
+  border-color: var(--ifm-color-primary);
+  box-shadow: var(--card-lift-shadow, 0 8px 24px rgb(0 0 0 / 8%));
+  color: inherit;
+  transform: translateY(-2px);
+}
+
+.cardLift:focus-visible {
+  outline: 3px solid var(--ifm-color-primary-light);
+  outline-offset: var(--card-lift-outline-offset, 2px);
+}

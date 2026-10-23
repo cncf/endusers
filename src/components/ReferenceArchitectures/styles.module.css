@@ -12,6 +12,9 @@
 }
 
 .card {
+  composes: cardLift from '../shared/InteractiveCard.module.css';
+  --card-lift-shadow: 0 8px 24px rgb(0 0 0 / 10%);
+  --card-lift-outline-offset: 3px;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -24,19 +27,6 @@
     border-color 160ms ease,
     box-shadow 160ms ease,
     transform 160ms ease;
-}
-
-.card:hover,
-.card:focus-visible {
-  border-color: var(--ifm-color-primary);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 10%);
-  color: inherit;
-  transform: translateY(-2px);
-}
-
-.card:focus-visible {
-  outline: 3px solid var(--ifm-color-primary-light);
-  outline-offset: 3px;
 }
 
 .cardContent {
