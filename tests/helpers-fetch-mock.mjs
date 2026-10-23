@@ -23,7 +23,14 @@ globalThis.fetch = async (input) => {
   const url = typeof input === 'string' ? input : input.url;
   const route = routes.find((candidate) => url.includes(candidate.match));
   if (!route) throw new Error('unstubbed request: ' + url);
-  if (route.networkError) throw new Error(route.networkError);
+  if (route.networkError) {
+    const error = new Error(route.networkError);
+    // Transport failures surface through fetch() as a wrapper whose cause
+    // carries the code callers branch on (ENOTFOUND for a name that does not
+    // resolve). Routes that do not name a code keep the previous shape.
+    if (route.errorCode) error.cause = { code: route.errorCode };
+    throw error;
+  }
   const status = route.status ?? 200;
   return {
     ok: status >= 200 && status < 300,
@@ -46,7 +53,8 @@ globalThis.fetch = async (input) => {
  * @param {string} options.script file name inside scripts/
  * @param {Record<string, string>} [options.fixtures] repo-relative path -> contents
  * @param {Array<{match: string, status?: number, body?: unknown,
- *   headers?: Record<string, string>, networkError?: string}>} [options.routes]
+ *   headers?: Record<string, string>, networkError?: string,
+ *   errorCode?: string}>} [options.routes]
  * @param {string[]} [options.outputs] repo-relative paths to read back afterwards
  * @param {Record<string, string>} [options.env] extra environment variables
  * @returns {{status: number, stdout: string, stderr: string,
