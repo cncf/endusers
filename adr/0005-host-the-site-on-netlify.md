@@ -200,8 +200,7 @@ counts toward line coverage.
   canonical, deploy previews on every PR, interim URL
   `https://endusers.netlify.app/`.
 - `AGENTS.md` (deployment sentence), `LAUNCH.md` ("Default-branch deployment"
-  pipeline row), `ROADMAP.md` (Phase 3 DNS bullet),
-  `adr/stakeholder-outreach-draft-for-0001.md` and
+  pipeline row), `adr/stakeholder-outreach-draft-for-0001.md` and
   `adr/inbound-link-requests-for-0004.md` (interim URL mentions) are updated to
   the Netlify URL. `docs/skills/` (now `.agents/skills/`) is checked for GitHub
   Pages references and updated if any.

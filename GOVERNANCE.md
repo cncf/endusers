@@ -13,8 +13,6 @@ policy instead of ad-hoc judgment (see issues #47 and #58).
 - **Direction changes** (ownership, site architecture, new content pillars):
   record lasting design decisions as an ADR in `adr/`. See
   `adr/0001-site-ownership-and-cutover-path.md` for the format.
-- **Roadmap priorities**: `ROADMAP.md` is the source of truth; changes to it are
-  pull requests labeled `roadmap`, reviewed by a maintainer.
 
 ## Review and merge expectations
 

@@ -57,8 +57,8 @@ We've recorded three options and their tradeoffs in an ADR for discussion:
 Full writeup with pros/cons: [link to ADR 0001 in the merged repo]
 
 Could we get this on an upcoming TAB agenda, or get a read from TOC on the
-org-transfer process, so we can record a decision and unblock the Phase 2/3
-roadmap items that depend on it (see ROADMAP.md)?
+org-transfer process, so we can record a decision and unblock the work that
+depends on it (DNS cutover, cross-linking, or content-merge plan)?
 
 Thanks,
 [maintainer name]
@@ -68,7 +68,7 @@ Thanks,
 
 1. Record the outcome in ADR 0001's "Decision" section (update Status from
    "Proposed" to "Accepted", with the chosen option and date).
-2. Update `ROADMAP.md` Phase 2/3 to reflect the decision and unblock the
-   dependent items (DNS cutover, cross-linking, or content-merge plan).
+2. Unblock the dependent items (DNS cutover, cross-linking, or content-merge
+   plan).
 3. Delete or trim this file once the outreach has happened — it is a one-time
    aid, not a living document.

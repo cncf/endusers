@@ -57,7 +57,7 @@ const REFRESH_NOT_RUN_BY_CI = new Map([
   [
     'collect:launch-metrics',
     'records a one-time launch baseline rather than a recurring dataset, and ' +
-      'needs GH_TOKEN; CONTRIBUTING.md and ROADMAP.md schedule its re-runs ' +
+      'needs GH_TOKEN; CONTRIBUTING.md schedules its re-runs ' +
       'against launch milestones, not against a cron.',
   ],
   [

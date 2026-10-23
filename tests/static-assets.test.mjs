@@ -28,7 +28,6 @@ const DATA_FILES = [
   'data/community-roster.json',
   'data/members.json',
   'data/metrics.json',
-  'data/milestones.json',
   'data/projects-born.json',
 ];
 

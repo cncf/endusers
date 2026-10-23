@@ -64,7 +64,7 @@ Consequences for this repository:
 
 ## References
 
-- Issue #1407 (tracking issue for this roadmap deliverable)
+- Issue #1407 (tracking issue for this deliverable)
 - `CONTRIBUTING.md`, "Content audience" section
 - `AGENTS.md`, "Audience" bullet
 - ADR 0001 (site ownership and cutover path) — the DNS cutover this ADR

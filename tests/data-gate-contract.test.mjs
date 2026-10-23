@@ -4,9 +4,8 @@
 // repository" job: a `scripts/validate-*.mjs` wired to a `validate:*` script
 // (tests/workflow-scripts.test.mjs proves each one is run by a workflow), or a
 // contract test under tests/ that parses the committed file and asserts its
-// shape. data/milestones.json has only the second kind -- no validator exists
-// for it, and tests/milestones-data.test.mjs is the whole gate -- so a rule
-// that demanded a validator would be wrong about the repository as it stands.
+// shape. Either kind counts here: a rule that demanded a validator would be
+// stricter than the repository has ever needed to be.
 //
 // What nothing checks today is the case neither kind covers: a dataset that
 // lands with *no* reader at all. That is not hypothetical. Until it gained
@@ -281,8 +280,10 @@ test('an allowlist entry that still describes the repository is not stale', () =
 // or the fixtures above describe a function the repository never calls.
 test('the real reader lookup finds the gates this repository has', () => {
   assert.ok(
-    readersOf('milestones.json').includes('tests/milestones-data.test.mjs'),
-    'expected the contract test that gates data/milestones.json',
+    readersOf('community-roster.json').includes(
+      'tests/community-roster-data.test.mjs',
+    ),
+    'expected the contract test that reads data/community-roster.json',
   );
   assert.ok(
     readersOf('members.json').includes('scripts/validate-members.mjs'),

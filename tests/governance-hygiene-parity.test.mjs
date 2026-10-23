@@ -163,7 +163,7 @@ test('fixture: a sentence that adds an undocumented label is reported as a diffe
 test('fixture: a sentence about labels that names no hold label is not a hold-label sentence', () => {
   assert.deepEqual(
     holdLabelSentences(
-      'The `roadmap` label marks tracking issues. Unrelated prose follows.',
+      'The `tracking` label marks tracking issues. Unrelated prose follows.',
     ),
     [],
   );

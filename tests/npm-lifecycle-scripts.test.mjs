@@ -3,10 +3,10 @@
 //
 // `npm ci` runs preinstall/install/postinstall/prepare from every package it
 // resolves -- 1490 of them here -- as arbitrary code on the runner, before any
-// validator, test or lint step gets to look at the tree. Four of the eleven
+// validator, test or lint step gets to look at the tree. Three of the eleven
 // install call sites sit in jobs holding a write-scoped GITHUB_TOKEN
-// (architecture-submission, refresh-metrics, pr-queue-hygiene,
-// create-milestones), so a single compromised transitive dependency gets code
+// (architecture-submission, refresh-metrics, pr-queue-hygiene), so a single
+// compromised transitive dependency gets code
 // execution next to a token that pushes branches and opens pull requests.
 //
 // The root `.npmrc` closes that off with one line. Nothing reads it back: the

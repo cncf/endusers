@@ -69,43 +69,37 @@ the import gates.
 
 ## Known unpatched dependency advisories
 
-`npm audit` currently reports 28 high-severity packages. They all resolve to the
-single advisory below, and every other entry is transitive bubbling from it. The
-package is already at its newest published version, so there is no upgrade to
-apply and Dependabot has nothing to offer:
+This section is the register of high or critical `npm audit` advisories that
+`scripts/audit-gate.mjs` allowlists because no patched release exists upstream.
+It is currently empty: `npm audit` reports no high or critical advisory, and
+`ALLOWLISTED_ADVISORIES` in `scripts/audit-gate.mjs` has no entries.
 
-| Advisory                                                                 | Package  | Installed | Reached through                                |
-| ------------------------------------------------------------------------ | -------- | --------- | ---------------------------------------------- |
-| [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | `braces` | 3.0.3     | `@docusaurus/utils` globbing, via `micromatch` |
+When one has to be added, record it as a table row here with the advisory,
+package, installed version and the path it is reached through, plus a note on
+whether it is build-time only or reachable from the published site, and add the
+matching entry to `ALLOWLISTED_ADVISORIES`. Do not run `npm audit fix --force`
+against an advisory with no patched version: the command can only try to
+force-resolve the dependency tree onto incompatible versions, breaking the build
+without removing the advisory.
 
-It is build-time only: `braces` glob patterns come from Docusaurus rather than
-from submitted content, and the package is not bundled into the static output,
-so the advisory is not reachable by a visitor to the published site.
+Two advisories have been listed here and retired. GHSA-ch52-4w7c-c8xp against
+`http-cache-semantics` left when upstream published `4.3.0`, outside its
+`<= 4.2.0` vulnerable range. GHSA-vfj7-8cjw-p6xm against `braces` left on
+2026-10-23 when GitHub withdrew the advisory; `braces` is still at `3.0.3`, but
+`npm audit` no longer reports it. When an entry here is said to have no fix,
+re-check the registry before trusting it: "no patched version" is only true as
+of the day it was written. `npm run check:audit` re-checks it for you on every
+run, in both of the ways such a claim can expire. Once an allowlisted advisory
+stops appearing in the lockfile, the gate fails and names the entry to remove
+from both `scripts/audit-gate.mjs` and the table here. And once npm reports a
+fix for an advisory that is still in the lockfile — the more likely case, where
+upstream publishes a patched release before this repository picks it up — the
+gate fails with the release to upgrade to, so a stale "no patched version" claim
+cannot sit here unnoticed the way GHSA-ch52-4w7c-c8xp did.
 
-**Do not run `npm audit fix --force` against this.** No patched version exists —
-`3.0.3` is the newest release and the advisory's vulnerable range is `<= 3.0.3`
-— so the command can only try to force-resolve the `@docusaurus/*` tree onto
-incompatible versions, breaking the build without removing the advisory. Remove
-this section once upstream publishes a fix and the dependency tree picks it up.
-
-A second advisory, GHSA-ch52-4w7c-c8xp against `http-cache-semantics`, was
-listed here until upstream published `4.3.0` — outside that advisory's
-`<= 4.2.0` vulnerable range. The lockfile now resolves `4.3.0` and the advisory
-no longer appears, which is why the count above dropped from 34 to 28. When an
-entry here is said to have no fix, re-check the registry before trusting it: "no
-patched version" is only true as of the day it was written.
-`npm run check:audit` now re-checks it for you on every run, in both of the ways
-such a claim can expire. Once an allowlisted advisory stops appearing in the
-lockfile, the gate fails and names the entry to remove from both
-`scripts/audit-gate.mjs` and the table above. And once npm reports a fix for an
-advisory that is still in the lockfile — the more likely case, where upstream
-publishes a patched release before this repository picks it up — the gate fails
-with the release to upgrade to, so a stale "no patched version" claim cannot sit
-here unnoticed the way GHSA-ch52-4w7c-c8xp did.
-
-CI enforces this table: `npm run check:audit` (`scripts/audit-gate.mjs`) fails
-the build on any high or critical advisory other than the allowlisted ones
-above, so a new lockfile advisory cannot land silently. When an advisory listed
+CI enforces this register: `npm run check:audit` (`scripts/audit-gate.mjs`)
+fails the build on any high or critical advisory other than the allowlisted
+ones, so a new lockfile advisory cannot land silently. When an advisory listed
 here gains a patched release, apply the fix and remove both the table row and
 the matching allowlist entry in `scripts/audit-gate.mjs` — a unit test keeps the
 two in sync.

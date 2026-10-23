@@ -31,8 +31,8 @@ Since then, the repository has been transferred: it now lives at
 `cncf.github.io/endusers`. The `endusers.cncf.io` domain itself is still not
 wired up (no DNS record, no `static/CNAME`), so every investment in content,
 SEO, and metrics still accumulates under a staging URL rather than the intended
-production domain. This remaining DNS cutover is what blocks Phase 3 of the
-roadmap (see `ROADMAP.md`).
+production domain. This remaining DNS cutover is what blocks ecosystem
+integration (cross-linking with contribute.cncf.io and cncf.io).
 
 ## Decision drivers
 
@@ -104,14 +104,13 @@ follow-up PR.
 3. Execute the DNS cutover to `endusers.cncf.io`: add it as the custom domain on
    the Netlify site and point DNS at Netlify. The canonical URL follows
    Netlify's `URL` variable, so no `static/CNAME` or workflow `SITE_URL`/
-   `BASE_URL` change is involved (see ADR 0005). Then update `ROADMAP.md` Phase
-   3 accordingly.
+   `BASE_URL` change is involved (see ADR 0005).
 
 ## Consequences
 
 - The ownership question is resolved: `cncf/endusers` is the canonical,
   CNCF-owned repository.
-- The remaining roadmap item that depends on ownership — DNS cutover to
+- The remaining item that depends on ownership — DNS cutover to
   `endusers.cncf.io` and cross-linking with contribute.cncf.io/cncf.io — stays
   open until that cutover is executed.
 - This ADR should be superseded (not silently edited into a different decision)

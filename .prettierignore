@@ -8,8 +8,6 @@
 docs/architectures/*.md
 !docs/architectures/index.md
 !docs/architectures/submit.md
-# Workflow file: formatting it requires a credential with the Workflows permission:
-.github/workflows/create-milestones.yml
 # Blog posts contain MDX JSX comments ({/* truncate */}) that prettier's markdown
 # parser mangles into {/_ _/}, breaking Docusaurus truncation and SSG:
 blog/

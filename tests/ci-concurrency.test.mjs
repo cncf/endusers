@@ -90,14 +90,6 @@ const SERIALISED_WORKFLOWS = new Map([
       'same reasoning as refresh-metrics.yml.',
   ],
   [
-    'create-milestones.yml',
-    'Snapshots every existing milestone once before its loop, so two ' +
-      'concurrent dispatches both see a title as absent and both try to ' +
-      'create it. Pushes no branch, so the branch-race contract does not ' +
-      'reach it; the constant group is plain serialisation of a ' +
-      'read-then-create step. Not PR-triggered.',
-  ],
-  [
     'pr-queue-hygiene.yml',
     'Keeps its state in a hidden marker comment that it reads and then ' +
       'writes non-atomically, so two overlapping runs both find no marker ' +
@@ -265,16 +257,14 @@ function racingBranchWorkflows(parsedWorkflows) {
 // withoutConcurrency above only asks this of PR-triggered workflows, and
 // racingBranchWorkflows only of workflows that push a branch they name. A
 // workflow that is in neither population but still mutates shared repository
-// state -- milestones, issue and pull request comments, labels -- is
+// state -- issue and pull request comments, labels -- is
 // serialised today only by hand. SERIALISED_WORKFLOWS already says why that is
-// sharp for the two such workflows the repository has: create-milestones.yml
-// snapshots the milestone list before its loop, so two dispatches both see a
-// title as absent and both create it, and pr-queue-hygiene.yml reads then
-// writes a hidden marker comment non-atomically, so two runs both find no
-// marker and both post one onto a contributor PR. Neither pushes a branch.
+// sharp for the one such workflow the repository has: pr-queue-hygiene.yml
+// reads then writes a hidden marker comment non-atomically, so two runs both
+// find no marker and both post one onto a contributor PR. It pushes no branch.
 //
-// Those two keep their groups only incidentally: the retirement guard below
-// asserts that an allowlisted workflow still declares one, so deleting their
+// It keeps its group only incidentally: the retirement guard below
+// asserts that an allowlisted workflow still declares one, so deleting its
 // group fails on the allowlist rather than on a contract. A *new* workflow of
 // the same class arrives with no allowlist entry and no group, and every test
 // in this file passes over it -- the same hole the preamble describes for the
@@ -441,7 +431,7 @@ test('every workflow that grants a write permission declares a concurrency group
   assert.deepEqual(
     offenders,
     [],
-    `a workflow that writes milestones, comments, labels or refs with no 'concurrency:' lets two runs interleave a read-then-write: both observe the state as it was before either acted, and both act. Neither the PR contract above nor the branch contract below reaches a workflow that is not PR-triggered and pushes no branch:\n${offenders.join('\n')}`,
+    `a workflow that writes comments, labels or refs with no 'concurrency:' lets two runs interleave a read-then-write: both observe the state as it was before either acted, and both act. Neither the PR contract above nor the branch contract below reaches a workflow that is not PR-triggered and pushes no branch:\n${offenders.join('\n')}`,
   );
 });
 
