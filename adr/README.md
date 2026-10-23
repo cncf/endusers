@@ -18,6 +18,7 @@ still pending) so future contributors understand why, not just what.
 | [0005](./0005-host-the-site-on-netlify.md)                           | Host the site on Netlify instead of GitHub Pages                             | Accepted |
 | [0006](./0006-retire-line-number-citations-in-test-prose.md)         | Retire line-number citations in test prose and narrow test-only agent work   | Accepted |
 | [0007](./0007-scope-end-to-end-coverage-to-user-reachable-states.md) | Scope end-to-end coverage findings to user-reachable states                  | Accepted |
+| [0008](./0008-scope-agent-findings-to-user-observable-change.md)     | Scope agent findings to user-observable change                               | Accepted |
 
 Supporting material is not part of the numbered ADR sequence and is not assigned
 an ADR number, but is listed here for discoverability:

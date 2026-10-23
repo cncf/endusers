@@ -86,6 +86,24 @@ or CI will fail the PR.
 
 ## Guidelines for Agents
 
+- **Remit**: An agent-filed issue or PR must name a defect an end user can
+  observe on the production site, a security or supply-chain exposure, a
+  required CI check failing on `main` or fleet-wide, a generated-data or
+  dependency refresh through its existing lane, or an issue a maintainer filed
+  for agent work. Anything else is out of remit. In particular, a change whose
+  only effect is to move a metric (mutation score or surviving mutants, unit or
+  browser coverage, clone count, test-prose or harness shape) gets at most one
+  comment on the advisory issue (#23), never an issue or PR. The coverage,
+  mutation and clone thresholds are frozen regression gates, not targets
+  ([ADR 0008](./adr/0008-scope-agent-findings-to-user-observable-change.md)).
+- **Decided questions stay decided**: A decision in an ADR, or by a maintainer
+  on a closed issue or PR, binds every later finding on the same rule, file or
+  component however it is worded. Comment on the original; do not re-file
+  ([ADR 0008](./adr/0008-scope-agent-findings-to-user-observable-change.md)).
+- **Folded findings**: A PR for a finding that was folded into an existing issue
+  says `Refs #N`, never `Fixes`/`Closes`/`Resolves`, unless it also completes
+  that issue's own deliverable
+  ([ADR 0008](./adr/0008-scope-agent-findings-to-user-observable-change.md)).
 - **Duplicate PR prevention**: Before implementing a fix, search open (and
   recently closed) PRs and issues touching the same files or problem. See the
   "Cross-agent duplicate prevention" section of `GOVERNANCE.md` for the full

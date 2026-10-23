@@ -47,6 +47,24 @@ for agent-authored work:
   issues or PRs carrying them. Hive-specific hold instructions apply only when a
   hold is actually present or when the work is Hive-assigned; they are not a
   universal hold on other repository work.
+- An agent-filed issue or PR must name a defect an end user can observe on the
+  production site, a security or supply-chain exposure, a required CI check
+  failing on `main` or fleet-wide, a generated-data or dependency refresh
+  through its existing lane, or an issue a maintainer filed for agent work.
+  Anything else is out of remit, and a change whose only effect is to move a
+  metric (mutation score or surviving mutants, coverage, clone count, test-prose
+  or harness shape) is closed as not planned. The thresholds behind those
+  metrics are frozen regression gates; changing one is a maintainer-authored ADR
+  amendment
+  ([ADR 0008](./adr/0008-scope-agent-findings-to-user-observable-change.md)).
+- A decision recorded in an ADR, or by a maintainer on a closed issue or PR,
+  binds every later finding on the same rule, file or component however it is
+  worded. A re-filing is closed as not planned with a pointer to the decision
+  ([ADR 0008](./adr/0008-scope-agent-findings-to-user-observable-change.md)).
+- A PR for a finding that Hive folded into an existing issue says `Refs #N` for
+  that issue, never `Fixes`, `Closes` or `Resolves`, unless it also completes
+  the issue's own deliverable
+  ([ADR 0008](./adr/0008-scope-agent-findings-to-user-observable-change.md)).
 
 ### Low-risk merge classes
 
