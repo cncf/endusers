@@ -85,6 +85,13 @@ export function artworkMirrorName(path) {
   const name = segments[1];
   const file = segments[segments.length - 1];
   const extension = file.slice(file.lastIndexOf('.')).toLowerCase();
+  // Stryker disable next-line StringLiteral: equivalent. Emptying the literal
+  // makes `file.includes('')` vacuously true, leaving the extension check
+  // alone. With no dot, `lastIndexOf` returns -1 and `extension` is the final
+  // character, which no mirrorable extension can equal — every entry carries
+  // the leading dot. Pinned by "every mirrorable asset extension starts with a
+  // dot" and "artworkMirrorName rejects a dotless filename on the extension
+  // check" in tests/project-assets-equivalence-premises.test.mjs.
   if (!file.includes('.') || !MIRRORABLE_ARTWORK_EXTENSIONS.has(extension)) {
     return null;
   }
@@ -117,6 +124,14 @@ export function projectAsset(url) {
 /** Collects every distinct cncf/artwork image URL referenced in Markdown. */
 export function artworkUrls(body) {
   const urls = new Set();
+  // Stryker disable Regex: equivalent. Narrowing `https?` to `https` only
+  // stops these patterns from harvesting cleartext URLs, and every harvested
+  // URL is then filtered by `artworkPath()`, whose patterns are anchored at
+  // `https://` and reject an http URL outright. The harvest step cannot admit
+  // a cleartext URL that the resolution step would keep. Pinned by "an http
+  // artwork URL resolves to no artwork path" and "artworkUrls collects no http
+  // URL from either harvest pattern" in
+  // tests/project-assets-equivalence-premises.test.mjs.
   for (const [, url] of String(body).matchAll(
     /!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/g,
   )) {
@@ -127,5 +142,6 @@ export function artworkUrls(body) {
   )) {
     if (artworkPath(url)) urls.add(url);
   }
+  // Stryker restore Regex
   return [...urls];
 }
