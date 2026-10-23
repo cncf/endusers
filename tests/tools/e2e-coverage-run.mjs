@@ -15,6 +15,34 @@ import { captureRunScripts } from './e2e-coverage-scripts.mjs';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
+// Residual uncovered regions, recorded the way tests/tools/e2e-coverage-report.mjs
+// records its own so this file's region percentage is not re-investigated every
+// cycle. Named by function and expression rather than by line, so the note does
+// not go stale when the file moves:
+//
+//   readProvenance  `if (!(error instanceof SyntaxError)) throw error` -- the
+//       re-throw arm needs `JSON.parse` to fail with something other than a
+//       `SyntaxError`. The `try` wraps that one call and nothing else, and
+//       `raw` is bound from a `'utf8'` read, so the argument is always a
+//       string; `JSON.parse` of a string throws only `SyntaxError`. The
+//       `SyntaxError` half of the same `catch` is reached by
+//       tests/e2e-coverage-runtime.test.mjs.
+//
+// That premise is a claim about the code around the arm, not about the arm: a
+// later edit that widens the `try` -- over the `readFile`, or over a validator
+// -- makes the re-throw live without touching the line. It is asserted
+// directly by tests/e2e-coverage-run-residual-arm.test.mjs, the way
+// tests/e2e-coverage-error-arms.test.mjs asserts the premises behind the
+// reporter's residuals, so a change that makes the arm reachable fails on its
+// own name rather than merely moving the region count. Together they are 1
+// region, which caps this file at 99.15% regions;
+// tests/coverage-gate-thresholds.test.mjs reads that ceiling beside
+// `--check-harness-file-regions` so the floor is never set above it. The
+// denominator is V8's, so it drifts a little with the Node major -- 1/117 was
+// measured on Node 26 while CI pins Node 22 -- which is why the floor sits
+// below the ceiling rather than against it. Close the arm and shorten this
+// note in the same change; do not raise the floor past it alone.
+
 export const COVERAGE_RUN_SCHEMA_VERSION = 1;
 export const COVERAGE_RUN_KIND = 'endusers.e2e.coverage-run';
 export const COVERAGE_ARTIFACT_KIND = 'endusers.playwright.v8-coverage';

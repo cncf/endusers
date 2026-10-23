@@ -66,23 +66,25 @@ const FLOORS = {
   // Measured on the suite this commit ships: harness files 100.00% lines /
   // 99.79% regions (5742/5742 lines, 1938/1942 regions), taken twice -- on
   // node v22.23.3, the major ci.yml pins, and on node v26.10.0 -- with the two
-  // runs agreeing to the region. tests/tools/e2e-coverage-report.mjs is the
-  // only harness file below 100.00%; every other one is at 100.00%.
+  // runs agreeing to the region. The harness files below 100.00% are
+  // tests/tools/e2e-coverage-report.mjs and tests/tools/e2e-coverage-run.mjs;
+  // every other one is at 100.00%.
   //
-  // That file's percentage is its ceiling, not a backlog: its uncovered
-  // regions are the defensive fallbacks the note at the top of the file lists
-  // as unreachable, so no test can lift it. The per-file floor must stay at
-  // or below that ceiling until the list shrinks; a probe that lands one of
-  // them should raise the floor and shorten the list in the same change.
+  // Those percentages are ceilings, not a backlog: the uncovered regions in
+  // each are the defensive fallbacks the residual note at the top of that
+  // file lists as unreachable, so no test can lift them. The per-file floor
+  // must stay at or below the lowest of those ceilings until a list shrinks;
+  // a probe that lands one of them should raise the floor and shorten that
+  // file's note in the same change.
   //
-  // The ceiling itself is deliberately not written out here. It is asserted
-  // below against the note instead, because every attempt to restate it in
-  // this comment has gone stale while the note moved on: the comment said "6
-  // uncovered regions" where the note said 7, and it later said the file was
-  // capped at 98.57% -- the 7-region figure -- after three of them had been
-  // deleted and the note had been rewritten to 4 regions. A second test below
-  // now fails on that shape directly, so the next restatement cannot drift
-  // silently either.
+  // The ceilings themselves are deliberately not written out here. They are
+  // asserted below against the notes instead, because every attempt to restate
+  // one in this comment has gone stale while the note moved on: the comment
+  // said "6 uncovered regions" where the note said 7, and it later said the
+  // file was capped at 98.57% -- the 7-region figure -- after three of them
+  // had been deleted and the note had been rewritten to 4 regions. A second
+  // test below now fails on that shape directly, so the next restatement
+  // cannot drift silently either.
   //
   // Both harness floors moved up with this commit. They were previously held
   // at 97 by tests/helpers-script-sandbox.mjs, whose single uncovered region
@@ -109,13 +111,20 @@ function parseGate(command) {
 
 // The `--check-harness-file-regions` floor is the only one in this file that
 // is not set by the suite's measurement but by another file's *claim*: the
-// residual note at the top of tests/tools/e2e-coverage-report.mjs enumerates
-// the fallbacks no probe could close, totals them, and states the percentage
-// they cap that file at. The comment above read that total back by hand and
-// went stale -- it said 6 while the note said 7 -- which is the same
-// drift-by-omission tests/docs-threshold-parity.test.mjs closes between the
-// gate and the contributor docs. Reading it instead of restating it is what
-// keeps the two in step.
+// residual note at the top of a harness module enumerates the fallbacks no
+// probe could close, totals them, and states the percentage they cap that
+// file at. The comment above read that total back by hand and went stale --
+// it said 6 while the note said 7 -- which is the same drift-by-omission
+// tests/docs-threshold-parity.test.mjs closes between the gate and the
+// contributor docs. Reading it instead of restating it is what keeps the two
+// in step.
+//
+// Every harness file that carries such a note is read, not just the lowest
+// one of the day. A floor argued from one file alone silently stops being
+// argued at all the moment a probe closes that file's residuals: the next
+// raise would clear the file it was measured against and land above a ceiling
+// nothing here had ever looked at. The lowest ceiling among the notes is the
+// one the floor has to clear.
 // Matched across the comment's own line wrapping: the note is prose in a `//`
 // block, so any word boundary in it may carry a newline and a `// ` prefix.
 const RESIDUAL_NOTE = new RegExp(
@@ -124,25 +133,27 @@ const RESIDUAL_NOTE = new RegExp(
     'they',
     'are',
     '(\\d+)',
-    'regions,',
+    // Singular for a note that is down to its last one.
+    'regions?,',
     'which',
     'caps',
     'this',
     'file',
     'at',
     '(\\d+(?:\\.\\d+)?)%',
-    'regions',
+    'regions?',
   ].join('(?:\\s*\\n\\s*//)?\\s+'),
   'u',
 );
 const RESIDUAL_FILE = 'tests/tools/e2e-coverage-report.mjs';
+const RESIDUAL_FILES = [RESIDUAL_FILE, 'tests/tools/e2e-coverage-run.mjs'];
 
-function residualCeiling() {
-  const source = readFileSync(`${repoRoot}${RESIDUAL_FILE}`, 'utf8');
+function residualCeiling(file = RESIDUAL_FILE) {
+  const source = readFileSync(`${repoRoot}${file}`, 'utf8');
   const match = RESIDUAL_NOTE.exec(source);
   assert.ok(
     match,
-    `${RESIDUAL_FILE} must keep its residual note in the form "Together they are ` +
+    `${file} must keep its residual note in the form "Together they are ` +
       'N regions, which caps this file at P% regions"; the --check-harness-file-regions ' +
       'floor below is argued from that sentence, so a rewrite that drops it leaves the ' +
       'floor with nothing behind it',
@@ -150,21 +161,24 @@ function residualCeiling() {
   return { regions: Number(match[1]), ceiling: Number(match[2]) };
 }
 
-test(`${RESIDUAL_FILE} still caps the harness per-file floor where this file says`, () => {
-  const { regions, ceiling } = residualCeiling();
-  assert.ok(
-    regions > 0,
-    `${RESIDUAL_FILE} now lists no residual regions, so it is no longer the lowest ` +
-      'harness file; re-measure the harness row and raise --check-harness-file-regions',
-  );
+test('the harness per-file floor clears every documented residual ceiling', () => {
   const floor = FLOORS['--check-harness-file-regions'];
-  assert.ok(
-    floor <= Math.floor(ceiling),
-    `--check-harness-file-regions is floored at ${floor}, above the ${ceiling}% ceiling ` +
-      `${RESIDUAL_FILE} documents for its ${regions} unreachable regions; the gate can ` +
-      'only be raised past that by closing one of them and shortening the note in the ' +
-      'same change',
-  );
+  for (const file of RESIDUAL_FILES) {
+    const { regions, ceiling } = residualCeiling(file);
+    assert.ok(
+      regions > 0,
+      `${file} now lists no residual regions, so it no longer caps the harness ` +
+        'per-file gate; drop it from RESIDUAL_FILES, re-measure the harness row, ' +
+        'and raise --check-harness-file-regions',
+    );
+    assert.ok(
+      floor <= Math.floor(ceiling),
+      `--check-harness-file-regions is floored at ${floor}, above the ${ceiling}% ceiling ` +
+        `${file} documents for its ${regions} unreachable regions; the gate can ` +
+        'only be raised past that by closing one of them and shortening the note in the ' +
+        'same change',
+    );
+  }
 });
 
 // Any percentage this file attributes to the residual file by hand, with the

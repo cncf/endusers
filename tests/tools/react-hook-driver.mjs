@@ -30,6 +30,7 @@ export function renderHook(hook) {
   const states = [];
   const memos = [];
   let unmounted = false;
+  // Stryker disable next-line BooleanLiteral: runHookBody assigns rendering before it calls hook(), and only a setter called from inside hook() reads it, so this seed is never read
   let rendering = false;
 
   function runHookBody() {
@@ -41,6 +42,7 @@ export function renderHook(hook) {
     const previousDispatcher = Internals.H;
     Internals.H = {
       useRef(initial) {
+        // Stryker disable next-line ConditionalExpression: refIndex counts up from 0 and push appends past the indices this render reads, so pushing unconditionally changes only how much the array grows
         if (refIndex === refs.length) refs.push({ current: initial });
         return refs[refIndex++];
       },
@@ -66,6 +68,7 @@ export function renderHook(hook) {
         return [states[slot].value, states[slot].setter];
       },
       useMemo(factory, deps) {
+        // Stryker disable next-line UpdateOperator: counting down hands out 0, -1, -2 instead of 0, 1, 2, and memos is only ever indexed by these slots, so every render still reads back what the one before it wrote
         const slot = memoIndex++;
         const previous = memos[slot];
         if (previous && sameDeps(previous.deps, deps)) return previous.value;
@@ -104,6 +107,7 @@ export function renderHook(hook) {
     unmount() {
       if (unmounted) return;
       unmounted = true;
+      // Stryker disable next-line OptionalChaining: effect slots are handed out in call order from 0, so effects never has a hole for this walk to read as undefined
       for (const effect of effects) effect?.cleanup?.();
     },
   };

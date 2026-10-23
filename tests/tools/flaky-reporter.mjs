@@ -145,6 +145,7 @@ export default class FlakyReporter {
     this.appendFile = options.appendFile ?? appendFileSync;
     this.mkdir = options.mkdir ?? mkdirSync;
     this.env = options.env ?? process.env;
+    // Stryker disable next-line StringLiteral: onBegin assigns both rootDir and this.tests, and onEnd reads rootDir only when this.tests is non-empty, so the seed is never read
     this.rootDir = '';
     this.tests = [];
   }
