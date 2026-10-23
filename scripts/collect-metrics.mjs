@@ -32,8 +32,14 @@ try {
     stdio: 'ignore',
   });
   const projects = [];
-  const categoryCounts = {};
-  const maturityCounts = {};
+  // Null-prototype tallies: the keys below are upstream landscape.yml strings
+  // (category.name, project.project), so on a plain object a category named
+  // "constructor" would read Object.prototype's function through `|| 0` and
+  // publish a string where a count belongs, and one named "__proto__" would be
+  // dropped by the setter without an error. Same reason the lookup tables in
+  // generate-members.mjs use Object.create(null).
+  const categoryCounts = Object.create(null);
+  const maturityCounts = Object.create(null);
   for (const category of source.landscape || []) {
     for (const subcategory of category.subcategories || []) {
       for (const item of subcategory.items || []) {
