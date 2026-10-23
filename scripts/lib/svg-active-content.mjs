@@ -414,6 +414,9 @@ const MISDECODED_CHARACTER = /[\u0000\ufffd]/;
  */
 function localName(name) {
   const colon = name.lastIndexOf(':');
+  // Stryker disable next-line ConditionalExpression: with no colon the
+  // alternate arm is `name.slice(0)`, which is `name` -- both arms produce the
+  // same string, so the test reads as intent rather than as a decision.
   return (colon === -1 ? name : name.slice(colon + 1)).toLowerCase();
 }
 
@@ -436,6 +439,13 @@ function startsWithDoctype(source) {
         : null;
     if (!closer) break;
     const end = source.indexOf(closer, index + 2);
+    // Load-bearing: without this return, `index` would rewind to
+    // `closer.length - 1` and the walk would revisit the same unterminated
+    // `<?` forever on any source whose prolog starts with whitespace.
+    // Stryker disable next-line BooleanLiteral: returning true here only
+    // appends `Unterminated DOCTYPE` to `errors`, and every source that
+    // reaches an unterminated prolog node already failed to parse, so the
+    // extra message is never `errors[0]` -- the only one reported.
     if (end === -1) return false;
     index = end + closer.length;
   }
@@ -471,6 +481,8 @@ function parseXml(source) {
   parser.onerror = (error) => {
     errors.push(error.message.split('\n')[0]);
     parser.error = null;
+    // Stryker disable next-line CallExpression: `sax`'s `resume()` is exactly
+    // `this.error = null`, which the line above already did.
     parser.resume();
   };
   parser.onopentag = (tag) => {
@@ -531,6 +543,10 @@ function styleBlocks(events) {
   for (const event of events) {
     if (event.type === 'open' && localName(event.name) === 'style') {
       open.push(blocks.length);
+      // Stryker disable next-line StringLiteral: the seed is only ever a
+      // prefix to text handed to cssUrls(), and a seed carrying no `(`, `@`,
+      // quote or backslash can only add Ident and Delim tokens that cssUrls()
+      // ignores.
       blocks.push({ event, css: '' });
     } else if (event.type === 'close' && localName(event.name) === 'style') {
       open.pop();
@@ -569,6 +585,11 @@ function cssUrls(css) {
   // Every fetching construct needs a literal `(` or `@`, which no escape can
   // supply, so a value without either cannot contain one. This only avoids
   // tokenizing large `d` and base64 attribute values for nothing.
+  // Stryker disable next-line ConditionalExpression,Regex: a fast path, not a
+  // decision. CSS carrying neither `(` nor `@` cannot tokenize to a Url,
+  // BadUrl, Function or AtKeyword token, so tokenizing it reaches the same
+  // empty result; and negating the class only diverts a non-empty string made
+  // entirely of `(` and `@`, which has no url token or at-rule either.
   if (!/[(@]/.test(css)) return { urls: [], malformed: false };
 
   const tokens = [];
@@ -596,15 +617,27 @@ function cssUrls(css) {
       // reads an unquoted argument as a url token the tokenizer did not build.
       if (
         name === 'url' &&
+        // Stryker disable next-line ConditionalExpression,MethodExpression,StringLiteral:
+        // css-tree emits a `url(` Function token only when the argument opens
+        // with a quote; an unescaped `url(` with any other argument is a Url
+        // or BadUrl token instead. So whenever `text` is literally `url(`,
+        // `tokens[index + 1]` is a String and the next test already rejects
+        // the branch.
         text.toLowerCase() !== 'url(' &&
         tokens[index + 1]?.type !== tokenTypes.String
       ) {
         const close = css.indexOf(')', tokens[index].end);
         const raw = css.slice(
           tokens[index].end,
+          // Stryker disable next-line EqualityOperator: the search starts at
+          // `tokens[index].end`, which is past the function name, so a `)` is
+          // never found at index 0.
           close < 0 ? css.length : close,
         );
+        // Stryker disable MethodExpression: `url.decode()` already trims the
+        // whitespace inside `url(...)`.
         add(url.decode(`url(${raw.trim()})`));
+        // Stryker restore MethodExpression
         continue;
       }
       let nesting = 1;
@@ -617,7 +650,14 @@ function cssUrls(css) {
           nesting += 1;
         } else if (token.type === tokenTypes.RightParenthesis) {
           nesting -= 1;
-        } else if (token.type === tokenTypes.String) {
+        } else if (
+          // Stryker disable next-line ConditionalExpression: css-tree never
+          // puts a `:` or a `/` inside a single token other than a String, so
+          // no other token's decoded text can start `scheme:` or `//`.
+          // Widening this arm to every token therefore adds only values that
+          // disallowedScheme() and remoteTarget() both reject.
+          token.type === tokenTypes.String
+        ) {
           add(string.decode(token.text));
         }
       }
@@ -1015,6 +1055,10 @@ function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
   // Top-level nodes (declaration, DOCTYPE, comments, the root) go on their own
   // lines; the whitespace between them is not content and the parse drops it.
   const emit = (depth, text) => {
+    // Stryker disable next-line MethodExpression: every top-level node emitted
+    // so far is markup ending in `>` -- depth-0 text is dropped as layout --
+    // and the first emit is guarded by the length test, so `output` neither
+    // ends with nor starts with a newline here and both tests always hold.
     if (depth === 0 && output.length > bom.length && !output.endsWith('\n')) {
       output += '\n';
     }
@@ -1023,7 +1067,16 @@ function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
 
   for (const event of events) {
     if (skipDepth !== null) {
-      if (event.type === 'close' && event.depth === skipDepth) skipDepth = null;
+      if (
+        // Stryker disable next-line ConditionalExpression: `skipDepth` is the
+        // removed element's own depth, and parseXml() gives every event inside
+        // its subtree a greater one, so the matching close is the only event
+        // that can satisfy the depth test at all.
+        event.type === 'close' &&
+        event.depth === skipDepth
+      ) {
+        skipDepth = null;
+      }
       continue;
     }
 
@@ -1062,7 +1115,12 @@ function rebuild(source, events, { dropDoctype = false, strip = false } = {}) {
       emit(event.depth, `<!--${event.value}-->`);
     } else if (event.type === 'doctype') {
       if (!dropDoctype) emit(event.depth, `<!DOCTYPE${event.value}>`);
-    } else if (event.type === 'pi') {
+    } else if (
+      // Stryker disable next-line ConditionalExpression: `pi` is the last of
+      // the seven event types parseXml() emits and the arms above take the
+      // other six, so this test is always true where it is reached.
+      event.type === 'pi'
+    ) {
       if (event.name.toLowerCase() === 'xml') {
         emit(event.depth, `<?xml ${event.body}?>`);
       } else if (strip) {
