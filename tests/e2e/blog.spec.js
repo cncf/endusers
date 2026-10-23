@@ -108,7 +108,7 @@ test.describe('blog index', () => {
       // renders its title, so assert the href, not just the text.
       await expect(heading.getByRole('link')).toHaveAttribute(
         'href',
-        `/blog/${post.slug}`,
+        `/blog/${post.slug}/`,
       );
     }
 
@@ -216,7 +216,7 @@ test.describe('blog tag pages', () => {
     const main = page.getByRole('main');
     for (const tag of taggedPosts.keys()) {
       await expect(
-        main.locator(`a[href="/blog/tags/${tag}"]`),
+        main.locator(`a[href="/blog/tags/${tag}/"]`),
         `/blog/tags is missing a link to the "${tag}" tag`,
       ).toHaveCount(1);
     }
@@ -249,7 +249,7 @@ test.describe('blog author bylines', () => {
         // An author with a page is also linked from the byline.
         if (author.page) {
           await expect(
-            article.locator(`a[href="/blog/authors/${key}"]`).first(),
+            article.locator(`a[href="/blog/authors/${key}/"]`).first(),
           ).toBeVisible();
         }
       }

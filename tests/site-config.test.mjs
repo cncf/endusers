@@ -94,6 +94,13 @@ test('docs are served at the site root', () => {
   assert.equal(config.presets[0][1].docs.routeBasePath, '/');
 });
 
+// Netlify answers 200 only on the trailing-slash URL and 301s the bare form.
+// Without this setting every page's rel=canonical and 39 of the sitemap's
+// entries named the redirecting URL rather than the document.
+test('generated URLs carry the trailing slash the host serves', () => {
+  assert.equal(config.trailingSlash, true);
+});
+
 test('no two docs claim the same route', () => {
   const collisions = [...docRoutes.entries()].filter(
     ([, files]) => files.length > 1,

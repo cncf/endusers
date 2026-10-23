@@ -263,7 +263,7 @@ describeCoverage('drifted upstream data', () => {
       name: 'Reference architecture catalog',
     });
     const fallbackCard = catalogSection.locator(
-      `a[href$="/architectures/${noIndustries.id}"]`,
+      `a[href$="/architectures/${noIndustries.id}/"]`,
     );
     await expect(fallbackCard).toHaveCount(1);
     await expect(
@@ -273,7 +273,7 @@ describeCoverage('drifted upstream data', () => {
     // The populated arm on the same page is what makes this evidence that the
     // fallback is the branch rendering, not that every eyebrow went generic.
     const populatedCard = catalogSection.locator(
-      `a[href$="/architectures/${someIndustries.id}"]`,
+      `a[href$="/architectures/${someIndustries.id}/"]`,
     );
     await expect(populatedCard).toHaveCount(1);
     await expect(
@@ -307,7 +307,7 @@ describeCoverage('drifted upstream data', () => {
     });
 
     const nullishCard = catalogSection.locator(
-      `a[href$="/architectures/${nullishAssets.id}"]`,
+      `a[href$="/architectures/${nullishAssets.id}/"]`,
     );
     await expect(nullishCard).toHaveCount(1);
     // The card still renders, and renders the no-logo shape: the chain
@@ -320,7 +320,7 @@ describeCoverage('drifted upstream data', () => {
     // The entered-but-unmatched arm renders the same no-logo shape from the
     // other side of the chain, so neither arm can stand in for the other.
     const unmatchedCard = catalogSection.locator(
-      `a[href$="/architectures/${unmatchedAssets.id}"]`,
+      `a[href$="/architectures/${unmatchedAssets.id}/"]`,
     );
     await expect(unmatchedCard).toHaveCount(1);
     await expect(unmatchedCard.locator('img')).toHaveCount(0);
@@ -328,7 +328,7 @@ describeCoverage('drifted upstream data', () => {
     // The matched arm on the same page is what makes this evidence that the
     // chain is resolving per entry, not that every card lost its logo.
     const matchedCard = catalogSection.locator(
-      `a[href$="/architectures/${matchedAssets.id}"]`,
+      `a[href$="/architectures/${matchedAssets.id}/"]`,
     );
     await expect(matchedCard).toHaveCount(1);
     await expect(matchedCard.locator('img')).toHaveCount(1);

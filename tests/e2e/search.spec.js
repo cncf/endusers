@@ -52,7 +52,7 @@ test.describe('search page', () => {
   test('a known term returns results that link to real pages', async ({
     page,
   }) => {
-    await page.goto(`/search?q=${KNOWN_TERM}`);
+    await page.goto(`/search/?q=${KNOWN_TERM}`);
 
     const input = page.locator('input[type="search"][name="q"]');
     await expect(input).toHaveValue(KNOWN_TERM);
@@ -76,7 +76,7 @@ test.describe('search page', () => {
   test('a term that matches nothing shows the empty state', async ({
     page,
   }) => {
-    await page.goto(`/search?q=${NONSENSE_TERM}`);
+    await page.goto(`/search/?q=${NONSENSE_TERM}`);
 
     await expect(page.getByText('No documents were found')).toBeVisible();
     expect(await page.locator('article').count()).toBe(0);
@@ -85,7 +85,7 @@ test.describe('search page', () => {
   test('typing in the search box updates the results in place', async ({
     page,
   }) => {
-    await page.goto(`/search?q=${NONSENSE_TERM}`);
+    await page.goto(`/search/?q=${NONSENSE_TERM}`);
     await expect(page.getByText('No documents were found')).toBeVisible();
 
     const input = page.locator('input[type="search"][name="q"]');
