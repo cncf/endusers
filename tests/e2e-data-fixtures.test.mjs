@@ -557,7 +557,7 @@ test('every committed overlay still applies to its data file', () => {
         Object.values(data.referenceArchitectureLifecycle.trends).some(
           (trend) => trend.values.length > 1,
         ),
-      'the added trend displaced a real one instead of rendering beside it, so the arms it was added next to stopped rendering',
+      'the ordinary coverage build must carry a no-values trend and a multi-point trend beside the single-point one, or the arms Sparkline selects between stopped rendering together',
     ],
   ];
   for (const [name, holds, why] of cases) {

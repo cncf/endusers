@@ -7,26 +7,30 @@
 //
 // The `50` arm centres a lone point, because the expression beside it divides
 // by `values.length - 1` and would be a division by zero. Nothing in the
-// checked-in data reaches it. `data/metrics.json` defines exactly two
-// lifecycle trends: `submissions` carries zero values, so Sparkline returns
-// "No trend data yet" before reaching the ternary at all, and `publications`
-// carries five, which takes the arm beside it. A trend holding exactly one
-// point is an ordinary shape -- `submissions` becomes one the first month a
-// single submission is recorded -- and it is the shape neither trend has.
+// checked-in data reaches it, and nothing reaches the no-values arm that
+// returns "No trend data yet" before the ternary either. `data/metrics.json`
+// defines two lifecycle trends, `submissions` and `publications`, and both
+// carry several values, so both take the arm that divides. `submissions` was
+// empty while no open reference-architecture submissions were observed and
+// supplied the no-values arm for free, but it fills in as soon as a collector
+// run records open submissions, so neither arm can be left to the real data.
+// A trend holding exactly one point, and a trend holding none, are both
+// ordinary shapes -- a collector run that reaches a source with nothing to
+// report emits the trend with an empty `values`.
 //
-// This *is* a case tests/e2e/data-fixtures.spec.js's mechanism can take, and
-// it did not used to be. The trend grid is keyed
+// Both *are* cases tests/e2e/data-fixtures.spec.js's mechanism can take, and
+// they did not used to be. The trend grid is keyed
 // (`Object.entries(lifecycle?.trends || {})`), and until
 // tests/tools/e2e-data-fixtures.cjs grew an `add` operation an overlay could
-// only reshape a key the real document already carried. The single-point arm
-// could therefore only be made by appending a point onto `submissions` -- the
-// one trend that also reaches the no-values arm -- which trades one arm for
-// the other rather than adding a case, so it was given the variant build.
-// `add` introduces a trend *beside* the real two instead: both keep rendering
-// exactly as they did, and all three Sparkline arms -- no values, one value,
-// many values -- render together on the one real /resources/metrics page in one build.
+// only reshape a key the real document already carried. An arm could therefore
+// only be made by patching a real trend, which trades the arm that trend
+// already renders for the one under test rather than adding a case, so it was
+// given the variant build. `add` introduces trends *beside* the real two
+// instead: both keep rendering exactly as they did, and all three Sparkline
+// arms -- no values, one value, many values -- render together on the one real
+// /resources/metrics page in one build.
 //
-// Keeping it out of the variant build is what lets
+// Keeping them out of the variant build is what lets
 // tests/e2e/metrics-empty-collections-variant.spec.js clear
 // `referenceArchitectureLifecycle.trends` there for LifecycleSection's `|| {}`
 // fallback, which no build could reach while the append had to stay.
