@@ -23,6 +23,11 @@ body:
         third-party fetches, cncf/artwork logo URLs only) and remediation
         steps are documented in
         [CONTENT-SECURITY.md](https://github.com/cncf/endusers/blob/main/CONTENT-SECURITY.md).
+        Every diagram must also carry alt text describing what it shows —
+        write it between the brackets of the image, e.g.
+        `![Pod autoscaling loop](https://example.com/diagram.png)` —
+        because a diagram is the content of a reference-architecture page and
+        the validator rejects images with no text alternative.
 
   - type: input
     id: org_name
