@@ -29,6 +29,11 @@ const GROUPS = [
     name: 'Telecom User Group',
     repo: 'cncf/telecom-user-group',
   },
+  {
+    slug: 'platform-engineering',
+    name: 'Platform Engineering User Group',
+    repo: 'Cloud-Native-Platform-Engineering/cnpe-community',
+  },
 ];
 
 const headers = makeGitHubHeaders(
