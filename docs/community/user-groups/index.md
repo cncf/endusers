@@ -2,9 +2,7 @@
 title: User Groups
 sidebar_position: 4
 slug: /community/user-groups
-description:
-  Long-lived CNCF end user groups aligned to an industry vertical or problem
-  domain.
+description: Long-lived CNCF end user groups aligned to an industry vertical.
 ---
 
 User Groups are long-lived groups aligned to an industry vertical or problem
