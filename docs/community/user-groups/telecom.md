@@ -12,6 +12,12 @@ community for telecom organizations adopting and operating cloud native
 technologies. The group shares resources, use cases, and practical guidance for
 network functions, edge deployments, and carrier-grade platforms.
 
+> **Status:** the group's meetings are currently in hiatus, per the
+> [group's README](https://github.com/cncf/telecom-user-group#meeting-time).
+> Active CNCF telecom work continues in the
+> [CNF Working Group](https://github.com/cncf/cnf-wg) and the
+> [CNF Test Suite](https://github.com/cncf/cnf-testsuite).
+
 ## Who should join
 
 - Network and platform engineers at telecom operators
@@ -22,7 +28,7 @@ network functions, edge deployments, and carrier-grade platforms.
 
 - Visit the [GitHub repository](https://github.com/cncf/telecom-user-group) for
   meeting details, resources, and how to join
-- Join `#telecom-user-group` on [CNCF Slack](https://slack.cncf.io/)
+- Join `#tug` on [CNCF Slack](https://slack.cncf.io/)
 - Introduce yourself and ask questions in the repository discussions
 
 ## Related resources
