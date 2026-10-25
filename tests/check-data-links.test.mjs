@@ -160,15 +160,24 @@ test('checkUrl reports the cause of a failed fetch', async () => {
 });
 
 test('checkUrl aborts a request that outlives its timeout', async () => {
-  const result = await checkUrl('https://hang.example/', {
-    timeoutMs: 5,
-    fetchImpl: (url, { signal }) =>
-      new Promise((_, reject) => {
-        signal.addEventListener('abort', () => reject(signal.reason));
-      }),
-  });
-  assert.equal(result.verdict, 'unverifiable');
-  assert.match(result.detail, /timeout|aborted/i);
+  // AbortSignal.timeout() runs on an unref'd timer: a real fetch holds the
+  // event loop open until it fires, but a stub that never settles does not,
+  // and on a quiet runner the process would exit before the timeout. Hold
+  // the loop open for the duration of the test the way the socket would.
+  const keepAlive = setTimeout(() => {}, 1_000);
+  try {
+    const result = await checkUrl('https://hang.example/', {
+      timeoutMs: 5,
+      fetchImpl: (url, { signal }) =>
+        new Promise((_, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason));
+        }),
+    });
+    assert.equal(result.verdict, 'unverifiable');
+    assert.match(result.detail, /timeout|aborted/i);
+  } finally {
+    clearTimeout(keepAlive);
+  }
 });
 
 test('mapWithConcurrency keeps order and never exceeds the limit', async () => {
