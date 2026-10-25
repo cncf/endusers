@@ -307,9 +307,14 @@ enough for a first contribution.
    - `check:audit` — see above; part of "Validate repository", not "Lint
      repository".
    - `check:links` — runs `markdown-link-check` over every `*.md` file in the
-     repository, including `docs/` and `blog/`; it needs network access and can
-     fail for reasons unrelated to your change (a linked site being temporarily
-     down, for example).
+     repository, including `docs/` and `blog/`, and then
+     `scripts/check-data-links.mjs` over every outbound URL the site renders
+     from `data/`. Both halves need network access and can fail for reasons
+     unrelated to your change (a linked site being temporarily down, for
+     example). If the failure is a rotted URL in a `data/` file, fix the URL
+     there; if the fix belongs to an upstream source the data mirrors, add the
+     URL to `KNOWN_BROKEN_URLS` in `scripts/lib/data-links.mjs` with a note on
+     what tracks the upstream fix.
    - `check:community-group-links` — needs `GH_TOKEN` set to avoid the
      unauthenticated GitHub rate limit. It updates `data/community-groups.json`
      and its `generatedAt` timestamp only when group status content changes.
