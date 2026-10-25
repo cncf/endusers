@@ -85,6 +85,7 @@ test('a report without publishedAt renders no date row while a dated sibling kee
   try {
     const [first, second] = findAllByType(RadarReports(), 'li');
     const expected = new Date(REPORT.publishedAt).toLocaleDateString('en-US', {
+      timeZone: 'UTC',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -111,6 +112,7 @@ test('the fixture path renders the same provenance contract as the live corpus',
     assert.equal(anchor.props.target, '_blank');
     assert.match(anchor.props.rel, /noreferrer/);
     const expected = new Date(generatedAt).toLocaleDateString('en-US', {
+      timeZone: 'UTC',
       year: 'numeric',
       month: 'long',
       day: 'numeric',

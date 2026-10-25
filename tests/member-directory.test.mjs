@@ -349,8 +349,8 @@ test('formatDate renders a long en-US date and rejects a bad timestamp', () => {
   assert.equal(formatDate(null), 'January 1, 1970');
 });
 
-// The unit gate runs under TZ=UTC, where a local-zone and a UTC rendering
-// agree, so this one has to leave the process. data/radar-reports.json and
+// In a UTC host zone a local-zone and a UTC rendering agree, so this one
+// pins its own zones in a child process rather than trusting the host's. data/radar-reports.json and
 // data/case-studies.json carry date-only `publishedAt` values, which parse as
 // UTC midnight; the site is built once in UTC and hydrated in the visitor's
 // browser, so a local-zone rendering shows September 29 to everyone west of

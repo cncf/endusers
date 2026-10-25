@@ -37,7 +37,14 @@ const { default: RadarReports } = await importSource(
 const { default: data } = await importSource('data/radar-reports.json');
 const reports = data.radarReports || [];
 
-const LONG_DATE = { year: 'numeric', month: 'long', day: 'numeric' };
+// timeZone matches formatDate.js: the site renders every data/ date in UTC
+// so the client never disagrees with the server render.
+const LONG_DATE = {
+  timeZone: 'UTC',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+};
 
 /**
  * `<MirrorSyncStatus />` (src/components/shared) is a nested component
