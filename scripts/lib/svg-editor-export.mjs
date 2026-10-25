@@ -38,7 +38,10 @@ const DOCTYPE_WITH_SUBSET =
 
 /** The `encoding` pseudo-attribute of an XML declaration at the top of a file. */
 const DECLARED_ENCODING =
-  /^(\s*<\?xml\b[^>]*?\bencoding\s*=\s*)(?:"[^"]*"|'[^']*')/;
+  /^(\s*<\?xml\b[^>]*?\bencoding\s*=\s*)(?:"([^"]*)"|'([^']*)')/;
+
+/** Encoding labels that already name UTF-8, in any letter case. */
+const UTF8_LABEL = /^utf-?8$/i;
 
 /**
  * Parse an internal subset that consists only of editor-export entity
@@ -59,13 +62,17 @@ function parseEntitySubset(subset) {
 
 /**
  * Expand editor-export entities and drop the DOCTYPE that declared them, and
- * relabel the encoding declaration as UTF-8, which is what the mirror writes.
+ * relabel a non-UTF-8 encoding declaration as UTF-8, which is what the mirror
+ * writes. A label that already names UTF-8 is left byte-for-byte alone so the
+ * mirrored file, and the content hash in its name, do not churn.
  *
  * @param {string} source an SVG document decoded as UTF-8
  * @returns {string}
  */
 export function normalizeEditorExport(source) {
-  let text = String(source).replace(DECLARED_ENCODING, '$1"utf-8"');
+  let text = String(source).replace(DECLARED_ENCODING, (match, head, dq, sq) =>
+    UTF8_LABEL.test(dq ?? sq) ? match : `${head}"utf-8"`,
+  );
 
   const doctype = DOCTYPE_WITH_SUBSET.exec(text);
   if (!doctype) return text;
