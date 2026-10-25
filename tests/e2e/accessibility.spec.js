@@ -29,7 +29,11 @@
 // stops being reported, this file fails and asks for the entry to be deleted.
 // That is the same shape as the persist-credentials and timeout-minutes
 // baselines in tests/ci-supply-chain.test.mjs, and it is what stops a
-// temporary allowance from quietly becoming permanent.
+// temporary allowance from quietly becoming permanent. Each route's own scan
+// checks both directions -- nothing unrecorded reported, nothing recorded
+// missing -- so retirement costs no extra navigation; this file used to
+// rescan every baselined route serially in three further tests, which was the
+// slowest 25s of the suite.
 import AxeBuilder from '@axe-core/playwright';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -202,12 +206,12 @@ const INTERACTIVE_STATES = [
 // The site has no hook for the fix: the plugin's SearchBar renders
 // SearchButton without passing `translations`, so neither string can be
 // changed from docusaurus.config.js. This is a baseline, not a suppression;
-// the retirement tests below fail the moment the plugin stops reporting it.
+// every route's scan fails the moment the plugin stops reporting it.
 const NAVBAR_VIOLATIONS = ['label-content-name-mismatch'];
 
 // The state counterpart of KNOWN_VIOLATIONS, keyed by state label, with the
 // same self-retiring contract: an entry that stops being reported fails the
-// retirement test below and has to be deleted.
+// state's light-mode scan and has to be deleted.
 const KNOWN_STATE_VIOLATIONS = {
   'member profile dialog': [...NAVBAR_VIOLATIONS],
   'TAB profile dialog': [...NAVBAR_VIOLATIONS],
@@ -222,8 +226,8 @@ const DISABLED_RULES = Object.create(null);
 
 // Violations that exist on the site today, keyed by route path. Each entry is
 // an axe rule id. Deleting a fixed entry is required, not optional: the
-// "records no violation that has been fixed" test below fails while a stale
-// entry remains, so the baseline cannot outlive the bug it describes.
+// route's light-mode scan fails while a stale entry remains, so the baseline
+// cannot outlive the bug it describes.
 //
 // Every route carries the navbar, so every route starts from
 // NAVBAR_VIOLATIONS; route-specific entries are appended per path.
@@ -236,6 +240,30 @@ const KNOWN_VIOLATIONS = Object.fromEntries(
 // and retired through the template sample in KNOWN_VIOLATIONS, so only what
 // a page adds of its own belongs here.
 const KNOWN_CONTENT_VIOLATIONS = Object.create(null);
+
+// Both halves of the baseline contract against one scan's results. `allowed`
+// is every rule id the scan may report without failing; `recorded` is the
+// subset the baseline claims still fails, which must therefore be reported.
+// Retirement is checked in light mode only, the mode the retired serial
+// rescans ran in, so a rule that fails in one colour scheme but not the
+// other is not asked to fail in both.
+function expectBaselined(results, { allowed, recorded, mode, where, list }) {
+  const allowedIds = new Set(allowed);
+  const reported = new Set(results.violations.map((v) => v.id));
+  const unrecorded = results.violations.filter((v) => !allowedIds.has(v.id));
+
+  expect(
+    unrecorded.map(describe),
+    `${where} reported WCAG violations that are not in ${list}`,
+  ).toEqual([]);
+
+  if (mode !== 'light') return;
+  const stale = recorded.filter((ruleId) => !reported.has(ruleId));
+  expect(
+    stale,
+    `${where}: these rules no longer fail — delete them from ${list}`,
+  ).toEqual([]);
+}
 
 function scanner(page) {
   const builder = new AxeBuilder({ page }).withTags(WCAG_TAGS);
@@ -307,7 +335,7 @@ async function prepare(page, path, mode) {
   await page.evaluate(() => document.fonts.ready);
 }
 
-async function scan(page, path, mode = 'light') {
+async function scan(page, path, mode) {
   await prepare(page, path, mode);
 
   return scanner(page).analyze();
@@ -318,7 +346,7 @@ async function scan(page, path, mode = 'light') {
 // present before this returns, so a scan that found nothing because the
 // dialog never opened fails as a missing dialog rather than passing as a
 // clean page.
-async function scanState(page, state, mode = 'light') {
+async function scanState(page, state, mode) {
   if (state.viewport) await page.setViewportSize(state.viewport);
   await prepare(page, state.path, mode);
   await state.open(page);
@@ -333,13 +361,14 @@ for (const mode of ['light', 'dark']) {
     }) => {
       await page.emulateMedia({ colorScheme: mode });
       const results = await scan(page, route.path, mode);
-      const allowed = new Set(KNOWN_VIOLATIONS[route.path] ?? []);
-      const unrecorded = results.violations.filter((v) => !allowed.has(v.id));
-
-      expect(
-        unrecorded.map(describe),
-        `${route.path} reported WCAG violations that are not in KNOWN_VIOLATIONS`,
-      ).toEqual([]);
+      const recorded = KNOWN_VIOLATIONS[route.path] ?? [];
+      expectBaselined(results, {
+        allowed: recorded,
+        recorded,
+        mode,
+        where: route.path,
+        list: 'KNOWN_VIOLATIONS',
+      });
     });
   }
 }
@@ -351,16 +380,14 @@ for (const mode of ['light', 'dark']) {
     }) => {
       await page.emulateMedia({ colorScheme: mode });
       const results = await scan(page, path, mode);
-      const allowed = new Set([
-        ...NAVBAR_VIOLATIONS,
-        ...(KNOWN_CONTENT_VIOLATIONS[path] ?? []),
-      ]);
-      const unrecorded = results.violations.filter((v) => !allowed.has(v.id));
-
-      expect(
-        unrecorded.map(describe),
-        `${path} reported WCAG violations that are not in KNOWN_CONTENT_VIOLATIONS`,
-      ).toEqual([]);
+      const recorded = KNOWN_CONTENT_VIOLATIONS[path] ?? [];
+      expectBaselined(results, {
+        allowed: [...NAVBAR_VIOLATIONS, ...recorded],
+        recorded,
+        mode,
+        where: path,
+        list: 'KNOWN_CONTENT_VIOLATIONS',
+      });
     });
   }
 }
@@ -372,48 +399,22 @@ for (const mode of ['light', 'dark']) {
     }) => {
       await page.emulateMedia({ colorScheme: mode });
       const results = await scanState(page, state, mode);
-      const allowed = new Set(KNOWN_STATE_VIOLATIONS[state.label] ?? []);
-      const unrecorded = results.violations.filter((v) => !allowed.has(v.id));
-
-      expect(
-        unrecorded.map(describe),
-        `${state.label} reported WCAG violations that are not in KNOWN_STATE_VIOLATIONS`,
-      ).toEqual([]);
+      const recorded = KNOWN_STATE_VIOLATIONS[state.label] ?? [];
+      expectBaselined(results, {
+        allowed: recorded,
+        recorded,
+        mode,
+        where: state.label,
+        list: 'KNOWN_STATE_VIOLATIONS',
+      });
     });
   }
 }
 
-test('the state baseline records no violation that has been fixed', async ({
-  page,
-}) => {
-  // One navigation, one interaction and one full-page scan per recorded
-  // state, run serially in a single test.
-  test.setTimeout(240_000);
-
-  const byLabel = new Map(
-    INTERACTIVE_STATES.map((state) => [state.label, state]),
-  );
-  const stale = [];
-
-  for (const [label, ruleIds] of Object.entries(KNOWN_STATE_VIOLATIONS)) {
-    const results = await scanState(page, byLabel.get(label));
-    const reported = new Set(results.violations.map((v) => v.id));
-    for (const ruleId of ruleIds) {
-      if (!reported.has(ruleId)) stale.push(`${label}: ${ruleId}`);
-    }
-  }
-
-  expect(
-    stale,
-    'these rules no longer fail — delete them from KNOWN_STATE_VIOLATIONS',
-  ).toEqual([]);
-});
-
 test('every baselined state is a state this spec scans', () => {
   // The companion of the ROUTES check below: a KNOWN_STATE_VIOLATIONS key
-  // that names no entry in INTERACTIVE_STATES would silence nothing, and the
-  // retirement test above would throw on the undefined state rather than say
-  // so.
+  // that names no entry in INTERACTIVE_STATES would silence nothing and no
+  // scan would ever ask its rules to retire.
   const scanned = new Set(INTERACTIVE_STATES.map((state) => state.label));
   const unknown = Object.keys(KNOWN_STATE_VIOLATIONS).filter(
     (label) => !scanned.has(label),
@@ -425,55 +426,10 @@ test('every baselined state is a state this spec scans', () => {
   ).toEqual([]);
 });
 
-test('the baseline records no violation that has been fixed', async ({
-  page,
-}) => {
-  // One navigation and one full-page scan per recorded route, run serially in
-  // a single test; the per-test default is not enough for that.
-  test.setTimeout(240_000);
-
-  const stale = [];
-
-  for (const [path, ruleIds] of Object.entries(KNOWN_VIOLATIONS)) {
-    const results = await scan(page, path);
-    const reported = new Set(results.violations.map((v) => v.id));
-    for (const ruleId of ruleIds) {
-      if (!reported.has(ruleId)) stale.push(`${path}: ${ruleId}`);
-    }
-  }
-
-  expect(
-    stale,
-    'these rules no longer fail — delete them from KNOWN_VIOLATIONS',
-  ).toEqual([]);
-});
-
-test('the content baseline records no violation that has been fixed', async ({
-  page,
-}) => {
-  test.setTimeout(240_000);
-
-  const stale = [];
-
-  for (const [path, ruleIds] of Object.entries(KNOWN_CONTENT_VIOLATIONS)) {
-    const results = await scan(page, path);
-    const reported = new Set(results.violations.map((v) => v.id));
-    for (const ruleId of ruleIds) {
-      if (!reported.has(ruleId)) stale.push(`${path}: ${ruleId}`);
-    }
-  }
-
-  expect(
-    stale,
-    'these rules no longer fail — delete them from KNOWN_CONTENT_VIOLATIONS',
-  ).toEqual([]);
-});
-
 test('every baselined route is a route this spec scans', () => {
   // A KNOWN_VIOLATIONS key that matches no entry in ROUTES would silence
-  // nothing and go unnoticed, because the retirement test above would keep
-  // scanning it and keep passing. The same holds for a content entry naming
-  // a path the sitemap no longer lists.
+  // nothing and go unnoticed, because no scan would ever read it. The same
+  // holds for a content entry naming a path the sitemap no longer lists.
   const scanned = new Set(ROUTES.map((route) => route.path));
   const unknown = Object.keys(KNOWN_VIOLATIONS).filter(
     (path) => !scanned.has(path),
