@@ -3,7 +3,7 @@
   "sourceUrl": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/",
   "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
   "category": "End User Programming / End User Talk",
-  "generatedAt": "2026-10-12T19:41:29.093Z",
+  "generatedAt": "2026-10-24T16:09:45.827Z",
   "timezone": "MST (UTC−7)",
   "talkCount": 83,
   "days": [
@@ -91,7 +91,7 @@
             },
             {
               "id": "1247300",
-              "title": "Will It Scale? Moving Supply Chain Security from Concept to Production",
+              "title": "Signed, Sealed, Denied: Attestation-Driven Admission with Kyverno + CEL at AT&T",
               "speakers": "Chad Swenson, Sagar Kundral",
               "room": "Salt Palace | Level 1 | 151",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247300"
@@ -128,14 +128,14 @@
             {
               "id": "1250487",
               "title": "The New Scaling Matrix: Balancing In-Place Resizing, VPA, HPA and Automation Solutions",
-              "speakers": "Meghana Kaushal, Dolis Sharma",
+              "speakers": "Dolis Sharma",
               "room": "Salt Palace | Level 1 | Grand Ballroom GI",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250487"
             },
             {
               "id": "1247376",
               "title": "The Operator Calls Are Coming from Inside the Namespace",
-              "speakers": "Justin OLeary",
+              "speakers": "Justin O’Leary",
               "room": "Salt Palace | Level 1 | 151",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247376"
             }
@@ -264,7 +264,7 @@
             {
               "id": "1246066",
               "title": "AI-DDoS: How AI-Generated Contributions Are Breaching OSS Communities, and What We Can Do about It",
-              "speakers": "Zixuan Feng, Anita Sarma",
+              "speakers": "Zixuan Feng",
               "room": "Salt Palace | Level 1 | 151",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1246066"
             }
