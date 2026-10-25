@@ -35,10 +35,15 @@ import { test, expect } from '../tools/e2e-coverage.cjs';
 // project root, so the build output is addressed from there.
 const SITEMAP = resolve('build/sitemap.xml');
 
-// React hydrates after load, and a mismatch surfaces only once it has. Nothing
-// signals completion, so the wait is a fixed grace period; 2s was enough to
-// surface prior hydration mismatches on every observed run.
-const HYDRATION_GRACE_MS = 2_000;
+// React hydrates after load, and a mismatch surfaces only once it has.
+// Docusaurus marks that point: its BrowserContextProvider sets
+// `<html data-has-hydrated="true">` from an effect that runs once the first
+// client render has committed. React reports a hydration mismatch as a
+// recoverable error from that same commit, so a short settle after the marker
+// appears is all the console listener needs. This spec used to sleep a flat 2s
+// on every route instead, which was most of the suite's wall time.
+const HYDRATED_HTML = 'html[data-has-hydrated="true"]';
+const HYDRATION_SETTLE_MS = 250;
 
 function sitemapPaths() {
   let xml;
@@ -124,12 +129,13 @@ test.describe('built routes run without errors', () => {
         page.getByRole('heading', { name: 'Page Not Found' }),
       ).toHaveCount(0);
 
-      // Hydration is scheduled after load, so the listeners need a beat to see
-      // an error raised by it rather than by the initial script evaluation.
-      // There is no event to wait for here: the assertion is that nothing
-      // arrives, which can only be established by giving it time to.
+      // Hydration is scheduled after load, so the listeners need to see past
+      // the initial script evaluation. The hydrated marker pins the point the
+      // first client render committed; the settle after it lets a recoverable
+      // error logged from that commit reach the console listener.
       await page.waitForLoadState('load');
-      await page.waitForTimeout(HYDRATION_GRACE_MS);
+      await page.locator(HYDRATED_HTML).waitFor({ state: 'attached' });
+      await page.waitForTimeout(HYDRATION_SETTLE_MS);
 
       expect(errors, `${path} should raise no runtime error`).toEqual([]);
     });
