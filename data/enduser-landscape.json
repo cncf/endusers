@@ -1,11 +1,11 @@
 {
   "generated": true,
-  "collectedAt": "2026-10-01T05:13:13.673Z",
+  "collectedAt": "2026-10-25T17:13:18.319Z",
   "source": {
     "repository": "https://github.com/cncf/landscape",
-    "revision": "bc9d1b5c87904d9430fc3377938f38192bab3ad0",
+    "revision": "0ba45a1972a5e205f8d1f24929b713d2e67459d8",
     "file": "landscape.yml",
-    "sourceUrl": "https://github.com/cncf/landscape/blob/bc9d1b5c87904d9430fc3377938f38192bab3ad0/landscape.yml"
+    "sourceUrl": "https://github.com/cncf/landscape/blob/0ba45a1972a5e205f8d1f24929b713d2e67459d8/landscape.yml"
   },
   "selection": {
     "member": "CNCF Members item.enduser === true and name suffix \"(member)\"",
@@ -42,7 +42,7 @@
       "homepageUrl": "https://www.apple.com/",
       "joined": "2019-05-01",
       "logoFilename": "apple.svg",
-      "localLogo": "/img/end-user-members/19b6e6186d65d394-apple.svg",
+      "localLogo": "/img/end-user-members/f63844704ab781ea-apple.svg",
       "logoWarning": null
     },
     {
@@ -74,7 +74,7 @@
       "homepageUrl": "https://www.americanexpress.com/",
       "joined": "2021-06-01",
       "logoFilename": "american-express.svg",
-      "localLogo": "/img/end-user-members/75a36f956c78718a-american-express.svg",
+      "localLogo": "/img/end-user-members/03aee6a5a08caa12-american-express.svg",
       "logoWarning": null
     },
     {
@@ -378,7 +378,7 @@
       "homepageUrl": "https://www.dkb.de",
       "joined": "2026-09-01",
       "logoFilename": "dkb.svg",
-      "localLogo": "/img/end-user-members/a99dee1837aa15c1-dkb.svg",
+      "localLogo": "/img/end-user-members/31285f1116bf07cf-dkb.svg",
       "logoWarning": null
     },
     {
@@ -426,7 +426,7 @@
       "homepageUrl": "https://www.eon.com",
       "joined": "2024-06-01",
       "logoFilename": "e.on.svg",
-      "localLogo": "/img/end-user-members/c6d079bc3efb8450-e.on.svg",
+      "localLogo": "/img/end-user-members/01798be07fd20cf4-e.on.svg",
       "logoWarning": null
     },
     {
@@ -1258,7 +1258,7 @@
       "homepageUrl": "https://www.cncf.io/",
       "joined": null,
       "logoFilename": "quail.svg",
-      "localLogo": "/img/end-user-members/557f32e0d3e15ec8-quail.svg",
+      "localLogo": "/img/end-user-members/f3237617eaff5a2e-quail.svg",
       "logoWarning": null
     },
     {
@@ -1550,11 +1550,11 @@
       "logoWarning": null
     },
     {
-      "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/DIRECTV (supporter)",
-      "sourceRole": "supporter",
-      "included": false,
-      "classificationReason": "legacy-supporter-audit-only",
-      "sourceName": "DIRECTV (supporter)",
+      "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/DIRECTV (contributor)",
+      "sourceRole": "contributor",
+      "included": true,
+      "classificationReason": "selected-contributor",
+      "sourceName": "DIRECTV (contributor)",
       "displayName": "DIRECTV",
       "category": "CNCF Members",
       "subcategory": "End User Supporter and Contributor",
@@ -1562,7 +1562,7 @@
       "homepageUrl": "https://www.directv.com/",
       "joined": "2021-10-01",
       "logoFilename": "directv.svg",
-      "localLogo": null,
+      "localLogo": "/img/end-user-members/c9c29489c9990c1f-directv.svg",
       "logoWarning": null
     },
     {
@@ -2298,8 +2298,8 @@
       "homepageUrl": "https://www.subaru.co.jp/en/",
       "joined": "2026-09-01",
       "logoFilename": "subaru.svg",
-      "localLogo": null,
-      "logoWarning": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Subaru Corporation (contributor): landscape logo is a symlink or is missing: subaru.svg"
+      "localLogo": "/img/end-user-members/fe60e14655aad3a6-subaru.svg",
+      "logoWarning": null
     },
     {
       "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Swiss Post (contributor)",
@@ -2362,22 +2362,6 @@
       "homepageUrl": "https://www.ticketmaster.com/",
       "joined": "2016-12-01",
       "logoFilename": "ticket-master-supporter.svg",
-      "localLogo": null,
-      "logoWarning": null
-    },
-    {
-      "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Tokyo Gas (supporter)",
-      "sourceRole": "supporter",
-      "included": false,
-      "classificationReason": "legacy-supporter-audit-only",
-      "sourceName": "Tokyo Gas (supporter)",
-      "displayName": "Tokyo Gas",
-      "category": "CNCF Members",
-      "subcategory": "End User Supporter and Contributor",
-      "enduser": false,
-      "homepageUrl": "https://www.tokyo-gas.co.jp",
-      "joined": "2024-10-01",
-      "logoFilename": "tokyo-gas.svg",
       "localLogo": null,
       "logoWarning": null
     },
