@@ -193,6 +193,7 @@ test('each row links to the case study URL via its title and cannot reach back v
       study.organization,
       study.publishedAt
         ? new Date(study.publishedAt).toLocaleDateString('en-US', {
+            timeZone: 'UTC',
             year: 'numeric',
             month: 'long',
             day: 'numeric',
@@ -429,6 +430,7 @@ test('the sync status credits the upstream source with a safe outbound link', ()
   assert.ok(
     textOf(rendered).includes(
       new Date(data.generatedAt).toLocaleDateString('en-US', {
+        timeZone: 'UTC',
         year: 'numeric',
         month: 'long',
         day: 'numeric',

@@ -81,7 +81,7 @@ test('the banner attributes the mirror to the live sourceUrl', () => {
 test('the rendered date is the generatedAt of the live data file', () => {
   const expected = new Date(caseStudyData.generatedAt).toLocaleDateString(
     'en-US',
-    { year: 'numeric', month: 'long', day: 'numeric' },
+    { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' },
   );
   const text = textOf(renderSyncStatus(CaseStudies));
   assert.match(text, /^Mirrored from /);

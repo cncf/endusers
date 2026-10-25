@@ -49,11 +49,7 @@ async function renderWith(data) {
 test('the live data file renders the generatedAt last-updated line', () => {
   const expected = new Date(groupsData.generatedAt).toLocaleDateString(
     'en-US',
-    {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    },
+    { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' },
   );
   const text = textOf(GroupLinkStatus());
   assert.match(text, /Upstream group status last updated on/);

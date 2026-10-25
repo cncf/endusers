@@ -63,7 +63,7 @@ function unpinned(isoDate) {
   });
 }
 
-// Asserted rather than skipped around. The suite runs under TZ=UTC, so every
+// Asserted rather than skipped around. Whatever zone the suite runs in, every
 // assertion below is vacuous on a runtime that ignores a TZ change made after
 // start-up: the zone never actually moves, and a helper with no pin at all
 // passes. A runtime like that must fail here, loudly and once, instead of

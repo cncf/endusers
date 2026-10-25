@@ -32,6 +32,11 @@ jobs:
       - name: Audit dependencies against the advisory allowlist
         run: npm run check:audit
       - name: Run unit tests with coverage
+        # A zone fourteen hours ahead of UTC, so a date formatted in the
+        # host zone instead of UTC lands on a different calendar day for most
+        # of the day; the suite used to pin TZ=UTC, which hid exactly that.
+        env:
+          TZ: Pacific/Kiritimati
         run: npm run test:unit:coverage:check | tee coverage-summary.txt
         shell: bash -o pipefail {0}
       - name: Publish coverage summary

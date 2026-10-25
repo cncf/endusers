@@ -103,7 +103,7 @@ function datelines(text) {
     ([matched, month, first, last, year]) => ({
       matched,
       // End of the final day, UTC: an event is not past until that day is over
-      // anywhere the reader might be. The suite runs under TZ=UTC.
+      // anywhere the reader might be. Date.UTC keeps this zone-independent.
       endsAt: Date.UTC(
         Number(year),
         MONTHS.indexOf(month),

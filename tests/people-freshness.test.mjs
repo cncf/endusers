@@ -49,6 +49,7 @@ test('the live data file renders a single freshness paragraph', () => {
 
 test('the rendered date is the fetchedAt of the live data file', () => {
   const expected = new Date(peopleData.fetchedAt).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
