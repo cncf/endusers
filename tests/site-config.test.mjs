@@ -798,3 +798,76 @@ test('the CSP holds under a preview deployment origin', async () => {
   assert.deepEqual(directives.get('manifest-src'), ["'self'"]);
   assert.ok(directives.get('img-src')?.includes("'self'"));
 });
+
+// The two prism-react-renderer themes the site ships paint several token
+// groups below the 4.5:1 WCAG AA ratio on their own code-block background,
+// which axe reports as color-contrast on every page with a code block. The
+// config repaints those tokens; this reads the result back so a theme swap or
+// a prism-react-renderer upgrade that reintroduces one fails here rather than
+// in the browser scan.
+function channelsOf(color) {
+  const hex = /^#([0-9a-f]{6})$/i.exec(color);
+  if (hex) return [0, 2, 4].map((i) => parseInt(hex[1].slice(i, i + 2), 16));
+  const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(color);
+  assert.ok(rgb, `unrecognised token colour ${color}`);
+  return rgb.slice(1, 4).map(Number);
+}
+
+function relativeLuminance(color) {
+  const [r, g, b] = channelsOf(color).map((value) => {
+    const channel = value / 255;
+    return channel <= 0.04045
+      ? channel / 12.92
+      : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastRatio(foreground, background) {
+  const [low, high] = [
+    relativeLuminance(foreground),
+    relativeLuminance(background),
+  ].sort((a, b) => a - b);
+  return (high + 0.05) / (low + 0.05);
+}
+
+test('every syntax-highlighting colour clears WCAG AA on its code-block background', () => {
+  const { prism } = config.themeConfig;
+  const failing = [];
+  for (const [mode, theme] of [
+    ['light', prism.theme],
+    ['dark', prism.darkTheme],
+  ]) {
+    const background = theme.plain.backgroundColor;
+    assert.ok(theme.styles.length > 0, `${mode} theme defines no token styles`);
+    for (const { types, style } of theme.styles) {
+      if (style.color === undefined) continue;
+      const ratio = contrastRatio(style.color, background);
+      if (ratio < 4.5) {
+        failing.push(
+          `${mode} ${types.join('/')} ${style.color} ${ratio.toFixed(2)}:1`,
+        );
+      }
+    }
+  }
+  assert.deepEqual(failing, []);
+});
+
+test('the AA repaint keeps every token group the upstream themes define', async () => {
+  const { themes } = await import('prism-react-renderer');
+  const { prism } = config.themeConfig;
+  for (const [ours, upstream] of [
+    [prism.theme, themes.github],
+    [prism.darkTheme, themes.dracula],
+  ]) {
+    assert.deepEqual(ours.plain, upstream.plain);
+    assert.deepEqual(
+      ours.styles.map((entry) => entry.types),
+      upstream.styles.map((entry) => entry.types),
+    );
+    assert.deepEqual(
+      ours.styles.map(({ style }) => Object.keys(style)),
+      upstream.styles.map(({ style }) => Object.keys(style)),
+    );
+  }
+});

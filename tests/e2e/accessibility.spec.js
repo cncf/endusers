@@ -17,9 +17,12 @@
 // non-<li> child. All of those ship green today.
 //
 // This spec runs axe-core against the built pages for the WCAG 2.1 A and AA
-// rule sets. Routes are chosen to cover one instance of each distinct page
-// template rather than every URL: the scan is the expensive part, and two
-// architecture detail pages exercise identical markup.
+// rule sets. ROUTES names one instance of each distinct page template and
+// scans it in both colour modes; CONTENT_ROUTES is every other path in the
+// sitemap, scanned once. Two architecture detail pages exercise identical
+// chrome, but the markup between the template's landmarks is authored per
+// page -- an image without alt text in one submission, a heading level
+// skipped in one user-group doc -- and a template sample cannot see it.
 //
 // Pre-existing violations are recorded in KNOWN_VIOLATIONS below rather than
 // suppressed globally, and the baseline retires itself: if a recorded entry
@@ -28,7 +31,7 @@
 // baselines in tests/ci-supply-chain.test.mjs, and it is what stops a
 // temporary allowance from quietly becoming permanent.
 import AxeBuilder from '@axe-core/playwright';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
@@ -75,6 +78,34 @@ const ROUTES = [
   { path: '/blog/tags', label: 'blog tags index' },
   { path: '/blog/tags/community', label: 'blog tag post list' },
 ];
+
+// Every sitemap path ROUTES does not name, in the order the sitemap lists
+// them. Derived from the build rather than written down so a page added to
+// the site is scanned the first time it is built, and a page removed stops
+// being asked for. Scanned in both colour modes like ROUTES: the first run
+// of this list found syntax-highlighting tokens below AA contrast in the
+// light code theme, a defect the dark theme shared on a different token.
+//
+// The coverage build (E2E_COVERAGE=1) also mounts synthetic fixture pages --
+// the fixture docs instance and the per-directory fixture builds, all routed
+// under an /e2e-coverage- prefix -- so other specs can reach component
+// states no published page produces. No user reaches them on a production
+// build, so they are left out here; the specs that own them assert on them
+// directly.
+//
+// `playwright test --list` loads this file without a build (the unit suite
+// asks it which specs exist), so an absent sitemap yields no content routes
+// rather than a load error; the "scanned by exactly one route list" test
+// below fails a real run that has none.
+const FIXTURE_ROUTE_PREFIX = '/e2e-coverage-';
+const SITEMAP = resolve('build/sitemap.xml');
+const CONTENT_ROUTES = existsSync(SITEMAP)
+  ? sitemapPaths().filter(
+      (path) =>
+        !path.startsWith(FIXTURE_ROUTE_PREFIX) &&
+        !ROUTES.some((route) => route.path === path),
+    )
+  : [];
 
 // Interactive states the route scans above structurally cannot reach.
 //
@@ -200,6 +231,12 @@ const KNOWN_VIOLATIONS = Object.fromEntries(
   ROUTES.map((route) => [route.path, [...NAVBAR_VIOLATIONS]]),
 );
 
+// Route-specific violations on CONTENT_ROUTES, keyed by path, with the same
+// self-retiring contract. The navbar entry is implied for every content route
+// and retired through the template sample in KNOWN_VIOLATIONS, so only what
+// a page adds of its own belongs here.
+const KNOWN_CONTENT_VIOLATIONS = Object.create(null);
+
 function scanner(page) {
   const builder = new AxeBuilder({ page }).withTags(WCAG_TAGS);
   const disabled = Object.keys(DISABLED_RULES);
@@ -219,7 +256,7 @@ function describe(violation) {
 
 // The routes the built site publishes, normalized to the form ROUTES uses.
 function sitemapPaths() {
-  const sitemap = readFileSync(resolve('build/sitemap.xml'), 'utf8');
+  const sitemap = readFileSync(SITEMAP, 'utf8');
   const paths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => {
     const path = new URL(loc).pathname.replace(/\/$/, '');
     return path === '' ? '/' : path;
@@ -308,6 +345,27 @@ for (const mode of ['light', 'dark']) {
 }
 
 for (const mode of ['light', 'dark']) {
+  for (const path of CONTENT_ROUTES) {
+    test(`content page ${path} has no unrecorded WCAG A/AA violations in ${mode}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: mode });
+      const results = await scan(page, path, mode);
+      const allowed = new Set([
+        ...NAVBAR_VIOLATIONS,
+        ...(KNOWN_CONTENT_VIOLATIONS[path] ?? []),
+      ]);
+      const unrecorded = results.violations.filter((v) => !allowed.has(v.id));
+
+      expect(
+        unrecorded.map(describe),
+        `${path} reported WCAG violations that are not in KNOWN_CONTENT_VIOLATIONS`,
+      ).toEqual([]);
+    });
+  }
+}
+
+for (const mode of ['light', 'dark']) {
   for (const state of INTERACTIVE_STATES) {
     test(`${state.label} has no unrecorded WCAG A/AA violations in ${mode}`, async ({
       page,
@@ -390,10 +448,32 @@ test('the baseline records no violation that has been fixed', async ({
   ).toEqual([]);
 });
 
+test('the content baseline records no violation that has been fixed', async ({
+  page,
+}) => {
+  test.setTimeout(240_000);
+
+  const stale = [];
+
+  for (const [path, ruleIds] of Object.entries(KNOWN_CONTENT_VIOLATIONS)) {
+    const results = await scan(page, path);
+    const reported = new Set(results.violations.map((v) => v.id));
+    for (const ruleId of ruleIds) {
+      if (!reported.has(ruleId)) stale.push(`${path}: ${ruleId}`);
+    }
+  }
+
+  expect(
+    stale,
+    'these rules no longer fail — delete them from KNOWN_CONTENT_VIOLATIONS',
+  ).toEqual([]);
+});
+
 test('every baselined route is a route this spec scans', () => {
   // A KNOWN_VIOLATIONS key that matches no entry in ROUTES would silence
   // nothing and go unnoticed, because the retirement test above would keep
-  // scanning it and keep passing.
+  // scanning it and keep passing. The same holds for a content entry naming
+  // a path the sitemap no longer lists.
   const scanned = new Set(ROUTES.map((route) => route.path));
   const unknown = Object.keys(KNOWN_VIOLATIONS).filter(
     (path) => !scanned.has(path),
@@ -402,6 +482,32 @@ test('every baselined route is a route this spec scans', () => {
   expect(unknown, 'KNOWN_VIOLATIONS names routes ROUTES does not scan').toEqual(
     [],
   );
+
+  const content = new Set(CONTENT_ROUTES);
+  const unknownContent = Object.keys(KNOWN_CONTENT_VIOLATIONS).filter(
+    (path) => !content.has(path),
+  );
+
+  expect(
+    unknownContent,
+    'KNOWN_CONTENT_VIOLATIONS names routes the sitemap does not list outside ROUTES',
+  ).toEqual([]);
+});
+
+test('every sitemap path is scanned by exactly one route list', () => {
+  // CONTENT_ROUTES is the sitemap minus ROUTES, so between them every
+  // published page is scanned once as content or twice as a template sample,
+  // and a path appearing in both would be a route listed twice in ROUTES.
+  const listed = sitemapPaths().filter(
+    (path) => !path.startsWith(FIXTURE_ROUTE_PREFIX),
+  );
+  const scanned = [...ROUTES.map((route) => route.path), ...CONTENT_ROUTES];
+
+  expect([...scanned].sort()).toEqual([...new Set(listed)].sort());
+  expect(
+    CONTENT_ROUTES.length,
+    'the sitemap lists no page outside ROUTES; drop CONTENT_ROUTES if that is now true',
+  ).toBeGreaterThan(0);
 });
 
 test('every scanned route is a listed page of the built site', () => {

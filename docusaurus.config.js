@@ -128,6 +128,32 @@ function endusersRobotsTxt() {
   };
 }
 
+// Syntax-highlighting colours that fall short of the 4.5:1 WCAG AA contrast
+// ratio on their theme's own code-block background, mapped to the same hue
+// darkened (github, on #f6f8fa) or lightened (dracula, on #282a36) until it
+// clears 4.6:1. prism-react-renderer's github theme fails on five token
+// groups -- comments, strings, numbers/properties, keywords and tags -- so
+// every YAML block in /architectures/* reported axe color-contrast; dracula
+// only fails on comments.
+const AA_TOKEN_COLORS = {
+  '#999988': '#717165',
+  '#e3116c': '#da1068',
+  '#36acaa': '#277c7a',
+  '#00a4db': '#0079a2',
+  '#d73a49': '#ce3846',
+  'rgb(98, 114, 164)': '#8692b9',
+};
+
+function withAAContrast(theme) {
+  return {
+    ...theme,
+    styles: theme.styles.map((entry) => {
+      const color = AA_TOKEN_COLORS[String(entry.style.color).toLowerCase()];
+      return color ? { ...entry, style: { ...entry.style, color } } : entry;
+    }),
+  };
+}
+
 const E2E_COVERAGE = process.env.E2E_COVERAGE === '1';
 const E2E_SOURCE_MAP_PLUGIN = E2E_COVERAGE ? endusersE2ESourceMaps : null;
 const E2E_DATA_FIXTURE_PLUGIN = E2E_COVERAGE ? endusersE2EDataFixtures : null;
@@ -482,8 +508,8 @@ const config = {
         style: 'dark',
       },
       prism: {
-        theme: prismThemes.github,
-        darkTheme: prismThemes.dracula,
+        theme: withAAContrast(prismThemes.github),
+        darkTheme: withAAContrast(prismThemes.dracula),
       },
     }),
   plugins: [
