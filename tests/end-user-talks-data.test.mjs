@@ -27,9 +27,10 @@ import { checkUrl } from '../scripts/lib/validate-utils.mjs';
 // scripts/collect-end-user-talks.mjs against a synthetic API fixture and never
 // looks at the committed output.
 //
-// The file says "Do not hand-edit", but it is committed and refreshed by hand
-// -- no workflow runs `npm run collect:end-user-talks` -- so a partial or
-// corrupt snapshot reaches main through the ordinary pull-request path. What
+// The file says "Do not hand-edit", but it is committed, and the weekly
+// refresh-metrics.yml run of `npm run collect:end-user-talks` lands through
+// the ordinary pull-request path alongside any hand refresh, so a partial or
+// corrupt snapshot can reach main the same way. What
 // follows asserts the invariants the collector guarantees by construction, so
 // that a snapshot which cannot have come out of the collector fails here
 // rather than rendering a wrong /events page.

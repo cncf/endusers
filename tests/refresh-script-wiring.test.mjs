@@ -17,10 +17,8 @@
 // dataset stops being refreshed, and its validator keeps passing -- because
 // stale data is still valid data. The site just serves last year's numbers.
 //
-// `collect:case-studies` is in that state on purpose today. That decision
-// currently lives only in prose (scripts/collect-case-studies.mjs,
-// docs/resources/case-studies.md, CONTRIBUTING.md), where no test can tell it
-// apart from an accident. The table below puts it on the record, and the
+// `collect:case-studies` was in that state until refresh-metrics.yml took it
+// on. The table below puts any such decision on the record, and the
 // staleness guards force each entry to be deleted as its collector is
 // scheduled.
 import assert from 'node:assert/strict';
@@ -47,19 +45,8 @@ const REFRESH_NAMESPACES = ['collect:', 'fetch:', 'import:', 'generate:'];
 // tests/workflow-scripts.test.mjs. Delete an entry when its script joins a
 // workflow; the staleness guards below fail if one is left behind.
 const REFRESH_NOT_RUN_BY_CI = new Map([
-  [
-    'collect:case-studies',
-    'mirrors cncf.io case studies on demand; there is no scheduled workflow ' +
-      'yet, so a maintainer re-runs it manually and commits the refreshed ' +
-      'data/case-studies.json (scripts/collect-case-studies.mjs, ' +
-      'docs/resources/case-studies.md).',
-  ],
-  [
-    'collect:end-user-talks',
-    'mirrors KubeCon NA 2026 Sessionize schedule on demand; the event schedule ' +
-      'is fixed after conference dates (November 2026), so a maintainer re-runs ' +
-      'it manually if schedule changes occur rather than via cron.',
-  ],
+  // Empty since refresh-metrics.yml started running every collector on its
+  // weekly schedule; record a new omission here before unscheduling one.
 ]);
 
 // `npm run foo`, `npm run foo -- --bar`, `npm run -s foo`, `npm -s run foo`.

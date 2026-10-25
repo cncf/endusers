@@ -149,14 +149,14 @@ Rules:
   workflow re-runs both and opens a pull request with the result.
 - **Never edit `data/end-user-talks.json` by hand.** It mirrors the official
   KubeCon + CloudNativeCon North America 2026 schedule from the public
-  Sessionize API. A maintainer refreshes it on demand with
-  `npm run collect:end-user-talks` (no `GH_TOKEN` needed) when the conference
-  schedule changes; no scheduled workflow re-runs it.
-  `npm run validate:end-user-talks` enforces the link host allow-list
-  (`events.linuxfoundation.org`, `sessionize.com`) and runs as part of
-  `validate:all`, so it gates the Netlify publish build as well as CI; the
-  schedule's rendering and the collector's output are additionally covered by
-  the unit tests.
+  Sessionize API. The weekly "Refresh metrics" workflow re-runs
+  `npm run collect:end-user-talks` (no `GH_TOKEN` needed) and opens a pull
+  request with the result; a maintainer can also run it by hand when the
+  conference schedule changes. `npm run validate:end-user-talks` enforces the
+  link host allow-list (`events.linuxfoundation.org`, `sessionize.com`) and runs
+  as part of `validate:all`, so it gates the Netlify publish build as well as
+  CI; the schedule's rendering and the collector's output are additionally
+  covered by the unit tests.
 
 ## Blog contributions
 
