@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readWorkflow } from './helpers-workflows.mjs';
+import { readWorkflow, runCommands } from './helpers-workflows.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
@@ -31,14 +31,10 @@ function readDoc(name) {
 
 const workflow = readWorkflow('ci.yml').doc;
 
+// Composite steps included: the Playwright install lives in
+// .github/actions/setup-playwright.
 function workflowRunSteps() {
-  const runs = [];
-  for (const job of Object.values(workflow?.jobs ?? {})) {
-    for (const step of job?.steps ?? []) {
-      if (typeof step?.run === 'string') runs.push(step.run);
-    }
-  }
-  return runs;
+  return runCommands(workflow);
 }
 
 // Playwright ships the browser bundle and its OS packages separately. The
