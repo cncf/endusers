@@ -151,6 +151,9 @@ export function renderPage(body) {
 title: Changelog
 description: What changed on the CNCF End User Community site, newest first.
 sidebar_position: 8
+# This page is rendered from git history at build time and is gitignored,
+# so there is no source file on main for "Edit this page" to open.
+custom_edit_url: null
 ---
 
 {/*

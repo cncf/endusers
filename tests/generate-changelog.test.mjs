@@ -209,6 +209,7 @@ test('renderPage emits Docusaurus frontmatter and the generated-file warning', (
   assert.match(page, /^---\n/);
   assert.match(page, /title: Changelog/);
   assert.match(page, /sidebar_position: 8/);
+  assert.match(page, /custom_edit_url: null/);
   assert.match(page, /Do not edit by hand/);
   assert.match(page, /\nBODY\n$/);
 });

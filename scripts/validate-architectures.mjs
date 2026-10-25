@@ -42,6 +42,21 @@ function resolveContainedAsset(asset) {
   return resolved;
 }
 
+// markdownlint's MD045/no-alt-text is disabled for docs/architectures/** (see
+// .markdownlintignore) on the understanding that this validator gates the
+// generated pages instead, so the alt-text check lives here: an image whose
+// alt is empty renders with no text alternative at all, and a diagram is the
+// content of a reference-architecture page.
+function findMissingAltText(content) {
+  const findings = [];
+  content.split('\n').forEach((text, index) => {
+    for (const match of text.matchAll(/!\[([^\]]*)\]\([^)]*\)/g))
+      if (match[1].trim() === '')
+        findings.push({ line: index + 1, snippet: match[0] });
+  });
+  return findings;
+}
+
 const records = JSON.parse(readFileSync(catalogPath, 'utf8'));
 const ids = new Set();
 const errors = [];
@@ -127,13 +142,19 @@ for (const page of pages) {
         'page has no catalog record; it is published but nothing in data/architectures/ describes it — delete it or add its catalog record',
     });
 
-  for (const { line, reason, snippet } of findActiveContent(
-    readFileSync(join(docsDir, page), 'utf8'),
-  ))
+  const content = readFileSync(join(docsDir, page), 'utf8');
+  for (const { line, reason, snippet } of findActiveContent(content))
     errors.push({
       path: `${page}:${line}`,
       severity: 'error',
       message: `active content in imported page (${reason}): ${snippet}`,
+    });
+
+  for (const { line, snippet } of findMissingAltText(content))
+    errors.push({
+      path: `${page}:${line}`,
+      severity: 'error',
+      message: `image has no alt text: ${snippet}`,
     });
 }
 reportAndExit(errors, 'architecture catalog');
