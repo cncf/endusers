@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Collects the current CNCF case study catalog from the public cncf.io
-// WordPress REST API and writes data/case-studies.json. Run manually with
-// `npm run collect:case-studies` (there is no scheduled workflow for this
-// yet) so the /resources/case-studies table mirrors
-// https://www.cncf.io/case-studies/.
+// WordPress REST API and writes data/case-studies.json so the
+// /resources/case-studies table mirrors https://www.cncf.io/case-studies/.
+// The weekly refresh-metrics.yml workflow runs it; a maintainer can also run
+// `npm run collect:case-studies` by hand.
 //
 // Each case study's descriptive headline (e.g. "Zynga Scales Gaming
 // Infrastructure by Eliminating Networking Bottlenecks with Cilium") is
