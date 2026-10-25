@@ -20,6 +20,7 @@ export default function ProjectsBorn({
             key={project.name}
             className={styles.project}
             href={project.url}
+            target="_blank"
             rel="noreferrer"
           >
             <span className={styles.projectName}>{project.name}</span>
