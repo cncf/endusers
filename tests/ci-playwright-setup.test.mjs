@@ -31,7 +31,14 @@ import { parse } from 'yaml';
 import {
   jobEntries,
   loadWorkflows as readWorkflows,
+  walkSteps,
 } from './helpers-workflows.mjs';
+
+// A job's steps with local composite actions expanded in place, so a cache or
+// install step moved into .github/actions/<name>/action.yml stays in scope.
+function expandedSteps(job) {
+  return [...walkSteps(job)].map(({ step }) => step);
+}
 
 function runOf(step) {
   return typeof step?.run === 'string' ? step.run : '';
@@ -41,7 +48,7 @@ function runOf(step) {
 // installs the browser: an install-only job has nothing to launch and so
 // needs no system packages.
 function runsPlaywrightSuite(job) {
-  return (job?.steps ?? []).some((step) =>
+  return expandedSteps(job).some((step) =>
     /\bnpm run test:e2e\b|\bnpx playwright test\b|\bplaywright test\b/.test(
       runOf(step),
     ),
@@ -49,7 +56,7 @@ function runsPlaywrightSuite(job) {
 }
 
 function browserCacheStep(job) {
-  return (job?.steps ?? []).find((step) => {
+  return expandedSteps(job).find((step) => {
     if (!/actions\/cache@/.test(step?.uses ?? '')) return false;
     return /ms-playwright/.test(String(step?.with?.path ?? ''));
   });
@@ -83,8 +90,7 @@ export function playwrightSystemPackageGaps(workflows) {
   for (const { name, doc } of workflows) {
     for (const [jobName, job] of jobEntries(doc)) {
       if (!runsPlaywrightSuite(job)) continue;
-      const steps = job?.steps ?? [];
-      const installers = steps.filter(installsSystemPackages);
+      const installers = expandedSteps(job).filter(installsSystemPackages);
       const cacheStep = browserCacheStep(job);
 
       // Without a cache every run takes the same path, so one unconditional

@@ -29,6 +29,7 @@ updates:
       - '/'
       - '/.github/actions/setup-node-deps'
       - '/.github/actions/open-automation-pr'
+      - '/.github/actions/setup-playwright'
     schedule:
       interval: 'weekly'
       day: 'monday'

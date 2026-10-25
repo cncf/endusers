@@ -1,0 +1,41 @@
+# Saves the Playwright browser cache from main.
+#
+# A workflow run can restore caches created on its own ref or on the default
+# branch. ci.yml runs only on pull_request and merge_group, so every entry it
+# saved lived on a refs/pull/*/merge or merge-queue ref that no other pull
+# request could read: each pull request's end-to-end jobs downloaded Chromium
+# again (about 25s each) and wrote another 293 MB entry into the repository's
+# cache budget. Running the same composite action once per push to main puts
+# the entry where every pull request finds it; the weekly run keeps it from
+# being evicted on a quiet week.
+
+name: Warm caches
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package-lock.json
+      - .github/actions/setup-playwright/action.yml
+      - .github/workflows/warm-caches.yml
+  schedule:
+    - cron: '29 5 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    name: Warm the Playwright browser cache
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/actions/setup-node-deps
+      - name: Install Playwright browsers
+        uses: ./.github/actions/setup-playwright

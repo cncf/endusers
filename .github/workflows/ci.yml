@@ -111,39 +111,8 @@ jobs:
           persist-credentials: false
       - name: Set up Node.js and install dependencies
         uses: ./.github/actions/setup-node-deps
-      - name: Resolve Playwright version
-        id: playwright-version
-        # The value comes from package-lock.json, which a pull request
-        # controls; an unvalidated newline inside it would end the version
-        # assignment and smuggle extra key=value pairs into the step outputs.
-        # The allowlist accepts only the characters a version string can
-        # contain, so anything else fails the job instead of reaching
-        # $GITHUB_OUTPUT.
-        run: |
-          version="$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")"
-          case "$version" in
-            '' | *[!0-9A-Za-z.+-]*)
-              echo "::error::Refusing an implausible @playwright/test version from package-lock.json"
-              exit 1
-              ;;
-          esac
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key:
-            playwright-${{ runner.os }}-${{
-            steps.playwright-version.outputs.version }}
       - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-      - name: Install Playwright system dependencies
-        # The cache restores the browser bundle but not the OS packages it
-        # needs, which do not persist across runner images.
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        uses: ./.github/actions/setup-playwright
       - name: Build production site
         # Deliberately built without SITE_URL/BASE_URL: the suite navigates
         # with paths relative to the site root (playwright.config.js sets
@@ -184,39 +153,8 @@ jobs:
           persist-credentials: false
       - name: Set up Node.js and install dependencies
         uses: ./.github/actions/setup-node-deps
-      - name: Resolve Playwright version
-        id: playwright-version
-        # The value comes from package-lock.json, which a pull request
-        # controls; an unvalidated newline inside it would end the version
-        # assignment and smuggle extra key=value pairs into the step outputs.
-        # The allowlist accepts only the characters a version string can
-        # contain, so anything else fails the job instead of reaching
-        # $GITHUB_OUTPUT.
-        run: |
-          version="$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")"
-          case "$version" in
-            '' | *[!0-9A-Za-z.+-]*)
-              echo "::error::Refusing an implausible @playwright/test version from package-lock.json"
-              exit 1
-              ;;
-          esac
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key:
-            playwright-${{ runner.os }}-${{
-            steps.playwright-version.outputs.version }}
       - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-      - name: Install Playwright system dependencies
-        # The cache restores the browser bundle but not the OS packages it
-        # needs, which do not persist across runner images.
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        uses: ./.github/actions/setup-playwright
       - name: Initialize coverage run
         run: >-
           node tests/tools/e2e-coverage-run.mjs init --dir "$RUN_DIR" --run-id
