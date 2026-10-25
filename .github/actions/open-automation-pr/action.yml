@@ -30,3 +30,9 @@ runs:
         body: ${{ inputs.body }}
         labels: automated
         signoff: true
+        # Pin the author so a manually dispatched lane does not attribute the
+        # commit to the dispatching maintainer, who then cannot approve it
+        # under the default-branch ruleset's unattributed-changes rule.
+        author:
+          github-actions[bot]
+          <41898282+github-actions[bot]@users.noreply.github.com>
