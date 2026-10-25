@@ -74,6 +74,21 @@ updates:
       - 'javascript'
     commit-message:
       prefix: 'chore(deps)'
+    # eslint-plugin-jsx-a11y 6.10.2 — the latest release, unchanged since
+    # 2024-10 — declares `peer eslint: ^3 … ^9`, so any group that pulls
+    # eslint (or its paired @eslint/js) to a new major cannot `npm install`
+    # at all: every job ERESOLVE-fails in the install step, which is what
+    # red-lit the weekly group in #1910. Hold the eslint major line here
+    # until the plugin ships an eslint-10-compatible release. These ignores
+    # are scoped to `version-update:semver-major`, so minor/patch bumps and
+    # security updates for the current major are unaffected.
+    ignore:
+      - dependency-name: 'eslint'
+        update-types:
+          - 'version-update:semver-major'
+      - dependency-name: '@eslint/js'
+        update-types:
+          - 'version-update:semver-major'
     groups:
       docusaurus:
         patterns:
