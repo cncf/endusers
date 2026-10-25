@@ -488,18 +488,9 @@ const REFRESH_SCRIPT_PATTERN = /^(?:collect|fetch):/;
 // on the record rather than an omission nobody can distinguish from a
 // regression.
 const REFRESH_SCRIPTS_NOT_RUN_BY_CI = new Map([
-  [
-    'collect:case-studies',
-    'No scheduled workflow exists yet; scripts/collect-case-studies.mjs says ' +
-      'so in its own header and documents `npm run collect:case-studies` as ' +
-      'the manual refresh for data/case-studies.json.',
-  ],
-  [
-    'collect:end-user-talks',
-    'A snapshot of one event schedule (Sessionize, KubeCon NA 2026) rather ' +
-      'than a continuously moving upstream; scripts/collect-end-user-talks.mjs ' +
-      'documents `npm run collect:end-user-talks` as the manual refresh.',
-  ],
+  // Empty since refresh-metrics.yml started running every collector on its
+  // weekly schedule. Add an entry here, with the file that records the
+  // decision, before taking a collector back out of a workflow.
 ]);
 
 function refreshScripts() {
@@ -667,6 +658,9 @@ test('both exemption maps are seen to cite the files they rest on', () => {
     ['GATES_NOT_RUN_BY_CI', GATES_NOT_RUN_BY_CI],
     ['REFRESH_SCRIPTS_NOT_RUN_BY_CI', REFRESH_SCRIPTS_NOT_RUN_BY_CI],
   ]) {
+    // A table with no entries has nothing to cite; the guard is only
+    // meaningful once an exemption is on the record.
+    if (exemptions.size === 0) continue;
     assert.ok(
       citedPaths(exemptions).length > 0,
       `expected ${label} to cite the files its reasons rest on; if an entry ` +
