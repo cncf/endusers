@@ -378,6 +378,16 @@ test('browser coverage is isolated in a visible gating job with a source floor',
 // one.
 const GATES_NOT_RUN_BY_CI = new Map([
   [
+    'check:landscape-drift',
+    'Resolves cncf/landscape over the network, so running it on a pull ' +
+      'request would fail unrelated changes during someone else\u2019s outage ' +
+      '\u2014 the reasoning check-links.yml records for check:links. ' +
+      'scripts/check-landscape-drift.mjs documents ' +
+      '`npm run check:landscape-drift` as the manual answer to "is the member ' +
+      'directory still in step with upstream"; wiring it to the weekly ' +
+      'link schedule needs an edit to .github/workflows/check-links.yml.',
+  ],
+  [
     'validate:all',
     'The aggregate the Netlify build runs (netlify.toml -> build:netlify -> ' +
       'scripts/netlify-build.mjs), not a gate of its own; every validator it ' +
