@@ -16,6 +16,11 @@ ignorePaths:
   - '**/*.json'
   # Rendered from git history on every build; gitignored and not editable.
   - docs/resources/changelog.md
+ignoreRegExpList:
+  # GHSA advisory ids are three random four-character groups. Some groups
+  # happen to be all letters and read as misspellings, so every advisory this
+  # repository ever documents would otherwise need its own `words` entry.
+  - /GHSA(-[0-9a-z]{4}){3}/
 words:
   - geolocation
   - SAMEORIGIN

@@ -1,6 +1,17 @@
 #!/usr/bin/env node
-// Fails CI when `npm audit` reports a high or critical advisory that is not
-// explicitly allowlisted.
+// Fails CI when `npm audit` or OSV reports a high or critical advisory that is
+// not explicitly allowlisted.
+//
+// Two data sources, one gate. `npm audit` is authoritative for everything the
+// npm registry's advisory endpoint serves, but it is not the whole of the
+// advisory record: the endpoint silently omits advisories it has no record
+// for, and an omitted package is absent from `report.vulnerabilities`
+// entirely rather than scored below the threshold. No severity setting can
+// reach a finding that was never reported, so a second source is the only
+// thing that can. GHSA-g84c-rxfj-3j2c (webpack-dev-middleware <= 7.4.5, path
+// traversal, CVSS 7.4) was live in this lockfile while `npm audit` reported
+// zero high and zero critical findings; OSV had it. The OSV arm below closes
+// that blind spot without a second allowlist or a second CI step.
 //
 // A plain `npm audit --audit-level=high` cannot be a gate here: whenever the
 // lockfile carries an unfixable high advisory (see SECURITY.md, "Known
@@ -19,6 +30,7 @@
 // Usage: node scripts/audit-gate.mjs  (CI: `npm run check:audit`)
 
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
 // Advisories npm cannot fix because no patched release exists. Every entry
 // must correspond to a row in SECURITY.md's "Known unpatched dependency
@@ -290,10 +302,337 @@ function runAudit() {
   return { report, failure: null, output, status: result.status };
 }
 
+// --- OSV cross-check -------------------------------------------------------
+
+// OSV's batched query endpoint. It answers with advisory ids only, so a
+// second request per unresolved id fetches the record that carries severity,
+// aliases and the withdrawn marker.
+const OSV_QUERYBATCH_URL = 'https://api.osv.dev/v1/querybatch';
+const OSV_VULN_URL = 'https://api.osv.dev/v1/vulns/';
+// OSV documents no hard ceiling on a batch, but an unbounded body is a
+// request nobody can retry cheaply. 500 keeps this lockfile to a couple of
+// round trips while staying well inside the endpoint's comfort zone.
+const OSV_BATCH_SIZE = 500;
+// Mirrors AUDIT_ATTEMPTS/AUDIT_RETRY_DELAY_MS/AUDIT_FETCH_TIMEOUT_MS: the same
+// reasoning applies to the same class of fault, and a gate whose two arms
+// tolerate outages differently is a gate nobody can predict.
+const OSV_ATTEMPTS = 3;
+const OSV_RETRY_DELAY_MS = 2000;
+const OSV_TIMEOUT_MS = 60000;
+
+// Matches a GHSA id exactly (advisoryId() matches one *inside* an npm
+// advisory URL). The npm report names advisories by GHSA id, so an OSV record
+// can only be compared against it — or against the allowlist — through its
+// GHSA id or GHSA alias.
+const GHSA_ID = /^GHSA(?:-[0-9a-z]{4}){3}$/;
+
+// OSV severities this gate fails on, in the `database_specific.severity`
+// spelling GHSA records use, lowercased. `unknown` is deliberately included:
+// a record that declares no severity is usually not a GHSA at all but a `MAL-`
+// malicious-package report, and guessing "probably fine" about an advisory the
+// npm registry never served is the exact failure this arm exists to prevent.
+// It fails closed, the same way advisoryId() does for an advisory with no id.
+const GATED_OSV_SEVERITIES = new Set([...GATED_SEVERITIES, 'unknown']);
+
+const LOCKFILE_URL = new URL('../package-lock.json', import.meta.url);
+
+/**
+ * Reads and parses `package-lock.json`.
+ *
+ * @returns {{lockfile: object|null, failure: string|null}} `failure` carries
+ *   the reason when the lockfile could not be read or parsed.
+ */
+function readLockfile() {
+  try {
+    return {
+      lockfile: JSON.parse(readFileSync(LOCKFILE_URL, 'utf8')),
+      failure: null,
+    };
+  } catch (error) {
+    return { lockfile: null, failure: String(error) };
+  }
+}
+
+// Turns a lockfile into the deduplicated `name@version` pairs to ask OSV
+// about.
+//
+// Keys in a v3 lockfile are install paths, so the package name is whatever
+// follows the last `node_modules/` segment — except for an aliased install
+// (`"foo": "npm:bar@1"`), where npm records the real registry name in `name`
+// and that is the name OSV knows. Entries with no `node_modules/` segment are
+// the project itself and its workspaces, and `link` entries are symlinks to
+// those; neither comes from the registry, so neither has advisories to find.
+//
+// @returns {Array<{name: string, version: string}>} sorted, one per distinct
+//   name@version however many times it is installed
+export function lockfileQueries(lockfile) {
+  const marker = 'node_modules/';
+  const seen = new Map();
+  for (const [path, entry] of Object.entries(lockfile?.packages ?? {})) {
+    const at = path.lastIndexOf(marker);
+    if (at === -1 || entry?.link) continue;
+    const version = entry?.version;
+    if (typeof version !== 'string' || version === '') continue;
+    const name = entry?.name ?? path.slice(at + marker.length);
+    seen.set(`${name}@${version}`, { name, version });
+  }
+  return [...seen.values()].sort(
+    (a, b) =>
+      a.name.localeCompare(b.name) || a.version.localeCompare(b.version),
+  );
+}
+
+// Names an OSV record by the GHSA id npm would use, so one advisory reported
+// by both sources is one advisory here too, and one allowlist entry covers it
+// in both arms. OSV records reached through a CVE, GO- or MAL- id carry the
+// GHSA as an alias; a record with no GHSA at all keeps its own id, which can
+// never match an allowlist entry and therefore fails closed.
+export function osvAdvisoryId(vuln) {
+  const id = String(vuln?.id ?? 'advisory:unknown');
+  if (GHSA_ID.test(id)) return id;
+  return (vuln?.aliases ?? []).find((alias) => GHSA_ID.test(alias)) ?? id;
+}
+
+// Reads an OSV record's severity in the npm-audit vocabulary. GHSA records
+// carry it verbatim in `database_specific.severity` (`HIGH`, `MODERATE`, ...);
+// anything else is `unknown`, which GATED_OSV_SEVERITIES gates.
+export function osvSeverity(vuln) {
+  const declared = vuln?.database_specific?.severity;
+  return typeof declared === 'string' ? declared.toLowerCase() : 'unknown';
+}
+
+// Narrows the ids OSV returned to the ones whose record actually has to be
+// fetched.
+//
+// A GHSA id can be judged without its record: if the npm report already
+// reaches it, the npm arm above owns it outright — it has already applied the
+// allowlist, the stale-entry check and the fixable-entry check to it — and if
+// the allowlist covers it there is nothing left to decide. Every other id
+// (non-GHSA, or GHSA npm did not report) needs its record to resolve aliases,
+// severity and `withdrawn`. On a lockfile whose advisories npm reports in full
+// this leaves nothing to fetch, so the happy path costs one round trip.
+export function osvIdsNeedingLookup(
+  ids,
+  report,
+  allowlist = ALLOWLISTED_ADVISORIES,
+) {
+  const known = reportedAdvisoryIds(report);
+  return [...ids]
+    .filter((id) => !(GHSA_ID.test(id) && (known.has(id) || allowlist.has(id))))
+    .sort();
+}
+
+// Decides which OSV findings block the gate.
+//
+// `hits` maps an OSV id to the `name@version` strings it was reported against;
+// `details` holds the records osvIdsNeedingLookup() selected. An id with no
+// record was resolved without one and is not a finding. A withdrawn record is
+// not an advisory. Everything else is matched against the npm report and the
+// allowlist by GHSA id, then gated on severity.
+//
+// @returns {Array<{id: string, package: string, severity: string}>}
+export function classifyOsv(
+  hits,
+  details,
+  report,
+  allowlist = ALLOWLISTED_ADVISORIES,
+) {
+  const known = reportedAdvisoryIds(report);
+  const blocked = [];
+  for (const [rawId, packages] of hits) {
+    const vuln = details.get(rawId);
+    if (!vuln || vuln.withdrawn) continue;
+    const id = osvAdvisoryId(vuln);
+    if (known.has(id) || allowlist.has(id)) continue;
+    const severity = osvSeverity(vuln);
+    if (!GATED_OSV_SEVERITIES.has(severity)) continue;
+    for (const name of packages) blocked.push({ id, package: name, severity });
+  }
+  return blocked.sort(
+    (a, b) => a.id.localeCompare(b.id) || a.package.localeCompare(b.package),
+  );
+}
+
+/**
+ * Fetches JSON from OSV, bounded by OSV_TIMEOUT_MS.
+ *
+ * @param {string} url endpoint to call
+ * @param {object} [body] POST payload; omitted, the request is a GET
+ * @returns {Promise<object>} the decoded answer
+ */
+async function osvFetch(url, body) {
+  const response = await fetch(url, {
+    method: body === undefined ? 'GET' : 'POST',
+    headers: body === undefined ? {} : { 'content-type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(OSV_TIMEOUT_MS),
+  });
+  if (!response.ok) {
+    throw new Error(`${url} answered HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * Retries an OSV call that failed, then gives up.
+ *
+ * Only transport and shape failures reach here; a decoded answer is final
+ * whatever it says, for the same reason a parsed npm report is.
+ *
+ * @param {string} label what is being retried, for the CI log
+ * @param {() => Promise<object>} call the request to make
+ * @returns {Promise<object>} the first successful answer
+ */
+async function osvRetry(label, call) {
+  let last;
+  for (let attempt = 1; attempt <= OSV_ATTEMPTS; attempt += 1) {
+    try {
+      return await call();
+    } catch (error) {
+      last = error;
+      if (attempt < OSV_ATTEMPTS) {
+        console.error(
+          `audit-gate: OSV ${label} failed (${error}); retrying ` +
+            `(attempt ${attempt + 1} of ${OSV_ATTEMPTS})`,
+        );
+        sleepSync(OSV_RETRY_DELAY_MS);
+      }
+    }
+  }
+  throw new Error(`OSV ${label} failed in ${OSV_ATTEMPTS} attempts: ${last}`);
+}
+
+/**
+ * Asks OSV which of the lockfile's packages have advisories.
+ *
+ * The answer's `results` array is positional, so a length that does not match
+ * the batch makes every id ambiguous; that is a failed query, not an empty
+ * one. (`next_page_token` is not handled: it appears only past 1000
+ * advisories for a single package version, which no npm release approaches.)
+ *
+ * @param {Array<{name: string, version: string}>} queries
+ * @returns {Promise<Map<string, string[]>>} OSV id -> sorted `name@version`
+ */
+async function osvQuery(queries) {
+  const hits = new Map();
+  for (let start = 0; start < queries.length; start += OSV_BATCH_SIZE) {
+    const chunk = queries.slice(start, start + OSV_BATCH_SIZE);
+    const answer = await osvRetry('querybatch', () =>
+      osvFetch(OSV_QUERYBATCH_URL, {
+        queries: chunk.map(({ name, version }) => ({
+          package: { name, ecosystem: 'npm' },
+          version,
+        })),
+      }),
+    );
+    const results = answer?.results;
+    if (!Array.isArray(results) || results.length !== chunk.length) {
+      throw new Error(
+        `OSV querybatch answered ${
+          Array.isArray(results) ? results.length : 'no'
+        } result(s) for ${chunk.length} quer(ies)`,
+      );
+    }
+    results.forEach((result, index) => {
+      for (const vuln of result?.vulns ?? []) {
+        const id = String(vuln?.id ?? '');
+        if (id === '') continue;
+        const packages = hits.get(id) ?? [];
+        packages.push(`${chunk[index].name}@${chunk[index].version}`);
+        hits.set(id, packages);
+      }
+    });
+  }
+  for (const [id, packages] of hits)
+    hits.set(id, [...new Set(packages)].sort());
+  return hits;
+}
+
+/**
+ * Fetches the full OSV record for each id that still needs one.
+ *
+ * @param {string[]} ids
+ * @returns {Promise<Map<string, object>>} id -> record
+ */
+async function osvLookup(ids) {
+  const details = new Map();
+  for (const id of ids) {
+    details.set(
+      id,
+      await osvRetry(`lookup of ${id}`, () =>
+        osvFetch(`${OSV_VULN_URL}${encodeURIComponent(id)}`),
+      ),
+    );
+  }
+  return details;
+}
+
+/**
+ * Runs the OSV arm of the gate, exiting 1 on a finding or on a failed query.
+ *
+ * Fails closed on every fault, including a lockfile it cannot read: the whole
+ * point of this arm is that `npm audit` reporting nothing is not evidence of
+ * nothing, so silently skipping the cross-check would restore the blind spot
+ * precisely when the gate is least able to notice.
+ *
+ * @param {object} report the npm audit report the first arm already accepted
+ * @param {Set<string>} allowlist
+ * @returns {Promise<number>} how many lockfile packages were cross-checked
+ */
+async function osvGate(report, allowlist) {
+  const { lockfile, failure } = readLockfile();
+  if (lockfile === null) {
+    console.error(
+      `audit-gate: could not read package-lock.json for the OSV ` +
+        `cross-check: ${failure}`,
+    );
+    console.error(
+      'npm audit alone cannot see an advisory the npm registry does not ' +
+        'serve, so a skipped cross-check is not a clean one.',
+    );
+    process.exit(1);
+  }
+  const queries = lockfileQueries(lockfile);
+  let hits;
+  let details;
+  try {
+    hits = await osvQuery(queries);
+    details = await osvLookup(
+      osvIdsNeedingLookup([...hits.keys()], report, allowlist),
+    );
+  } catch (error) {
+    console.error(`audit-gate: the OSV cross-check did not complete: ${error}`);
+    console.error(
+      'Refusing to report a clean audit on npm alone: the advisories only ' +
+        'OSV carries are exactly the ones npm audit cannot report.',
+    );
+    process.exit(1);
+  }
+  const blocked = classifyOsv(hits, details, report, allowlist);
+  if (blocked.length > 0) {
+    console.error(
+      'audit-gate: high/critical advisories reported by OSV and not by npm ' +
+        'audit, outside the allowlist:',
+    );
+    for (const item of blocked) {
+      console.error(`  ${item.package} (${item.severity}): ${item.id}`);
+    }
+    console.error(
+      'npm audit does not report these, so raising its threshold cannot ' +
+        'catch them. Fix the advisory (upgrade or add an override, see ' +
+        'SECURITY.md), or — only for an advisory with no patched release — ' +
+        'document it in SECURITY.md and allowlist it in ' +
+        'scripts/audit-gate.mjs.',
+    );
+    process.exit(1);
+  }
+  return queries.length;
+}
+
 // The allowlist is a parameter so the unit tests can drive every arm of the
 // gate whatever the shipped allowlist happens to contain; the CLI entry below
 // always runs with ALLOWLISTED_ADVISORIES.
-export function main(allowlist = ALLOWLISTED_ADVISORIES) {
+export async function main(allowlist = ALLOWLISTED_ADVISORIES) {
   // Retries only the answers that carry no report. A parsed report is final
   // whatever it says: a genuinely new advisory must never be retried away.
   let last = runAudit();
@@ -346,6 +685,11 @@ export function main(allowlist = ALLOWLISTED_ADVISORIES) {
     );
     process.exit(1);
   }
+  // Runs before the two allowlist-hygiene checks below and after the npm
+  // blocked check above: all three of these describe advisories that are live
+  // in the lockfile right now, and a finding npm cannot see at all is the one
+  // nothing else in CI would ever report.
+  const crossChecked = await osvGate(report, allowlist);
   // Reported after the blocked check: a live advisory outside the allowlist is
   // the more urgent signal, and naming a dead exemption first would bury it.
   const unused = unusedAllowlistEntries(report, allowlist);
@@ -388,10 +732,11 @@ export function main(allowlist = ALLOWLISTED_ADVISORIES) {
   }
   console.log(
     `audit-gate: ok — ${allowlisted.length} high/critical finding(s), all ` +
-      'tracing to allowlisted advisories documented in SECURITY.md',
+      'tracing to allowlisted advisories documented in SECURITY.md; OSV ' +
+      `cross-check clean across ${crossChecked} lockfile package(s)`,
   );
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+  await main();
 }

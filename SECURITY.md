@@ -69,10 +69,11 @@ the import gates.
 
 ## Known unpatched dependency advisories
 
-This section is the register of high or critical `npm audit` advisories that
+This section is the register of high or critical dependency advisories that
 `scripts/audit-gate.mjs` allowlists because no patched release exists upstream.
-It is currently empty: `npm audit` reports no high or critical advisory, and
-`ALLOWLISTED_ADVISORIES` in `scripts/audit-gate.mjs` has no entries.
+It is currently empty: neither `npm audit` nor OSV reports a high or critical
+advisory, and `ALLOWLISTED_ADVISORIES` in `scripts/audit-gate.mjs` has no
+entries.
 
 When one has to be added, record it as a table row here with the advisory,
 package, installed version and the path it is reached through, plus a note on
@@ -103,6 +104,20 @@ ones, so a new lockfile advisory cannot land silently. When an advisory listed
 here gains a patched release, apply the fix and remove both the table row and
 the matching allowlist entry in `scripts/audit-gate.mjs` — a unit test keeps the
 two in sync.
+
+The gate reads two advisory sources, and the allowlist above covers both.
+`npm audit` is authoritative for everything the npm registry's advisory endpoint
+serves, but an advisory it holds no record for is absent from the report
+entirely rather than scored below the threshold, so no severity setting can
+reach it. The gate therefore also asks [OSV](https://osv.dev) about every
+`name@version` in `package-lock.json` and fails on a high or critical advisory
+only OSV carries. GHSA-g84c-rxfj-3j2c against `webpack-dev-middleware 7.4.5` was
+exactly that case: live in this lockfile while `npm audit` reported zero high
+and zero critical findings. An OSV record with no declared severity — a `MAL-`
+malicious-package report, typically — is treated as gated rather than as below
+the threshold. Because a skipped cross-check is not a clean one, an OSV outage
+fails the gate after three attempts rather than falling back to `npm audit`
+alone.
 
 A new advisory that does have a patched release turns the gate red on `main`
 until the lockfile moves. Dependabot security updates open that lockfile bump,

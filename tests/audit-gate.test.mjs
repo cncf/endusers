@@ -26,6 +26,11 @@ import {
   ALLOWLISTED_ADVISORIES,
   advisoryId,
   classifyAudit,
+  classifyOsv,
+  lockfileQueries,
+  osvAdvisoryId,
+  osvIdsNeedingLookup,
+  osvSeverity,
   unusedAllowlistEntries,
   fixableAllowlistedAdvisories,
   describeFix,
@@ -537,6 +542,29 @@ childProcess.spawnSync = (command, args, options) => {
   return spawn(command, args, options);
 };
 syncBuiltinESMExports();
+
+// The OSV arm talks to api.osv.dev over global fetch. Answers are consumed in
+// order, one per request, with the last entry repeating, so a case can script
+// a failure followed by a success without matching on URLs; every request is
+// logged so the batching and the endpoints can be asserted directly.
+const answers = JSON.parse(process.env.AUDIT_STUB_OSV);
+let served = 0;
+globalThis.fetch = async (url, init) => {
+  const step = answers[Math.min(served, answers.length - 1)] ?? {};
+  served += 1;
+  appendFileSync(process.env.AUDIT_STUB_OSV_LOG, JSON.stringify({
+    url: String(url),
+    method: init.method,
+    body: init.body ?? null,
+  }) + '\\n');
+  if (step.networkError) throw new Error(step.networkError);
+  const status = step.status ?? 200;
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => step.body ?? {},
+  };
+};
 `;
 
 /**
@@ -552,12 +580,18 @@ syncBuiltinESMExports();
  * @param {boolean} [options.withNpm] install the stub at all; false makes
  *   spawnSync fail with ENOENT to exercise the spawn-error arm
  * @param {number} [options.timeouts] deadline errors before npm can run
+ * @param {object|null} [options.lockfile] package-lock.json to place beside
+ *   the script; null writes none, exercising the unreadable-lockfile arm.
+ *   The default has no packages, so the OSV arm makes no request at all.
+ * @param {Array<{status?: number, body?: unknown, networkError?: string}>}
+ *   [options.osv] answers for the OSV requests, in order; the last repeats
  * @param {Iterable<string>} [options.allowlist] GHSA ids to run the gate
  *   with, through a wrapper entry that calls main(); omitted, the script runs
  *   as the CLI does with its shipped allowlist
  * @returns {{status: number, stdout: string, stderr: string,
- *   attempts: number, argv: string[], spawns: object[]}} `argv` holds the
- *   invocations that reached npm; `spawns` includes timed-out attempts.
+ *   attempts: number, argv: string[], spawns: object[], osv: object[]}}
+ *   `argv` holds the invocations that reached npm; `spawns` includes
+ *   timed-out attempts; `osv` holds every OSV request the gate made.
  */
 function runGate({
   stdout = '',
@@ -565,6 +599,8 @@ function runGate({
   responses,
   withNpm = true,
   timeouts = 0,
+  lockfile = { packages: {} },
+  osv = [],
   allowlist,
 } = {}) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-audit-'));
@@ -572,6 +608,9 @@ function runGate({
     const script = join(work, 'scripts', 'audit-gate.mjs');
     mkdirSync(dirname(script), { recursive: true });
     cpSync(join(repoRoot, 'scripts', 'audit-gate.mjs'), script);
+    if (lockfile !== null) {
+      writeFileSync(join(work, 'package-lock.json'), JSON.stringify(lockfile));
+    }
 
     let entrypoint = script;
     if (allowlist) {
@@ -579,7 +618,7 @@ function runGate({
       writeFileSync(
         entrypoint,
         `import { main } from './scripts/audit-gate.mjs';\n` +
-          `main(new Set(${JSON.stringify([...allowlist])}));\n`,
+          `await main(new Set(${JSON.stringify([...allowlist])}));\n`,
       );
     }
 
@@ -595,6 +634,7 @@ function runGate({
 
     const argvLog = join(work, 'npm-argv');
     const spawnLog = join(work, 'npm-spawns');
+    const osvLog = join(work, 'osv-requests');
     const preload = join(work, 'spawn-preload.mjs');
     writeFileSync(preload, SPAWN_PRELOAD);
     const result = spawnSync(
@@ -609,6 +649,8 @@ function runGate({
           AUDIT_STUB_ARGV: argvLog,
           AUDIT_STUB_SPAWNS: spawnLog,
           AUDIT_STUB_TIMEOUTS: String(timeouts),
+          AUDIT_STUB_OSV: JSON.stringify(osv),
+          AUDIT_STUB_OSV_LOG: osvLog,
           AUDIT_STUB_RESPONSES: JSON.stringify(
             responses ?? [{ stdout, status: Number(status) }],
           ),
@@ -623,6 +665,9 @@ function runGate({
     const spawns = existsSync(spawnLog)
       ? readFileSync(spawnLog, 'utf8').trim().split('\n').map(JSON.parse)
       : [];
+    const osvRequests = existsSync(osvLog)
+      ? readFileSync(osvLog, 'utf8').trim().split('\n').map(JSON.parse)
+      : [];
     return {
       status: result.status ?? 1,
       stdout: result.stdout ?? '',
@@ -630,6 +675,7 @@ function runGate({
       attempts: spawns.length,
       argv,
       spawns,
+      osv: osvRequests,
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -884,4 +930,458 @@ test('cli: a missing npm is retried too, then reported as a spawn failure', () =
   assert.equal(result.status, 1);
   assert.match(result.stderr, /failed to run npm audit/);
   assert.doesNotMatch(result.stderr, /did not return a report/);
+});
+
+// --- the OSV cross-check ---
+//
+// `npm audit` reports only what the npm registry's advisory endpoint serves,
+// and an advisory it has no record for is absent from the report entirely
+// rather than scored below the gate's threshold. The cases below drive the
+// second data source that closes that gap. GHSA-g84c-rxfj-3j2c against
+// webpack-dev-middleware 7.4.5 is the real instance it was built for: live in
+// this lockfile while `npm audit` reported 0 high and 0 critical.
+
+const WDM = 'GHSA-g84c-rxfj-3j2c';
+
+/** @returns {object} an OSV record shaped like the GHSA records OSV serves */
+function osvRecord(id, severity = 'HIGH', extra = {}) {
+  return {
+    id,
+    aliases: [],
+    database_specific: { severity },
+    ...extra,
+  };
+}
+
+/** @returns {object} a lockfile carrying one registry package */
+function lockfileWith(name, version) {
+  return {
+    packages: { '': { name: 'site' }, [`node_modules/${name}`]: { version } },
+  };
+}
+
+/** @returns {object} an OSV querybatch answer naming `ids` for one query */
+function batchAnswer(...ids) {
+  return { results: [{ vulns: ids.map((id) => ({ id })) }] };
+}
+
+// --- lockfileQueries ---
+
+test('lockfileQueries names each installed registry package once', () => {
+  const queries = lockfileQueries({
+    packages: {
+      'node_modules/b': { version: '2.0.0' },
+      'node_modules/a': { version: '1.0.0' },
+      'node_modules/b/node_modules/a': { version: '1.0.0' },
+      'node_modules/c/node_modules/a': { version: '1.5.0' },
+    },
+  });
+  assert.deepEqual(queries, [
+    { name: 'a', version: '1.0.0' },
+    { name: 'a', version: '1.5.0' },
+    { name: 'b', version: '2.0.0' },
+  ]);
+});
+
+test('lockfileQueries skips the project, its workspaces and link entries', () => {
+  // None of these come from the registry, so OSV has nothing to say about
+  // them and asking would only widen the batch.
+  assert.deepEqual(
+    lockfileQueries({
+      packages: {
+        '': { name: 'site', version: '0.0.0' },
+        docs: { version: '1.0.0' },
+        'node_modules/docs': { resolved: 'docs', link: true },
+        'node_modules/unresolved': {},
+        'node_modules/blank': { version: '' },
+      },
+    }),
+    [],
+  );
+});
+
+test('lockfileQueries uses the registry name of an aliased install', () => {
+  // `"left-pad": "npm:pad-left@2"` installs at node_modules/left-pad, but the
+  // advisories are filed against pad-left, which is what npm records in
+  // `name` and the only name OSV would match.
+  assert.deepEqual(
+    lockfileQueries({
+      packages: {
+        'node_modules/left-pad': { name: 'pad-left', version: '2.1.0' },
+      },
+    }),
+    [{ name: 'pad-left', version: '2.1.0' }],
+  );
+});
+
+test('lockfileQueries treats a lockfile with no packages key as empty', () => {
+  assert.deepEqual(lockfileQueries({}), []);
+});
+
+// --- osvAdvisoryId ---
+
+test('osvAdvisoryId keeps a GHSA id as it stands', () => {
+  assert.equal(osvAdvisoryId(osvRecord(WDM)), WDM);
+});
+
+test('osvAdvisoryId prefers the GHSA alias of a non-GHSA record', () => {
+  // OSV serves the same advisory under CVE and GHSA ids. npm names it by
+  // GHSA, and so does the allowlist, so only the alias can match either.
+  const record = osvRecord('CVE-2026-12345');
+  record.aliases = ['CVE-2026-12345', WDM];
+  assert.equal(osvAdvisoryId(record), WDM);
+});
+
+test('osvAdvisoryId falls back to an id that can never be allowlisted', () => {
+  // A malicious-package report has no GHSA at all. Keeping its own id means
+  // the allowlist cannot silently cover it, so it fails closed.
+  assert.equal(osvAdvisoryId({ id: 'MAL-2026-1' }), 'MAL-2026-1');
+  assert.equal(osvAdvisoryId({}), 'advisory:unknown');
+});
+
+// --- osvSeverity ---
+
+test('osvSeverity reads a GHSA severity in the npm vocabulary', () => {
+  assert.equal(osvSeverity(osvRecord(WDM, 'HIGH')), 'high');
+  assert.equal(osvSeverity(osvRecord(WDM, 'MODERATE')), 'moderate');
+});
+
+test('osvSeverity reports a record that declares none as unknown', () => {
+  assert.equal(osvSeverity({ id: 'MAL-2026-1' }), 'unknown');
+  assert.equal(osvSeverity({ id: 'x', database_specific: {} }), 'unknown');
+});
+
+// --- osvIdsNeedingLookup ---
+
+test('osvIdsNeedingLookup skips GHSA ids the npm report already reaches', () => {
+  // The npm arm owns those outright: it has already applied the allowlist and
+  // both hygiene checks to them, so re-deciding them here could only disagree.
+  const report = {
+    vulnerabilities: { braces: entry('high', [advisory(BRACES)]) },
+  };
+  assert.deepEqual(osvIdsNeedingLookup([BRACES, WDM], report), [WDM]);
+});
+
+test('osvIdsNeedingLookup skips an allowlisted GHSA id', () => {
+  assert.deepEqual(
+    osvIdsNeedingLookup([BRACES, WDM], { vulnerabilities: {} }, ALLOWLIST),
+    [WDM],
+  );
+});
+
+test('osvIdsNeedingLookup always fetches a non-GHSA id', () => {
+  // Its GHSA alias lives in the record, so nothing can be decided without it
+  // — an allowlisted advisory reached through its CVE id would otherwise look
+  // like a new finding.
+  assert.deepEqual(
+    osvIdsNeedingLookup(['CVE-2026-1', 'MAL-2026-1'], { vulnerabilities: {} }),
+    ['CVE-2026-1', 'MAL-2026-1'],
+  );
+});
+
+// --- classifyOsv ---
+
+const CLEAN_REPORT = { vulnerabilities: {} };
+
+test('classifyOsv blocks a high advisory npm never reported', () => {
+  assert.deepEqual(
+    classifyOsv(
+      new Map([[WDM, ['webpack-dev-middleware@7.4.5']]]),
+      new Map([[WDM, osvRecord(WDM)]]),
+      CLEAN_REPORT,
+    ),
+    [{ id: WDM, package: 'webpack-dev-middleware@7.4.5', severity: 'high' }],
+  );
+});
+
+test('classifyOsv names every package version an advisory was reported against', () => {
+  assert.deepEqual(
+    classifyOsv(
+      new Map([[WDM, ['wdm@7.4.4', 'wdm@7.4.5']]]),
+      new Map([[WDM, osvRecord(WDM, 'CRITICAL')]]),
+      CLEAN_REPORT,
+    ).map((item) => item.package),
+    ['wdm@7.4.4', 'wdm@7.4.5'],
+  );
+});
+
+test('classifyOsv ignores an id whose record was never fetched', () => {
+  // osvIdsNeedingLookup() already resolved it against the npm report or the
+  // allowlist; an absent record is that decision, not a missing one.
+  assert.deepEqual(
+    classifyOsv(new Map([[BRACES, ['braces@3.0.3']]]), new Map(), CLEAN_REPORT),
+    [],
+  );
+});
+
+test('classifyOsv ignores a withdrawn record', () => {
+  // OSV keeps withdrawn advisories addressable. Gating on one would red the
+  // build over a finding its own database has retracted.
+  assert.deepEqual(
+    classifyOsv(
+      new Map([[WDM, ['wdm@7.4.5']]]),
+      new Map([
+        [WDM, osvRecord(WDM, 'HIGH', { withdrawn: '2026-10-01T00:00:00Z' })],
+      ]),
+      CLEAN_REPORT,
+    ),
+    [],
+  );
+});
+
+test('classifyOsv ignores a moderate or low advisory', () => {
+  // The arm mirrors `npm audit --audit-level=high`; a second data source must
+  // not quietly become a stricter gate.
+  assert.deepEqual(
+    classifyOsv(
+      new Map([[WDM, ['wdm@7.4.5']]]),
+      new Map([[WDM, osvRecord(WDM, 'MODERATE')]]),
+      CLEAN_REPORT,
+    ),
+    [],
+  );
+});
+
+test('classifyOsv blocks a record that declares no severity', () => {
+  // A `MAL-` malicious-package report carries no severity. Reading that as
+  // "below the threshold" is the failure this whole arm exists to prevent.
+  assert.deepEqual(
+    classifyOsv(
+      new Map([['MAL-2026-1', ['evil@1.0.0']]]),
+      new Map([['MAL-2026-1', { id: 'MAL-2026-1' }]]),
+      CLEAN_REPORT,
+    ),
+    [{ id: 'MAL-2026-1', package: 'evil@1.0.0', severity: 'unknown' }],
+  );
+});
+
+test('classifyOsv resolves a CVE-keyed record to its GHSA before deciding', () => {
+  // Reached through the CVE id, so the record had to be fetched; the npm
+  // report names the same advisory by GHSA, and the two must not double-report.
+  const record = osvRecord('CVE-2026-12345');
+  record.aliases = [BRACES];
+  const report = {
+    vulnerabilities: { braces: entry('high', [advisory(BRACES)]) },
+  };
+  assert.deepEqual(
+    classifyOsv(
+      new Map([['CVE-2026-12345', ['braces@3.0.3']]]),
+      new Map([['CVE-2026-12345', record]]),
+      report,
+    ),
+    [],
+  );
+});
+
+test('classifyOsv honours the allowlist through a GHSA alias', () => {
+  const record = osvRecord('CVE-2026-12345');
+  record.aliases = [BRACES];
+  assert.deepEqual(
+    classifyOsv(
+      new Map([['CVE-2026-12345', ['braces@3.0.3']]]),
+      new Map([['CVE-2026-12345', record]]),
+      CLEAN_REPORT,
+      ALLOWLIST,
+    ),
+    [],
+  );
+});
+
+// --- the OSV arm end to end ---
+
+const EMPTY_AUDIT = JSON.stringify({ vulnerabilities: {} });
+
+test('cli: fails on the advisory npm audit cannot see', () => {
+  // The regression this arm was built for, reproduced end to end: npm reports
+  // a completely clean audit and the gate still goes red.
+  const result = runGate({
+    stdout: EMPTY_AUDIT,
+    lockfile: lockfileWith('webpack-dev-middleware', '7.4.5'),
+    osv: [{ body: batchAnswer(WDM) }, { body: osvRecord(WDM) }],
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /reported by OSV and not by npm audit/);
+  assert.match(
+    result.stderr,
+    new RegExp(`webpack-dev-middleware@7\\.4\\.5 \\(high\\): ${WDM}`),
+  );
+  assert.match(result.stderr, /raising its threshold cannot catch them/);
+  assert.doesNotMatch(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: passes once the package is upgraded past the advisory', () => {
+  const result = runGate({
+    stdout: EMPTY_AUDIT,
+    lockfile: lockfileWith('webpack-dev-middleware', '7.4.6'),
+    osv: [{ body: { results: [{}] } }],
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(
+    result.stdout,
+    /OSV cross-check clean across 1 lockfile package/,
+  );
+});
+
+test('cli: asks OSV about the lockfile and looks up only unresolved ids', () => {
+  const result = runGate({
+    stdout: EMPTY_AUDIT,
+    lockfile: lockfileWith('webpack-dev-middleware', '7.4.5'),
+    osv: [{ body: batchAnswer(WDM) }, { body: osvRecord(WDM, 'MODERATE') }],
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.osv.length, 2);
+  assert.equal(result.osv[0].url, 'https://api.osv.dev/v1/querybatch');
+  assert.equal(result.osv[0].method, 'POST');
+  assert.deepEqual(JSON.parse(result.osv[0].body), {
+    queries: [
+      {
+        package: { name: 'webpack-dev-middleware', ecosystem: 'npm' },
+        version: '7.4.5',
+      },
+    ],
+  });
+  assert.equal(result.osv[1].url, `https://api.osv.dev/v1/vulns/${WDM}`);
+  assert.equal(result.osv[1].method, 'GET');
+  assert.equal(result.osv[1].body, null);
+});
+
+test('cli: a clean lockfile costs no OSV request at all', () => {
+  const result = runGate({ stdout: EMPTY_AUDIT });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.osv, []);
+  assert.match(
+    result.stdout,
+    /OSV cross-check clean across 0 lockfile package/,
+  );
+});
+
+test('cli: an advisory npm already reports is not looked up again', () => {
+  // npm has it, so the npm arm decided it; a second request could only cost a
+  // round trip and risk the two arms disagreeing.
+  const report = {
+    vulnerabilities: { braces: entry('high', [advisory(BRACES)]) },
+  };
+  const result = runGate({
+    stdout: JSON.stringify(report),
+    status: '1',
+    lockfile: lockfileWith('braces', '3.0.3'),
+    osv: [{ body: batchAnswer(BRACES) }],
+    allowlist: ALLOWLIST,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.osv.length, 1);
+});
+
+test('cli: splits the lockfile into batches of 500', () => {
+  // One oversized body is a request nobody can retry cheaply, and a truncated
+  // answer would silently drop whatever fell off the end.
+  const packages = {};
+  for (let index = 0; index < 501; index += 1) {
+    packages[`node_modules/p${index}`] = { version: '1.0.0' };
+  }
+  const result = runGate({
+    stdout: EMPTY_AUDIT,
+    lockfile: { packages },
+    osv: [
+      { body: { results: Array.from({ length: 500 }, () => ({})) } },
+      { body: { results: [{}] } },
+    ],
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.osv.length, 2);
+  assert.equal(JSON.parse(result.osv[0].body).queries.length, 500);
+  assert.equal(JSON.parse(result.osv[1].body).queries.length, 1);
+  assert.match(result.stdout, /clean across 501 lockfile package/);
+});
+
+test('cli: an unidentified vuln in the answer is skipped', () => {
+  const result = runGate({
+    stdout: EMPTY_AUDIT,
+    lockfile: lockfileWith('braces', '3.0.3'),
+    osv: [{ body: { results: [{ vulns: [{}] }] } }],
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.osv.length, 1);
+});
+
+test('cli: fails closed when the lockfile cannot be read', () => {
+  // A skipped cross-check is not a clean one: npm reporting nothing is
+  // exactly what this arm refuses to accept as evidence of nothing.
+  const result = runGate({ stdout: EMPTY_AUDIT, lockfile: null });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /could not read package-lock\.json/);
+  assert.match(result.stderr, /a skipped cross-check is not a clean one/);
+  assert.doesNotMatch(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: fails closed when OSV answers a result count it cannot align', () => {
+  // `results` is positional, so a short answer makes every id ambiguous.
+  const result = runGate({
+    stdout: EMPTY_AUDIT,
+    lockfile: lockfileWith('braces', '3.0.3'),
+    osv: [{ body: { results: [] } }],
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /answered 0 result\(s\) for 1 quer\(ies\)/);
+  assert.match(result.stderr, /did not complete/);
+});
+
+test('cli: fails closed when OSV answers no results array at all', () => {
+  const result = runGate({
+    stdout: EMPTY_AUDIT,
+    lockfile: lockfileWith('braces', '3.0.3'),
+    osv: [{ body: { error: 'nope' } }],
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /answered no result\(s\) for 1 quer\(ies\)/);
+});
+
+test('cli: fails closed on an HTTP error from OSV', () => {
+  const result = runGate({
+    stdout: EMPTY_AUDIT,
+    lockfile: lockfileWith('braces', '3.0.3'),
+    osv: [{ status: 503 }],
+  });
+  assert.equal(result.status, 1);
+  assert.equal(result.osv.length, 3);
+  assert.match(result.stderr, /answered HTTP 503/);
+  assert.match(result.stderr, /failed in 3 attempts/);
+  assert.match(
+    result.stderr,
+    /the advisories only OSV carries are exactly the ones npm audit cannot report/,
+  );
+});
+
+test('cli: a transient OSV fault is retried and the next answer decides', () => {
+  // The gate must not red every open PR over one dropped connection, and it
+  // must not pass over one either.
+  const result = runGate({
+    stdout: EMPTY_AUDIT,
+    lockfile: lockfileWith('webpack-dev-middleware', '7.4.5'),
+    osv: [
+      { networkError: 'ECONNRESET' },
+      { body: batchAnswer(WDM) },
+      { body: osvRecord(WDM) },
+    ],
+  });
+  assert.equal(result.status, 1);
+  assert.equal(result.osv.length, 3);
+  assert.match(result.stderr, /OSV querybatch failed \(Error: ECONNRESET\)/);
+  assert.match(result.stderr, /retrying \(attempt 2 of 3\)/);
+  assert.match(result.stderr, new RegExp(WDM));
+});
+
+test('cli: a failing record lookup is retried and then fails closed', () => {
+  // The querybatch succeeded, so an advisory is known to exist; giving up on
+  // its record and passing would be the blind spot all over again.
+  const result = runGate({
+    stdout: EMPTY_AUDIT,
+    lockfile: lockfileWith('webpack-dev-middleware', '7.4.5'),
+    osv: [{ body: batchAnswer(WDM) }, { networkError: 'ETIMEDOUT' }],
+  });
+  assert.equal(result.status, 1);
+  assert.equal(result.osv.length, 4);
+  assert.match(result.stderr, new RegExp(`OSV lookup of ${WDM} failed`));
+  assert.match(result.stderr, /failed in 3 attempts/);
+  assert.doesNotMatch(result.stdout, /audit-gate: ok/);
 });
