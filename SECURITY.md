@@ -99,10 +99,14 @@ cannot sit here unnoticed the way GHSA-ch52-4w7c-c8xp did.
 
 CI enforces this register: `npm run check:audit` (`scripts/audit-gate.mjs`)
 fails the build on any high or critical advisory other than the allowlisted
-ones, so a new lockfile advisory cannot land silently. When an advisory listed
-here gains a patched release, apply the fix and remove both the table row and
-the matching allowlist entry in `scripts/audit-gate.mjs` — a unit test keeps the
-two in sync.
+ones, so a new lockfile advisory cannot land silently. Moderate and low
+advisories do not block on their own, but the gate also fails when one of them
+has a patched release reachable without a semver-major change, so a fix that is
+one `npm audit fix --package-lock-only` away (typically an `overrides` floor
+that no longer reaches the patched release) cannot sit under the threshold
+indefinitely. When an advisory listed here gains a patched release, apply the
+fix and remove both the table row and the matching allowlist entry in
+`scripts/audit-gate.mjs` — a unit test keeps the two in sync.
 
 A new advisory that does have a patched release turns the gate red on `main`
 until the lockfile moves. Dependabot security updates open that lockfile bump,

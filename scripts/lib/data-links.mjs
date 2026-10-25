@@ -37,7 +37,7 @@ export const RENDERED_DATA_FILES = [
 export const KNOWN_BROKEN_URLS = new Map([
   [
     'https://www.walmartlabs.com',
-    'cncf/landscape still lists this homepage for Walmart; see #1856',
+    'cncf/landscape still lists this homepage for Walmart; see cncf/landscape#5222',
   ],
 ]);
 
