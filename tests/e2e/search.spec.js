@@ -20,6 +20,9 @@ import { test, expect } from '../tools/e2e-coverage.cjs';
 const KNOWN_TERM = 'architecture';
 // Deliberately not a word: exercises the "no documents" branch.
 const NONSENSE_TERM = 'zzzqqqxnotaterm';
+// The User Groups hub, whose category links to a real index doc rather than a
+// Docusaurus `generated-index` route.
+const HUB_ROUTE = '/community/user-groups/';
 
 test.describe('search index', () => {
   test('the build publishes a non-empty index of internal routes', async ({
@@ -45,6 +48,21 @@ test.describe('search index', () => {
     for (const document of documents) {
       expect(document.u.length).toBeGreaterThan(1);
     }
+  });
+
+  test('the User Groups hub indexes under its real title', async ({
+    request,
+  }) => {
+    const index = await (await request.get('/search-index.json')).json();
+    const documents = index.flatMap((entry) => entry.documents || []);
+
+    // The plugin reads page titles from `article header h1`, which a
+    // `generated-index` category route does not render. A category that links
+    // to a generated index therefore indexes with an empty title, so the hub
+    // is unreachable by name and its hits render blank headings.
+    const hub = documents.find((document) => document.u === HUB_ROUTE);
+    expect(hub, `no indexed document for ${HUB_ROUTE}`).toBeTruthy();
+    expect(hub.t).toBe('User Groups');
   });
 });
 

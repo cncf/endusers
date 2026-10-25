@@ -58,7 +58,7 @@ const ROUTES = [
   { path: '/community', label: 'community landing' },
   { path: '/community/members', label: 'member directory' },
   { path: '/community/technical-advisory-board', label: 'TAB roster' },
-  { path: '/community/user-groups', label: 'generated doc category index' },
+  { path: '/community/user-groups', label: 'user groups hub' },
   { path: '/architectures', label: 'architecture catalog' },
   { path: '/architectures/adobe', label: 'architecture detail' },
   { path: '/community/awards', label: 'awards timeline' },
