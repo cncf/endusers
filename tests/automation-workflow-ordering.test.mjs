@@ -202,6 +202,7 @@ test('the workflows this contract applies to are actually detected', () => {
       .map(({ name }) => name),
     [
       'architecture-submission.yml',
+      'audit-fix.yml',
       'refresh-community-people.yml',
       'refresh-metrics.yml',
       'refresh-radar-reports.yml',

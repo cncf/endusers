@@ -90,6 +90,11 @@ const SERIALISED_WORKFLOWS = new Map([
       'same reasoning as refresh-metrics.yml.',
   ],
   [
+    'audit-fix.yml',
+    'Force-pushes the constant branch automation/audit-fix; same reasoning ' +
+      'as refresh-metrics.yml. Triggered by workflow_run, not by a PR.',
+  ],
+  [
     'pr-queue-hygiene.yml',
     'Keeps its state in a hidden marker comment that it reads and then ' +
       'writes non-atomically, so two overlapping runs both find no marker ' +
