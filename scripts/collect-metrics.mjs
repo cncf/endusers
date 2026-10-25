@@ -81,7 +81,7 @@ try {
       landscape: {
         repository: 'https://github.com/cncf/landscape',
         revision: landscapeCommit,
-        sourceUrl: 'https://github.com/cncf/landscape/blob/main/landscape.yml',
+        sourceUrl: `https://github.com/cncf/landscape/blob/${landscapeCommit}/landscape.yml`,
       },
       architectures: {
         repository: 'https://github.com/cncf/architecture',
