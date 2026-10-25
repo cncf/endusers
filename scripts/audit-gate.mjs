@@ -16,6 +16,12 @@
 // chain is allowlisted; a single new advisory therefore blocks the whole
 // chain it poisons, however deeply it bubbles.
 //
+// Below that threshold the gate is narrower: a moderate or low advisory is
+// tolerated while it is unfixable or needs a semver-major upgrade, but fails
+// the gate as soon as npm can patch it in range, so `npm audit fix` (and the
+// audit-fix workflow that runs it when this gate is red on main) is asked
+// for rather than left until someone reads the report.
+//
 // Usage: node scripts/audit-gate.mjs  (CI: `npm run check:audit`)
 
 import { spawnSync } from 'node:child_process';
@@ -35,7 +41,8 @@ import { spawnSync } from 'node:child_process';
 export const ALLOWLISTED_ADVISORIES = new Set([]);
 
 // `npm audit --audit-level=high` semantics: moderate and low findings are
-// reported but do not gate the merge.
+// reported but do not gate the merge on their own; see
+// inRangeFixableAdvisories() for the one case where they do.
 const GATED_SEVERITIES = new Set(['high', 'critical']);
 
 // Names a `via` advisory object by its GHSA id so it can be matched against
@@ -172,6 +179,58 @@ export function fixableAllowlistedAdvisories(
   return fixable.sort(
     (a, b) => a.id.localeCompare(b.id) || a.package.localeCompare(b.package),
   );
+}
+
+// Reports the below-threshold (moderate/low) advisories that npm can fix
+// without a semver-major change.
+//
+// Gating only high and critical leaves a gap the overrides block has already
+// fallen into once: an override floor such as `^7.0.3` keeps satisfying the
+// lockfile after the advisory it was added for moves its patched release to
+// 7.1.3, and a moderate or low advisory with a fix one `npm audit fix` away
+// then sits under the threshold indefinitely, propagating through every
+// package that depends on it. Nothing re-reads the report to notice.
+//
+// npm's `fixAvailable` already separates the two cases this gate should keep
+// apart. `true`, or an object with `isSemVerMajor` false, means the fix is
+// reachable within the ranges package.json (and its overrides) already
+// declare, so `npm audit fix --package-lock-only` applies it and the
+// audit-fix workflow does exactly that once this gate is red on main. `false`
+// or a semver-major object means a human decision is needed, which the
+// severity threshold deliberately defers; those are left alone here.
+//
+// Only the entry that carries the advisory object is reported, as in
+// fixableAllowlistedAdvisories(): a package that merely inherits it through
+// its `via` chain is fixed by the same lockfile move. Allowlisted advisories
+// are excluded because fixableAllowlistedAdvisories() already reports them
+// with the allowlist-specific instructions.
+//
+// @returns {Array<{name: string, severity: string, advisories: string[],
+//   fixAvailable: unknown}>}
+export function inRangeFixableAdvisories(
+  report,
+  allowlist = ALLOWLISTED_ADVISORIES,
+) {
+  const fixable = [];
+  for (const [name, entry] of Object.entries(report.vulnerabilities ?? {})) {
+    if (GATED_SEVERITIES.has(entry.severity)) continue;
+    const fix = entry.fixAvailable;
+    // `true.isSemVerMajor` is undefined, so a bare boolean fix passes too.
+    if (!fix || fix.isSemVerMajor) continue;
+    const advisories = (entry.via ?? [])
+      .filter((via) => typeof via !== 'string')
+      .map(advisoryId)
+      .filter((id) => !allowlist.has(id))
+      .sort();
+    if (advisories.length === 0) continue;
+    fixable.push({
+      name,
+      severity: entry.severity,
+      advisories,
+      fixAvailable: fix,
+    });
+  }
+  return fixable.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Renders npm's `fixAvailable` value as a short phrase for the CI log.
@@ -383,6 +442,30 @@ export function main(allowlist = ALLOWLISTED_ADVISORIES) {
         'a deliberate decision), then remove the advisory from ' +
         'ALLOWLISTED_ADVISORIES in scripts/audit-gate.mjs and drop its row ' +
         'from SECURITY.md\'s "Known unpatched dependency advisories" table.',
+    );
+    process.exit(1);
+  }
+  // Reported last of all: nothing above is letting an unknown advisory
+  // through; this one names below-threshold findings whose fix is already
+  // published and in range, so the remedy is mechanical.
+  const inRange = inRangeFixableAdvisories(report, allowlist);
+  if (inRange.length > 0) {
+    console.error(
+      'audit-gate: moderate/low advisories npm can fix within the declared ranges:',
+    );
+    for (const item of inRange) {
+      console.error(
+        `  ${item.name} (${item.severity}): ${item.advisories.join(', ')} — ` +
+          describeFix(item.fixAvailable),
+      );
+    }
+    console.error(
+      'These sit below the high/critical threshold but have a patched ' +
+        'release reachable without a semver-major change. Run ' +
+        '`npm audit fix --package-lock-only` (raise the matching override ' +
+        'floor in package.json if one pins the package) and commit the ' +
+        'lockfile; on main the "Dependency audit fix" workflow opens that ' +
+        'PR automatically.',
     );
     process.exit(1);
   }

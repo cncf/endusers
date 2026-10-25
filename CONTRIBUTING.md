@@ -290,14 +290,16 @@ enough for a first contribution.
    which fails differently from the lint checks:
    - `check:audit` — fails the build on any high/critical dependency advisory
      not in the allowlist (see "Known unpatched dependency advisories" in
-     [`SECURITY.md`](SECURITY.md)). The advisory database updates daily, so a
-     branch that was green yesterday can fail with no code change. Do **not**
-     run `npm audit fix --force`; flag the failure for maintainers, who own the
-     allowlist in `scripts/audit-gate.mjs`. When the advisory has a patched
-     release, first look for the Dependabot security update: a lockfile-only
-     patch or minor fix is queued to merge automatically (see "Low-risk merge
-     classes" in [`GOVERNANCE.md`](GOVERNANCE.md)), so a hand-made lockfile bump
-     would duplicate it.
+     [`SECURITY.md`](SECURITY.md)), and on any moderate/low advisory that
+     `npm audit fix --package-lock-only` can already patch in range. The
+     advisory database updates daily, so a branch that was green yesterday can
+     fail with no code change. Do **not** run `npm audit fix --force`; flag the
+     failure for maintainers, who own the allowlist in `scripts/audit-gate.mjs`.
+     When the advisory has a patched release, first look for the Dependabot
+     security update: a lockfile-only patch or minor fix is queued to merge
+     automatically (see "Low-risk merge classes" in
+     [`GOVERNANCE.md`](GOVERNANCE.md)), so a hand-made lockfile bump would
+     duplicate it.
 
    `npm run check` runs the lint checks plus three more scripts that the PR
    gates enforce separately ("Validate repository") or not at all, so treat it

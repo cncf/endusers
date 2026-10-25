@@ -28,6 +28,7 @@ import {
   classifyAudit,
   unusedAllowlistEntries,
   fixableAllowlistedAdvisories,
+  inRangeFixableAdvisories,
   describeFix,
 } from '../scripts/audit-gate.mjs';
 
@@ -461,6 +462,136 @@ test('fixableAllowlistedAdvisories defaults to the shipped allowlist', () => {
   );
 });
 
+// --- inRangeFixableAdvisories ---
+
+/** @returns {object} a below-threshold entry carrying one advisory */
+function lowEntry(
+  fixAvailable,
+  severity = 'low',
+  via = [advisory(NEW_BAD, severity)],
+) {
+  return { severity, via, range: '<7.1.3', nodes: [], fixAvailable };
+}
+
+test('inRangeFixableAdvisories names a low advisory npm can fix in range', () => {
+  // The shape that slipped past the gate before: an override floor satisfied by a still-vulnerable
+  // release, with the patched one inside the same caret.
+  const report = {
+    vulnerabilities: { 'serialize-javascript': lowEntry(true) },
+  };
+  assert.deepEqual(inRangeFixableAdvisories(report, ALLOWLIST), [
+    {
+      name: 'serialize-javascript',
+      severity: 'low',
+      advisories: [NEW_BAD],
+      fixAvailable: true,
+    },
+  ]);
+});
+
+test('inRangeFixableAdvisories accepts a non-major fix object and keeps it for the log', () => {
+  const fix = { name: 'fast-uri', version: '3.1.9', isSemVerMajor: false };
+  const report = {
+    vulnerabilities: { 'fast-uri': lowEntry(fix, 'moderate') },
+  };
+  const [item] = inRangeFixableAdvisories(report, ALLOWLIST);
+  assert.equal(item.severity, 'moderate');
+  assert.equal(item.fixAvailable, fix);
+});
+
+test('inRangeFixableAdvisories leaves unfixable and semver-major findings alone', () => {
+  // Both need a human decision; the severity threshold defers them on
+  // purpose and this check must not undo that.
+  const report = {
+    vulnerabilities: {
+      stuck: lowEntry(false),
+      major: lowEntry({ name: 'major', version: '2.0.0', isSemVerMajor: true }),
+    },
+  };
+  assert.deepEqual(inRangeFixableAdvisories(report, ALLOWLIST), []);
+});
+
+test('inRangeFixableAdvisories ignores high and critical entries', () => {
+  // Those block through classifyAudit whatever their fix status; reporting
+  // them twice would bury the stronger message.
+  const report = {
+    vulnerabilities: {
+      bad: { ...lowEntry(true), severity: 'high' },
+      worse: { ...lowEntry(true), severity: 'critical' },
+    },
+  };
+  assert.deepEqual(inRangeFixableAdvisories(report, ALLOWLIST), []);
+});
+
+test('inRangeFixableAdvisories reports only the carrier, not packages that inherit', () => {
+  const report = {
+    vulnerabilities: {
+      'serialize-javascript': lowEntry(true),
+      'copy-webpack-plugin': lowEntry(true, 'low', ['serialize-javascript']),
+    },
+  };
+  assert.deepEqual(
+    inRangeFixableAdvisories(report, ALLOWLIST).map((f) => f.name),
+    ['serialize-javascript'],
+  );
+});
+
+test('inRangeFixableAdvisories excludes allowlisted advisories', () => {
+  // fixableAllowlistedAdvisories owns that case and its removal instructions.
+  const report = {
+    vulnerabilities: {
+      braces: lowEntry(true, 'low', [advisory(BRACES, 'low')]),
+      both: lowEntry(true, 'low', [
+        advisory(BRACES, 'low'),
+        advisory(NEW_BAD, 'low'),
+      ]),
+    },
+  };
+  assert.deepEqual(inRangeFixableAdvisories(report, ALLOWLIST), [
+    {
+      name: 'both',
+      severity: 'low',
+      advisories: [NEW_BAD],
+      fixAvailable: true,
+    },
+  ]);
+});
+
+test('inRangeFixableAdvisories sorts the advisory ids of one entry', () => {
+  const report = {
+    vulnerabilities: {
+      dep: lowEntry(true, 'low', [
+        advisory('GHSA-zzzz-zzzz-zzzz', 'low'),
+        advisory(NEW_BAD, 'low'),
+      ]),
+    },
+  };
+  assert.deepEqual(inRangeFixableAdvisories(report, ALLOWLIST)[0].advisories, [
+    NEW_BAD,
+    'GHSA-zzzz-zzzz-zzzz',
+  ]);
+});
+
+test('inRangeFixableAdvisories sorts by package and tolerates bare reports', () => {
+  const report = {
+    vulnerabilities: {
+      zeta: lowEntry(true),
+      alpha: lowEntry(true),
+      bare: { severity: 'low', fixAvailable: true },
+    },
+  };
+  assert.deepEqual(
+    inRangeFixableAdvisories(report, ALLOWLIST).map((f) => f.name),
+    ['alpha', 'zeta'],
+  );
+  assert.deepEqual(inRangeFixableAdvisories({}, ALLOWLIST), []);
+});
+
+test('inRangeFixableAdvisories defaults to the shipped allowlist', () => {
+  const report = { vulnerabilities: { dep: lowEntry(true) } };
+  assert.equal(inRangeFixableAdvisories(report).length, 1);
+});
+
 // --- describeFix ---
 
 test('describeFix names the release npm points at, flagging a semver-major bump', () => {
@@ -712,6 +843,40 @@ test('cli: exits 1 naming a new advisory outside the allowlist', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, new RegExp(`newdep \\(critical\\): ${NEW_BAD}`));
   assert.match(result.stderr, /SECURITY\.md/);
+});
+
+test('cli: exits 1 when a low advisory is fixable in range', () => {
+  const report = {
+    vulnerabilities: {
+      'serialize-javascript': lowEntry({
+        name: 'serialize-javascript',
+        version: '7.1.3',
+        isSemVerMajor: false,
+      }),
+    },
+  };
+  const result = runGate({ stdout: JSON.stringify(report), status: '1' });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /moderate\/low advisories npm can fix/);
+  assert.match(
+    result.stderr,
+    new RegExp(
+      `serialize-javascript \\(low\\): ${NEW_BAD} — upgrade to serialize-javascript@7\\.1\\.3`,
+    ),
+  );
+  assert.match(result.stderr, /npm audit fix --package-lock-only/);
+  assert.doesNotMatch(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: exits 0 when the only low advisory needs a semver-major upgrade', () => {
+  const report = {
+    vulnerabilities: {
+      stuck: lowEntry({ name: 'stuck', version: '2.0.0', isSemVerMajor: true }),
+    },
+  };
+  const result = runGate({ stdout: JSON.stringify(report), status: '1' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /audit-gate: ok/);
 });
 
 test('cli: exits 1 when npm emits unparseable output', () => {
