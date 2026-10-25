@@ -21,7 +21,12 @@
  * @returns {Generator<any>} every element in document order
  */
 export function* walkElements(node, { expand } = {}) {
-  if (node === null || node === undefined || node === false) return;
+  // `null` is the only non-element this guard has to catch: `typeof null` is
+  // `'object'`, so without it the `node.type` read below would throw. Every
+  // other non-element child React allows — `undefined`, a boolean, a string,
+  // a number — fails the `typeof node !== 'object'` test instead and returns
+  // there, so naming them here as well would add branches nothing can observe.
+  if (node === null) return;
   if (Array.isArray(node)) {
     for (const child of node) yield* walkElements(child, { expand });
     return;
@@ -83,9 +88,11 @@ export function findByType(tree, type, options) {
  * @returns {string} the visible text
  */
 export function textOf(node) {
-  if (node === null || node === undefined || typeof node === 'boolean') {
-    return '';
-  }
+  // As in walkElements, `null` is the only case worth naming: it is the one
+  // non-element whose `typeof` is `'object'`, so it would otherwise reach the
+  // `node.props` read below. `undefined` and booleans fall through every test
+  // here and leave by the final `return ''`.
+  if (node === null) return '';
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (Array.isArray(node)) return node.map(textOf).join('');
   if (typeof node === 'object') return textOf(node.props?.children);

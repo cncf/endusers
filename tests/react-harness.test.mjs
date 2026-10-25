@@ -405,3 +405,97 @@ test('unmounting twice runs each cleanup only once', () => {
 
   assert.deepEqual(log, ['cleanup']);
 });
+
+test('walkElements skips the non-elements React renders as nothing', () => {
+  // `{flag && <p/>}`, `{maybe}` and a bare boolean all reach the walker as
+  // children. Each has to be dropped without yielding and without reading
+  // `.type` off it — `null` in particular is `typeof 'object'`, so a walker
+  // that trusted the type check alone would throw on the commonest of them.
+  const tree = {
+    type: 'div',
+    props: { children: [null, undefined, false, true, '', 0] },
+  };
+
+  assert.deepEqual([...walkElements(tree)], [tree]);
+  assert.deepEqual([...walkElements(null)], []);
+  assert.deepEqual([...walkElements(undefined)], []);
+  assert.deepEqual([...walkElements(false)], []);
+});
+
+test('walkElements does not yield a child that is not an element', () => {
+  // A plain object in the children — a prop passed to the wrong slot, or data
+  // rendered by mistake — has no `type`. Yielding it would hand findByType and
+  // textOf an object with no element shape, and the resulting failure would
+  // point at the component rather than at the mistake.
+  const stray = { label: 'not an element' };
+  const tree = { type: 'ul', props: { children: [stray] } };
+
+  assert.deepEqual([...walkElements(tree)], [tree]);
+});
+
+test('walkElements descends an element that carries no props', () => {
+  // Hand-built fixtures in these suites are written as `{ type: 'hr' }` with
+  // no props at all. Reading `children` off the missing props object would
+  // throw, and the throw would surface in whichever component suite happened
+  // to build such a node.
+  const bare = { type: 'hr' };
+  const tree = { type: 'div', props: { children: [bare] } };
+
+  assert.deepEqual([...walkElements(tree)], [tree, bare]);
+  assert.deepEqual([...walkElements(bare)], [bare]);
+});
+
+test('walkElements consults expand only for function-component types', () => {
+  // `expand` is documented as selecting which function components to render.
+  // Asking it about an intrinsic tag would let a predicate as broad as
+  // `() => true` drive the walker into calling the string 'div' as a function,
+  // so the type check has to run before the predicate, not alongside it.
+  function Inner() {
+    return { type: 'em', props: { children: 'inner' } };
+  }
+  const asked = [];
+  const tree = {
+    type: 'div',
+    props: { children: [{ type: Inner, props: {} }] },
+  };
+
+  const expanded = [
+    ...walkElements(tree, {
+      expand: (type) => {
+        asked.push(type);
+        return true;
+      },
+    }),
+  ];
+
+  assert.deepEqual(asked, [Inner]);
+  assert.deepEqual(
+    expanded.map((element) => element.type),
+    ['div', Inner, 'em'],
+  );
+});
+
+test('textOf renders the non-elements as empty text', () => {
+  // textOf is the assertion every component suite makes about visible copy.
+  // The same children walkElements drops have to contribute no text — and
+  // `null`, being `typeof 'object'`, would otherwise reach the `props` read.
+  assert.equal(textOf(null), '');
+  assert.equal(textOf(undefined), '');
+  assert.equal(textOf(false), '');
+  assert.equal(textOf(true), '');
+  assert.equal(
+    textOf({ type: 'p', props: { children: [null, 'a', undefined, 'b'] } }),
+    'ab',
+  );
+});
+
+test('textOf of an element with no props is empty rather than a throw', () => {
+  // The same `{ type: 'hr' }` fixture shape as above. A suite asserting the
+  // visible text of a tree containing one would otherwise fail with a
+  // TypeError about `props` instead of a text mismatch.
+  assert.equal(textOf({ type: 'hr' }), '');
+  assert.equal(
+    textOf({ type: 'div', props: { children: [{ type: 'hr' }, 'tail'] } }),
+    'tail',
+  );
+});

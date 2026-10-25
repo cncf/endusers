@@ -5,6 +5,9 @@
 // the hook's real contract with the DOM explicit.
 
 function matches(node, selector) {
+  // Stryker disable next-line Regex: the selectors this fake answers are a tag
+  // name optionally followed by one attribute group, so the group is always
+  // terminal and dropping the `$` anchor cannot change what is stripped.
   const tag = selector.replace(/\[.*\]$/, '').toLowerCase();
   if (node.tagName.toLowerCase() !== tag) return false;
   const attr = selector.match(/\[([^\]]+)\]/)?.[1];

@@ -35,7 +35,7 @@ test('a fixture keyed by a specifier the component does not import is rejected',
 test('a fixture for a specifier no module under test imported is rejected', () => {
   assert.throws(
     () => applyFixtures({ '@site/data/never-loaded.json': {} }),
-    /has not been imported by any module under test/,
+    /has not been imported by any module under test; the fixture would be ignored/,
   );
 });
 
@@ -46,7 +46,7 @@ test('a second fixture for a live specifier is rejected rather than silently win
   try {
     await assert.rejects(
       () => importWithData(SOURCE, { [SPECIFIER]: { fetchedAt: null } }),
-      /already active; call cleanup\(\) before/,
+      /already active; call cleanup\(\) before importing with another fixture/,
     );
   } finally {
     cleanup();
