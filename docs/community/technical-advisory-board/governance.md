@@ -297,7 +297,6 @@ initiative's status.
 - **MUST** check in at least monthly to assess the initiative's continued need,
   progress, and ability to meet.
 - **SHOULD** acknowledge everyone who actively helped complete the initiative.
--
 
 ### Roles
 

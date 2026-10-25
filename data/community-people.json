@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-05T02:59:49.793Z",
+  "fetchedAt": "2026-10-25T15:51:23.147Z",
   "people": {
     "tab": [
       {
@@ -27,6 +27,18 @@
         "blog": ""
       },
       {
+        "name": "Kenta Tada",
+        "company": "Toyota",
+        "role": "TAB APAC Chair",
+        "bio": "Kenta Tada has worked as a Linux engineer and team lead for various organizations, specializing in Linux kernel tracing technologies and eBPF. He has contributed to the Linux kernel and the BPF Compiler Collection (BCC) to enhance kernel tracing infrastructure. He has also contributed to several CNCF-related projects, including serving as a reviewer for the system validator used in kubeadm preflight checks. In 2023, he reviewed the Japanese translation of Learning eBPF, published by O'Reilly Japan. In 2024, he became an organizer of Cloud Native Community Japan (CNCJ), fostering open source culture in Japan. Additionally, he served as Co-Chair of KubeDay Japan 2024, playing a key role in shaping the event and promoting cloud-native technologies within the Japanese developer community. Recognizing the growing importance of eBPF in cloud-native environments, Kenta founded the eBPF Japan Community for engineers across various industries to collaborate, share knowledge, and drive eBPF adoption in Japan.",
+        "location": "Yokohama, Japan",
+        "image": "https://raw.githubusercontent.com/cncf/people/main/images/kenta-tada.jpeg",
+        "github": "KentaTada",
+        "linkedin": null,
+        "twitter": "kenta_tada",
+        "blog": ""
+      },
+      {
         "name": "Ahmed Bebars",
         "company": "The New York Times",
         "role": null,
@@ -48,7 +60,7 @@
         "github": "alolita",
         "linkedin": null,
         "twitter": null,
-        "blog": "https://www.alolitasharma.com"
+        "blog": "https://alolitasharma.com"
       },
       {
         "name": "Ben Somogyi",
@@ -75,6 +87,18 @@
         "blog": ""
       },
       {
+        "name": "Juliano Martinez",
+        "company": "Adyen",
+        "role": null,
+        "bio": "Juliano is a Principal Engineer at Adyen with 25 years of experience in Linux, networking, large-scale infrastructure, and automation. That experience informs the design and evolution of systems that connect cloud-native platforms and services to end users. The work spans cloud infrastructure, Kubernetes-based platforms, service mesh and service-to-service networking, traffic management, observability, and the reliable operation of distributed systems at scale. A longtime open-source enthusiast and Go developer, Juliano enjoys understanding systems from first principles and building simple, composable tools that reduce operational complexity.",
+        "location": "",
+        "image": "https://raw.githubusercontent.com/cncf/people/main/images/juliano-martinez.jpeg",
+        "github": "ncode",
+        "linkedin": "ncode",
+        "twitter": "ncode",
+        "blog": "https://martinez.io"
+      },
+      {
         "name": "Katie Gamanji",
         "company": "Apple",
         "role": null,
@@ -85,18 +109,6 @@
         "linkedin": "katie-gamanji",
         "twitter": "k_gamanji",
         "blog": "https://kgamanji.medium.com/"
-      },
-      {
-        "name": "Kenta Tada",
-        "company": "Toyota",
-        "role": null,
-        "bio": "Kenta Tada has worked as a Linux engineer and team lead for various organizations, specializing in Linux kernel tracing technologies and eBPF. He has contributed to the Linux kernel and the BPF Compiler Collection (BCC) to enhance kernel tracing infrastructure. He has also contributed to several CNCF-related projects, including serving as a reviewer for the system validator used in kubeadm preflight checks. In 2023, he reviewed the Japanese translation of Learning eBPF, published by O'Reilly Japan. In 2024, he became an organizer of Cloud Native Community Japan (CNCJ), fostering open source culture in Japan. Additionally, he served as Co-Chair of KubeDay Japan 2024, playing a key role in shaping the event and promoting cloud-native technologies within the Japanese developer community. Recognizing the growing importance of eBPF in cloud-native environments, Kenta founded the eBPF Japan Community for engineers across various industries to collaborate, share knowledge, and drive eBPF adoption in Japan.",
-        "location": "Yokohama, Japan",
-        "image": "https://raw.githubusercontent.com/cncf/people/main/images/kenta-tada.jpeg",
-        "github": "KentaTada",
-        "linkedin": null,
-        "twitter": "kenta_tada",
-        "blog": ""
       },
       {
         "name": "Michael Amundson",

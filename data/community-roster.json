@@ -18,6 +18,12 @@
         "linkedin": "josephrsandoval"
       },
       {
+        "name": "Kenta Tada",
+        "company": "Toyota",
+        "role": "TAB APAC Chair",
+        "github": "KentaTada"
+      },
+      {
         "name": "Ahmed Bebars",
         "company": "The New York Times",
         "role": null,
@@ -27,7 +33,8 @@
         "name": "Alolita Sharma",
         "company": "Apple",
         "role": null,
-        "github": "alolita"
+        "github": "alolita",
+        "blog": "https://alolitasharma.com"
       },
       {
         "name": "Ben Somogyi",
@@ -42,18 +49,18 @@
         "github": "chadbeaudin"
       },
       {
+        "name": "Juliano Martinez",
+        "company": "Adyen",
+        "role": null,
+        "github": "ncode"
+      },
+      {
         "name": "Katie Gamanji",
         "company": "Apple",
         "role": null,
         "github": "kgamanji",
         "linkedin": "katie-gamanji",
         "twitter": "k_gamanji"
-      },
-      {
-        "name": "Kenta Tada",
-        "company": "Toyota",
-        "role": null,
-        "github": "KentaTada"
       },
       {
         "name": "Michael Amundson",

@@ -128,11 +128,12 @@ test('the decorative arrow is hidden from assistive technology', () => {
   }
 });
 
-test('no project tile opens a new tab without noreferrer', () => {
-  for (const anchor of anchorsOf(ProjectsBorn({}))) {
-    if (anchor.props.target === '_blank') {
-      assert.match(anchor.props.rel ?? '', /\bnoreferrer\b/);
-    }
+test('every project tile opens its outbound link in a new tab with noreferrer', () => {
+  const anchors = projectAnchors(ProjectsBorn({}));
+  assert.equal(anchors.length, projects.length);
+  for (const anchor of anchors) {
+    assert.equal(anchor.props.target, '_blank');
+    assert.match(anchor.props.rel ?? '', /\bnoreferrer\b/);
   }
 });
 

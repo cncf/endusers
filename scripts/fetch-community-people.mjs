@@ -113,7 +113,15 @@ let fallbacks = 0;
 
 for (const [section, entries] of Object.entries(people)) {
   result[section] = [];
-  for (const { name, company, role, github, linkedin, twitter } of entries) {
+  for (const {
+    name,
+    company,
+    role,
+    github,
+    linkedin,
+    twitter,
+    blog: rosterBlog,
+  } of entries) {
     if (github && !GITHUB_HANDLE.test(github)) {
       console.error(
         `data/community-roster.json: ${name} has an invalid GitHub handle: ${JSON.stringify(github)}`,
@@ -142,7 +150,7 @@ for (const [section, entries] of Object.entries(people)) {
         linkedin || lastSegment(profile?.linkedin) || previous.linkedin || null,
       twitter:
         twitter || lastSegment(profile?.twitter) || previous.twitter || null,
-      blog: profile?.website || previous.blog || '',
+      blog: rosterBlog || profile?.website || previous.blog || '',
     });
   }
 }

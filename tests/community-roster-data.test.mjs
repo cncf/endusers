@@ -19,9 +19,16 @@ const KNOWN_FIELDS = [
   'github',
   'linkedin',
   'twitter',
+  'blog',
 ];
 const REQUIRED_STRING_FIELDS = ['name', 'company'];
-const NULLABLE_STRING_FIELDS = ['role', 'github', 'linkedin', 'twitter'];
+const NULLABLE_STRING_FIELDS = [
+  'role',
+  'github',
+  'linkedin',
+  'twitter',
+  'blog',
+];
 
 // GitHub usernames: alphanumeric, single internal hyphens, 1-39 characters.
 const GITHUB_HANDLE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;

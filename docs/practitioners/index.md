@@ -126,8 +126,8 @@ Connect with peers through the channels and events built for end users:
   [End User Events](/events/) for the latest.
 - **End User Reception** — networking for CNCF End User Community members during
   KubeCon + CloudNativeCon.
-- **End User Groups** — industry-focused groups for financial services,
-  research, public sector, telecom, and transportation.
+- **End User Groups** — long-lived peer groups aligned to an industry vertical
+  or problem domain, such as Public Sector, Telecom, and Platform Engineering.
   [Browse groups](/community/).
 - **CNCF Slack** — real-time conversation in `#enduser`, `#tab`, and group
   channels. Access to End User-only discussion forums is part of approved End
