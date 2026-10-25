@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 // GroupLinkStatus renders data/community-groups.json on /community/ as the
 // drift warning for the User Groups the site publishes. The report is written
 // by the GROUPS table in scripts/check-community-group-links.mjs, which is
-// maintained by hand; a group page added without a matching table entry leaves
+// maintained by hand (index.md is the hub, not a group); a group page added without a matching table entry leaves
 // that group's upstream repository unchecked for ever, and the panel keeps
 // saying the status is up to date. These tests fail on that drift instead.
 
@@ -19,7 +19,7 @@ const report = JSON.parse(
 
 function pages() {
   return readdirSync(pagesDir)
-    .filter((entry) => entry.endsWith('.md'))
+    .filter((entry) => entry.endsWith('.md') && entry !== 'index.md')
     .map((entry) => ({
       slug: basename(entry, '.md'),
       file: `docs/community/user-groups/${entry}`,
