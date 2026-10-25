@@ -1,0 +1,76 @@
+name: Dependency audit fix
+
+# audit-schedule.yml re-runs the advisory gate daily and, by its own contract,
+# opens nothing: a red run is the notification. Each of its last three red
+# runs was then resolved by hand with the same mechanical step, a lockfile
+# bump to a patched release that already sat inside the ranges package.json
+# allows. This workflow runs that step when the scheduled audit fails, and
+# opens the pull request if the gate is green on the result.
+#
+# It is a separate workflow rather than a second job there so the audit lane
+# keeps its read-only token and single-gate cost (tests/audit-schedule-
+# contract.test.mjs pins both), and only this lane holds write scope.
+#
+# `npm audit fix --package-lock-only` moves nothing outside the existing
+# semver ranges and never touches package.json, so the diff a reviewer sees is
+# the lockfile alone. When the gate is still red afterwards the patched release
+# is outside the ranges, which needs an `overrides` floor and a SECURITY.md row
+# a person has to choose; this job then fails and the scheduled red run stays
+# the notification, as before.
+#
+# A pull request opened with the workflow token does not itself trigger ci.yml;
+# a maintainer closes and reopens it, or pushes to it, to start the checks.
+
+on:
+  workflow_run:
+    workflows: [Dependency audit]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialised on the branch this workflow force-pushes; see the note in
+# refresh-radar-reports.yml. Not cancelled, for the same reason.
+concurrency:
+  group: automation/audit-fix
+  cancel-in-progress: false
+
+jobs:
+  remediate:
+    name: Open a lockfile fix for the advisories npm can patch in range
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    # A green or cancelled audit run leaves nothing to fix.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'failure'
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-deps
+      # Rewrites package-lock.json only; the re-run gate below reads it.
+      - run: npm audit fix --package-lock-only
+      - run: npm ci
+      - run: npm run check:audit
+      - run: npm run test:unit
+      - uses: ./.github/actions/open-automation-pr
+        with:
+          branch: automation/audit-fix
+          commit-message: 'fix(deps): move patched advisories in the lockfile'
+          title: 'fix(deps): move patched advisories in the lockfile'
+          body: |
+            The scheduled dependency audit failed on `main`, and
+            `npm audit fix --package-lock-only` resolved every gated advisory
+            inside the lockfile's existing semver ranges. No `overrides`
+            floor or `package.json` change was needed.
+
+            `npm run check:audit` and the unit suite passed on this lockfile.
+
+            Remit: security exposure; `npm run check:audit` failing on `main`.
