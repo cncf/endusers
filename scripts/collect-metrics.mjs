@@ -81,7 +81,9 @@ try {
       landscape: {
         repository: 'https://github.com/cncf/landscape',
         revision: landscapeCommit,
-        sourceUrl: 'https://github.com/cncf/landscape/blob/main/landscape.yml',
+        // Pin to the collected revision, not the branch name: cncf/landscape's
+        // default branch is `master`, so a `blob/main` URL is a 404.
+        sourceUrl: `https://github.com/cncf/landscape/blob/${landscapeCommit}/landscape.yml`,
       },
       architectures: {
         repository: 'https://github.com/cncf/architecture',

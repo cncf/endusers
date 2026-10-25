@@ -5,7 +5,7 @@
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
       "revision": "97b2e16fdf4147166df9427299998a83991b0958",
-      "sourceUrl": "https://github.com/cncf/landscape/blob/main/landscape.yml"
+      "sourceUrl": "https://github.com/cncf/landscape/blob/97b2e16fdf4147166df9427299998a83991b0958/landscape.yml"
     },
     "architectures": {
       "repository": "https://github.com/cncf/architecture",
