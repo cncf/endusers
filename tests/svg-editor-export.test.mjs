@@ -79,6 +79,21 @@ test('a document without a DOCTYPE subset only has its encoding relabelled', () 
     `<?xml version='1.0' encoding="utf-8" standalone='yes'?>\n${plain}`,
   );
 
+  for (const label of ['UTF-8', 'utf-8', 'utf8', 'Utf8']) {
+    const already = `<?xml version="1.0" encoding="${label}" standalone="no"?>\n${plain}`;
+    assert.equal(normalizeEditorExport(already), already, label);
+  }
+  const singleQuoted = `<?xml version='1.0' encoding='UTF-8'?>\n${plain}`;
+  assert.equal(normalizeEditorExport(singleQuoted), singleQuoted);
+  for (const label of ['utf-8-sig', 'x-utf-8', 'utf-16']) {
+    const other = `<?xml version="1.0" encoding="${label}"?>\n${plain}`;
+    assert.equal(
+      normalizeEditorExport(other),
+      `<?xml version="1.0" encoding="utf-8"?>\n${plain}`,
+      label,
+    );
+  }
+
   const noSubset = `<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n${plain}`;
   assert.equal(normalizeEditorExport(noSubset), noSubset);
 
