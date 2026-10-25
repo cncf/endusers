@@ -31,7 +31,7 @@
 // baselines in tests/ci-supply-chain.test.mjs, and it is what stops a
 // temporary allowance from quietly becoming permanent.
 import AxeBuilder from '@axe-core/playwright';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { test, expect, waitForHydration } from '../tools/e2e-coverage.cjs';
@@ -92,12 +92,20 @@ const ROUTES = [
 // states no published page produces. No user reaches them on a production
 // build, so they are left out here; the specs that own them assert on them
 // directly.
+//
+// `playwright test --list` loads this file without a build (the unit suite
+// asks it which specs exist), so an absent sitemap yields no content routes
+// rather than a load error; the "scanned by exactly one route list" test
+// below fails a real run that has none.
 const FIXTURE_ROUTE_PREFIX = '/e2e-coverage-';
-const CONTENT_ROUTES = sitemapPaths().filter(
-  (path) =>
-    !path.startsWith(FIXTURE_ROUTE_PREFIX) &&
-    !ROUTES.some((route) => route.path === path),
-);
+const SITEMAP = resolve('build/sitemap.xml');
+const CONTENT_ROUTES = existsSync(SITEMAP)
+  ? sitemapPaths().filter(
+      (path) =>
+        !path.startsWith(FIXTURE_ROUTE_PREFIX) &&
+        !ROUTES.some((route) => route.path === path),
+    )
+  : [];
 
 // Interactive states the route scans above structurally cannot reach.
 //
@@ -248,7 +256,7 @@ function describe(violation) {
 
 // The routes the built site publishes, normalized to the form ROUTES uses.
 function sitemapPaths() {
-  const sitemap = readFileSync(resolve('build/sitemap.xml'), 'utf8');
+  const sitemap = readFileSync(SITEMAP, 'utf8');
   const paths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => {
     const path = new URL(loc).pathname.replace(/\/$/, '');
     return path === '' ? '/' : path;
