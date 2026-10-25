@@ -24,9 +24,13 @@ export default defineConfig({
   // and image requests until tests time out — observed as reproducible
   // failures in both architecture-detail.spec.js and interactions.spec.js on a
   // 32-core host, where capping at 4 is both green and faster end to end.
-  // CI is left on Playwright's own default, which already scales to the
-  // smaller runners.
-  workers: process.env.CI ? undefined : 4,
+  // The same 4 applies in CI: Playwright's default there is half of the
+  // runner's 4 cores, and the suite is I/O-bound on page loads and axe scans
+  // rather than on CPU, so two more browsers against the one server shorten
+  // the run without starving it. The coverage lane passes --workers=2 on the
+  // command line, which takes precedence, because it also writes per-test V8
+  // coverage artifacts.
+  workers: 4,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   // 'github' annotates the run; the flaky reporter beside it is what leaves a
