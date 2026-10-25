@@ -83,6 +83,34 @@ test('every section has an entry for each rostered person', () => {
   }
 });
 
+// The roster is the curated source of truth; the published file is generated
+// from it. Only the count was pinned, so a roster edit that was never
+// regenerated -- a member added, renamed, moved employer, or given a chair
+// role -- kept rendering the previous name, company and role on
+// /community/technical-advisory-board until the next scheduled refresh.
+test('curated fields match the roster entry in the same position', () => {
+  for (const [section, entries] of Object.entries(roster.sections)) {
+    entries.forEach((entry, index) => {
+      const generated = people.people[section][index];
+      assert.equal(
+        generated.name,
+        entry.name,
+        `${section} entry ${index} is ${generated.name}, roster says ${entry.name}`,
+      );
+      assert.equal(
+        generated.company,
+        entry.company,
+        `${section} entry ${entry.name} renders company ${generated.company}, roster says ${entry.company}`,
+      );
+      assert.equal(
+        generated.role,
+        entry.role ?? null,
+        `${section} entry ${entry.name} renders role ${generated.role}, roster says ${entry.role ?? null}`,
+      );
+    });
+  }
+});
+
 test('docs reference at least one section', () => {
   assert.ok(
     sectionsReferencedByDocs().length > 0,
