@@ -17,6 +17,7 @@ import {
   stripActiveContent,
   stripDoctype,
 } from './svg-active-content.mjs';
+import { normalizeEditorExport } from './svg-editor-export.mjs';
 import {
   classifyLandscapeDocument,
   END_USER_SUPPORTER_SUBCATEGORY,
@@ -163,7 +164,7 @@ export function mirrorLandscapeLogo({
     if (extension === '.svg') {
       // Stryker disable next-line StringLiteral: a Buffer decodes to the same utf8 text in stripActiveContent
       const original = readFileSync(source, 'utf8');
-      const stripped = stripActiveContent(original);
+      const stripped = stripActiveContent(normalizeEditorExport(original));
       const cleaned = stripDoctype(stripped.source)
         .split('\n')
         .map((line) => line.replace(/\s+$/, ''))
