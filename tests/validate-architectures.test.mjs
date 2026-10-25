@@ -158,6 +158,26 @@ test('accepts an imported architecture page with only inert content', () => {
   assert.equal(result.status, 0, result.stderr);
 });
 
+test('rejects an imported architecture page image with no alt text', () => {
+  const fixtures = catalogFixture([validRecord], {
+    'docs/architectures/acme-platform.md':
+      '# Acme\n\n![](/img/architectures/acme-platform/diagram.svg)\n',
+  });
+  const result = runScriptWithFixtures(SCRIPT, fixtures);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /acme-platform\.md:3/);
+  assert.match(result.stderr, /image has no alt text/);
+});
+
+test('accepts an imported architecture page whose images carry alt text', () => {
+  const fixtures = catalogFixture([validRecord], {
+    'docs/architectures/acme-platform.md':
+      '# Acme\n\n![Acme platform diagram](/img/architectures/acme-platform/diagram.svg)\n',
+  });
+  const result = runScriptWithFixtures(SCRIPT, fixtures);
+  assert.equal(result.status, 0, result.stderr);
+});
+
 // A userinfo component makes the visible prefix and the real host disagree:
 // "https://www.cncf.io@evil.example/x" reads as CNCF in a generated diff and
 // resolves to evil.example in a browser. sourceUrl is rendered as an href in

@@ -15,7 +15,7 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
 ## Architecture highlights
 
-![](/img/architectures/colopl/festibattle-architecture.png)
+![COLOPL FestiBattle architecture on Kubernetes with Agones-managed game servers](/img/architectures/colopl/festibattle-architecture.png)
 
 At COLOPL, our API servers run on Google Kubernetes Engine (GKE) with Cloud Spanner as the backend database. While that combination is somewhat distinctive, the overall structure is not far from a typical web service.
 
