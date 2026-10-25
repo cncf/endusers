@@ -1,10 +1,10 @@
 {
   "generated": true,
-  "generatedAt": "2026-09-28T02:48:30.866Z",
+  "generatedAt": "2026-10-25T16:44:18.803Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
-      "revision": "97b2e16fdf4147166df9427299998a83991b0958",
+      "revision": "0ba45a1972a5e205f8d1f24929b713d2e67459d8",
       "sourceUrl": "https://github.com/cncf/landscape/blob/main/landscape.yml"
     },
     "architectures": {
@@ -17,10 +17,10 @@
     {
       "id": "cncf-projects",
       "label": "CNCF projects",
-      "value": 255,
+      "value": 259,
       "source": "landscape",
       "sourceUrl": "https://landscape.cncf.io/",
-      "collectedAt": "2026-09-28T02:48:30.866Z",
+      "collectedAt": "2026-10-25T16:44:18.803Z",
       "note": "Projects explicitly marked with a CNCF maturity level in landscape.yml."
     },
     {
@@ -29,7 +29,7 @@
       "value": 8,
       "source": "architectures",
       "sourceUrl": "https://github.com/cncf/architecture/tree/main/content/en/architectures",
-      "collectedAt": "2026-09-28T02:48:30.866Z",
+      "collectedAt": "2026-10-25T16:44:18.803Z",
       "note": "Published architecture directories under content/en/architectures."
     }
   ],
@@ -45,7 +45,7 @@
         },
         {
           "name": "Orchestration & Management",
-          "value": 58
+          "value": 61
         },
         {
           "name": "App Definition and Development",
@@ -74,6 +74,10 @@
         {
           "name": "Serverless",
           "value": 2
+        },
+        {
+          "name": "AI Agent",
+          "value": 1
         }
       ]
     },
@@ -84,7 +88,7 @@
       "values": [
         {
           "name": "sandbox",
-          "value": 150
+          "value": 154
         },
         {
           "name": "graduated",
@@ -108,8 +112,8 @@
       "sourceUrl": "https://landscape.cncf.io/",
       "values": [
         {
-          "date": "2026-09-28",
-          "value": 649
+          "date": "2026-10-25",
+          "value": 650
         }
       ]
     },
@@ -153,7 +157,7 @@
     "generated": true,
     "source": "cncf/tab and cncf/architecture GitHub APIs",
     "sourceUrl": "https://github.com/cncf/tab/issues?q=is%3Aissue+label%3Aarea%2Freference-architecture",
-    "observedAt": "2026-09-28T02:48:30.865Z",
+    "observedAt": "2026-10-25T16:44:18.803Z",
     "cards": [
       {
         "id": "open-submissions",
@@ -164,7 +168,7 @@
       {
         "id": "open-architecture-prs",
         "label": "Open architecture PRs",
-        "value": 5,
+        "value": 6,
         "note": "Architecture PRs identified from public GitHub metadata."
       },
       {
