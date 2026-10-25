@@ -55,12 +55,29 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-deps
+      # Proceed only when the gate is red on main as checked out. A manual
+      # dispatch while it is green would otherwise still rewrite the lockfile:
+      # `npm audit fix` normalises fields npm no longer emits, and the result
+      # would be a pull request that moves no advisory.
+      - name: Confirm the gate is red
+        id: gate
+        run: |
+          if npm run check:audit; then
+            echo 'red=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'red=true' >> "$GITHUB_OUTPUT"
+          fi
       # Rewrites package-lock.json only; the re-run gate below reads it.
-      - run: npm audit fix --package-lock-only
-      - run: npm ci
-      - run: npm run check:audit
-      - run: npm run test:unit
-      - uses: ./.github/actions/open-automation-pr
+      - if: steps.gate.outputs.red == 'true'
+        run: npm audit fix --package-lock-only
+      - if: steps.gate.outputs.red == 'true'
+        run: npm ci
+      - if: steps.gate.outputs.red == 'true'
+        run: npm run check:audit
+      - if: steps.gate.outputs.red == 'true'
+        run: npm run test:unit
+      - if: steps.gate.outputs.red == 'true'
+        uses: ./.github/actions/open-automation-pr
         with:
           branch: automation/audit-fix
           commit-message: 'fix(deps): move patched advisories in the lockfile'
