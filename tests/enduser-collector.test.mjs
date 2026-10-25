@@ -68,6 +68,39 @@ test('mirrors and sanitizes a local landscape SVG', () => {
   });
 });
 
+test('mirrors an Illustrator export that declares its namespaces as DTD entities', () => {
+  withRoots(({ sourceRoot, destinationRoot }) => {
+    writeFileSync(
+      join(sourceRoot, 'hosted_logos/acme.svg'),
+      [
+        '<?xml version="1.0" encoding="utf-16"?>',
+        '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [',
+        '\t<!ENTITY ns_ai "http://ns.adobe.com/AdobeIllustrator/10.0/">',
+        ']>',
+        '<svg xmlns:i="&ns_ai;" xmlns="http://www.w3.org/2000/svg">',
+        '<g i:extraneous="self"><rect /></g><i:pgf id="pgf">x</i:pgf>',
+        '</svg>',
+      ].join('\n'),
+    );
+    const result = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.equal(result.logoWarning, null);
+    const mirrored = readFileSync(
+      join(destinationRoot, result.localLogo.split('/').pop()),
+      'utf8',
+    );
+    assert.match(mirrored, /^<\?xml version="1\.0" encoding="utf-8"\?>/);
+    assert.match(
+      mirrored,
+      /xmlns:i="http:\/\/ns\.adobe\.com\/AdobeIllustrator\/10\.0\/"/,
+    );
+    assert.doesNotMatch(mirrored, /<!DOCTYPE|&ns_ai;/);
+  });
+});
+
 test('refreshes a changed logo for the same source ID and filename', () => {
   withRoots(({ sourceRoot, destinationRoot }) => {
     const logo = join(sourceRoot, 'hosted_logos/acme.svg');
