@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T14:42:39.000Z",
+  "generatedAt": "2026-10-24T07:50:12.361Z",
   "groups": [
     {
       "slug": "public-sector",
@@ -12,6 +12,13 @@
       "slug": "telecom",
       "name": "Telecom User Group",
       "repository": "https://github.com/cncf/telecom-user-group",
+      "archived": false,
+      "reachable": true
+    },
+    {
+      "slug": "platform-engineering",
+      "name": "Platform Engineering User Group",
+      "repository": "https://github.com/Cloud-Native-Platform-Engineering/cnpe-community",
       "archived": false,
       "reachable": true
     }
