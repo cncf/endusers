@@ -159,6 +159,25 @@ test('a via cycle terminates and is judged by its advisories', () => {
   assert.deepEqual(dirty.blocked.map((b) => b.name).sort(), ['a', 'b']);
 });
 
+test('a blocked entry lists its advisories in a stable order', () => {
+  // blockingAdvisories() walks the `via` chain and collects into a Set, so
+  // the ids come out in the order npm happened to write them. The CI log is
+  // read against a previous run's log, and a package whose two advisories
+  // swap places between runs reads as a change in what is blocking it. The
+  // sort is what makes the line comparable; nothing asserted it, so dropping
+  // it left every test green.
+  const { blocked } = classifyAudit({
+    vulnerabilities: {
+      dep: entry('high', [advisory(BRACES), advisory(NEW_BAD)]),
+    },
+  });
+  assert.deepEqual(blocked, [
+    // Written in the order the sort produces, which is the reverse of the
+    // order the `via` array above lists them in.
+    { name: 'dep', severity: 'high', advisories: [NEW_BAD, BRACES] },
+  ]);
+});
+
 test('a string via naming an unlisted package contributes nothing', () => {
   // npm should never emit this, but a dangling reference must not throw and
   // must not invent a block.
@@ -327,6 +346,22 @@ test('unusedAllowlistEntries finds an advisory nested behind a string via', () =
   assert.deepEqual(unusedAllowlistEntries(report, new Set([BRACES])), []);
 });
 
+test('unusedAllowlistEntries never reads a string via as an advisory', () => {
+  // A string `via` names another vulnerable package, not an advisory.
+  // advisoryId() would still accept it and return the unidentifiable
+  // fallback label, so dropping the type guard makes every string link in
+  // every chain report as `advisory:unknown` -- and an allowlist entry
+  // carrying that label would then look reached, suppressing a finding on
+  // the strength of a package name.
+  const report = {
+    vulnerabilities: { dep: entry('high', ['other']) },
+  };
+  assert.deepEqual(
+    unusedAllowlistEntries(report, new Set(['advisory:unknown'])),
+    ['advisory:unknown'],
+  );
+});
+
 test('unusedAllowlistEntries tolerates a report with no vulnerabilities key', () => {
   assert.deepEqual(unusedAllowlistEntries({}, new Set([BRACES])), [BRACES]);
 });
@@ -444,6 +479,23 @@ test('fixableAllowlistedAdvisories orders a shared advisory by package name', ()
       (f) => f.package,
     ),
     ['alpha', 'zeta'],
+  );
+});
+
+test('fixableAllowlistedAdvisories never reads a string via as an advisory', () => {
+  // Same guard as in unusedAllowlistEntries, with the opposite consequence:
+  // here the unidentifiable fallback label would be matched against the
+  // allowlist and reported as an allowlisted advisory npm can now fix, so a
+  // package name in a `via` chain would raise a finding against an advisory
+  // that does not exist.
+  const report = {
+    vulnerabilities: {
+      dep: { ...entry('high', ['other']), fixAvailable: true },
+    },
+  };
+  assert.deepEqual(
+    fixableAllowlistedAdvisories(report, new Set(['advisory:unknown'])),
+    [],
   );
 });
 
@@ -613,6 +665,18 @@ test('describeFix falls back to a generic phrase when npm names no release', () 
   assert.equal(describeFix(true), 'a fix is available');
   assert.equal(describeFix({}), 'a fix is available');
   assert.equal(describeFix({ isSemVerMajor: true }), 'a fix is available');
+});
+
+test('describeFix reads a null fixAvailable without dereferencing it', () => {
+  // `typeof null === 'object'`, so the truthiness half of the guard is the
+  // only thing standing between a null fixAvailable and a TypeError on
+  // `fixAvailable.name`. npm writes `fixAvailable: false` rather than null
+  // today, but the renderer is handed whatever the report carries, and this
+  // function runs while the gate is already failing the build: a throw here
+  // replaces the advisory list the log exists to print with a stack trace.
+  assert.equal(describeFix(null), 'a fix is available');
+  assert.equal(describeFix(undefined), 'a fix is available');
+  assert.equal(describeFix(false), 'a fix is available');
 });
 
 // --- CLI entry, with npm stubbed ---
