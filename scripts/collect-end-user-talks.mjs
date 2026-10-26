@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Refresh the 2026 schedule snapshot with npm run collect:end-user-talks.
 // This is the public JSON API embedded by the official LF schedule, not HTML.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const sourceUrl =
   'https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/';
@@ -99,6 +99,24 @@ const data = {
   days: [...days.values()],
 };
 const outputPath = new URL('../data/end-user-talks.json', import.meta.url);
+// Only bump generatedAt and rewrite the schedule when the talks themselves
+// changed (ADR 0009). The Sessionize schedule is fixed once published, so
+// touching generatedAt on every weekly refresh-metrics.yml run would open
+// a no-op PR each time (#1935).
+const contentOnly = (value) =>
+  JSON.stringify(value, (key, field) =>
+    key === 'generatedAt' ? undefined : field,
+  );
+if (
+  existsSync(outputPath) &&
+  contentOnly(JSON.parse(readFileSync(outputPath, 'utf8'))) ===
+    contentOnly(data)
+) {
+  console.log(
+    'No End User Talk changes detected; leaving data/end-user-talks.json untouched.',
+  );
+  process.exit(0);
+}
 mkdirSync(new URL('../data', import.meta.url), { recursive: true });
 writeFileSync(outputPath, JSON.stringify(data, null, 2) + '\n');
 console.log(

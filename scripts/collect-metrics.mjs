@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -158,12 +159,41 @@ try {
       },
     ],
   };
-  mkdirSync(join(root, 'data'), { recursive: true });
-  writeFileSync(
-    join(root, 'data/metrics.json'),
-    JSON.stringify(data, null, 2) + '\n',
-  );
-  console.log(`Collected ${data.metrics.length} metrics at ${generatedAt}`);
+  // Only bump generatedAt and rewrite the file when the metrics themselves
+  // changed (ADR 0009). The counts and series are stable for weeks at a
+  // time, so touching the envelope on every weekly refresh-metrics.yml run
+  // would open a no-op PR each time (#1935). generatedAt, each metric's
+  // collectedAt, the lifecycle observedAt, the upstream source revisions and
+  // the as-of date stamped on the single-point member series are this run's
+  // envelope: they record when the published data last changed, so they are
+  // excluded from the comparison and stay pinned to the run that last
+  // changed it. A real change still diffs: series gain points and counts
+  // move, and the median-age card is rounded coarsely enough to sit still
+  // between genuinely different readings.
+  const outputPath = join(root, 'data/metrics.json');
+  const contentOnly = (value) =>
+    JSON.stringify(value, (key, field) =>
+      key === 'generatedAt' ||
+      key === 'collectedAt' ||
+      key === 'observedAt' ||
+      key === 'sources' ||
+      key === 'date'
+        ? undefined
+        : field,
+    );
+  if (
+    existsSync(outputPath) &&
+    contentOnly(JSON.parse(readFileSync(outputPath, 'utf8'))) ===
+      contentOnly(data)
+  ) {
+    console.log(
+      'No metric changes detected; leaving data/metrics.json untouched.',
+    );
+  } else {
+    mkdirSync(join(root, 'data'), { recursive: true });
+    writeFileSync(outputPath, JSON.stringify(data, null, 2) + '\n');
+    console.log(`Collected ${data.metrics.length} metrics at ${generatedAt}`);
+  }
 } finally {
   rmSync(work, { recursive: true, force: true });
 }

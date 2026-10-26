@@ -51,7 +51,7 @@ function sessionizeFixture() {
   };
 }
 
-function collect(fixture = sessionizeFixture()) {
+function collect(fixture = sessionizeFixture(), { fixtures = {} } = {}) {
   return runScriptInSandbox({
     script: 'collect-end-user-talks.mjs',
     routes: [
@@ -61,6 +61,7 @@ function collect(fixture = sessionizeFixture()) {
       },
     ],
     outputs: [OUTPUT],
+    fixtures,
   });
 }
 
@@ -80,6 +81,47 @@ test('collect-end-user-talks queries Sessionize and outputs filtered talks catal
   assert.equal(talk.title, 'Platform Engineering at Acme');
   assert.equal(talk.speakers, 'Alice Doe');
   assert.equal(talk.room, 'Grand Ballroom A');
+});
+
+test('leaves the schedule untouched when nothing changed', () => {
+  const first = collect();
+  assert.equal(first.status, 0, first.stderr);
+  const firstCatalog = JSON.parse(first.outputs[OUTPUT]);
+
+  // Re-run against the exact schedule the first run produced, as the weekly
+  // refresh-metrics.yml workflow would with unchanged upstream content.
+  const second = collect(sessionizeFixture(), {
+    fixtures: { [OUTPUT]: first.outputs[OUTPUT] },
+  });
+
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /No End User Talk changes detected/);
+  // The file on disk — including generatedAt — must be byte-for-byte the
+  // same; a second run must not open a no-op refresh PR.
+  assert.equal(second.outputs[OUTPUT], first.outputs[OUTPUT]);
+  assert.equal(
+    JSON.parse(second.outputs[OUTPUT]).generatedAt,
+    firstCatalog.generatedAt,
+  );
+});
+
+test('rewrites the schedule and bumps generatedAt when a talk actually changes', () => {
+  const first = collect();
+  assert.equal(first.status, 0, first.stderr);
+
+  const changed = sessionizeFixture();
+  changed.sessions[0].title = 'Platform Engineering at Acme, Revisited';
+  const second = collect(changed, {
+    fixtures: { [OUTPUT]: first.outputs[OUTPUT] },
+  });
+
+  assert.equal(second.status, 0, second.stderr);
+  assert.notEqual(second.outputs[OUTPUT], first.outputs[OUTPUT]);
+  const catalog = JSON.parse(second.outputs[OUTPUT]);
+  assert.equal(
+    catalog.days[0].slots[0].talks[0].title,
+    'Platform Engineering at Acme, Revisited',
+  );
 });
 
 test('throws an error if End User Programming category is missing', () => {
