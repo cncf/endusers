@@ -488,6 +488,22 @@ test('warns on an asset larger than 2 MB but still passes', () => {
   assert.equal(result.assetCount, 1);
 });
 
+test('rejects a member logo larger than 2 MB', () => {
+  const padding = ' '.repeat(2 * 1024 * 1024);
+  const svg = VALID_SVG.replace('<svg ', `<svg data-pad="${padding}" `);
+  const result = validateAssetFixtures({
+    'static/img/end-user-members/large.svg': svg,
+  });
+  assertInvalidAssets(result);
+  assert.deepEqual(result.issues, [
+    {
+      path: 'static/img/end-user-members/large.svg',
+      severity: 'error',
+      message: 'asset exceeds 2 MB limit (2.00 MB)',
+    },
+  ]);
+});
+
 test('does not warn on an asset exactly at the 2 MB limit', () => {
   const result = validateAssetFixtures({
     'static/img/architectures/example/limit.png': Buffer.alloc(2 * 1024 * 1024),
