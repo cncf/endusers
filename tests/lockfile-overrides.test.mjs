@@ -80,8 +80,55 @@ function resolveFrom(parentPath, childName) {
 
 const overrides = pkg.overrides ?? {};
 
+// Every override selector/range pair in package.json, nested entries
+// flattened to a "parent > child" label, so a rule can be stated once and
+// hold for both forms.
+function overrideRanges() {
+  return Object.entries(overrides).flatMap(([selector, value]) =>
+    typeof value === 'string'
+      ? [[selector, value]]
+      : Object.entries(value).map(([child, range]) => [
+          `${selector} > ${child}`,
+          range,
+        ]),
+  );
+}
+
+// A bare "1.2.3" is an exact pin to npm, not a floor: it is the ceiling too.
+// floorOf() above reads one as a floor, so nothing else in this file can tell
+// the two apart. The difference is the whole remediation path -- `npm audit
+// fix --package-lock-only` (which .github/workflows/audit-fix.yml runs) and
+// Dependabot's lockfile-only security update both move a dependency only
+// within the range package.json allows, so an exact pin freezes it until
+// someone edits package.json by hand. SECURITY.md says a fix needing a
+// package.json change "still waits for a maintainer". Since every override
+// here exists to clear an advisory, pinning one exactly excludes the single
+// dependency already known to have had one from the automatic path.
+const EXACT_PIN = /^\d+\.\d+\.\d+/;
+
+test('every override is a version floor, not an exact pin', () => {
+  for (const [label, range] of overrideRanges()) {
+    assert.ok(
+      !EXACT_PIN.test(String(range).trim()),
+      `override "${label}": "${range}" is an exact pin, not a floor; ` +
+        'write it as a range (for example "^' +
+        String(range).trim() +
+        '") so a later patched release can be picked up without a ' +
+        'package.json edit',
+    );
+  }
+});
+
 test('markdownlint-cli retains its patched js-yaml override', () => {
-  assert.equal(pkg.overrides['markdownlint-cli']?.['js-yaml'], '5.4.2');
+  const range = pkg.overrides['markdownlint-cli']?.['js-yaml'];
+  assert.ok(range, 'the markdownlint-cli js-yaml override was dropped');
+  // Asserted as a floor rather than by string equality so the override can be
+  // raised to a later patched release, or rewritten in another floor form,
+  // without this test having to be edited in lockstep.
+  assert.ok(
+    atOrAbove(floorOf(range).join('.'), [5, 4, 2]),
+    `markdownlint-cli js-yaml override "${range}" must have a floor of at least 5.4.2`,
+  );
 });
 
 test('package-lock.json belongs to this package', () => {
