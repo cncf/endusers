@@ -103,7 +103,7 @@ test.describe('TAB roster', () => {
     await page.goto(TAB_PATH);
 
     await expect(
-      page.getByText(/Profiles last refreshed from public GitHub sources on /),
+      page.getByText(/Profiles last updated from public GitHub sources on /),
     ).toBeVisible();
   });
 });

@@ -1,4 +1,4 @@
-// PeopleFreshness renders the "last refreshed" line under the TAB/staff
+// PeopleFreshness renders the "last updated" line under the TAB/staff
 // profile grids on docs/community/*. Nothing imported the module before this
 // file, so its two behaviours — formatting data/community-people.json's
 // fetchedAt, and rendering nothing at all when that timestamp is unusable —
@@ -54,7 +54,7 @@ test('the rendered date is the fetchedAt of the live data file', () => {
     month: 'long',
     day: 'numeric',
   });
-  assert.match(textOf(PeopleFreshness()), /last refreshed from public GitHub/);
+  assert.match(textOf(PeopleFreshness()), /last updated from public GitHub/);
   assert.ok(
     textOf(PeopleFreshness()).includes(expected),
     `expected the rendered text to include ${expected}`,

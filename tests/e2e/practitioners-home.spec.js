@@ -320,7 +320,7 @@ test.describe('landing page TAB roster', () => {
 
     await expect(
       article(page).getByText(
-        /Profiles last refreshed from public GitHub sources on /,
+        /Profiles last updated from public GitHub sources on /,
       ),
     ).toBeVisible();
   });
