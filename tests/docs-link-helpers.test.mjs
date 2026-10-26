@@ -18,10 +18,12 @@ import test from 'node:test';
 import {
   headingSlug,
   headingSlugs,
+  malformedFrontmatterLines,
   readDoc,
   relativeLinks,
   resolveDocPath,
 } from './helpers-docs-links.mjs';
+import { renderPage } from '../scripts/lib/changelog.mjs';
 
 function withTempDocs(files, run) {
   const root = mkdtempSync(join(tmpdir(), 'docs-links-'));
@@ -66,6 +68,45 @@ test('readDoc splits a terminated frontmatter fence from the body', () => {
       assert.equal(readDoc(join(root, 'late.md')).frontmatter, null);
     },
   );
+});
+
+// The frontmatter rule has to agree with what Docusaurus accepts, not be
+// stricter. YAML comments are legal between keys, and the changelog page that
+// `npm run build` writes into docs/ carries two; a rule that rejected them
+// turned `npm run test:unit` red for anyone who had built the site first,
+// against a file that is gitignored and therefore never wrong on main.
+test('malformedFrontmatterLines accepts YAML comments and flags only stray top-level lines', () => {
+  assert.deepEqual(
+    malformedFrontmatterLines('title: Fenced\n# a comment\nid: one'),
+    [],
+  );
+  assert.deepEqual(
+    malformedFrontmatterLines(
+      'title: Fenced\ntags:\n  - one\n  - two\n\ndescription: >\n  folded\n',
+    ),
+    [],
+  );
+  assert.deepEqual(
+    malformedFrontmatterLines('title: Fenced\nnot a key\n# fine\n- stray item'),
+    ['not a key', '- stray item'],
+  );
+  // A block with no key at all is reported as a whole rather than line by
+  // line, so a comment-only or prose-only block still fails.
+  assert.equal(malformedFrontmatterLines('# only a comment'), null);
+  assert.equal(malformedFrontmatterLines('just prose'), null);
+});
+
+test('the generated changelog frontmatter satisfies the docs contract', () => {
+  withTempDocs({ 'changelog.md': renderPage('') }, (root) => {
+    const { frontmatter } = readDoc(join(root, 'changelog.md'));
+    assert.ok(frontmatter, 'renderPage no longer opens a frontmatter fence');
+    assert.match(
+      frontmatter,
+      /^#/mu,
+      'the fixture lost the YAML comment this test exists for',
+    );
+    assert.deepEqual(malformedFrontmatterLines(frontmatter), []);
+  });
 });
 
 test('headingSlug reproduces the Docusaurus slug the contract compares against', () => {

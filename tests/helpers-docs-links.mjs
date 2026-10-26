@@ -20,6 +20,26 @@ export function readDoc(file) {
   };
 }
 
+const FRONTMATTER_KEY = /^[A-Za-z_][\w-]*\s*:/;
+
+// Returns the top-level frontmatter lines that are not `key:` pairs, or null
+// when the block declares no key at all. Blank lines, indented continuations
+// and list items, and YAML `#` comments are all legal between keys and are
+// skipped; Docusaurus parses frontmatter as YAML, so a comment there is not a
+// defect, and scripts/lib/changelog.mjs relies on one to explain its
+// `custom_edit_url: null` in the page it generates.
+export function malformedFrontmatterLines(frontmatter) {
+  const lines = frontmatter.split(/\r?\n/);
+  if (!lines.some((line) => FRONTMATTER_KEY.test(line))) return null;
+  return lines.filter(
+    (line) =>
+      line.trim() !== '' &&
+      !/^\s/.test(line) &&
+      !/^#/.test(line) &&
+      !FRONTMATTER_KEY.test(line),
+  );
+}
+
 // Mirrors Docusaurus' GitHub-flavoured heading slugs closely enough to catch a
 // renamed or deleted heading, which is all this contract needs to detect.
 export function headingSlug(text) {

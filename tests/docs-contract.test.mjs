@@ -6,6 +6,7 @@ import test from 'node:test';
 
 import {
   headingSlugs,
+  malformedFrontmatterLines,
   readDoc,
   relativeLinks,
   resolveDocPath,
@@ -108,20 +109,13 @@ test('frontmatter keys are parseable key: value pairs', () => {
   for (const file of docs) {
     const { frontmatter } = readDoc(file);
     if (frontmatter === null) continue;
-    const lines = frontmatter.split(/\r?\n/);
-    const hasKey = lines.some((line) => /^[A-Za-z_][\w-]*\s*:/.test(line));
-    if (!hasKey) {
+    const lines = malformedFrontmatterLines(frontmatter);
+    if (lines === null) {
       malformed.push(relative(repoRoot, file));
       continue;
     }
     for (const line of lines) {
-      if (line.trim() === '') continue;
-      // Continuations and list items are indented; only top-level lines must
-      // be `key:` pairs.
-      if (/^\s/.test(line)) continue;
-      if (!/^[A-Za-z_][\w-]*\s*:/.test(line)) {
-        malformed.push(`${relative(repoRoot, file)}: ${line}`);
-      }
+      malformed.push(`${relative(repoRoot, file)}: ${line}`);
     }
   }
   assert.deepEqual(malformed, [], 'docs/ frontmatter must be key: value pairs');
