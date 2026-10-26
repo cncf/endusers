@@ -234,14 +234,17 @@ test('accepts an image on an allowed cncf.io subdomain', () => {
   assert.equal(result.status, 0, result.stderr);
 });
 
-test('warns, without failing, when fetchedAt exceeds the staleness threshold', () => {
-  const stale = new Date(Date.now() - 46 * 86_400_000).toISOString();
+// fetch-community-people.mjs writes the file only when a profile changes
+// (ADR 0009), so an old fetchedAt is the normal state of stable data, not a
+// sign the weekly refresh is broken. The validator must stay silent on it.
+test('accepts an old fetchedAt without a staleness warning', () => {
+  const old = new Date(Date.now() - 400 * 86_400_000).toISOString();
   const result = runScriptWithFixtures(
     SCRIPT,
-    fixture({ ...freshData, fetchedAt: stale }),
+    fixture({ ...freshData, fetchedAt: old }),
   );
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stderr, /exceeding the 45-day staleness threshold/);
+  assert.doesNotMatch(result.stderr, /stale|days old/i);
 });
 
 // The generated file is written by fetch-community-people.mjs, which can fail

@@ -112,14 +112,14 @@ content-only refresh rule:
   findings that an old `generatedAt` or `fetchedAt` means the data is stale, or
   that a staleness warning should be restored, are decided by this ADR; comment
   here rather than filing (ADR 0008).
-- `validate-community-people.mjs` still carries a 45-day `warn`-severity
-  staleness check on `fetchedAt`, written before `fetch-community-people.mjs`
-  adopted content-only writes. Under point 3 that warning now measures how long
-  the profiles have been unchanged, not whether the lane is healthy, and will
-  fire against a working pipeline once profiles sit still for 45 days. Removing
-  it is a follow-up change under this ADR; its comment already records that
-  restoring `error` severity would be a maintainer call, and this ADR settles
-  that question the other way.
+- `validate-community-people.mjs` carried a 45-day `warn`-severity staleness
+  check on `fetchedAt`, written before `fetch-community-people.mjs` adopted
+  content-only writes. Under point 3 that warning measured how long the profiles
+  had been unchanged, not whether the lane was healthy, and would have fired
+  against a working pipeline once profiles sat still for 45 days. It was removed
+  as the first follow-up to this ADR; its comment had recorded that restoring
+  `error` severity would be a maintainer call, and this ADR settles that
+  question the other way.
 - `CONTRIBUTING.md` describes the community-group checker as recording status
   and the weekly workflow as opening a PR "with the result"; that remains
   accurate because the result may be no diff.

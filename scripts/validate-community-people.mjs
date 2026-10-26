@@ -19,8 +19,12 @@ const roster = JSON.parse(
 const errors = [];
 
 // Strict ISO 8601 only: plain Date.parse also accepts loose strings like
-// "March 1, 2026", which would silently defeat the staleness check below.
-// checkIsoTimestamp() in ./lib/validate-utils.mjs is the shared gate.
+// "March 1, 2026", which would silently defeat the not-in-the-future check.
+// checkIsoTimestamp() in ./lib/validate-utils.mjs is the shared gate. There
+// is deliberately no age check: fetch-community-people.mjs rewrites the file
+// only when a profile changes (ADR 0009), so fetchedAt records when the
+// published profiles last changed and is expected to sit still for months
+// while the weekly refresh stays green.
 checkIsoTimestamp(
   errors,
   'community-people.json',
@@ -117,24 +121,6 @@ for (const section of new Set([
       );
     }
   }
-}
-
-// Stale-refresh: refresh-community-people.yml has been healthy since the
-// #122 PR-creation blocker closed, so fetchedAt only goes stale when the
-// weekly pipeline itself breaks -- which its own PR trail already makes
-// visible. Warn (not error) so a data-refresh outage does not turn every
-// deploy red for a problem a pull request cannot fix; restoring 'error'
-// severity is a maintainer call, not a default.
-const STALENESS_SEVERITY = 'warn';
-const STALENESS_DAYS = 45;
-const ageDays = (Date.now() - new Date(data.fetchedAt).getTime()) / 86_400_000;
-if (Number.isFinite(ageDays) && ageDays > STALENESS_DAYS) {
-  collectError(
-    errors,
-    'community-people.json',
-    STALENESS_SEVERITY,
-    `fetchedAt is ${Math.round(ageDays)} days old, exceeding the ${STALENESS_DAYS}-day staleness threshold`,
-  );
 }
 
 reportAndExit(errors, 'community people');
