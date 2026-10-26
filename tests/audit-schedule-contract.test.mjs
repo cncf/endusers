@@ -202,3 +202,40 @@ test(`${AUDIT_WORKFLOW} holds no write permission`, () => {
       `unattended: ${JSON.stringify(offenders)}`,
   );
 });
+
+// audit-fix.yml is the write-scoped sibling of the lane above. After
+// `npm audit fix --package-lock-only` rewrites the lockfile, it installs the
+// result to re-run the gate and the unit suite. Those versions were resolved
+// from the registry seconds ago and reviewed by nobody; the other write-scoped
+// automation jobs install only the lockfile already on main. A lifecycle
+// script in one of them would execute under contents: write and
+// pull-requests: write, with `create-pull-request` ready to commit whatever
+// it leaves in the workspace. Neither consumer needs the scripts to have run:
+// `check:audit` reads the lockfile and `test:unit` is `node --test`.
+test('audit-fix.yml installs the unreviewed lockfile with --ignore-scripts', () => {
+  const doc = workflow('audit-fix.yml');
+  const steps = Object.values(doc.jobs).flatMap((job) => job.steps);
+  const fixIndex = steps.findIndex(
+    (step) =>
+      typeof step.run === 'string' && /\bnpm audit fix\b/u.test(step.run),
+  );
+  assert.ok(fixIndex >= 0, 'audit-fix.yml no longer runs npm audit fix');
+  const installs = steps
+    .slice(fixIndex + 1)
+    .filter(
+      (step) => typeof step.run === 'string' && /\bnpm ci\b/u.test(step.run),
+    );
+  assert.ok(
+    installs.length > 0,
+    'audit-fix.yml no longer installs the rewritten lockfile before ' +
+      're-running the gate, so the gate below reads an unverified tree',
+  );
+  for (const step of installs) {
+    assert.match(
+      step.run,
+      /\bnpm ci\b[^\n]*--ignore-scripts/u,
+      'audit-fix.yml runs lifecycle scripts from versions nobody has ' +
+        `reviewed inside a contents: write job: ${step.run.trim()}`,
+    );
+  }
+});

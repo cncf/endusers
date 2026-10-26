@@ -70,8 +70,14 @@ jobs:
       # Rewrites package-lock.json only; the re-run gate below reads it.
       - if: steps.gate.outputs.red == 'true'
         run: npm audit fix --package-lock-only
+      # The versions `npm audit fix` just resolved have not been reviewed by
+      # anyone, and this is the only job in the repository that installs
+      # unreviewed versions while holding contents: write and
+      # pull-requests: write. Install them without running their lifecycle
+      # scripts: `npm run check:audit` reads the lockfile and
+      # `npm run test:unit` is `node --test`, so neither needs a postinstall.
       - if: steps.gate.outputs.red == 'true'
-        run: npm ci
+        run: npm ci --ignore-scripts
       - if: steps.gate.outputs.red == 'true'
         run: npm run check:audit
       - if: steps.gate.outputs.red == 'true'
