@@ -2520,7 +2520,7 @@
       "id": "subaru-corporation",
       "name": "Subaru Corporation",
       "slug": "subaru-corporation",
-      "logo": "/img/end-user-members/fe60e14655aad3a6-subaru.svg",
+      "logo": "/img/end-user-members/fe60e14655aad3a6-subaru.png",
       "industries": [],
       "projects": [],
       "architectures": [],
@@ -2538,7 +2538,7 @@
           "subcategory": "End User Supporter and Contributor",
           "homepageUrl": "https://www.subaru.co.jp/en/",
           "joined": "2026-09-01",
-          "localLogo": "/img/end-user-members/fe60e14655aad3a6-subaru.svg",
+          "localLogo": "/img/end-user-members/fe60e14655aad3a6-subaru.png",
           "sourceUrl": "https://github.com/cncf/landscape/blob/0ba45a1972a5e205f8d1f24929b713d2e67459d8/landscape.yml"
         }
       ],

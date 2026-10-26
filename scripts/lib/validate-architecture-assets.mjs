@@ -5,7 +5,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { extname, join, relative } from 'node:path';
+import { extname, join, relative, sep } from 'node:path';
 import { collectError } from './validate-utils.mjs';
 import { MIRRORABLE_ASSET_EXTENSIONS as ALLOWED_ASSET_EXTENSIONS } from './asset-extensions.mjs';
 import {
@@ -365,10 +365,17 @@ export function validateArchitectureAssets(root, shouldFix = false) {
     const stats = statSync(path);
     const maxSize = 2 * 1024 * 1024; // 2 MB
     if (stats.size > maxSize) {
+      // The automated member refresh must fail instead of shipping warnings.
+      const isMemberLogo = relative(root, path).startsWith(
+        `${join('static', 'img', 'end-user-members')}${sep}`,
+      );
+      const size = `${(stats.size / 1024 / 1024).toFixed(2)} MB`;
       record(
         path,
-        'warn',
-        `asset is ${(stats.size / 1024 / 1024).toFixed(2)} MB (consider optimization)`,
+        isMemberLogo ? 'error' : 'warn',
+        isMemberLogo
+          ? `asset exceeds 2 MB limit (${size})`
+          : `asset is ${size} (consider optimization)`,
       );
     }
 
