@@ -56,8 +56,9 @@ function readDoc(entry) {
 }
 
 function readGroupDocs() {
-  return readdirSync(GROUPS_DIR)
-    .filter((entry) => entry.endsWith('.md') && entry !== HUB_FILE)
+  return readdirSync(GROUPS_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(entry.name, 'index.md'))
     .map(readDoc)
     .sort((a, b) => a.file.localeCompare(b.file));
 }
