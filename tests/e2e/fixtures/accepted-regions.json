@@ -37,12 +37,6 @@
       "reason": "`|| []` fallback taken only when data/metrics.json lifecycle has no omitted array."
     },
     {
-      "file": "src/components/PeopleFreshness/index.js",
-      "span": "12:25-12:30",
-      "class": "data-shape-guard",
-      "reason": "`return null` when data/people.json carries no fetchedAt."
-    },
-    {
       "file": "src/components/RadarReports/index.js",
       "span": "7:40-7:46",
       "class": "data-shape-guard",
