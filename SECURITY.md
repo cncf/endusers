@@ -109,10 +109,26 @@ fix and remove both the table row and the matching allowlist entry in
 `scripts/audit-gate.mjs` — a unit test keeps the two in sync.
 
 A new advisory that does have a patched release turns the gate red on `main`
-until the lockfile moves. Dependabot security updates open that lockfile bump,
-and when it changes only `package-lock.json` with a patch or minor version
-change, [`dependabot-automerge.yml`](.github/workflows/dependabot-automerge.yml)
-queues it to merge once the required checks, including `npm run check:audit`,
-pass (see "Low-risk merge classes" in [`GOVERNANCE.md`](GOVERNANCE.md)). Check
-for that pull request before hand-filing a lockfile bump. A fix that needs a
+until the lockfile moves — and within a day: the scheduled "Dependency audit"
+workflow
+([`.github/workflows/audit-schedule.yml`](.github/workflows/audit-schedule.yml))
+re-runs `npm run check:audit` on `main` daily, because the advisory database
+moves on its own while a quiet lockfile changes nothing. The red run is the
+notification; that workflow opens nothing. When
+`npm audit fix --package-lock-only` can resolve every gated advisory inside the
+ranges `package.json` already allows, the "Dependency audit fix" workflow
+([`.github/workflows/audit-fix.yml`](.github/workflows/audit-fix.yml)) runs it,
+re-checks the gate and the unit tests on the result, and opens a lockfile-only
+pull request from the `automation/audit-fix` branch. That pull request is not
+Dependabot-authored, so `dependabot-automerge.yml` does not queue it: a
+maintainer merges it by hand under the normal review rules, and closes and
+reopens it (or pushes to it) to start CI, which a workflow-token pull request
+does not trigger. When the patched release falls outside the ranges, the job
+fails and the red scheduled run stays the notification, as before. Dependabot
+security updates open the same lockfile bump, and when it changes only
+`package-lock.json` with a patch or minor version change,
+[`dependabot-automerge.yml`](.github/workflows/dependabot-automerge.yml) queues
+it to merge once the required checks, including `npm run check:audit`, pass (see
+"Low-risk merge classes" in [`GOVERNANCE.md`](GOVERNANCE.md)). Check for either
+pull request before hand-filing a lockfile bump. A fix that needs a
 `package.json` change or a major version still waits for a maintainer.
