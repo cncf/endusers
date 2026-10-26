@@ -7,7 +7,7 @@ description:
   governed.
 ---
 
-:::note Source and license
+:::note[Source and license]
 
 This page reproduces the
 [CNCF TAB's User Group Governance](https://github.com/cncf/tab/blob/main/governance/ug-governance.md)
