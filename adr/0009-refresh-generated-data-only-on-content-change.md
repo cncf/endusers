@@ -120,6 +120,10 @@ content-only refresh rule:
   as the first follow-up to this ADR; its comment had recorded that restoring
   `error` severity would be a maintainer call, and this ADR settles that
   question the other way.
+- `PeopleFreshness` rendered "Profiles last refreshed from public GitHub sources
+  on {date}", which under point 2 described the wrong event. It now reads
+  "Profiles last updated from public GitHub sources on {date}", matching the
+  `GroupLinkStatus` wording.
 - `CONTRIBUTING.md` describes the community-group checker as recording status
   and the weekly workflow as opening a PR "with the result"; that remains
   accurate because the result may be no diff.

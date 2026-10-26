@@ -268,7 +268,7 @@ test('reports a missing fetchedAt instead of crashing on an absent field', () =>
 // PeopleFreshness hands `peopleData.fetchedAt` straight to the shared
 // formatDate (src/components/PeopleFreshness/index.js), and
 // `new Date(null)` coerces to 0 rather than to an invalid date, so a null that
-// reached the committed file would render "Profiles last refreshed from public
+// reached the committed file would render "Profiles last updated from public
 // GitHub sources on January 1, 1970" in a paragraph that is meant to
 // disappear. tests/format-date.test.mjs pins that formatting and names this
 // validator as what keeps the value out; this is the assertion on the other

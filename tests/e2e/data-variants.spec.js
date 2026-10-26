@@ -61,7 +61,7 @@ const people = loadSiteData('community-people.json', COVERAGE_ENV);
 const variantPeople = loadSiteData('community-people.json', VARIANT_ENV);
 
 const PROVENANCE = /Winner history audited for completeness against/;
-const PROFILES_REFRESHED = /Profiles last refreshed from public GitHub sources/;
+const PROFILES_REFRESHED = /Profiles last updated from public GitHub sources/;
 
 describeCoverage('data the site has not received yet', () => {
   test('AwardsTimeline drops its provenance paragraph with no verifiedAt', async ({
