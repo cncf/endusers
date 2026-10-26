@@ -133,6 +133,63 @@ test('publishes a provenanced snapshot, mirrored logos, and an owned-asset manif
   assert.equal(result.requests.length, 0);
 });
 
+test('leaves the snapshot untouched when nothing changed', () => {
+  const first = collect({ outputs: ['data/enduser-landscape-assets.json'] });
+  assert.equal(first.status, 0, first.stderr);
+  const firstSnapshot = JSON.parse(
+    first.outputs['data/enduser-landscape.json'],
+  );
+
+  // Re-run against the exact snapshot the first run produced, as the weekly
+  // refresh-metrics.yml workflow would with unchanged upstream content.
+  const second = collect({
+    fixtures: {
+      'data/enduser-landscape.json':
+        first.outputs['data/enduser-landscape.json'],
+      'data/enduser-landscape-assets.json':
+        first.outputs['data/enduser-landscape-assets.json'],
+    },
+  });
+
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /No end user member changes detected/);
+  // The file on disk — collectedAt and the source revision included — must
+  // be byte-for-byte the same; a second run must not open a no-op refresh PR.
+  assert.equal(
+    second.outputs['data/enduser-landscape.json'],
+    first.outputs['data/enduser-landscape.json'],
+  );
+  assert.equal(
+    JSON.parse(second.outputs['data/enduser-landscape.json']).collectedAt,
+    firstSnapshot.collectedAt,
+  );
+});
+
+test('republishes the snapshot when a member record actually changes', () => {
+  const first = collect({});
+  assert.equal(first.status, 0, first.stderr);
+
+  const moved = landscapeRepo({
+    'landscape.yml': landscapeYaml().replace(
+      'homepage_url: https://acme.test/',
+      'homepage_url: https://acme.example/',
+    ),
+  });
+  const second = collect({
+    repos: moved,
+    fixtures: {
+      'data/enduser-landscape.json':
+        first.outputs['data/enduser-landscape.json'],
+    },
+  });
+
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /Collected 2 selected End User/);
+  const snapshot = JSON.parse(second.outputs['data/enduser-landscape.json']);
+  const acme = snapshot.records.find((record) => record.displayName === 'Acme');
+  assert.equal(acme.homepageUrl, 'https://acme.example/');
+});
+
 test('seeds the owned-asset manifest from the previous snapshot', () => {
   const previous = {
     generated: true,

@@ -92,6 +92,7 @@ function run({
   ],
   routes,
   env,
+  fixtures = {},
 } = {}) {
   return runScriptInSandbox({
     script: 'collect-metrics.mjs',
@@ -108,6 +109,7 @@ function run({
     ],
     outputs: ['data/metrics.json'],
     env,
+    fixtures,
   });
 }
 
@@ -153,6 +155,49 @@ test('collect-metrics writes metrics.json with project and architecture counts',
     assert.ok(entry.note, 'every metric explains its provenance');
     assert.ok(entry.sourceUrl.startsWith('https://'));
   }
+});
+
+test('collect-metrics leaves metrics.json untouched when nothing changed', () => {
+  const first = run();
+  const firstData = metricsFrom(first);
+
+  // Re-run against the exact file the first run produced, as the weekly
+  // refresh-metrics.yml workflow would with unchanged upstream content.
+  const second = run({
+    fixtures: { 'data/metrics.json': first.outputs['data/metrics.json'] },
+  });
+
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /No metric changes detected/);
+  // The file on disk — generatedAt, the per-metric collectedAt, the
+  // lifecycle observedAt and the source revisions included — must be
+  // byte-for-byte the same; a second run must not open a no-op refresh PR.
+  assert.equal(
+    second.outputs['data/metrics.json'],
+    first.outputs['data/metrics.json'],
+  );
+  assert.equal(
+    JSON.parse(second.outputs['data/metrics.json']).generatedAt,
+    firstData.generatedAt,
+  );
+});
+
+test('collect-metrics rewrites metrics.json when the content actually changes', () => {
+  const first = run();
+  const firstData = metricsFrom(first);
+
+  const second = run({
+    architectures: ['acme-platform', 'globex-edge', 'initech-grid'],
+    fixtures: { 'data/metrics.json': first.outputs['data/metrics.json'] },
+  });
+
+  const secondData = metricsFrom(second);
+  const count = (data, id) =>
+    data.metrics.find((entry) => entry.id === id).value;
+  assert.equal(
+    count(secondData, 'reference-architectures'),
+    count(firstData, 'reference-architectures') + 1,
+  );
 });
 
 test('collect-metrics records the cloned revisions as sources', () => {
