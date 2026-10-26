@@ -12,8 +12,8 @@ The
 focuses on platform engineering practices, tools, and patterns that help
 development teams self-service their infrastructure needs while maintaining
 consistency, security, and governance across an organization. See
-[Governance](../technical-advisory-board/governance.md) for how User Groups are
-formed and run.
+[Governance](../../technical-advisory-board/governance.md) for how User Groups
+are formed and run.
 
 ## Focus areas
 

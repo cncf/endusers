@@ -118,7 +118,7 @@ test.describe('community reference docs', () => {
     await expect(page.locator('nav.menu').first()).toBeVisible();
 
     // Written as a relative Markdown link
-    // (`../technical-advisory-board/governance.md`); this asserts the build
+    // (`../../technical-advisory-board/governance.md`); this asserts the build
     // resolved it to the governance route rather than emitting the source path.
     const governanceLink = page
       .locator('article')

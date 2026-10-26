@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // GroupLinkStatus renders data/community-groups.json on /community/ as the
@@ -18,12 +18,12 @@ const report = JSON.parse(
 );
 
 function pages() {
-  return readdirSync(pagesDir)
-    .filter((entry) => entry.endsWith('.md') && entry !== 'index.md')
+  return readdirSync(pagesDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
     .map((entry) => ({
-      slug: basename(entry, '.md'),
-      file: `docs/community/user-groups/${entry}`,
-      body: readFileSync(join(pagesDir, entry), 'utf8'),
+      slug: entry.name,
+      file: `docs/community/user-groups/${entry.name}/index.md`,
+      body: readFileSync(join(pagesDir, entry.name, 'index.md'), 'utf8'),
     }));
 }
 
