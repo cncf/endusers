@@ -356,3 +356,69 @@ test('a malformed registry fails the report before anything is rendered', async 
     await rm(fixture.root, { recursive: true, force: true });
   }
 });
+
+test('--prune-stale-accepted-regions removes the stale entries and lets main() pass', async () => {
+  const registry = {
+    $comment: 'fixture provenance the prune must keep',
+    measured: { revision: 'abc', node: 'v0.0.0', date: '2026-01-01' },
+    entries: [
+      entry('1:0-1:1'),
+      entry(COVERED_SPAN),
+      entry(SPANS.miss),
+      entry(SPANS.no),
+    ],
+  };
+  const fixture = await fixtureRun({ registry });
+  try {
+    const report = await main(
+      reportArgs(fixture, ['--prune-stale-accepted-regions']),
+    );
+    // Both stale shapes go: the span the run never reports and the span it
+    // now covers. The two valid acceptances stay.
+    assert.deepEqual(report.staleAcceptedRegions, []);
+    assert.deepEqual(
+      report.acceptedRegions.map((accepted) => accepted.span),
+      [SPANS.miss, SPANS.no],
+    );
+    const pruned = JSON.parse(
+      await readFile(join(fixture.root, ACCEPTED_REGIONS_PATH), 'utf8'),
+    );
+    assert.equal(pruned.$comment, registry.$comment);
+    assert.deepEqual(pruned.measured, registry.measured);
+    assert.deepEqual(
+      pruned.entries.map((accepted) => accepted.span),
+      [SPANS.miss, SPANS.no],
+    );
+    // The pruned registry parses clean and the rewritten file keeps the
+    // committed two-space, trailing-newline shape.
+    assert.equal(pruned.entries.length, 2);
+    assert.equal(
+      await readFile(join(fixture.root, ACCEPTED_REGIONS_PATH), 'utf8'),
+      `${JSON.stringify(pruned, null, 2)}\n`,
+    );
+    // A second run against the pruned registry reports no staleness at all.
+    const rerun = await collect(fixture);
+    assert.deepEqual(rerun.staleAcceptedRegions, []);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('--prune-stale-accepted-regions with no stale entries leaves the registry untouched', async () => {
+  const fixture = await fixtureRun({
+    registry: { entries: [entry(SPANS.miss)] },
+  });
+  try {
+    const before = await readFile(
+      join(fixture.root, ACCEPTED_REGIONS_PATH),
+      'utf8',
+    );
+    await main(reportArgs(fixture, ['--prune-stale-accepted-regions']));
+    assert.equal(
+      await readFile(join(fixture.root, ACCEPTED_REGIONS_PATH), 'utf8'),
+      before,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});

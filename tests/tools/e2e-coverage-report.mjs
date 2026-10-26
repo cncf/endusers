@@ -130,6 +130,7 @@ function parseArgs(argv) {
     checkSourceRegions: null,
     checkSourceFileRegions: null,
     requireSourceFiles: false,
+    pruneStaleAcceptedRegions: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -152,6 +153,8 @@ function parseArgs(argv) {
       );
     else if (arg === '--require-source-files')
       options.requireSourceFiles = true;
+    else if (arg === '--prune-stale-accepted-regions')
+      options.pruneStaleAcceptedRegions = true;
     else throw new Error(`unknown e2e coverage report option: ${arg}`);
   }
   if (!options.input) throw new Error('--input is required');
@@ -555,6 +558,28 @@ async function loadAcceptedRegions(root) {
   const path = join(root, ACCEPTED_REGIONS_PATH);
   if (!existsSync(path)) return [];
   return parseAcceptedRegions(JSON.parse(await readFile(path, 'utf8')));
+}
+
+// --prune-stale-accepted-regions rewrites the registry with the entries this
+// run flagged stale removed, so the author of a PR that invalidates an
+// accepted region carries the registry update in the same PR instead of
+// leaving a red main for a cleanup PR. Every other key ($comment, measured,
+// ...) is preserved byte-for-byte in value; the file keeps the two-space,
+// trailing-newline shape it is committed in. Returns the pruned entries.
+async function pruneStaleAcceptedRegions(root, stale) {
+  const path = join(root, ACCEPTED_REGIONS_PATH);
+  const raw = JSON.parse(await readFile(path, 'utf8'));
+  const staleKeys = new Set(
+    stale.map((entry) => `${entry.file} ${entry.span}`),
+  );
+  const pruned = [];
+  raw.entries = raw.entries.filter((entry) => {
+    if (!staleKeys.has(`${entry.file} ${entry.span}`)) return true;
+    pruned.push(entry);
+    return false;
+  });
+  await writeFile(path, `${JSON.stringify(raw, null, 2)}\n`);
+  return pruned;
 }
 
 export { parseAcceptedRegions };
@@ -1288,6 +1313,25 @@ export async function main(argv = process.argv.slice(2)) {
   // checked: an entry that no longer names a zero this run reports is either
   // a region the suite now reaches or a span the build no longer emits, and
   // in both cases the fix is to delete it, not to keep rendering around it.
+  // --prune-stale-accepted-regions performs that deletion: the flag exists for
+  // the author of the PR that invalidated the entry, who runs the reporter
+  // locally and commits the pruned registry in the same PR instead of leaving
+  // the lane red for a follow-up cleanup PR. The run then passes, confirming
+  // nothing but the stale entries changed.
+  if (report.staleAcceptedRegions.length > 0) {
+    if (options.pruneStaleAcceptedRegions) {
+      const pruned = await pruneStaleAcceptedRegions(
+        resolve(options.root),
+        report.staleAcceptedRegions,
+      );
+      process.stdout.write(
+        `Pruned ${pruned.length} stale accepted region(s) from ${ACCEPTED_REGIONS_PATH}:\n` +
+          pruned.map((entry) => `  ${entry.file} ${entry.span}`).join('\n') +
+          '\n',
+      );
+      report.staleAcceptedRegions = [];
+    }
+  }
   if (report.staleAcceptedRegions.length > 0) {
     throw new Error(
       `${report.staleAcceptedRegions.length} accepted region(s) in ${ACCEPTED_REGIONS_PATH} are stale; remove them:\n` +

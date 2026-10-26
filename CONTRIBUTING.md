@@ -434,7 +434,12 @@ classes as a `data-shape-guard` or `span-drift` may be recorded in
 one-line reason; the reporter then counts it as neither covered nor uncovered
 and lists it under "Accepted regions" instead. Nothing else qualifies, and the
 floors do not change. An entry whose span the run now covers, or no longer
-reports, is stale and fails the report until it is removed.
+reports, is stale and fails the report until it is removed. When your change
+invalidates an entry, remove it in the same PR rather than leaving the lane red
+for a follow-up:
+`npm run report:e2e:coverage -- --input coverage/e2e/<run> --prune-stale-accepted-regions`
+rewrites the registry with the stale entries removed (every other key is kept),
+so the pruned registry commits alongside the change that invalidated it.
 
 Compare percentages from equivalent build, browser and reporting toolchains,
 including the Node major CI pins. These are _region_ counts: the denominator can
