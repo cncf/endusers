@@ -125,7 +125,10 @@ test('markdownlint-cli retains its patched js-yaml override', () => {
   // Asserted as a floor rather than by string equality so the override can be
   // raised to a later patched release, or rewritten in another floor form,
   // without this test having to be edited in lockstep.
-  assert.deepEqual(floorOf(range), [5, 4, 2]);
+  assert.ok(
+    atOrAbove(floorOf(range).join('.'), [5, 4, 2]),
+    `markdownlint-cli js-yaml override "${range}" must have a floor of at least 5.4.2`,
+  );
 });
 
 test('package-lock.json belongs to this package', () => {
