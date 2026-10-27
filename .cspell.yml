@@ -77,6 +77,17 @@ words:
   - reinstrumenting
   - rearchitected
   - awss
+  # docs/architectures/sncf-onprem.md (Cluster API provider acronyms and SNCF tooling)
+  - autohealing
+  - CABPT
+  - CACPPT
+  - CAPI
+  - Capix
+  - kubeconfig
+  - kubeconfigs
+  - onprem
+  - problematics
+  - tfvars
   - roadmap
   - devcontainer
   - npx
