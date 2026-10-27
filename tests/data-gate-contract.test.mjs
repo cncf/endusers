@@ -39,7 +39,14 @@
 // tests/ci-playwright-trace-evidence.test.mjs gives for the same shape.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -69,21 +76,35 @@ const UNGATED_DATASETS = new Map();
  * scripts/validate-community-people.mjs directly, and a non-recursive scan
  * would call that dataset ungated.
  *
+ * The listing is a snapshot, and the suite runs its files in parallel: the
+ * tests/coverage-report-unmapped-sources.test.mjs fixture writes a
+ * `tests/drift-<id>.test.mjs` into the real tree and removes it again a
+ * moment later (it has to live here; the reporter maps only repository-rooted
+ * files). A file that is gone by the time it is read has no readers to
+ * contribute, so ENOENT skips it. Any other error is still the scan's to
+ * report: a file that exists and cannot be read would otherwise disappear
+ * from the question this test asks.
+ *
  * @param {string} dir - directory to walk
  * @param {string[]} [skip] - basenames to leave out
+ * @param {(path: string, encoding: string) => string} [read] - file reader
  * @returns {Array<{path: string, text: string}>}
  */
-function readerSources(dir, skip = []) {
+export function readerSources(dir, skip = [], read = readFileSync) {
   const found = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
-      found.push(...readerSources(join(dir, entry.name), skip));
+      found.push(...readerSources(join(dir, entry.name), skip, read));
       continue;
     }
     if (!entry.name.endsWith('.mjs')) continue;
     if (skip.includes(entry.name)) continue;
     const path = join(dir, entry.name);
-    found.push({ path, text: readFileSync(path, 'utf8') });
+    try {
+      found.push({ path, text: read(path, 'utf8') });
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
   }
   return found;
 }
@@ -274,6 +295,45 @@ test('an allowlist entry that still describes the repository is not stale', () =
     ),
     [],
   );
+});
+
+// A file that vanishes between the listing and the read is the race
+// described on readerSources; the reader is injected because the window is
+// too narrow to reproduce on a real filesystem.
+test('a source that vanishes after it is listed is skipped, not fatal', () => {
+  const root = mkdtempSync(join(tmpdir(), 'data-gate-'));
+  try {
+    writeFileSync(join(root, 'kept.mjs'), "read('kept.json');\n");
+    writeFileSync(join(root, 'drift-1234abcd.test.mjs'), '');
+    const vanished = (path, encoding) => {
+      if (path.endsWith('drift-1234abcd.test.mjs')) {
+        throw Object.assign(new Error('ENOENT: no such file'), {
+          code: 'ENOENT',
+        });
+      }
+      return readFileSync(path, encoding);
+    };
+    assert.deepEqual(readerSources(root, [], vanished), [
+      { path: join(root, 'kept.mjs'), text: "read('kept.json');\n" },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a source that exists but cannot be read still fails the scan', () => {
+  const root = mkdtempSync(join(tmpdir(), 'data-gate-'));
+  try {
+    writeFileSync(join(root, 'locked.mjs'), '');
+    const denied = () => {
+      throw Object.assign(new Error('EACCES: permission denied'), {
+        code: 'EACCES',
+      });
+    };
+    assert.throws(() => readerSources(root, [], denied), { code: 'EACCES' });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 // The real scan must agree with the fixtures about what a reader looks like,
