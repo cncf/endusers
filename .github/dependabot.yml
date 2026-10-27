@@ -1,5 +1,28 @@
 version: 2
 
+# Every entry below declares `cooldown: default-days: 7`. Dependabot already
+# waits 3 days before proposing a newly published version when `cooldown` is
+# absent, so this is a widening of that implicit default, not a new control.
+# Three days is short for the case this guards against: a release published
+# from a compromised maintainer account. Those are usually reported and the
+# version unpublished or deprecated within about a week, so a 7-day wait lets
+# the ecosystem finish triaging before a version update asks this repository's
+# lockfile to move. `npm ci` installs the committed lockfile and nothing else,
+# so a Dependabot version-update pull request is the only way a new upstream
+# version reaches it.
+#
+# This delays nothing that matters for an advisory: `cooldown` applies to
+# version updates only and is never consulted for a security update, so a fix
+# for a published vulnerability still arrives the moment Dependabot sees it.
+# `default-days` is supported for all three ecosystems configured here
+# (github-actions, devcontainers, npm). tests/dependabot-contract.test.mjs
+# fails if any entry drops below 7, so the wait cannot be quietly removed.
+#
+# npm's own `min-release-age` is the equivalent control and is deliberately
+# NOT set in .npmrc: it was added in npm 11.10, and this project pins Node 22
+# (package.json engines, .github/actions/setup-node-deps, netlify.toml), whose
+# bundled npm is 10.x. It would be an unenforced comment there, and Dependabot
+# resolves versions itself without reading it.
 updates:
   # Actions are pinned to commit SHAs, which never float onto upstream security
   # fixes. Dependabot rewrites the pin and refreshes the trailing version
@@ -33,6 +56,8 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'monday'
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     labels:
       - 'dependencies'
@@ -54,6 +79,8 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'monday'
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     labels:
       - 'dependencies'
@@ -68,6 +95,8 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'monday'
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     labels:
       - 'dependencies'

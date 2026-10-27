@@ -57,6 +57,14 @@ const WEEKDAYS = new Set([
   'sunday',
 ]);
 
+// Release-age floor for a version update, in days. Dependabot applies 3 days
+// when `cooldown` is absent; the entries here declare 7 so a release published
+// from a compromised maintainer account has time to be reported and pulled
+// before a pull request offers it. `cooldown` is consulted for version updates
+// only, never for security updates, so this floor delays no advisory fix.
+// https://docs.github.com/code-security/reference/supply-chain-security/dependabot-options-reference#cooldown
+const MINIMUM_COOLDOWN_DAYS = 7;
+
 // A directory is repo-relative and always starts with "/". Mapped to a path on
 // disk so a typo cannot pass as a configured-but-inert entry.
 function resolveDirectory(directory) {
@@ -279,6 +287,26 @@ test('every update entry schedules a supported interval', () => {
         `${entry['package-ecosystem']}: "${schedule.day}" is not a weekday name`,
       );
     }
+  }
+});
+
+test('every update entry waits out a release-age cooldown', () => {
+  for (const entry of updates) {
+    const cooldown = entry.cooldown;
+    assert.ok(
+      cooldown && typeof cooldown === 'object',
+      `${entry['package-ecosystem']}: cooldown is required; without it Dependabot falls back to its implicit 3-day default, which is shorter than the window in which a release published from a compromised account is usually reported`,
+    );
+    const days = cooldown['default-days'];
+    assert.equal(
+      Number.isInteger(days),
+      true,
+      `${entry['package-ecosystem']}: cooldown.default-days must be an integer`,
+    );
+    assert.ok(
+      days >= MINIMUM_COOLDOWN_DAYS,
+      `${entry['package-ecosystem']}: cooldown.default-days ${days} is below the ${MINIMUM_COOLDOWN_DAYS}-day floor`,
+    );
   }
 });
 
