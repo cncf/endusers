@@ -1,11 +1,19 @@
 {
-  "description": "Clears one catalog entry's industries, and another entry's assets, so ArchitectureCard takes two arms in src/components/ReferenceArchitectures/index.js that the shipped catalog cannot reach. The 'Reference architecture' eyebrow fallback needs an empty industries array; every shipped entry carries a non-empty one. The `architecture.assets?.find(...)` optional-chain needs a nullish assets field; every shipped entry carries an array, so the chain is always entered and its short-circuit never runs. Both are per-record rather than document-level, so the remaining entries still render the populated eyebrow and still enter the chain: both arms of each pair render in the same build and no second build is needed. swisscom-cloud-native-telco is the entry nulled because it carries no logo or wordmark asset to begin with, so the chain already resolved to undefined for it and the rendered card is unchanged -- only which arm produced the undefined differs. allianz and swisscom-kubernetes-service keep their assets arrays and no logo asset, so the chain-entered-but-no-match arm stays covered beside it.",
+  "description": "Clears one catalog entry's industries, and reshapes two entries' assets, so ArchitectureCard takes three arms in src/components/ReferenceArchitectures/index.js that the shipped catalog cannot reach. The 'Reference architecture' eyebrow fallback needs an empty industries array; every shipped entry carries a non-empty one. The `architecture.assets?.find(...)` optional chain has two ways to yield no logo: it short-circuits on a nullish assets field, or it is entered and matches nothing. Every shipped entry carries an array that includes a logo or wordmark asset, so neither arm runs in production. swisscom-cloud-native-telco has its assets nulled for the short-circuit arm, and swisscom-kubernetes-service keeps an assets array holding only its diagrams for the entered-but-unmatched arm; both render the initials fallback in the coverage build only. All three patches are per-record rather than document-level, so the remaining entries still render the populated eyebrow and still resolve a logo through the chain: every arm of each pair renders in the same build and no second build is needed.",
   "setWhere": {
     "id=allianz": {
       "industries": []
     },
     "id=swisscom-cloud-native-telco": {
       "assets": null
+    },
+    "id=swisscom-kubernetes-service": {
+      "assets": [
+        "/img/architectures/swisscom-kubernetes-service/kubernetes-service-central-infra.png",
+        "/img/architectures/swisscom-kubernetes-service/kubernetes-service-ingredients.png",
+        "/img/architectures/swisscom-kubernetes-service/kubernetes-service-isolated-envs.png",
+        "/img/architectures/swisscom-kubernetes-service/kubernetes-service-team-deliverables.png"
+      ]
     }
   }
 }
