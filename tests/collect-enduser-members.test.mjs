@@ -256,6 +256,51 @@ test('warns about an unmirrorable logo without dropping the organization', () =>
   assert.match(acme.logoWarning, /landscape logo is a symlink or is missing/);
 });
 
+test('keeps a committed override for an upstream logo it refuses', () => {
+  // The refresh lane re-reads the oversized upstream file on every run; the
+  // override is what carries a hand-optimized replacement across it.
+  const oversized =
+    '<svg xmlns="http://www.w3.org/2000/svg"><text>' +
+    'x'.repeat(2 * 1024 * 1024) +
+    '</text></svg>';
+  const overrideLogo = '/img/end-user-members/0123456789abcdef-acme.png';
+  const result = collect({
+    repos: landscapeRepo({ 'hosted_logos/acme.svg': oversized }),
+    fixtures: {
+      [`static${overrideLogo}`]: 'optimized-png-bytes',
+      'data/enduser-logo-overrides.json': JSON.stringify({
+        overrides: [
+          {
+            sourceId: 'cncf/landscape#CNCF Members/Gold/Acme (member)',
+            localLogo: overrideLogo,
+            reason: 'upstream is oversized',
+          },
+        ],
+      }),
+    },
+    outputs: [`static${overrideLogo}`],
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /\[warn\]/);
+  const snapshot = JSON.parse(result.outputs['data/enduser-landscape.json']);
+  const acme = snapshot.records.find((record) => record.displayName === 'Acme');
+  assert.equal(acme.localLogo, overrideLogo);
+  assert.equal(acme.logoWarning, null);
+  assert.equal(result.outputs[`static${overrideLogo}`], 'optimized-png-bytes');
+});
+
+test('fails closed on a malformed override file', () => {
+  const result = collect({
+    fixtures: {
+      'data/enduser-logo-overrides.json': JSON.stringify({ overrides: {} }),
+    },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /must carry an overrides array/);
+  assert.equal(result.outputs['data/enduser-landscape.json'], null);
+});
+
 test('fails closed and leaves the previous snapshot intact when selection is invalid', () => {
   const previousRaw =
     JSON.stringify({ generated: true, records: [], marker: 'untouched' }) +

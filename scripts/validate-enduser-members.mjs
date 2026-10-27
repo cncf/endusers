@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { checkDuplicateValue } from './lib/duplicate-check.mjs';
@@ -18,6 +18,12 @@ const staticRoot = fileURLToPath(new URL('../static/', import.meta.url));
 const assetManifestPath = fileURLToPath(
   new URL('../data/enduser-landscape-assets.json', import.meta.url),
 );
+const logoOverridesPath = fileURLToPath(
+  new URL('../data/enduser-logo-overrides.json', import.meta.url),
+);
+// The same ceiling scripts/lib/enduser-collector.mjs refuses upstream logos
+// at; a committed override must fit under it too.
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const snapshot = JSON.parse(
   readFileSync(new URL('../data/enduser-landscape.json', import.meta.url)),
 );
@@ -257,6 +263,72 @@ if (existsSync(assetManifestPath)) {
           error(path, 'owned asset must be under /img/end-user-members/');
         }
         localAsset(path, asset);
+      }
+    }
+  }
+}
+
+// Overrides are hand-curated replacements for upstream logos the collector
+// refuses (#1957). Each must name a selected record and a committed asset
+// the collector can keep referencing, or the override is dead data and the
+// asset it names is an orphan.
+if (existsSync(logoOverridesPath)) {
+  let overrides;
+  try {
+    overrides = JSON.parse(readFileSync(logoOverridesPath, 'utf8'));
+  } catch {
+    error('enduser-logo-overrides.json', 'must contain valid JSON');
+    overrides = null;
+  }
+  if (overrides) {
+    if (!Array.isArray(overrides.overrides)) {
+      error('enduser-logo-overrides.json', 'must carry an overrides array');
+    } else {
+      const seenOverrides = new Set();
+      const includedIds = new Set(
+        records
+          .filter((record) => record?.included === true)
+          .map((record) => record.sourceId),
+      );
+      for (const [index, entry] of overrides.overrides.entries()) {
+        const path = `enduser-logo-overrides.json.overrides[${index}]`;
+        if (nonEmpty(`${path}.sourceId`, entry?.sourceId)) {
+          checkDuplicateValue(
+            errors,
+            path,
+            entry.sourceId,
+            seenOverrides,
+            'duplicate logo override',
+          );
+          if (!includedIds.has(entry.sourceId)) {
+            error(
+              `${path}.sourceId`,
+              'must name a selected record in the landscape snapshot',
+            );
+          }
+        }
+        nonEmpty(`${path}.reason`, entry?.reason);
+        const localLogo = entry?.localLogo;
+        if (
+          typeof localLogo !== 'string' ||
+          !localLogo.startsWith('/img/end-user-members/') ||
+          localLogo.slice('/img/end-user-members/'.length).includes('/')
+        ) {
+          error(
+            `${path}.localLogo`,
+            'must name a file directly under /img/end-user-members/',
+          );
+          continue;
+        }
+        localAsset(`${path}.localLogo`, localLogo);
+        const stat = lstatSync(join(staticRoot, localLogo.slice(1)), {
+          throwIfNoEntry: false,
+        });
+        if (stat && (stat.isSymbolicLink() || !stat.isFile())) {
+          error(`${path}.localLogo`, 'must be a regular file');
+        } else if (stat && stat.size > MAX_LOGO_BYTES) {
+          error(`${path}.localLogo`, 'exceeds the 2 MB member-asset limit');
+        }
       }
     }
   }

@@ -18,9 +18,12 @@ import { join } from 'node:path';
 import {
   assertLandscapeSnapshotReady,
   buildLandscapeSnapshot,
+  loadLogoOverrides,
   mirrorLandscapeLogo,
   publishLandscapeSnapshot,
 } from '../scripts/lib/enduser-collector.mjs';
+
+const repoRoot = new URL('..', import.meta.url);
 
 const RECORD = {
   sourceId: 'cncf/landscape#CNCF Members/Gold/Acme (member)',
@@ -277,6 +280,249 @@ test('refuses to mirror a logo past the 2 MB member-asset limit', () => {
     );
     assert.deepEqual(readdirSync(destinationRoot), []);
   });
+});
+
+test('keeps a committed override when the upstream logo is refused for size', () => {
+  withRoots(({ root, sourceRoot, destinationRoot }) => {
+    // A maintainer replaced an oversized upstream logo with a hand-optimized
+    // file. Without an override the next refresh re-reads the original,
+    // refuses it, and the replacement is never referenced again, so the
+    // prune step deletes it. The override is only consulted on that path.
+    const oversized =
+      '<svg xmlns="http://www.w3.org/2000/svg"><text>' +
+      'x'.repeat(2 * 1024 * 1024) +
+      '</text></svg>';
+    writeFileSync(join(sourceRoot, 'hosted_logos/acme.svg'), oversized);
+    const publishedRoot = join(root, 'published');
+    mkdirSync(publishedRoot);
+    const localLogo = '/img/end-user-members/0123456789abcdef-acme.png';
+    writeFileSync(join(publishedRoot, '0123456789abcdef-acme.png'), 'png');
+    const overrides = new Map([[RECORD.sourceId, localLogo]]);
+
+    const kept = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+      publishedRoot,
+      overrides,
+    });
+    assert.equal(kept.localLogo, localLogo);
+    assert.equal(kept.logoWarning, null);
+    // The override is already published; nothing is staged for it.
+    assert.deepEqual(readdirSync(destinationRoot), []);
+
+    // An override for a different organization changes nothing.
+    const other = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+      publishedRoot,
+      overrides: new Map([['cncf/landscape#Other', localLogo]]),
+    });
+    assert.equal(other.localLogo, null);
+    assert.match(
+      other.logoWarning,
+      /exceeds the 2 MB member-asset limit: acme\.svg \(2\.00 MB\)$/,
+    );
+
+    // The ceiling is inclusive on both sides: an override of exactly 2 MB is
+    // kept, and so is an upstream logo of exactly 2 MB.
+    writeFileSync(
+      join(publishedRoot, '0123456789abcdef-acme.png'),
+      Buffer.alloc(2 * 1024 * 1024),
+    );
+    assert.equal(
+      mirrorLandscapeLogo({
+        record: RECORD,
+        sourceRoot,
+        destinationRoot,
+        publishedRoot,
+        overrides,
+      }).localLogo,
+      localLogo,
+    );
+    writeFileSync(
+      join(sourceRoot, 'hosted_logos/acme.png'),
+      Buffer.alloc(2 * 1024 * 1024),
+    );
+    const exact = mirrorLandscapeLogo({
+      record: { ...RECORD, logoFilename: 'acme.png' },
+      sourceRoot,
+      destinationRoot,
+      publishedRoot,
+      overrides: new Map(),
+    });
+    assert.equal(exact.logoWarning, null);
+    assert.match(exact.localLogo, /-acme\.png$/);
+    assert.notEqual(exact.localLogo, localLogo);
+
+    // Once upstream fixes its logo, the mirrored copy wins over the override.
+    writeFileSync(
+      join(sourceRoot, 'hosted_logos/acme.svg'),
+      '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    );
+    const upstream = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+      publishedRoot,
+      overrides,
+    });
+    assert.notEqual(upstream.localLogo, localLogo);
+    assert.match(upstream.localLogo, /-acme\.svg$/);
+  });
+});
+
+test('refuses an override that is missing, not a regular file, or oversized', () => {
+  withRoots(({ root, sourceRoot, destinationRoot }) => {
+    writeFileSync(
+      join(sourceRoot, 'hosted_logos/acme.svg'),
+      '<svg xmlns="http://www.w3.org/2000/svg"><text>' +
+        'x'.repeat(2 * 1024 * 1024) +
+        '</text></svg>',
+    );
+    const publishedRoot = join(root, 'published');
+    mkdirSync(publishedRoot);
+    const localLogo = '/img/end-user-members/acme.png';
+    const overrides = new Map([[RECORD.sourceId, localLogo]]);
+    const mirror = () =>
+      mirrorLandscapeLogo({
+        record: RECORD,
+        sourceRoot,
+        destinationRoot,
+        publishedRoot,
+        overrides,
+      });
+
+    const missing = mirror();
+    assert.equal(missing.localLogo, null);
+    assert.match(
+      missing.logoWarning,
+      /exceeds the 2 MB member-asset limit: acme\.svg \(2\.00 MB\); logo override is not a regular file: \/img\/end-user-members\/acme\.png$/,
+    );
+
+    mkdirSync(join(publishedRoot, 'acme.png'));
+    assert.match(mirror().logoWarning, /logo override is not a regular file/);
+    rmSync(join(publishedRoot, 'acme.png'), { recursive: true });
+
+    writeFileSync(join(publishedRoot, 'real.png'), 'png');
+    symlinkSync(
+      join(publishedRoot, 'real.png'),
+      join(publishedRoot, 'acme.png'),
+    );
+    assert.match(mirror().logoWarning, /logo override is not a regular file/);
+    rmSync(join(publishedRoot, 'acme.png'));
+
+    writeFileSync(
+      join(publishedRoot, 'acme.png'),
+      Buffer.alloc(2 * 1024 * 1024 + 1),
+    );
+    assert.match(
+      mirror().logoWarning,
+      /logo override exceeds the 2 MB member-asset limit: \/img\/end-user-members\/acme\.png$/,
+    );
+
+    // Without a published root there is nowhere to find an override.
+    const unrooted = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+      overrides,
+    });
+    assert.equal(unrooted.localLogo, null);
+    assert.doesNotMatch(unrooted.logoWarning, /logo override/);
+  });
+});
+
+test('loads logo overrides and rejects malformed entries', () => {
+  const root = mkdtempSync(join(tmpdir(), 'endusers-overrides-test-'));
+  const path = join(root, 'overrides.json');
+  const write = (value) => writeFileSync(path, JSON.stringify(value));
+  try {
+    assert.deepEqual(loadLogoOverrides(path), new Map());
+
+    write({
+      overrides: [
+        {
+          sourceId: RECORD.sourceId,
+          localLogo: '/img/end-user-members/acme.png',
+          reason: 'upstream is oversized',
+        },
+      ],
+    });
+    assert.deepEqual(
+      loadLogoOverrides(path),
+      new Map([[RECORD.sourceId, '/img/end-user-members/acme.png']]),
+    );
+
+    for (const value of [null, { overrides: {} }]) {
+      write(value);
+      assert.throws(
+        () => loadLogoOverrides(path),
+        /must carry an overrides array/,
+      );
+    }
+
+    for (const entry of [
+      null,
+      { localLogo: '/img/end-user-members/acme.png' },
+      { sourceId: ' ', localLogo: '/img/end-user-members/acme.png' },
+    ]) {
+      write({ overrides: [entry] });
+      assert.throws(() => loadLogoOverrides(path), /missing a sourceId/);
+    }
+
+    const entry = {
+      sourceId: RECORD.sourceId,
+      localLogo: '/img/end-user-members/acme.png',
+    };
+    write({ overrides: [entry, entry] });
+    assert.throws(() => loadLogoOverrides(path), /duplicate logo override/);
+
+    for (const localLogo of [
+      undefined,
+      '/img/end-user-members/',
+      '/img/other/acme.png',
+      '/img/end-user-members/nested/acme.png',
+      '/img/end-user-members/..',
+    ]) {
+      write({ overrides: [{ sourceId: RECORD.sourceId, localLogo }] });
+      assert.throws(
+        () => loadLogoOverrides(path),
+        /must name a file under \/img\/end-user-members\//,
+        String(localLogo),
+      );
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('every committed logo override names a selected record and a published asset', () => {
+  // The override exists to survive the refresh lane; an entry whose record
+  // left the landscape or whose asset is gone is dead data and the committed
+  // asset it names is an orphan. The validator enforces the same contract on
+  // the live data; this pins the collector's own reading of it.
+  const overrides = loadLogoOverrides(
+    new URL('data/enduser-logo-overrides.json', repoRoot),
+  );
+  const snapshot = JSON.parse(
+    readFileSync(new URL('data/enduser-landscape.json', repoRoot), 'utf8'),
+  );
+  const included = new Map(
+    snapshot.records
+      .filter((record) => record.included)
+      .map((record) => [record.sourceId, record]),
+  );
+  assert.ok(overrides.size > 0);
+  for (const [sourceId, localLogo] of overrides) {
+    assert.ok(included.has(sourceId), `${sourceId} is not a selected record`);
+    const file = new URL(`static${localLogo}`, repoRoot);
+    const stat = statSync(file);
+    assert.ok(stat.isFile(), `${localLogo} is not a file`);
+    assert.ok(stat.size <= 2 * 1024 * 1024, `${localLogo} is oversized`);
+    assert.equal(included.get(sourceId).localLogo, localLogo);
+  }
 });
 
 test('keeps records with no logo and rejects unsafe logo filenames', () => {

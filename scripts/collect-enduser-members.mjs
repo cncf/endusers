@@ -11,6 +11,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   buildLandscapeSnapshot,
+  loadLogoOverrides,
   publishLandscapeSnapshot,
 } from './lib/enduser-collector.mjs';
 import { ensureOwnedAssetManifest } from './lib/enduser-assets.mjs';
@@ -24,6 +25,7 @@ const output = join(root, 'data/enduser-landscape.json');
 const outputTemp = join(work, 'enduser-landscape.json');
 const assetDestination = join(root, 'static/img/end-user-members');
 const manifestPath = join(root, 'data/enduser-landscape-assets.json');
+const overridesPath = join(root, 'data/enduser-logo-overrides.json');
 const previousSnapshot = existsSync(output)
   ? JSON.parse(readFileSync(output, 'utf8'))
   : null;
@@ -36,6 +38,8 @@ try {
     collectedAt: new Date().toISOString(),
     sourceRoot: landscapeRoot,
     destinationRoot: stagedAssets,
+    publishedRoot: assetDestination,
+    overrides: loadLogoOverrides(overridesPath),
   });
 
   for (const record of snapshot.records) {
