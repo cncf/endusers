@@ -157,9 +157,9 @@
   },
   {
     "id": "swisscom-kubernetes-service",
-    "title": "A modern and sovereign Private Cloud «Kubernetes Service» for Swiss-based enterprises.",
+    "title": "A modern and sovereign Private Cloud «Kubernetes Service» for Swiss-based enterprises",
     "organization": "Swisscom (Switzerland) Ltd",
-    "summary": "Our next generation Private Cloud Container as a Service offering «Kubernetes Service» for the B2B market addresses customer’s need for scalable and highly available Kubernetes workload as a flexible and secure IT foundation. It is part of ",
+    "summary": "Our next generation Private Cloud Container as a Service offering «Kubernetes Service» for the B2B market addresses customer's need for scalable and highly available Kubernetes workload as a flexible and secure IT foundation.",
     "industries": ["Communication", "Telecommunication", "Software", "Cloud"],
     "tags": [
       "service-delivery",
@@ -177,10 +177,13 @@
       "Kyverno",
       "ArgoCD",
       "Helm",
-      "CloudNativePG"
+      "CloudNativePG",
+      "Cilium",
+      "Longhorn",
+      "Envoy Gateway"
     ],
-    "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-kubernetes-service",
-    "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+    "sourceUrl": "https://github.com/cncf/architecture/tree/8af07d62851bc770130a6f942ca7cf9ab20eb784/content/en/architectures/swisscom-kubernetes-service",
+    "sourceCommit": "8af07d62851bc770130a6f942ca7cf9ab20eb784",
     "assets": [
       "/img/architectures/swisscom-kubernetes-service/kubernetes-service-central-infra.png",
       "/img/architectures/swisscom-kubernetes-service/kubernetes-service-ingredients.png",
