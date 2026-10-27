@@ -7,6 +7,13 @@
 // copied CSS rule or workflow step is far shorter than a copied function:
 // at the code scan's 50-token, 5-line minimum it sees neither.
 //
+// The YAML scan leaves out .github/dependabot.yml. Dependabot's parser
+// accepts neither YAML anchors nor aliases, so an `updates` entry cannot
+// share its schedule, cooldown or label block with its siblings: the format
+// forces the repetition and there is no helper to extract. Every other
+// .github/ YAML file has one (composite actions for workflows), so the
+// exclusion is that single file, not the directory.
+//
 // The repository's test suite grew by copying: fifteen contract tests each
 // carried the same workflow loader, two gates shared a hundred lines of
 // scanner, and the next bot sweep filed the same finding once per copy. A
