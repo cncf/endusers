@@ -26,6 +26,12 @@ import { MIRRORABLE_ASSET_EXTENSIONS as MIRRORABLE_EXTENSIONS } from './asset-ex
 
 const LOCAL_LOGO_PREFIX = '/img/end-user-members/';
 
+// The same ceiling validate-architecture-assets.mjs fails on for
+// static/img/end-user-members/: an oversized upstream logo must be refused
+// here, at mirror time, or the collector republishes an asset its own
+// validator rejects and the weekly refresh lane fails on every run (#1945).
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+
 function logoDestination(content, filename) {
   const digest = createHash('sha256')
     .update(content)
@@ -180,6 +186,14 @@ export function mirrorLandscapeLogo({
       content = Buffer.from(cleaned, 'utf8');
     } else {
       content = readFileSync(source);
+    }
+
+    if (content.length > MAX_LOGO_BYTES) {
+      const size = (content.length / 1024 / 1024).toFixed(2);
+      return warning(
+        record,
+        `landscape logo exceeds the 2 MB member-asset limit: ${filename} (${size} MB)`,
+      );
     }
 
     destinationName = logoDestination(content, filename);
