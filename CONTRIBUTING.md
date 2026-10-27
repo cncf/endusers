@@ -131,6 +131,22 @@ Rules:
   validate the snapshot with `npm run validate:enduser-members` before
   generation; `npm run validate:members` also runs explicitly before CI and
   deployment builds, alongside the existing unit smoke validation.
+- **Member logos come from the CNCF landscape, not from this repository.**
+  `npm run collect:enduser-members` mirrors each member's logo out of a
+  landscape checkout into `static/img/end-user-members/`, and there is a hard
+  2 MB ceiling on those assets: a landscape logo over the limit is refused at
+  mirror time, so the member keeps its place in the snapshot but renders with
+  the initials placeholder while the run logs a `landscape logo exceeds the
+  2 MB member-asset limit` warning naming the file and size;
+  `npm run validate:architecture-assets` enforces the same ceiling as a build
+  error for anything under `static/img/end-user-members/` (other asset paths
+  only warn past 2 MB), so an oversized member logo can never ship. When a
+  refresh pull request flips a member's card to initials, the durable fix is
+  at the source: get the logo under 2 MB in
+  [cncf/landscape](https://github.com/cncf/landscape). The collector
+  re-mirrors from the landscape on every run, so a hand-optimized file
+  committed here is dropped again while the upstream logo stays over the
+  limit (#1926, #1949).
 - **Never edit `data/community-people.json` by hand.** Add or fix a person in
   `data/community-roster.json`, then refresh with
   `npm run fetch:community-people`. This enriches roster entries with bio,
