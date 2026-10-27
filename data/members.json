@@ -138,7 +138,7 @@
       "id": "allianz",
       "name": "Allianz",
       "slug": "allianz",
-      "logo": "/img/architectures/allianz/allianz.svg",
+      "logo": "/img/architectures/allianz/logo.svg",
       "industries": ["Financial", "Insurance"],
       "projects": ["Argo", "Helm", "Kubernetes"],
       "architectures": [
@@ -2604,7 +2604,7 @@
       "id": "swisscom",
       "name": "Swisscom",
       "slug": "swisscom",
-      "logo": "/img/architectures/swisscom-cloud-native-telco/swisscom.png",
+      "logo": "/img/architectures/swisscom-cloud-native-telco/logo.png",
       "industries": ["Cloud", "Communication", "Software", "Telecommunication"],
       "projects": [
         "ArgoCD",

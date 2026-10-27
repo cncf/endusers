@@ -38,7 +38,7 @@
     "assets": [
       "/img/architectures/allianz/PEArchitecture.jpg",
       "/img/architectures/allianz/PEJourney.jpg",
-      "/img/architectures/allianz/allianz.svg"
+      "/img/architectures/allianz/logo.svg"
     ]
   },
   {
@@ -177,7 +177,7 @@
     "assets": [
       "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-architecture-overview.png",
       "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-layers.svg",
-      "/img/architectures/swisscom-cloud-native-telco/swisscom.png"
+      "/img/architectures/swisscom-cloud-native-telco/logo.png"
     ]
   },
   {
@@ -214,7 +214,7 @@
       "/img/architectures/swisscom-kubernetes-service/kubernetes-service-ingredients.png",
       "/img/architectures/swisscom-kubernetes-service/kubernetes-service-isolated-envs.png",
       "/img/architectures/swisscom-kubernetes-service/kubernetes-service-team-deliverables.png",
-      "/img/architectures/swisscom-kubernetes-service/swisscom.png"
+      "/img/architectures/swisscom-kubernetes-service/logo.png"
     ]
   },
   {
