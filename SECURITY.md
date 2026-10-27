@@ -108,6 +108,15 @@ indefinitely. When an advisory listed here gains a patched release, apply the
 fix and remove both the table row and the matching allowlist entry in
 `scripts/audit-gate.mjs` — a unit test keeps the two in sync.
 
+When the fix for an advisory is an `overrides` entry in `package.json` — lifting
+a package onto a patched release its dependents' declared ranges cannot reach —
+write the entry as a floor (`^x.y.z`), never an exact version. npm reads a bare
+version as an exact pin: the ceiling as well as the floor. Both automated
+remediation paths below resolve only inside the range `package.json` allows, so
+a pinned override leaves them no room and opts that package out of automatic
+patching the next time it carries an advisory — the fix then waits for a
+maintainer, which is what the override was meant to avoid (#1941).
+
 A new advisory that does have a patched release turns the gate red on `main`
 until the lockfile moves — and within a day: the scheduled "Dependency audit"
 workflow
