@@ -238,6 +238,47 @@ test('rejects a logo with a DOCTYPE that cannot be removed', () => {
   });
 });
 
+test('refuses to mirror a logo past the 2 MB member-asset limit', () => {
+  withRoots(({ sourceRoot, destinationRoot }) => {
+    // The gate validate-architecture-assets.mjs enforces on
+    // static/img/end-user-members/ must also hold at mirror time, or the
+    // collector republishes an asset its own validator rejects.
+    writeFileSync(
+      join(sourceRoot, 'hosted_logos/acme.svg'),
+      '<svg xmlns="http://www.w3.org/2000/svg"><text>' +
+        'x'.repeat(2 * 1024 * 1024) +
+        '</text></svg>',
+    );
+    const result = mirrorLandscapeLogo({
+      record: RECORD,
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.equal(result.localLogo, null);
+    assert.match(
+      result.logoWarning,
+      /exceeds the 2 MB member-asset limit: acme\.svg \(2\.00 MB\)/,
+    );
+    assert.deepEqual(readdirSync(destinationRoot), []);
+
+    writeFileSync(
+      join(sourceRoot, 'hosted_logos/acme.png'),
+      Buffer.alloc(2 * 1024 * 1024 + 1),
+    );
+    const raster = mirrorLandscapeLogo({
+      record: { ...RECORD, logoFilename: 'acme.png' },
+      sourceRoot,
+      destinationRoot,
+    });
+    assert.equal(raster.localLogo, null);
+    assert.match(
+      raster.logoWarning,
+      /exceeds the 2 MB member-asset limit: acme\.png \(2\.00 MB\)/,
+    );
+    assert.deepEqual(readdirSync(destinationRoot), []);
+  });
+});
+
 test('keeps records with no logo and rejects unsafe logo filenames', () => {
   withRoots(({ sourceRoot, destinationRoot }) => {
     const noLogo = mirrorLandscapeLogo({
