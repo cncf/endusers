@@ -72,6 +72,11 @@ words:
   - Adobe
   - Allianz
   - CERN
+  # docs/architectures/capital-one.md (imported upstream prose and collector config)
+  - reinstrumentation
+  - reinstrumenting
+  - rearchitected
+  - awss
   - roadmap
   - devcontainer
   - npx

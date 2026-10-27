@@ -42,6 +42,31 @@
     ]
   },
   {
+    "id": "capital-one",
+    "title": "Scaling to Petabytes: Inside Capital One’s OpenTelemetry Architecture",
+    "organization": "Capital One",
+    "summary": "Capital One adopted OpenTelemetry as its enterprise observability framework, replacing legacy telemetry tooling with a single open standard for metrics, traces, and logs at petabyte scale.",
+    "industries": ["Financial Services"],
+    "tags": [
+      "capital-one",
+      "observability",
+      "opentelemetry",
+      "resilience",
+      "reliability",
+      "financial-services"
+    ],
+    "projects": ["OpenTelemetry", "Prometheus", "Kubernetes"],
+    "sourceUrl": "https://github.com/cncf/architecture/tree/8af07d62851bc770130a6f942ca7cf9ab20eb784/content/en/architectures/capital-one",
+    "sourceCommit": "8af07d62851bc770130a6f942ca7cf9ab20eb784",
+    "assets": [
+      "/img/architectures/capital-one/backend-failover.png",
+      "/img/architectures/capital-one/high-level-architecture.png",
+      "/img/architectures/capital-one/logo.svg",
+      "/img/architectures/capital-one/opamp-agent-management.png",
+      "/img/architectures/capital-one/traces-sampling.png"
+    ]
+  },
+  {
     "id": "cern-scientific-computing",
     "title": "A Cloud Native Scientific Computing Platform for CERN NextGen AI",
     "organization": "CERN",
