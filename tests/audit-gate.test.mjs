@@ -170,6 +170,23 @@ test('a string via naming an unlisted package contributes nothing', () => {
   assert.deepEqual(allowlisted, ['odd']);
 });
 
+test('the advisory ids of a blocked entry are sorted, not in report order', () => {
+  // One package can carry several advisories, and npm emits them in whatever
+  // order its report happens to hold. The CI log names them in a stable
+  // order so the same finding reads the same way on every run.
+  const later = 'GHSA-zzzz-zzzz-zzzz';
+  const earlier = 'GHSA-aaaa-aaaa-aaaa';
+  const report = {
+    vulnerabilities: {
+      newdep: entry('high', [advisory(later), advisory(earlier)]),
+    },
+  };
+  const { blocked } = classifyAudit(report);
+  assert.deepEqual(blocked, [
+    { name: 'newdep', severity: 'high', advisories: [earlier, later] },
+  ]);
+});
+
 test('an entry without a via array is not blocked', () => {
   const report = { vulnerabilities: { bare: { severity: 'high' } } };
   const { blocked, allowlisted } = classifyAudit(report);
@@ -327,6 +344,21 @@ test('unusedAllowlistEntries finds an advisory nested behind a string via', () =
   assert.deepEqual(unusedAllowlistEntries(report, new Set([BRACES])), []);
 });
 
+test('unusedAllowlistEntries does not read a string via as an advisory', () => {
+  // A string `via` names another vulnerable package; it carries no advisory
+  // of its own. Treating one as an advisory object would label it with
+  // advisoryId()'s fallback for an advisory it cannot identify, and that
+  // label would then keep an allowlist entry of the same shape alive for an
+  // advisory the report never mentions.
+  const report = {
+    vulnerabilities: { micromatch: entry('high', ['braces']) },
+  };
+  assert.deepEqual(
+    unusedAllowlistEntries(report, new Set(['advisory:unknown'])),
+    ['advisory:unknown'],
+  );
+});
+
 test('unusedAllowlistEntries tolerates a report with no vulnerabilities key', () => {
   assert.deepEqual(unusedAllowlistEntries({}, new Set([BRACES])), [BRACES]);
 });
@@ -420,6 +452,21 @@ test('fixableAllowlistedAdvisories ignores a fixable advisory outside the allowl
     },
   };
   assert.deepEqual(fixableAllowlistedAdvisories(report, new Set([BRACES])), []);
+});
+
+test('fixableAllowlistedAdvisories does not read a string via as an advisory', () => {
+  // As in unusedAllowlistEntries: a string `via` is a package name, not an
+  // advisory. Identifying one would give it advisoryId()'s fallback label
+  // and report a package as carrying an allowlisted advisory it never had.
+  const report = {
+    vulnerabilities: {
+      micromatch: { ...entry('high', ['braces']), fixAvailable: true },
+    },
+  };
+  assert.deepEqual(
+    fixableAllowlistedAdvisories(report, new Set(['advisory:unknown'])),
+    [],
+  );
 });
 
 test('fixableAllowlistedAdvisories tolerates a missing vulnerabilities key and bare entries', () => {
@@ -613,6 +660,13 @@ test('describeFix falls back to a generic phrase when npm names no release', () 
   assert.equal(describeFix(true), 'a fix is available');
   assert.equal(describeFix({}), 'a fix is available');
   assert.equal(describeFix({ isSemVerMajor: true }), 'a fix is available');
+  // A report entry can carry no `fixAvailable` key at all. The phrase is only
+  // ever printed beside a finding, so an absent value has to render as the
+  // generic phrase rather than reaching into a non-object and throwing --
+  // which would replace the gate's diagnostic with a crash.
+  assert.equal(describeFix(undefined), 'a fix is available');
+  assert.equal(describeFix(null), 'a fix is available');
+  assert.equal(describeFix(false), 'a fix is available');
 });
 
 // --- CLI entry, with npm stubbed ---
