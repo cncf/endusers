@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { runScriptWithFixtures } from './helpers.mjs';
 
 const SCRIPT = 'validate-enduser-members.mjs';
@@ -352,4 +354,144 @@ test('rejects malformed owned-asset manifests', () => {
   });
   assert.equal(duplicateAsset.status, 1);
   assert.match(duplicateAsset.stderr, /duplicate owned asset/);
+});
+
+const OVERRIDES_FILE = 'data/enduser-logo-overrides.json';
+const OVERRIDE_LOGO = '/img/end-user-members/acme-override.png';
+
+function overrideFixture(entry, extra = {}) {
+  return {
+    ...fixture(),
+    [`static${OVERRIDE_LOGO}`]: 'png',
+    [OVERRIDES_FILE]: JSON.stringify({ overrides: [entry] }),
+    ...extra,
+  };
+}
+
+const validOverride = {
+  sourceId: validSnapshot.records[0].sourceId,
+  localLogo: OVERRIDE_LOGO,
+  reason: 'upstream logo exceeds the member-asset limit',
+};
+
+test('accepts a logo override for a selected record with a committed asset', () => {
+  const result = runScriptWithFixtures(SCRIPT, overrideFixture(validOverride));
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('rejects malformed logo override files', () => {
+  const invalidJson = runScriptWithFixtures(SCRIPT, {
+    ...fixture(),
+    [OVERRIDES_FILE]: '{',
+  });
+  assert.equal(invalidJson.status, 1);
+  assert.match(invalidJson.stderr, /must contain valid JSON/);
+
+  const invalidShape = runScriptWithFixtures(SCRIPT, {
+    ...fixture(),
+    [OVERRIDES_FILE]: JSON.stringify({ overrides: {} }),
+  });
+  assert.equal(invalidShape.status, 1);
+  assert.match(invalidShape.stderr, /must carry an overrides array/);
+});
+
+test('rejects a logo override whose record, reason, or asset is unusable', () => {
+  const unknownRecord = runScriptWithFixtures(
+    SCRIPT,
+    overrideFixture({ ...validOverride, sourceId: 'cncf/landscape#Nobody' }),
+  );
+  assert.equal(unknownRecord.status, 1);
+  assert.match(
+    unknownRecord.stderr,
+    /must name a selected record in the landscape snapshot/,
+  );
+
+  const auditOnly = runScriptWithFixtures(
+    SCRIPT,
+    overrideFixture({
+      ...validOverride,
+      sourceId: validSnapshot.records[1].sourceId,
+    }),
+  );
+  assert.equal(auditOnly.status, 1);
+  assert.match(auditOnly.stderr, /must name a selected record/);
+
+  const noReason = runScriptWithFixtures(
+    SCRIPT,
+    overrideFixture({ ...validOverride, reason: '' }),
+  );
+  assert.equal(noReason.status, 1);
+  assert.match(noReason.stderr, /reason: must be a non-empty string/);
+
+  const noSourceId = runScriptWithFixtures(
+    SCRIPT,
+    overrideFixture({ ...validOverride, sourceId: '' }),
+  );
+  assert.equal(noSourceId.status, 1);
+  assert.match(noSourceId.stderr, /sourceId: must be a non-empty string/);
+  assert.doesNotMatch(noSourceId.stderr, /must name a selected record/);
+
+  const duplicate = runScriptWithFixtures(SCRIPT, {
+    ...overrideFixture(validOverride),
+    [OVERRIDES_FILE]: JSON.stringify({
+      overrides: [validOverride, validOverride],
+    }),
+  });
+  assert.equal(duplicate.status, 1);
+  assert.match(duplicate.stderr, /duplicate logo override/);
+
+  for (const localLogo of [
+    undefined,
+    '/img/other/acme.png',
+    '/img/end-user-members/nested/acme.png',
+  ]) {
+    const wrongPlace = runScriptWithFixtures(
+      SCRIPT,
+      overrideFixture({ ...validOverride, localLogo }),
+    );
+    assert.equal(wrongPlace.status, 1, String(localLogo));
+    assert.match(
+      wrongPlace.stderr,
+      /must name a file directly under \/img\/end-user-members\//,
+    );
+  }
+
+  const missingAsset = runScriptWithFixtures(SCRIPT, {
+    ...fixture(),
+    [OVERRIDES_FILE]: JSON.stringify({ overrides: [validOverride] }),
+  });
+  assert.equal(missingAsset.status, 1);
+  assert.match(missingAsset.stderr, /asset does not exist under static\//);
+
+  const oversized = runScriptWithFixtures(SCRIPT, {
+    ...overrideFixture(validOverride),
+    [`static${OVERRIDE_LOGO}`]: Buffer.alloc(2 * 1024 * 1024 + 1),
+  });
+  assert.equal(oversized.status, 1);
+  assert.match(oversized.stderr, /exceeds the 2 MB member-asset limit/);
+
+  const directory = runScriptWithFixtures(
+    SCRIPT,
+    {
+      ...fixture(),
+      [OVERRIDES_FILE]: JSON.stringify({ overrides: [validOverride] }),
+    },
+    {
+      setup: (work) =>
+        mkdirSync(join(work, `static${OVERRIDE_LOGO}`), { recursive: true }),
+    },
+  );
+  assert.equal(directory.status, 1);
+  assert.match(directory.stderr, /must be a regular file/);
+
+  const symlinked = runScriptWithFixtures(
+    SCRIPT,
+    {
+      ...fixture(),
+      [OVERRIDES_FILE]: JSON.stringify({ overrides: [validOverride] }),
+    },
+    { symlinks: { [`static${OVERRIDE_LOGO}`]: `static${LOGO}` } },
+  );
+  assert.equal(symlinked.status, 1);
+  assert.match(symlinked.stderr, /must be a regular file/);
 });

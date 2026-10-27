@@ -52,6 +52,74 @@ function containedPath(path, root) {
   return path.startsWith(`${root}${sep}`);
 }
 
+function isOverridePath(value) {
+  return (
+    typeof value === 'string' &&
+    value.startsWith(LOCAL_LOGO_PREFIX) &&
+    value.length > LOCAL_LOGO_PREFIX.length &&
+    !value.slice(LOCAL_LOGO_PREFIX.length).includes('/') &&
+    !value.includes('..')
+  );
+}
+
+/**
+ * Reads the checked-in logo overrides: committed, hand-optimized replacements
+ * for upstream logos the size gate refuses. Without one the collector
+ * re-reads the oversized original on every refresh, refuses it, and the
+ * replacement a maintainer committed is never referenced again, so the
+ * prune step deletes it (#1957). Returns a Map of sourceId -> local path.
+ */
+export function loadLogoOverrides(path) {
+  if (!existsSync(path)) return new Map();
+  // Stryker disable next-line StringLiteral: JSON.parse decodes a Buffer as the same utf8 text
+  const data = JSON.parse(readFileSync(path, 'utf8'));
+  if (!Array.isArray(data?.overrides)) {
+    throw new Error('logo overrides must carry an overrides array');
+  }
+  const overrides = new Map();
+  for (const entry of data.overrides) {
+    if (typeof entry?.sourceId !== 'string' || !entry.sourceId.trim()) {
+      throw new Error('logo override is missing a sourceId');
+    }
+    if (overrides.has(entry.sourceId)) {
+      throw new Error(`duplicate logo override: ${entry.sourceId}`);
+    }
+    if (!isOverridePath(entry.localLogo)) {
+      throw new Error(
+        `logo override for ${entry.sourceId} must name a file under ${LOCAL_LOGO_PREFIX}`,
+      );
+    }
+    overrides.set(entry.sourceId, entry.localLogo);
+  }
+  return overrides;
+}
+
+/**
+ * Resolves a committed replacement for a refused upstream logo. The file must
+ * already be published under publishedRoot as a regular, in-limit file: the
+ * collector never writes it, it only keeps referencing it.
+ */
+function overrideLogo(record, overrides, publishedRoot) {
+  const localLogo = overrides.get(record.sourceId);
+  // Stryker disable next-line ObjectLiteral: callers only test the two fields for truthiness
+  if (!localLogo || !publishedRoot) return { localLogo: null, problem: null };
+  const target = join(publishedRoot, basename(localLogo));
+  const stat = lstatSync(target, { throwIfNoEntry: false });
+  if (!stat || stat.isSymbolicLink() || !stat.isFile()) {
+    return {
+      localLogo: null,
+      problem: `logo override is not a regular file: ${localLogo}`,
+    };
+  }
+  if (stat.size > MAX_LOGO_BYTES) {
+    return {
+      localLogo: null,
+      problem: `logo override exceeds the 2 MB member-asset limit: ${localLogo}`,
+    };
+  }
+  return { localLogo, problem: null };
+}
+
 export function assertLandscapeSnapshotReady(snapshot) {
   if (snapshot?.generated !== true) {
     throw new Error('landscape snapshot is not marked generated');
@@ -108,6 +176,8 @@ export function mirrorLandscapeLogo({
   record,
   sourceRoot,
   destinationRoot,
+  publishedRoot = null,
+  overrides = new Map(),
   realpath = realpathSync,
 }) {
   if (!record.logoFilename) {
@@ -189,10 +259,15 @@ export function mirrorLandscapeLogo({
     }
 
     if (content.length > MAX_LOGO_BYTES) {
+      const override = overrideLogo(record, overrides, publishedRoot);
+      if (override.localLogo) {
+        return { ...record, localLogo: override.localLogo, logoWarning: null };
+      }
       const size = (content.length / 1024 / 1024).toFixed(2);
       return warning(
         record,
-        `landscape logo exceeds the 2 MB member-asset limit: ${filename} (${size} MB)`,
+        `landscape logo exceeds the 2 MB member-asset limit: ${filename} (${size} MB)` +
+          (override.problem ? `; ${override.problem}` : ''),
       );
     }
 
@@ -229,11 +304,19 @@ export function buildLandscapeSnapshot({
   collectedAt,
   sourceRoot,
   destinationRoot,
+  publishedRoot = null,
+  overrides = new Map(),
 }) {
   const { records } = classifyLandscapeDocument(document);
   const processed = records.map((record) =>
     record.included
-      ? mirrorLandscapeLogo({ record, sourceRoot, destinationRoot })
+      ? mirrorLandscapeLogo({
+          record,
+          sourceRoot,
+          destinationRoot,
+          publishedRoot,
+          overrides,
+        })
       : { ...record, localLogo: null, logoWarning: null },
   );
   const sourceUrl = `https://github.com/cncf/landscape/blob/${revision}/landscape.yml`;

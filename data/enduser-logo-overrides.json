@@ -1,0 +1,9 @@
+{
+  "overrides": [
+    {
+      "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/Subaru Corporation (contributor)",
+      "localLogo": "/img/end-user-members/fe60e14655aad3a6-subaru.png",
+      "reason": "Upstream hosted_logos/subaru.svg is 2.21 MB, over the 2 MB member-asset limit. Hand-optimized 14 KB PNG from #1926."
+    }
+  ]
+}
