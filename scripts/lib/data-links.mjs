@@ -34,12 +34,7 @@ export const RENDERED_DATA_FILES = [
  * tracks the upstream change. The check reports them as `known` instead of
  * failing, and fails once one resolves again so the entry is retired.
  */
-export const KNOWN_BROKEN_URLS = new Map([
-  [
-    'https://www.walmartlabs.com',
-    'cncf/landscape still lists this homepage for Walmart; see cncf/landscape#5222',
-  ],
-]);
+export const KNOWN_BROKEN_URLS = new Map([]);
 
 /** Hosts whose pages are this site's own; the build already checks them. */
 const INTERNAL_HOSTS = new Set(['endusers.cncf.io', 'localhost']);

@@ -1,11 +1,11 @@
 {
   "generated": true,
-  "collectedAt": "2026-10-25T17:13:18.319Z",
+  "collectedAt": "2026-10-28T15:32:12.765Z",
   "source": {
     "repository": "https://github.com/cncf/landscape",
-    "revision": "0ba45a1972a5e205f8d1f24929b713d2e67459d8",
+    "revision": "c239ac1c6d2e5e096c6cf9f12b9330ae8c832438",
     "file": "landscape.yml",
-    "sourceUrl": "https://github.com/cncf/landscape/blob/0ba45a1972a5e205f8d1f24929b713d2e67459d8/landscape.yml"
+    "sourceUrl": "https://github.com/cncf/landscape/blob/c239ac1c6d2e5e096c6cf9f12b9330ae8c832438/landscape.yml"
   },
   "selection": {
     "member": "CNCF Members item.enduser === true and name suffix \"(member)\"",
@@ -1095,7 +1095,7 @@
       "category": "CNCF Members",
       "subcategory": "Silver",
       "enduser": true,
-      "homepageUrl": "https://www.walmartlabs.com",
+      "homepageUrl": "https://tech.walmart.com/",
       "joined": "2018-09-01",
       "logoFilename": "walmart-member.svg",
       "localLogo": "/img/end-user-members/657a658c57df2ca4-walmart-member.svg",
