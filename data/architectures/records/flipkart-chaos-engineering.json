@@ -23,6 +23,8 @@
   ],
   "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/flipkart-chaos-engineering",
   "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+  "published": "2026-06-08",
+  "updated": "2026-06-15",
   "assets": [
     "/img/architectures/flipkart-chaos-engineering/layers.png",
     "/img/architectures/flipkart-chaos-engineering/logo.png",

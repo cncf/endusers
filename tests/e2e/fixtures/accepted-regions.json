@@ -61,6 +61,12 @@
       "reason": "Inner `null` of the unparseable-date guard above, reported as its own region."
     },
     {
+      "file": "src/components/shared/FilterToolbar.js",
+      "span": "115:10-115:15",
+      "class": "span-drift",
+      "reason": "Bare `input` arm of the `searchChips ? ... : input` render; the member directory and case studies toolbars take it and the architecture catalog does not, in different chunks."
+    },
+    {
       "file": "src/components/shared/OrgAvatar.js",
       "span": "30:20-30:56",
       "class": "span-drift",

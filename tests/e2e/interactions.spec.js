@@ -310,13 +310,25 @@ test.describe('member profile dialog', () => {
   });
 });
 
+// The tag each chip carries, read from its remove button's accessible name:
+// the chip's visible text also includes that button's glyph.
+function chipTags(chips) {
+  return chips
+    .getByRole('button')
+    .evaluateAll((buttons) =>
+      buttons.map((button) =>
+        button.getAttribute('aria-label').replace(/^Remove tag /, ''),
+      ),
+    );
+}
+
 test.describe('reference architecture filters', () => {
   test('filtering by organization narrows the catalog and clears back', async ({
     page,
   }) => {
     await page.goto('/architectures');
     const search = page.getByLabel(
-      'Search architectures by organization or title',
+      'Search architectures by organization, title, or tag',
     );
     await waitForHydration(search);
 
@@ -347,12 +359,98 @@ test.describe('reference architecture filters', () => {
     await expect(organization).toHaveValue('');
   });
 
+  test('a selected tag becomes a search chip that narrows and clears', async ({
+    page,
+  }) => {
+    await page.goto('/architectures');
+    const search = page.getByLabel(
+      'Search architectures by organization, title, or tag',
+    );
+    await waitForHydration(search);
+
+    const results = page.getByText(/Showing \d+ of \d+ architectures/);
+    const total = totalCount(await results.textContent());
+
+    const tagSelect = page.getByLabel('Add a tag to the search');
+    const tag = await tagSelect.locator('option').nth(1).getAttribute('value');
+    await tagSelect.selectOption(tag);
+
+    const chips = page.getByRole('list', { name: 'Selected tags' });
+    await expect.poll(() => chipTags(chips)).toEqual([tag]);
+    await expect(tagSelect).toHaveValue('');
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBeLessThan(total);
+
+    await page.getByRole('button', { name: `Remove tag ${tag}` }).click();
+    await expect(chips).toHaveCount(0);
+    await expect(search).toBeFocused();
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBe(total);
+  });
+
+  test('Backspace in an empty search box removes the last tag chip', async ({
+    page,
+  }) => {
+    await page.goto('/architectures');
+    const search = page.getByLabel(
+      'Search architectures by organization, title, or tag',
+    );
+    await waitForHydration(search);
+    const chips = page.getByRole('list', { name: 'Selected tags' });
+
+    // With no chips, Backspace in the empty box is a no-op.
+    await search.press('Backspace');
+    await expect(chips).toHaveCount(0);
+
+    const tagSelect = page.getByLabel('Add a tag to the search');
+    const options = tagSelect.locator('option');
+    const first = await options.nth(1).getAttribute('value');
+    const second = await options.nth(2).getAttribute('value');
+    await tagSelect.selectOption(first);
+    await tagSelect.selectOption(second);
+    await expect.poll(() => chipTags(chips)).toEqual([first, second]);
+
+    // Backspace edits typed text first; chips stay until the box is empty.
+    await search.press('x');
+    await expect(search).toHaveValue('x');
+    await search.press('Backspace');
+    await expect(search).toHaveValue('');
+    await expect.poll(() => chipTags(chips)).toEqual([first, second]);
+
+    await search.press('Backspace');
+    await expect.poll(() => chipTags(chips)).toEqual([first]);
+  });
+
+  test('sorting by recently updated orders the cards newest first', async ({
+    page,
+  }) => {
+    await page.goto('/architectures');
+    const sort = page.getByLabel('Sort architectures');
+    await waitForHydration(sort);
+    await expect(sort).toHaveValue('alphabetical');
+
+    const dates = () =>
+      page
+        .locator('a time')
+        .evaluateAll((nodes) => nodes.map((node) => node.dateTime));
+    const before = await dates();
+    expect(before.length).toBeGreaterThan(1);
+
+    await sort.selectOption('updated');
+
+    const expected = Array.from(before).sort().reverse();
+    expect(expected).not.toEqual(before);
+    await expect.poll(dates).toEqual(expected);
+  });
+
   test('a query that matches nothing shows the empty state', async ({
     page,
   }) => {
     await page.goto('/architectures');
     const search = page.getByLabel(
-      'Search architectures by organization or title',
+      'Search architectures by organization, title, or tag',
     );
     await waitForHydration(search);
 
@@ -398,7 +496,7 @@ test.describe('reference architecture filters', () => {
     }) => {
       await page.goto('/architectures');
       const search = page.getByLabel(
-        'Search architectures by organization or title',
+        'Search architectures by organization, title, or tag',
       );
       await waitForHydration(search);
 

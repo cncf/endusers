@@ -17,21 +17,89 @@
   margin-bottom: 0.75rem;
 }
 
-.searchInput {
+.searchInput,
+.chipField {
   background: var(--ifm-background-surface-color);
   border: 1px solid var(--ifm-color-emphasis-300);
   border-radius: 8px;
   color: var(--ifm-font-color-base);
+  width: 100%;
+}
+
+.searchInput {
   font-size: 1rem;
   padding: 0.65rem 0.9rem;
-  width: 100%;
   max-width: 480px;
 }
 
-.searchInput:focus-visible {
+/* A chip field draws the search input's border and focus ring around its
+   chips and the borderless .chipInput inside it. */
+.chipField {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  max-width: 640px;
+  padding: 0.3rem 0.5rem;
+}
+
+.searchInput:focus-visible,
+.chipField:focus-within {
   border-color: var(--ifm-color-primary);
   outline: 3px solid var(--ifm-color-primary-light);
   outline-offset: 2px;
+}
+
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chip {
+  align-items: center;
+  background: var(--ifm-color-emphasis-200);
+  border-radius: 999px;
+  color: var(--ifm-font-color-base);
+  display: inline-flex;
+  font-size: 0.85rem;
+  gap: 0.15rem;
+  padding: 0.15rem 0.2rem 0.15rem 0.7rem;
+}
+
+.chipRemove {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  min-height: 24px;
+  min-width: 24px;
+}
+
+.chipRemove:hover {
+  background: var(--ifm-color-emphasis-300);
+}
+
+.chipRemove:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 1px;
+}
+
+.chipInput {
+  background: transparent;
+  border: 0;
+  color: var(--ifm-font-color-base);
+  flex: 1;
+  font-size: 1rem;
+  min-width: 12rem;
+  outline: none;
+  padding: 0.35rem 0.4rem;
 }
 
 .filtersRow {

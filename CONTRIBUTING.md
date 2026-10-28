@@ -119,6 +119,17 @@ Rules:
   (`validate:architectures`, `validate:architecture-assets`); the rules they
   enforce — and how to fix an `active content` or `remote reference` failure —
   are documented in [CONTENT-SECURITY.md](CONTENT-SECURITY.md).
+- Architecture `tags` are written with spaces, not underscores (`private cloud`,
+  not `private_cloud`): they appear as search chips on the catalog. The importer
+  converts underscores and `validate:architectures` rejects them.
+- Every architecture record carries `published` and `updated` dates
+  (`YYYY-MM-DD`, UTC), validated by `validate:architectures`; the catalog cards
+  show `updated` and sort on it. For a record from cncf/architecture,
+  `published` is the `date` in the upstream page's front matter and `updated` is
+  the date of the last upstream commit touching `content/en/architectures/<id>/`
+  at the pinned `sourceCommit`; refresh both when the pin moves. For an
+  issue-sourced record the importer takes them from the issue's `created_at` and
+  `updated_at`.
 - Verify CNCF facts (award winners, TAB scope, architecture counts) against
   authoritative sources. Never assert numbers without a source.
 - Radar report `summary` fields in `data/radar-reports.json` are hand-written

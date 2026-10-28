@@ -21,10 +21,16 @@ import styles from './FilterToolbar.module.css';
  * @param {string} props.searchValue
  * @param {string} props.searchPlaceholder
  * @param {(value: string) => void} props.onSearchChange
+ * @param {{values: string[], listLabel: string,
+ *   removeLabel: (value: string) => string,
+ *   onRemove: (value: string) => void}} [props.searchChips] selected values
+ *   shown as removable chips inside the search box; Backspace in an empty
+ *   search box removes the last one
  * @param {Array<{id: string, label: string, value: string,
  *   onChange: (value: string) => void,
  *   options: Array<string|{value: string, label: string}>,
- *   allLabel: string}>} props.selects one entry per `<select>` filter
+ *   allLabel?: string}>} props.selects one entry per `<select>`; omit
+ *   `allLabel` for a control with no empty "All" choice, such as a sort order
  * @param {React.ReactNode} [props.extra] additional controls rendered after
  *   the selects (e.g. checkbox toggles), in the same `filtersRow`
  * @param {number} props.resultCount
@@ -40,6 +46,7 @@ export default function FilterToolbar({
   searchValue,
   searchPlaceholder,
   onSearchChange,
+  searchChips,
   selects,
   extra,
   resultCount,
@@ -48,20 +55,65 @@ export default function FilterToolbar({
   activeCount,
   onClear,
 }) {
+  const input = (
+    <input
+      id={searchId}
+      type="search"
+      value={searchValue}
+      onChange={(event) => onSearchChange(event.target.value)}
+      onKeyDown={
+        searchChips &&
+        ((event) => {
+          const last = searchChips.values.at(-1);
+          if (event.key === 'Backspace' && searchValue === '' && last) {
+            searchChips.onRemove(last);
+          }
+        })
+      }
+      placeholder={searchPlaceholder}
+      className={searchChips ? styles.chipInput : styles.searchInput}
+    />
+  );
   return (
     <div className={styles.toolbar}>
       <div className={styles.searchRow}>
         <label htmlFor={searchId} className={styles.visuallyHidden}>
           {searchLabel}
         </label>
-        <input
-          id={searchId}
-          type="search"
-          value={searchValue}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder={searchPlaceholder}
-          className={styles.searchInput}
-        />
+        {searchChips ? (
+          <div className={styles.chipField}>
+            {searchChips.values.length > 0 && (
+              <ul
+                className={styles.chipList}
+                aria-label={searchChips.listLabel}
+              >
+                {searchChips.values.map((value) => (
+                  <li key={value} className={styles.chip}>
+                    {value}
+                    <button
+                      type="button"
+                      className={styles.chipRemove}
+                      aria-label={searchChips.removeLabel(value)}
+                      onClick={(event) => {
+                        searchChips.onRemove(value);
+                        // The button unmounts with its chip; keep focus in
+                        // the search box rather than dropping it to <body>.
+                        event.currentTarget.ownerDocument
+                          .getElementById(searchId)
+                          .focus();
+                      }}
+                    >
+                      <span aria-hidden="true">×</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {input}
+          </div>
+        ) : (
+          input
+        )}
       </div>
       <div className={styles.filtersRow}>
         {selects.map(({ id, label, value, onChange, options, allLabel }) => (
@@ -75,7 +127,7 @@ export default function FilterToolbar({
               onChange={(event) => onChange(event.target.value)}
               className={styles.select}
             >
-              <option value="">{allLabel}</option>
+              {allLabel !== undefined && <option value="">{allLabel}</option>}
               {options.map((option) => {
                 const optionValue =
                   typeof option === 'string' ? option : option.value;

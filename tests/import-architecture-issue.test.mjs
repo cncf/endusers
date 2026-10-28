@@ -116,6 +116,8 @@ function fixtureIssue(overrides = {}, answers = {}) {
     number: 900,
     title: '[Reference Architecture]: Acme - Cloud Native Platform',
     html_url: 'https://github.com/cncf/endusers/issues/900',
+    created_at: '2026-10-20T23:30:00Z',
+    updated_at: '2026-10-22T08:15:00Z',
     body: issueBody({ ...REQUIRED_ANSWERS, ...answers }),
     ...overrides,
   };
@@ -142,6 +144,8 @@ test('imports a labeled issue into catalog, record and docs page', () => {
       projects: ['Kubernetes'],
       sourceUrl: 'https://github.com/cncf/endusers/issues/900',
       sourceIssue: 900,
+      published: '2026-10-20',
+      updated: '2026-10-22',
       assets: [],
     });
 
@@ -663,6 +667,48 @@ test('rejects an issue payload that carries no title at all', () => {
   try {
     assert.notEqual(run.status, 0);
     assert.match(run.stderr, /Missing required issue title/);
+    assert.ok(!run.exists('data/architectures/catalog.json'));
+  } finally {
+    run.cleanup();
+  }
+});
+
+// The catalog cards show the updated date and sort on it, so an issue that
+// was never edited after it was opened still needs one.
+test('falls back to the creation date when the issue has no updated_at', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({ updated_at: undefined }),
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const [entry] = run.readJson('data/architectures/catalog.json');
+    assert.equal(entry.published, '2026-10-20');
+    assert.equal(entry.updated, '2026-10-20');
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('stores submitted tags with underscores written as spaces', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({}, { Tags: 'private_cloud, ci-cd, cloud__native' }),
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const [entry] = run.readJson('data/architectures/catalog.json');
+    assert.deepEqual(entry.tags, ['private cloud', 'ci-cd', 'cloud  native']);
+  } finally {
+    run.cleanup();
+  }
+});
+
+test('rejects an issue payload without a valid created_at', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({ created_at: 'not a date' }),
+  });
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /missing a valid created_at timestamp/);
     assert.ok(!run.exists('data/architectures/catalog.json'));
   } finally {
     run.cleanup();

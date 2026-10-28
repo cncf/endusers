@@ -96,6 +96,26 @@ test('a select may mix both option shapes in one list', () => {
   );
 });
 
+test('a select without an allLabel renders only its own options', () => {
+  const { tree } = renderToolbar(['newest', 'oldest']);
+  const { tree: noAll } = renderToolbar([], {
+    selects: [
+      {
+        id: 'toolbar-sort',
+        label: 'Sort entries',
+        value: 'newest',
+        onChange: () => {},
+        options: ['newest', 'oldest'],
+      },
+    ],
+  });
+  assert.equal(findAllByType(tree, 'option').length, 3);
+  assert.deepEqual(
+    findAllByType(noAll, 'option').map((option) => option.props.value),
+    ['newest', 'oldest'],
+  );
+});
+
 test('every option keys off its value, so labels may repeat', () => {
   const { tree } = renderToolbar([
     { value: 'a', label: 'Shared label' },
@@ -132,4 +152,73 @@ test('Clear filters renders only while a filter is active, and resets', () => {
   assert.equal(textOf(button), 'Clear filters');
   button.props.onClick();
   assert.deepEqual(calls, [['clear']]);
+});
+
+function renderWithChips(values, searchValue = '') {
+  const removed = [];
+  const { tree } = renderToolbar(['retail'], {
+    searchValue,
+    searchChips: {
+      values,
+      listLabel: 'Selected tags',
+      removeLabel: (value) => `Remove ${value}`,
+      onRemove: (value) => removed.push(value),
+    },
+  });
+  return { tree, removed };
+}
+
+test('without searchChips the search box keeps its plain markup', () => {
+  const { tree } = renderToolbar(['retail']);
+  const input = findByType(tree, 'input');
+  assert.equal(input.props.onKeyDown, undefined);
+  assert.equal(input.props.className, 'searchInput');
+  assert.equal(findAllByType(tree, 'ul').length, 0);
+});
+
+test('an empty chip set renders the chip field with no list', () => {
+  const { tree } = renderWithChips([]);
+  assert.equal(findAllByType(tree, 'ul').length, 0);
+  assert.equal(findByType(tree, 'input').props.className, 'chipInput');
+});
+
+test('each chip shows its value and a labelled remove button', () => {
+  const { tree, removed } = renderWithChips(['edge', 'gitops']);
+  const chips = findAllByType(tree, 'li');
+  assert.deepEqual(
+    chips.map((chip) => chip.key),
+    ['edge', 'gitops'],
+  );
+  assert.equal(chips[0].props.children[0], 'edge');
+  const button = findByType(chips[0], 'button');
+  assert.equal(button.props.type, 'button');
+  assert.equal(button.props['aria-label'], 'Remove edge');
+
+  const focused = [];
+  button.props.onClick({
+    currentTarget: {
+      ownerDocument: {
+        getElementById: (id) => ({ focus: () => focused.push(id) }),
+      },
+    },
+  });
+  assert.deepEqual(removed, ['edge']);
+  assert.deepEqual(focused, ['toolbar-search']);
+});
+
+test('Backspace in an empty search box removes the last chip only', () => {
+  const { tree, removed } = renderWithChips(['edge', 'gitops', 'telco']);
+  const onKeyDown = findByType(tree, 'input').props.onKeyDown;
+  onKeyDown({ key: 'a' });
+  assert.deepEqual(removed, []);
+  onKeyDown({ key: 'Backspace' });
+  assert.deepEqual(removed, ['telco']);
+
+  const typed = renderWithChips(['edge'], 'ku');
+  findByType(typed.tree, 'input').props.onKeyDown({ key: 'Backspace' });
+  assert.deepEqual(typed.removed, []);
+
+  const none = renderWithChips([]);
+  findByType(none.tree, 'input').props.onKeyDown({ key: 'Backspace' });
+  assert.deepEqual(none.removed, []);
 });

@@ -4,7 +4,7 @@
   "organization": "CERN",
   "summary": "Some additional projects outside the CNCF are essential to this deployment. [MLFlow](https://mlflow.org/), a project under the Linux Foundation used for model management and versioning [Nvidia GPU operator](https://github.com/NVIDIA/gpu-ope",
   "industries": ["Research", "Public Sector"],
-  "tags": ["cloud_native", "private_cloud", "kubernetes", "switzerland"],
+  "tags": ["cloud native", "private cloud", "kubernetes", "switzerland"],
   "projects": [
     "Argo",
     "Bootc",
@@ -20,6 +20,8 @@
   ],
   "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/cern-scientific-computing",
   "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+  "published": "2026-03-09",
+  "updated": "2026-06-04",
   "assets": [
     "/img/architectures/cern-scientific-computing/hwlayout.png",
     "/img/architectures/cern-scientific-computing/logo.svg",

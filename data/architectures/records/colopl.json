@@ -8,6 +8,8 @@
   "projects": ["Kubernetes", "Agones"],
   "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/colopl",
   "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+  "published": "2026-07-28",
+  "updated": "2026-07-28",
   "assets": [
     "/img/architectures/colopl/agones.png",
     "/img/architectures/colopl/agones.svg",

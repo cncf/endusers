@@ -140,3 +140,16 @@ test('clearFilters resets every field back to its initial value', () => {
   assert.equal(after.activeCount, 0);
   assert.equal(after.filtered.length, 2);
 });
+
+test('a list-valued filter is active only while it holds an entry', () => {
+  const hook = renderHook(() =>
+    useFilterToolbar(ITEMS, { query: '', tags: [] }, (items) => items),
+  );
+  assert.equal(hook.result.activeCount, 0);
+
+  hook.result.setFilter('tags', ['retail']);
+  assert.equal(hook.result.activeCount, 1);
+
+  hook.result.setFilter('tags', []);
+  assert.equal(hook.result.activeCount, 0);
+});

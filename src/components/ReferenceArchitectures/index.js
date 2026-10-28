@@ -7,10 +7,11 @@ import ArchitectureFilters, {
 import { OrgAvatar } from '../shared/OrgAvatar';
 import { ProjectTagList } from '../shared/ProjectTagList';
 import EmptyFilterState from '../shared/EmptyFilterState';
+import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
 
 function ArchitectureCard({ architecture }) {
-  const { organization, title, summary, industries, projects, id } =
+  const { organization, title, summary, industries, projects, id, updated } =
     architecture;
   const logoAsset = architecture.assets?.find((asset) =>
     /logo|wordmark/i.test(asset),
@@ -28,6 +29,9 @@ function ArchitectureCard({ architecture }) {
         </p>
         <h2 className={styles.orgName}>{organization}</h2>
         <p className={styles.title}>{title}</p>
+        <p className={styles.updated}>
+          Updated <time dateTime={updated}>{formatDate(updated)}</time>
+        </p>
         <p className={styles.summary}>{summary}</p>
         <ProjectTagList projects={projects} />
         <span className={styles.link}>View architecture →</span>
@@ -44,6 +48,10 @@ export default function ReferenceArchitectures() {
     setIndustry,
     setProject,
     setOrganization,
+    addTag,
+    removeTag,
+    sort,
+    setSort,
     filtered,
     clearFilters,
     activeCount,
@@ -61,6 +69,10 @@ export default function ReferenceArchitectures() {
         setIndustry={setIndustry}
         setProject={setProject}
         setOrganization={setOrganization}
+        addTag={addTag}
+        removeTag={removeTag}
+        sort={sort}
+        setSort={setSort}
         activeCount={activeCount}
         onClear={clearFilters}
         resultCount={filtered.length}

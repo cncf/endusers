@@ -14,6 +14,8 @@
   "projects": ["Kubernetes", "Dapr", "KEDA", "OpenTelemetry", "Helm"],
   "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/zeiss",
   "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+  "published": "2026-03-17",
+  "updated": "2026-06-04",
   "assets": [
     "/img/architectures/zeiss/solutionArchitecture.png",
     "/img/architectures/zeiss/zeiss-logo-rgb.svg"

@@ -22,6 +22,7 @@ const {
   default: ArchitectureFilters,
   useArchitectureFilterOptions,
   useArchitectureFilters,
+  SORT_OPTIONS,
 } = await importSource('src/components/ArchitectureFilters/index.js');
 const { default: FilterToolbar } = await importSource(
   'src/components/shared/FilterToolbar.js',
@@ -34,18 +35,22 @@ function architecture(overrides = {}) {
     summary: 'Running fleets of clusters across regions.',
     industries: ['Retail'],
     projects: ['Kubernetes'],
+    tags: [],
+    updated: '2026-01-15',
     ...overrides,
   };
 }
 
 const CORPUS = [
-  architecture(),
+  architecture({ tags: ['Kubernetes', 'private cloud'] }),
   architecture({
     organization: 'Globex',
     title: 'Edge inference',
     summary: 'Serving models at the edge.',
     industries: ['Manufacturing', 'Retail'],
     projects: ['KubeEdge', 'Kubernetes'],
+    tags: ['kubernetes', 'edge'],
+    updated: '2026-06-01',
   }),
   architecture({
     organization: 'Initech',
@@ -53,6 +58,8 @@ const CORPUS = [
     summary: 'Unifying metrics and traces.',
     industries: ['Financial Services'],
     projects: ['Prometheus'],
+    tags: ['observability'],
+    updated: '2026-03-20',
   }),
 ];
 
@@ -66,6 +73,34 @@ test('option lists are de-duplicated and alphabetically sorted', () => {
     'Retail',
   ]);
   assert.deepEqual(result.projects, ['KubeEdge', 'Kubernetes', 'Prometheus']);
+  // Tags differing only in case are listed once, in their first-seen form.
+  assert.deepEqual(result.tags, [
+    'edge',
+    'Kubernetes',
+    'observability',
+    'private cloud',
+  ]);
+});
+
+test('addTag selects a tag and removeTag drops it', () => {
+  const hook = renderHook(() => useArchitectureFilters(CORPUS));
+
+  hook.result.addTag('edge');
+  hook.result.addTag('observability');
+
+  assert.deepEqual(hook.result.filters.tags, ['edge', 'observability']);
+  assert.equal(hook.result.activeCount, 1);
+  assert.deepEqual(
+    hook.result.filtered.map((a) => a.organization),
+    ['Globex', 'Initech'],
+  );
+
+  hook.result.removeTag('edge');
+  assert.deepEqual(hook.result.filters.tags, ['observability']);
+
+  hook.result.clearFilters();
+  assert.deepEqual(hook.result.filters.tags, []);
+  assert.equal(hook.result.activeCount, 0);
 });
 
 test('option lists are memoized while the architecture list is unchanged', () => {
@@ -95,6 +130,7 @@ test('the toolbar starts unfiltered, with every architecture showing', () => {
     industry: '',
     project: '',
     organization: '',
+    tags: [],
   });
   assert.equal(result.activeCount, 0);
   assert.equal(result.filtered.length, CORPUS.length);
@@ -152,15 +188,56 @@ test('clearFilters resets every control at once', () => {
     industry: '',
     project: '',
     organization: '',
+    tags: [],
   });
   assert.equal(hook.result.activeCount, 0);
   assert.equal(hook.result.filtered.length, CORPUS.length);
+});
+
+test('architectures are listed alphabetically until another sort is chosen', () => {
+  const reversed = Array.from(CORPUS).reverse();
+  const hook = renderHook(() => useArchitectureFilters(reversed));
+
+  assert.equal(hook.result.sort, 'alphabetical');
+  assert.deepEqual(
+    hook.result.filtered.map((a) => a.organization),
+    ['Acme Corp', 'Globex', 'Initech'],
+  );
+
+  hook.result.setSort('updated');
+
+  assert.equal(hook.result.sort, 'updated');
+  assert.deepEqual(
+    hook.result.filtered.map((a) => a.organization),
+    ['Globex', 'Initech', 'Acme Corp'],
+  );
+});
+
+test('the sort order is not a filter: it is not counted and survives a clear', () => {
+  const hook = renderHook(() => useArchitectureFilters(CORPUS));
+
+  hook.result.setSort('updated');
+  assert.equal(hook.result.activeCount, 0);
+
+  hook.result.setIndustry('Retail');
+  assert.deepEqual(
+    hook.result.filtered.map((a) => a.organization),
+    ['Globex', 'Acme Corp'],
+  );
+
+  hook.result.clearFilters();
+  assert.equal(hook.result.sort, 'updated');
+  assert.deepEqual(
+    hook.result.filtered.map((a) => a.organization),
+    ['Globex', 'Initech', 'Acme Corp'],
+  );
 });
 
 const OPTIONS = {
   organizations: ['Acme Corp', 'Globex'],
   industries: ['Manufacturing', 'Retail'],
   projects: ['KubeEdge', 'Kubernetes'],
+  tags: ['edge', 'GitOps', 'private cloud'],
 };
 
 const NO_FILTERS = {
@@ -168,6 +245,7 @@ const NO_FILTERS = {
   industry: '',
   project: '',
   organization: '',
+  tags: [],
 };
 
 function render(overrides = {}) {
@@ -180,6 +258,10 @@ function render(overrides = {}) {
     setIndustry: record('setIndustry'),
     setProject: record('setProject'),
     setOrganization: record('setOrganization'),
+    addTag: record('addTag'),
+    removeTag: record('removeTag'),
+    sort: 'alphabetical',
+    setSort: record('setSort'),
     activeCount: 0,
     onClear: record('onClear'),
     resultCount: 2,
@@ -212,6 +294,8 @@ test('every control carries a label bound to its own id', () => {
     'architecture-organization',
     'architecture-industry',
     'architecture-project',
+    'architecture-tag',
+    'architecture-sort',
   ];
 
   assert.deepEqual(
@@ -261,6 +345,70 @@ test('each select offers an "all" reset option ahead of its values', () => {
   }
 });
 
+test('the tag select adds unselected tags and always rests on its prompt', () => {
+  const { tree, calls } = render({
+    filters: { ...NO_FILTERS, tags: ['gitops'] },
+  });
+  const select = selectById(tree, 'architecture-tag');
+
+  assert.equal(select.props.value, '');
+  assert.deepEqual(
+    findAllByType(select, 'option').map((option) => textOf(option)),
+    ['Add a tag', 'edge', 'private cloud'],
+  );
+
+  select.props.onChange({ target: { value: 'edge' } });
+  assert.deepEqual(calls, [['addTag', 'edge']]);
+});
+
+test('selected tags render as removable chips in the search box', () => {
+  const { tree, calls } = render({
+    filters: { ...NO_FILTERS, tags: ['edge', 'private cloud'] },
+  });
+  const list = findByType(tree, 'ul');
+  assert.equal(list.props['aria-label'], 'Selected tags');
+
+  const buttons = findAllByType(list, 'button');
+  assert.deepEqual(
+    buttons.map((button) => button.props['aria-label']),
+    ['Remove tag edge', 'Remove tag private cloud'],
+  );
+  buttons[1].props.onClick({
+    currentTarget: {
+      ownerDocument: { getElementById: () => ({ focus() {} }) },
+    },
+  });
+  assert.deepEqual(calls, [['removeTag', 'private cloud']]);
+  assert.equal(
+    findByType(tree, 'label').props.children,
+    'Search architectures by organization, title, or tag',
+  );
+});
+
+test('the sort select offers only the sort orders, with no "all" option', () => {
+  const { tree, calls } = render({ sort: 'updated' });
+  const select = selectById(tree, 'architecture-sort');
+
+  assert.equal(select.props.value, 'updated');
+  assert.deepEqual(
+    findAllByType(select, 'option').map((option) => [
+      option.props.value,
+      textOf(option),
+    ]),
+    [
+      ['alphabetical', 'Sort: Alphabetical'],
+      ['updated', 'Sort: Recently updated'],
+    ],
+  );
+  assert.deepEqual(
+    SORT_OPTIONS.map((option) => option.value),
+    ['alphabetical', 'updated'],
+  );
+
+  select.props.onChange({ target: { value: 'alphabetical' } });
+  assert.deepEqual(calls, [['setSort', 'alphabetical']]);
+});
+
 test('each select is controlled by its own slice of the filter state', () => {
   const { tree } = render({
     filters: {
@@ -268,6 +416,7 @@ test('each select is controlled by its own slice of the filter state', () => {
       organization: 'Globex',
       industry: 'Retail',
       project: 'KubeEdge',
+      tags: [],
     },
   });
 
@@ -371,6 +520,7 @@ test('each hook setter writes its own filter field', () => {
       industry: '',
       project: '',
       organization: '',
+      tags: [],
       [field]: value,
     });
     assert.deepEqual(

@@ -16,6 +16,8 @@
     "projects": ["Kubernetes", "Helm", "Argo", "Backstage"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/adobe",
     "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+    "published": "2024-10-11",
+    "updated": "2026-06-04",
     "assets": [
       "/img/architectures/adobe/Adobe_Wordmark_RGB_Red.svg",
       "/img/architectures/adobe/CellBasedArchitecture.webp",
@@ -31,10 +33,12 @@
     "organization": "Allianz Direct",
     "summary": "The PE team is internally organised in DDOs - Distributed DevOps, where each ddo owns a Domain. This setup follows the reverse Conway manoeuver where the reference architecture structure dictates the teams setup. The PE team consist of 13 m",
     "industries": ["Financial", "Insurance"],
-    "tags": ["finance", "insurance", "europe", "public_cloud", "aws"],
+    "tags": ["finance", "insurance", "europe", "public cloud", "aws"],
     "projects": ["Kubernetes", "Helm", "Argo"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/allianz",
     "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+    "published": "2024-10-28",
+    "updated": "2024-11-10",
     "assets": [
       "/img/architectures/allianz/PEArchitecture.jpg",
       "/img/architectures/allianz/PEJourney.jpg",
@@ -58,6 +62,8 @@
     "projects": ["OpenTelemetry", "Prometheus", "Kubernetes"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/8af07d62851bc770130a6f942ca7cf9ab20eb784/content/en/architectures/capital-one",
     "sourceCommit": "8af07d62851bc770130a6f942ca7cf9ab20eb784",
+    "published": "2026-10-23",
+    "updated": "2026-10-23",
     "assets": [
       "/img/architectures/capital-one/backend-failover.png",
       "/img/architectures/capital-one/high-level-architecture.png",
@@ -72,7 +78,7 @@
     "organization": "CERN",
     "summary": "Some additional projects outside the CNCF are essential to this deployment. [MLFlow](https://mlflow.org/), a project under the Linux Foundation used for model management and versioning [Nvidia GPU operator](https://github.com/NVIDIA/gpu-ope",
     "industries": ["Research", "Public Sector"],
-    "tags": ["cloud_native", "private_cloud", "kubernetes", "switzerland"],
+    "tags": ["cloud native", "private cloud", "kubernetes", "switzerland"],
     "projects": [
       "Argo",
       "Bootc",
@@ -88,6 +94,8 @@
     ],
     "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/cern-scientific-computing",
     "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+    "published": "2026-03-09",
+    "updated": "2026-06-04",
     "assets": [
       "/img/architectures/cern-scientific-computing/hwlayout.png",
       "/img/architectures/cern-scientific-computing/logo.svg",
@@ -105,6 +113,8 @@
     "projects": ["Kubernetes", "Agones"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/colopl",
     "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+    "published": "2026-07-28",
+    "updated": "2026-07-28",
     "assets": [
       "/img/architectures/colopl/agones.png",
       "/img/architectures/colopl/agones.svg",
@@ -137,6 +147,8 @@
     ],
     "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/flipkart-chaos-engineering",
     "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+    "published": "2026-06-08",
+    "updated": "2026-06-15",
     "assets": [
       "/img/architectures/flipkart-chaos-engineering/layers.png",
       "/img/architectures/flipkart-chaos-engineering/logo.png",
@@ -150,8 +162,8 @@
     "summary": "This reference architecture describes SNCF's second generation on-premise Kubernetes platform, built on a bare-metal, open source OpenStack infrastructure to provide container orchestration and scheduling at scale.",
     "industries": ["Transport", "Rail", "Software", "Cloud"],
     "tags": [
-      "cloud_native",
-      "private_cloud",
+      "cloud native",
+      "private cloud",
       "kubernetes",
       "france",
       "sovereignty"
@@ -169,6 +181,8 @@
     ],
     "sourceUrl": "https://github.com/cncf/architecture/tree/ffd45de571e34f101725b2a3316d673899458e58/content/en/architectures/sncf-onprem",
     "sourceCommit": "ffd45de571e34f101725b2a3316d673899458e58",
+    "published": "2026-07-03",
+    "updated": "2026-10-27",
     "assets": [
       "/img/architectures/sncf-onprem/architecture-detailed.excalidraw.png",
       "/img/architectures/sncf-onprem/architecture-global.excalidraw.png",
@@ -182,13 +196,13 @@
     "summary": "Swisscom has built a cloud native telco platform for the end-to-end automation of its 5G standalone core network and cross-domain resource orchestration. The architecture replaces traditional imperative network management (Jenkins pipelines",
     "industries": ["Communication", "Telecommunication"],
     "tags": [
-      "cloud_native",
+      "cloud native",
       "telco",
       "5g",
       "gitops",
       "kubernetes",
       "switzerland",
-      "private_cloud"
+      "private cloud"
     ],
     "projects": [
       "Kubernetes",
@@ -206,6 +220,8 @@
     ],
     "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-cloud-native-telco",
     "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+    "published": "2026-03-16",
+    "updated": "2026-06-04",
     "assets": [
       "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-architecture-overview.png",
       "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-layers.svg",
@@ -220,8 +236,8 @@
     "industries": ["Communication", "Telecommunication", "Software", "Cloud"],
     "tags": [
       "service-delivery",
-      "cloud_native",
-      "private_cloud",
+      "cloud native",
+      "private cloud",
       "kubernetes",
       "switzerland"
     ],
@@ -241,6 +257,8 @@
     ],
     "sourceUrl": "https://github.com/cncf/architecture/tree/8af07d62851bc770130a6f942ca7cf9ab20eb784/content/en/architectures/swisscom-kubernetes-service",
     "sourceCommit": "8af07d62851bc770130a6f942ca7cf9ab20eb784",
+    "published": "2026-03-04",
+    "updated": "2026-10-27",
     "assets": [
       "/img/architectures/swisscom-kubernetes-service/kubernetes-service-central-infra.png",
       "/img/architectures/swisscom-kubernetes-service/kubernetes-service-ingredients.png",
@@ -265,6 +283,8 @@
     "projects": ["Kubernetes", "Dapr", "KEDA", "OpenTelemetry", "Helm"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/zeiss",
     "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+    "published": "2026-03-17",
+    "updated": "2026-06-04",
     "assets": [
       "/img/architectures/zeiss/solutionArchitecture.png",
       "/img/architectures/zeiss/zeiss-logo-rgb.svg"
