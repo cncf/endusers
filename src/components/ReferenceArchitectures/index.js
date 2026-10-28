@@ -48,6 +48,8 @@ export default function ReferenceArchitectures() {
     setIndustry,
     setProject,
     setOrganization,
+    addTag,
+    removeTag,
     sort,
     setSort,
     filtered,
@@ -67,6 +69,8 @@ export default function ReferenceArchitectures() {
         setIndustry={setIndustry}
         setProject={setProject}
         setOrganization={setOrganization}
+        addTag={addTag}
+        removeTag={removeTag}
         sort={sort}
         setSort={setSort}
         activeCount={activeCount}

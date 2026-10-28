@@ -7,7 +7,15 @@ const DEFAULT_FILTERS = {
   industry: '',
   project: '',
   organization: '',
+  tags: [],
 };
+
+// Upstream tags are not consistently cased ("Kubernetes" and "kubernetes"),
+// so tags are compared case-insensitively and listed once.
+function tagKey(tag) {
+  // Stryker disable next-line MethodExpression: upper-casing is an equally valid case-insensitive key
+  return tag.toLowerCase();
+}
 
 export const SORT_OPTIONS = [
   { value: 'alphabetical', label: 'Sort: Alphabetical' },
@@ -39,27 +47,35 @@ export function useArchitectureFilterOptions(architectures) {
     const industries = new Set();
     const projects = new Set();
     const organizations = new Set();
+    const tags = new Map();
     for (const architecture of architectures) {
       organizations.add(architecture.organization);
       architecture.industries.forEach((i) => industries.add(i));
       architecture.projects.forEach((p) => projects.add(p));
+      architecture.tags.forEach((tag) => {
+        if (!tags.has(tagKey(tag))) tags.set(tagKey(tag), tag);
+      });
     }
     return {
       industries: Array.from(industries).sort(),
       projects: Array.from(projects).sort(),
       organizations: Array.from(organizations).sort(),
+      tags: Array.from(tags.values()).sort((a, b) =>
+        tagKey(a).localeCompare(tagKey(b)),
+      ),
     };
   }, [architectures]);
 }
 
 export function filterArchitectures(architectures, filters) {
-  const { query, industry, project, organization } = filters;
+  const { query, industry, project, organization, tags } = filters;
   const normalizedQuery = query.trim().toLowerCase();
+  const wantedTags = new Set(tags.map(tagKey));
   return architectures.filter((architecture) => {
     // Stryker disable next-line ConditionalExpression: an empty query matches every architecture
     if (normalizedQuery) {
       const searchable =
-        `${architecture.organization} ${architecture.title} ${architecture.summary}`.toLowerCase();
+        `${architecture.organization} ${architecture.title} ${architecture.summary} ${architecture.tags.join(' ')}`.toLowerCase();
       if (!searchable.includes(normalizedQuery)) {
         return false;
       }
@@ -71,6 +87,13 @@ export function filterArchitectures(architectures, filters) {
       return false;
     }
     if (organization && architecture.organization !== organization) {
+      return false;
+    }
+    // Selected tags widen within themselves: any one of them is a match.
+    if (
+      wantedTags.size > 0 &&
+      !architecture.tags.some((tag) => wantedTags.has(tagKey(tag)))
+    ) {
       return false;
     }
     return true;
@@ -96,6 +119,16 @@ export function useArchitectureFilters(architectures) {
     setIndustry: (value) => setFilter('industry', value),
     setProject: (value) => setFilter('project', value),
     setOrganization: (value) => setFilter('organization', value),
+    addTag: (tag) => {
+      if (tag && !filters.tags.some((t) => tagKey(t) === tagKey(tag))) {
+        setFilter('tags', [...filters.tags, tag]);
+      }
+    },
+    removeTag: (tag) =>
+      setFilter(
+        'tags',
+        filters.tags.filter((t) => t !== tag),
+      ),
     sort,
     setSort,
     filtered: sorted,
@@ -111,6 +144,8 @@ export default function ArchitectureFilters({
   setIndustry,
   setProject,
   setOrganization,
+  addTag,
+  removeTag,
   sort,
   setSort,
   activeCount,
@@ -118,13 +153,20 @@ export default function ArchitectureFilters({
   resultCount,
   totalCount,
 }) {
+  const selectedTags = new Set(filters.tags.map(tagKey));
   return (
     <FilterToolbar
       searchId="architecture-search"
-      searchLabel="Search architectures by organization or title"
+      searchLabel="Search architectures by organization, title, or tag"
       searchValue={filters.query}
-      searchPlaceholder="Search architectures by organization or title"
+      searchPlaceholder="Search by organization, title, or tag"
       onSearchChange={setQuery}
+      searchChips={{
+        values: filters.tags,
+        listLabel: 'Selected tags',
+        removeLabel: (tag) => `Remove tag ${tag}`,
+        onRemove: removeTag,
+      }}
       selects={[
         {
           id: 'architecture-organization',
@@ -149,6 +191,14 @@ export default function ArchitectureFilters({
           onChange: setProject,
           options: options.projects,
           allLabel: 'All projects',
+        },
+        {
+          id: 'architecture-tag',
+          label: 'Add a tag to the search',
+          value: '',
+          onChange: addTag,
+          options: options.tags.filter((tag) => !selectedTags.has(tagKey(tag))),
+          allLabel: 'Add a tag',
         },
         {
           id: 'architecture-sort',

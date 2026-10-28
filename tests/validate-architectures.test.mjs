@@ -74,6 +74,24 @@ for (const [label, overrides, pattern] of [
   });
 }
 
+for (const tag of ['private_cloud', 42]) {
+  test(`rejects the tag ${JSON.stringify(tag)}`, () => {
+    const record = { ...validRecord, tags: ['kubernetes', tag] };
+    const result = runScriptWithFixtures(SCRIPT, catalogFixture([record]));
+    assert.equal(result.status, 1);
+    assert.match(
+      result.stderr,
+      /must be a string using spaces, not underscores/,
+    );
+  });
+}
+
+test('accepts tags written with spaces', () => {
+  const record = { ...validRecord, tags: ['private cloud', 'ci-cd'] };
+  const result = runScriptWithFixtures(SCRIPT, catalogFixture([record]));
+  assert.equal(result.status, 0, result.stderr);
+});
+
 test('accepts a record updated on the day it was published', () => {
   const record = { ...validRecord, updated: validRecord.published };
   const result = runScriptWithFixtures(SCRIPT, catalogFixture([record]));

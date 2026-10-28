@@ -689,6 +689,19 @@ test('falls back to the creation date when the issue has no updated_at', () => {
   }
 });
 
+test('stores submitted tags with underscores written as spaces', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue({}, { Tags: 'private_cloud, ci-cd, cloud__native' }),
+  });
+  try {
+    assert.equal(run.status, 0, run.stderr);
+    const [entry] = run.readJson('data/architectures/catalog.json');
+    assert.deepEqual(entry.tags, ['private cloud', 'ci-cd', 'cloud  native']);
+  } finally {
+    run.cleanup();
+  }
+});
+
 test('rejects an issue payload without a valid created_at', () => {
   const run = runImportArchitectureIssue({
     issue: fixtureIssue({ created_at: 'not a date' }),

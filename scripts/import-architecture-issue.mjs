@@ -108,7 +108,10 @@ async function main() {
     issue.html_url ?? `https://github.com/cncf/endusers/issues/${issue.number}`;
 
   const industries = splitList(field(fields, 'Industries'));
-  const tags = splitList(field(fields, 'Tags'));
+  // Tags are shown as search chips, so they are stored as readable words.
+  const tags = splitList(field(fields, 'Tags')).map((tag) =>
+    tag.replaceAll('_', ' '),
+  );
   const projects = parseProjects(field(fields, 'Relevant CNCF Projects'));
 
   await mirrorArtworkUrls(

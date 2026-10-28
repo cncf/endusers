@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react';
 
 // Whether a single filter field counts toward the toolbar's "active filters"
 // badge and the "Clear filters" escape hatch. String fields (search boxes,
-// <select> values) are active once trimmed non-empty; everything else
-// (checkbox toggles) is active when truthy.
+// <select> values) are active once trimmed non-empty; lists (multi-select
+// chips) once non-empty; everything else (checkbox toggles) when truthy.
 function isActiveFilterValue(value) {
+  if (Array.isArray(value)) return value.length > 0;
   return typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
 }
 

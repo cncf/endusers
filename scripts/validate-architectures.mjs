@@ -119,6 +119,13 @@ for (const record of records) {
       severity: 'error',
       message: 'updated must not be earlier than published',
     });
+  for (const tag of record.tags ?? [])
+    if (typeof tag !== 'string' || tag.includes('_'))
+      errors.push({
+        path: record.id,
+        severity: 'error',
+        message: `tag ${JSON.stringify(tag)} must be a string using spaces, not underscores`,
+      });
   for (const asset of record.assets ?? []) {
     const file = resolveContainedAsset(asset);
     if (!file) {

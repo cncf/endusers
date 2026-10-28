@@ -33,7 +33,7 @@
     "organization": "Allianz Direct",
     "summary": "The PE team is internally organised in DDOs - Distributed DevOps, where each ddo owns a Domain. This setup follows the reverse Conway manoeuver where the reference architecture structure dictates the teams setup. The PE team consist of 13 m",
     "industries": ["Financial", "Insurance"],
-    "tags": ["finance", "insurance", "europe", "public_cloud", "aws"],
+    "tags": ["finance", "insurance", "europe", "public cloud", "aws"],
     "projects": ["Kubernetes", "Helm", "Argo"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/allianz",
     "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
@@ -78,7 +78,7 @@
     "organization": "CERN",
     "summary": "Some additional projects outside the CNCF are essential to this deployment. [MLFlow](https://mlflow.org/), a project under the Linux Foundation used for model management and versioning [Nvidia GPU operator](https://github.com/NVIDIA/gpu-ope",
     "industries": ["Research", "Public Sector"],
-    "tags": ["cloud_native", "private_cloud", "kubernetes", "switzerland"],
+    "tags": ["cloud native", "private cloud", "kubernetes", "switzerland"],
     "projects": [
       "Argo",
       "Bootc",
@@ -162,8 +162,8 @@
     "summary": "This reference architecture describes SNCF's second generation on-premise Kubernetes platform, built on a bare-metal, open source OpenStack infrastructure to provide container orchestration and scheduling at scale.",
     "industries": ["Transport", "Rail", "Software", "Cloud"],
     "tags": [
-      "cloud_native",
-      "private_cloud",
+      "cloud native",
+      "private cloud",
       "kubernetes",
       "france",
       "sovereignty"
@@ -196,13 +196,13 @@
     "summary": "Swisscom has built a cloud native telco platform for the end-to-end automation of its 5G standalone core network and cross-domain resource orchestration. The architecture replaces traditional imperative network management (Jenkins pipelines",
     "industries": ["Communication", "Telecommunication"],
     "tags": [
-      "cloud_native",
+      "cloud native",
       "telco",
       "5g",
       "gitops",
       "kubernetes",
       "switzerland",
-      "private_cloud"
+      "private cloud"
     ],
     "projects": [
       "Kubernetes",
@@ -236,8 +236,8 @@
     "industries": ["Communication", "Telecommunication", "Software", "Cloud"],
     "tags": [
       "service-delivery",
-      "cloud_native",
-      "private_cloud",
+      "cloud native",
+      "private cloud",
       "kubernetes",
       "switzerland"
     ],

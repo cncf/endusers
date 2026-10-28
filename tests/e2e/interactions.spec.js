@@ -316,7 +316,7 @@ test.describe('reference architecture filters', () => {
   }) => {
     await page.goto('/architectures');
     const search = page.getByLabel(
-      'Search architectures by organization or title',
+      'Search architectures by organization, title, or tag',
     );
     await waitForHydration(search);
 
@@ -347,6 +347,37 @@ test.describe('reference architecture filters', () => {
     await expect(organization).toHaveValue('');
   });
 
+  test('a selected tag becomes a search chip that narrows and clears', async ({
+    page,
+  }) => {
+    await page.goto('/architectures');
+    const search = page.getByLabel(
+      'Search architectures by organization, title, or tag',
+    );
+    await waitForHydration(search);
+
+    const results = page.getByText(/Showing \d+ of \d+ architectures/);
+    const total = totalCount(await results.textContent());
+
+    const tagSelect = page.getByLabel('Add a tag to the search');
+    const tag = await tagSelect.locator('option').nth(1).getAttribute('value');
+    await tagSelect.selectOption(tag);
+
+    const chips = page.getByRole('list', { name: 'Selected tags' });
+    await expect(chips.getByRole('listitem')).toHaveText([tag]);
+    await expect(tagSelect).toHaveValue('');
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBeLessThan(total);
+
+    await page.getByRole('button', { name: `Remove tag ${tag}` }).click();
+    await expect(chips).toHaveCount(0);
+    await expect(search).toBeFocused();
+    await expect
+      .poll(async () => shownCount(await results.textContent()))
+      .toBe(total);
+  });
+
   test('sorting by recently updated orders the cards newest first', async ({
     page,
   }) => {
@@ -374,7 +405,7 @@ test.describe('reference architecture filters', () => {
   }) => {
     await page.goto('/architectures');
     const search = page.getByLabel(
-      'Search architectures by organization or title',
+      'Search architectures by organization, title, or tag',
     );
     await waitForHydration(search);
 
@@ -420,7 +451,7 @@ test.describe('reference architecture filters', () => {
     }) => {
       await page.goto('/architectures');
       const search = page.getByLabel(
-        'Search architectures by organization or title',
+        'Search architectures by organization, title, or tag',
       );
       await waitForHydration(search);
 

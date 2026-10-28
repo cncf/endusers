@@ -7,7 +7,13 @@ const { filterArchitectures, sortArchitectures } = await importSource(
   'src/components/ArchitectureFilters/index.js',
 );
 
-const NO_FILTERS = { query: '', industry: '', project: '', organization: '' };
+const NO_FILTERS = {
+  query: '',
+  industry: '',
+  project: '',
+  organization: '',
+  tags: [],
+};
 
 function architecture(overrides = {}) {
   return {
@@ -16,6 +22,7 @@ function architecture(overrides = {}) {
     summary: 'Running fleets of clusters across regions.',
     industries: ['Retail'],
     projects: ['Kubernetes'],
+    tags: [],
     ...overrides,
   };
 }
@@ -28,6 +35,7 @@ const CORPUS = [
     summary: 'Serving models at the edge.',
     industries: ['Manufacturing'],
     projects: ['KubeEdge', 'Kubernetes'],
+    tags: ['edge'],
   }),
   architecture({
     organization: 'Initech',
@@ -148,6 +156,7 @@ test('filters combine as AND', () => {
     industry: 'Manufacturing',
     project: 'Kubernetes',
     organization: 'Globex',
+    tags: ['EDGE'],
   });
   assert.deepEqual(titles(result), ['Edge inference']);
 });
@@ -201,5 +210,55 @@ test('an unrecognised sort falls back to alphabetical', () => {
   assert.deepEqual(
     sortArchitectures(input, 'bogus').map((a) => a.organization),
     ['Acme Corp', 'Globex'],
+  );
+});
+
+const TAGGED = [
+  architecture({
+    organization: 'Acme Corp',
+    tags: ['private cloud', 'gitops'],
+  }),
+  architecture({ organization: 'Globex', tags: ['Kubernetes', 'edge'] }),
+  architecture({ organization: 'Initech', tags: ['observability'] }),
+];
+
+function organizations(results) {
+  return results.map((entry) => entry.organization);
+}
+
+test('the query also matches tags', () => {
+  assert.deepEqual(
+    organizations(
+      filterArchitectures(TAGGED, { ...NO_FILTERS, query: 'Private Cloud' }),
+    ),
+    ['Acme Corp'],
+  );
+  // Tags are searched as separate words, not run together.
+  assert.deepEqual(
+    filterArchitectures(TAGGED, { ...NO_FILTERS, query: 'cloudgitops' }),
+    [],
+  );
+});
+
+test('selected tags match any one of them, ignoring case', () => {
+  assert.deepEqual(
+    organizations(
+      filterArchitectures(TAGGED, {
+        ...NO_FILTERS,
+        tags: ['kubernetes', 'GitOps'],
+      }),
+    ),
+    ['Acme Corp', 'Globex'],
+  );
+});
+
+test('selected tags still combine with the other filters', () => {
+  assert.deepEqual(
+    filterArchitectures(TAGGED, {
+      ...NO_FILTERS,
+      query: 'acme',
+      tags: ['edge'],
+    }),
+    [],
   );
 });
