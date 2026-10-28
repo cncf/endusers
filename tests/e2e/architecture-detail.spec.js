@@ -61,10 +61,15 @@ test.describe('reference architecture detail pages', () => {
       ).toBeVisible();
 
       // CC BY 4.0 obliges the site to carry attribution for text that
-      // originated in cncf/architecture, and the pinned revision records
-      // exactly what was taken. Both live in the page's leading blockquote.
+      // originated elsewhere, and the pinned revision or submission issue
+      // records exactly what was taken when the record carries one. Both
+      // live in the page's leading blockquote.
       const attribution = page.locator('article blockquote').first();
-      await expect(attribution).toContainText(record.sourceCommit);
+      if (record.sourceCommit) {
+        await expect(attribution).toContainText(record.sourceCommit);
+      } else if (record.sourceIssue) {
+        await expect(attribution).toContainText(`#${record.sourceIssue}`);
+      }
       await expect(attribution).toContainText('CC BY 4.0');
 
       // Each declared project is rendered by <CNCFProjectCard>. A card links

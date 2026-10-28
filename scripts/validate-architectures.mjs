@@ -116,11 +116,11 @@ for (const record of records) {
         severity: 'error',
         message: `${FRONT_MATTER_KEY}.${key} must be a list of non-empty strings`,
       });
-  if (!('sourceCommit' in record) === !('sourceIssue' in record))
+  if ('sourceCommit' in record && 'sourceIssue' in record)
     errors.push({
       path: record.page,
       severity: 'error',
-      message: `${FRONT_MATTER_KEY} must set exactly one of sourceCommit (cncf/architecture import) or sourceIssue (submission issue)`,
+      message: `${FRONT_MATTER_KEY} must set at most one of sourceCommit (cncf/architecture import) or sourceIssue (submission issue)`,
     });
   if ('sourceIssue' in record && !Number.isInteger(record.sourceIssue))
     errors.push({

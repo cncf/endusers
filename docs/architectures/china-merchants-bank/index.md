@@ -24,7 +24,6 @@ architecture:
     - HAMi
     - Fluid
   sourceUrl: https://github.com/cncf/tab/issues/140
-  sourceIssue: 140
   published: 2026-10-28
   updated: 2026-10-28
 ---

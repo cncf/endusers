@@ -132,15 +132,16 @@ Rules:
   record and member data use.
 - The page's front matter is the only place an architecture's metadata is
   written. Alongside `title`, an `architecture:` block carries `organization`,
-  `summary`, `industries`, `tags`, `projects`, `sourceUrl`, exactly one of
+  `summary`, `industries`, `tags`, `projects`, `sourceUrl`, optionally one of
   `sourceCommit` (a cncf/architecture import) or `sourceIssue` (a submission
-  issue in this repository or in the End User TAB's cncf/tab intake),
-  `published` and `updated`. The record's `id` is the directory name and its
-  `assets` are the files in `images/`; neither is written by hand. After editing
-  a page or adding one, run `npm run generate:architectures` and commit the
-  regenerated `data/architectures/catalog.json` with it; the catalog component,
-  member directory and data-link checks read that mirror, and
-  `validate:architectures` fails when it is behind the pages
+  issue), `published` and `updated`. A page authored directly from another
+  source sets neither and cites its `sourceUrl` in the attribution line. The
+  record's `id` is the directory name and its `assets` are the files in
+  `images/`; neither is written by hand. After editing a page or adding one, run
+  `npm run generate:architectures` and commit the regenerated
+  `data/architectures/catalog.json` with it; the catalog component, member
+  directory and data-link checks read that mirror, and `validate:architectures`
+  fails when it is behind the pages
   ([ADR 0010](adr/0010-architecture-pages-are-the-metadata-source.md)).
 - Architecture `tags` are written with spaces, not underscores (`private cloud`,
   not `private_cloud`): they appear as search chips on the catalog. The importer

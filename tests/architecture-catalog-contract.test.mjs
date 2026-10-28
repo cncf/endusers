@@ -23,19 +23,22 @@ const docsDir = join(repoRoot, 'docs/architectures');
 
 const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
 
-// Two provenance shapes coexist in the catalog. Records that originated in
+// Three provenance shapes coexist in the catalog. Records that originated in
 // the CNCF Cloud Native Reference Architecture project are pinned to the
 // cncf/architecture commit they were taken from (`sourceCommit` + a
 // commit-pinned `sourceUrl`), which is what their CC BY 4.0 attribution
 // cites. scripts/import-architecture-issue.mjs turns a submission issue into
-// a record whose source IS the issue (`sourceIssue` + the issue URL); there is
-// no upstream commit to pin, so the commit-pinning assertions below apply
-// only to records without `sourceIssue`.
+// a record whose source IS the issue (`sourceIssue` + the issue URL). A page
+// authored directly in this repository from some other source carries neither
+// and cites only its `sourceUrl`, so each pinning assertion below applies only
+// to records that carry its field.
 function isIssueSourced(record) {
   return typeof record?.sourceIssue === 'number';
 }
 
-const SUBMISSION_ISSUE_REPOS = ['cncf/endusers', 'cncf/tab'];
+function isCommitSourced(record) {
+  return typeof record?.sourceCommit === 'string';
+}
 
 const REQUIRED_STRING_FIELDS = [
   'id',
@@ -43,7 +46,6 @@ const REQUIRED_STRING_FIELDS = [
   'organization',
   'summary',
   'sourceUrl',
-  'sourceCommit',
   'published',
   'updated',
 ];
@@ -82,10 +84,7 @@ test('catalog.json is a non-empty array of uniquely identified records', () => {
 
 test('every catalog record carries the fields the site renders', () => {
   for (const record of catalog) {
-    const requiredStrings = isIssueSourced(record)
-      ? REQUIRED_STRING_FIELDS.filter((field) => field !== 'sourceCommit')
-      : REQUIRED_STRING_FIELDS;
-    for (const field of requiredStrings) {
+    for (const field of REQUIRED_STRING_FIELDS) {
       assert.equal(
         typeof record[field],
         'string',
@@ -120,7 +119,7 @@ test('every catalog record carries the fields the site renders', () => {
 
 test('provenance pins an upstream commit that the source URL points at', () => {
   for (const record of catalog) {
-    if (isIssueSourced(record)) continue;
+    if (!isCommitSourced(record)) continue;
     assert.match(
       record.sourceCommit,
       /^[0-9a-f]{40}$/,
@@ -144,15 +143,10 @@ test('issue-submitted records cite the submission issue as their source', () => 
       Number.isInteger(record.sourceIssue) && record.sourceIssue > 0,
       `${record.id}: sourceIssue must be a positive issue number`,
     );
-    // Submissions arrive either through this repository's issue form or
-    // through the End User TAB's reference-architecture intake in cncf/tab.
-    assert.ok(
-      SUBMISSION_ISSUE_REPOS.some(
-        (repo) =>
-          record.sourceUrl ===
-          `https://github.com/${repo}/issues/${record.sourceIssue}`,
-      ),
-      `${record.id}: issue-submitted record sourceUrl must be its submission issue in ${SUBMISSION_ISSUE_REPOS.join(' or ')}, got ${record.sourceUrl}`,
+    assert.equal(
+      record.sourceUrl,
+      `https://github.com/cncf/endusers/issues/${record.sourceIssue}`,
+      `${record.id}: issue-submitted record sourceUrl must be its submission issue`,
     );
   }
 });
@@ -213,7 +207,7 @@ test('doc frontmatter reuses the record title and labels the sidebar', () => {
   }
 });
 
-test('each doc page attributes the revision its record was imported from', () => {
+test('each doc page attributes the source its record came from', () => {
   for (const record of catalog) {
     const body = readFileSync(docPath(record.id), 'utf8');
     if (isIssueSourced(record)) {
@@ -221,10 +215,15 @@ test('each doc page attributes the revision its record was imported from', () =>
         body.includes(`issues/${record.sourceIssue}`),
         `${record.id}: doc page does not cite submission issue #${record.sourceIssue}`,
       );
-    } else {
+    } else if (isCommitSourced(record)) {
       assert.ok(
         body.includes(record.sourceCommit),
         `${record.id}: doc page does not cite sourceCommit ${record.sourceCommit}`,
+      );
+    } else {
+      assert.ok(
+        body.includes(record.sourceUrl),
+        `${record.id}: doc page does not cite sourceUrl ${record.sourceUrl}`,
       );
     }
     assert.match(
