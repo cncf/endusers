@@ -43,6 +43,7 @@
     "docus:write-translations": "docusaurus write-translations",
     "collect:enduser-members": "node scripts/collect-enduser-members.mjs",
     "import:architecture-issue": "node scripts/import-architecture-issue.mjs",
+    "generate:architectures": "node scripts/generate-architectures.mjs",
     "fetch:community-people": "node scripts/fetch-community-people.mjs",
     "check:community-group-links": "node scripts/check-community-group-links.mjs",
     "generate:changelog": "node scripts/generate-changelog.mjs",

@@ -38,7 +38,10 @@ Never assert counts or winner lists from memory.
 - `/architectures` pages are generated from submission issues by
   `.github/workflows/architecture-submission.yml`; the hand-authored catalog and
   submission guide are `docs/architectures/index.md` and
-  `docs/architectures/submit.md`.
+  `docs/architectures/submit.md`. Each page's `architecture:` front matter block
+  is the source of its catalog metadata; `data/architectures/catalog.json` is
+  regenerated from the pages with `npm run generate:architectures` and
+  `validate:architectures` fails when it is behind them.
 - `/community/awards` is rendered from `data/awards.json`; winners are data
   entries, not pages.
 

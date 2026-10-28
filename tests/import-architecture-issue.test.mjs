@@ -123,7 +123,7 @@ function fixtureIssue(overrides = {}, answers = {}) {
   };
 }
 
-test('imports a labeled issue into catalog, record and docs page', () => {
+test('imports a labeled issue into a docs page whose front matter generates the catalog', () => {
   const run = runImportArchitectureIssue({ issue: fixtureIssue() });
   try {
     assert.equal(run.status, 0, run.stderr);
@@ -149,12 +149,25 @@ test('imports a labeled issue into catalog, record and docs page', () => {
       assets: [],
     });
 
-    const record = run.readJson('data/architectures/records/acme-corp.json');
-    assert.deepEqual(record, catalog[0]);
+    assert.ok(!run.exists('data/architectures/records'));
 
     const page = run.read('docs/architectures/acme-corp/index.md');
-    assert.match(page, /^---\ntitle: "Acme - Cloud Native Platform"\n/);
-    assert.match(page, /sidebar_label: "Acme Corp"/);
+    assert.match(page, /^---\ntitle: Acme - Cloud Native Platform\n/);
+    assert.match(page, /\nsidebar_label: Acme Corp\n/);
+    // The page is the source of truth: its front matter carries every
+    // authored catalog field, and id/assets are derived from the directory.
+    const frontMatter = parse(page.match(/^---\n([\s\S]*?)\n---\n/)[1]);
+    assert.deepEqual(frontMatter.architecture, {
+      organization: 'Acme Corp',
+      summary: 'Acme Corp builds widgets.',
+      industries: ['Retail', 'Logistics'],
+      tags: [],
+      projects: ['Kubernetes'],
+      sourceUrl: 'https://github.com/cncf/endusers/issues/900',
+      sourceIssue: 900,
+      published: '2026-10-20',
+      updated: '2026-10-22',
+    });
     assert.match(
       page,
       /import CNCFProjectCard from '@site\/src\/components\/CNCFProjectCard';/,
@@ -268,6 +281,26 @@ test('disambiguates an id collision with an existing catalog entry', () => {
     const ids = catalog.map((entry) => entry.id).sort();
     assert.deepEqual(ids, ['acme-corp', 'acme-corp-900']);
     assert.ok(run.exists('docs/architectures/acme-corp-900/index.md'));
+  } finally {
+    run.cleanup();
+  }
+});
+
+// The importer regenerates the catalog from every page, so a page already in
+// the tree that cannot yield a record would otherwise be dropped from the
+// catalog silently by the import of an unrelated one.
+test('refuses to regenerate the catalog over a page without front matter', () => {
+  const run = runImportArchitectureIssue({
+    issue: fixtureIssue(),
+    files: { 'docs/architectures/legacy/index.md': '# Legacy\n' },
+  });
+  try {
+    assert.notEqual(run.status, 0);
+    assert.match(
+      run.stderr,
+      /Cannot regenerate the catalog: legacy\/index\.md: page has no YAML front matter mapping/,
+    );
+    assert.ok(!run.exists('data/architectures/catalog.json'));
   } finally {
     run.cleanup();
   }
@@ -414,7 +447,7 @@ test('keeps the catalog summary free of the escaping character references', () =
   });
   try {
     assert.equal(run.status, 0, run.stderr);
-    const record = run.readJson('data/architectures/records/acme-corp.json');
+    const [record] = run.readJson('data/architectures/catalog.json');
     assert.equal(record.summary, 'Acme runs {many} clusters, <10 regions.');
   } finally {
     run.cleanup();
@@ -555,7 +588,7 @@ test('derives sourceUrl from the issue number when html_url is absent', () => {
   });
   try {
     assert.equal(run.status, 0, run.stderr);
-    const record = run.readJson('data/architectures/records/acme-corp.json');
+    const [record] = run.readJson('data/architectures/catalog.json');
     assert.equal(
       record.sourceUrl,
       'https://github.com/cncf/endusers/issues/900',

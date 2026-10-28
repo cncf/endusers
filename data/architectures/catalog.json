@@ -223,9 +223,9 @@
     "published": "2026-03-16",
     "updated": "2026-06-04",
     "assets": [
+      "/img/architectures/swisscom-cloud-native-telco/logo.png",
       "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-architecture-overview.png",
-      "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-layers.svg",
-      "/img/architectures/swisscom-cloud-native-telco/logo.png"
+      "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-layers.svg"
     ]
   },
   {

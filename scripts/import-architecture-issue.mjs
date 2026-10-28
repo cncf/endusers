@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
  * Turns a reference-architecture submission issue (opened with
- * .github/ISSUE_TEMPLATE/reference-architecture.yml) into a catalog record and
- * docs/architectures/<id>/index.md page.
+ * .github/ISSUE_TEMPLATE/reference-architecture.yml) into a
+ * docs/architectures/<id>/index.md page whose front matter carries the
+ * catalog metadata, then regenerates data/architectures/catalog.json from
+ * every page's front matter.
  *
  * Run by .github/workflows/architecture-submission.yml when a maintainer adds
  * the `architecture-ready` label to a submission issue. The workflow points
@@ -25,6 +27,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stringify } from 'yaml';
 import { jsxElement } from './lib/jsx-attributes.mjs';
 import { artworkPath, projectAsset } from './lib/project-assets.mjs';
 import { escapeMdx, unescapeMdx } from './lib/mdx-escape.mjs';
@@ -33,9 +36,14 @@ import {
   firstParagraph,
   mirrorArtworkUrls,
 } from './lib/architecture-content.mjs';
+import {
+  FRONT_MATTER_KEY,
+  collectArchitectureRecords,
+  serializeCatalog,
+} from './lib/architecture-frontmatter.mjs';
+import { REPO_AUTHORED_PAGES } from './lib/architecture-pages.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const recordsDir = join(root, 'data/architectures/records');
 const docsDir = join(root, 'docs/architectures');
 const catalogPath = join(root, 'data/architectures/catalog.json');
 
@@ -131,42 +139,49 @@ async function main() {
 
   const cleanBody = cleanMarkdown(sections.filter(Boolean).join('\n\n'));
 
-  const record = {
-    id,
-    title,
-    organization: orgName,
-    // The summary is stored as JSON and rendered as a plain text node, where
-    // the character references renderSection() added would show through
-    // literally, so it is taken from the author's own characters.
-    summary: firstParagraph(unescapeMdx(cleanBody)),
-    industries,
-    tags,
-    projects: projects.map((project) => project.name),
-    sourceUrl,
-    sourceIssue: issue.number,
-    published,
-    updated,
-    assets: [],
-  };
+  // The page's front matter is the catalog record's source of truth; the
+  // summary is rendered as a plain text node, where the character references
+  // renderSection() added would show through literally, so it is taken from
+  // the author's own characters. `id` and `assets` are derived from the
+  // directory when the catalog is generated.
+  const frontMatter = stringify(
+    {
+      title,
+      sidebar_label: orgName,
+      [FRONT_MATTER_KEY]: {
+        organization: orgName,
+        summary: firstParagraph(unescapeMdx(cleanBody)),
+        industries,
+        tags,
+        projects: projects.map((project) => project.name),
+        sourceUrl,
+        sourceIssue: issue.number,
+        published,
+        updated,
+      },
+    },
+    { lineWidth: 0 },
+  ).trimEnd();
 
-  mkdirSync(recordsDir, { recursive: true });
   mkdirSync(join(docsDir, id), { recursive: true });
   writeFileSync(
-    join(recordsDir, `${id}.json`),
-    JSON.stringify(record, null, 2) + '\n',
-  );
-  writeFileSync(
     join(docsDir, id, 'index.md'),
-    `---\ntitle: ${JSON.stringify(title)}\nsidebar_label: ${JSON.stringify(orgName)}\n---\n\nimport CNCFProjectCard from '@site/src/components/CNCFProjectCard';\n\n> Submitted by the community via [reference architecture issue #${issue.number}](${sourceUrl}). Documentation is distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).\n\n${cleanBody}\n`,
+    `---\n${frontMatter}\n---\n\nimport CNCFProjectCard from '@site/src/components/CNCFProjectCard';\n\n> Submitted by the community via [reference architecture issue #${issue.number}](${sourceUrl}). Documentation is distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).\n\n${cleanBody}\n`,
   );
 
-  const catalog = existsSync(catalogPath)
-    ? JSON.parse(readFileSync(catalogPath, 'utf8'))
-    : [];
-  const withoutExisting = catalog.filter((entry) => entry.id !== id);
-  withoutExisting.push(record);
-  withoutExisting.sort((a, b) => a.organization.localeCompare(b.organization));
-  writeFileSync(catalogPath, JSON.stringify(withoutExisting, null, 2) + '\n');
+  // Regenerate the catalog from every page so the new record lands in the
+  // same order and shape `npm run generate:architectures` would produce.
+  const { records, problems } = collectArchitectureRecords(
+    docsDir,
+    REPO_AUTHORED_PAGES,
+  );
+  if (problems.length > 0)
+    throw new Error(
+      `Cannot regenerate the catalog: ${problems
+        .map(({ page, message }) => `${page}: ${message}`)
+        .join('; ')}`,
+    );
+  writeFileSync(catalogPath, serializeCatalog(records));
 
   console.log(
     `Imported reference architecture "${id}" from issue #${issue.number}`,
@@ -234,14 +249,10 @@ function slugify(value) {
 }
 
 // Disambiguates a second submission that slugifies to the same id as an
-// existing catalog entry, rather than clobbering it.
+// existing architecture directory, rather than clobbering its page.
 function uniqueId(base, issueNumber) {
-  if (!existsSync(catalogPath)) return base || `issue-${issueNumber}`;
-  const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
-  const ids = new Set(catalog.map((entry) => entry.id));
   if (!base) return `issue-${issueNumber}`;
-  if (!ids.has(base)) return base;
-  return `${base}-${issueNumber}`;
+  return existsSync(join(docsDir, base)) ? `${base}-${issueNumber}` : base;
 }
 
 /**

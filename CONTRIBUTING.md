@@ -92,7 +92,7 @@ hand-building pages:
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `/community/awards`                       | `data/awards.json`                                                                                                                                                            | `npm run validate:awards`                                         |
 | `/resources/metrics`                      | `data/metrics.json` (generated)                                                                                                                                               | `npm run validate:metrics`                                        |
-| `/architectures`                          | `data/architectures/records/*.json`                                                                                                                                           | `npm run validate:architectures`                                  |
+| `/architectures`                          | `docs/architectures/<id>/index.md` front matter (`architecture:` block); `data/architectures/catalog.json` is generated from it by `npm run generate:architectures`           | `npm run validate:architectures`                                  |
 | `/community/members`                      | `data/enduser-landscape.json` (pinned CNCF landscape snapshot) + `data/members.json` (generated from the snapshot, `data/awards.json`, and `data/architectures/catalog.json`) | `npm run validate:enduser-members` and `npm run validate:members` |
 | Community people lightboxes               | `data/community-roster.json` (curated) → refreshed into `data/community-people.json`                                                                                          | `npm run validate:community-people`                               |
 | `docs/community/` user groups             | `data/community-groups.json` (generated)                                                                                                                                      | `npm run validate:community-groups`                               |
@@ -130,6 +130,17 @@ Rules:
   rejects a relative link or image that leaves `images/`. The build also
   publishes each file at `/img/architectures/<id>/<file>`, the URL the catalog
   record and member data use.
+- The page's front matter is the only place an architecture's metadata is
+  written. Alongside `title`, an `architecture:` block carries `organization`,
+  `summary`, `industries`, `tags`, `projects`, `sourceUrl`, exactly one of
+  `sourceCommit` (a cncf/architecture import) or `sourceIssue` (a submission
+  issue), `published` and `updated`. The record's `id` is the directory name and
+  its `assets` are the files in `images/`; neither is written by hand. After
+  editing a page or adding one, run `npm run generate:architectures` and commit
+  the regenerated `data/architectures/catalog.json` with it; the catalog
+  component, member directory and data-link checks read that mirror, and
+  `validate:architectures` fails when it is behind the pages
+  ([ADR 0010](adr/0010-architecture-pages-are-the-metadata-source.md)).
 - Architecture `tags` are written with spaces, not underscores (`private cloud`,
   not `private_cloud`): they appear as search chips on the catalog. The importer
   converts underscores and `validate:architectures` rejects them. The catalog

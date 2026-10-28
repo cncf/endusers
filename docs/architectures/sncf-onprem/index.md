@@ -1,6 +1,34 @@
 ---
 title: "A Private Cloud \"Kubernetes Service\" deployable anywhere."
 sidebar_label: "SNCF"
+architecture:
+  organization: SNCF
+  summary: This reference architecture describes SNCF's second generation on-premise Kubernetes platform, built on a bare-metal, open source OpenStack infrastructure to provide container orchestration and scheduling at scale.
+  industries:
+    - Transport
+    - Rail
+    - Software
+    - Cloud
+  tags:
+    - cloud native
+    - private cloud
+    - kubernetes
+    - france
+    - sovereignty
+  projects:
+    - ArgoCD
+    - Cluster API
+    - External-dns
+    - External Secrets Operator
+    - Harbor
+    - Kubernetes
+    - OpenStack
+    - Renovate
+    - Talos Linux
+  sourceUrl: https://github.com/cncf/architecture/tree/ffd45de571e34f101725b2a3316d673899458e58/content/en/architectures/sncf-onprem
+  sourceCommit: ffd45de571e34f101725b2a3316d673899458e58
+  published: 2026-07-03
+  updated: 2026-10-27
 ---
 
 import CNCFProjectCard from '@site/src/components/CNCFProjectCard';

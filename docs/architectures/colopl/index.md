@@ -1,6 +1,22 @@
 ---
 title: "Colopl's FESTIBATTLE Infrastructure Architecture: Dedicated Game Servers with Agones on Kubernetes"
 sidebar_label: "Colopl Inc."
+architecture:
+  organization: Colopl Inc.
+  summary: At COLOPL, our API servers run on Google Kubernetes Engine (GKE) with Cloud Spanner as the backend database. While that combination is somewhat distinctive, the overall structure is not far from a typical web service.
+  industries:
+    - gaming
+  tags:
+    - agones
+    - gaming
+    - kubernetes
+  projects:
+    - Kubernetes
+    - Agones
+  sourceUrl: https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/colopl
+  sourceCommit: 3ddf917facd0aea9694cc9c12c52e583fd2f86cb
+  published: 2026-07-28
+  updated: 2026-07-28
 ---
 
 import CNCFProjectCard from '@site/src/components/CNCFProjectCard';

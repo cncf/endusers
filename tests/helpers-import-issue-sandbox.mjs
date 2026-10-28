@@ -10,7 +10,8 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { stringify } from 'yaml';
 import { resolveRepoRoot } from './helpers.mjs';
 
 const repoRoot = resolveRepoRoot(import.meta.url);
@@ -56,8 +57,13 @@ function scrubbedEnv() {
  *   or one already wrapped in `{ issue: ... }` as GitHub's webhook event does.
  * @param {Record<string, {status?: number, body?: string, networkError?: boolean}>} [options.fetchResponses]
  *   Stubbed responses keyed by absolute URL.
- * @param {Record<string, unknown>} [options.catalog] Pre-existing
- *   data/architectures/catalog.json content.
+ * @param {Array<Record<string, unknown>>} [options.catalog] Pre-existing
+ *   architectures. Each entry is written as a docs/architectures/<id>/index.md
+ *   page carrying the entry's metadata in front matter, which is where the
+ *   importer reads existing ids from, and the committed catalog.json is
+ *   seeded with the same entries.
+ * @param {Record<string, string>} [options.files] Extra repo-relative files
+ *   to write before the run, for pages the `catalog` option cannot express.
  * @param {string[]} [options.args] Extra CLI arguments.
  * @param {boolean} [options.passIssueJson] Pass `--issue-json <path>`. Set
  *   false to exercise the GITHUB_EVENT_PATH fallback the workflow relies on,
@@ -74,6 +80,7 @@ export function runImportArchitectureIssue({
   issue,
   fetchResponses = {},
   catalog,
+  files = {},
   args = [],
   passIssueJson = true,
   env = {},
@@ -95,14 +102,24 @@ export function runImportArchitectureIssue({
   });
   symlinkSync(join(repoRoot, 'node_modules'), join(work, 'node_modules'));
   mkdirSync(join(work, 'docs', 'architectures'), { recursive: true });
-  mkdirSync(join(work, 'data', 'architectures', 'records'), {
-    recursive: true,
-  });
+  mkdirSync(join(work, 'data', 'architectures'), { recursive: true });
   if (catalog !== undefined) {
     writeFileSync(
       join(work, 'data', 'architectures', 'catalog.json'),
       JSON.stringify(catalog, null, 2) + '\n',
     );
+    for (const { id, title, assets, ...architecture } of catalog) {
+      mkdirSync(join(work, 'docs', 'architectures', id), { recursive: true });
+      writeFileSync(
+        join(work, 'docs', 'architectures', id, 'index.md'),
+        `---\n${stringify({ title, architecture }).trimEnd()}\n---\n\nExisting page.\n`,
+      );
+    }
+  }
+
+  for (const [relativePath, content] of Object.entries(files)) {
+    mkdirSync(dirname(join(work, relativePath)), { recursive: true });
+    writeFileSync(join(work, relativePath), content);
   }
 
   const issuePath = join(work, 'issue.json');

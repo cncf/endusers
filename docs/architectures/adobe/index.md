@@ -1,6 +1,29 @@
 ---
 title: "Scaling Adobe’s Service Delivery Foundation with a Cell-based Architecture"
 sidebar_label: "Adobe"
+architecture:
+  organization: Adobe
+  summary: Security, Compliance, Support and Cost Efficiency are cross-cutting concerns for both infrastructure and developer experience.
+  industries:
+    - Software
+    - Digital Media
+    - Digital Experience
+  tags:
+    - adobe
+    - ci-cd
+    - service-delivery
+    - cell-based-architecture
+    - developer-platforms
+    - developer-experience
+  projects:
+    - Kubernetes
+    - Helm
+    - Argo
+    - Backstage
+  sourceUrl: https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/adobe
+  sourceCommit: 3ddf917facd0aea9694cc9c12c52e583fd2f86cb
+  published: 2024-10-11
+  updated: 2026-06-04
 ---
 
 import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
