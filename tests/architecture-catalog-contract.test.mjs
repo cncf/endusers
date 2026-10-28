@@ -35,6 +35,8 @@ function isIssueSourced(record) {
   return typeof record?.sourceIssue === 'number';
 }
 
+const SUBMISSION_ISSUE_REPOS = ['cncf/endusers', 'cncf/tab'];
+
 const REQUIRED_STRING_FIELDS = [
   'id',
   'title',
@@ -142,10 +144,15 @@ test('issue-submitted records cite the submission issue as their source', () => 
       Number.isInteger(record.sourceIssue) && record.sourceIssue > 0,
       `${record.id}: sourceIssue must be a positive issue number`,
     );
-    assert.equal(
-      record.sourceUrl,
-      `https://github.com/cncf/endusers/issues/${record.sourceIssue}`,
-      `${record.id}: issue-submitted record sourceUrl must be its submission issue`,
+    // Submissions arrive either through this repository's issue form or
+    // through the End User TAB's reference-architecture intake in cncf/tab.
+    assert.ok(
+      SUBMISSION_ISSUE_REPOS.some(
+        (repo) =>
+          record.sourceUrl ===
+          `https://github.com/${repo}/issues/${record.sourceIssue}`,
+      ),
+      `${record.id}: issue-submitted record sourceUrl must be its submission issue in ${SUBMISSION_ISSUE_REPOS.join(' or ')}, got ${record.sourceUrl}`,
     );
   }
 });
