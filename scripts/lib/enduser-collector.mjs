@@ -23,14 +23,9 @@ import {
   END_USER_SUPPORTER_SUBCATEGORY,
 } from './enduser-landscape.mjs';
 import { MIRRORABLE_ASSET_EXTENSIONS as MIRRORABLE_EXTENSIONS } from './asset-extensions.mjs';
+import { MAX_LOGO_BYTES } from './asset-size-limits.mjs';
 
 const LOCAL_LOGO_PREFIX = '/img/end-user-members/';
-
-// The same ceiling validate-architecture-assets.mjs fails on for
-// static/img/end-user-members/: an oversized upstream logo must be refused
-// here, at mirror time, or the collector republishes an asset its own
-// validator rejects and the weekly refresh lane fails on every run (#1945).
-const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 function logoDestination(content, filename) {
   const digest = createHash('sha256')

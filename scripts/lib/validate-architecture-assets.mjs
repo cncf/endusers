@@ -8,6 +8,7 @@ import {
 import { extname, join, relative, sep } from 'node:path';
 import { collectError } from './validate-utils.mjs';
 import { MIRRORABLE_ASSET_EXTENSIONS as ALLOWED_ASSET_EXTENSIONS } from './asset-extensions.mjs';
+import { MAX_LOGO_BYTES } from './asset-size-limits.mjs';
 import {
   findActiveContent,
   findRemoteReferences,
@@ -363,7 +364,7 @@ export function validateArchitectureAssets(root, shouldFix = false) {
 
   function validateAsset(path, quality, extensions) {
     const stats = statSync(path);
-    const maxSize = 2 * 1024 * 1024; // 2 MB
+    const maxSize = MAX_LOGO_BYTES;
     if (stats.size > maxSize) {
       // The automated member refresh must fail instead of shipping warnings.
       const isMemberLogo = relative(root, path).startsWith(

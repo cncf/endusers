@@ -13,6 +13,7 @@ import {
   LANDSCAPE_CATEGORY,
 } from './lib/enduser-landscape.mjs';
 import { MIRRORABLE_ASSET_EXTENSIONS as allowedImageExtensions } from './lib/asset-extensions.mjs';
+import { MAX_LOGO_BYTES } from './lib/asset-size-limits.mjs';
 
 const staticRoot = fileURLToPath(new URL('../static/', import.meta.url));
 const assetManifestPath = fileURLToPath(
@@ -21,9 +22,6 @@ const assetManifestPath = fileURLToPath(
 const logoOverridesPath = fileURLToPath(
   new URL('../data/enduser-logo-overrides.json', import.meta.url),
 );
-// The same ceiling scripts/lib/enduser-collector.mjs refuses upstream logos
-// at; a committed override must fit under it too.
-const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const snapshot = JSON.parse(
   readFileSync(new URL('../data/enduser-landscape.json', import.meta.url)),
 );
