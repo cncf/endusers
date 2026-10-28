@@ -155,44 +155,51 @@ test('one card is rendered per catalog entry, linking to its detail page', () =>
   );
   assert.equal(cards.length, catalog.length);
   // The card's root is a `<Link>`, which maps `to` onto the anchor's href.
-  // Cards start in the default alphabetical order: organization, then title.
-  const alphabetical = Array.from(catalog).sort(
+  // Cards start in the default order: most recently updated first, then
+  // organization and title within a day.
+  const newestFirst = Array.from(catalog).sort(
     (a, b) =>
+      b.updated.localeCompare(a.updated) ||
       a.organization.localeCompare(b.organization) ||
       a.title.localeCompare(b.title),
   );
   assert.deepEqual(
     cards.map((card) => card.type(card.props).props.to),
-    alphabetical.map((architecture) => `/architectures/${architecture.id}`),
+    newestFirst.map((architecture) => `/architectures/${architecture.id}`),
   );
   const [first] = cards;
   const link = first.type(first.props);
   assert.equal(
     findByType(link.type(link.props), 'a').props.href,
-    `/architectures/${alphabetical[0].id}`,
+    `/architectures/${newestFirst[0].id}`,
   );
 });
 
-test('choosing "Recently updated" reorders the cards newest first', () => {
+test('choosing "Alphabetical" reorders the cards by organization', () => {
   const view = render(ReferenceArchitectures);
-  assert.equal(toolbarProps(view.tree).sort, 'alphabetical');
-
-  toolbarProps(view.tree).setSort('updated');
-
   assert.equal(toolbarProps(view.tree).sort, 'updated');
-  const dates = [...walkElements(view.tree)]
+
+  toolbarProps(view.tree).setSort('alphabetical');
+
+  assert.equal(toolbarProps(view.tree).sort, 'alphabetical');
+  const organizations = [...walkElements(view.tree)]
     .filter(
       (node) =>
         typeof node.type === 'function' &&
         node.type.name === 'ArchitectureCard',
     )
-    .map((card) => card.props.architecture.updated);
-  assert.equal(dates.length, catalog.length);
-  assert.deepEqual(dates, Array.from(dates).sort().reverse());
+    .map((card) => card.props.architecture.organization);
+  assert.equal(organizations.length, catalog.length);
+  assert.deepEqual(
+    organizations,
+    Array.from(organizations).sort((a, b) => a.localeCompare(b)),
+  );
   assert.notDeepEqual(
-    dates,
-    catalog.map((architecture) => architecture.updated),
-    'the catalog file order is not already newest first',
+    organizations,
+    Array.from(catalog)
+      .sort((a, b) => b.updated.localeCompare(a.updated))
+      .map((architecture) => architecture.organization),
+    'the newest-first order is not already alphabetical',
   );
 });
 

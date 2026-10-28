@@ -423,13 +423,13 @@ test.describe('reference architecture filters', () => {
     await expect.poll(() => chipTags(chips)).toEqual([first]);
   });
 
-  test('sorting by recently updated orders the cards newest first', async ({
+  test('cards are newest first until another sort is chosen', async ({
     page,
   }) => {
     await page.goto('/architectures');
     const sort = page.getByLabel('Sort architectures');
     await waitForHydration(sort);
-    await expect(sort).toHaveValue('alphabetical');
+    await expect(sort).toHaveValue('updated');
 
     const dates = () =>
       page
@@ -437,12 +437,12 @@ test.describe('reference architecture filters', () => {
         .evaluateAll((nodes) => nodes.map((node) => node.dateTime));
     const before = await dates();
     expect(before.length).toBeGreaterThan(1);
+    expect(before).toEqual(Array.from(before).sort().reverse());
 
-    await sort.selectOption('updated');
+    await sort.selectOption('alphabetical');
 
-    const expected = Array.from(before).sort().reverse();
-    expect(expected).not.toEqual(before);
-    await expect.poll(dates).toEqual(expected);
+    await expect(sort).toHaveValue('alphabetical');
+    await expect.poll(dates).not.toEqual(before);
   });
 
   test('a query that matches nothing shows the empty state', async ({
