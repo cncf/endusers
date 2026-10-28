@@ -1,6 +1,6 @@
-// Unit coverage for the four istanbul readers in
+// Unit coverage for the three istanbul readers in
 // tests/tools/e2e-coverage-report.mjs -- `getLineCoverage`,
-// `getRegionCoverage`, `isPhantomRegion` and `isContradictedRegion`.
+// `getRegionCoverage` and `isPhantomRegion`.
 //
 // Every guard in those readers defends against a malformed *istanbul* object.
 // Istanbul objects are not inputs to the module: `convertScript` builds them
@@ -27,28 +27,12 @@ import {
   getLineCoverage,
   getRegionCoverage,
   isPhantomRegion,
-  isContradictedRegion,
 } from './tools/e2e-coverage-report.mjs';
 
 // A region as the readers consume it: original-source coordinates plus the
 // execution count the fold decided on.
 function region(line, column, endLine, endColumn, count = 0) {
   return { line, column, endLine, endColumn, count };
-}
-
-// A witness as `isContradictedRegion` consumes it: the script that produced it,
-// its per-line counts, its zero-count regions and the keys of those zeros.
-function witness({ script, lines = [], zeros = [] }) {
-  return {
-    script,
-    lines: new Map(lines),
-    zeros,
-    zeroKeys: new Set(
-      zeros.map((zero) =>
-        [zero.line, zero.column, zero.endLine, zero.endColumn].join(':'),
-      ),
-    ),
-  };
 }
 
 test('getLineCoverage treats a coverage object with no statements as empty', () => {
@@ -203,105 +187,6 @@ test('isPhantomRegion keeps a multi-line zero contradicted by an unexecuted line
         [4, 1],
       ]),
     ),
-    false,
-  );
-});
-
-test('isContradictedRegion keeps a region that executed', () => {
-  assert.equal(isContradictedRegion(region(1, 0, 1, 4, 3), []), false);
-});
-
-test('isContradictedRegion keeps a zero no script ever recorded', () => {
-  // The witness recorded a zero at different coordinates, so no script is a
-  // candidate and the inference never starts. Across scripts the absence of a
-  // zero proves nothing: a different bundle maps the same arm elsewhere.
-  const target = region(5, 2, 5, 9);
-  assert.equal(
-    isContradictedRegion(target, [
-      witness({
-        script: 'a.js',
-        lines: [[5, 1]],
-        zeros: [region(9, 0, 9, 3)],
-      }),
-    ]),
-    false,
-  );
-});
-
-test('isContradictedRegion keeps a zero whose only witness lines carry no statement', () => {
-  // The witness covers the script but records no executable line across the
-  // region's span, so it never saw the text and cannot speak for it.
-  const target = region(5, 2, 5, 9);
-  assert.equal(
-    isContradictedRegion(target, [
-      witness({ script: 'a.js', lines: [[40, 1]], zeros: [target] }),
-    ]),
-    false,
-  );
-});
-
-test('isContradictedRegion keeps a zero whose witness left one span line unexecuted', () => {
-  // Line 6 inside the span did not run in the witness, so the witness did not
-  // execute the text either and contradicts nothing.
-  const target = region(5, 2, 7, 9);
-  assert.equal(
-    isContradictedRegion(target, [
-      witness({
-        script: 'a.js',
-        lines: [
-          [5, 1],
-          [6, 0],
-          [7, 1],
-        ],
-        zeros: [target],
-      }),
-    ]),
-    false,
-  );
-});
-
-test('isContradictedRegion keeps a zero the witness itself also recorded', () => {
-  // The witness covers the span's lines but records a zero touching them, so
-  // it skipped the same text. Only a witness with no zero over those lines
-  // proves execution.
-  const target = region(5, 2, 5, 9);
-  assert.equal(
-    isContradictedRegion(target, [
-      witness({
-        script: 'a.js',
-        lines: [[5, 1]],
-        zeros: [target, region(5, 0, 5, 1)],
-      }),
-    ]),
-    false,
-  );
-});
-
-test('isContradictedRegion folds a zero another artifact of the same script executed', () => {
-  // Two artifacts of one script: the first recorded the zero, the second ran
-  // the span's lines and recorded no zero on any of them. One source map per
-  // script means the same skipped text would land on the same span, so the
-  // second artifact executed it.
-  const target = region(5, 2, 5, 9);
-  assert.equal(
-    isContradictedRegion(target, [
-      witness({ script: 'a.js', lines: [[5, 1]], zeros: [target] }),
-      witness({ script: 'a.js', lines: [[5, 1]], zeros: [] }),
-    ]),
-    true,
-  );
-});
-
-test('isContradictedRegion ignores witnesses from a script that never recorded the zero', () => {
-  // `b.js` covers the lines and carries no zero, but it never produced the
-  // zero at these coordinates, so it is not a witness for this region. Only
-  // `a.js` is consulted, and it still records the zero.
-  const target = region(5, 2, 5, 9);
-  assert.equal(
-    isContradictedRegion(target, [
-      witness({ script: 'a.js', lines: [[5, 1]], zeros: [target] }),
-      witness({ script: 'b.js', lines: [[5, 1]], zeros: [] }),
-    ]),
     false,
   );
 });
