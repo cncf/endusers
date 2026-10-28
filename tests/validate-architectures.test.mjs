@@ -17,7 +17,7 @@ const validRecord = {
 function catalogFixture(records, extraFiles = {}) {
   return {
     'data/architectures/catalog.json': JSON.stringify(records),
-    'static/img/architectures/acme-platform/diagram.svg': '<svg/>',
+    'docs/architectures/acme-platform/images/diagram.svg': '<svg/>',
     ...extraFiles,
   };
 }
@@ -167,6 +167,21 @@ test('rejects an asset that escapes the architectures prefix with ..', () => {
   assert.match(result.stderr, /must be a site-absolute path contained in/);
 });
 
+test('rejects an asset that escapes its own images directory', () => {
+  const record = {
+    ...validRecord,
+    assets: ['/img/architectures/acme-platform/../index.md'],
+  };
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    catalogFixture([record], {
+      'docs/architectures/acme-platform/index.md': '# Acme\n',
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /must be a site-absolute path contained in/);
+});
+
 test('rejects an asset that is not a string', () => {
   const record = { ...validRecord, assets: [42] };
   const result = runScriptWithFixtures(SCRIPT, catalogFixture([record]));
@@ -174,7 +189,7 @@ test('rejects an asset that is not a string', () => {
   assert.match(result.stderr, /must be a site-absolute path contained in/);
 });
 
-test('rejects assets missing from static/', () => {
+test('rejects assets missing from the architecture images directory', () => {
   const fixtures = {
     'data/architectures/catalog.json': JSON.stringify([validRecord]),
   };
@@ -197,18 +212,18 @@ test('fails when catalog.json is absent', () => {
 
 test('rejects active content in an imported architecture page', () => {
   const fixtures = catalogFixture([validRecord], {
-    'docs/architectures/acme-platform.md':
+    'docs/architectures/acme-platform/index.md':
       '# Acme\n\n<script>fetch("https://evil.test")</script>\n',
   });
   const result = runScriptWithFixtures(SCRIPT, fixtures);
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /acme-platform\.md:3/);
+  assert.match(result.stderr, /acme-platform\/index\.md:3/);
   assert.match(result.stderr, /active content in imported page/);
 });
 
 test('accepts an imported architecture page with only inert content', () => {
   const fixtures = catalogFixture([validRecord], {
-    'docs/architectures/acme-platform.md': [
+    'docs/architectures/acme-platform/index.md': [
       "import CNCFProjectCard from '@site/src/components/CNCFProjectCard';",
       '',
       '# Acme',
@@ -223,22 +238,58 @@ test('accepts an imported architecture page with only inert content', () => {
 
 test('rejects an imported architecture page image with no alt text', () => {
   const fixtures = catalogFixture([validRecord], {
-    'docs/architectures/acme-platform.md':
-      '# Acme\n\n![](/img/architectures/acme-platform/diagram.svg)\n',
+    'docs/architectures/acme-platform/index.md':
+      '# Acme\n\n![](./images/diagram.svg)\n',
   });
   const result = runScriptWithFixtures(SCRIPT, fixtures);
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /acme-platform\.md:3/);
+  assert.match(result.stderr, /acme-platform\/index\.md:3/);
   assert.match(result.stderr, /image has no alt text/);
 });
 
 test('accepts an imported architecture page whose images carry alt text', () => {
   const fixtures = catalogFixture([validRecord], {
-    'docs/architectures/acme-platform.md':
-      '# Acme\n\n![Acme platform diagram](/img/architectures/acme-platform/diagram.svg)\n',
+    'docs/architectures/acme-platform/index.md':
+      '# Acme\n\n![Acme platform diagram](./images/diagram.svg)\n\n[Full size](images/diagram.svg)\n',
   });
   const result = runScriptWithFixtures(SCRIPT, fixtures);
   assert.equal(result.status, 0, result.stderr);
+});
+
+// Docusaurus bundles whatever file a relative destination names and publishes
+// it under /assets/, so a page may only reach its own gated images/ directory.
+test('rejects a relative destination outside the page images directory', () => {
+  const fixtures = catalogFixture([validRecord], {
+    'docs/architectures/acme-platform/index.md': [
+      '# Acme',
+      '',
+      '![Secrets](../../../.env)',
+      '',
+      '[Other](../other/images/diagram.svg)',
+      '',
+      '[Encoded](./images/%2e%2e/index.md)',
+      '',
+      '[Malformed](./images/%E0%A4%A)',
+      '',
+      '![Diagram](./images/diagram.svg?v=1#top)',
+      '',
+    ].join('\n'),
+  });
+  const result = runScriptWithFixtures(SCRIPT, fixtures);
+  assert.equal(result.status, 1);
+  for (const [line, url] of [
+    [3, '../../../.env'],
+    [5, '../other/images/diagram.svg'],
+    [7, './images/%2e%2e/index.md'],
+    [9, './images/%E0%A4%A'],
+  ])
+    assert.ok(
+      result.stderr.includes(
+        `acme-platform/index.md:${line}: relative destination ${url} must stay inside this architecture's images/ directory`,
+      ),
+      result.stderr,
+    );
+  assert.doesNotMatch(result.stderr, /index\.md:11:/);
 });
 
 // A userinfo component makes the visible prefix and the real host disagree:
@@ -295,7 +346,7 @@ test('rejects a published page that has no catalog record', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
     catalogFixture([validRecord], {
-      'docs/architectures/acme-platform.md': '# Acme\n',
+      'docs/architectures/acme-platform/index.md': '# Acme\n',
       'docs/architectures/orphan.md': '# Orphan\n',
     }),
   );

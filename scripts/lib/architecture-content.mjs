@@ -31,6 +31,15 @@ const REMOTE_DESTINATION = /^(?:[a-z][a-z0-9+.-]*:)?\/\//i;
 /** Any URI scheme; a scheme-less destination is a path on this site. */
 const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 
+/**
+ * A destination with no scheme that is not site-absolute, a fragment, or empty
+ * (an empty destination links to the page itself and bundles nothing).
+ */
+const RELATIVE_PATH = /^(?![a-z][a-z0-9+.-]*:|[/#]|$)/i;
+
+/** Nodes whose `url` Docusaurus resolves as a link or image destination. */
+const URL_NODES = new Set(['link', 'image', 'definition']);
+
 const markdownGrammar = {
   extensions: [gfm()],
   mdastExtensions: [gfmFromMarkdown()],
@@ -69,9 +78,10 @@ function destination(url) {
  *   browser, so a third-party host would see their IP, User-Agent and Referer.
  * - An allowed scheme that names no host (`mailto:`, `https:x`) is reduced to
  *   its alt text.
- * - A relative path is rebased onto `/img/architectures/<id>/`.
+ * - A relative path is rebased onto the page's own `./images/` directory
+ *   (docs/architectures/<id>/images/), which Docusaurus bundles from.
  */
-function rewriteImages(body, id) {
+function rewriteImages(body) {
   const tree = fromMarkdown(body, markdownGrammar);
   const definitions = new Map();
   const images = [];
@@ -116,7 +126,7 @@ function rewriteImages(body, id) {
       replacement = `![${escapeLabel(alt)}](${destination(url)})`;
     } else {
       const rest = url.replace(/^\.\//, '').replace(/^images\//, '');
-      replacement = `![${escapeLabel(alt)}](${destination(`/img/architectures/${id}/${rest}`)})`;
+      replacement = `![${escapeLabel(alt)}](${destination(`./images/${rest}`)})`;
     }
     edits.push({
       start: node.position.start.offset,
@@ -134,15 +144,35 @@ function rewriteImages(body, id) {
 }
 
 /**
+ * Every link, image and definition destination in a page that is a relative
+ * path. Docusaurus resolves such a destination against the page's directory
+ * and, when it names a file, bundles that file under /assets/ whatever its type
+ * or location, so scripts/validate-architectures.mjs requires each one to stay
+ * inside the page's own images/ directory.
+ *
+ * @param {string} body
+ * @returns {Array<{ line: number, url: string }>}
+ */
+export function findRelativeDestinations(body) {
+  const findings = [];
+  const walk = (node) => {
+    if (URL_NODES.has(node.type) && RELATIVE_PATH.test(node.url))
+      findings.push({ line: node.position.start.line, url: node.url });
+    for (const child of node.children ?? []) walk(child);
+  };
+  walk(fromMarkdown(body, markdownGrammar));
+  return findings;
+}
+
+/**
  * Strips remaining Hugo/Docsy shortcodes, applies the image policy described
- * on {@link rewriteImages}, and collapses blank-line runs. `id` scopes
- * relative image paths (`images/foo.png`) to the architecture's own asset
+ * on {@link rewriteImages}, and collapses blank-line runs. Relative image
+ * paths (`images/foo.png`) are scoped to the architecture's own images/
  * directory.
  */
-export function cleanMarkdown(body, id) {
+export function cleanMarkdown(body) {
   return rewriteImages(
     body.replace(/{{<[\s\S]*?>}}/g, '').replace(/{{<\/?[^>]+>}}/g, ''),
-    id,
   )
     .replace(/\[\[([^\]]+)\]\((https?:\/\/[^)]+)\)\]/g, '[$1]($2)')
     .replace(/<>/g, '&lt;&gt;')

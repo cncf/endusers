@@ -45,7 +45,7 @@ The PE team has built a Cloud Native Platform
 that serves the core B2C business of a fully digital insurance player acting on
 several european markets. 
 
-![High Level Diagram](/img/architectures/allianz/PEArchitecture.jpg)
+![High Level Diagram](./images/PEArchitecture.jpg)
 
 It serves also all the newly created B2B business initiatives. 
 The highly aggressive scale-up of the both B2B and B2B businesses forced the PE team to redesign the architecture towards
@@ -135,4 +135,4 @@ Migration work is inevitable.
 ## The Journey
 It took us 4 years to move towards the current Platform Engineering setup. There is more to come. The full Journey as it happened till today 28.10.2024 can be seen in the following diagram:
 
-![High Level Diagram](/img/architectures/allianz/PEJourney.jpg)
+![High Level Diagram](./images/PEJourney.jpg)

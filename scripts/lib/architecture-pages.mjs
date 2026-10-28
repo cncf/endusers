@@ -27,15 +27,16 @@ export const REPO_AUTHORED_PAGES = new Set(['index.md', 'submit.md']);
 /**
  * Catalog ids an imported record may not claim.
  *
- * The issue importer writes its page to `docs/architectures/<id>.md`, and the
- * id is derived from submitter-controlled text (the "Organization or Team
- * Name" answer on a submission issue). An
- * id that slugifies to a repo-authored page name therefore overwrites that
- * hand-authored page with imported content — and because the active-content
- * gate in scripts/validate-architectures.mjs deliberately skips
- * REPO_AUTHORED_PAGES, the overwritten page ships without ever being scanned
- * for the MDX expressions, event handlers and script-capable URL schemes that
- * gate exists to reject.
+ * The issue importer writes its page to `docs/architectures/<id>/index.md`,
+ * and the id is derived from submitter-controlled text (the "Organization or
+ * Team Name" answer on a submission issue). An id that slugifies to a
+ * repo-authored page name therefore publishes imported content at that
+ * hand-authored page's route (`submit/index.md` and `submit.md` both serve
+ * `/architectures/submit/`), and because the active-content gate in
+ * scripts/validate-architectures.mjs deliberately skips REPO_AUTHORED_PAGES, a
+ * reviewer comparing the two would be looking at the one that was never
+ * scanned for the MDX expressions, event handlers and script-capable URL
+ * schemes that gate exists to reject.
  *
  * The exemption is only safe while nothing imported can land on an exempt
  * path, so the ids are reserved here and rejected by the validator.
@@ -152,15 +153,16 @@ export function listArchitecturePages(docsDir) {
 }
 
 /**
- * The catalog id a page path corresponds to, or null when the path is not a
- * top-level `<id>.md`/`<id>.mdx`. Nested paths have no catalog record by
+ * The catalog id a page path corresponds to, or null when the path is not an
+ * architecture directory's `<id>/index.md` or `<id>/index.mdx`. Every imported
+ * architecture keeps its page and its `images/` together in its own directory,
+ * so any other path, including a top-level `<id>.md`, has no catalog record by
  * construction.
  *
  * @param {string} relativePath
  * @returns {string|null}
  */
 export function pageCatalogId(relativePath) {
-  if (relativePath.includes('/')) return null;
-  const extension = relativePath.match(PAGE_EXTENSION);
-  return extension ? relativePath.slice(0, -extension[0].length) : null;
+  const match = relativePath.match(/^([^/]+)\/index\.mdx?$/);
+  return match ? match[1] : null;
 }

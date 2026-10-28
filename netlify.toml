@@ -108,9 +108,12 @@
 # list, so this block cannot drift from the allowlists in docusaurus.config.js.
 #
 # These paths are every directory scripts/validate-architecture-assets.mjs walks,
-# which is every directory in static/ that holds an SVG. The site-wide values are
-# restated because Netlify does not document how it merges a header name set by
-# both a broad and a narrow matching rule; restating is correct either way.
+# which is every directory in static/ that holds an SVG plus the architecture
+# images in docs/architectures/<id>/images/, which the build publishes at
+# /img/architectures/<id>/ (endusersArchitectureImages in docusaurus.config.js).
+# The site-wide values are restated because Netlify does not document how it
+# merges a header name set by both a broad and a narrow matching rule;
+# restating is correct either way.
 [[headers]]
   for = "/img/*"
 

@@ -31,10 +31,11 @@ Guidelines for technical documentation within this repository.
 
 - `docs/practitioners/`: The site homepage (slug `/`). Single page, no sidebars.
 - `docs/architectures/`: Reference architecture catalog (`index.md`) and the
-  submission guide (`submit.md`), the only two pages in its sidebar. The other
-  pages are generated from submission issues by
-  `.github/workflows/architecture-submission.yml` and then committed; register
-  any new hand-authored page in `REPO_AUTHORED_PAGES`
+  submission guide (`submit.md`), the only two pages in its sidebar. Each
+  architecture is a directory, `<id>/index.md` with its images in `<id>/images/`
+  referenced relatively (`./images/<file>`); its page is generated from
+  submission issues by `.github/workflows/architecture-submission.yml` and then
+  committed; register any new hand-authored page in `REPO_AUTHORED_PAGES`
   (`scripts/lib/architecture-pages.mjs`) so the content-security gate treats it
   as repo-authored.
 - `docs/community/`: The End User TAB, Governance, User Groups, Technical

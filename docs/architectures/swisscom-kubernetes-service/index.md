@@ -52,7 +52,7 @@ The development and delivery of the new «Kubernetes Service» is done at within
 The layered approach allows Swisscom to manage technological aspects distinctly by segregating the cloud native infrastructure (managed by the Pathfinders team) from the Kubernetes platform (managed by the Guardians team). 
 This strategy ensures considerable flexibility, permitting each layer to be combined or integrated with other technologies in the future.
 
-![Kubernetes Service is a combination of CNIP & SKP deliverables](/img/architectures/swisscom-kubernetes-service/kubernetes-service-team-deliverables.png)
+![Kubernetes Service is a combination of CNIP & SKP deliverables](./images/kubernetes-service-team-deliverables.png)
 
 ## Brief overview of your architecture and any potential goals you are trying to achieve with it?
 
@@ -68,7 +68,7 @@ Another important point is that our customers' data will always remain within Sw
 ### Brief overview of architecture
 A simplified high-level diagram describes Kubernetes Service, including multi-tenancy and security aspects:
 
-![Central Kubernetes Infra Cluster is used to provide customer environments/tenants based on consolidated infrastructure](/img/architectures/swisscom-kubernetes-service/kubernetes-service-central-infra.png)
+![Central Kubernetes Infra Cluster is used to provide customer environments/tenants based on consolidated infrastructure](./images/kubernetes-service-central-infra.png)
 
 As illustrated in the figure, two separate and independent user tenants, BLUE and RED, are established on shared resources (depicted in yellow), managed by the Kubernetes Infrastructure Cluster. The foundation for all virtual abstractions is the Consolidated Infrastructure (COI) in Swisscom's data centers.
 
@@ -78,7 +78,7 @@ These zones address shared responsibilities, where Swisscom provides the Control
 Customers have the flexibility to deploy workloads within the workload zone independently of the management resources as required.
 Furthermore, each customer is able to maintain multiple environments. This provides an alternative method for segregating workloads at the tenant level instead of the Kubernetes cluster level, thereby ensuring comprehensive isolation from the outset.
 
-![Each customer environment is isolated and comprises a management zone and workload zone](/img/architectures/swisscom-kubernetes-service/kubernetes-service-isolated-envs.png)
+![Each customer environment is isolated and comprises a management zone and workload zone](./images/kubernetes-service-isolated-envs.png)
 
 ### Goals and objectives
 
@@ -97,7 +97,7 @@ Moreover, additional options are directly available to our customers:
 
 With KubeVirt providing abstraction, KVM is employed as the hypervisor on bare-metal servers. From the customer's perspective (Customer X), the administrator of their user cluster manages all selections and abstractions shown in the figure below, enabling customers to make independent decisions, e.g. choosing a default CNI from the available options (Cilium, Canal, None).
 
-![Ingredients of Kubernetes Service and abstraction towards user/customer](/img/architectures/swisscom-kubernetes-service/kubernetes-service-ingredients.png)
+![Ingredients of Kubernetes Service and abstraction towards user/customer](./images/kubernetes-service-ingredients.png)
 
 In addition to technical improvements, we aimed to minimise reliance on external vendors and build a truly sovereign cloud solution that can compete with Public Cloud offerings, free from outside service dependencies. Our goal is for customers to run their Kubernetes workloads in our sovereign ESC Cloud, providing a comprehensive alternative to US hyperscalers - in terms of functionality and, most importantly, data privacy.
 

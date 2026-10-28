@@ -51,13 +51,13 @@ In this article, we will cover Flex’s initial architecture, its challenges, an
 ## Initial Architecture
 Here is a simplified high-level diagram describing how Flex acts as the foundation between the source (Github), destinations, and the developer surfaces.
 
-![High Level Diagram](/img/architectures/adobe/FlexHighLevel.png)
+![High Level Diagram](./images/FlexHighLevel.png)
 
 As you can see in the diagram, the CI/CD foundation acts as the glue between the source and the destinations. The developer surfaces, powered by the foundation, offer paved roads and seamless workflows for various use cases.
 
 Here is the initial architecture that we started with.
 
-![Initial Architecture Diagram](/img/architectures/adobe/InitialArchitecture.png)
+![Initial Architecture Diagram](./images/InitialArchitecture.png)
 
 We have a Hub-and-Spoke architecture with the Hub in the middle (aka Flex Hub k8s cluster) connected to the various remote K8s clusters, which act as the spokes. As you can see, we have Git as the source of truth on the left, and K8s clusters as the remote clusters (destinations) on the right.
 
@@ -128,7 +128,7 @@ Cell-based architecture is an architecture pattern that involves designing syste
 Each cell is independent, does not share any state with other cells, and handles a subset of the overall workload requests. This reduces the potential impact of a failure, such as a bad software update, on an individual cell and the requests that it's processing.
 
 Here's a diagram that depicts the cell-based architecture at a high level:
-![Cell-based Architecture Diagram](/img/architectures/adobe/CellBasedArchitecture.webp)
+![Cell-based Architecture Diagram](./images/CellBasedArchitecture.webp)
 
 More details here:
 Diagram Source: https://newsletter.systemdesign.one/p/cell-based-architecture \
@@ -146,12 +146,12 @@ Our FiaB architecture is based on three Rs:
 
 Here’s a diagram that captures these three concepts. More details on these 3 Rs below.
 
-![3R diagram](/img/architectures/adobe/FiaBArchitecture.png)
+![3R diagram](./images/FiaBArchitecture.png)
 
 ### Recreation
 We created a GitOps-based pipeline for Flexbox lifecycle management. This means that there is a Flexbox config in Git which defines what a Flexbox looks like. Here is a diagram showing the workflow in action:
 
-![Recreation diagram](/img/architectures/adobe/FiaBAutomation.png)
+![Recreation diagram](./images/FiaBAutomation.png)
 
 As can be seen from the diagram, any changes to the Flexbox config triggers a Flexbox automation Argo workflow. The workflow has a series of steps that automate the setup of a Flexbox on top of an EKS cluster.
 

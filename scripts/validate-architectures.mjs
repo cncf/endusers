@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve, sep } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkDuplicateValue } from './lib/duplicate-check.mjs';
 import { isSafeUrl, reportAndExit } from './lib/validate-utils.mjs';
 import { findActiveContent } from './lib/mdx-active-content.mjs';
+import { findRelativeDestinations } from './lib/architecture-content.mjs';
+import {
+  ARCHITECTURE_IMAGE_PREFIX,
+  publishedSourcePath,
+} from './lib/published-assets.mjs';
 import {
   REPO_AUTHORED_PAGES,
   isReservedPageId,
@@ -13,9 +18,8 @@ import {
 } from './lib/architecture-pages.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const staticRoot = resolve(join(root, 'static'));
-const assetPrefix = '/img/architectures/';
-const assetRoot = resolve(join(staticRoot, assetPrefix.slice(1)));
+const docsDir = join(root, 'docs/architectures');
+const assetPrefix = ARCHITECTURE_IMAGE_PREFIX;
 const idPattern = /^[a-z0-9][a-z0-9-]*$/;
 
 const catalogPath = join(root, 'data/architectures/catalog.json');
@@ -32,14 +36,35 @@ function isHttpsUrl(value) {
   return typeof value === 'string' && Boolean(isSafeUrl(value));
 }
 
-// Resolve first, then assert containment: '..' segments are normalised away by
-// join()/resolve(), so testing the raw value would let the guard be bypassed.
+// The file the build publishes an asset URL from, or null when the URL is
+// outside its architecture's images/ directory. Resolve first, then assert
+// containment: '..' segments are normalised away by join()/resolve(), so
+// testing the raw value would let the guard be bypassed.
 function resolveContainedAsset(asset) {
   if (typeof asset !== 'string' || !asset.startsWith(assetPrefix)) return null;
-  const resolved = resolve(join(staticRoot, asset.slice(1)));
-  if (resolved !== assetRoot && !resolved.startsWith(assetRoot + sep))
-    return null;
-  return resolved;
+  const [id] = asset.slice(assetPrefix.length).split('/');
+  if (!idPattern.test(id)) return null;
+  const imagesDir = resolve(join(docsDir, id, 'images'));
+  const resolved = resolve(publishedSourcePath(root, asset));
+  return resolved.startsWith(imagesDir + sep) ? resolved : null;
+}
+
+// Docusaurus bundles the file a relative link or image destination names,
+// whatever its type and wherever it sits in the repository, and publishes it
+// under /assets/. A page may therefore only reach files in its own images/
+// directory, which validate:architecture-assets gates. The destination is
+// decoded the way Docusaurus decodes it, and any query or fragment dropped,
+// before it is resolved; a value that cannot be decoded fails closed.
+function staysInImages(page, url) {
+  let path;
+  try {
+    path = decodeURIComponent(url.replace(/[?#].*$/, ''));
+  } catch {
+    return false;
+  }
+  const pageDir = join(docsDir, dirname(page));
+  const imagesDir = resolve(join(pageDir, 'images'));
+  return resolve(join(pageDir, path)).startsWith(imagesDir + sep);
 }
 
 // markdownlint's MD045/no-alt-text is disabled for docs/architectures/** (see
@@ -151,7 +176,6 @@ for (const record of records) {
 // did not mention published and completely unguarded. That is reachable
 // unattended: a record deleted from the catalog leaves its page behind, and
 // nothing else would ever scan it again.
-const docsDir = join(root, 'docs/architectures');
 const { pages, irregular } = listArchitecturePages(docsDir);
 const catalogIds = new Set(records.map((record) => record.id).filter(Boolean));
 
@@ -175,7 +199,7 @@ for (const page of pages) {
       path: page,
       severity: 'error',
       message:
-        'page has no catalog record; it is published but nothing in data/architectures/ describes it — delete it or add its catalog record',
+        'page has no catalog record; it is published but nothing in data/architectures/ describes it — an architecture page lives at <id>/index.md for its catalog id; move it there, delete it, or add its catalog record',
     });
 
   const content = readFileSync(join(docsDir, page), 'utf8');
@@ -185,6 +209,14 @@ for (const page of pages) {
       severity: 'error',
       message: `active content in imported page (${reason}): ${snippet}`,
     });
+
+  for (const { line, url } of findRelativeDestinations(content))
+    if (!staysInImages(page, url))
+      errors.push({
+        path: `${page}:${line}`,
+        severity: 'error',
+        message: `relative destination ${url} must stay inside this architecture's images/ directory`,
+      });
 
   for (const { line, snippet } of findMissingAltText(content))
     errors.push({

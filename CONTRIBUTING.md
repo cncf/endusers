@@ -124,6 +124,12 @@ Rules:
   (`validate:architectures`, `validate:architecture-assets`); the rules they
   enforce — and how to fix an `active content` or `remote reference` failure —
   are documented in [CONTENT-SECURITY.md](CONTENT-SECURITY.md).
+- Each architecture is a directory, `docs/architectures/<id>/`, holding its page
+  (`index.md`) and its diagrams and logo (`images/`). The page references its
+  images relatively (`./images/diagram.svg`), and `validate:architectures`
+  rejects a relative link or image that leaves `images/`. The build also
+  publishes each file at `/img/architectures/<id>/<file>`, the URL the catalog
+  record and member data use.
 - Architecture `tags` are written with spaces, not underscores (`private cloud`,
   not `private_cloud`): they appear as search chips on the catalog. The importer
   converts underscores and `validate:architectures` rejects them. The catalog

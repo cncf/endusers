@@ -80,7 +80,7 @@ Multiple teams collaborate on this platform:
 
 The platform is organized in three layers:
 
-![Cloud Native Telco Automation Layers](/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-layers.svg)
+![Cloud Native Telco Automation Layers](./images/swisscom-cloud-native-telco-automation-layers.svg)
 
 The **Intent Layer** stores high-level desired state in Git — engineers define *what* they want using concise Custom Resources (e.g., a DNN configuration with hostname, region, and SNSSAI).
 
@@ -88,7 +88,7 @@ The **Automation Layer** runs on Kubernetes and continuously reconciles. Flux pu
 
 The **Runtime Layer** hosts the 5G core CNFs and supporting services. Flux pulls intents from Git. SDC pushes the assembled configuration to CNFs via NETCONF/gNMI. MetalLB, cert-manager, External Secrets Operator, ExternalDNS are used to configure the Workload cluster.
 
-![Cloud Native Telco Automation Architecture Overview](/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-architecture-overview.png)
+![Cloud Native Telco Automation Architecture Overview](./images/swisscom-cloud-native-telco-automation-architecture-overview.png)
 
 ### Key Design Principles
 

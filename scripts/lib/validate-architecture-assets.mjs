@@ -27,8 +27,25 @@ const SITE_CHROME_EXTENSIONS = new Set([...ALLOWED_ASSET_EXTENSIONS, '.ico']);
 const FONT_EXTENSIONS = new Set(['.ttf', '.woff', '.woff2']);
 
 /**
+ * The images/ directory of every architecture directory under docsDir. Only
+ * real directories are listed: a symlinked architecture directory is rejected
+ * by scripts/validate-architectures.mjs, and the build's copy does not follow
+ * it. Whether each images/ path exists, or is itself a symlink, is decided by
+ * the asset-root checks in validateArchitectureAssets().
+ * @param {string} docsDir
+ * @returns {string[]}
+ */
+function architectureImageDirs(docsDir) {
+  const stats = lstatSync(docsDir, { throwIfNoEntry: false });
+  if (!stats?.isDirectory()) return [];
+  return readdirSync(docsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(docsDir, entry.name, 'images'));
+}
+
+/**
  * Validate published assets beneath an explicit repository root.
- * @param {string} root Repository root containing static/.
+ * @param {string} root Repository root containing static/ and docs/architectures/.
  * @param {boolean} [shouldFix] Apply the existing safe SVG repairs.
  * @returns {{issues: object[], fixed: string[], assetCount: number}}
  */
@@ -59,8 +76,7 @@ export function validateArchitectureAssets(root, shouldFix = false) {
   // checkForUngatedStaticEntries gates each one individually: the known non-asset
   // files (robots.txt, manifest.json) are named in exemptTopLevelFiles
   // and every other one is held to the site-chrome extension allow-list.
-  const assetDirs = [
-    { dir: join(root, 'static/img/architectures'), quality: true },
+  const staticAssetDirs = [
     { dir: join(root, 'static/img/cncf-projects'), quality: false },
     { dir: join(root, 'static/img/awards'), quality: false },
     { dir: join(root, 'static/img/end-user-members'), quality: false },
@@ -77,6 +93,19 @@ export function validateArchitectureAssets(root, shouldFix = false) {
     },
   ];
 
+  // Architecture diagrams live beside their page, in
+  // docs/architectures/<id>/images/, and endusersArchitectureImages in
+  // docusaurus.config.js publishes each of those directories at
+  // /img/architectures/<id>/. They are served from the origin exactly like
+  // static/img, so each one is an asset root with the diagram-quality gate.
+  const assetDirs = [
+    ...architectureImageDirs(join(root, 'docs/architectures')).map((dir) => ({
+      dir,
+      quality: true,
+    })),
+    ...staticAssetDirs,
+  ];
+
   // Paths that are asset roots in their own right. The shallow static/img walk
   // must not report on them whatever they turn out to be on disk: each one is
   // already handled by its own entry above, which decides for itself whether a
@@ -86,9 +115,9 @@ export function validateArchitectureAssets(root, shouldFix = false) {
   const assetRootPaths = new Set(assetDirs.map(({ dir }) => dir));
 
   // Top-level static/ subdirectory names the gate above already walks, derived
-  // from assetDirs rather than hand-duplicated so the two can't drift.
+  // from staticAssetDirs rather than hand-duplicated so the two can't drift.
   const gatedTopLevelDirs = new Set(
-    assetDirs.map(
+    staticAssetDirs.map(
       ({ dir }) => relative(join(root, 'static'), dir).split('/')[0],
     ),
   );

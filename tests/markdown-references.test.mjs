@@ -91,7 +91,7 @@ function isScannedMarkdown(file) {
   if (/^adr\/\d{4}-/.test(rel)) return false;
   if (
     rel.startsWith('docs/architectures/') &&
-    !/\/(index|submit)\.md$/.test(rel)
+    !/^docs\/architectures\/(index|submit)\.md$/.test(rel)
   )
     return false;
   return true;

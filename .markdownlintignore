@@ -1,5 +1,5 @@
-# docs/architectures/*.md is generated content: scripts/import-architecture-issue.mjs
-# writes these files from submission issues, embedding JSX component props
+# docs/architectures/<id>/index.md is generated content: scripts/import-architecture-issue.mjs
+# writes these pages from submission issues, embedding JSX component props
 # inline in prose that lint fixes would break. Linting is enforced on
 # hand-maintained content only; generated pages are covered by
 # scripts/validate-architectures.mjs instead.

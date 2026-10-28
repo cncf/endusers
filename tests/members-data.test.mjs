@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { publishedSourcePath } from '../scripts/lib/published-assets.mjs';
 
 const repoRoot = new URL('..', import.meta.url);
 
@@ -211,14 +212,14 @@ test('members are sorted by display name', () => {
   );
 });
 
-test('member logos live under /img/ and exist in static/', () => {
+test('member logos live under /img/ and exist in the repository', () => {
   for (const member of members) {
     if (!member.logo) continue;
     assert.ok(
       member.logo.startsWith('/img/'),
       `${member.id} logo must be a site-absolute /img/ path`,
     );
-    const file = fileURLToPath(new URL(`static${member.logo}`, repoRoot));
+    const file = publishedSourcePath(fileURLToPath(repoRoot), member.logo);
     assert.ok(
       existsSync(file),
       `${member.id} logo file missing: ${member.logo}`,

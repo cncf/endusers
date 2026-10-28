@@ -467,7 +467,7 @@ test('leaves an unresolved image reference alone', () => {
 
 test('leaves links, link definitions and local images alone', () => {
   // rewriteImages() demotes a remote image *to* a remote link, and
-  // docs/architectures/colopl.md carries remote link definitions, so a gate on
+  // docs/architectures/colopl/index.md carries remote link definitions, so a gate on
   // either would reject every imported page.
   assert.deepEqual(reasons('[x](https://good.example/)'), []);
   assert.deepEqual(reasons('[x][d]\n\n[d]: https://good.example/'), []);

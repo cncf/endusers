@@ -128,6 +128,57 @@ function endusersRobotsTxt() {
   };
 }
 
+// Each reference architecture keeps its page and images together in
+// docs/architectures/<id>/ (index.md plus images/). The page bundles its images
+// through relative references; this copy also publishes them at
+// /img/architectures/<id>/, the URL data/architectures/ and data/members.json
+// name and the /img/* response headers in netlify.toml cover. A bundler copy
+// (rather than postBuild) serves them from the dev server too. The site builds
+// with Rspack (future.v4), whose processAssets hook copy-webpack-plugin cannot
+// run in, so the copy plugin follows the current bundler as Docusaurus's own
+// getCopyPlugin does. The architecture validators reject symlinks, which
+// CopyRspackPlugin cannot be told to skip. The path is resolved from this file,
+// not the bundler config, because knip loads the config and calls
+// configureWebpack({}, false, {}) to find its dependencies.
+function endusersArchitectureImages() {
+  return {
+    name: 'endusers-architecture-images',
+    configureWebpack(_config, isServer, { currentBundler }) {
+      if (isServer) return {};
+      const CopyPlugin =
+        currentBundler?.name === 'rspack'
+          ? currentBundler.instance.CopyRspackPlugin
+          : require('copy-webpack-plugin');
+      const { posix, relative, sep } = require('path');
+      const { fileURLToPath } = require('url');
+      return {
+        plugins: [
+          new CopyPlugin({
+            patterns: [
+              {
+                context: fileURLToPath(
+                  new URL('docs/architectures', import.meta.url),
+                ),
+                from: '*/images/**/*',
+                // <id>/images/<rest> -> img/architectures/<id>/<rest>
+                to: ({ context, absoluteFilename }) => {
+                  const [id, , ...rest] = relative(
+                    context,
+                    absoluteFilename,
+                  ).split(sep);
+                  return posix.join('img/architectures', id, ...rest);
+                },
+                toType: 'file',
+                noErrorOnMissing: true,
+              },
+            ],
+          }),
+        ],
+      };
+    },
+  };
+}
+
 // Syntax-highlighting colours that fall short of the 4.5:1 WCAG AA contrast
 // ratio on their theme's own code-block background, mapped to the same hue
 // darkened (github, on #f6f8fa) or lightened (dracula, on #282a36) until it
@@ -514,6 +565,7 @@ const config = {
     }),
   plugins: [
     endusersRobotsTxt,
+    endusersArchitectureImages,
     E2E_SOURCE_MAP_PLUGIN,
     E2E_DATA_FIXTURE_PLUGIN,
     E2E_FIXTURE_DOCS_PLUGIN,
