@@ -110,6 +110,11 @@ Rules:
   `GH_TOKEN` to a GitHub personal access token with public-repo read access
   before running it — this script makes enough GitHub API calls to exceed the
   unauthenticated rate limit.
+- Member logos are capped at 2 MB. `npm run collect:enduser-members` mirrors
+  each landscape logo under `static/img/end-user-members/`; a logo over the 2 MB
+  member-asset limit is skipped with a `logoWarning` and the member renders as
+  an initials badge on `/community/members` until you commit an in-limit
+  replacement to `data/enduser-logo-overrides.json`.
 - Verify award entries against the linked cncf.io announcement before adding.
 - Reference architecture pages are generated from submission issues by
   `.github/workflows/architecture-submission.yml`; the pages that originated in
