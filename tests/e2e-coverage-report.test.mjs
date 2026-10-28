@@ -299,27 +299,35 @@ test('a zero-count region spanning only covered lines is not counted against the
       recursive: true,
     });
     await writeFile(original, source);
-    await writeFile(join(fixture.buildDir, 'assets/js/app.js'), scriptText);
-    await writeFile(
-      join(fixture.buildDir, 'assets/js/app.js.map'),
-      JSON.stringify({
-        version: 3,
-        file: 'app.js',
-        sources: ['webpack://endusers/./src/components/Example/index.js'],
-        sourcesContent: [source],
-        names: [],
-        // Every line maps at column 0; line 4 carries a second mapping at
-        // column 8, so a block opening mid-line resolves inside it rather
-        // than snapping back to the start of the line.
-        mappings: `${mapLines([
-          [0, 0],
-          [0, 1],
-          [0, 2],
-          [0, 3],
-          [0, 4],
-        ])},${[vlq(8), vlq(0), vlq(0), vlq(8)].join('')}`,
-      }),
-    );
+    // Two chunks compiled from the same file. The report sums captures of one
+    // chunk before converting it, so the phantom has to come from a chunk
+    // other than the one whose lines ran.
+    for (const name of ['app.js', 'app2.js']) {
+      await writeFile(
+        join(fixture.buildDir, `assets/js/${name}`),
+        `${source}\n//# sourceMappingURL=${name}.map\n`,
+      );
+      await writeFile(
+        join(fixture.buildDir, `assets/js/${name}.map`),
+        JSON.stringify({
+          version: 3,
+          file: name,
+          sources: ['webpack://endusers/./src/components/Example/index.js'],
+          sourcesContent: [source],
+          names: [],
+          // Every line maps at column 0; line 4 carries a second mapping at
+          // column 8, so a block opening mid-line resolves inside it rather
+          // than snapping back to the start of the line.
+          mappings: `${mapLines([
+            [0, 0],
+            [0, 1],
+            [0, 2],
+            [0, 3],
+            [0, 4],
+          ])},${[vlq(8), vlq(0), vlq(0), vlq(8)].join('')}`,
+        }),
+      );
+    }
 
     // One page runs everything but the last line.
     await writePageCoverage(fixture, 0, [
@@ -330,20 +338,25 @@ test('a zero-count region spanning only covered lines is not counted against the
         count: 0,
       },
     ]);
-    // A second page contributes two more zero-count blocks: one over lines
-    // 1-3, standing in for the mis-mapped multi-line span (line 2 is blank, so
+    // A page loading the second chunk contributes two more zero-count
+    // blocks: one over lines 1-3, standing in for the mis-mapped multi-line span (line 2 is blank, so
     // the span has to be judged on the lines that carry statements), and one
     // from inside line 4 to the end of line 5, which closes on a line nothing
     // ran. Only the first is a phantom.
-    await writePageCoverage(fixture, 1, [
-      { startOffset: 0, endOffset: scriptText.length, count: 1 },
-      { startOffset: 0, endOffset: offset('const d'), count: 0 },
-      {
-        startOffset: offset('const d') + 'const d'.length,
-        endOffset: offset('const e') + 'const e = 5;'.length,
-        count: 0,
-      },
-    ]);
+    await writePageCoverage(
+      fixture,
+      1,
+      [
+        { startOffset: 0, endOffset: scriptText.length, count: 1 },
+        { startOffset: 0, endOffset: offset('const d'), count: 0 },
+        {
+          startOffset: offset('const d') + 'const d'.length,
+          endOffset: offset('const e') + 'const e = 5;'.length,
+          count: 0,
+        },
+      ],
+      'http://localhost:3000/assets/js/app2.js',
+    );
     await sealCoverageRun(fixture.runDir, 'passed');
 
     const report = await collectE2ECoverage(fixture.runDir, {
@@ -383,10 +396,9 @@ test('a zero-count region spanning only covered lines is not counted against the
 // the chunks that never record their zero), `1:0:1:12` (the same line), and
 // `1:6:3:12` (the same start column, differing end -- the shape an ordinal
 // key would fold away). It survives all three. The enclosing script must be
-// a different chunk here: an artifact of the *same* script that covers the
-// arm's lines while recording no zero over them is V8's way of saying the arm
-// executed, which is the contradiction fold's evidence, pinned separately
-// below.
+// a different chunk here: captures of the *same* script are summed before
+// conversion, so a page that ran the arm in that chunk would cover it, as
+// pinned separately below.
 test('a single-line zero-count region survives a covered region that encloses it', async () => {
   const fixture = await fixtureRun();
   try {
@@ -555,21 +567,19 @@ test('a zero-count region crossed by a covered one is treated as source-map drif
 });
 
 // Drift needs the twin *recorded*; one shape leaves none. V8 emits a
-// deviation range only where a count differs from the enclosing one, so an
-// artifact that executes a branch arm at the same count as the code around it
+// deviation range only where a count differs from the enclosing one, so a
+// page that executes a branch arm at the same count as the code around it
 // carries no range over the arm at all -- `useFocusTrap`'s `previousFocus`
 // arm runs exactly like that on the trigger-unmounted page, while every
-// truthy-path artifact of the same chunk records `51:25-51:41` at zero. The
-// zero then survives the union with no covered region sharing or crossing its
-// key. The silence is still proof, but only within one script: one script has
-// one source map, so had the arm been skipped in the silent artifact too, the
-// identical zero mapping would have reappeared. These three tests pin the
-// fold and both edges of its evidence requirement.
+// truthy-path page of the same chunk records `51:25-51:41` at zero. The report
+// therefore sums every page's capture of one script offset by offset before
+// converting it: a span is zero in the sum only when every page skipped it.
+// These three tests pin that sum.
 //
 // Shared fixture shape: one source file carried by one chunk, line 1 mapped
 // at columns 0, 3 and 6 so distinct spans inside it resolve to distinct
-// original columns. Artifacts differ only in their V8 ranges.
-async function contradictionFixture(buildArtifacts) {
+// original columns. Pages differ only in their V8 ranges.
+async function summedCapturesFixture(buildArtifacts) {
   const fixture = await fixtureRun();
   const lines = ['const a = 1;', 'const b = 2;', 'const c = 3;'];
   const source = `${lines.join('\n')}\n`;
@@ -609,11 +619,11 @@ async function contradictionFixture(buildArtifacts) {
   return fixture;
 }
 
-test('a zero-count region contradicted by a silent artifact of its own script is folded', async () => {
+test('a region one page of a script skipped and another ran is covered', async () => {
   // Page 0 skips the arm at columns 6-10 and records the zero; page 1 runs
   // the whole script uniformly, so V8 emits no range over the arm at all.
-  // Same script, lines covered, no zero anywhere near it: the arm executed.
-  const fixture = await contradictionFixture((length) => [
+  // Summed, the arm ran once.
+  const fixture = await summedCapturesFixture((length) => [
     {
       ranges: [
         { startOffset: 0, endOffset: length, count: 1 },
@@ -637,15 +647,14 @@ test('a zero-count region contradicted by a silent artifact of its own script is
   }
 });
 
-test('a zero-count region recorded by every artifact of its script survives', async () => {
+test('a region every page of a script skipped stays uncovered', async () => {
   // Both pages skip the arm -- the genuinely dead shape (RadarReports'
-  // empty-corpus arms). No artifact of the chunk is silent about it, so
-  // nothing contradicts the zero.
+  // empty-corpus arms) -- so the sum is still zero there.
   const skipArm = (length) => [
     { startOffset: 0, endOffset: length, count: 1 },
     { startOffset: 6, endOffset: 10, count: 0 },
   ];
-  const fixture = await contradictionFixture((length) => [
+  const fixture = await summedCapturesFixture((length) => [
     { ranges: skipArm(length) },
     { ranges: skipArm(length) },
   ]);
@@ -663,12 +672,11 @@ test('a zero-count region recorded by every artifact of its script survives', as
   }
 });
 
-test('a witness with any zero touching the region lines does not contradict it', async () => {
-  // Page 1 covers the arm's line but skips the *neighbouring* arm at columns
-  // 3-6 on the same line. A zero that near the region means the witness was
-  // on a path where flattening could have merged or shifted spans, so it is
-  // disqualified -- both zeros survive, neither contradicts the other.
-  const fixture = await contradictionFixture((length) => [
+test('neighbouring arms skipped on different pages are both covered', async () => {
+  // Page 0 skips the arm at columns 6-10 and page 1 skips the neighbouring
+  // arm at columns 3-6. Each ran the arm the other skipped, so the sum has no
+  // zero on line 1.
+  const fixture = await summedCapturesFixture((length) => [
     {
       ranges: [
         { startOffset: 0, endOffset: length, count: 1 },
@@ -689,10 +697,8 @@ test('a witness with any zero touching the region lines does not contradict it',
     });
     assert.equal(report.status, 'ok');
     const [entry] = report.sources;
-    // One entry per surviving zero, both on line 1: the list and the count
-    // below are two views of the same two regions.
-    assert.deepEqual(entry.uncoveredRegions, [1, 1]);
-    assert.equal(entry.regions - entry.coveredRegions, 2);
+    assert.deepEqual(entry.uncoveredRegions, []);
+    assert.equal(entry.regions, entry.coveredRegions);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
@@ -2067,6 +2073,38 @@ test('collectE2ECoverage rejects a recorded source hash that disagrees with the 
         },
       ),
     );
+    await sealCoverageRun(fixture.runDir, 'passed');
+    await assert.rejects(
+      () =>
+        collectE2ECoverage(fixture.runDir, {
+          root: fixture.root,
+          buildDir: fixture.buildDir,
+        }),
+      /generated source hash mismatch/,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('collectE2ECoverage never sums a capture of other text served at the same URL', async () => {
+  // Captures of one script are summed before conversion. A stale capture of
+  // different text at the same URL must stay its own record and fail its own
+  // hash check, not ride on the first capture's matching hash.
+  const fixture = await tamperFixture('MixedText');
+  const url = 'http://localhost:3000/assets/js/MixedText.js';
+  const sha = (text) => createHash('sha256').update(text).digest('hex');
+  try {
+    for (const [page, text] of [fixture.scriptText, 'other'].entries()) {
+      await writeCoverageArtifact(
+        fixture.runDir,
+        `worker-0-page-${page}`,
+        coverageEntry(url, fixture.scriptText, {
+          sourceLength: fixture.scriptText.length,
+          sourceSha256: sha(text),
+        }),
+      );
+    }
     await sealCoverageRun(fixture.runDir, 'passed');
     await assert.rejects(
       () =>
