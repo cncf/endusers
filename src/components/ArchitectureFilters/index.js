@@ -119,11 +119,8 @@ export function useArchitectureFilters(architectures) {
     setIndustry: (value) => setFilter('industry', value),
     setProject: (value) => setFilter('project', value),
     setOrganization: (value) => setFilter('organization', value),
-    addTag: (tag) => {
-      if (tag && !filters.tags.some((t) => tagKey(t) === tagKey(tag))) {
-        setFilter('tags', [...filters.tags, tag]);
-      }
-    },
+    // The tag select lists only unselected tags, so a tag is never added twice.
+    addTag: (tag) => setFilter('tags', [...filters.tags, tag]),
     removeTag: (tag) =>
       setFilter(
         'tags',

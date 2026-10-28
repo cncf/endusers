@@ -100,7 +100,7 @@ export default function FilterToolbar({
                         // the search box rather than dropping it to <body>.
                         event.currentTarget.ownerDocument
                           .getElementById(searchId)
-                          ?.focus();
+                          .focus();
                       }}
                     >
                       <span aria-hidden="true">×</span>

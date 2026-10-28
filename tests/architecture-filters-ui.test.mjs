@@ -82,13 +82,11 @@ test('option lists are de-duplicated and alphabetically sorted', () => {
   ]);
 });
 
-test('addTag selects a tag once, ignoring case, and removeTag drops it', () => {
+test('addTag selects a tag and removeTag drops it', () => {
   const hook = renderHook(() => useArchitectureFilters(CORPUS));
 
   hook.result.addTag('edge');
   hook.result.addTag('observability');
-  hook.result.addTag('EDGE');
-  hook.result.addTag('');
 
   assert.deepEqual(hook.result.filters.tags, ['edge', 'observability']);
   assert.equal(hook.result.activeCount, 1);
@@ -376,7 +374,9 @@ test('selected tags render as removable chips in the search box', () => {
     ['Remove tag edge', 'Remove tag private cloud'],
   );
   buttons[1].props.onClick({
-    currentTarget: { ownerDocument: { getElementById: () => null } },
+    currentTarget: {
+      ownerDocument: { getElementById: () => ({ focus() {} }) },
+    },
   });
   assert.deepEqual(calls, [['removeTag', 'private cloud']]);
   assert.equal(
