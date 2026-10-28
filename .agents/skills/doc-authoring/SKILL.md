@@ -35,7 +35,10 @@ Guidelines for technical documentation within this repository.
   architecture is a directory, `<id>/index.md` with its images in `<id>/images/`
   referenced relatively (`./images/<file>`); its page is generated from
   submission issues by `.github/workflows/architecture-submission.yml` and then
-  committed; register any new hand-authored page in `REPO_AUTHORED_PAGES`
+  committed. The page's `architecture:` front matter block is the source of its
+  catalog metadata: after editing it, run `npm run generate:architectures` and
+  commit `data/architectures/catalog.json` with the page. Register any new
+  hand-authored page in `REPO_AUTHORED_PAGES`
   (`scripts/lib/architecture-pages.mjs`) so the content-security gate treats it
   as repo-authored.
 - `docs/community/`: The End User TAB, Governance, User Groups, Technical

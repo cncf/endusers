@@ -5,19 +5,20 @@ import { join } from 'node:path';
 import { resolveRepoRoot } from './helpers.mjs';
 import { parse as parseYaml } from 'yaml';
 import { REPO_AUTHORED_PAGES } from '../scripts/lib/architecture-pages.mjs';
+import {
+  catalogRecords,
+  collectArchitectureRecords,
+} from '../scripts/lib/architecture-frontmatter.mjs';
 
-// The architecture catalog, the per-record JSON files and the generated
-// Docusaurus pages are three artifacts written together by an import run
-// (scripts/import-architecture-issue.mjs). Nothing re-checks that they still agree
-// once committed: validate-architectures.mjs reads only catalog.json, and
-// validate-architecture-assets.mjs reads only the image files. A
-// partial import, a hand-edited page or a deleted record therefore ships a
-// catalog entry with no page, or a page with no entry, without failing a
-// check. These tests assert the contract between the three.
+// Each docs/architectures/<id>/index.md carries its catalog metadata in front
+// matter, and data/architectures/catalog.json is generated from those pages
+// (scripts/generate-architectures.mjs). validate-architectures.mjs gates the
+// committed catalog against the pages; these tests pin the shape of what the
+// pages describe, so a page edit that passes the validator still cannot drop
+// a field the site renders.
 
 const repoRoot = resolveRepoRoot(import.meta.url);
 const catalogPath = join(repoRoot, 'data/architectures/catalog.json');
-const recordsDir = join(repoRoot, 'data/architectures/records');
 const docsDir = join(repoRoot, 'docs/architectures');
 
 const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
@@ -149,32 +150,18 @@ test('issue-submitted records cite the submission issue as their source', () => 
   }
 });
 
-test('catalog and data/architectures/records are one-to-one', () => {
-  const recordFiles = readdirSync(recordsDir).filter((name) =>
-    name.endsWith('.json'),
+test("catalog.json is exactly what the pages' front matter generates", () => {
+  const { records, problems, irregular } = collectArchitectureRecords(
+    docsDir,
+    REPO_AUTHORED_PAGES,
   );
-  const fromFiles = recordFiles
-    .map((name) => name.replace(/\.json$/, ''))
-    .sort();
-  const fromCatalog = catalog.map((record) => record.id).sort();
+  assert.deepEqual(problems, []);
+  assert.deepEqual(irregular, []);
   assert.deepEqual(
-    fromFiles,
-    fromCatalog,
-    'every catalog id needs a records/<id>.json and vice versa',
+    catalog,
+    catalogRecords(records),
+    'catalog.json has drifted from the pages; run `npm run generate:architectures`',
   );
-});
-
-test('each record file is byte-identical in content to its catalog entry', () => {
-  for (const record of catalog) {
-    const onDisk = JSON.parse(
-      readFileSync(join(recordsDir, `${record.id}.json`), 'utf8'),
-    );
-    assert.deepEqual(
-      onDisk,
-      record,
-      `${record.id}: records/${record.id}.json has drifted from catalog.json`,
-    );
-  }
 });
 
 test('catalog ids and generated doc pages are one-to-one', () => {

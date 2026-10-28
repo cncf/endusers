@@ -1,6 +1,26 @@
 ---
 title: "Scaling to Petabytes: Inside Capital One’s OpenTelemetry Architecture"
 sidebar_label: "Capital One"
+architecture:
+  organization: Capital One
+  summary: Capital One adopted OpenTelemetry as its enterprise observability framework, replacing legacy telemetry tooling with a single open standard for metrics, traces, and logs at petabyte scale.
+  industries:
+    - Financial Services
+  tags:
+    - capital-one
+    - observability
+    - opentelemetry
+    - resilience
+    - reliability
+    - financial-services
+  projects:
+    - OpenTelemetry
+    - Prometheus
+    - Kubernetes
+  sourceUrl: https://github.com/cncf/architecture/tree/8af07d62851bc770130a6f942ca7cf9ab20eb784/content/en/architectures/capital-one
+  sourceCommit: 8af07d62851bc770130a6f942ca7cf9ab20eb784
+  published: 2026-10-23
+  updated: 2026-10-23
 ---
 
 import CNCFProjectCard from '@site/src/components/CNCFProjectCard';

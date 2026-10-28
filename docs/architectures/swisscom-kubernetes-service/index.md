@@ -1,6 +1,37 @@
 ---
 title: "A modern and sovereign Private Cloud «Kubernetes Service» for Swiss-based enterprises"
 sidebar_label: "Swisscom (Switzerland) Ltd"
+architecture:
+  organization: Swisscom (Switzerland) Ltd
+  summary: Our next generation Private Cloud Container as a Service offering «Kubernetes Service» for the B2B market addresses customer's need for scalable and highly available Kubernetes workload as a flexible and secure IT foundation.
+  industries:
+    - Communication
+    - Telecommunication
+    - Software
+    - Cloud
+  tags:
+    - service-delivery
+    - cloud native
+    - private cloud
+    - kubernetes
+    - switzerland
+  projects:
+    - Kubernetes
+    - KubeVirt
+    - Kube-OVN
+    - MetalLB
+    - Container Storage Interface (CSI)
+    - Kyverno
+    - ArgoCD
+    - Helm
+    - CloudNativePG
+    - Cilium
+    - Longhorn
+    - Envoy Gateway
+  sourceUrl: https://github.com/cncf/architecture/tree/8af07d62851bc770130a6f942ca7cf9ab20eb784/content/en/architectures/swisscom-kubernetes-service
+  sourceCommit: 8af07d62851bc770130a6f942ca7cf9ab20eb784
+  published: 2026-03-04
+  updated: 2026-10-27
 ---
 
 import CNCFProjectCard from '@site/src/components/CNCFProjectCard';

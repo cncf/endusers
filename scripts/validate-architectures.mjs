@@ -7,24 +7,22 @@ import { isSafeUrl, reportAndExit } from './lib/validate-utils.mjs';
 import { findActiveContent } from './lib/mdx-active-content.mjs';
 import { findRelativeDestinations } from './lib/architecture-content.mjs';
 import {
-  ARCHITECTURE_IMAGE_PREFIX,
-  publishedSourcePath,
-} from './lib/published-assets.mjs';
+  AUTHORED_KEYS,
+  FRONT_MATTER_KEY,
+  catalogRecords,
+  collectArchitectureRecords,
+  splitFrontMatter,
+} from './lib/architecture-frontmatter.mjs';
 import {
   REPO_AUTHORED_PAGES,
   isReservedPageId,
-  listArchitecturePages,
-  pageCatalogId,
 } from './lib/architecture-pages.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const docsDir = join(root, 'docs/architectures');
-const assetPrefix = ARCHITECTURE_IMAGE_PREFIX;
 const idPattern = /^[a-z0-9][a-z0-9-]*$/;
 
 const catalogPath = join(root, 'data/architectures/catalog.json');
-if (!existsSync(catalogPath))
-  throw new Error('Missing data/architectures/catalog.json');
 
 // The catalog is regenerated from the third-party cncf/architecture repository,
 // so every field that reaches an href or an <img src> is treated as untrusted.
@@ -34,19 +32,6 @@ if (!existsSync(catalogPath))
 // resolving to evil.example, so its visible prefix and its real host disagree.
 function isHttpsUrl(value) {
   return typeof value === 'string' && Boolean(isSafeUrl(value));
-}
-
-// The file the build publishes an asset URL from, or null when the URL is
-// outside its architecture's images/ directory. Resolve first, then assert
-// containment: '..' segments are normalised away by join()/resolve(), so
-// testing the raw value would let the guard be bypassed.
-function resolveContainedAsset(asset) {
-  if (typeof asset !== 'string' || !asset.startsWith(assetPrefix)) return null;
-  const [id] = asset.slice(assetPrefix.length).split('/');
-  if (!idPattern.test(id)) return null;
-  const imagesDir = resolve(join(docsDir, id, 'images'));
-  const resolved = resolve(publishedSourcePath(root, asset));
-  return resolved.startsWith(imagesDir + sep) ? resolved : null;
 }
 
 // Docusaurus bundles the file a relative link or image destination names,
@@ -94,35 +79,80 @@ function isCalendarDate(value) {
   );
 }
 
-const records = JSON.parse(readFileSync(catalogPath, 'utf8'));
+// Each page's front matter is the source of truth for its catalog record;
+// data/architectures/catalog.json is the generated mirror. The rules below
+// run on the records the pages describe, then the committed catalog is
+// compared with them so a page edit that was not followed by
+// `npm run generate:architectures` fails here rather than shipping stale.
+const { records, problems, irregular } = collectArchitectureRecords(
+  docsDir,
+  REPO_AUTHORED_PAGES,
+);
 const ids = new Set();
 const errors = [];
+for (const { page, message } of problems)
+  errors.push({ path: page, severity: 'error', message });
+
 for (const record of records) {
-  if (!record.id || !record.title || !record.organization)
+  if (!record.title || !record.organization)
     errors.push({
-      path: record.id || '<unknown>',
+      path: record.page,
       severity: 'error',
-      message: 'missing id, title, or organization',
+      message: `front matter must set title and ${FRONT_MATTER_KEY}.organization`,
     });
-  if (record.id && !idPattern.test(record.id))
+  if (typeof record.summary !== 'string' || !record.summary.trim())
     errors.push({
-      path: record.id,
+      path: record.page,
+      severity: 'error',
+      message: `${FRONT_MATTER_KEY}.summary must be a non-empty string; it is the catalog card's description`,
+    });
+  for (const key of ['industries', 'tags', 'projects'])
+    if (
+      !Array.isArray(record[key]) ||
+      record[key].some((item) => typeof item !== 'string' || !item.trim())
+    )
+      errors.push({
+        path: record.page,
+        severity: 'error',
+        message: `${FRONT_MATTER_KEY}.${key} must be a list of non-empty strings`,
+      });
+  if (!('sourceCommit' in record) === !('sourceIssue' in record))
+    errors.push({
+      path: record.page,
+      severity: 'error',
+      message: `${FRONT_MATTER_KEY} must set exactly one of sourceCommit (cncf/architecture import) or sourceIssue (submission issue)`,
+    });
+  if ('sourceIssue' in record && !Number.isInteger(record.sourceIssue))
+    errors.push({
+      path: record.page,
+      severity: 'error',
+      message: `${FRONT_MATTER_KEY}.sourceIssue must be an issue number`,
+    });
+  if ('sourceCommit' in record && !/^[0-9a-f]{40}$/.test(record.sourceCommit))
+    errors.push({
+      path: record.page,
+      severity: 'error',
+      message: `${FRONT_MATTER_KEY}.sourceCommit must be a full 40-character commit SHA`,
+    });
+  if (!idPattern.test(record.id))
+    errors.push({
+      path: record.page,
       severity: 'error',
       message:
-        'id must be a lowercase slug matching /^[a-z0-9][a-z0-9-]*$/; it is used as a route segment and as a filesystem path component',
+        'directory name must be a lowercase slug matching /^[a-z0-9][a-z0-9-]*$/; it is the catalog id, a route segment and a filesystem path component',
     });
   if (isReservedPageId(record.id))
     errors.push({
-      path: record.id,
+      path: record.page,
       severity: 'error',
       message:
-        'id is reserved for a repo-authored page; a record claiming it overwrites docs/architectures/' +
+        'id is reserved for a repo-authored page; a directory claiming it serves the same route as docs/architectures/' +
         `${record.id}.md, which the active-content scan below skips — so the imported body would publish unscanned`,
     });
-  checkDuplicateValue(errors, record.id, record.id, ids, 'duplicate id');
+  checkDuplicateValue(errors, record.page, record.id, ids, 'duplicate id');
   if (!isHttpsUrl(record.sourceUrl))
     errors.push({
-      path: record.id || '<unknown>',
+      path: record.page,
       severity: 'error',
       message:
         'sourceUrl must be an https URL; it is rendered as an href in the member directory',
@@ -130,7 +160,7 @@ for (const record of records) {
   for (const key of ['published', 'updated'])
     if (!isCalendarDate(record[key]))
       errors.push({
-        path: record.id || '<unknown>',
+        path: record.page,
         severity: 'error',
         message: `${key} must be a YYYY-MM-DD calendar date`,
       });
@@ -140,34 +170,17 @@ for (const record of records) {
     record.updated < record.published
   )
     errors.push({
-      path: record.id,
+      path: record.page,
       severity: 'error',
       message: 'updated must not be earlier than published',
     });
   for (const tag of record.tags ?? [])
-    if (typeof tag !== 'string' || tag.includes('_'))
+    if (typeof tag === 'string' && tag.includes('_'))
       errors.push({
-        path: record.id,
+        path: record.page,
         severity: 'error',
         message: `tag ${JSON.stringify(tag)} must be a string using spaces, not underscores`,
       });
-  for (const asset of record.assets ?? []) {
-    const file = resolveContainedAsset(asset);
-    if (!file) {
-      errors.push({
-        path: record.id,
-        severity: 'error',
-        message: `asset ${asset} must be a site-absolute path contained in ${assetPrefix}`,
-      });
-      continue;
-    }
-    if (!existsSync(file))
-      errors.push({
-        path: record.id,
-        severity: 'error',
-        message: `missing asset ${asset}`,
-      });
-  }
 }
 
 // The active-content scan is driven by the files on disk, not by the catalog.
@@ -176,9 +189,6 @@ for (const record of records) {
 // did not mention published and completely unguarded. That is reachable
 // unattended: a record deleted from the catalog leaves its page behind, and
 // nothing else would ever scan it again.
-const { pages, irregular } = listArchitecturePages(docsDir);
-const catalogIds = new Set(records.map((record) => record.id).filter(Boolean));
-
 for (const page of irregular)
   errors.push({
     path: page,
@@ -187,22 +197,31 @@ for (const page of irregular)
       'page must be a regular file; a symlinked page, or a symlinked directory of pages, is published but cannot be gated',
   });
 
-for (const page of pages) {
-  // Safe only because no imported record can claim a repo-authored id: the
-  // reserved-id check above rejects the catalog record an importer writes
-  // alongside the page, so nothing imported ever reaches this `continue`.
-  if (REPO_AUTHORED_PAGES.has(page)) continue;
+// Every page collectArchitectureRecords could not turn into a record is
+// already an error above (wrong layout, no front matter), so the content
+// scan runs over the records' pages plus those problem pages: a page is
+// published whether or not its metadata parses, and must be gated either way.
+// REPO_AUTHORED_PAGES are excluded by collectArchitectureRecords; that is
+// safe only because the reserved-id check above rejects a directory that
+// would serve the same route as one of them.
+const scannedPages = [
+  ...records.map((record) => record.page),
+  ...problems.map((problem) => problem.page),
+].sort();
 
-  const catalogId = pageCatalogId(page);
-  if (!catalogId || !catalogIds.has(catalogId))
-    errors.push({
-      path: page,
-      severity: 'error',
-      message:
-        'page has no catalog record; it is published but nothing in data/architectures/ describes it — an architecture page lives at <id>/index.md for its catalog id; move it there, delete it, or add its catalog record',
-    });
-
+for (const page of scannedPages) {
   const content = readFileSync(join(docsDir, page), 'utf8');
+  const { data } = splitFrontMatter(content);
+  const authored = data?.[FRONT_MATTER_KEY];
+  if (authored && typeof authored === 'object')
+    for (const key of Object.keys(authored))
+      if (!AUTHORED_KEYS.includes(key))
+        errors.push({
+          path: page,
+          severity: 'error',
+          message: `${FRONT_MATTER_KEY}.${key} is not a catalog field; the fields are ${AUTHORED_KEYS.join(', ')}`,
+        });
+
   for (const { line, reason, snippet } of findActiveContent(content))
     errors.push({
       path: `${page}:${line}`,
@@ -225,5 +244,26 @@ for (const page of pages) {
       message: `image has no alt text: ${snippet}`,
     });
 }
+// The committed catalog is a generated mirror of the pages. Compare parsed
+// records so a `fix:format` refold is not drift, and report before exiting
+// so the page errors above (the cause) are shown alongside.
+const expected = JSON.stringify(catalogRecords(records));
+let committed = null;
+if (existsSync(catalogPath))
+  try {
+    committed = JSON.stringify(JSON.parse(readFileSync(catalogPath, 'utf8')));
+  } catch {
+    committed = null;
+  }
+if (committed !== expected)
+  errors.push({
+    path: 'data/architectures/catalog.json',
+    severity: 'error',
+    message:
+      committed === null
+        ? 'catalog is missing or not valid JSON; run `npm run generate:architectures`'
+        : "catalog is behind the pages' front matter; run `npm run generate:architectures` and commit the result",
+  });
+
 reportAndExit(errors, 'architecture catalog');
 console.log(`Validated ${records.length} architecture records`);

@@ -42,6 +42,10 @@ jobs:
       - name: Import reference architecture from issue
         id: import
         run: npm run import:architecture-issue
+      # The importer regenerates the catalog itself; this keeps the mirror
+      # step visible in the pipeline and is what validate:architectures names
+      # as the fix when the committed catalog is behind the pages.
+      - run: npm run generate:architectures
       - run: npm run test:unit
       - run: npm run fix:format
       - run: npm run validate:architectures

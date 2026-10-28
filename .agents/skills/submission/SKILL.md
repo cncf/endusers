@@ -26,14 +26,15 @@ the GitHub Action `.github/workflows/architecture-submission.yml` executes:
 3. Extracts metadata, projects table, and content fields
 4. Mirrors CNCF project logos locally under the repository's static architecture
    image directory
-5. Writes the catalog record `data/architectures/records/<id>.json`
-6. Updates `data/architectures/catalog.json`
-7. Generates the documentation page `docs/architectures/<id>/index.md`
-8. Runs unit tests (`npm run test:unit`), formatting (`npm run fix:format`),
+5. Generates the documentation page `docs/architectures/<id>/index.md`, with the
+   architecture's metadata in an `architecture:` front matter block
+6. Regenerates `data/architectures/catalog.json` from every page's front matter
+   (the same step as `npm run generate:architectures`)
+7. Runs unit tests (`npm run test:unit`), formatting (`npm run fix:format`),
    validators (`npm run validate:architectures`,
    `npm run validate:architecture-assets`), and production build
    (`npm run build`)
-9. Opens a pull request against `main` on branch
+8. Opens a pull request against `main` on branch
    `automation/architecture-issue-<number>`
 
 If any verification step fails, the workflow comments on the issue with a link

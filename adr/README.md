@@ -20,6 +20,7 @@ still pending) so future contributors understand why, not just what.
 | [0007](./0007-scope-end-to-end-coverage-to-user-reachable-states.md) | Scope end-to-end coverage findings to user-reachable states                  | Accepted |
 | [0008](./0008-scope-agent-findings-to-user-observable-change.md)     | Scope agent findings to user-observable change                               | Accepted |
 | [0009](./0009-refresh-generated-data-only-on-content-change.md)      | Refresh generated data only when its content changes                         | Accepted |
+| [0010](./0010-architecture-pages-are-the-metadata-source.md)         | Architecture pages are the source of their catalog metadata                  | Accepted |
 
 Supporting material is not part of the numbered ADR sequence and is not assigned
 an ADR number, but is listed here for discoverability:

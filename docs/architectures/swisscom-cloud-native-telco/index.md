@@ -1,6 +1,37 @@
 ---
 title: "End-to-End Cloud Native Telco Platform Automation at Swisscom"
 sidebar_label: "Swisscom (Switzerland) Ltd"
+architecture:
+  organization: Swisscom (Switzerland) Ltd
+  summary: Swisscom has built a cloud native telco platform for the end-to-end automation of its 5G standalone core network and cross-domain resource orchestration. The architecture replaces traditional imperative network management (Jenkins pipelines
+  industries:
+    - Communication
+    - Telecommunication
+  tags:
+    - cloud native
+    - telco
+    - 5g
+    - gitops
+    - kubernetes
+    - switzerland
+    - private cloud
+  projects:
+    - Kubernetes
+    - Flux
+    - cert-manager
+    - Headlamp
+    - SDC (Schema Driven Configuration)
+    - CoreDNS
+    - ExternalDNS
+    - MetalLB
+    - Kubebuilder / controller-runtime
+    - PowerDNS
+    - NetBox Operator
+    - NetBox
+  sourceUrl: https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-cloud-native-telco
+  sourceCommit: 3ddf917facd0aea9694cc9c12c52e583fd2f86cb
+  published: 2026-03-16
+  updated: 2026-06-04
 ---
 
 import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
