@@ -5,8 +5,8 @@ architecture:
   organization: China Merchants Bank
   summary: China Merchants Bank runs large-model training, LoRA fine-tuning, and online inference on one Kubernetes-based pool of nearly 10,000 heterogeneous accelerator cards, with separate operating policies for each workload type.
   industries:
-    - financial-services
-    - banking
+    - Financial Services
+    - Banking
   tags:
     - ai
     - machine learning

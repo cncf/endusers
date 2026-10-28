@@ -115,11 +115,15 @@ function legacyMembers(catalog, awardsData) {
     const projects = [
       ...new Set(catalogEntries.flatMap((e) => e.projects || [])),
     ].sort();
+    // A catalog record carries at most one provenance field (sourceCommit for
+    // a cncf/architecture import, sourceIssue for a submission issue) or none
+    // when the page was authored directly; forward whichever is present.
     const architectures = catalogEntries.map((e) => ({
       id: e.id,
       title: e.title,
       sourceUrl: e.sourceUrl,
-      sourceCommit: e.sourceCommit,
+      ...(e.sourceCommit !== undefined && { sourceCommit: e.sourceCommit }),
+      ...(e.sourceIssue !== undefined && { sourceIssue: e.sourceIssue }),
     }));
     const awards = awardEntries.map((a) => ({
       year: a.year,
