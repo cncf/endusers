@@ -82,6 +82,20 @@ test('option lists are de-duplicated and alphabetically sorted', () => {
   ]);
 });
 
+test('tags differing only in separators are listed once', () => {
+  const { result } = renderHook(() =>
+    useArchitectureFilterOptions([
+      architecture({ tags: ['public cloud'] }),
+      architecture({
+        tags: ['Public-Cloud', 'public_cloud', 'public - cloud'],
+      }),
+      // Separators are folded, not dropped: run-together words stay distinct.
+      architecture({ tags: ['publiccloud'] }),
+    ]),
+  );
+  assert.deepEqual(result.tags, ['public cloud', 'publiccloud']);
+});
+
 test('addTag selects a tag and removeTag drops it', () => {
   const hook = renderHook(() => useArchitectureFilters(CORPUS));
 

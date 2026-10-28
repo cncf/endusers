@@ -69,21 +69,8 @@ function isCalendarDate(value) {
   );
 }
 
-// The catalog tag list drives the "Add a tag" control and the tag arm of the
-// search on /architectures. src/components/ArchitectureFilters compares tags
-// case-insensitively and lists each one once, because upstream tags are not
-// consistently cased ("Kubernetes" and "kubernetes"), so a case difference
-// alone is deliberate and collapses in the UI. A separator difference does
-// not: "public cloud" and "public-cloud" are two entries in the control, and
-// picking either returns only the records that spell it that way. Folding
-// case and separators together gives the key that must have one spelling.
-function tagSpellingKey(tag) {
-  return tag.toLowerCase().replace(/[-_\s]+/g, ' ');
-}
-
 const records = JSON.parse(readFileSync(catalogPath, 'utf8'));
 const ids = new Set();
-const tagSpellings = new Map();
 const errors = [];
 for (const record of records) {
   if (!record.id || !record.title || !record.organization)
@@ -132,27 +119,13 @@ for (const record of records) {
       severity: 'error',
       message: 'updated must not be earlier than published',
     });
-  for (const tag of record.tags ?? []) {
-    if (typeof tag !== 'string' || tag.includes('_')) {
+  for (const tag of record.tags ?? [])
+    if (typeof tag !== 'string' || tag.includes('_'))
       errors.push({
         path: record.id,
         severity: 'error',
         message: `tag ${JSON.stringify(tag)} must be a string using spaces, not underscores`,
       });
-      continue;
-    }
-    const key = tagSpellingKey(tag);
-    const seen = tagSpellings.get(key);
-    if (!seen) {
-      tagSpellings.set(key, { tag, id: record.id });
-    } else if (seen.tag.toLowerCase() !== tag.toLowerCase()) {
-      errors.push({
-        path: record.id,
-        severity: 'error',
-        message: `tag ${JSON.stringify(tag)} differs only in separators from ${JSON.stringify(seen.tag)} on ${seen.id}; the catalog filter lists both and each returns only its own records, so one spelling must be used`,
-      });
-    }
-  }
   for (const asset of record.assets ?? []) {
     const file = resolveContainedAsset(asset);
     if (!file) {

@@ -92,55 +92,6 @@ test('accepts tags written with spaces', () => {
   assert.equal(result.status, 0, result.stderr);
 });
 
-test('rejects two spellings of one tag that differ only in separators', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    catalogFixture([
-      { ...validRecord, tags: ['public cloud'] },
-      { ...validRecord, id: 'acme-two', tags: ['public-cloud'] },
-    ]),
-  );
-  assert.equal(result.status, 1);
-  assert.match(
-    result.stderr,
-    /"public-cloud" differs only in separators from "public cloud" on acme-platform/,
-  );
-});
-
-test('reports a separator collision inside a single record', () => {
-  const record = {
-    ...validRecord,
-    tags: ['public cloud', 'PUBLIC-CLOUD'],
-  };
-  const result = runScriptWithFixtures(SCRIPT, catalogFixture([record]));
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /differs only in separators/);
-});
-
-test('accepts tags that differ only in case, which the catalog filter collapses', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    catalogFixture([
-      { ...validRecord, tags: ['Kubernetes'] },
-      { ...validRecord, id: 'acme-two', tags: ['kubernetes'] },
-    ]),
-  );
-  assert.equal(result.status, 0, result.stderr);
-});
-
-test('an underscore tag is reported once, not also as a separator collision', () => {
-  const result = runScriptWithFixtures(
-    SCRIPT,
-    catalogFixture([
-      { ...validRecord, tags: ['public cloud'] },
-      { ...validRecord, id: 'acme-two', tags: ['public_cloud'] },
-    ]),
-  );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /must be a string using spaces, not underscores/);
-  assert.doesNotMatch(result.stderr, /differs only in separators/);
-});
-
 test('accepts a record updated on the day it was published', () => {
   const record = { ...validRecord, updated: validRecord.published };
   const result = runScriptWithFixtures(SCRIPT, catalogFixture([record]));
