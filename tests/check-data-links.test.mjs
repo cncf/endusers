@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -211,11 +212,12 @@ const FIXTURE_FILES = Object.fromEntries(
   RENDERED_DATA_FILES.map((file) => [file, '{}']),
 );
 
-function run(routes, members) {
+function run(routes, members, extraFixtures = {}) {
   return runScriptWithFetchMock({
     script: 'check-data-links.mjs',
     fixtures: {
       ...FIXTURE_FILES,
+      ...extraFixtures,
       'data/members.json': JSON.stringify(members),
     },
     routes,
@@ -247,7 +249,7 @@ test('the script passes when every rendered URL resolves or is merely unverifiab
   );
   assert.match(
     result.stdout,
-    /^known: https:\/\/www\.walmartlabs\.com \(fetch failed; cncf\/landscape still lists/m,
+    /^unverifiable: https:\/\/www\.walmartlabs\.com \(fetch failed\)$/m,
   );
   assert.match(
     result.stdout,
@@ -256,7 +258,7 @@ test('the script passes when every rendered URL resolves or is merely unverifiab
   assert.doesNotMatch(result.stdout, /^(ok|broken|stale):/m);
   assert.match(
     result.stdout,
-    /3 URL\(s\) in \d+ file\(s\): 1 ok, 1 unverifiable, 1 known, 0 broken, 0 stale/,
+    /3 URL\(s\) in \d+ file\(s\): 1 ok, 2 unverifiable, 0 known, 0 broken, 0 stale/,
   );
 });
 
@@ -273,13 +275,23 @@ test('the script fails on a rotten URL and names where it renders from', () => {
 });
 
 test('the script fails when an allow-listed URL resolves again', () => {
-  const result = run([{ match: 'https://www.walmartlabs.com', status: 200 }], {
-    members: [{ homepageUrl: 'https://www.walmartlabs.com' }],
-  });
-  assert.equal(result.status, 1);
-  assert.match(
-    result.stdout,
-    /^stale: https:\/\/www\.walmartlabs\.com \(HTTP 200; /m,
+  const url = 'https://test-known.example/';
+  const dataLinksPath = new URL(
+    '../scripts/lib/data-links.mjs',
+    import.meta.url,
   );
+  const dataLinks = readFileSync(dataLinksPath, 'utf8');
+  const fixtureDataLinks = dataLinks.replace(
+    'export const KNOWN_BROKEN_URLS = new Map([]);',
+    `export const KNOWN_BROKEN_URLS = new Map([['${url}', 'tracked by this test #1']]);`,
+  );
+  assert.notEqual(fixtureDataLinks, dataLinks);
+  const result = run(
+    [{ match: url, status: 200 }],
+    { members: [{ homepageUrl: url }] },
+    { 'scripts/lib/data-links.mjs': fixtureDataLinks },
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /^stale: https:\/\/test-known\.example\//m);
   assert.match(result.stderr, /remove it from KNOWN_BROKEN_URLS/);
 });
