@@ -208,42 +208,42 @@ test('clearFilters resets every control at once', () => {
   assert.equal(hook.result.filtered.length, CORPUS.length);
 });
 
-test('architectures are listed alphabetically until another sort is chosen', () => {
+test('architectures are listed newest first until another sort is chosen', () => {
   const reversed = Array.from(CORPUS).reverse();
   const hook = renderHook(() => useArchitectureFilters(reversed));
+
+  assert.equal(hook.result.sort, 'updated');
+  assert.deepEqual(
+    hook.result.filtered.map((a) => a.organization),
+    ['Globex', 'Initech', 'Acme Corp'],
+  );
+
+  hook.result.setSort('alphabetical');
 
   assert.equal(hook.result.sort, 'alphabetical');
   assert.deepEqual(
     hook.result.filtered.map((a) => a.organization),
     ['Acme Corp', 'Globex', 'Initech'],
   );
-
-  hook.result.setSort('updated');
-
-  assert.equal(hook.result.sort, 'updated');
-  assert.deepEqual(
-    hook.result.filtered.map((a) => a.organization),
-    ['Globex', 'Initech', 'Acme Corp'],
-  );
 });
 
 test('the sort order is not a filter: it is not counted and survives a clear', () => {
   const hook = renderHook(() => useArchitectureFilters(CORPUS));
 
-  hook.result.setSort('updated');
+  hook.result.setSort('alphabetical');
   assert.equal(hook.result.activeCount, 0);
 
   hook.result.setIndustry('Retail');
   assert.deepEqual(
     hook.result.filtered.map((a) => a.organization),
-    ['Globex', 'Acme Corp'],
+    ['Acme Corp', 'Globex'],
   );
 
   hook.result.clearFilters();
-  assert.equal(hook.result.sort, 'updated');
+  assert.equal(hook.result.sort, 'alphabetical');
   assert.deepEqual(
     hook.result.filtered.map((a) => a.organization),
-    ['Globex', 'Initech', 'Acme Corp'],
+    ['Acme Corp', 'Globex', 'Initech'],
   );
 });
 
@@ -410,13 +410,13 @@ test('the sort select offers only the sort orders, with no "all" option', () => 
       textOf(option),
     ]),
     [
-      ['alphabetical', 'Sort: Alphabetical'],
       ['updated', 'Sort: Recently updated'],
+      ['alphabetical', 'Sort: Alphabetical'],
     ],
   );
   assert.deepEqual(
     SORT_OPTIONS.map((option) => option.value),
-    ['alphabetical', 'updated'],
+    ['updated', 'alphabetical'],
   );
 
   select.props.onChange({ target: { value: 'alphabetical' } });

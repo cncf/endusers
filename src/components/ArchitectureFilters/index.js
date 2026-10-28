@@ -18,9 +18,10 @@ function tagKey(tag) {
   return tag.toLowerCase().replace(/[-_\s]+/g, ' ');
 }
 
+// The first option is the default: newest architectures lead the catalog.
 export const SORT_OPTIONS = [
-  { value: 'alphabetical', label: 'Sort: Alphabetical' },
   { value: 'updated', label: 'Sort: Recently updated' },
+  { value: 'alphabetical', label: 'Sort: Alphabetical' },
 ];
 
 const DEFAULT_SORT = SORT_OPTIONS[0].value;
