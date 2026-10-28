@@ -1,6 +1,6 @@
 // walk() already refuses to validate through a symlinked *entry*. These tests
 // cover the walk roots, which are reached before walk() ever runs: a symlink at
-// static/img/architectures or static/img/cncf-projects used to be followed,
+// docs/architectures/<id>/images or static/img/cncf-projects used to be followed,
 // so files outside the published asset tree were validated as if they were
 // assets and were written back through by --fix.
 import assert from 'node:assert/strict';
@@ -18,12 +18,16 @@ const DOCTYPE_SVG =
 test('rejects a symlinked architecture asset root instead of following it', () => {
   const result = validateAssetFixtures(
     { 'outside/evil/diagram.svg': DOCTYPE_SVG },
-    { symlinks: { 'static/img/architectures': '../../outside/evil' } },
+    {
+      symlinks: {
+        'docs/architectures/example/images': '../../../outside/evil',
+      },
+    },
   );
   assertInvalidAssets(result);
   assert.match(
     assetDiagnostics(result),
-    /static\/img\/architectures: asset directory is a symbolic link/,
+    /docs\/architectures\/example\/images: asset directory is a symbolic link/,
   );
   // The link target must not be reported as if it were a published asset.
   assert.doesNotMatch(assetDiagnostics(result), /DOCTYPE/);
@@ -46,7 +50,9 @@ test('--fix does not write through a symlinked asset root', () => {
     { 'outside/evil/diagram.svg': DOCTYPE_SVG },
     {
       fix: true,
-      symlinks: { 'static/img/architectures': '../../outside/evil' },
+      symlinks: {
+        'docs/architectures/example/images': '../../../outside/evil',
+      },
       readBack: ['outside/evil/diagram.svg'],
     },
   );
@@ -56,7 +62,7 @@ test('--fix does not write through a symlinked asset root', () => {
 
 test('a regular file at an asset root is skipped, not walked', () => {
   const result = validateAssetFixtures({
-    'static/img/architectures': 'not a directory',
+    'docs/architectures/example/images': 'not a directory',
   });
   assertValidAssets(result);
   assert.equal(result.assetCount, 0);

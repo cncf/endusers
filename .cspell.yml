@@ -72,12 +72,12 @@ words:
   - Adobe
   - Allianz
   - CERN
-  # docs/architectures/capital-one.md (imported upstream prose and collector config)
+  # docs/architectures/capital-one/index.md (imported upstream prose and collector config)
   - reinstrumentation
   - reinstrumenting
   - rearchitected
   - awss
-  # docs/architectures/sncf-onprem.md (Cluster API provider acronyms and SNCF tooling)
+  # docs/architectures/sncf-onprem/index.md (Cluster API provider acronyms and SNCF tooling)
   - autohealing
   - CABPT
   - CACPPT

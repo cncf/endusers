@@ -4,17 +4,17 @@
 // non-zero count, but no spec has ever opened one of the pages that listing
 // links to. Those pages are the only surface on the site that is written
 // wholesale by automation: the issue importer generates
-// docs/architectures/<id>.md, data/architectures/catalog.json and the mirrored
-// files under static/img/architectures/ from a submission issue whenever
-// architecture-submission.yml runs.
+// docs/architectures/<id>/index.md and data/architectures/catalog.json from a
+// submission issue whenever architecture-submission.yml runs, beside the
+// images committed in docs/architectures/<id>/images/.
 //
 // The unit suite already pins the *file-level* contract hard — see
 // tests/architecture-catalog-contract.test.mjs, which proves catalog ids and
 // doc pages are one-to-one and that every declared asset exists on disk. What
 // it cannot reach is whether the page a reader actually receives renders: MDX
 // has to compile, <CNCFProjectCard> has to hydrate out of the shipped bundle,
-// and the mirrored diagrams have to survive Docusaurus' asset pipeline, which
-// rewrites each /img/architectures/... reference to a content-hashed URL under
+// and the diagrams have to survive Docusaurus' asset pipeline, which rewrites
+// each relative ./images/... reference to a content-hashed URL under
 // /assets/images/. A rename or a dropped mirror upstream leaves the on-disk
 // contract satisfied and the rendered page broken.
 //
@@ -76,7 +76,7 @@ test.describe('reference architecture detail pages', () => {
       const projects = record.projects ?? [];
       if (projects.length > 0) {
         const source = readFileSync(
-          resolve(`docs/architectures/${record.id}.md`),
+          resolve(`docs/architectures/${record.id}/index.md`),
           'utf8',
         );
         const linked = (source.match(/<CNCFProjectCard\b[^>]*\bhref=/g) ?? [])

@@ -53,7 +53,7 @@ A pure cloud native based infrastructure can now successfully serve scientific c
 
 A set of requirements and use cases was initially defined when designing the architecture. The figure below shows how a shared pool of resources, mostly on-premises but integrating public cloud and supercomputing centers, should be accessed from different services.
 
-![Use Cases and Resources](/img/architectures/cern-scientific-computing/use-cases.png)
+![Use Cases and Resources](./images/use-cases.png)
 
 Below we highlight specific requirements in terms of hardware and user facing functionality.
 
@@ -76,7 +76,7 @@ Below we highlight specific requirements in terms of hardware and user facing fu
 
 The diagram below shows how the different projects and tools match the requirements.
 
-![CERN next-generation reference architecture: projects and tools mapped to requirements](/img/architectures/cern-scientific-computing/ngt-refarch.png)
+![CERN next-generation reference architecture: projects and tools mapped to requirements](./images/ngt-refarch.png)
 
 Areas of particular interest where effort was required include compute, scheduling, networking, storage and observability.
 
@@ -84,7 +84,7 @@ Areas of particular interest where effort was required include compute, scheduli
 
 **Proper isolation and reproducibility** is essential for reliable performance and results, removing the effect of noisy neighbors and the latency between CPU and GPU. GPU nodes follow a NUMA-aware dual-socket layout, designed to preserve locality between CPU, memory, and accelerator resources. Each node has two CPU sockets, exposed as two NUMA nodes.
 
-![NUMA-aware dual-socket GPU node layout: two CPU sockets exposed as two NUMA nodes](/img/architectures/cern-scientific-computing/hwlayout.png)
+![NUMA-aware dual-socket GPU node layout: two CPU sockets exposed as two NUMA nodes](./images/hwlayout.png)
 
 Depending on the node type, GPUs are distributed evenly across these NUMA domains: either 8 GPUs per node, with 4 GPUs attached to each NUMA node, or 4 GPUs per node, with 2 GPUs attached to each NUMA node.
 

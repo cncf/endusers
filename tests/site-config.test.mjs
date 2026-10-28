@@ -398,6 +398,56 @@ test('robots.txt is written at build time with an absolute sitemap URL that foll
   }
 });
 
+// data/architectures/, data/members.json and the /img/* headers in
+// netlify.toml name /img/architectures/<id>/<file>; the files live in
+// docs/architectures/<id>/images/. The client build is the one that emits
+// assets, so the server build adds nothing. The site builds with Rspack, where
+// copy-webpack-plugin fails the build, so the copy follows the bundler.
+test('architecture images are published at /img/architectures/<id>/', () => {
+  const factory = config.plugins.find(
+    (plugin) =>
+      typeof plugin === 'function' &&
+      plugin.name === 'endusersArchitectureImages',
+  );
+  assert.ok(factory, 'endusersArchitectureImages must be registered');
+  const plugin = factory();
+  assert.equal(plugin.name, 'endusers-architecture-images');
+  assert.deepEqual(plugin.configureWebpack({}, true, {}), {});
+
+  class CopyRspackPlugin {
+    constructor({ patterns }) {
+      this.patterns = patterns;
+    }
+  }
+  const rspack = { name: 'rspack', instance: { CopyRspackPlugin } };
+  const [rspackCopy] = plugin.configureWebpack({}, false, {
+    currentBundler: rspack,
+  }).plugins;
+  assert.ok(rspackCopy instanceof CopyRspackPlugin);
+  const [webpackCopy] = plugin.configureWebpack({}, false, {
+    currentBundler: { name: 'webpack' },
+  }).plugins;
+  assert.equal(webpackCopy.constructor.name, 'CopyPlugin');
+
+  const context = join(repoRoot, 'docs', 'architectures');
+  for (const [pattern] of [rspackCopy.patterns, webpackCopy.patterns]) {
+    assert.equal(pattern.context, context);
+    assert.equal(pattern.from, '*/images/**/*');
+    assert.equal(pattern.toType, 'file');
+    for (const [source, published] of [
+      ['acme/images/diagram.svg', 'img/architectures/acme/diagram.svg'],
+      ['acme/images/flows/a.png', 'img/architectures/acme/flows/a.png'],
+    ])
+      assert.equal(
+        pattern.to({
+          context,
+          absoluteFilename: join(context, ...source.split('/')),
+        }),
+        published,
+      );
+  }
+});
+
 test('the e2e fixture docs instance is opt-in and scoped to the fixture directory', async () => {
   // The fixture page renders a <CNCFProjectCard> prop shape no generated
   // architecture page produces (tests/e2e/cncf-project-card.spec.js).

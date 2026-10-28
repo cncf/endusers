@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { firstParagraph } from '../scripts/lib/architecture-content.mjs';
+import {
+  findRelativeDestinations,
+  firstParagraph,
+} from '../scripts/lib/architecture-content.mjs';
 
 // firstParagraph() is reached only through scripts/import-architecture-issue.mjs,
 // so without these pins every assertion about it would be an assertion about a
@@ -50,3 +53,25 @@ for (const [label, body, expected] of PARAGRAPHS) {
     assert.equal(firstParagraph(body), expected);
   });
 }
+
+test('findRelativeDestinations reports only relative paths, by line', () => {
+  const body = [
+    '![Diagram](./images/diagram.svg)',
+    '[Notes](notes.md) and [Up](../submit/)',
+    '',
+    '[ref]: images/flow.png',
+    '',
+    '![Published](/img/architectures/acme/diagram.svg)',
+    '[Site](https://example.com) [Mail](mailto:a@example.com) [Top](#top) [Self]()',
+    '',
+    '```',
+    '![Code](./in-code.svg)',
+    '```',
+  ].join('\n');
+  assert.deepEqual(findRelativeDestinations(body), [
+    { line: 1, url: './images/diagram.svg' },
+    { line: 2, url: 'notes.md' },
+    { line: 2, url: '../submit/' },
+    { line: 4, url: 'images/flow.png' },
+  ]);
+});

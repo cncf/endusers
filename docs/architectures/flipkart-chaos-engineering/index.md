@@ -83,11 +83,11 @@ Multiple teams collaborate to build, operate, and consume the chaos platform:
 
 At a high level, the architecture consists of a centralised control plane that is setup on a Kubernetes namespace or cluster that helps in designing and coordinating the chaos experiments. The chaos experiments are designed, implemented and certified and finally placed in a ChaosHub, which then are used by various teams in the organization to run them on the target Kubernetes clusters. Chaos experiment results are pushed back into the control plane as resilience scores, which can be used to create resilience testing trends and resilience posture reports for various teams’ consumption.
 
-![Top-level chaos engineering architecture: central control plane coordinating experiments across target Kubernetes clusters](/img/architectures/flipkart-chaos-engineering/top-level-diagram.png)
+![Top-level chaos engineering architecture: central control plane coordinating experiments across target Kubernetes clusters](./images/top-level-diagram.png)
 
 The platform is organized into four logical layers:
 
-![The four logical layers of the chaos platform](/img/architectures/flipkart-chaos-engineering/layers.png)
+![The four logical layers of the chaos platform](./images/layers.png)
 
 **Control Plane Layer.** A single, centralized LitmusChaos installation — the operator, workflow controller, MongoDB backing store, and Grafana dashboards — lives in a dedicated central namespace and is operated by Central Reliability Engineering. There is one control plane per cluster footprint (staging, production), not one per tenant.
 

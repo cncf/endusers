@@ -167,7 +167,26 @@ test('rejects a logo that does not exist under static/', () => {
     withMember({ logo: '/img/awards/missing.svg' }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /logo does not exist under static\//);
+  assert.match(result.stderr, /logo does not exist in the repository/);
+});
+
+// The build publishes docs/architectures/<id>/images/ at
+// /img/architectures/<id>/, so an architecture logo is found there, not in
+// static/.
+test('resolves an architecture logo to its images/ directory', () => {
+  const logo = '/img/architectures/acme/logo.svg';
+  const present = runScriptWithFixtures(SCRIPT, {
+    ...withMember({ logo }),
+    'docs/architectures/acme/images/logo.svg': '<svg/>',
+  });
+  assert.equal(present.status, 0, present.stderr);
+
+  const misplaced = runScriptWithFixtures(SCRIPT, {
+    ...withMember({ logo }),
+    'static/img/architectures/acme/logo.svg': '<svg/>',
+  });
+  assert.equal(misplaced.status, 1);
+  assert.match(misplaced.stderr, /logo does not exist in the repository/);
 });
 
 test('rejects a non-string logo', () => {

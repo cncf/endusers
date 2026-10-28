@@ -248,6 +248,15 @@ in prose must be escaped or reworded; the check fails closed. Findings read
 `disallowed element <name>`, `disallowed attribute name on <element>`,
 `disallowed node type name` or `disallowed URL scheme scheme:`.
 
+A relative destination (`./images/diagram.svg`) must stay inside the page's own
+`docs/architectures/<id>/images/` directory, which
+`validate:architecture-assets` gates; anything else is rejected with
+`relative destination <path> must stay inside this architecture's images/ directory`.
+Docusaurus bundles whatever file a relative link or image names, of any type and
+from anywhere in the repository, so without this rule a page could publish a
+file no gate has read. The importer rebases relative image paths onto
+`./images/`.
+
 The inline-element list above is matched exactly as written, in lower case. MDX
 reads a lower-case tag name as an HTML element and any other casing as a
 _component_ reference, so `<B>` is not the inert `<b>` the list allows — it

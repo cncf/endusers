@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
 import { checkDuplicateValue } from './lib/duplicate-check.mjs';
+import {
+  ARCHITECTURE_IMAGE_PREFIX,
+  publishedSourcePath,
+} from './lib/published-assets.mjs';
 import {
   checkNonEmptyArray,
   checkNonEmptyString,
@@ -24,14 +27,15 @@ import {
 // reaches the page as a live <img src> that every visitor's browser fetches on
 // load -- the third-party beacon that scripts/lib/profile-image.mjs and the
 // img-src directive in docusaurus.config.js exist to prevent. Require a
-// site-local path instead, and require it to resolve under static/.
+// site-local path instead, and require it to resolve to a file the build
+// publishes (scripts/lib/published-assets.mjs).
 //
 // URL fields are parsed rather than prefix-tested through checkUrl() in
 // ./lib/validate-utils.mjs: /^https:\/\// accepts
 // "https://www.cncf.io@evil.example/", whose visible prefix and real host
 // disagree.
 
-const staticRoot = fileURLToPath(new URL('../static/', import.meta.url));
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const landscapePath = fileURLToPath(
   new URL('../data/enduser-landscape.json', import.meta.url),
 );
@@ -119,11 +123,11 @@ function checkLogo(errors, path, value) {
     return;
   }
 
-  if (!existsSync(join(staticRoot, logo.replace(/^\//, '')))) {
+  if (!existsSync(publishedSourcePath(repoRoot, logo))) {
     errors.push({
       path,
       severity: 'error',
-      message: `logo does not exist under static/: ${logo}`,
+      message: `logo does not exist in the repository (static/, or docs/architectures/<id>/images/ for ${ARCHITECTURE_IMAGE_PREFIX}): ${logo}`,
     });
   }
 }

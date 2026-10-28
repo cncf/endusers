@@ -57,7 +57,7 @@ This was addressed by a joined initiative between a private cloud provider built
 
 The architecture described below, is our OnPremise implementation of our Kubernetes deployment strategy.
 
-![Global Architecture](/img/architectures/sncf-onprem/architecture-global.excalidraw.png)
+![Global Architecture](./images/architecture-global.excalidraw.png)
 
 ### Goals
 
@@ -71,7 +71,7 @@ The architecture described below, is our OnPremise implementation of our Kuberne
 
 ## Can you expand on why you are using those projects/services?
 
-![Detailed Architecture](/img/architectures/sncf-onprem/architecture-detailed.excalidraw.png)
+![Detailed Architecture](./images/architecture-detailed.excalidraw.png)
 
 CNCF projects and OpenSource are at the heart of our architecture:
 - **ClusterAPI - Clusters and Machines Management** *(adopted in 2025)*: ClusterAPI uses CAPO for lifecycle management of our Kubernetes clusters' control plane. It also provides through CACPPT machine configuration, enabling node autoscaling and autohealing thanks to cluster autoscaler.

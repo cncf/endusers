@@ -18,7 +18,7 @@ test('a protocol-relative image is demoted to a plain link', () => {
   // exactly like an absolute URL, while matching neither `https?://` nor the
   // local-path rewrite -- so it used to survive as a live remote <img>.
   assert.equal(
-    cleanMarkdown('![beacon](//evil.example/b.png)', 'demo'),
+    cleanMarkdown('![beacon](//evil.example/b.png)'),
     '[beacon](//evil.example/b.png)',
   );
 });
@@ -26,41 +26,41 @@ test('a protocol-relative image is demoted to a plain link', () => {
 test('an uppercase-scheme image is demoted rather than mangled', () => {
   // A browser reads HTTPS:// as https://. The old case-sensitive test missed
   // it, and the local-path rewrite then turned it into
-  // "/img/architectures/demo/HTTPS://evil.example/b.png", a path that can
+  // "./images/HTTPS://evil.example/b.png", a path that can
   // never resolve.
   assert.equal(
-    cleanMarkdown('![beacon](HTTPS://evil.example/b.png)', 'demo'),
+    cleanMarkdown('![beacon](HTTPS://evil.example/b.png)'),
     '[beacon](HTTPS://evil.example/b.png)',
   );
 });
 
 test('an absolute http(s) image is still demoted', () => {
   assert.equal(
-    cleanMarkdown('![beacon](https://evil.example/b.png)', 'demo'),
+    cleanMarkdown('![beacon](https://evil.example/b.png)'),
     '[beacon](https://evil.example/b.png)',
   );
 });
 
 test('a cncf/artwork image still resolves to its mirrored path', () => {
   assert.equal(
-    cleanMarkdown(`![Helm](${ARTWORK_SVG})`, 'demo'),
+    cleanMarkdown(`![Helm](${ARTWORK_SVG})`),
     '![Helm](/img/cncf-projects/helm-helm-icon-color.svg)',
   );
 });
 
-test('relative images are still scoped to the architecture asset directory', () => {
+test('relative images are scoped to the page images directory', () => {
   for (const destination of ['images/local.png', './local.png', 'local.png']) {
     assert.equal(
-      cleanMarkdown(`![Diagram](${destination})`, 'demo'),
-      '![Diagram](/img/architectures/demo/local.png)',
+      cleanMarkdown(`![Diagram](${destination})`),
+      '![Diagram](./images/local.png)',
     );
   }
 });
 
 test('an already site-absolute image is left alone', () => {
   assert.equal(
-    cleanMarkdown('![Diagram](/img/architectures/demo/x.png)', 'demo'),
-    '![Diagram](/img/architectures/demo/x.png)',
+    cleanMarkdown('![Diagram](/img/shared/x.png)'),
+    '![Diagram](/img/shared/x.png)',
   );
 });
 
@@ -68,28 +68,28 @@ test('a protocol-relative plain link is left alone', () => {
   // Only images are demoted: a link is not fetched until the reader chooses
   // to follow it, so it leaks nothing on page load.
   assert.equal(
-    cleanMarkdown('[docs](//example.com/x)', 'demo'),
+    cleanMarkdown('[docs](//example.com/x)'),
     '[docs](//example.com/x)',
   );
 });
 
 test('demotes a reference-style remote image to a plain link', () => {
   assert.equal(
-    cleanMarkdown('![beacon][b]\n\n[b]: https://evil.example/b.png', 'demo'),
+    cleanMarkdown('![beacon][b]\n\n[b]: https://evil.example/b.png'),
     '[beacon](https://evil.example/b.png)\n\n[b]: https://evil.example/b.png',
   );
   assert.equal(
-    cleanMarkdown('![beacon][]\n\n[beacon]: //evil.example/b.png', 'demo'),
+    cleanMarkdown('![beacon][]\n\n[beacon]: //evil.example/b.png'),
     '[beacon](//evil.example/b.png)\n\n[beacon]: //evil.example/b.png',
   );
 });
 
 test('rebases a reference-style local image and drops a non-http scheme', () => {
   assert.equal(
-    cleanMarkdown('![d][x]\n\n[x]: images/d.png', 'demo'),
-    '![d](/img/architectures/demo/d.png)\n\n[x]: images/d.png',
+    cleanMarkdown('![d][x]\n\n[x]: images/d.png'),
+    '![d](./images/d.png)\n\n[x]: images/d.png',
   );
-  assert.equal(cleanMarkdown('![hi](javascript:alert(1))', 'demo'), 'hi');
+  assert.equal(cleanMarkdown('![hi](javascript:alert(1))'), 'hi');
 });
 
 test('a script-capable image destination is reduced to alt text even with an authority prefix', () => {
@@ -98,10 +98,10 @@ test('a script-capable image destination is reduced to alt text even with an aut
   // into a *link* carrying the same scheme. "//" is a JavaScript line comment
   // and "%0a" starts a new line, so that link runs alert(1) on click. Only
   // findActiveContent() stood between it and the published page.
-  assert.equal(cleanMarkdown('![x](javascript://%0aalert(1))', 'demo'), 'x');
-  assert.equal(cleanMarkdown('![x](vbscript://x)', 'demo'), 'x');
+  assert.equal(cleanMarkdown('![x](javascript://%0aalert(1))'), 'x');
+  assert.equal(cleanMarkdown('![x](vbscript://x)'), 'x');
   assert.equal(
-    cleanMarkdown('![x][r]\n\n[r]: javascript://%0aalert(1)', 'demo'),
+    cleanMarkdown('![x][r]\n\n[r]: javascript://%0aalert(1)'),
     'x\n\n[r]: javascript://%0aalert(1)',
   );
 });
@@ -110,30 +110,24 @@ test('a schemed destination that names no host is reduced to alt text', () => {
   // The HAS_SCHEME arm catches what the scheme allowlist lets through but
   // REMOTE_DESTINATION does not: an allowed scheme that carries no authority.
   // It is not a usable image source, so the alt text is all that survives.
-  assert.equal(cleanMarkdown('![x](mailto:a@b.example)', 'demo'), 'x');
-  assert.equal(cleanMarkdown('![x](tel:+15551234)', 'demo'), 'x');
-  assert.equal(cleanMarkdown('![x](data:image/png;base64,AAAA)', 'demo'), 'x');
+  assert.equal(cleanMarkdown('![x](mailto:a@b.example)'), 'x');
+  assert.equal(cleanMarkdown('![x](tel:+15551234)'), 'x');
+  assert.equal(cleanMarkdown('![x](data:image/png;base64,AAAA)'), 'x');
 });
 
 test('a disallowed scheme is reduced to alt text even when it names a host', () => {
   // Demoting ftp:// to a link would publish a scheme the publish-time gate
   // rejects. A schemeless //host is still demoted, since it inherits https.
+  assert.equal(cleanMarkdown('![beacon](ftp://evil.example/b.png)'), 'beacon');
   assert.equal(
-    cleanMarkdown('![beacon](ftp://evil.example/b.png)', 'demo'),
-    'beacon',
-  );
-  assert.equal(
-    cleanMarkdown('![beacon](//evil.example/b.png)', 'demo'),
+    cleanMarkdown('![beacon](//evil.example/b.png)'),
     '[beacon](//evil.example/b.png)',
   );
 });
 
 test('reduces a remote image inside a link to its alt text', () => {
   assert.equal(
-    cleanMarkdown(
-      '[![logo](https://evil.example/l.png)](https://example.com)',
-      'demo',
-    ),
+    cleanMarkdown('[![logo](https://evil.example/l.png)](https://example.com)'),
     '[logo](https://example.com)',
   );
 });
@@ -141,7 +135,7 @@ test('reduces a remote image inside a link to its alt text', () => {
 test('does not touch an image written inside a code span or fence', () => {
   const body =
     'Use `![x](https://evil.example/b.png)` here.\n\n```\n![x](https://evil.example/b.png)\n```';
-  assert.equal(cleanMarkdown(body, 'demo'), body);
+  assert.equal(cleanMarkdown(body), body);
 });
 
 test('resolves a repeated label to its first definition', () => {
@@ -153,39 +147,36 @@ test('resolves a repeated label to its first definition', () => {
   assert.equal(
     cleanMarkdown(
       '![d][x]\n\n[x]: https://evil.example/b.png\n[x]: images/d.png',
-      'demo',
     ),
     '[d](https://evil.example/b.png)\n\n[x]: https://evil.example/b.png\n[x]: images/d.png',
   );
   assert.equal(
     cleanMarkdown(
       '![d][x]\n\n[x]: images/d.png\n[x]: https://evil.example/b.png',
-      'demo',
     ),
-    '![d](/img/architectures/demo/d.png)\n\n[x]: images/d.png\n[x]: https://evil.example/b.png',
+    '![d](./images/d.png)\n\n[x]: images/d.png\n[x]: https://evil.example/b.png',
   );
 });
 
 test('leaves an unresolved image reference and an absolute reference path alone', () => {
-  assert.equal(cleanMarkdown('![a][missing]', 'demo'), '![a][missing]');
+  assert.equal(cleanMarkdown('![a][missing]'), '![a][missing]');
   assert.equal(
-    cleanMarkdown('![a][x]\n\n[x]: /img/shared/a.png', 'demo'),
+    cleanMarkdown('![a][x]\n\n[x]: /img/shared/a.png'),
     '![a](/img/shared/a.png)\n\n[x]: /img/shared/a.png',
   );
 });
 
 test('keeps mirrored artwork referenced by definition and escapes labels and paths', () => {
   assert.equal(
-    cleanMarkdown(`![He\\]lm][h]\n\n[h]: ${ARTWORK_SVG}`, 'demo'),
-    cleanMarkdown(`![He\\]lm](${ARTWORK_SVG})`, 'demo') +
-      `\n\n[h]: ${ARTWORK_SVG}`,
+    cleanMarkdown(`![He\\]lm][h]\n\n[h]: ${ARTWORK_SVG}`),
+    cleanMarkdown(`![He\\]lm](${ARTWORK_SVG})`) + `\n\n[h]: ${ARTWORK_SVG}`,
   );
   assert.equal(
-    cleanMarkdown('![](<images/my diagram.png>)', 'demo'),
-    '![](</img/architectures/demo/my diagram.png>)',
+    cleanMarkdown('![](<images/my diagram.png>)'),
+    '![](<./images/my diagram.png>)',
   );
   assert.equal(
-    cleanMarkdown('![x](<https://evil.example/a b.png>)', 'demo'),
+    cleanMarkdown('![x](<https://evil.example/a b.png>)'),
     '[x](<https://evil.example/a b.png>)',
   );
 });
@@ -196,9 +187,8 @@ test('cleanMarkdown rewrites several references in one body', () => {
   assert.equal(
     cleanMarkdown(
       '![a](images/a.png) text ![b](https://evil.example/b.png) more ![c](./c.png)',
-      'demo',
     ),
-    '![a](/img/architectures/demo/a.png) text [b](https://evil.example/b.png) more ![c](/img/architectures/demo/c.png)',
+    '![a](./images/a.png) text [b](https://evil.example/b.png) more ![c](./images/c.png)',
   );
 });
 
@@ -208,17 +198,17 @@ const PINNED_REWRITES = [
   [
     'a "//" inside a relative path does not make it remote',
     '![x](sub//b.png)',
-    '![x](/img/architectures/demo/sub//b.png)',
+    '![x](./images/sub//b.png)',
   ],
   [
     'a ":" inside a relative path is not a scheme',
     '![x](images/a:b.png)',
-    '![x](/img/architectures/demo/a:b.png)',
+    '![x](./images/a:b.png)',
   ],
   [
     'only a leading "./" and "images/" are stripped from a relative path',
     '![x](a/./b.png) ![y](sub/images/b.png)',
-    '![x](/img/architectures/demo/a/./b.png) ![y](/img/architectures/demo/sub/images/b.png)',
+    '![x](./images/a/./b.png) ![y](./images/sub/images/b.png)',
   ],
   [
     'a bracket in alt text is escaped when the image is demoted',
@@ -268,6 +258,6 @@ const PINNED_REWRITES = [
 
 for (const [label, body, expected] of PINNED_REWRITES) {
   test(`cleanMarkdown: ${label}`, () => {
-    assert.equal(cleanMarkdown(body, 'demo'), expected);
+    assert.equal(cleanMarkdown(body), expected);
   });
 }

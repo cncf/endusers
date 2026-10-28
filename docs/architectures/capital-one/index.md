@@ -65,7 +65,7 @@ We continue to extend this abstraction to languages and platforms not yet covere
 Because every signal passes through this one layer, it is where we consistently enforce enterprise policy — governing where data can go, applying compliance controls, and attributing cost — rather than relying on each application to get those decisions right on its own.
 
 **High-Level Architecture**  
-![High-level architecture: an application workload sends telemetry to a local OTel Collector, which fans out to logs, traces, and metrics gateways that feed the observability backend used by monitoring, visualization, and GenAI tools](/img/architectures/capital-one/high-level-architecture.png)
+![High-level architecture: an application workload sends telemetry to a local OTel Collector, which fans out to logs, traces, and metrics gateways that feed the observability backend used by monitoring, visualization, and GenAI tools](./images/high-level-architecture.png)
 
 Each application workload (i.e. container, function, process) is paired with an OpenTelemetry Collector utilizing standard OTLP.
 This local collector exports to gateway collectors dedicated to each signal.
@@ -87,7 +87,7 @@ Let's follow the path of a Metric from generation to Alert.
 In addition to the OTel infrastructure for telemetry generation, collection, processing, and export, we have deployed the OpenTelemetry OpAMP control interface to monitor and track our deployed fleet of local collectors.
 
 **OTel Agent Management: OpAMP Implementation**  
-![OpAMP agent management: inside the workload, an OTel initialization process fetches configuration from the Config Service, then an OpAMP Supervisor connects to the OpAMP Service and starts the OTel Collector; the services read a config store and write an agent status store that engineers manage through the Agent Manager user interface](/img/architectures/capital-one/opamp-agent-management.png)
+![OpAMP agent management: inside the workload, an OTel initialization process fetches configuration from the Config Service, then an OpAMP Supervisor connects to the OpAMP Service and starts the OTel Collector; the services read a config store and write an agent status store that engineers manage through the Agent Manager user interface](./images/opamp-agent-management.png)
 
 The OTel Agent Management allows central monitoring and control of the OpenTelemetry collectors deployed alongside each workload while still empowering application teams a self service onboarding and management experience.
 This solution leverages OpAMP protocol using a custom control plane built for internal processes and policy requirements.
@@ -117,7 +117,7 @@ Application teams keep the same self-service flexibility to tailor their collect
 The result is a deliberate combination: teams get the customization they need, while the central observability team retains the standards, version compatibility, and change control, especially for production rollouts, that keep the fleet consistent at scale.
 
 **Traces Gateway: Sampling Architecture**  
-![Traces gateway: a client collector sends spans to a global load balancing gateway, which routes to regional load balancing gateways and then to tail sampling gateways before export to the observability backend](/img/architectures/capital-one/traces-sampling.png)
+![Traces gateway: a client collector sends spans to a global load balancing gateway, which routes to regional load balancing gateways and then to tail sampling gateways before export to the observability backend](./images/traces-sampling.png)
 
 Trace Sampling is a crucial capability to surface insights while still controlling costs of distributed tracing and ensuring we have the data needed to troubleshooting and development needs.
 Our sampling strategy captures all traces when attributes that indicate errors or latency are present, then a probabilistic sampling of the rest.
@@ -142,7 +142,7 @@ This allows the sampling ratio to adapt to each application in real time.
 
 **Backend Failover Architecture**
 
-![Backend failover: inside the OTel gateway, the collector exports directly to the observability backend; on failure, telemetry is written to object storage, queued for retry, and re-delivered by a backfill process](/img/architectures/capital-one/backend-failover.png)
+![Backend failover: inside the OTel gateway, the collector exports directly to the observability backend; on failure, telemetry is written to object storage, queued for retry, and re-delivered by a backfill process](./images/backend-failover.png)
 
 During normal operation, gateway collectors export telemetry to the destination platform in near-real time, holding only a minimal amount of telemetry in memory while transform and routing operations complete.
 When the destination platform becomes unavailable during an incident, however, exports begin to fail and telemetry accumulates in collector memory.

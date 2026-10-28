@@ -11,6 +11,7 @@ import {
   findEscapingReferences,
   findMissingAssets,
 } from './tools/static-references.mjs';
+import { ARCHITECTURE_IMAGE_PREFIX } from '../scripts/lib/published-assets.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const staticRoot = join(repoRoot, 'static');
@@ -38,7 +39,35 @@ const REFERENCES = collectReferences({
   dataFiles: DATA_FILES,
 });
 
+// /img/architectures/<id>/<file> is published from
+// docs/architectures/<id>/images/<file> (endusersArchitectureImages in
+// docusaurus.config.js), so those references are rewritten relative to
+// docs/architectures and checked there with the same rules.
+const architecturesRoot = join(repoRoot, 'docs/architectures');
+const fromStatic = new Map();
+const fromArchitectures = new Map();
+for (const [ref, origins] of REFERENCES) {
+  if (ref.startsWith(ARCHITECTURE_IMAGE_PREFIX)) {
+    const [id, ...rest] = ref
+      .slice(ARCHITECTURE_IMAGE_PREFIX.length)
+      .split('/');
+    fromArchitectures.set(`/${[id, 'images', ...rest].join('/')}`, origins);
+  } else {
+    fromStatic.set(ref, origins);
+  }
+}
+const ROOTS = [
+  [fromStatic, staticRoot],
+  [fromArchitectures, architecturesRoot],
+];
+const acrossRoots = (check) =>
+  ROOTS.flatMap(([references, root]) => check(references, root));
+
 test('the scan finds references to check', () => {
+  assert.ok(
+    fromArchitectures.size > 0,
+    'expected architecture image references; the /img/architectures/ rewrite would otherwise check nothing',
+  );
   assert.ok(
     REFERENCES.size > 20,
     `expected the scan to find static references; found ${REFERENCES.size}. ` +
@@ -47,7 +76,7 @@ test('the scan finds references to check', () => {
 });
 
 test('every referenced static asset exists on disk', () => {
-  const missing = findMissingAssets(REFERENCES, staticRoot);
+  const missing = acrossRoots(findMissingAssets);
   assert.deepEqual(
     missing,
     [],
@@ -56,12 +85,12 @@ test('every referenced static asset exists on disk', () => {
 });
 
 test('referenced static assets are non-empty', () => {
-  const empty = findEmptyAssets(REFERENCES, staticRoot);
+  const empty = acrossRoots(findEmptyAssets);
   assert.deepEqual(empty, [], `zero-byte static assets:\n${empty.join('\n')}`);
 });
 
 test('referenced static assets match the on-disk name exactly', () => {
-  const mismatched = findCaseMismatches(REFERENCES, staticRoot);
+  const mismatched = acrossRoots(findCaseMismatches);
   assert.deepEqual(
     mismatched,
     [],
@@ -70,7 +99,7 @@ test('referenced static assets match the on-disk name exactly', () => {
 });
 
 test('no static reference escapes static/ via path traversal', () => {
-  const escaping = findEscapingReferences(REFERENCES, staticRoot);
+  const escaping = acrossRoots(findEscapingReferences);
   assert.deepEqual(
     escaping,
     [],

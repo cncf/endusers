@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { utimesSync } from 'node:fs';
+import { mkdirSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
 import { runScriptWithFixtures } from './helpers.mjs';
 import {
@@ -17,7 +17,7 @@ const VALID_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100"/></svg>';
 
 function svgFixture(svg, name = 'diagram.svg') {
-  return { [`static/img/architectures/example/${name}`]: svg };
+  return { [`docs/architectures/example/images/${name}`]: svg };
 }
 
 test('accepts a valid SVG', () => {
@@ -98,7 +98,7 @@ test('warns on draw.io mxfile metadata but still passes', () => {
   assert.match(assetDiagnostics(result), /mxfile metadata/);
   assert.deepEqual(result.issues, [
     {
-      path: 'static/img/architectures/example/diagram.svg',
+      path: 'docs/architectures/example/images/diagram.svg',
       severity: 'warn',
       message: 'contains draw.io mxfile metadata in content attribute',
     },
@@ -119,7 +119,7 @@ test('warns on foreignObject but still passes', () => {
 
 test('rejects a non-image asset type', () => {
   const result = validateAssetFixtures({
-    'static/img/architectures/example/notes.html': '<script>alert(1)</script>',
+    'docs/architectures/example/images/notes.html': '<script>alert(1)</script>',
   });
   assertInvalidAssets(result);
   assert.match(
@@ -130,7 +130,7 @@ test('rejects a non-image asset type', () => {
 
 test('rejects an extensionless asset', () => {
   const result = validateAssetFixtures({
-    'static/img/architectures/example/README': 'hello',
+    'docs/architectures/example/images/README': 'hello',
   });
   assertInvalidAssets(result);
   assert.match(
@@ -141,8 +141,8 @@ test('rejects an extensionless asset', () => {
 
 test('walks nested directories', () => {
   const result = validateAssetFixtures({
-    'static/img/architectures/a/one.svg': VALID_SVG,
-    'static/img/architectures/b/deep/two.svg': VALID_SVG,
+    'docs/architectures/a/images/one.svg': VALID_SVG,
+    'docs/architectures/b/images/deep/two.svg': VALID_SVG,
   });
   assertValidAssets(result);
   assert.equal(result.assetCount, 2);
@@ -182,7 +182,7 @@ test('rejects SVG containing a script element under an uppercase .SVG extension'
 // These cases pin which findings are repaired, which are reported untouched,
 // and what lands on disk afterwards.
 
-const ASSET = 'static/img/architectures/example/diagram.svg';
+const ASSET = 'docs/architectures/example/images/diagram.svg';
 
 for (const path of [ASSET, 'static/img/cncf-projects/logo.svg']) {
   for (const fix of [false, true]) {
@@ -348,7 +348,7 @@ test('--fix repairs several findings in one file and reports each', () => {
 });
 
 test('--fix writes a repair to each asset it walks', () => {
-  const second = 'static/img/architectures/nested/deep/two.svg';
+  const second = 'docs/architectures/nested/images/deep/two.svg';
   const result = validateAssetFixtures(
     {
       ...svgFixture(`<!DOCTYPE svg>\n${VALID_SVG}`),
@@ -363,7 +363,7 @@ test('--fix writes a repair to each asset it walks', () => {
 });
 
 test('--fix ignores non-SVG assets', () => {
-  const png = 'static/img/architectures/example/shot.png';
+  const png = 'docs/architectures/example/images/shot.png';
   const result = validateAssetFixtures(
     { [png]: 'not really a png' },
     { fix: true, readBack: [png] },
@@ -376,7 +376,7 @@ test('--fix ignores non-SVG assets', () => {
 test('rejects a symlink among published assets', () => {
   const result = validateAssetFixtures(svgFixture(VALID_SVG), {
     symlinks: {
-      'static/img/architectures/example/link.svg': 'diagram.svg',
+      'docs/architectures/example/images/link.svg': 'diagram.svg',
     },
   });
   assertInvalidAssets(result);
@@ -480,7 +480,7 @@ test('warns on an asset larger than 2 MB but still passes', () => {
   assert.match(assetDiagnostics(result), /large\.svg: asset is \d+\.\d\d MB/);
   assert.deepEqual(result.issues, [
     {
-      path: 'static/img/architectures/example/large.svg',
+      path: 'docs/architectures/example/images/large.svg',
       severity: 'warn',
       message: 'asset is 2.00 MB (consider optimization)',
     },
@@ -506,7 +506,9 @@ test('rejects a member logo larger than 2 MB', () => {
 
 test('does not warn on an asset exactly at the 2 MB limit', () => {
   const result = validateAssetFixtures({
-    'static/img/architectures/example/limit.png': Buffer.alloc(2 * 1024 * 1024),
+    'docs/architectures/example/images/limit.png': Buffer.alloc(
+      2 * 1024 * 1024,
+    ),
   });
   assert.deepEqual(result.issues, []);
   assert.equal(result.assetCount, 1);
@@ -578,7 +580,7 @@ test('walks static/img shallowly so diagram-quality checks stay scoped', () => {
   // static/img is walked without recursion because its image subdirectories
   // are gated as their own roots. A viewBox-less logo sitting directly in
   // static/img must therefore pass, while the same file under
-  // static/img/architectures fails the diagram-quality gate.
+  // docs/architectures/<id>/images fails the diagram-quality gate.
   const svg = '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>';
   const chrome = validateAssetFixtures({ 'static/img/logo.svg': svg });
   assertValidAssets(chrome);
@@ -593,8 +595,12 @@ test('reports a symlinked directory sitting directly in static/img', () => {
   // before the directory branch, so a link that would otherwise be skipped
   // for not being recursed into is still a finding.
   const result = validateAssetFixtures(
-    { 'static/img/architectures/example/diagram.svg': VALID_SVG },
-    { symlinks: { 'static/img/elsewhere': 'architectures/example' } },
+    { 'docs/architectures/example/images/diagram.svg': VALID_SVG },
+    {
+      symlinks: {
+        'static/img/elsewhere': '../../docs/architectures/example/images',
+      },
+    },
   );
   assertInvalidAssets(result);
   assert.match(assetDiagnostics(result), /elsewhere: is a symbolic link/);
@@ -620,7 +626,7 @@ test('accepts a font file in the exempted static/fonts directory', () => {
     'static/fonts/some-font.ttf': 'not really a font',
     'static/fonts/some-font.woff': 'not really a font',
     'static/fonts/some-font.woff2': 'not really a font',
-    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'docs/architectures/example/images/diagram.svg': VALID_SVG,
   });
   assertValidAssets(result);
   assert.equal(result.assetCount, 1);
@@ -634,7 +640,7 @@ test('rejects a script-bearing SVG hidden in the exempted static/fonts directory
   const result = validateAssetFixtures({
     'static/fonts/poc.svg':
       '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
-    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'docs/architectures/example/images/diagram.svg': VALID_SVG,
   });
   assertInvalidAssets(result);
   assert.match(
@@ -646,7 +652,7 @@ test('rejects a script-bearing SVG hidden in the exempted static/fonts directory
 test('rejects an HTML file in the exempted static/fonts directory', () => {
   const result = validateAssetFixtures({
     'static/fonts/poc.html': '<html><script>alert(1)</script></html>',
-    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'docs/architectures/example/images/diagram.svg': VALID_SVG,
   });
   assertInvalidAssets(result);
   assert.match(
@@ -659,7 +665,7 @@ test('rejects a symlink inside the exempted static/fonts directory', () => {
   const result = validateAssetFixtures(
     {
       'static/fonts/some-font.woff2': 'not really a font',
-      'static/img/architectures/example/diagram.svg': VALID_SVG,
+      'docs/architectures/example/images/diagram.svg': VALID_SVG,
     },
     { symlinks: { 'static/fonts/link.woff': 'some-font.woff2' } },
   );
@@ -674,7 +680,7 @@ test('gates a nested subdirectory of the exempted static/fonts directory', () =>
   const result = validateAssetFixtures({
     'static/fonts/nested/poc.svg':
       '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
-    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'docs/architectures/example/images/diagram.svg': VALID_SVG,
   });
   assertInvalidAssets(result);
   assert.match(
@@ -685,7 +691,7 @@ test('gates a nested subdirectory of the exempted static/fonts directory', () =>
 
 test('rejects a symlink standing in for a top-level static/ directory', () => {
   const result = validateAssetFixtures(
-    { 'static/img/architectures/example/diagram.svg': VALID_SVG },
+    { 'docs/architectures/example/images/diagram.svg': VALID_SVG },
     { symlinks: { 'static/uploads': 'img' } },
   );
   assertInvalidAssets(result);
@@ -694,7 +700,7 @@ test('rejects a symlink standing in for a top-level static/ directory', () => {
 
 test('does not flag static/ subdirectories the gate already walks', () => {
   const result = validateAssetFixtures({
-    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'docs/architectures/example/images/diagram.svg': VALID_SVG,
     'static/favicons/favicon.svg': VALID_SVG,
   });
   assertValidAssets(result);
@@ -729,7 +735,7 @@ test('accepts the exempted non-asset files in the static/ root', () => {
   const result = validateAssetFixtures({
     'static/manifest.json': '{"name":"site"}',
     'static/robots.txt': 'User-agent: *',
-    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'docs/architectures/example/images/diagram.svg': VALID_SVG,
   });
   assertValidAssets(result);
 });
@@ -759,9 +765,10 @@ test(
   { skip: MKFIFO_MISSING },
   () => {
     const fixtures = {
-      'static/img/architectures/example/diagram.svg': VALID_SVG,
+      'docs/architectures/example/images/diagram.svg': VALID_SVG,
     };
     const setup = (work) => {
+      mkdirSync(join(work, 'static'), { recursive: true });
       const fifo = join(work, 'static', 'pipe');
       assert.equal(spawnSync('mkfifo', [fifo]).status, 0);
     };
@@ -783,7 +790,7 @@ test('rejects a subdirectory of the shallow static/img walk', () => {
   // assetDirs entry; one that is not would otherwise ship to the site origin
   // with no gate at all.
   const result = validateAssetFixtures({
-    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'docs/architectures/example/images/diagram.svg': VALID_SVG,
     'static/img/illustrations/nested.svg': '<svg><rect/></svg>',
   });
   assertInvalidAssets(result);
@@ -798,7 +805,7 @@ test('rejects markup in a subdirectory of the shallow static/img walk', () => {
   // site origin, and it never ran below static/img: the file was published
   // verbatim with the validator, the unit suite and the build all green.
   const result = validateAssetFixtures({
-    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'docs/architectures/example/images/diagram.svg': VALID_SVG,
     'static/img/blog/pwn.html': '<html><script>alert(1)</script></html>',
   });
   assertInvalidAssets(result);
@@ -812,7 +819,7 @@ test('does not flag the static/img subdirectories that are asset roots', () => {
   // The three real subdirectories each have their own assetDirs entry, so
   // they are returned by assetRootPaths before the new subdirectory check.
   const result = validateAssetFixtures({
-    'static/img/architectures/example/diagram.svg': VALID_SVG,
+    'docs/architectures/example/images/diagram.svg': VALID_SVG,
     'static/img/cncf-projects/helm-helm-icon-color.svg': VALID_SVG,
     'static/img/awards/example.svg': VALID_SVG,
     'static/img/cncf_logo_white.svg': VALID_SVG,
@@ -830,7 +837,7 @@ test('cli: reports successful asset validation', () => {
 
 test('cli: reports validation errors and exits unsuccessfully', () => {
   const result = runScriptWithFixtures(SCRIPT, {
-    'static/img/architectures/example/notes.html': '<html/>',
+    'docs/architectures/example/images/notes.html': '<html/>',
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /\.html is not an allowed asset type/);
@@ -861,7 +868,7 @@ test('cli: --fix retains repair messages and the validation summary', () => {
   assert.equal(
     result.stdout,
     'Fixed 1 issue(s):\n' +
-      '  - static/img/architectures/example/diagram.svg: removed DOCTYPE\n' +
+      '  - docs/architectures/example/images/diagram.svg: removed DOCTYPE\n' +
       'Validated 1 architecture asset(s).\n' +
       'No fixes were needed.\n',
   );
@@ -890,4 +897,22 @@ test('cli: warnings remain nonfatal and do not claim a clean --fix run', () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stderr, /contains foreignObject/);
   assert.equal(result.stdout, 'Validated 1 architecture asset(s).\n');
+});
+
+test('gates each architecture images/ directory as its own asset root', () => {
+  // endusersArchitectureImages publishes docs/architectures/<id>/images/ at
+  // /img/architectures/<id>/; the pages beside it are not assets, and a
+  // symlinked architecture directory is not followed (validate-architectures
+  // rejects it, and the build's copy does not follow links).
+  const result = validateAssetFixtures(
+    {
+      'docs/architectures/index.md': '# Catalog',
+      'docs/architectures/example/index.md': '# Example',
+      'docs/architectures/example/images/diagram.svg': VALID_SVG,
+      'outside/evil/images/diagram.svg': '<svg><script/></svg>',
+    },
+    { symlinks: { 'docs/architectures/evil': '../../outside/evil' } },
+  );
+  assertValidAssets(result);
+  assert.equal(result.assetCount, 1);
 });

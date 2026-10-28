@@ -2,7 +2,7 @@
 /**
  * Turns a reference-architecture submission issue (opened with
  * .github/ISSUE_TEMPLATE/reference-architecture.yml) into a catalog record and
- * docs/architectures/<id>.md page.
+ * docs/architectures/<id>/index.md page.
  *
  * Run by .github/workflows/architecture-submission.yml when a maintainer adds
  * the `architecture-ready` label to a submission issue. The workflow points
@@ -129,7 +129,7 @@ async function main() {
     sections.push(renderSection(label, value));
   }
 
-  const cleanBody = cleanMarkdown(sections.filter(Boolean).join('\n\n'), id);
+  const cleanBody = cleanMarkdown(sections.filter(Boolean).join('\n\n'));
 
   const record = {
     id,
@@ -150,13 +150,13 @@ async function main() {
   };
 
   mkdirSync(recordsDir, { recursive: true });
-  mkdirSync(docsDir, { recursive: true });
+  mkdirSync(join(docsDir, id), { recursive: true });
   writeFileSync(
     join(recordsDir, `${id}.json`),
     JSON.stringify(record, null, 2) + '\n',
   );
   writeFileSync(
-    join(docsDir, `${id}.md`),
+    join(docsDir, id, 'index.md'),
     `---\ntitle: ${JSON.stringify(title)}\nsidebar_label: ${JSON.stringify(orgName)}\n---\n\nimport CNCFProjectCard from '@site/src/components/CNCFProjectCard';\n\n> Submitted by the community via [reference architecture issue #${issue.number}](${sourceUrl}). Documentation is distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).\n\n${cleanBody}\n`,
   );
 

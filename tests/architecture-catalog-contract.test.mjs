@@ -10,7 +10,7 @@ import { REPO_AUTHORED_PAGES } from '../scripts/lib/architecture-pages.mjs';
 // Docusaurus pages are three artifacts written together by an import run
 // (scripts/import-architecture-issue.mjs). Nothing re-checks that they still agree
 // once committed: validate-architectures.mjs reads only catalog.json, and
-// validate-architecture-assets.mjs reads only static/img/architectures. A
+// validate-architecture-assets.mjs reads only the image files. A
 // partial import, a hand-edited page or a deleted record therefore ships a
 // catalog entry with no page, or a page with no entry, without failing a
 // check. These tests assert the contract between the three.
@@ -19,7 +19,6 @@ const repoRoot = resolveRepoRoot(import.meta.url);
 const catalogPath = join(repoRoot, 'data/architectures/catalog.json');
 const recordsDir = join(repoRoot, 'data/architectures/records');
 const docsDir = join(repoRoot, 'docs/architectures');
-const assetsRoot = join(repoRoot, 'static/img/architectures');
 
 const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
 
@@ -59,7 +58,7 @@ function readFrontmatter(markdown, label) {
 }
 
 function docPath(id) {
-  return join(docsDir, `${id}.md`);
+  return join(docsDir, id, 'index.md');
 }
 
 test('catalog.json is a non-empty array of uniquely identified records', () => {
@@ -179,14 +178,18 @@ test('each record file is byte-identical in content to its catalog entry', () =>
 });
 
 test('catalog ids and generated doc pages are one-to-one', () => {
-  const pages = readdirSync(docsDir)
-    .filter((name) => name.endsWith('.md') && !REPO_AUTHORED_PAGES.has(name))
-    .map((name) => name.replace(/\.md$/, ''))
+  const pages = readdirSync(docsDir, { withFileTypes: true })
+    .filter(
+      (entry) =>
+        entry.isDirectory() &&
+        existsSync(join(docsDir, entry.name, 'index.md')),
+    )
+    .map((entry) => entry.name)
     .sort();
   assert.deepEqual(
     pages,
     catalog.map((record) => record.id).sort(),
-    'every catalog id needs a docs/architectures/<id>.md and vice versa',
+    'every catalog id needs a docs/architectures/<id>/index.md and vice versa',
   );
 });
 
@@ -247,7 +250,7 @@ test('every repo-authored architectures page exists and has a title', () => {
   }
 });
 
-test('assets are namespaced under the record id and present in static/', () => {
+test('assets are namespaced under the record id and present in its images/', () => {
   for (const record of catalog) {
     for (const asset of record.assets) {
       const prefix = `/img/architectures/${record.id}/`;
@@ -256,21 +259,23 @@ test('assets are namespaced under the record id and present in static/', () => {
         `${record.id}: asset ${asset} is not namespaced under ${prefix}`,
       );
       assert.ok(
-        existsSync(join(repoRoot, 'static', asset.slice(1))),
-        `${record.id}: asset ${asset} is missing from static/`,
+        existsSync(
+          join(docsDir, record.id, 'images', asset.slice(prefix.length)),
+        ),
+        `${record.id}: asset ${asset} is missing from docs/architectures/${record.id}/images/`,
       );
     }
   }
 });
 
-test('static/img/architectures holds no directory without a record', () => {
+test('docs/architectures holds no directory without a record', () => {
   const ids = new Set(catalog.map((record) => record.id));
-  const orphans = readdirSync(assetsRoot, { withFileTypes: true })
+  const orphans = readdirSync(docsDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !ids.has(entry.name))
     .map((entry) => entry.name);
   assert.deepEqual(
     orphans,
     [],
-    'asset directories remain for architectures no longer in the catalog',
+    'architecture directories remain for architectures no longer in the catalog',
   );
 });

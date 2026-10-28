@@ -28,7 +28,7 @@ the GitHub Action `.github/workflows/architecture-submission.yml` executes:
    image directory
 5. Writes the catalog record `data/architectures/records/<id>.json`
 6. Updates `data/architectures/catalog.json`
-7. Generates the documentation page `docs/architectures/<id>.md`
+7. Generates the documentation page `docs/architectures/<id>/index.md`
 8. Runs unit tests (`npm run test:unit`), formatting (`npm run fix:format`),
    validators (`npm run validate:architectures`,
    `npm run validate:architecture-assets`), and production build

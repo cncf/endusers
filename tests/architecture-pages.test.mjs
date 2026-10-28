@@ -94,16 +94,21 @@ test('returns empty lists when the docs directory does not exist', () => {
   }
 });
 
-test('maps a top-level page to its catalog id', () => {
-  assert.equal(pageCatalogId('adobe.md'), 'adobe');
+test('maps an architecture directory index page to its catalog id', () => {
+  assert.equal(pageCatalogId('adobe/index.md'), 'adobe');
 });
 
-test('reports no catalog id for a nested page', () => {
-  assert.equal(pageCatalogId('reports/leftover.md'), null);
+// A page outside <id>/index.md publishes at a route no catalog record owns:
+// the flat pre-directory layout, a second page in an architecture directory,
+// or anything nested deeper.
+test('reports no catalog id for a page outside <id>/index.md', () => {
+  assert.equal(pageCatalogId('adobe.md'), null);
+  assert.equal(pageCatalogId('adobe/notes.md'), null);
+  assert.equal(pageCatalogId('adobe/images/index.md'), null);
 });
 
 test('reports no catalog id for a non-markdown path', () => {
-  assert.equal(pageCatalogId('adobe.txt'), null);
+  assert.equal(pageCatalogId('adobe/index.txt'), null);
 });
 
 // Docusaurus publishes .mdx from the same default `include` as .md, so an
@@ -229,8 +234,8 @@ test('reports a page-named entry that is not a regular file as irregular', () =>
   );
 });
 
-test('maps a top-level .mdx page to its catalog id', () => {
-  assert.equal(pageCatalogId('evil.mdx'), 'evil');
+test('maps an .mdx directory index page to its catalog id', () => {
+  assert.equal(pageCatalogId('evil/index.mdx'), 'evil');
 });
 
 test('exempts only the hand-authored catalog and submission pages', () => {
@@ -302,6 +307,6 @@ test('ignores a file whose page extension is not at the end of its name', () => 
       assert.deepEqual(irregular, []);
     },
   );
-  assert.equal(pageCatalogId('adobe.md.bak'), null);
-  assert.equal(pageCatalogId('adobe.mdx.orig'), null);
+  assert.equal(pageCatalogId('adobe/index.md.bak'), null);
+  assert.equal(pageCatalogId('adobe/index.mdx.orig'), null);
 });

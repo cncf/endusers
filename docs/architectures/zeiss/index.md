@@ -44,7 +44,7 @@ The architecture is designed for future-proofing and scale. By leveraging event-
 - Cost-effective operations
 
 ### Architecture Overview
-![Architecture](/img/architectures/zeiss/solutionArchitecture.png)
+![Architecture](./images/solutionArchitecture.png)
 
 #### Data & Storage Strategy
 The platform uses Azure-managed data services as backing stores:
