@@ -274,23 +274,41 @@ test('the script fails on a rotten URL and names where it renders from', () => {
   assert.equal(result.stderr, '');
 });
 
-test('the script fails when an allow-listed URL resolves again', () => {
-  const url = 'https://test-known.example/';
-  const dataLinksPath = new URL(
-    '../scripts/lib/data-links.mjs',
-    import.meta.url,
+const KNOWN_URL = 'https://test-known.example/';
+
+function runWithKnownUrl(routes) {
+  const dataLinks = readFileSync(
+    new URL('../scripts/lib/data-links.mjs', import.meta.url),
+    'utf8',
   );
-  const dataLinks = readFileSync(dataLinksPath, 'utf8');
   const fixtureDataLinks = dataLinks.replace(
     'export const KNOWN_BROKEN_URLS = new Map([]);',
-    `export const KNOWN_BROKEN_URLS = new Map([['${url}', 'tracked by this test #1']]);`,
+    `export const KNOWN_BROKEN_URLS = new Map([['${KNOWN_URL}', 'tracked upstream']]);`,
   );
   assert.notEqual(fixtureDataLinks, dataLinks);
-  const result = run(
-    [{ match: url, status: 200 }],
-    { members: [{ homepageUrl: url }] },
+  return run(
+    routes,
+    { members: [{ homepageUrl: KNOWN_URL }] },
     { 'scripts/lib/data-links.mjs': fixtureDataLinks },
   );
+}
+
+test('the script reports an allow-listed URL that still fails as known and passes', () => {
+  const result = runWithKnownUrl([{ match: KNOWN_URL, status: 410 }]);
+  assert.equal(result.status, 0);
+  assert.match(
+    result.stdout,
+    /^known: https:\/\/test-known\.example\/ \(HTTP 410; tracked upstream\)$/m,
+  );
+  assert.match(
+    result.stdout,
+    /0 ok, 0 unverifiable, 1 known, 0 broken, 0 stale/,
+  );
+  assert.equal(result.stderr, '');
+});
+
+test('the script fails when an allow-listed URL resolves again', () => {
+  const result = runWithKnownUrl([{ match: KNOWN_URL, status: 200 }]);
   assert.equal(result.status, 1);
   assert.match(result.stdout, /^stale: https:\/\/test-known\.example\//m);
   assert.match(result.stderr, /remove it from KNOWN_BROKEN_URLS/);
