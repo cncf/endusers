@@ -252,6 +252,35 @@ test('selected tags match any one of them, ignoring case', () => {
   );
 });
 
+test('tags spelled with different separators select and search as one', () => {
+  const corpus = [
+    architecture({ organization: 'Allianz', tags: ['public cloud'] }),
+    architecture({ organization: 'ZEISS', tags: ['public-cloud'] }),
+    architecture({ organization: 'Initech', tags: ['private cloud'] }),
+  ];
+  for (const tag of ['public cloud', 'public-cloud']) {
+    assert.deepEqual(
+      organizations(
+        filterArchitectures(corpus, { ...NO_FILTERS, tags: [tag] }),
+      ),
+      ['Allianz', 'ZEISS'],
+    );
+    assert.deepEqual(
+      organizations(filterArchitectures(corpus, { ...NO_FILTERS, query: tag })),
+      ['Allianz', 'ZEISS'],
+    );
+  }
+});
+
+test('a hyphenated query still matches organization, title and summary', () => {
+  assert.deepEqual(
+    titles(
+      filterArchitectures(CORPUS, { ...NO_FILTERS, query: 'Multi-cluster' }),
+    ),
+    ['Multi-cluster platform'],
+  );
+});
+
 test('selected tags still combine with the other filters', () => {
   assert.deepEqual(
     filterArchitectures(TAGGED, {

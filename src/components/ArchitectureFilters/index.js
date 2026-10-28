@@ -10,11 +10,12 @@ const DEFAULT_FILTERS = {
   tags: [],
 };
 
-// Upstream tags are not consistently cased ("Kubernetes" and "kubernetes"),
-// so tags are compared case-insensitively and listed once.
+// Upstream tags are not consistently spelled ("Kubernetes" and "kubernetes",
+// "public cloud" and "public-cloud"), so tags are compared ignoring case and
+// separators and listed once.
 function tagKey(tag) {
   // Stryker disable next-line MethodExpression: upper-casing is an equally valid case-insensitive key
-  return tag.toLowerCase();
+  return tag.toLowerCase().replace(/[-_\s]+/g, ' ');
 }
 
 export const SORT_OPTIONS = [
@@ -70,13 +71,18 @@ export function useArchitectureFilterOptions(architectures) {
 export function filterArchitectures(architectures, filters) {
   const { query, industry, project, organization, tags } = filters;
   const normalizedQuery = query.trim().toLowerCase();
+  const tagQuery = tagKey(normalizedQuery);
   const wantedTags = new Set(tags.map(tagKey));
   return architectures.filter((architecture) => {
     // Stryker disable next-line ConditionalExpression: an empty query matches every architecture
     if (normalizedQuery) {
       const searchable =
-        `${architecture.organization} ${architecture.title} ${architecture.summary} ${architecture.tags.join(' ')}`.toLowerCase();
-      if (!searchable.includes(normalizedQuery)) {
+        `${architecture.organization} ${architecture.title} ${architecture.summary}`.toLowerCase();
+      const tagText = architecture.tags.map(tagKey).join(' ');
+      if (
+        !searchable.includes(normalizedQuery) &&
+        !tagText.includes(tagQuery)
+      ) {
         return false;
       }
     }
