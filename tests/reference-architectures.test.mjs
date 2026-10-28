@@ -155,15 +155,44 @@ test('one card is rendered per catalog entry, linking to its detail page', () =>
   );
   assert.equal(cards.length, catalog.length);
   // The card's root is a `<Link>`, which maps `to` onto the anchor's href.
+  // Cards start in the default alphabetical order: organization, then title.
+  const alphabetical = Array.from(catalog).sort(
+    (a, b) =>
+      a.organization.localeCompare(b.organization) ||
+      a.title.localeCompare(b.title),
+  );
   assert.deepEqual(
     cards.map((card) => card.type(card.props).props.to),
-    catalog.map((architecture) => `/architectures/${architecture.id}`),
+    alphabetical.map((architecture) => `/architectures/${architecture.id}`),
   );
   const [first] = cards;
   const link = first.type(first.props);
   assert.equal(
     findByType(link.type(link.props), 'a').props.href,
-    `/architectures/${catalog[0].id}`,
+    `/architectures/${alphabetical[0].id}`,
+  );
+});
+
+test('choosing "Recently updated" reorders the cards newest first', () => {
+  const view = render(ReferenceArchitectures);
+  assert.equal(toolbarProps(view.tree).sort, 'alphabetical');
+
+  toolbarProps(view.tree).setSort('updated');
+
+  assert.equal(toolbarProps(view.tree).sort, 'updated');
+  const dates = [...walkElements(view.tree)]
+    .filter(
+      (node) =>
+        typeof node.type === 'function' &&
+        node.type.name === 'ArchitectureCard',
+    )
+    .map((card) => card.props.architecture.updated);
+  assert.equal(dates.length, catalog.length);
+  assert.deepEqual(dates, Array.from(dates).sort().reverse());
+  assert.notDeepEqual(
+    dates,
+    catalog.map((architecture) => architecture.updated),
+    'the catalog file order is not already newest first',
   );
 });
 
@@ -378,6 +407,7 @@ test('a card renders the organization, title, summary and call to action', () =>
       summary: 'How Acme scaled.',
       industries: ['Software'],
       projects: ['Kubernetes'],
+      updated: '2026-03-09',
       assets: [],
     },
   });
@@ -387,8 +417,13 @@ test('a card renders the organization, title, summary and call to action', () =>
   assert.deepEqual(paragraphs, [
     'Software',
     'Scaling Acme',
+    'Updated March 9, 2026',
     'How Acme scaled.',
   ]);
+  assert.equal(
+    findByType(card, 'time', EXPAND_SHARED).props.dateTime,
+    '2026-03-09',
+  );
   assert.ok(
     findAllByType(card, 'span', EXPAND_SHARED).some(
       (span) => textOf(span) === 'View architecture →',

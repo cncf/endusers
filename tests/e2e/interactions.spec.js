@@ -347,6 +347,28 @@ test.describe('reference architecture filters', () => {
     await expect(organization).toHaveValue('');
   });
 
+  test('sorting by recently updated orders the cards newest first', async ({
+    page,
+  }) => {
+    await page.goto('/architectures');
+    const sort = page.getByLabel('Sort architectures');
+    await waitForHydration(sort);
+    await expect(sort).toHaveValue('alphabetical');
+
+    const dates = () =>
+      page
+        .locator('a time')
+        .evaluateAll((nodes) => nodes.map((node) => node.dateTime));
+    const before = await dates();
+    expect(before.length).toBeGreaterThan(1);
+
+    await sort.selectOption('updated');
+
+    const expected = Array.from(before).sort().reverse();
+    expect(expected).not.toEqual(before);
+    await expect.poll(dates).toEqual(expected);
+  });
+
   test('a query that matches nothing shows the empty state', async ({
     page,
   }) => {

@@ -95,6 +95,14 @@ async function main() {
     );
   }
 
+  // Issue-sourced records take their catalog dates from the issue itself:
+  // published when it was opened, updated when it was last edited.
+  const published = utcDate(issue.created_at);
+  if (!published) {
+    throw new Error('Issue payload is missing a valid created_at timestamp');
+  }
+  const updated = utcDate(issue.updated_at) ?? published;
+
   const id = uniqueId(slugify(orgName), issue.number);
   const sourceUrl =
     issue.html_url ?? `https://github.com/cncf/endusers/issues/${issue.number}`;
@@ -133,6 +141,8 @@ async function main() {
     projects: projects.map((project) => project.name),
     sourceUrl,
     sourceIssue: issue.number,
+    published,
+    updated,
     assets: [],
   };
 
@@ -163,6 +173,13 @@ async function main() {
   if (process.env.GITHUB_OUTPUT) {
     appendFileSync(process.env.GITHUB_OUTPUT, `id=${id}\n`);
   }
+}
+
+function utcDate(timestamp) {
+  const parsed = new Date(timestamp ?? '');
+  return Number.isNaN(parsed.getTime())
+    ? null
+    : parsed.toISOString().slice(0, 10);
 }
 
 function readArg(name) {

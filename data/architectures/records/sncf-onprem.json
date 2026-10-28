@@ -24,6 +24,8 @@
   ],
   "sourceUrl": "https://github.com/cncf/architecture/tree/ffd45de571e34f101725b2a3316d673899458e58/content/en/architectures/sncf-onprem",
   "sourceCommit": "ffd45de571e34f101725b2a3316d673899458e58",
+  "published": "2026-07-03",
+  "updated": "2026-10-27",
   "assets": [
     "/img/architectures/sncf-onprem/architecture-detailed.excalidraw.png",
     "/img/architectures/sncf-onprem/architecture-global.excalidraw.png",

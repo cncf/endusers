@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useFilterToolbar } from '../shared/useFilterToolbar';
 import FilterToolbar from '../shared/FilterToolbar';
 
@@ -8,6 +8,31 @@ const DEFAULT_FILTERS = {
   project: '',
   organization: '',
 };
+
+export const SORT_OPTIONS = [
+  { value: 'alphabetical', label: 'Sort: Alphabetical' },
+  { value: 'updated', label: 'Sort: Recently updated' },
+];
+
+const DEFAULT_SORT = SORT_OPTIONS[0].value;
+
+function compareAlphabetical(a, b) {
+  return (
+    a.organization.localeCompare(b.organization) ||
+    a.title.localeCompare(b.title)
+  );
+}
+
+// `updated` is a YYYY-MM-DD string, so comparing it as text orders it by date.
+function compareRecentlyUpdated(a, b) {
+  return b.updated.localeCompare(a.updated) || compareAlphabetical(a, b);
+}
+
+export function sortArchitectures(architectures, sort) {
+  const compare =
+    sort === 'updated' ? compareRecentlyUpdated : compareAlphabetical;
+  return Array.from(architectures).sort(compare);
+}
 
 export function useArchitectureFilterOptions(architectures) {
   return useMemo(() => {
@@ -56,6 +81,13 @@ export function useArchitectureFilters(architectures) {
   const options = useArchitectureFilterOptions(architectures);
   const { filters, setFilter, filtered, clearFilters, activeCount } =
     useFilterToolbar(architectures, DEFAULT_FILTERS, filterArchitectures);
+  // Sort order is kept apart from the filters: it never narrows the results,
+  // so it does not count as an active filter and Clear filters leaves it.
+  const [sort, setSort] = useState(DEFAULT_SORT);
+  const sorted = useMemo(
+    () => sortArchitectures(filtered, sort),
+    [filtered, sort],
+  );
 
   return {
     options,
@@ -64,7 +96,9 @@ export function useArchitectureFilters(architectures) {
     setIndustry: (value) => setFilter('industry', value),
     setProject: (value) => setFilter('project', value),
     setOrganization: (value) => setFilter('organization', value),
-    filtered,
+    sort,
+    setSort,
+    filtered: sorted,
     clearFilters,
     activeCount,
   };
@@ -77,6 +111,8 @@ export default function ArchitectureFilters({
   setIndustry,
   setProject,
   setOrganization,
+  sort,
+  setSort,
   activeCount,
   onClear,
   resultCount,
@@ -113,6 +149,13 @@ export default function ArchitectureFilters({
           onChange: setProject,
           options: options.projects,
           allLabel: 'All projects',
+        },
+        {
+          id: 'architecture-sort',
+          label: 'Sort architectures',
+          value: sort,
+          onChange: setSort,
+          options: SORT_OPTIONS,
         },
       ]}
       resultCount={resultCount}

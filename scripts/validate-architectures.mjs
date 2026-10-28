@@ -57,6 +57,18 @@ function findMissingAltText(content) {
   return findings;
 }
 
+// published and updated are rendered on the catalog cards and drive the
+// "Recently updated" sort, so each must be a real YYYY-MM-DD calendar date.
+// Round-tripping through Date rejects impossible days such as 2026-02-30.
+function isCalendarDate(value) {
+  return (
+    typeof value === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(Date.parse(value)) &&
+    new Date(value).toISOString().startsWith(value)
+  );
+}
+
 const records = JSON.parse(readFileSync(catalogPath, 'utf8'));
 const ids = new Set();
 const errors = [];
@@ -89,6 +101,23 @@ for (const record of records) {
       severity: 'error',
       message:
         'sourceUrl must be an https URL; it is rendered as an href in the member directory',
+    });
+  for (const key of ['published', 'updated'])
+    if (!isCalendarDate(record[key]))
+      errors.push({
+        path: record.id || '<unknown>',
+        severity: 'error',
+        message: `${key} must be a YYYY-MM-DD calendar date`,
+      });
+  if (
+    isCalendarDate(record.published) &&
+    isCalendarDate(record.updated) &&
+    record.updated < record.published
+  )
+    errors.push({
+      path: record.id,
+      severity: 'error',
+      message: 'updated must not be earlier than published',
     });
   for (const asset of record.assets ?? []) {
     const file = resolveContainedAsset(asset);

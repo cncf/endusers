@@ -42,6 +42,8 @@ const REQUIRED_STRING_FIELDS = [
   'summary',
   'sourceUrl',
   'sourceCommit',
+  'published',
+  'updated',
 ];
 const REQUIRED_ARRAY_FIELDS = ['industries', 'tags', 'projects', 'assets'];
 

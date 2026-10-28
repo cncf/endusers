@@ -9,6 +9,8 @@ const validRecord = {
   title: 'Acme Platform',
   organization: 'Acme Corp',
   sourceUrl: 'https://github.com/cncf/architecture/blob/main/acme-platform.md',
+  published: '2026-03-01',
+  updated: '2026-04-15',
   assets: ['/img/architectures/acme-platform/diagram.svg'],
 };
 
@@ -33,6 +35,49 @@ test('rejects records missing id, title, or organization', () => {
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /missing id, title, or organization/);
+});
+
+for (const [label, overrides, pattern] of [
+  [
+    'a missing published date',
+    { published: undefined },
+    /published must be a YYYY-MM-DD calendar date/,
+  ],
+  [
+    'a timestamp as updated',
+    { updated: '2026-04-15T10:00:00Z' },
+    /updated must be a YYYY-MM-DD calendar date/,
+  ],
+  [
+    'an impossible calendar day',
+    { updated: '2026-02-30' },
+    /updated must be a YYYY-MM-DD calendar date/,
+  ],
+  [
+    'a non-string date',
+    { published: 20260301 },
+    /published must be a YYYY-MM-DD calendar date/,
+  ],
+  [
+    'an updated date before published',
+    { updated: '2026-02-28' },
+    /updated must not be earlier than published/,
+  ],
+]) {
+  test(`rejects a record with ${label}`, () => {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      catalogFixture([{ ...validRecord, ...overrides }]),
+    );
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, pattern);
+  });
+}
+
+test('accepts a record updated on the day it was published', () => {
+  const record = { ...validRecord, updated: validRecord.published };
+  const result = runScriptWithFixtures(SCRIPT, catalogFixture([record]));
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test('rejects duplicate ids', () => {

@@ -8,6 +8,8 @@
   "projects": ["Kubernetes", "Helm", "Argo"],
   "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/allianz",
   "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+  "published": "2024-10-28",
+  "updated": "2024-11-10",
   "assets": [
     "/img/architectures/allianz/PEArchitecture.jpg",
     "/img/architectures/allianz/PEJourney.jpg",

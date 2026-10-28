@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { importSource } from './helpers-jsx.mjs';
 
-const { filterArchitectures } = await importSource(
+const { filterArchitectures, sortArchitectures } = await importSource(
   'src/components/ArchitectureFilters/index.js',
 );
 
@@ -163,4 +163,43 @@ test('combined filters that no architecture satisfies return nothing', () => {
 
 test('an empty corpus stays empty', () => {
   assert.deepEqual(filterArchitectures([], { ...NO_FILTERS, query: 'x' }), []);
+});
+
+test('alphabetical sort orders by organization, then by title', () => {
+  const input = [
+    architecture({ organization: 'globex', title: 'B' }),
+    architecture({ organization: 'Acme Corp', title: 'Zeta' }),
+    architecture({ organization: 'Acme Corp', title: 'Alpha' }),
+  ];
+  const result = sortArchitectures(input, 'alphabetical');
+  assert.deepEqual(
+    result.map((a) => `${a.organization}/${a.title}`),
+    ['Acme Corp/Alpha', 'Acme Corp/Zeta', 'globex/B'],
+  );
+  assert.notEqual(result, input);
+  assert.equal(input[0].organization, 'globex', 'input left in place');
+});
+
+test('recently updated sort is newest first, alphabetical within a day', () => {
+  const input = [
+    architecture({ organization: 'Initech', updated: '2025-12-31' }),
+    architecture({ organization: 'Globex', updated: '2026-06-04' }),
+    architecture({ organization: 'Acme Corp', updated: '2026-06-04' }),
+    architecture({ organization: 'Hooli', updated: '2026-01-10' }),
+  ];
+  assert.deepEqual(
+    sortArchitectures(input, 'updated').map((a) => a.organization),
+    ['Acme Corp', 'Globex', 'Hooli', 'Initech'],
+  );
+});
+
+test('an unrecognised sort falls back to alphabetical', () => {
+  const input = [
+    architecture({ organization: 'Globex', updated: '2026-06-04' }),
+    architecture({ organization: 'Acme Corp', updated: '2025-01-01' }),
+  ];
+  assert.deepEqual(
+    sortArchitectures(input, 'bogus').map((a) => a.organization),
+    ['Acme Corp', 'Globex'],
+  );
 });

@@ -29,6 +29,8 @@
   ],
   "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/swisscom-cloud-native-telco",
   "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+  "published": "2026-03-16",
+  "updated": "2026-06-04",
   "assets": [
     "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-architecture-overview.png",
     "/img/architectures/swisscom-cloud-native-telco/swisscom-cloud-native-telco-automation-layers.svg",

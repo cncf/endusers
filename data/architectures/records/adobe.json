@@ -15,6 +15,8 @@
   "projects": ["Kubernetes", "Helm", "Argo", "Backstage"],
   "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/adobe",
   "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
+  "published": "2024-10-11",
+  "updated": "2026-06-04",
   "assets": [
     "/img/architectures/adobe/Adobe_Wordmark_RGB_Red.svg",
     "/img/architectures/adobe/CellBasedArchitecture.webp",

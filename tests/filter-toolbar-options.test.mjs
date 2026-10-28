@@ -96,6 +96,26 @@ test('a select may mix both option shapes in one list', () => {
   );
 });
 
+test('a select without an allLabel renders only its own options', () => {
+  const { tree } = renderToolbar(['newest', 'oldest']);
+  const { tree: noAll } = renderToolbar([], {
+    selects: [
+      {
+        id: 'toolbar-sort',
+        label: 'Sort entries',
+        value: 'newest',
+        onChange: () => {},
+        options: ['newest', 'oldest'],
+      },
+    ],
+  });
+  assert.equal(findAllByType(tree, 'option').length, 3);
+  assert.deepEqual(
+    findAllByType(noAll, 'option').map((option) => option.props.value),
+    ['newest', 'oldest'],
+  );
+});
+
 test('every option keys off its value, so labels may repeat', () => {
   const { tree } = renderToolbar([
     { value: 'a', label: 'Shared label' },

@@ -22,6 +22,7 @@ const {
   default: ArchitectureFilters,
   useArchitectureFilterOptions,
   useArchitectureFilters,
+  SORT_OPTIONS,
 } = await importSource('src/components/ArchitectureFilters/index.js');
 const { default: FilterToolbar } = await importSource(
   'src/components/shared/FilterToolbar.js',
@@ -34,6 +35,7 @@ function architecture(overrides = {}) {
     summary: 'Running fleets of clusters across regions.',
     industries: ['Retail'],
     projects: ['Kubernetes'],
+    updated: '2026-01-15',
     ...overrides,
   };
 }
@@ -46,6 +48,7 @@ const CORPUS = [
     summary: 'Serving models at the edge.',
     industries: ['Manufacturing', 'Retail'],
     projects: ['KubeEdge', 'Kubernetes'],
+    updated: '2026-06-01',
   }),
   architecture({
     organization: 'Initech',
@@ -53,6 +56,7 @@ const CORPUS = [
     summary: 'Unifying metrics and traces.',
     industries: ['Financial Services'],
     projects: ['Prometheus'],
+    updated: '2026-03-20',
   }),
 ];
 
@@ -157,6 +161,45 @@ test('clearFilters resets every control at once', () => {
   assert.equal(hook.result.filtered.length, CORPUS.length);
 });
 
+test('architectures are listed alphabetically until another sort is chosen', () => {
+  const reversed = Array.from(CORPUS).reverse();
+  const hook = renderHook(() => useArchitectureFilters(reversed));
+
+  assert.equal(hook.result.sort, 'alphabetical');
+  assert.deepEqual(
+    hook.result.filtered.map((a) => a.organization),
+    ['Acme Corp', 'Globex', 'Initech'],
+  );
+
+  hook.result.setSort('updated');
+
+  assert.equal(hook.result.sort, 'updated');
+  assert.deepEqual(
+    hook.result.filtered.map((a) => a.organization),
+    ['Globex', 'Initech', 'Acme Corp'],
+  );
+});
+
+test('the sort order is not a filter: it is not counted and survives a clear', () => {
+  const hook = renderHook(() => useArchitectureFilters(CORPUS));
+
+  hook.result.setSort('updated');
+  assert.equal(hook.result.activeCount, 0);
+
+  hook.result.setIndustry('Retail');
+  assert.deepEqual(
+    hook.result.filtered.map((a) => a.organization),
+    ['Globex', 'Acme Corp'],
+  );
+
+  hook.result.clearFilters();
+  assert.equal(hook.result.sort, 'updated');
+  assert.deepEqual(
+    hook.result.filtered.map((a) => a.organization),
+    ['Globex', 'Initech', 'Acme Corp'],
+  );
+});
+
 const OPTIONS = {
   organizations: ['Acme Corp', 'Globex'],
   industries: ['Manufacturing', 'Retail'],
@@ -180,6 +223,8 @@ function render(overrides = {}) {
     setIndustry: record('setIndustry'),
     setProject: record('setProject'),
     setOrganization: record('setOrganization'),
+    sort: 'alphabetical',
+    setSort: record('setSort'),
     activeCount: 0,
     onClear: record('onClear'),
     resultCount: 2,
@@ -212,6 +257,7 @@ test('every control carries a label bound to its own id', () => {
     'architecture-organization',
     'architecture-industry',
     'architecture-project',
+    'architecture-sort',
   ];
 
   assert.deepEqual(
@@ -259,6 +305,30 @@ test('each select offers an "all" reset option ahead of its values', () => {
       OPTIONS[key],
     );
   }
+});
+
+test('the sort select offers only the sort orders, with no "all" option', () => {
+  const { tree, calls } = render({ sort: 'updated' });
+  const select = selectById(tree, 'architecture-sort');
+
+  assert.equal(select.props.value, 'updated');
+  assert.deepEqual(
+    findAllByType(select, 'option').map((option) => [
+      option.props.value,
+      textOf(option),
+    ]),
+    [
+      ['alphabetical', 'Sort: Alphabetical'],
+      ['updated', 'Sort: Recently updated'],
+    ],
+  );
+  assert.deepEqual(
+    SORT_OPTIONS.map((option) => option.value),
+    ['alphabetical', 'updated'],
+  );
+
+  select.props.onChange({ target: { value: 'alphabetical' } });
+  assert.deepEqual(calls, [['setSort', 'alphabetical']]);
 });
 
 test('each select is controlled by its own slice of the filter state', () => {

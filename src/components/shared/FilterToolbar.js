@@ -24,7 +24,8 @@ import styles from './FilterToolbar.module.css';
  * @param {Array<{id: string, label: string, value: string,
  *   onChange: (value: string) => void,
  *   options: Array<string|{value: string, label: string}>,
- *   allLabel: string}>} props.selects one entry per `<select>` filter
+ *   allLabel?: string}>} props.selects one entry per `<select>`; omit
+ *   `allLabel` for a control with no empty "All" choice, such as a sort order
  * @param {React.ReactNode} [props.extra] additional controls rendered after
  *   the selects (e.g. checkbox toggles), in the same `filtersRow`
  * @param {number} props.resultCount
@@ -75,7 +76,7 @@ export default function FilterToolbar({
               onChange={(event) => onChange(event.target.value)}
               className={styles.select}
             >
-              <option value="">{allLabel}</option>
+              {allLabel !== undefined && <option value="">{allLabel}</option>}
               {options.map((option) => {
                 const optionValue =
                   typeof option === 'string' ? option : option.value;
