@@ -3,7 +3,7 @@ title: "Enabling Allianz Direct's scaling through Platform Engineering"
 sidebar_label: "Allianz Direct"
 architecture:
   organization: Allianz Direct
-  summary: The PE team is internally organised in DDOs - Distributed DevOps, where each ddo owns a Domain. This setup follows the reverse Conway manoeuver where the reference architecture structure dictates the teams setup. The PE team consist of 13 m
+  summary: The PE team is internally organised in DDOs - Distributed DevOps, where each ddo owns a Domain. This setup follows the reverse Conway manoeuver where the reference architecture structure dictates the teams setup.
   industries:
     - Financial
     - Insurance

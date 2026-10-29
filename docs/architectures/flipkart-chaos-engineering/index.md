@@ -3,7 +3,7 @@ title: "From Afterthought to Practice: Flipkart’s Multi-Tenant Chaos Engineeri
 sidebar_label: "Flipkart Internet Pvt. Ltd."
 architecture:
   organization: Flipkart Internet Pvt. Ltd.
-  summary: Flipkart is one of India’s leading digital commerce companies, running hundreds of tightly coupled microservices across Kubernetes and VM workloads that must withstand the traffic surges of Big Billion Days and other festive sales. The Cent
+  summary: Flipkart is one of India’s leading digital commerce companies, running hundreds of tightly coupled microservices across Kubernetes and VM workloads that must withstand the traffic surges of Big Billion Days and other festive sales.
   industries:
     - E-commerce
     - Retail
