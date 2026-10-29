@@ -1,10 +1,17 @@
 {
-  "generatedAt": "2026-10-24T07:50:12.361Z",
+  "generatedAt": "2026-10-29T19:12:39.037Z",
   "groups": [
     {
       "slug": "public-sector",
       "name": "Public Sector User Group",
       "repository": "https://github.com/cncf/public-sector-user-group",
+      "archived": false,
+      "reachable": true
+    },
+    {
+      "slug": "research",
+      "name": "Research User Group",
+      "repository": "https://github.com/cncf/research-user-group",
       "archived": false,
       "reachable": true
     },

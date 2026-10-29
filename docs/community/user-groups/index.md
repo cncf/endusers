@@ -17,5 +17,7 @@ the full definition.
   native collaboration for platform engineering end users.
 - [Public Sector](/community/user-groups/public-sector) — cloud native
   collaboration for public-sector end users.
+- [Research](/community/user-groups/research) — cloud native collaboration for
+  research organizations and scientific workloads.
 - [Telecom](/community/user-groups/telecom) — cloud native collaboration for
   telecom end users.

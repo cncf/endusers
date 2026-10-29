@@ -25,6 +25,11 @@ const GROUPS = [
     repo: 'cncf/public-sector-user-group',
   },
   {
+    slug: 'research',
+    name: 'Research User Group',
+    repo: 'cncf/research-user-group',
+  },
+  {
     slug: 'telecom',
     name: 'Telecom User Group',
     repo: 'cncf/telecom-user-group',
