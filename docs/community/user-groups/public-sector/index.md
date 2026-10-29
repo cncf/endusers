@@ -24,7 +24,7 @@ and operational patterns unique to government and public institutions.
 - Visit the
   [CNCF community page](https://community.cncf.io/public-sector-user-group/) for
   participation details
-- Join `#public-sector-ug` on [CNCF Slack](https://slack.cncf.io/) (the channel
+- Join `#ug-public-sector` on [CNCF Slack](https://slack.cncf.io/) (the channel
   named in the group's
   [charter](https://github.com/cncf/public-sector-user-group/blob/main/charter.md))
 - Browse resources and meeting information in the
