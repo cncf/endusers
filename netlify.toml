@@ -135,3 +135,26 @@
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "same-origin"
+
+# Host redirects. architecture.cncf.io served the reference architecture
+# catalogue before it moved here (ADR 0001); its DNS now points at Netlify and
+# this build answers on it, which publishes the whole site a second time under
+# a host whose canonical URLs all say endusers.cncf.io. Every request on that
+# host is sent to the catalogue instead. Deep links keep their path because the
+# architecture ids did not change in the move; anything else lands on the
+# catalogue index. Rules are evaluated in order, so the path-preserving rule
+# must stay above the catch-all. The scheme is part of the match; Netlify
+# upgrades http:// to https:// before redirect rules run, so one https rule
+# covers both. force = true applies the rule even though the build holds a
+# file at the path.
+[[redirects]]
+  from = "https://architecture.cncf.io/architectures/*"
+  to = "https://endusers.cncf.io/architectures/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://architecture.cncf.io/*"
+  to = "https://endusers.cncf.io/architectures/"
+  status = 301
+  force = true
