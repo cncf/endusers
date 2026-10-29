@@ -148,6 +148,23 @@ for (const [id, series] of Object.entries(data.series || {})) {
         message: 'invalid time-series point',
       });
 }
+const architectureCard = (data.metrics || []).find(
+  (metric) => metric.id === 'reference-architectures',
+);
+const architectureValues = data.series?.referenceArchitectures?.values;
+const lastArchitecturePoint = Array.isArray(architectureValues)
+  ? architectureValues.at(-1)
+  : undefined;
+if (
+  architectureCard &&
+  lastArchitecturePoint &&
+  lastArchitecturePoint.value !== architectureCard.value
+)
+  errors.push({
+    path: 'metrics.json',
+    severity: 'error',
+    message: `reference architecture submissions end at ${lastArchitecturePoint.value} (${lastArchitecturePoint.date}) but the reference-architectures card reads ${architectureCard.value}; regenerate with npm run collect:metrics`,
+  });
 for (const [id, chart] of Object.entries(data.breakdowns || {})) {
   if (!chart.label || !chart.sourceUrl || !Array.isArray(chart.values))
     errors.push({

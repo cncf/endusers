@@ -189,6 +189,68 @@ test('rejects time-series points without a date', () => {
   assert.match(result.stderr, /invalid time-series point/);
 });
 
+function architectureData(value, values) {
+  return {
+    ...validData,
+    metrics: [{ ...validMetric, id: 'reference-architectures', value }],
+    series: {
+      referenceArchitectures: {
+        label: 'Reference architecture submissions',
+        sourceUrl: 'https://github.com/cncf/architecture',
+        values,
+      },
+    },
+  };
+}
+
+test('rejects an architecture series ending above or below the card count', () => {
+  for (const value of [11, 9]) {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      metricsFixture(
+        architectureData(10, [
+          { date: '2026-09', value: 10 },
+          { date: '2026-10', value },
+        ]),
+      ),
+    );
+    assert.equal(result.status, 1);
+    assert.match(
+      result.stderr,
+      new RegExp(
+        `reference architecture submissions end at ${value} \\(2026-10\\) but the reference-architectures card reads 10; regenerate with npm run collect:metrics`,
+      ),
+    );
+  }
+});
+
+test('accepts architecture series ending at the card count, including zero', () => {
+  for (const value of [10, 0]) {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      metricsFixture(
+        architectureData(value, [
+          { date: '2026-09', value: 0 },
+          { date: '2026-10', value },
+        ]),
+      ),
+    );
+    assert.equal(result.status, 0, result.stderr);
+  }
+});
+
+test('keeps architecture series shape errors as validation failures', () => {
+  for (const values of [undefined, [], { '2026-10': 10 }]) {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      metricsFixture(architectureData(10, values)),
+    );
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /invalid time series/);
+    assert.doesNotMatch(result.stderr, /TypeError/);
+  }
+});
+
 test('rejects breakdown values without a name', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
