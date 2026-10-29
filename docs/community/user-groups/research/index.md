@@ -1,6 +1,6 @@
 ---
 title: Research
-sidebar_position: 4
+sidebar_position: 3
 description: Research cloud native collaboration for scientific workloads.
 slug: /community/user-groups/research
 ---

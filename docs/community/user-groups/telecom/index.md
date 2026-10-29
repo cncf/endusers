@@ -1,6 +1,6 @@
 ---
 title: Telecom
-sidebar_position: 2
+sidebar_position: 4
 description: Cloud native collaboration for telecom end users.
 slug: /community/user-groups/telecom
 ---
