@@ -183,10 +183,13 @@ export function cleanMarkdown(body) {
 /**
  * First non-heading, non-markup paragraph, used as the catalog summary.
  *
- * Inline links are flattened to their link text before the 240-character cut
- * so the stored summary never carries raw markdown syntax,
+ * Inline links and images are flattened to their text before the
+ * 240-character cut so the stored summary never carries raw markdown syntax,
  * and the cut lands on the last sentence boundary that fits rather than
- * mid-word, so a truncated summary still reads as prose.
+ * mid-word, so a truncated summary still reads as prose. A sentence boundary
+ * is `.`, `!` or `?` followed by whitespace, so "Kubernetes 1.28" or "e.g."
+ * never ends the summary. The paragraph is longer than the cap whenever the
+ * cut applies, so a boundary inside the cap always has a following character.
  */
 export function firstParagraph(body) {
   const paragraph = body.split(/\n\s*\n/).find((part) => {
@@ -194,15 +197,19 @@ export function firstParagraph(body) {
     return text && !/^[#!\-[<|>]/.test(text);
   });
   const text = paragraph
-    ?.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    ?.replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/[*_`]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
   if (!text) return '';
   if (text.length <= 240) return text;
-  const cut = text.slice(0, 240);
-  const lastSentence = cut.search(/[^.!?]*$/) - 1;
-  return lastSentence > 0 ? cut.slice(0, lastSentence + 1).trim() : cut.trim();
+  let end = -1;
+  for (const match of text.matchAll(/[.!?](?=\s)/g)) {
+    if (match.index >= 240) break;
+    end = match.index + 1;
+  }
+  if (end === -1) return text.slice(0, 240).trim();
+  return text.slice(0, end);
 }
 
 /**

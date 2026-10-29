@@ -36,6 +36,13 @@ test('firstParagraph flattens an inline link to its text, dropping the URL', () 
   );
 });
 
+test('firstParagraph flattens an inline image to its alt text', () => {
+  assert.equal(
+    firstParagraph('See ![the diagram](./images/arch.png) for the layout.'),
+    'See the diagram for the layout.',
+  );
+});
+
 test('firstParagraph cuts a long paragraph on the last sentence boundary, not mid-word', () => {
   const sentence = 'This describes the deployment in full. ';
   const body =
@@ -44,6 +51,39 @@ test('firstParagraph cuts a long paragraph on the last sentence boundary, not mi
   assert.ok(result.length <= 240);
   assert.match(result, /\.$/);
   assert.ok(!result.endsWith('Trailing words that never close a sentence'));
+});
+
+test('firstParagraph keeps a sentence-ending boundary that sits exactly at the cap', () => {
+  const sentence = `${'x'.repeat(239)}.`;
+  assert.equal(firstParagraph(`${sentence} More words follow here.`), sentence);
+});
+
+test('firstParagraph returns a paragraph at the cap whole, ignoring earlier boundaries', () => {
+  const exact = `${'a'.repeat(100)}. ${'b'.repeat(138)}`;
+  assert.equal(exact.length, 240);
+  assert.equal(firstParagraph(exact), exact);
+});
+
+test('firstParagraph trims the whitespace around a short paragraph', () => {
+  assert.equal(firstParagraph('\n  Padded  prose.  \n'), 'Padded prose.');
+});
+
+test('firstParagraph ignores punctuation inside a token such as a version number', () => {
+  const lead = `${'y'.repeat(200)}. `;
+  const body = `${lead}Runs Kubernetes 1.28 and Istio 1.20 on every cluster in the fleet today`;
+  assert.equal(firstParagraph(body), `${'y'.repeat(200)}.`);
+});
+
+test('firstParagraph falls back to the hard cut when the only boundary is past the cap', () => {
+  assert.equal(
+    firstParagraph(`${'z'.repeat(240)}. Then a second sentence`),
+    'z'.repeat(240),
+  );
+  // The hard cut trims a space that lands exactly at the cap.
+  assert.equal(
+    firstParagraph(`${'z'.repeat(239)} ${'w'.repeat(20)}`),
+    'z'.repeat(239),
+  );
 });
 
 const PARAGRAPHS = [
