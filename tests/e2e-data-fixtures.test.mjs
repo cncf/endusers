@@ -505,6 +505,8 @@ test('loadSiteData returns the overlaid document inside the coverage build', () 
 // the message says so, rather than in a browser run that just stops covering
 // the branch.
 test('every committed overlay still applies to its data file', () => {
+  const realTrends = loadSiteData('metrics.json', {})
+    .referenceArchitectureLifecycle.trends;
   const cases = [
     [
       'community-groups.json',
@@ -551,13 +553,12 @@ test('every committed overlay still applies to its data file', () => {
     [
       'metrics.json',
       (data) =>
-        Object.values(data.referenceArchitectureLifecycle.trends).some(
-          (trend) => trend.values.length === 0,
-        ) &&
-        Object.values(data.referenceArchitectureLifecycle.trends).some(
-          (trend) => trend.values.length > 1,
+        Object.entries(realTrends).every(
+          ([id, trend]) =>
+            JSON.stringify(data.referenceArchitectureLifecycle.trends[id]) ===
+            JSON.stringify(trend),
         ),
-      'the added trend displaced a real one instead of rendering beside it, so the arms it was added next to stopped rendering',
+      'the added trend displaced a real one instead of rendering beside it',
     ],
   ];
   for (const [name, holds, why] of cases) {

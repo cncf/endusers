@@ -1,41 +1,7 @@
-// End-to-end coverage for the Sparkline arm that centres a lone point.
-//
-// Sparkline in src/components/MetricsDashboard/index.js picks a point's
-// x-coordinate:
-//
-//   `${values.length === 1 ? 50 : (index / (values.length - 1)) * 100},...`
-//
-// The `50` arm centres a lone point, because the expression beside it divides
-// by `values.length - 1` and would be a division by zero. Nothing in the
-// checked-in data reaches it. `data/metrics.json` defines exactly two
-// lifecycle trends: `submissions` carries zero values, so Sparkline returns
-// "No trend data yet" before reaching the ternary at all, and `publications`
-// carries five, which takes the arm beside it. A trend holding exactly one
-// point is an ordinary shape -- `submissions` becomes one the first month a
-// single submission is recorded -- and it is the shape neither trend has.
-//
-// This *is* a case tests/e2e/data-fixtures.spec.js's mechanism can take, and
-// it did not used to be. The trend grid is keyed
-// (`Object.entries(lifecycle?.trends || {})`), and until
-// tests/tools/e2e-data-fixtures.cjs grew an `add` operation an overlay could
-// only reshape a key the real document already carried. The single-point arm
-// could therefore only be made by appending a point onto `submissions` -- the
-// one trend that also reaches the no-values arm -- which trades one arm for
-// the other rather than adding a case, so it was given the variant build.
-// `add` introduces a trend *beside* the real two instead: both keep rendering
-// exactly as they did, and all three Sparkline arms -- no values, one value,
-// many values -- render together on the one real /resources/metrics page in one build.
-//
-// Keeping it out of the variant build is what lets
-// tests/e2e/metrics-empty-collections-variant.spec.js clear
-// `referenceArchitectureLifecycle.trends` there for LifecycleSection's `|| {}`
-// fallback, which no build could reach while the append had to stay.
-//
-// All three arms are asserted together rather than the single-point one alone.
-// An assertion that one sparkline centres its point passes just as well when
-// the page has quietly stopped rendering the other trends; pairing them is
-// what makes this evidence that the arm was *selected* rather than that the
-// grid happens to hold one thing.
+// The coverage overlay adds a single-point lifecycle trend beside the real
+// trends, so Sparkline's centring arm renders without displacing their data.
+// The real trends vary on every metrics refresh: assert any empty trends
+// when present rather than requiring upstream to have no open submissions.
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 
@@ -84,7 +50,6 @@ describeCoverage('lifecycle trend sparklines', () => {
     expect(single).toHaveLength(1);
     // The other two arms are present in the same document, which is what makes
     // this a case added beside the real data rather than traded for it.
-    expect(empty.length).toBeGreaterThan(0);
     expect(many.length).toBeGreaterThan(0);
 
     await page.goto(METRICS_PATH);
