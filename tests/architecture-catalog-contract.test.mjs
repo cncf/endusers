@@ -266,3 +266,31 @@ test('docs/architectures holds no directory without a record', () => {
     'architecture directories remain for architectures no longer in the catalog',
   );
 });
+
+// The catalog's project filter (src/components/ArchitectureFilters) offers one
+// option per distinct `projects` string and matches with exact equality, so two
+// spellings of one project become two options that each hide the architectures
+// filed under the other. Pages are imported from different upstream sources, so
+// nothing but this check keeps their spellings in step.
+test('no project is listed under two spellings across the catalog', () => {
+  const spellings = new Map();
+  for (const record of catalog)
+    for (const project of record.projects) {
+      const key = project.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!spellings.has(key)) spellings.set(key, new Map());
+      const byName = spellings.get(key);
+      byName.set(project, [...(byName.get(project) ?? []), record.id]);
+    }
+  const collisions = [...spellings.values()]
+    .filter((byName) => byName.size > 1)
+    .map((byName) =>
+      [...byName]
+        .map(([project, ids]) => `${project} (${ids.join(', ')})`)
+        .join(' vs '),
+    );
+  assert.deepEqual(
+    collisions,
+    [],
+    'one project is spelled two ways, so the catalog filter offers it twice and each option hides the other spelling',
+  );
+});

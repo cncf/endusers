@@ -18,7 +18,7 @@ architecture:
   projects:
     - ArgoCD
     - Cluster API
-    - External-dns
+    - ExternalDNS
     - External Secrets Operator
     - Harbor
     - Kubernetes
@@ -41,7 +41,7 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
   <CNCFProjectCard name={"Cluster API"} since={"2024"} version={"v1.10.5"} description={"- Cluster API manages K8s control planes & machines at scale leaning on the ad hoc infrastructure providers (CAPO for OpenStack. CABPT and CACPPT for Talos), and serves as autoscaling & autohealing provider."} />
 
-  <CNCFProjectCard name={"External-dns"} since={"2021"} version={"v2.0.1"} description={"- External-dns automates Designate DNS records management for workload Clusters."} />
+  <CNCFProjectCard name={"ExternalDNS"} since={"2021"} version={"v2.0.1"} description={"- External-dns automates Designate DNS records management for workload Clusters."} />
 
   <CNCFProjectCard name={"External Secrets Operator"} href={"https://www.cncf.io/projects/external-secrets/"} logo={"/img/cncf-projects/external-secrets-operator-eso-horizontal-color.svg"} since={"2022"} version={"v1.3.2"} description={"- External Secrets Operator is the glue between Hashicorp Vault and workload clusters, allowing for secure and centralized secrets management."} />
 
