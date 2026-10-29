@@ -31,7 +31,7 @@
     "id": "allianz",
     "title": "Enabling Allianz Direct's scaling through Platform Engineering",
     "organization": "Allianz Direct",
-    "summary": "The PE team is internally organised in DDOs - Distributed DevOps, where each ddo owns a Domain. This setup follows the reverse Conway manoeuver where the reference architecture structure dictates the teams setup. The PE team consist of 13 m",
+    "summary": "The PE team is internally organised in DDOs - Distributed DevOps, where each ddo owns a Domain. This setup follows the reverse Conway manoeuver where the reference architecture structure dictates the teams setup.",
     "industries": ["Financial", "Insurance"],
     "tags": ["finance", "insurance", "europe", "public cloud", "aws"],
     "projects": ["Kubernetes", "Helm", "Argo"],
@@ -76,7 +76,7 @@
     "id": "cern-scientific-computing",
     "title": "A Cloud Native Scientific Computing Platform for CERN NextGen AI",
     "organization": "CERN",
-    "summary": "Some additional projects outside the CNCF are essential to this deployment. [MLFlow](https://mlflow.org/), a project under the Linux Foundation used for model management and versioning [Nvidia GPU operator](https://github.com/NVIDIA/gpu-ope",
+    "summary": "A pure cloud native based infrastructure can now successfully serve scientific computing workloads, with advanced scheduling features such as co-scheduling, fair sharing, among others.",
     "industries": ["Research", "Public Sector"],
     "tags": ["cloud native", "private cloud", "kubernetes", "switzerland"],
     "projects": [
@@ -126,7 +126,7 @@
     "id": "flipkart-chaos-engineering",
     "title": "From Afterthought to Practice: Flipkart’s Multi-Tenant Chaos Engineering Platform on LitmusChaos",
     "organization": "Flipkart Internet Pvt. Ltd.",
-    "summary": "Flipkart is one of India’s leading digital commerce companies, running hundreds of tightly coupled microservices across Kubernetes and VM workloads that must withstand the traffic surges of Big Billion Days and other festive sales. The Cent",
+    "summary": "Flipkart is one of India’s leading digital commerce companies, running hundreds of tightly coupled microservices across Kubernetes and VM workloads that must withstand the traffic surges of Big Billion Days and other festive sales.",
     "industries": ["E-commerce", "Retail", "Digital Commerce"],
     "tags": [
       "Chaos engineering",
@@ -193,7 +193,7 @@
     "id": "swisscom-cloud-native-telco",
     "title": "End-to-End Cloud Native Telco Platform Automation at Swisscom",
     "organization": "Swisscom (Switzerland) Ltd",
-    "summary": "Swisscom has built a cloud native telco platform for the end-to-end automation of its 5G standalone core network and cross-domain resource orchestration. The architecture replaces traditional imperative network management (Jenkins pipelines",
+    "summary": "Swisscom has built a cloud native telco platform for the end-to-end automation of its 5G standalone core network and cross-domain resource orchestration.",
     "industries": ["Communication", "Telecommunication"],
     "tags": [
       "cloud native",

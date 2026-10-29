@@ -3,7 +3,7 @@ title: "A Cloud Native Scientific Computing Platform for CERN NextGen AI"
 sidebar_label: "CERN"
 architecture:
   organization: CERN
-  summary: Some additional projects outside the CNCF are essential to this deployment. [MLFlow](https://mlflow.org/), a project under the Linux Foundation used for model management and versioning [Nvidia GPU operator](https://github.com/NVIDIA/gpu-ope
+  summary: A pure cloud native based infrastructure can now successfully serve scientific computing workloads, with advanced scheduling features such as co-scheduling, fair sharing, among others.
   industries:
     - Research
     - Public Sector
