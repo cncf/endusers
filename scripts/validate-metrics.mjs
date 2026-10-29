@@ -102,13 +102,24 @@ for (const item of data.omitted || [])
       severity: 'error',
       message: 'omitted metrics require id and reason',
     });
-for (const card of data.referenceArchitectureLifecycle?.cards || [])
+for (const card of data.referenceArchitectureLifecycle?.cards || []) {
   if (!card.id || !card.label || !Number.isFinite(card.value))
     errors.push({
       path: 'metrics.json',
       severity: 'error',
       message: 'invalid lifecycle card',
     });
+  // sampleSize is optional; the dashboard renders "No data yet" when it is 0.
+  if (
+    card.sampleSize !== undefined &&
+    !(Number.isInteger(card.sampleSize) && card.sampleSize >= 0)
+  )
+    errors.push({
+      path: 'metrics.json',
+      severity: 'error',
+      message: 'lifecycle card sampleSize must be a non-negative integer',
+    });
+}
 for (const item of data.referenceArchitectureLifecycle?.omitted || [])
   if (!item.id || !item.reason)
     errors.push({

@@ -305,6 +305,12 @@ test.describe('reference architecture lifecycle panel', () => {
 
     for (const card of lifecycle?.cards || []) {
       const rendered = section.locator('div').filter({ hasText: card.label });
+      // A median over an empty sample is published as "No data yet", not as
+      // the 0 the collector stores to keep the value numeric.
+      if (card.sampleSize === 0) {
+        await expect(rendered.first()).toContainText('No data yet');
+        continue;
+      }
       await expect(rendered.first()).toContainText(card.value.toLocaleString());
       if (card.suffix) {
         await expect(rendered.first()).toContainText(card.suffix);

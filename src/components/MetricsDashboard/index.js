@@ -66,7 +66,11 @@ function LifecycleSection() {
           <div className={styles.lifecycleCard} key={card.id}>
             <span>{card.label}</span>
             <strong>
-              {card.value.toLocaleString()} {card.suffix || ''}
+              {card.sampleSize === 0 ? (
+                <span className={styles.noTrend}>No data yet</span>
+              ) : (
+                `${card.value.toLocaleString()} ${card.suffix || ''}`
+              )}
             </strong>
             <small>{card.note}</small>
           </div>

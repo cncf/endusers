@@ -212,8 +212,15 @@ function breakdown(label, values, source, href) {
 }
 function memberTimeline(dir) {
   const content = readFileSync(join(dir, 'landscape.yml'), 'utf8');
-  const value = (content.match(/^\s+name: .*\(member\)$/gm) || []).length;
-  return [{ date: new Date().toISOString().slice(0, 10), value }];
+  // landscape.yml writes a member card once per subcategory it is placed in,
+  // so a company cross-listed under both "CNCF Members" and a product category
+  // appears twice. Count distinct names, not matching lines.
+  const names = new Set(
+    (content.match(/^\s+name: .*\(member\)$/gm) || []).map((line) =>
+      line.trim(),
+    ),
+  );
+  return [{ date: new Date().toISOString().slice(0, 10), value: names.size }];
 }
 async function collectLifecycleMetrics() {
   const headers = makeGitHubHeaders(
@@ -289,6 +296,9 @@ async function collectLifecycleMetrics() {
         id: 'median-submission-age',
         label: 'Median submission age',
         value: median(ages),
+        // median() returns 0 for an empty sample; the dashboard needs the
+        // sample size to tell "no open submissions" from "zero days".
+        sampleSize: ages.length,
         suffix: 'days',
         note: 'Time since open submission issue creation; not end-to-end review time.',
       },
@@ -296,6 +306,7 @@ async function collectLifecycleMetrics() {
         id: 'median-pr-cycle',
         label: 'Median public PR cycle',
         value: median(cycleDays),
+        sampleSize: cycleDays.length,
         suffix: 'days',
         note: 'Creation to merge for merged architecture PRs; a public GitHub proxy.',
       },

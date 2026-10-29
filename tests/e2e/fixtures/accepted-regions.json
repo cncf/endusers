@@ -32,7 +32,7 @@
     },
     {
       "file": "src/components/MetricsDashboard/index.js",
-      "span": "85:21-85:33",
+      "span": "89:21-89:33",
       "class": "data-shape-guard",
       "reason": "`|| []` fallback taken only when data/metrics.json lifecycle has no omitted array."
     },
