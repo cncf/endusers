@@ -5,6 +5,7 @@ import { runScriptWithFetchMock } from './helpers-fetch-mock.mjs';
 
 const OUTPUT = 'data/community-groups.json';
 const PUBLIC_SECTOR = 'repos/cncf/public-sector-user-group';
+const RESEARCH = 'repos/cncf/research-user-group';
 const TELECOM = 'repos/cncf/telecom-user-group';
 const PLATFORM_ENGINEERING =
   'repos/Cloud-Native-Platform-Engineering/cnpe-community';
@@ -52,6 +53,13 @@ function existingGroups(publicSector = {}) {
       ...publicSector,
     },
     {
+      slug: 'research',
+      name: 'Research User Group',
+      repository: 'https://github.com/cncf/research-user-group',
+      archived: false,
+      reachable: true,
+    },
+    {
       slug: 'telecom',
       name: 'Telecom User Group',
       repository: 'https://github.com/cncf/telecom-user-group',
@@ -69,24 +77,25 @@ function existingGroups(publicSector = {}) {
   ];
 }
 
-test('records every configured group as healthy when both repos are live', () => {
+test('records every configured group as healthy when their repos are live', () => {
   const result = run([
     live(PUBLIC_SECTOR),
+    live(RESEARCH),
     live(TELECOM),
     live(PLATFORM_ENGINEERING),
   ]);
   const output = parseOutput(result);
 
-  assert.equal(output.groups.length, 3);
+  assert.equal(output.groups.length, 4);
   assert.deepEqual(
     output.groups.map((group) => group.slug),
-    ['public-sector', 'telecom', 'platform-engineering'],
+    ['public-sector', 'research', 'telecom', 'platform-engineering'],
   );
   for (const group of output.groups) {
     assert.equal(group.archived, false);
     assert.equal(group.reachable, true);
   }
-  assert.match(result.stdout, /Checked 3 End User Group upstream repositories/);
+  assert.match(result.stdout, /Checked 4 End User Group upstream repositories/);
   // A clean run must not append the attention suffix, which the freshness UI
   // copy and reviewers read as "nothing to do".
   assert.doesNotMatch(result.stdout, /need attention/);
@@ -95,7 +104,12 @@ test('records every configured group as healthy when both repos are live', () =>
 
 test('derives the repository URL and slug/name pairs from the group table', () => {
   const output = parseOutput(
-    run([live(PUBLIC_SECTOR), live(TELECOM), live(PLATFORM_ENGINEERING)]),
+    run([
+      live(PUBLIC_SECTOR),
+      live(RESEARCH),
+      live(TELECOM),
+      live(PLATFORM_ENGINEERING),
+    ]),
   );
 
   assert.deepEqual(bySlug(output, 'public-sector'), {
@@ -112,11 +126,19 @@ test('derives the repository URL and slug/name pairs from the group table', () =
     archived: false,
     reachable: true,
   });
+  assert.deepEqual(bySlug(output, 'research'), {
+    slug: 'research',
+    name: 'Research User Group',
+    repository: 'https://github.com/cncf/research-user-group',
+    archived: false,
+    reachable: true,
+  });
 });
 
 test('writes a parseable ISO generatedAt envelope terminated by a newline', () => {
   const result = run([
     live(PUBLIC_SECTOR),
+    live(RESEARCH),
     live(TELECOM),
     live(PLATFORM_ENGINEERING),
   ]);
@@ -139,7 +161,12 @@ test('leaves the report untouched when group status has not changed', () => {
   };
   const raw = JSON.stringify(existing, null, 2) + '\n';
   const result = run(
-    [live(PUBLIC_SECTOR), live(TELECOM), live(PLATFORM_ENGINEERING)],
+    [
+      live(PUBLIC_SECTOR),
+      live(RESEARCH),
+      live(TELECOM),
+      live(PLATFORM_ENGINEERING),
+    ],
     {
       [OUTPUT]: raw,
     },
@@ -158,6 +185,7 @@ test('updates generatedAt when group status changes', () => {
   const result = run(
     [
       { match: PUBLIC_SECTOR, body: { archived: true } },
+      live(RESEARCH),
       live(TELECOM),
       live(PLATFORM_ENGINEERING),
     ],
@@ -175,9 +203,17 @@ test('migrates a legacy checkedAt report to generatedAt', () => {
     groups: existingGroups(),
   };
   const output = parseOutput(
-    run([live(PUBLIC_SECTOR), live(TELECOM), live(PLATFORM_ENGINEERING)], {
-      [OUTPUT]: JSON.stringify(existing),
-    }),
+    run(
+      [
+        live(PUBLIC_SECTOR),
+        live(RESEARCH),
+        live(TELECOM),
+        live(PLATFORM_ENGINEERING),
+      ],
+      {
+        [OUTPUT]: JSON.stringify(existing),
+      },
+    ),
   );
 
   assert.ok(Number.isFinite(Date.parse(output.generatedAt)));
@@ -188,6 +224,7 @@ test('migrates a legacy checkedAt report to generatedAt', () => {
 test('flags an archived upstream repository as stale', () => {
   const result = run([
     { match: PUBLIC_SECTOR, body: { archived: true } },
+    live(RESEARCH),
     live(TELECOM),
     live(PLATFORM_ENGINEERING),
   ]);
@@ -210,6 +247,7 @@ test('flags an archived upstream repository as stale', () => {
 test('flags a 404 upstream repository as missing or renamed', () => {
   const result = run([
     live(PUBLIC_SECTOR),
+    live(RESEARCH),
     { match: TELECOM, status: 404, body: {} },
     live(PLATFORM_ENGINEERING),
   ]);
@@ -231,7 +269,9 @@ test('flags a 404 upstream repository as missing or renamed', () => {
 test('treats a non-404 error response as an inconclusive check, not a failure', () => {
   const result = run([
     live(PUBLIC_SECTOR),
+    live(RESEARCH),
     { match: TELECOM, status: 500, body: {} },
+    live(PLATFORM_ENGINEERING),
   ]);
   const output = parseOutput(result);
 
@@ -252,7 +292,9 @@ test('treats a non-404 error response as an inconclusive check, not a failure', 
 test('survives a transport-level failure and still writes the other groups', () => {
   const result = run([
     { match: PUBLIC_SECTOR, networkError: 'socket hang up' },
+    live(RESEARCH),
     live(TELECOM),
+    live(PLATFORM_ENGINEERING),
   ]);
   const output = parseOutput(result);
 
@@ -274,7 +316,12 @@ test('carries forward the last-known status when a recheck is inconclusive', () 
     groups: existingGroups({ archived: true }),
   });
   const result = run(
-    [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
+    [
+      { match: PUBLIC_SECTOR, status: 500, body: {} },
+      live(RESEARCH),
+      live(TELECOM),
+      live(PLATFORM_ENGINEERING),
+    ],
     { [OUTPUT]: knownStaleReport },
   );
   const output = parseOutput(result);
@@ -292,7 +339,12 @@ test('carries forward null last-known status when recorded in previous report', 
     groups: existingGroups({ archived: null, reachable: null }),
   });
   const result = run(
-    [{ match: PUBLIC_SECTOR, status: 500, body: {} }, live(TELECOM)],
+    [
+      { match: PUBLIC_SECTOR, status: 500, body: {} },
+      live(RESEARCH),
+      live(TELECOM),
+      live(PLATFORM_ENGINEERING),
+    ],
     { [OUTPUT]: previousReport },
   );
   const output = parseOutput(result);
@@ -306,6 +358,7 @@ test('falls back cleanly when the previous report cannot be parsed', () => {
   const result = run(
     [
       { match: PUBLIC_SECTOR, status: 500, body: {} },
+      live(RESEARCH),
       live(TELECOM),
       live(PLATFORM_ENGINEERING),
     ],
@@ -321,6 +374,7 @@ test('falls back cleanly when the previous report cannot be parsed', () => {
 test('reports every stale group in a single run', () => {
   const result = run([
     { match: PUBLIC_SECTOR, body: { archived: true } },
+    live(RESEARCH),
     { match: TELECOM, status: 404, body: {} },
     live(PLATFORM_ENGINEERING),
   ]);
@@ -334,6 +388,7 @@ test('reports every stale group in a single run', () => {
 test('coerces a truthy non-boolean archived field to a boolean', () => {
   const result = run([
     { match: PUBLIC_SECTOR, body: { archived: 'yes' } },
+    live(RESEARCH),
     live(TELECOM),
     live(PLATFORM_ENGINEERING),
   ]);
@@ -347,6 +402,7 @@ test('coerces a truthy non-boolean archived field to a boolean', () => {
 test('refuses to overwrite the report when every check is inconclusive', () => {
   const result = run([
     { match: PUBLIC_SECTOR, networkError: 'socket hang up' },
+    { match: RESEARCH, status: 500, body: {} },
     { match: TELECOM, status: 500, body: {} },
     { match: PLATFORM_ENGINEERING, status: 500, body: {} },
   ]);
@@ -358,7 +414,7 @@ test('refuses to overwrite the report when every check is inconclusive', () => {
   );
   assert.match(
     result.stderr,
-    /All 3 End User Group checks were inconclusive; leaving the existing report untouched\./,
+    /All 4 End User Group checks were inconclusive; leaving the existing report untouched\./,
   );
   // The pre-existing report must survive with its honest old generatedAt:
   // rewriting it would date-stamp a verification that never happened.
