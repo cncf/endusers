@@ -80,6 +80,11 @@ const SERIALISED_WORKFLOWS = new Map([
       'cancel-in-progress contract below.',
   ],
   [
+    'refresh-members.yml',
+    'Force-pushes the constant branch automation/refresh-members; ' +
+      'same reasoning as refresh-metrics.yml.',
+  ],
+  [
     'refresh-community-people.yml',
     'Force-pushes the constant branch automation/refresh-community-people; ' +
       'same reasoning as refresh-metrics.yml.',

@@ -2,9 +2,12 @@ name: Refresh metrics
 
 on:
   # Weekly, offset from the other scheduled workflows so they do not contend
-  # for runners. Everything this lane collects (metrics, the end user member
-  # list, the case study catalog, the End User Talks schedule) is rendered on
-  # the live site and goes visibly stale when it is only refreshed by hand.
+  # for runners. Everything this lane collects (metrics, the case study
+  # catalog, the End User Talks schedule) is rendered on the live site and
+  # goes visibly stale when it is only refreshed by hand. The end user member
+  # list is refreshed by refresh-members.yml: it is the only refresh that
+  # mirrors third-party binary assets, and an upstream logo that breaks the
+  # 2 MB publish limit must not hold these datasets back (#1980).
   # A maintainer can still trigger it from the Actions tab or `gh workflow
   # run` when upstream changes should land sooner.
   schedule:
@@ -33,14 +36,10 @@ jobs:
       - run: npm run collect:metrics
         env:
           GH_TOKEN: ${{ github.token }}
-      - run: npm run collect:enduser-members
-      - run: npm run validate:enduser-members
-      - run: npm run generate:members
       - run: npm run collect:case-studies
       - run: npm run collect:end-user-talks
       - run: npm run fix:format
       - run: npm run validate:metrics
-      - run: npm run validate:members
       - run: npm run validate:case-studies
       - run: npm run validate:end-user-talks
       - run: npm run test:unit
@@ -49,10 +48,9 @@ jobs:
         with:
           branch: automation/refresh-metrics
           commit-message: 'chore: refresh metrics'
-          title: 'chore: refresh metrics and member data'
+          title: 'chore: refresh metrics'
           body: |
-            Automated refresh of `data/metrics.json`, the end user member
-            list and the generated member directory, `data/case-studies.json`
-            and `data/end-user-talks.json`.
+            Automated refresh of `data/metrics.json`,
+            `data/case-studies.json` and `data/end-user-talks.json`.
 
             Validation, the unit tests and the production build passed.

@@ -5,10 +5,10 @@
 // supply its branch name and PR text", and the action supplies the rest by
 // pinning `delete-branch: true`, `labels: automated` and `signoff: true` on the
 // inner `peter-evans/create-pull-request` step, and forwarding its own declared
-// inputs to it. Four workflows route through it -- architecture-submission,
-// refresh-community-people, refresh-metrics, refresh-radar-reports -- and none
-// uses the action directly, so that one `with:` block is the whole of the
-// policy.
+// inputs to it. Five workflows route through it -- architecture-submission,
+// refresh-community-people, refresh-members, refresh-metrics,
+// refresh-radar-reports -- and none uses the action directly, so that one
+// `with:` block is the whole of the policy.
 //
 // Nothing read it. ./composite-action-supply-chain.test.mjs is the only test
 // that opens `.github/actions/**`, and it asserts the supply-chain and wiring

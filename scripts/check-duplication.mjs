@@ -43,7 +43,13 @@ export const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 // them. A change that genuinely needs a new copy should instead extract the
 // shared piece, which is what the count exists to prompt.
 export const CLONE_CEILING = 245;
-export const CSS_YAML_CLONE_CEILING = 35;
+// Maintainer exception (#1980): the fifth automation lane,
+// refresh-members.yml, repeats the checkout/setup header and the
+// test/build/open-automation-pr tail every lane carries. Neither can move
+// into a composite (checkout must precede any local action; the workflow
+// ordering contract reads workflow-level run steps only), so the split added
+// two clones the gate cannot be paid for by extraction.
+export const CSS_YAML_CLONE_CEILING = 37;
 
 // How far below the ceiling the count may fall before the gate insists the
 // ceiling follow it down. Without this the slack left by one clean-up would
