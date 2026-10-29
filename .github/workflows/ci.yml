@@ -18,8 +18,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  classify:
+    name: Classify changed paths
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      document_only: ${{ steps.classify.outputs.document_only }}
+      documents_b64: ${{ steps.classify.outputs.documents_b64 }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Classify changed documents
+        id: classify
+        run:
+          node --input-type=module -e "import { runClassifier } from
+          './scripts/lib/content-only-ci.mjs'; runClassifier()"
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+
   validate:
     name: Validate repository
+    needs: classify
+    outputs:
+      document_only:
+        ${{ needs.classify.result == 'success' &&
+        needs.classify.outputs.document_only == 'true' }}
+    if: ${{ !cancelled() }}
+    env:
+      FULL_VALIDATION:
+        ${{ needs.classify.result != 'success' ||
+        needs.classify.outputs.document_only != 'true' }}
+      CONTENT_ONLY:
+        ${{ needs.classify.result == 'success' &&
+        needs.classify.outputs.document_only == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -30,8 +66,10 @@ jobs:
       - name: Set up Node.js and install dependencies
         uses: ./.github/actions/setup-node-deps
       - name: Audit dependencies against the advisory allowlist
+        if: ${{ !cancelled() && env.FULL_VALIDATION == 'true' }}
         run: npm run check:audit
       - name: Run unit tests with coverage
+        if: ${{ !cancelled() && env.FULL_VALIDATION == 'true' }}
         # A zone fourteen hours ahead of UTC, so a date formatted in the
         # host zone instead of UTC lands on a different calendar day for most
         # of the day; the suite used to pin TZ=UTC, which hid exactly that.
@@ -40,49 +78,47 @@ jobs:
         run: npm run test:unit:coverage:check | tee coverage-summary.txt
         shell: bash -o pipefail {0}
       - name: Publish coverage summary
-        if: always()
+        if: ${{ !cancelled() && env.FULL_VALIDATION == 'true' }}
         run: |
           if [ -f coverage-summary.txt ]; then
             { echo '## Unit test coverage'; echo '```'; cat coverage-summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Upload coverage report
-        if: always()
+        if: ${{ !cancelled() && env.FULL_VALIDATION == 'true' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-summary
           path: coverage-summary.txt
           retention-days: 90
-      - name: Validate metrics data
-        run: npm run validate:metrics
-      - name: Validate architectures data
-        run: npm run validate:architectures
-      - name: Validate architecture assets
-        run: npm run validate:architecture-assets
-      - name: Validate awards data
-        run: npm run validate:awards
-      - name: Validate community people data
-        run: npm run validate:community-people
-      - name: Validate community group links
-        run: npm run validate:community-groups
-      - name: Validate case studies data
-        run: npm run validate:case-studies
-      - name: Validate radar reports data
-        run: npm run validate:radar-reports
-      - name: Validate projects-born data
-        run: npm run validate:projects-born
-      - name: Validate End User talks data
-        run: npm run validate:end-user-talks
-      - name: Validate button contrast
-        run: npm run validate:button-contrast
-      - name: Validate End User landscape data
-        run: npm run validate:enduser-members
-      - name: Validate members data
-        run: npm run validate:members
+      - name: Validate repository data
+        if: ${{ !cancelled() && env.FULL_VALIDATION == 'true' }}
+        run: |
+          npm run validate:metrics
+          npm run validate:architectures
+          npm run validate:architecture-assets
+          npm run validate:awards
+          npm run validate:community-people
+          npm run validate:community-groups
+          npm run validate:case-studies
+          npm run validate:radar-reports
+          npm run validate:projects-born
+          npm run validate:end-user-talks
+          npm run validate:button-contrast
+          npm run validate:enduser-members
+          npm run validate:members
+      - name: Check content contracts
+        if: ${{ !cancelled() && env.CONTENT_ONLY == 'true' }}
+        run: >-
+          node --test tests/docs-contract.test.mjs
+          tests/markdown-references.test.mjs
+          tests/community-group-coverage.test.mjs
       - name: Build production site
         run: npm run build:production
 
   lint:
     name: Lint repository
+    needs: classify
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -92,21 +128,35 @@ jobs:
           persist-credentials: false
       - name: Set up Node.js and install dependencies
         uses: ./.github/actions/setup-node-deps
-      - name: Check formatting
-        run: npm run check:format
-      - name: Check spelling
-        run: npm run check:spelling
-      - name: Check markdown
-        run: npm run check:markdown
-      - name: Check duplication
-        run: npm run check:duplication
-      - name: Lint JavaScript
-        run: npm run check:lint
-      - name: Check unused code and dependencies
-        run: npm run check:unused
+      - name: Check changed-document formatting, spelling, and Markdown
+        if:
+          ${{ !cancelled() && needs.classify.result == 'success' &&
+          needs.classify.outputs.document_only == 'true' }}
+        run:
+          node --input-type=module -e "import { runDocumentLint } from
+          './scripts/lib/content-only-ci.mjs';
+          runDocumentLint(process.env.CHANGED_DOCUMENTS_B64)"
+        env:
+          CHANGED_DOCUMENTS_B64: ${{ needs.classify.outputs.documents_b64 }}
+      - name: Run full repository lint
+        if:
+          ${{ !cancelled() && (needs.classify.result != 'success' ||
+          needs.classify.outputs.document_only != 'true') }}
+        run: |
+          npm run check:format
+          npm run check:spelling
+          npm run check:markdown
+          npm run check:duplication
+          npm run check:lint
+          npm run check:unused
 
   e2e:
     name: End-to-end tests
+    needs: [validate, lint]
+    if: >-
+      ${{ !cancelled() && (needs.validate.result != 'success' ||
+      needs.lint.result != 'success' || needs.validate.outputs.document_only !=
+      'true') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -146,6 +196,11 @@ jobs:
 
   e2e-coverage:
     name: End-to-end coverage
+    needs: [classify, validate, lint]
+    if: >-
+      ${{ !cancelled() && (needs.classify.result != 'success' ||
+      needs.classify.outputs.document_only != 'true' || needs.validate.result !=
+      'success' || needs.lint.result != 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
