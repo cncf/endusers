@@ -29,6 +29,23 @@ test('firstParagraph caps the summary at 240 characters', () => {
   assert.equal(firstParagraph(long).length, 240);
 });
 
+test('firstParagraph flattens an inline link to its text, dropping the URL', () => {
+  assert.equal(
+    firstParagraph('Built with [MLFlow](https://mlflow.org/) tracking.'),
+    'Built with MLFlow tracking.',
+  );
+});
+
+test('firstParagraph cuts a long paragraph on the last sentence boundary, not mid-word', () => {
+  const sentence = 'This describes the deployment in full. ';
+  const body =
+    sentence.repeat(7) + 'Trailing words that never close a sentence';
+  const result = firstParagraph(body);
+  assert.ok(result.length <= 240);
+  assert.match(result, /\.$/);
+  assert.ok(!result.endsWith('Trailing words that never close a sentence'));
+});
+
 const PARAGRAPHS = [
   [
     'splits paragraphs on a blank line that carries whitespace',

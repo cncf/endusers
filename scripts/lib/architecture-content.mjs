@@ -180,15 +180,29 @@ export function cleanMarkdown(body) {
     .trim();
 }
 
-/** First non-heading, non-markup paragraph, used as the catalog summary. */
+/**
+ * First non-heading, non-markup paragraph, used as the catalog summary.
+ *
+ * Inline links are flattened to their link text before the 240-character cut
+ * so the stored summary never carries raw markdown syntax,
+ * and the cut lands on the last sentence boundary that fits rather than
+ * mid-word, so a truncated summary still reads as prose.
+ */
 export function firstParagraph(body) {
   const paragraph = body.split(/\n\s*\n/).find((part) => {
     const text = part.trim();
     return text && !/^[#!\-[<|>]/.test(text);
   });
-  return (
-    paragraph?.replace(/[*_`]/g, '').replace(/\s+/g, ' ').slice(0, 240) ?? ''
-  );
+  const text = paragraph
+    ?.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return '';
+  if (text.length <= 240) return text;
+  const cut = text.slice(0, 240);
+  const lastSentence = cut.search(/[^.!?]*$/) - 1;
+  return lastSentence > 0 ? cut.slice(0, lastSentence + 1).trim() : cut.trim();
 }
 
 /**
