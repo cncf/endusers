@@ -728,6 +728,18 @@ test('falls back to a PNG when no SVG asset exists', () => {
   );
 });
 
+test('does not use an architecture diagram as a member logo', () => {
+  const result = run({
+    catalog: [
+      catalogEntry({
+        assets: ['/img/architectures/acme/architecture.png'],
+      }),
+    ],
+  });
+
+  assert.equal(memberById(result, 'acme').logo, null);
+});
+
 test('falls back to the award logo when no usable catalog asset exists', () => {
   const result = run({
     catalog: [

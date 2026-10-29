@@ -75,12 +75,15 @@ function pickLogo(allAssets, awardEntries, slug) {
   if (namedLogo) return namedLogo;
   const exactMatch = allAssets.find((a) => basename(a) === slug);
   if (exactMatch) return exactMatch;
-  const svgs = allAssets.filter((a) => a.toLowerCase().endsWith('.svg'));
+  const logoCandidates = allAssets.filter(
+    (a) => basename(a) !== 'architecture',
+  );
+  const svgs = logoCandidates.filter((a) => a.toLowerCase().endsWith('.svg'));
   if (svgs.length > 0) {
     svgs.sort((a, b) => basename(a).length - basename(b).length);
     return svgs[0];
   }
-  const png = allAssets.find((a) => a.toLowerCase().endsWith('.png'));
+  const png = logoCandidates.find((a) => a.toLowerCase().endsWith('.png'));
   if (png) return png;
   return awardEntries[0]?.logo || null;
 }
