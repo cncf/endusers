@@ -58,19 +58,19 @@ If you have [`just`](https://github.com/casey/just) installed, the repository's
   `validate:end-user-talks`, `validate:button-contrast`,
   `validate:enduser-members`, `validate:members`) followed by `build`.
 
-These recipes are a superset of the validation steps the "Refresh metrics"
-workflow runs, and `just build` runs the same `validate:*` set as
-`npm run validate:all`, which `npm run build:netlify` runs before the Netlify
-build. The recipes are **not** the same checks the "Validate repository" and
-"Lint repository" PR gates run, and a green `just build`/`just refresh` locally
-does **not** imply a green PR check. Before opening a PR, also run
-`npm run test:unit:coverage:check` and the local check scripts that match "Lint
-repository": `npm run check:format`, `npm run check:spelling`,
-`npm run check:markdown`, `npm run check:duplication`, `npm run check:lint` and
-`npm run check:unused`. The "Validate repository" gate additionally runs
-`npm run check:audit` (dependency advisory allowlist) — see step 5 below.
-`npm run check` also runs the lint checks, but it additionally runs
-`check:audit`, `check:links` (network-dependent) and
+These recipes are a superset of the validation steps the "Refresh metrics" and
+"Refresh end user members" workflows run, and `just build` runs the same
+`validate:*` set as `npm run validate:all`, which `npm run build:netlify` runs
+before the Netlify build. The recipes are **not** the same checks the "Validate
+repository" and "Lint repository" PR gates run, and a green
+`just build`/`just refresh` locally does **not** imply a green PR check. Before
+opening a PR, also run `npm run test:unit:coverage:check` and the local check
+scripts that match "Lint repository": `npm run check:format`,
+`npm run check:spelling`, `npm run check:markdown`, `npm run check:duplication`,
+`npm run check:lint` and `npm run check:unused`. The "Validate repository" gate
+additionally runs `npm run check:audit` (dependency advisory allowlist) — see
+step 5 below. `npm run check` also runs the lint checks, but it additionally
+runs `check:audit`, `check:links` (network-dependent) and
 `check:community-group-links` (needs `GH_TOKEN` and rewrites
 `data/community-groups.json`) — see step 5 below before running the full
 `npm run check`. `just` is optional — the npm scripts remain the canonical

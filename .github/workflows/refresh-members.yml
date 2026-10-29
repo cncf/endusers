@@ -1,0 +1,56 @@
+name: Refresh end user members
+
+on:
+  # Weekly, thirty minutes after Refresh metrics so the two lanes do not
+  # contend for runners. Split from refresh-metrics.yml: this is the only
+  # refresh that mirrors third-party binary assets (member logos under
+  # static/img/end-user-members/), and an upstream logo that breaks the 2 MB
+  # publish limit in scripts/lib/validate-architecture-assets.mjs must fail
+  # here without holding back the metrics, case-study and talk-schedule
+  # refreshes (#1980). A maintainer can still trigger it from the Actions tab
+  # or `gh workflow run` when upstream changes should land sooner.
+  schedule:
+    - cron: '47 3 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Serialised on the branch this workflow force-pushes; see the note in
+# refresh-radar-reports.yml. Not cancelled, for the same reason.
+concurrency:
+  group: automation/refresh-members
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-deps
+      - run: npm run collect:enduser-members
+      - run: npm run validate:enduser-members
+      - run: npm run generate:members
+      # Explicit step, so a mirrored logo that breaks the publish limit fails
+      # here as "asset exceeds 2 MB limit" instead of surfacing later as a
+      # unit-test failure in tests/validators-smoke.test.mjs.
+      - run: npm run validate:architecture-assets
+      - run: npm run fix:format
+      - run: npm run validate:members
+      - run: npm run test:unit
+      - run: npm run build
+      - uses: ./.github/actions/open-automation-pr
+        with:
+          branch: automation/refresh-members
+          commit-message: 'chore: refresh end user members'
+          title: 'chore: refresh end user member data'
+          body: |
+            Automated refresh of the end user member list, the generated
+            member directory (`data/members.json`) and the mirrored member
+            logos under `static/img/end-user-members/`.
+
+            Validation, the unit tests and the production build passed.
