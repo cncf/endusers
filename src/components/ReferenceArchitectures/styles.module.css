@@ -12,6 +12,7 @@
 }
 
 .card {
+  --org-avatar-bg: #fff;
   display: flex;
   min-width: 0;
   flex-direction: column;
