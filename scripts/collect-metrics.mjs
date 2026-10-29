@@ -71,7 +71,10 @@ try {
     );
     return false;
   });
-  const architectureTimeline = architectureTimelineData(architectureHistory);
+  const architectureTimeline = architectureTimelineData(
+    architectureHistory,
+    new Set(architectures.map((entry) => entry.name)),
+  );
   const memberHistory = memberTimeline(landscapeDir);
   const lifecycle = await collectLifecycleMetrics();
   const generatedAt = new Date().toISOString();
@@ -369,8 +372,10 @@ function monthlyCounts(dates) {
 // One cumulative point per month, counting each architecture directory once at
 // the commit that first added a file under it. `git log --format=%aI` alone
 // counts commits, so an edit to an existing architecture would register as a
-// new submission.
-function architectureTimelineData(dir) {
+// new submission. Only directories still published are counted, so a
+// submission that was later withdrawn upstream does not leave the series one
+// ahead of the stat card for good.
+function architectureTimelineData(dir, published) {
   const log = execFileSync(
     'git',
     [
@@ -401,6 +406,7 @@ function architectureTimelineData(dir) {
     // it either.
     const parts = line.split('/');
     if (parts.length < 5) continue;
+    if (!published.has(parts[3])) continue;
     if (added.has(parts[3])) continue;
     added.set(parts[3], month);
   }
