@@ -3,7 +3,7 @@
   "sourceUrl": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/",
   "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
   "category": "End User Programming / End User Talk",
-  "generatedAt": "2026-10-24T16:09:45.827Z",
+  "generatedAt": "2026-10-29T11:55:31.231Z",
   "timezone": "MST (UTC−7)",
   "talkCount": 83,
   "days": [
@@ -424,7 +424,7 @@
               "id": "1247134",
               "title": "Kubernetes Secrets Were a Bad Idea. Now What?",
               "speakers": "Maxime Coquerel",
-              "room": "Hyatt Regency | Level 4 | Regency Ballroom B-D",
+              "room": "Hyatt Regency | Level 4 | Regency Ballroom CD",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1247134"
             }
           ]
@@ -439,7 +439,7 @@
               "id": "1250015",
               "title": "Allocating Kubernetes Idle Per-Instance — Letting Scale Do What Fairness Rules Couldn't",
               "speakers": "Vinicius Krischke",
-              "room": "Hyatt Regency | Level 4 | Regency Ballroom B-D",
+              "room": "Hyatt Regency | Level 4 | Regency Ballroom CD",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250015"
             }
           ]
@@ -490,7 +490,7 @@
               "id": "1250936",
               "title": "When Agents Talk to Agents: Scaling A2A on Kubernetes Without Drowning in Connections",
               "speakers": "Shriya Chaitanya Kamat Tarcar",
-              "room": "Hyatt Regency | Level 4 | Regency Ballroom B-D",
+              "room": "Hyatt Regency | Level 4 | Regency Ballroom CD",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250936"
             }
           ]
@@ -676,7 +676,7 @@
             {
               "id": "1249553",
               "title": "BurritoBot Said Let's Dance, the Platform Said No",
-              "speakers": "Michael Forrester, Whitney Lee",
+              "speakers": "Michael Rishi Forrester, Whitney Lee",
               "room": "Salt Palace | Level 1 | Grand Ballroom BDF",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1249553"
             },
