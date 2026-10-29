@@ -136,7 +136,7 @@ try {
         label: 'Reference architecture submissions',
         source: 'architectures',
         sourceUrl:
-          'https://github.com/cncf/architecture/commits/main/content/en/architectures',
+          'https://github.com/cncf/architecture/tree/main/content/en/architectures',
         values: architectureTimeline,
       },
     },
@@ -355,20 +355,46 @@ function monthlyCounts(dates) {
     .map(([date, value]) => ({ date, value }));
 }
 
+// One cumulative point per month, counting each architecture directory once at
+// the commit that first added a file under it. `git log --format=%aI` alone
+// counts commits, so an edit to an existing architecture would register as a
+// new submission.
 function architectureTimelineData(dir) {
-  const commits = execFileSync(
+  const log = execFileSync(
     'git',
-    ['-C', dir, 'log', '--format=%aI', '--', 'content/en/architectures'],
+    [
+      '-C',
+      dir,
+      'log',
+      '--reverse',
+      '--format=%aI',
+      '--name-only',
+      '--diff-filter=A',
+      '--',
+      'content/en/architectures',
+    ],
     { encoding: 'utf8' },
-  )
-    .trim()
-    .split('\n')
-    .filter(Boolean);
-  const months = {};
-  for (const date of commits) {
-    const month = date.slice(0, 7);
-    months[month] = (months[month] || 0) + 1;
+  );
+  // --reverse walks oldest-first, so the first commit a directory appears
+  // under is the one that introduced it.
+  const added = new Map();
+  let month = null;
+  for (const line of log.split('\n')) {
+    if (!line) continue;
+    if (/^\d{4}-\d{2}-\d{2}T/.test(line)) {
+      month = line.slice(0, 7);
+      continue;
+    }
+    // content/en/architectures/<id>/<rest>: a path with no <rest> is a loose
+    // file in the root, not an architecture, and the stat card does not count
+    // it either.
+    const parts = line.split('/');
+    if (parts.length < 5) continue;
+    if (added.has(parts[3])) continue;
+    added.set(parts[3], month);
   }
+  const months = {};
+  for (const value of added.values()) months[value] = (months[value] || 0) + 1;
   let total = 0;
   return Object.entries(months)
     .sort(([a], [b]) => a.localeCompare(b))

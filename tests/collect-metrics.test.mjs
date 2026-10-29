@@ -85,6 +85,7 @@ function run({
   landscape = LANDSCAPE_YML,
   architectures = ['acme-platform', 'globex-edge'],
   architectureSymlinks = {},
+  architectureOverlays = {},
   commitDates = [
     '2024-01-10T00:00:00Z',
     '2024-01-20T00:00:00Z',
@@ -101,6 +102,7 @@ function run({
       architecture: architectureRepo(architectures),
     },
     repoCommitDates: { architecture: commitDates },
+    repoCommitOverlays: { architecture: architectureOverlays },
     repoSymlinks: { architecture: architectureSymlinks },
     routes: routes ?? [
       { match: FILES_ROUTE, body: [] },
@@ -260,12 +262,41 @@ test('collect-metrics counts landscape member entries into the member series', (
   );
 });
 
-test('collect-metrics builds a cumulative monthly architecture timeline from git history', () => {
+test('collect-metrics counts each architecture once, at the commit that first added it', () => {
   const data = metricsFrom(run());
 
+  // Both fixture architectures land in the first (2024-01) commit; the later
+  // commits only touch the loose .timeline file, so nothing new is counted.
   assert.deepEqual(data.series.referenceArchitectures.values, [
     { date: '2024-01', value: 2 },
-    { date: '2024-03', value: 3 },
+  ]);
+});
+
+test('collect-metrics counts an architecture added across several commits once', () => {
+  const data = metricsFrom(
+    run({
+      architectures: ['acme-platform'],
+      commitDates: [
+        '2024-01-10T00:00:00Z',
+        '2024-02-15T00:00:00Z',
+        '2024-03-05T00:00:00Z',
+      ],
+      architectureOverlays: {
+        2: {
+          'content/en/architectures/globex-edge/index.md': '# globex-edge\n',
+        },
+        3: {
+          'content/en/architectures/globex-edge/images/diagram.svg': '<svg/>\n',
+        },
+      },
+    }),
+  );
+
+  // globex-edge arrives page-first in 2024-02 and gains an image in 2024-03;
+  // only the commit that introduced the directory counts.
+  assert.deepEqual(data.series.referenceArchitectures.values, [
+    { date: '2024-01', value: 1 },
+    { date: '2024-02', value: 2 },
   ]);
 });
 
