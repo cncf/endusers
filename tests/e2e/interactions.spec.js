@@ -176,6 +176,25 @@ test.describe('member directory filtering', () => {
 });
 
 for (const colorScheme of ['light', 'dark']) {
+  test(`architecture logo plates stay readable in ${colorScheme}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/architectures');
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-theme',
+      colorScheme,
+    );
+    const catalog = page.getByRole('region', {
+      name: 'Reference architecture catalog',
+    });
+    const plates = catalog.locator('a > div[aria-hidden="true"]');
+    expect(await plates.count()).toBeGreaterThan(0);
+    for (const plate of await plates.all()) {
+      await expect(plate).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    }
+  });
+
   test(`corporate logo plates stay readable in ${colorScheme}`, async ({
     page,
   }) => {
