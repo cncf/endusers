@@ -1,7 +1,7 @@
 ---
 title: Research
 sidebar_position: 4
-description: Cloud native collaboration for research organizations and scientific workloads.
+description: Research cloud native collaboration for scientific workloads.
 slug: /community/user-groups/research
 ---
 
