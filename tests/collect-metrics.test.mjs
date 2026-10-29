@@ -94,6 +94,7 @@ function run({
   architectures = ['acme-platform', 'globex-edge'],
   architectureSymlinks = {},
   architectureOverlays = {},
+  architectureRemovals = {},
   commitDates = [
     '2024-01-10T00:00:00Z',
     '2024-01-20T00:00:00Z',
@@ -111,6 +112,7 @@ function run({
     },
     repoCommitDates: { architecture: commitDates },
     repoCommitOverlays: { architecture: architectureOverlays },
+    repoCommitRemovals: { architecture: architectureRemovals },
     repoSymlinks: { architecture: architectureSymlinks },
     routes: routes ?? [
       { match: FILES_ROUTE, body: [] },
@@ -311,6 +313,42 @@ test('collect-metrics counts an architecture added across several commits once',
     { date: '2024-01', value: 1 },
     { date: '2024-02', value: 2 },
   ]);
+});
+
+test('collect-metrics drops an architecture that was added and later withdrawn from the series', () => {
+  const data = metricsFrom(
+    run({
+      architectures: ['acme-platform'],
+      commitDates: [
+        '2024-01-10T00:00:00Z',
+        '2024-02-15T00:00:00Z',
+        '2024-03-05T00:00:00Z',
+      ],
+      architectureOverlays: {
+        2: {
+          'content/en/architectures/initech-legacy/index.md':
+            '# initech-legacy\n',
+        },
+      },
+      architectureRemovals: {
+        3: ['content/en/architectures/initech-legacy'],
+      },
+    }),
+  );
+
+  // initech-legacy was added in 2024-02 and deleted in 2024-03. The published
+  // count on the stat card never sees it, so the series must not either, or
+  // the chart would end one ahead of the card for good.
+  assert.deepEqual(data.series.referenceArchitectures.values, [
+    { date: '2024-01', value: 1 },
+  ]);
+  const card = data.metrics.find(
+    (entry) => entry.id === 'reference-architectures',
+  );
+  assert.equal(
+    data.series.referenceArchitectures.values.at(-1).value,
+    card.value,
+  );
 });
 
 test('collect-metrics tolerates a landscape with no projects', () => {

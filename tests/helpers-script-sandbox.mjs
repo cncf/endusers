@@ -87,6 +87,14 @@ index=0
 IFS=',' read -ra stamps <<< "$dates"
 for stamp in "\${stamps[@]}"; do
   index=$((index + 1))
+  remove_var="ENDUSERS_GIT_REMOVE_\${name//[^A-Za-z0-9]/_}_$index"
+  remove="\${!remove_var:-}"
+  if [ -n "$remove" ]; then
+    IFS=',' read -ra doomed <<< "$remove"
+    for path in "\${doomed[@]}"; do
+      rm -rf -- "$path"
+    done
+  fi
   overlay_var="ENDUSERS_GIT_OVERLAY_\${name//[^A-Za-z0-9]/_}_$index"
   overlay="\${!overlay_var:-}"
   if [ -n "$overlay" ]; then
@@ -125,6 +133,9 @@ exit 0
  *   clone target name -> 1-based commit index -> extra files written into the
  *   repository before that commit, so one directory can be added across
  *   several commits; an overlaid commit skips the default .timeline touch
+ * @param {Record<string, Record<string, string[]>>} [options.repoCommitRemovals]
+ *   clone target name -> 1-based commit index -> repo-relative paths removed
+ *   before that commit, so a directory can be added and later deleted
  * @param {Record<string, Record<string, string>>} [options.repoSymlinks] clone
  *   target name -> repo-relative link path -> link target. The `git clone`
  *   shim copies the fixture with `cp -R`, which preserves symlinks, so these
@@ -143,6 +154,7 @@ export function runScriptInSandbox({
   repos = {},
   repoCommitDates = {},
   repoCommitOverlays = {},
+  repoCommitRemovals = {},
   repoSymlinks = {},
   routes = [],
   outputs = [],
@@ -185,6 +197,13 @@ export function runScriptInSandbox({
         repoDates[
           `ENDUSERS_GIT_OVERLAY_${name.replace(/[^A-Za-z0-9]/g, '_')}_${index}`
         ] = overlayDir;
+      }
+    }
+    for (const [name, removals] of Object.entries(repoCommitRemovals)) {
+      for (const [index, paths] of Object.entries(removals)) {
+        repoDates[
+          `ENDUSERS_GIT_REMOVE_${name.replace(/[^A-Za-z0-9]/g, '_')}_${index}`
+        ] = paths.join(',');
       }
     }
 
