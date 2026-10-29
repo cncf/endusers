@@ -345,7 +345,12 @@ test('the lifecycle panel renders one card per leading indicator', () => {
     const expected = source.cards[index];
     const text = textOf(card);
     assert.match(text, new RegExp(expected.label));
-    assert.match(text, new RegExp(expected.value.toLocaleString()));
+    assert.match(
+      text,
+      expected.sampleSize === 0
+        ? /No data yet/
+        : new RegExp(expected.value.toLocaleString()),
+    );
     assert.match(
       text,
       new RegExp(
@@ -361,11 +366,13 @@ test('a lifecycle card without a suffix renders no stray unit', () => {
     (element) => element.props?.className === 'lifecycleCard',
   );
   cards.forEach((card, index) => {
-    const { value, suffix } = source.cards[index];
+    const { value, suffix, sampleSize } = source.cards[index];
     const strong = findByType(card, 'strong');
     assert.equal(
       textOf(strong).trim(),
-      `${value.toLocaleString()} ${suffix ?? ''}`.trim(),
+      sampleSize === 0
+        ? 'No data yet'
+        : `${value.toLocaleString()} ${suffix ?? ''}`.trim(),
     );
   });
 });
@@ -548,6 +555,46 @@ test('a lifecycle section present but empty renders the same as a missing one', 
   );
   assert.equal(findByType(panel, 'a').props.href, '/src');
   assert.equal(findAllByType(panel, 'strong').length, 0);
+});
+
+// median() in scripts/collect-metrics.mjs returns 0 for an empty sample, so a
+// median card over no open submissions or no merged PRs would otherwise
+// publish "0 days" beside "Open submissions: 0". The collector records the
+// sample size on the card; a zero sample renders the no-data affordance, and
+// any other size (or a card from an older metrics.json without the field)
+// renders the value as before.
+test('a lifecycle card with an empty sample says "No data yet" instead of a zero median', async () => {
+  const panel = await renderWith(
+    baseData({
+      referenceArchitectureLifecycle: {
+        cards: [
+          {
+            id: 'empty',
+            label: 'Median age',
+            value: 0,
+            sampleSize: 0,
+            suffix: 'days',
+            note: 'n',
+          },
+          {
+            id: 'one',
+            label: 'Median cycle',
+            value: 0,
+            sampleSize: 1,
+            suffix: 'days',
+            note: 'n',
+          },
+          { id: 'legacy', label: 'Open', value: 0, note: 'n' },
+        ],
+      },
+    }),
+    'LifecycleSection',
+  );
+  const [empty, one, legacy] = findAllByType(panel, 'strong');
+  assert.equal(textOf(empty), 'No data yet');
+  assert.equal(findByType(empty, 'span').props.className, 'noTrend');
+  assert.equal(textOf(one).trim(), '0 days');
+  assert.equal(textOf(legacy).trim(), '0');
 });
 
 test('a metrics file with no series renders no line charts', async () => {

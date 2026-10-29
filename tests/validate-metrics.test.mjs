@@ -261,6 +261,38 @@ test('rejects lifecycle cards with a non-finite value', () => {
   assert.match(result.stderr, /invalid lifecycle card/);
 });
 
+test('rejects a lifecycle card whose sampleSize is not a non-negative integer', () => {
+  for (const sampleSize of [-1, 1.5, '0', null]) {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      metricsFixture({
+        ...validData,
+        referenceArchitectureLifecycle: {
+          cards: [{ id: 'median-age', label: 'Median', value: 0, sampleSize }],
+        },
+      }),
+    );
+    assert.equal(result.status, 1, `sampleSize ${sampleSize} was accepted`);
+    assert.match(result.stderr, /sampleSize must be a non-negative integer/);
+  }
+});
+
+test('accepts a lifecycle card with a zero sampleSize and one without any', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      referenceArchitectureLifecycle: {
+        cards: [
+          { id: 'median-age', label: 'Median', value: 0, sampleSize: 0 },
+          { id: 'open', label: 'Open', value: 0 },
+        ],
+      },
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
+});
+
 test('rejects lifecycle omissions without a reason', () => {
   const result = runScriptWithFixtures(
     SCRIPT,

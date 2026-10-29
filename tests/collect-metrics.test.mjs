@@ -41,6 +41,14 @@ const MEMBER_ONLY_LANDSCAPE = `landscape:
             name: Second Corp (member)
           - homepage_url: https://third.example.com
             name: Third Corp
+  - name: Orchestration
+    subcategories:
+      - name: Scheduling
+        items:
+          # Cross-listed: landscape.yml repeats a member card under every
+          # subcategory it is placed in, so this is the same company again.
+          - homepage_url: https://example.com
+            name: Example Corp (member)
 `;
 
 const ISSUE_ROUTE = 'repos/cncf/tab/issues';
@@ -124,12 +132,16 @@ function metricsFrom(result) {
   return JSON.parse(raw);
 }
 
-function cardValue(data, id) {
-  const card = data.referenceArchitectureLifecycle.cards.find(
-    (entry) => entry.id === id,
+function card(data, id) {
+  const entry = data.referenceArchitectureLifecycle.cards.find(
+    (item) => item.id === id,
   );
-  assert.ok(card, `missing lifecycle card ${id}`);
-  return card.value;
+  assert.ok(entry, `missing lifecycle card ${id}`);
+  return entry;
+}
+
+function cardValue(data, id) {
+  return card(data, id).value;
 }
 
 test('collect-metrics writes metrics.json with project and architecture counts', () => {
@@ -249,10 +261,11 @@ test('collect-metrics breaks projects down by category and maturity, sorted by c
   );
 });
 
-test('collect-metrics counts landscape member entries into the member series', () => {
+test('collect-metrics counts each landscape member once however many places it is listed', () => {
   const data = metricsFrom(run({ landscape: MEMBER_ONLY_LANDSCAPE }));
 
   assert.equal(data.series.endUserMembers.values.length, 1);
+  // Three "(member)" lines, two distinct companies.
   assert.equal(data.series.endUserMembers.values[0].value, 2);
   assert.match(
     data.series.endUserMembers.values[0].date,
@@ -288,9 +301,13 @@ test('collect-metrics tolerates a landscape with no projects', () => {
   assert.equal(byId['cncf-projects'].value, 0);
   assert.equal(byId['reference-architectures'].value, 0);
   assert.deepEqual(data.breakdowns.projectCategories.values, []);
-  // median() returns 0 rather than NaN for an empty sample.
+  // median() returns 0 rather than NaN for an empty sample, and the card
+  // carries the sample size so the dashboard can say "No data yet" instead
+  // of publishing a zero-day median.
   assert.equal(cardValue(data, 'median-submission-age'), 0);
+  assert.equal(card(data, 'median-submission-age').sampleSize, 0);
   assert.equal(cardValue(data, 'median-pr-cycle'), 0);
+  assert.equal(card(data, 'median-pr-cycle').sampleSize, 0);
 });
 
 // Dirent.isDirectory() is false for a symlink, so a symlinked architecture
@@ -386,8 +403,10 @@ test('collect-metrics reports median submission age and PR cycle time in days', 
 
   // Odd sample: the middle value, rounded to one decimal.
   assert.ok(Math.abs(cardValue(data, 'median-submission-age') - 20) < 0.1);
+  assert.equal(card(data, 'median-submission-age').sampleSize, 3);
   // Even sample of merged PRs (2 and 8 days) averages the two middle values.
   assert.equal(cardValue(data, 'median-pr-cycle'), 5);
+  assert.equal(card(data, 'median-pr-cycle').sampleSize, 2);
   assert.equal(cardValue(data, 'open-architecture-prs'), 1);
 });
 
