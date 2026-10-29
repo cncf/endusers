@@ -83,9 +83,15 @@ if [ -z "$dates" ]; then
   exit 0
 fi
 first=1
+index=0
 IFS=',' read -ra stamps <<< "$dates"
 for stamp in "\${stamps[@]}"; do
-  if [ "$first" = "1" ]; then
+  index=$((index + 1))
+  overlay_var="ENDUSERS_GIT_OVERLAY_\${name//[^A-Za-z0-9]/_}_$index"
+  overlay="\${!overlay_var:-}"
+  if [ -n "$overlay" ]; then
+    cp -R "$overlay/." .
+  elif [ "$first" = "1" ]; then
     first=0
   else
     mkdir -p content/en/architectures
@@ -115,6 +121,10 @@ exit 0
  * @param {Record<string, string[]>} [options.repoCommitDates] clone target name
  *   -> ISO author dates, one commit each; commits after the first touch
  *   content/en/architectures so path-filtered history is exercised
+ * @param {Record<string, Record<string, Record<string, string>>>} [options.repoCommitOverlays]
+ *   clone target name -> 1-based commit index -> extra files written into the
+ *   repository before that commit, so one directory can be added across
+ *   several commits; an overlaid commit skips the default .timeline touch
  * @param {Record<string, Record<string, string>>} [options.repoSymlinks] clone
  *   target name -> repo-relative link path -> link target. The `git clone`
  *   shim copies the fixture with `cp -R`, which preserves symlinks, so these
@@ -132,6 +142,7 @@ export function runScriptInSandbox({
   fixtures = {},
   repos = {},
   repoCommitDates = {},
+  repoCommitOverlays = {},
   repoSymlinks = {},
   routes = [],
   outputs = [],
@@ -164,6 +175,16 @@ export function runScriptInSandbox({
       if (dates?.length) {
         repoDates[`ENDUSERS_GIT_DATES_${name.replace(/[^A-Za-z0-9]/g, '_')}`] =
           dates.join(',');
+      }
+    }
+    for (const [name, overlays] of Object.entries(repoCommitOverlays)) {
+      for (const [index, tree] of Object.entries(overlays)) {
+        const overlayDir = join(fixtureRepos, `${name}.overlay-${index}`);
+        mkdirSync(overlayDir, { recursive: true });
+        writeFiles(overlayDir, tree);
+        repoDates[
+          `ENDUSERS_GIT_OVERLAY_${name.replace(/[^A-Za-z0-9]/g, '_')}_${index}`
+        ] = overlayDir;
       }
     }
 
