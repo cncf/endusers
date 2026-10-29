@@ -1,6 +1,6 @@
 ---
 title: Public Sector
-sidebar_position: 1
+sidebar_position: 2
 description: Cloud native collaboration for public-sector end users.
 slug: /community/user-groups/public-sector
 ---

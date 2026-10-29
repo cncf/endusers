@@ -64,3 +64,57 @@ test('each status entry names the repository its page links', () => {
     );
   }
 });
+
+function hubOrder() {
+  const hub = readFileSync(join(pagesDir, 'index.md'), 'utf8');
+  return [...hub.matchAll(/\]\(\/community\/user-groups\/([a-z0-9-]+)\)/g)].map(
+    (match) => match[1],
+  );
+}
+
+function sidebarOrder() {
+  return pages()
+    .map((page) => ({
+      slug: page.slug,
+      position: Number(
+        /^sidebar_position:\s*(\d+)\s*$/m.exec(page.body)?.[1] ?? NaN,
+      ),
+    }))
+    .sort((a, b) => a.position - b.position || a.slug.localeCompare(b.slug))
+    .map((entry) => entry.slug);
+}
+
+test('every User Group page declares a numeric sidebar_position', () => {
+  const missing = pages()
+    .filter((page) => !/^sidebar_position:\s*\d+\s*$/m.test(page.body))
+    .map((page) => page.file);
+
+  assert.deepEqual(
+    missing,
+    [],
+    `${missing.join(', ')} needs a numeric frontmatter sidebar_position; without one Docusaurus appends the page after the ordered ones`,
+  );
+});
+
+test('no two User Group pages share a sidebar_position', () => {
+  const positions = pages().map((page) =>
+    Number(/^sidebar_position:\s*(\d+)\s*$/m.exec(page.body)?.[1] ?? NaN),
+  );
+  const duplicated = positions.filter(
+    (position, index) => positions.indexOf(position) !== index,
+  );
+
+  assert.deepEqual(
+    duplicated,
+    [],
+    `sidebar_position ${duplicated.join(', ')} is declared by more than one page under docs/community/user-groups/; ties fall back to the source path, so the menu order stops being the one the frontmatter states`,
+  );
+});
+
+test('the sidebar orders the User Groups the way the hub page lists them', () => {
+  assert.deepEqual(
+    sidebarOrder(),
+    hubOrder(),
+    'the sidebar_position values under docs/community/user-groups/ order the groups differently from the list on docs/community/user-groups/index.md; readers see one order in the menu and another on the page',
+  );
+});
