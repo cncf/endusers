@@ -36,8 +36,7 @@ and the
 
 - Visit the [group repository](https://github.com/cncf/research-user-group) for
   its organization index, resources, and updates.
-- Join
-  [`#ug-research` on CNCF Slack](https://cloud-native.slack.com/archives/CTW1NRLBW).
+- Join `#ug-research` on [CNCF Slack](https://slack.cncf.io/).
 
 ## Related resources
 
