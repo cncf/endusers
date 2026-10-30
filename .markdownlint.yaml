@@ -4,7 +4,8 @@
 # small set of inline HTML elements (figure/figcaption/a) for captions.
 default: true
 
-# Prose lines are not hard-wrapped in this repository.
+# Prose may be wrapped or unwrapped (Prettier runs with proseWrap: preserve
+# for Markdown), so line length is not enforced.
 MD013: false
 
 # Docusaurus doc/blog frontmatter provides the H1 via `title`, so pages may

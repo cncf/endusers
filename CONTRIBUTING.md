@@ -277,9 +277,17 @@ enough for a first contribution.
 Pull requests that change only recognized, human-maintained Markdown or MDX
 documents use focused CI: formatting, spelling, and Markdown checks run on the
 changed documents, document-contract tests run, and the production site is
-built. Generated or data-backed pages, code, configuration, assets, mixed
-changes, and unrecognized paths keep the full validation, lint, and browser
-suites. If CI cannot confidently classify a change, it uses the full path.
+built. On that path formatting and spelling are advisory: their findings appear
+as annotations on the pull request and in the job summary, with the fix to
+apply, but do not fail the check, so a page edited in the GitHub web editor can
+merge without hard-wrapped lines or a dictionary entry for a new proper noun.
+Markdown lint, the document-contract tests and the build still block. The
+"Format documents" workflow opens a single `chore: format documents` pull
+request whenever formatting drift reaches `main`. Generated or data-backed
+pages, code, configuration, assets, mixed changes, and unrecognized paths keep
+the full validation, lint, and browser suites, where formatting and spelling
+fail as before. If CI cannot confidently classify a change, it uses the full
+path.
 
 1. Fork the repository and create a branch from `main`.
 2. Make your change and run the relevant validation script.
@@ -300,9 +308,12 @@ suites. If CI cannot confidently classify a change, it uses the full path.
    `npm run check:spelling`, `npm run check:markdown`,
    `npm run check:duplication`, `npm run check:lint` and `npm run check:unused`.
    The "Lint repository" check runs these six on that path. Content-only PRs use
-   focused formatting, spelling and Markdown checks on changed documents. If a
-   full-path check fails:
-   - `check:format` — run `npm run fix:format` to auto-format.
+   focused formatting, spelling and Markdown checks on changed documents, with
+   formatting and spelling reported as advisory annotations rather than
+   failures. If a full-path check fails:
+   - `check:format` — run `npm run fix:format` to auto-format. Markdown prose
+     may be wrapped or unwrapped (`proseWrap: preserve`); Prettier only
+     normalizes structure such as lists, emphasis and tables.
    - `check:spelling` — add the flagged term to `.cspell.yml` if it's a
      legitimate project word, or fix the typo.
    - `check:markdown` — fix the reported issue, or add an inline disable comment

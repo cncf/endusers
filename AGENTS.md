@@ -80,8 +80,11 @@ takes the full path.
   in a file a PR does not touch is not a finding. See
   [`CONTRIBUTING.md`](CONTRIBUTING.md#mutation-testing).
 - **Lint**: the required "Lint repository" CI check runs on every PR. A
-  document-only PR lints just the changed files (formatting, spelling and
-  Markdown); every other PR runs `npm run check:format`,
+  document-only PR lints just the changed files: markdownlint blocks, while
+  Prettier and cspell findings are advisory annotations that do not fail the
+  check (ADR 0011 amendment); the "Format documents" workflow then opens a
+  `chore: format documents` PR to normalize any drift on `main`. Every other PR
+  runs `npm run check:format`,
   `npm run check:spelling`, `npm run check:markdown`,
   `npm run check:duplication`, `npm run check:lint` and `npm run check:unused`.
   `check:lint` runs ESLint (`eslint.config.mjs`) over `src/`, `scripts/`,

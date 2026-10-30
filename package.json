@@ -56,6 +56,7 @@
     "validate:members": "node scripts/validate-members.mjs",
     "docusaurus": "docusaurus",
     "fix:format": "npm run _check:format -- --write",
+    "fix:format:documents": "npx prettier --write docs blog adr CODE_OF_CONDUCT.md CONTENT-SECURITY.md CONTRIBUTING.md GOVERNANCE.md MAINTAINERS.md README.md SECURITY.md",
     "fix": "npm run seq -- $(npm -s run _list:fix:*)",
     "seq": "bash -c 'for cmd in \"$@\"; do npm run $cmd || exit 1; done' - ",
     "serve": "npm run docus:serve",
@@ -147,7 +148,18 @@
   "spelling": "cSpell:ignore ACMR docus HTMLTEST loglevel pkgs -",
   "prettier": {
     "proseWrap": "always",
-    "singleQuote": true
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": [
+          "*.md",
+          "*.mdx"
+        ],
+        "options": {
+          "proseWrap": "preserve"
+        }
+      }
+    ]
   },
   "homepage": "https://endusers.cncf.io/",
   "overrides": {

@@ -1,0 +1,55 @@
+name: Format documents
+
+# Repairs formatting drift that reaches main through the advisory
+# document-only lint path (ADR 0011, amendment of 2026-10-30). Formats the
+# authored document paths with the repository Prettier configuration and
+# opens or refreshes a single pull request when anything changed.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'blog/**'
+      - 'adr/**'
+      - 'CODE_OF_CONDUCT.md'
+      - 'CONTENT-SECURITY.md'
+      - 'CONTRIBUTING.md'
+      - 'GOVERNANCE.md'
+      - 'MAINTAINERS.md'
+      - 'README.md'
+      - 'SECURITY.md'
+  schedule:
+    - cron: '27 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Serialised on the branch this workflow force-pushes; see the note in
+# refresh-radar-reports.yml. Not cancelled, for the same reason.
+concurrency:
+  group: automation/format-documents
+  cancel-in-progress: false
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install dependencies
+        uses: ./.github/actions/setup-node-deps
+      - name: Format authored documents
+        run: npm run fix:format:documents
+      - name: Open or refresh the formatting pull request
+        uses: ./.github/actions/open-automation-pr
+        with:
+          branch: automation/format-documents
+          commit-message: 'chore: format documents'
+          title: 'chore: format documents'
+          body: |
+            Automated Prettier pass over the authored documents (docs/, blog/, adr/ and the root documents). A document-only pull request may merge with formatting findings left as advisory annotations; this pull request normalizes what landed.

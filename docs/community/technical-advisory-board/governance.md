@@ -60,10 +60,8 @@ standards bodies, such as the [Internet Engineering Task Force (IETF)] and the
   optional.
 
 [RFC2119 keywords]: https://www.ietf.org/rfc/rfc2119.txt
-[Internet Engineering Task Force (IETF)]:
-  https://en.wikipedia.org/wiki/Internet_Engineering_Task_Force
-[Kubernetes project]:
-  https://github.com/kubernetes/community/blob/master/committee-steering/governance/sig-governance-requirements.md
+[Internet Engineering Task Force (IETF)]: https://en.wikipedia.org/wiki/Internet_Engineering_Task_Force
+[Kubernetes project]: https://github.com/kubernetes/community/blob/master/committee-steering/governance/sig-governance-requirements.md
 
 ## User Groups (UGs)
 
@@ -339,8 +337,7 @@ approval.
 TOC or TAB; the TCG organizers should reach out to the chairs of the TOC and TAB
 to discuss which group would be the most appropriate.
 
-[Community Groups README]:
-  https://github.com/cncf/communitygroups?tab=readme-ov-file#how-to-apply
+[Community Groups README]: https://github.com/cncf/communitygroups?tab=readme-ov-file#how-to-apply
 
 ### Roles, Terms, and Elections
 
@@ -403,7 +400,5 @@ Community Groups.
 
 {/* Common Links */}
 
-[Technical Leadership Principles]:
-  https://github.com/cncf/toc/blob/main/PRINCIPLES.md#technical-leadership-principles
-[Community Group Organizer Requirements]:
-  https://github.com/cncf/communitygroups/blob/main/organizers.md
+[Technical Leadership Principles]: https://github.com/cncf/toc/blob/main/PRINCIPLES.md#technical-leadership-principles
+[Community Group Organizer Requirements]: https://github.com/cncf/communitygroups/blob/main/organizers.md

@@ -1,7 +1,6 @@
 ---
 title: Community
-description:
-  'The CNCF End User Community, TAB, governance, and community groups.'
+description: 'The CNCF End User Community, TAB, governance, and community groups.'
 sidebar_position: 1
 ---
 
