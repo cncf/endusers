@@ -334,8 +334,8 @@ suites. If CI cannot confidently classify a change, it uses the full path.
      something is reached in a way it cannot see, add an ignore entry with a
      one-line reason to `knip.config.js`.
 
-   The "Validate repository" check also runs `npm run check:audit` on every PR,
-   which fails differently from the lint checks:
+   The full "Validate repository" path also runs `npm run check:audit`, which
+   fails differently from the lint checks:
    - `check:audit` — fails the build on any high/critical dependency advisory
      not in the allowlist (see "Known unpatched dependency advisories" in
      [`SECURITY.md`](SECURITY.md)), and on any moderate/low advisory that
@@ -376,8 +376,8 @@ suites. If CI cannot confidently classify a change, it uses the full path.
 ## End-to-end tests
 
 The Playwright suite in `tests/e2e/` exercises the built site in a browser and
-is a required "End-to-end tests" CI check on every PR. It has two prerequisites
-that `npm run test:e2e` does not handle for you:
+runs as the required "End-to-end tests" CI check on the full-validation path. It
+has two prerequisites that `npm run test:e2e` does not handle for you:
 
 ```bash
 npm run build:production      # required first: the suite serves build/, it

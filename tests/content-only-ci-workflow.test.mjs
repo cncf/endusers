@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import test from 'node:test';
 
+import { resolveRepoRoot } from './helpers.mjs';
 import { readWorkflow } from './helpers-workflows.mjs';
 
 const workflow = readWorkflow('ci.yml').doc;
@@ -94,4 +97,68 @@ test('limits focused lint to changed documents and skips browsers only after val
   assert.match(coverage.if, /needs\.classify\.result != 'success'/u);
   assert.match(coverage.if, /needs\.validate\.result != 'success'/u);
   assert.match(coverage.if, /needs\.lint\.result != 'success'/u);
+});
+
+// The focused-validation split gated most of `validate`, `lint` and the browser
+// suites behind the full-validation path, but CONTRIBUTING.md describes those
+// gates twice: once where contributors are told what to run locally, and again
+// in the numbered steps and the suite sections further down. The first
+// description was updated and the later ones were not, so the file told
+// contributors the dependency advisory gate ran on every PR while a
+// document-only PR skipped it. A claim about a gate that no longer holds is
+// worse than no claim: it is relied on.
+//
+// Both shapes of claim are bound to the workflow here. A job named in quotes
+// ("End-to-end tests") is claimed to run on every PR only if its job has no
+// condition that can skip it; a script named as `npm run <script>` is claimed
+// to run on every PR only if the step running it is not gated on
+// FULL_VALIDATION.
+const contributing = readFileSync(
+  join(resolveRepoRoot(import.meta.url), 'CONTRIBUTING.md'),
+  'utf8',
+).replace(/\s+/gu, ' ');
+
+test('CONTRIBUTING claims a check runs on every PR only when CI never skips it', () => {
+  const jobsByName = new Map(
+    Object.entries(workflow.jobs).map(([id, job]) => [job.name ?? id, job]),
+  );
+  const claimedJobs = new Set();
+  for (const name of jobsByName.keys())
+    if (
+      new RegExp(
+        `"${name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}"[^.]{0,160}?on every PR`,
+        'u',
+      ).test(contributing)
+    )
+      claimedJobs.add(name);
+
+  for (const name of claimedJobs)
+    assert.equal(
+      jobsByName.get(name).if ?? null,
+      null,
+      `CONTRIBUTING.md says the "${name}" check runs on every PR, but ci.yml gives that job a condition that can skip it`,
+    );
+
+  const gatedScripts = new Set(
+    Object.values(workflow.jobs)
+      .flatMap((job) => job.steps ?? [])
+      .filter((step) => String(step.if ?? '').includes('FULL_VALIDATION'))
+      .flatMap((step) =>
+        [...String(step.run ?? '').matchAll(/npm run ([\w:-]+)/gu)].map(
+          (match) => match[1],
+        ),
+      ),
+  );
+  assert.ok(
+    gatedScripts.has('check:audit'),
+    'expected ci.yml to gate npm run check:audit on FULL_VALIDATION; update this test if the gate moved',
+  );
+
+  for (const [, script] of contributing.matchAll(
+    /`npm run ([\w:-]+)`[^.]{0,160}?on every PR/gu,
+  ))
+    assert.ok(
+      !gatedScripts.has(script),
+      `CONTRIBUTING.md says npm run ${script} runs on every PR, but ci.yml gates its step on FULL_VALIDATION`,
+    );
 });
