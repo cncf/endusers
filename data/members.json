@@ -2343,7 +2343,7 @@
         "ArgoCD",
         "Cluster API",
         "External Secrets Operator",
-        "External-dns",
+        "ExternalDNS",
         "Harbor",
         "Kubernetes",
         "OpenStack",
