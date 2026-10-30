@@ -139,7 +139,7 @@
       "name": "Allianz",
       "slug": "allianz",
       "logo": "/img/architectures/allianz/logo.svg",
-      "industries": ["Financial", "Insurance"],
+      "industries": ["Financial Services", "Insurance"],
       "projects": ["Argo", "Helm", "Kubernetes"],
       "architectures": [
         {
