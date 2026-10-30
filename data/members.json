@@ -1212,7 +1212,7 @@
       "logo": "/img/architectures/flipkart-chaos-engineering/logo.png",
       "industries": ["Digital Commerce", "E-commerce", "Retail"],
       "projects": [
-        "Argo Workflows",
+        "Argo",
         "Helm",
         "Kubernetes",
         "LitmusChaos",
@@ -2340,7 +2340,7 @@
       "logo": "/img/architectures/sncf-onprem/logo.png",
       "industries": ["Cloud", "Rail", "Software", "Transport"],
       "projects": [
-        "ArgoCD",
+        "Argo",
         "Cluster API",
         "External Secrets Operator",
         "ExternalDNS",
@@ -2633,7 +2633,7 @@
       "logo": "/img/architectures/swisscom-cloud-native-telco/logo.png",
       "industries": ["Cloud", "Communication", "Software", "Telecommunication"],
       "projects": [
-        "ArgoCD",
+        "Argo",
         "Cilium",
         "CloudNativePG",
         "Container Storage Interface (CSI)",

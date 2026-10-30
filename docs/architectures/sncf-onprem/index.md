@@ -16,7 +16,7 @@ architecture:
     - france
     - sovereignty
   projects:
-    - ArgoCD
+    - Argo
     - Cluster API
     - ExternalDNS
     - External Secrets Operator

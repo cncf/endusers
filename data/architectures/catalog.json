@@ -140,7 +140,7 @@
     "projects": [
       "LitmusChaos",
       "Kubernetes",
-      "Argo Workflows",
+      "Argo",
       "Prometheus",
       "Helm",
       "containerd"
@@ -169,7 +169,7 @@
       "sovereignty"
     ],
     "projects": [
-      "ArgoCD",
+      "Argo",
       "Cluster API",
       "ExternalDNS",
       "External Secrets Operator",
@@ -248,7 +248,7 @@
       "MetalLB",
       "Container Storage Interface (CSI)",
       "Kyverno",
-      "ArgoCD",
+      "Argo",
       "Helm",
       "CloudNativePG",
       "Cilium",

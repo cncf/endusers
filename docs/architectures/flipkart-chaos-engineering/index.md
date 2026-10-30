@@ -19,7 +19,7 @@ architecture:
   projects:
     - LitmusChaos
     - Kubernetes
-    - Argo Workflows
+    - Argo
     - Prometheus
     - Helm
     - containerd
