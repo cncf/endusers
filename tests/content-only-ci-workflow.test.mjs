@@ -56,7 +56,7 @@ test('keeps content contracts and the production build on the focused path', () 
     "${{ !cancelled() && env.CONTENT_ONLY == 'true' }}",
   );
   // The focused path must run every suite that reads an authored document,
-  // or a broken README link or unlisted ADR merges unnoticed (#2002).
+  // or a broken README link or unlisted ADR merges unnoticed.
   const suites = contracts.run
     .replaceAll('\\\n', ' ')
     .trim()
