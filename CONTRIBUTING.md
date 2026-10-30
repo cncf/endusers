@@ -64,17 +64,19 @@ These recipes are a superset of the validation steps the "Refresh metrics" and
 before the Netlify build. The recipes are **not** the same checks the "Validate
 repository" and "Lint repository" PR gates run, and a green
 `just build`/`just refresh` locally does **not** imply a green PR check. Before
-opening a PR, also run `npm run test:unit:coverage:check` and the local check
-scripts that match "Lint repository": `npm run check:format`,
-`npm run check:spelling`, `npm run check:markdown`, `npm run check:duplication`,
-`npm run check:lint` and `npm run check:unused`. The "Validate repository" gate
-additionally runs `npm run check:audit` (dependency advisory allowlist) — see
-step 5 below. `npm run check` also runs the lint checks, but it additionally
-runs `check:audit`, `check:links` (network-dependent) and
-`check:community-group-links` (needs `GH_TOKEN` and rewrites
-`data/community-groups.json`) — see step 5 below before running the full
-`npm run check`. `just` is optional — the npm scripts remain the canonical
-interface and work without it.
+For PRs that use the full-validation path, also run
+`npm run test:unit:coverage:check` and the local check scripts that match "Lint
+repository": `npm run check:format`, `npm run check:spelling`,
+`npm run check:markdown`, `npm run check:duplication`, `npm run check:lint` and
+`npm run check:unused`. Content-only PRs do not need to run the full unit
+coverage or lint suites locally; CI runs focused checks on the changed documents
+and builds the site. The full "Validate repository" gate also runs
+`npm run check:audit` (dependency advisory allowlist) — see step 5 below.
+`npm run check` runs the lint checks, but it additionally runs `check:audit`,
+`check:links` (network-dependent) and `check:community-group-links` (needs
+`GH_TOKEN` and rewrites `data/community-groups.json`) — see step 5 below before
+running the full `npm run check`. `just` is optional — the npm scripts remain
+the canonical interface and work without it.
 
 ## Content audience
 
@@ -272,25 +274,34 @@ enough for a first contribution.
 
 ## Making changes
 
+Pull requests that change only recognized, human-maintained Markdown or MDX
+documents use focused CI: formatting, spelling, and Markdown checks run on the
+changed documents, document-contract tests run, and the production site is
+built. Generated or data-backed pages, code, configuration, assets, mixed
+changes, and unrecognized paths keep the full validation, lint, and browser
+suites. If CI cannot confidently classify a change, it uses the full path.
+
 1. Fork the repository and create a branch from `main`.
 2. Make your change and run the relevant validation script.
-3. Run `npm run test:unit:coverage:check` — the required "Validate repository"
-   check runs this on every PR, and it fails the build if unit-test coverage
+3. For PRs that use the full-validation path, run
+   `npm run test:unit:coverage:check`. This check fails if unit-test coverage
    drops below its thresholds (99% lines / 100% source / 96% regions / 100%
    source regions). The harness under `tests/tools/` is floored separately (100%
    lines / 99% regions, and 98% regions per harness file): it is measured like
    source but reported in its own `harness files` row, so a gap in the test
    apparatus cannot be paid for out of `src/`'s slack. `npm run test:unit` alone
-   skips the coverage gate, so a green `test:unit` locally does not guarantee a
-   green PR check. If you changed a file under `src/` or `scripts/lib/`, also
-   run its mutation tests — see [Mutation testing](#mutation-testing) below.
+   skips the coverage gate. Content-only PRs use focused document checks
+   instead. If you changed a file under `src/` or `scripts/lib/`, also run its
+   mutation tests — see [Mutation testing](#mutation-testing) below.
 4. Verify with `npm run build` before opening a PR. If your change touches
    pages, components, or navigation, also run the end-to-end suite — see
    [End-to-end tests](#end-to-end-tests) below.
-5. Run `npm run check:format`, `npm run check:spelling`,
-   `npm run check:markdown`, `npm run check:duplication`, `npm run check:lint`
-   and `npm run check:unused` — the required "Lint repository" check runs these
-   six on every PR. If a check fails:
+5. For PRs that use the full-validation path, run `npm run check:format`,
+   `npm run check:spelling`, `npm run check:markdown`,
+   `npm run check:duplication`, `npm run check:lint` and `npm run check:unused`.
+   The "Lint repository" check runs these six on that path. Content-only PRs use
+   focused formatting, spelling and Markdown checks on changed documents. If a
+   full-path check fails:
    - `check:format` — run `npm run fix:format` to auto-format.
    - `check:spelling` — add the flagged term to `.cspell.yml` if it's a
      legitimate project word, or fix the typo.

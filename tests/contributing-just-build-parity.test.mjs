@@ -276,8 +276,8 @@ test('a gating check dropped from the qualifying paragraph is caught', () => {
 
 test('a check added to a gating job and nowhere else is caught', () => {
   const drifted = WORKFLOW.replace(
-    '        run: npm run check:spelling\n',
-    '        run: npm run check:spelling\n      - name: Newly added gate\n        run: npm run check:newly-added\n',
+    '          npm run check:spelling\n',
+    '          npm run check:spelling\n          npm run check:newly-added\n',
   );
   assert.notEqual(drifted, WORKFLOW, 'the fixture edit matched nothing');
   const { missing } = uncompensatedGates(CONTRIBUTING, JUSTFILE, drifted);
