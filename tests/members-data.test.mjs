@@ -13,6 +13,7 @@ function readJson(relativePath) {
 const membersData = readJson('data/members.json');
 const awardsData = readJson('data/awards.json');
 const landscapeData = readJson('data/enduser-landscape.json');
+const catalogData = readJson('data/architectures/catalog.json');
 const members = membersData.members;
 
 // src/components/MemberDirectory/index.js dereferences these without guards
@@ -210,6 +211,35 @@ test('members are sorted by display name', () => {
     sorted,
     'generate-members.mjs emits members sorted by name; regenerate the file',
   );
+});
+
+test('member projects and industries match the committed architecture catalog', () => {
+  // generate-members.mjs derives these two arrays from the catalog entries it
+  // attaches as member.architectures. Nothing else reconciles the committed
+  // artifact with its committed input, so a catalog edit that skips
+  // regeneration leaves /members filtering on a stale project name.
+  const catalogById = new Map(catalogData.map((entry) => [entry.id, entry]));
+  for (const member of members) {
+    if (member.architectures.length === 0) continue;
+    const entries = member.architectures.map((architecture) => {
+      const entry = catalogById.get(architecture.id);
+      assert.ok(
+        entry,
+        `${member.id} lists architecture ${architecture.id} that data/architectures/catalog.json does not contain`,
+      );
+      return entry;
+    });
+    for (const field of ['projects', 'industries']) {
+      const expected = [
+        ...new Set(entries.flatMap((entry) => entry[field] || [])),
+      ].sort();
+      assert.deepEqual(
+        [...member[field]].sort(),
+        expected,
+        `${member.id} ${field} drifted from data/architectures/catalog.json; run npm run generate:members`,
+      );
+    }
+  }
 });
 
 test('member logos live under /img/ and exist in the repository', () => {
