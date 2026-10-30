@@ -5,8 +5,8 @@ architecture:
   organization: ZEISS
   summary: Our Business Enablement & IT team develops, designs, and operates the order fulfillment platform that underpins this process.
   industries:
-    - optics
-    - optical-manufacturing
+    - Optics
+    - Optical Manufacturing
   tags:
     - public cloud
     - mass-manufacturing

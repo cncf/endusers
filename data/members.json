@@ -826,7 +826,7 @@
       "name": "Colopl Inc.",
       "slug": "colopl",
       "logo": "/img/architectures/colopl/logo.png",
-      "industries": ["gaming"],
+      "industries": ["Gaming"],
       "projects": ["Agones", "Kubernetes"],
       "architectures": [
         {
@@ -3018,7 +3018,7 @@
       "name": "ZEISS",
       "slug": "zeiss",
       "logo": "/img/architectures/zeiss/zeiss-logo-rgb.svg",
-      "industries": ["optical-manufacturing", "optics"],
+      "industries": ["Optical Manufacturing", "Optics"],
       "projects": ["Dapr", "Helm", "KEDA", "Kubernetes", "OpenTelemetry"],
       "architectures": [
         {

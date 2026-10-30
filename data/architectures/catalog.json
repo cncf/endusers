@@ -108,7 +108,7 @@
     "title": "Colopl's FESTIBATTLE Infrastructure Architecture: Dedicated Game Servers with Agones on Kubernetes",
     "organization": "Colopl Inc.",
     "summary": "At COLOPL, our API servers run on Google Kubernetes Engine (GKE) with Cloud Spanner as the backend database. While that combination is somewhat distinctive, the overall structure is not far from a typical web service.",
-    "industries": ["gaming"],
+    "industries": ["Gaming"],
     "tags": ["agones", "gaming", "kubernetes"],
     "projects": ["Kubernetes", "Agones"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/colopl",
@@ -272,7 +272,7 @@
     "title": "ZEISS Vision Care - Order Fulfillment",
     "organization": "ZEISS",
     "summary": "Our Business Enablement & IT team develops, designs, and operates the order fulfillment platform that underpins this process.",
-    "industries": ["optics", "optical-manufacturing"],
+    "industries": ["Optics", "Optical Manufacturing"],
     "tags": [
       "public cloud",
       "mass-manufacturing",
