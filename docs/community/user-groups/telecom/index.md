@@ -7,12 +7,14 @@ slug: /community/user-groups/telecom
 
 # Telecom User Group
 
-The [CNCF Telecom User Group](https://github.com/cncf/telecom-user-group) is a community for telecom operators, vendors
-and other organizations adopting and operating cloud native technologies. The group shares best practices, resources,
-use cases, and practical guidance for network functions, edge deployments, and carrier-grade platforms.
+The [CNCF Telecom User Group](https://github.com/cncf/telecom-user-group) is a
+community for telecom operators, vendors and other organizations adopting and
+operating cloud native technologies. The group shares best practices, resources,
+use cases, and practical guidance for network functions, edge deployments, and
+carrier-grade platforms.
 
-> **Status:** the group is under a renewal process and the co-chairs of the group are working on re-establishing the
-  group meetings. 
+> **Status:** the group is under a renewal process and the co-chairs of the
+> group are working on re-establishing the group meetings.
 
 ## Who should join
 
@@ -22,14 +24,15 @@ use cases, and practical guidance for network functions, edge deployments, and c
 
 ## How to participate
 
-- Visit the [GitHub repository](https://github.com/cncf/telecom-user-group) for meeting details, resources, and how to
-  join
+- Visit the [GitHub repository](https://github.com/cncf/telecom-user-group) for
+  meeting details, resources, and how to join
 - Join `#ug-telecom` on [CNCF Slack](https://slack.cncf.io/)
 - Introduce yourself and ask questions in the repository discussions
 
 ## Related resources
 
-- [Reference architectures](/architectures/) from telecom end users (search for *Telecommunication* in
-  *All industries*)
+- [Reference architectures](/architectures/) from telecom end users (search for
+  _Telecommunication_ in _All industries_)
 - [CNCF case studies](https://www.cncf.io/case-studies/) for adoption narratives
-- [Cloud Native Maturity Model](https://maturitymodel.cncf.io/) for adoption guidance
+- [Cloud Native Maturity Model](https://maturitymodel.cncf.io/) for adoption
+  guidance
