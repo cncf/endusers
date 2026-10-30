@@ -95,6 +95,12 @@ const SERIALISED_WORKFLOWS = new Map([
       'same reasoning as refresh-metrics.yml.',
   ],
   [
+    'format-documents.yml',
+    'Force-pushes the constant branch automation/format-documents; same ' +
+      'reasoning as refresh-metrics.yml. Triggered by push to main, a ' +
+      'schedule and dispatch, not by a PR.',
+  ],
+  [
     'audit-fix.yml',
     'Force-pushes the constant branch automation/audit-fix; same reasoning ' +
       'as refresh-metrics.yml. Triggered by workflow_run, not by a PR.',

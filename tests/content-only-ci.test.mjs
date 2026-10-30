@@ -19,6 +19,10 @@ import {
   decodeChangedDocuments,
   isAuthoredDocumentPath,
   parseNameStatus,
+  prettierAnnotations,
+  cspellAnnotations,
+  formatAnnotation,
+  advisorySummary,
   runDocumentLint,
   runClassifier,
   writeOutputs,
@@ -364,6 +368,7 @@ test('decodes and validates the changed-document list', () => {
   assert.deepEqual(runDocumentLint(encoded([])), {
     documents: [],
     checked: [],
+    advisories: [],
   });
 
   for (const invalid of [undefined, '', '!', '!W10=', 'W10=!']) {
@@ -393,34 +398,52 @@ test('decodes and validates the changed-document list', () => {
   );
 });
 
+const README_B64 = Buffer.from(JSON.stringify(['README.md'])).toString(
+  'base64',
+);
+const REPO_ROOT = fileURLToPath(new URL('../', import.meta.url));
+const ADVISORY_OPTIONS = {
+  cwd: REPO_ROOT,
+  encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'pipe'],
+};
+const BLOCKING_OPTIONS = { cwd: REPO_ROOT, stdio: 'inherit' };
+
+function quietLint(encoded, runCommand, extra = {}) {
+  const logged = [];
+  const summaries = [];
+  const result = runDocumentLint(encoded, runCommand, {
+    log: (line) => logged.push(line),
+    summaryPath: null,
+    appendSummary: (path, text) => summaries.push({ path, text }),
+    ...extra,
+  });
+  return { result, logged, summaries };
+}
+
 test('runs changed-document formatting, spelling, and Markdown checks', () => {
   const calls = [];
-  const result = runDocumentLint(
-    Buffer.from(JSON.stringify(['README.md'])).toString('base64'),
-    (command, args, options) => {
-      calls.push({ command, args, options });
-      return { status: 0 };
-    },
-  );
+  const { result, logged } = quietLint(README_B64, (command, args, options) => {
+    calls.push({ command, args, options });
+    return { status: 0, stdout: '', stderr: '' };
+  });
 
   assert.deepEqual(result, {
     documents: ['README.md'],
-    checked: ['prettier', 'cspell', '--no-install'],
+    checked: ['prettier', 'cspell', 'markdownlint'],
+    advisories: [],
   });
-  const options = {
-    cwd: fileURLToPath(new URL('../', import.meta.url)),
-    stdio: 'inherit',
-  };
+  assert.deepEqual(logged, []);
   assert.deepEqual(calls, [
     {
       command: 'npx',
       args: ['prettier', '--check', 'README.md'],
-      options,
+      options: ADVISORY_OPTIONS,
     },
     {
       command: 'npx',
       args: ['cspell', '--no-progress', '-c', '.cspell.yml', 'README.md'],
-      options,
+      options: ADVISORY_OPTIONS,
     },
     {
       command: 'npx',
@@ -431,14 +454,14 @@ test('runs changed-document formatting, spelling, and Markdown checks', () => {
         '.markdownlint.yaml',
         'README.md',
       ],
-      options,
+      options: BLOCKING_OPTIONS,
     },
   ]);
 });
 
 test('preserves repository Prettier ignores for blog documents', () => {
   const calls = [];
-  runDocumentLint(
+  quietLint(
     Buffer.from(
       JSON.stringify(['blog/2026-07-22-welcome-to-endusers-cncf-io.md']),
     ).toString('base64'),
@@ -463,7 +486,7 @@ test('runs only formatting and spelling for MDX documents', () => {
   writeFileSync(path, '# Test\n');
   try {
     const calls = [];
-    const result = runDocumentLint(
+    const { result } = quietLint(
       Buffer.from(JSON.stringify([path])).toString('base64'),
       (command, args) => {
         calls.push({ command, args });
@@ -480,15 +503,172 @@ test('runs only formatting and spelling for MDX documents', () => {
   }
 });
 
-test('fails changed-document lint when a command fails or cannot start', () => {
-  const encoded = Buffer.from(JSON.stringify(['README.md'])).toString('base64');
+test('parses Prettier and cspell output into annotations', () => {
+  assert.deepEqual(
+    prettierAnnotations(
+      'Checking formatting...\n[warn] docs/a.md\n[warn] README.md\n[warn] Code style issues found in 2 files. Run Prettier with --write to fix.\n',
+    ),
+    [
+      { file: 'docs/a.md', message: 'Formatting differs from Prettier output' },
+      { file: 'README.md', message: 'Formatting differs from Prettier output' },
+    ],
+  );
+  assert.deepEqual(
+    prettierAnnotations(
+      'All matched files use Prettier code style!\nnote [warn] docs/a.md\n[warn] docs/a.md trailing\n',
+    ),
+    [],
+  );
+  assert.deepEqual(
+    cspellAnnotations(
+      'docs/a.md:5:21 - Unknown word (Zorblaxian)\ndocs/b.md:12:3 - Unknown word (Qux)\nCSpell: Files checked: 2, Issues found: 2 in 2 files.\n',
+    ),
+    [
+      {
+        file: 'docs/a.md',
+        line: 5,
+        col: 21,
+        message: 'Unknown word "Zorblaxian"',
+      },
+      { file: 'docs/b.md', line: 12, col: 3, message: 'Unknown word "Qux"' },
+    ],
+  );
+  assert.deepEqual(
+    cspellAnnotations('docs/a.md:1:2 - Unknown word (Foo) trailing\n'),
+    [],
+  );
+  assert.deepEqual(cspellAnnotations(undefined), []);
+});
+
+test('formats annotations as workflow commands with escaped messages', () => {
+  assert.equal(
+    formatAnnotation({ file: 'docs/a.md', message: 'Formatting differs' }),
+    '::warning file=docs/a.md::Formatting differs',
+  );
+  assert.equal(
+    formatAnnotation({
+      file: 'docs/a.md',
+      line: 5,
+      col: 2,
+      message: 'a%b\r\nc',
+    }),
+    '::warning file=docs/a.md,line=5,col=2::a%25b%0D%0Ac',
+  );
+});
+
+test('reports formatting and spelling as advisories without failing', () => {
+  const outputs = {
+    prettier: {
+      status: 1,
+      stdout: '[warn] README.md\n',
+      stderr: '',
+    },
+    cspell: {
+      status: 1,
+      stdout: 'README.md:3:1 - Unknown word (Zorblaxian)\n',
+      stderr: '',
+    },
+    '--no-install': { status: 0 },
+  };
+  const { result, logged, summaries } = quietLint(
+    README_B64,
+    (command, args) => outputs[args[0]],
+    { summaryPath: '/tmp/summary.md' },
+  );
+
+  assert.deepEqual(result.checked, ['prettier', 'cspell', 'markdownlint']);
+  assert.deepEqual(result.advisories, [
+    {
+      check: 'prettier',
+      file: 'README.md',
+      message: 'Formatting differs from Prettier output',
+    },
+    {
+      check: 'cspell',
+      file: 'README.md',
+      line: 3,
+      col: 1,
+      message: 'Unknown word "Zorblaxian"',
+    },
+  ]);
+  assert.deepEqual(logged, [
+    '[warn] README.md',
+    'README.md:3:1 - Unknown word (Zorblaxian)',
+    '::warning file=README.md::Formatting differs from Prettier output',
+    '::warning file=README.md,line=3,col=1::Unknown word "Zorblaxian"',
+  ]);
+  assert.equal(summaries.length, 1);
+  assert.equal(summaries[0].path, '/tmp/summary.md');
+  assert.equal(
+    summaries[0].text,
+    [
+      '## Advisory document checks',
+      '',
+      'These do not block a document-only pull request; a reviewer may still ask for the fix.',
+      '',
+      '- `prettier`: 1 finding(s); run `npm run fix:format`.',
+      '  - `README.md` Formatting differs from Prettier output',
+      '- `cspell`: 1 finding(s); add the word to `.cspell.yml`, or to a `<!-- cspell:ignore Word -->` comment in the page when it is a proper noun.',
+      '  - `README.md:3:1` Unknown word "Zorblaxian"',
+      '',
+    ].join('\n'),
+  );
+  assert.equal(advisorySummary([]), '');
+});
+
+test('keeps an advisory tool failure visible when it names no document', () => {
+  const { result, logged, summaries } = quietLint(
+    README_B64,
+    (command, args) =>
+      args[0] === 'cspell'
+        ? { status: 2, stdout: '', stderr: 'config not found\n' }
+        : { status: 0 },
+  );
+  assert.deepEqual(result.advisories, [
+    {
+      check: 'cspell',
+      file: 'README.md',
+      message: 'cspell exited with status 2 without reporting a finding',
+    },
+  ]);
+  assert.deepEqual(logged, [
+    'config not found',
+    '::warning file=README.md::cspell exited with status 2 without reporting a finding',
+  ]);
+  // No summary path was given, so nothing is appended.
+  assert.deepEqual(summaries, []);
+});
+
+test('writes nothing to the step summary when every advisory check is clean', () => {
+  const { summaries } = quietLint(
+    README_B64,
+    () => ({ status: 0, stdout: 'ok\n' }),
+    { summaryPath: '/tmp/summary.md' },
+  );
+  assert.deepEqual(summaries, []);
+});
+
+test('fails changed-document lint only for markdownlint or a tool that cannot start', () => {
   assert.throws(
-    () => runDocumentLint(encoded, () => ({ status: 1 })),
-    /npx prettier failed with status 1/u,
+    () =>
+      quietLint(README_B64, (command, args) => ({
+        status: args[0] === '--no-install' ? 1 : 0,
+      })),
+    /npx markdownlint failed with status 1/u,
   );
   const failure = new Error('command unavailable');
   assert.throws(
-    () => runDocumentLint(encoded, () => ({ error: failure })),
+    () =>
+      quietLint(README_B64, (command, args) =>
+        args[0] === 'prettier' ? { error: failure } : { status: 0 },
+      ),
+    (error) => error === failure,
+  );
+  assert.throws(
+    () =>
+      quietLint(README_B64, (command, args) =>
+        args[0] === '--no-install' ? { error: failure } : { status: 0 },
+      ),
     (error) => error === failure,
   );
 });

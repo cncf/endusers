@@ -213,33 +213,171 @@ export function decodeChangedDocuments(encoded) {
   return [...uniqueDocuments];
 }
 
-export function runDocumentLint(encoded, runCommand = spawnSync) {
-  const documents = decodeChangedDocuments(encoded);
-  if (documents.length === 0) return { documents, checked: [] };
+// Advisory checks on the document-only path (ADR 0011, amendment of
+// 2026-10-30): their findings become workflow annotations and a step-summary
+// entry, never a failed check. Each parser turns the tool's stdout into
+// annotations; `fix` is the one-line repair shown next to them.
+const ADVISORY_CHECKS = [
+  {
+    name: 'prettier',
+    args: (documents) => ['prettier', '--check', ...documents],
+    parse: prettierAnnotations,
+    fix: 'run `npm run fix:format`',
+  },
+  {
+    name: 'cspell',
+    args: (documents) => [
+      'cspell',
+      '--no-progress',
+      '-c',
+      '.cspell.yml',
+      ...documents,
+    ],
+    parse: cspellAnnotations,
+    fix: 'add the word to `.cspell.yml`, or to a `<!-- cspell:ignore Word -->` comment in the page when it is a proper noun',
+  },
+];
 
-  const markdown = documents.filter((path) => path.endsWith('.md'));
-  const commands = [
-    ['npx', ['prettier', '--check', ...documents]],
-    ['npx', ['cspell', '--no-progress', '-c', '.cspell.yml', ...documents]],
+export function prettierAnnotations(output) {
+  const annotations = [];
+  for (const match of String(output).matchAll(/^\[warn\] (\S+)$/gmu)) {
+    annotations.push({
+      file: match[1],
+      message: 'Formatting differs from Prettier output',
+    });
+  }
+  return annotations;
+}
+
+export function cspellAnnotations(output) {
+  const annotations = [];
+  for (const match of String(output).matchAll(
+    /(.+?):(\d+):(\d+) - Unknown word \((.+)\)$/gmu,
+  )) {
+    annotations.push({
+      file: match[1],
+      line: Number(match[2]),
+      col: Number(match[3]),
+      message: `Unknown word "${match[4]}"`,
+    });
+  }
+  return annotations;
+}
+
+function escapeAnnotationMessage(message) {
+  return message
+    .replaceAll('%', '%25')
+    .replaceAll('\r', '%0D')
+    .replaceAll('\n', '%0A');
+}
+
+export function formatAnnotation({ file, line, col, message }) {
+  const location =
+    line === undefined
+      ? `file=${file}`
+      : `file=${file},line=${line},col=${col}`;
+  return `::warning ${location}::${escapeAnnotationMessage(message)}`;
+}
+
+export function advisorySummary(findings) {
+  if (findings.length === 0) return '';
+  const lines = [
+    '## Advisory document checks',
+    '',
+    'These do not block a document-only pull request; a reviewer may still ask for the fix.',
+    '',
   ];
-  if (markdown.length > 0) {
-    commands.push([
-      'npx',
-      ['--no-install', 'markdownlint', '-c', '.markdownlint.yaml', ...markdown],
-    ]);
+  for (const { check, annotations } of findings) {
+    lines.push(
+      `- \`${check.name}\`: ${annotations.length} finding(s); ${check.fix}.`,
+    );
+    for (const annotation of annotations) {
+      const where =
+        annotation.line === undefined
+          ? annotation.file
+          : `${annotation.file}:${annotation.line}:${annotation.col}`;
+      lines.push(`  - \`${where}\` ${annotation.message}`);
+    }
+  }
+  lines.push('');
+  return lines.join('\n');
+}
+
+function runAdvisoryCheck(check, documents, runCommand, log) {
+  const args = check.args(documents);
+  const result = runCommand('npx', args, {
+    cwd: REPOSITORY_ROOT,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (result.error) throw result.error;
+  const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
+  if (output.length > 0) log(output.trimEnd());
+  if (result.status === 0) return [];
+
+  const annotations = check.parse(output);
+  if (annotations.length === 0) {
+    // The tool failed without naming a document (a missing config, a crash);
+    // keep that visible rather than reporting a clean run.
+    annotations.push({
+      file: documents[0],
+      message: `${check.name} exited with status ${result.status} without reporting a finding`,
+    });
+  }
+  return annotations;
+}
+
+export function runDocumentLint(
+  encoded,
+  runCommand = spawnSync,
+  {
+    log = console.log,
+    summaryPath = process.env.GITHUB_STEP_SUMMARY,
+    appendSummary = appendFileSync,
+  } = {},
+) {
+  const documents = decodeChangedDocuments(encoded);
+  if (documents.length === 0) return { documents, checked: [], advisories: [] };
+
+  const checked = [];
+  const findings = [];
+  for (const check of ADVISORY_CHECKS) {
+    const annotations = runAdvisoryCheck(check, documents, runCommand, log);
+    checked.push(check.name);
+    if (annotations.length > 0) findings.push({ check, annotations });
+  }
+  for (const { annotations } of findings) {
+    for (const annotation of annotations) log(formatAnnotation(annotation));
+  }
+  if (findings.length > 0 && summaryPath) {
+    appendSummary(summaryPath, advisorySummary(findings));
   }
 
-  for (const [command, args] of commands) {
-    const result = runCommand(command, args, {
+  const markdown = documents.filter((path) => path.endsWith('.md'));
+  if (markdown.length > 0) {
+    const args = [
+      '--no-install',
+      'markdownlint',
+      '-c',
+      '.markdownlint.yaml',
+      ...markdown,
+    ];
+    const result = runCommand('npx', args, {
       cwd: REPOSITORY_ROOT,
       stdio: 'inherit',
     });
     if (result.error) throw result.error;
     if (result.status !== 0) {
-      throw new Error(
-        `${command} ${args[0]} failed with status ${result.status}`,
-      );
+      throw new Error(`npx markdownlint failed with status ${result.status}`);
     }
+    checked.push('markdownlint');
   }
-  return { documents, checked: commands.map(([, args]) => args[0]) };
+
+  return {
+    documents,
+    checked,
+    advisories: findings.flatMap(({ check, annotations }) =>
+      annotations.map((annotation) => ({ check: check.name, ...annotation })),
+    ),
+  };
 }

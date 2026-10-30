@@ -1,6 +1,11 @@
 # ADR 0011: Content-only pull requests use focused validation
 
 - **Status**: Accepted
+- **Status note**: Amended 2026-10-30: on the document-only path, formatting and
+  spelling are reported as advisory annotations instead of failing the check,
+  Markdown no longer requires hard-wrapped prose, and formatting drift on `main`
+  is repaired by an automated pull request; see
+  [Amendment: advisory formatting and spelling](#amendment-advisory-formatting-and-spelling-2026-10-30).
 - **Date**: 2026-10-29
 - **Related**:
   [ADR 0008](./0008-scope-agent-findings-to-user-observable-change.md),
@@ -118,3 +123,53 @@ queue must apply the same classification and safety rules.
   silently skip validation.
 - This decision changes which checks run by change type; it does not change test
   coverage requirements or any other frozen threshold.
+
+## Amendment: advisory formatting and spelling (2026-10-30)
+
+The focused path still failed the contributions it was meant to ease. A page
+edited in the GitHub web editor is never hard-wrapped at 80 columns, so the
+Prettier check (`proseWrap: always`) failed every such change, most recently
+[#2005](https://github.com/cncf/endusers/pull/2005), which a maintainer had to
+force-merge and repair in [#2008](https://github.com/cncf/endusers/pull/2008).
+Spelling failed on proper nouns that a new User Group page legitimately
+introduces. Neither failure is a defect an end user can observe, and both are
+mechanical to repair, so they should not stand between a contributor and a
+merge. The DCO is not a hurdle here: the repository requires sign-off on web
+commits, so the web editor adds the trailer itself.
+
+### What changes
+
+1. Markdown and MDX files use `proseWrap: preserve`. Prettier accepts prose
+   either wrapped or unwrapped and still normalizes everything else (lists,
+   emphasis, tables, blockquote continuation). Code files keep their settings.
+2. On the document-only path, Prettier and cspell are advisory. Their findings
+   are surfaced as GitHub workflow annotations on the changed lines and in the
+   step summary, with the one-line fix for each (`npm run fix:format`, or a
+   `cspell:ignore` comment for a genuine proper noun), and they do not fail the
+   "Lint repository" check. markdownlint, the document-contract suites and the
+   production build still block, because what they catch does render wrong.
+3. The full path is unchanged: every other change still fails on formatting and
+   spelling as before.
+4. Formatting drift that reaches `main` through the advisory path is repaired by
+   a `format-documents` workflow. It runs on every push to `main` that touches
+   an authored document and on a weekly schedule, formats the authored document
+   paths with the repository Prettier configuration (so `.prettierignore` still
+   protects `blog/`), and opens or refreshes a single `chore: format documents`
+   pull request through the existing `open-automation-pr` action when anything
+   changed. That pull request is itself document-only and merges through the
+   focused path.
+
+### Effects
+
+- A contributor editing a page in the web editor can merge with unwrapped prose
+  and an unlisted proper noun; the formatting is normalized shortly after by the
+  automation pull request, and the spelling warning stays visible to the
+  reviewer on the pull request.
+- `main` may carry unformatted prose for the minutes between a merge and the
+  repair pull request. `npm run check:format` on a fresh clone can therefore
+  fail until that pull request lands; `npm run fix:format` restores it.
+- Advisory does not mean unchecked: the annotations appear on the pull request
+  and a reviewer can still ask for the fix. The classifier, the blocking
+  contract suites and the production build remain the trust boundary.
+- No frozen threshold changes. This amendment narrows which focused-path
+  findings block; it does not alter coverage, mutation or clone gates.

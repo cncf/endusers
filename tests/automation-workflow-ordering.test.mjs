@@ -203,6 +203,7 @@ test('the workflows this contract applies to are actually detected', () => {
     [
       'architecture-submission.yml',
       'audit-fix.yml',
+      'format-documents.yml',
       'refresh-community-people.yml',
       'refresh-members.yml',
       'refresh-metrics.yml',
