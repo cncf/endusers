@@ -118,3 +118,22 @@ test('the sidebar orders the User Groups the way the hub page lists them', () =>
     'the sidebar_position values under docs/community/user-groups/ order the groups differently from the list on docs/community/user-groups/index.md; readers see one order in the menu and another on the page',
   );
 });
+
+test('no User Group page links directly to the CNCF Slack workspace', () => {
+  // https://slack.cncf.io/ is the open invite page. A workspace URL
+  // (cloud-native.slack.com/...) redirects to the workspace root and answers
+  // 403 to anyone not already signed in to CNCF Slack -- which is exactly the
+  // reader a "How to participate" list is written for. Name the channel in
+  // text and link the invite page, as every other group page does.
+  const workspaceLinked = pages()
+    .filter((page) =>
+      /https:\/\/cloud-native\.slack\.com(?:\/|[?#\s)]|$)/.test(page.body),
+    )
+    .map((page) => page.file);
+
+  assert.deepEqual(
+    workspaceLinked,
+    [],
+    `${workspaceLinked.join(', ')} link a Slack workspace URL directly, so a reader who has not yet joined CNCF Slack lands on a sign-in wall instead of the channel; link https://slack.cncf.io/ and name the channel in text`,
+  );
+});
