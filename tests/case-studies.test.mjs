@@ -153,8 +153,10 @@ function clearButton(view) {
   );
 }
 
+// Project and industry names keep their published casing (etcd, gRPC), so the
+// option order is collation order, not code-point order.
 function uniqueSorted(values) {
-  return [...new Set(values)].sort();
+  return [...new Set(values)].sort((a, b) => a.localeCompare(b, 'en'));
 }
 
 test('the mirrored data set is non-empty, so these assertions are meaningful', () => {
@@ -504,6 +506,41 @@ async function renderWithData(fixture) {
     module.cleanup();
   }
 }
+
+test('filter options list lowercase project and industry names in alphabetical position', async () => {
+  const view = await renderWithData({
+    caseStudies: [
+      study({
+        id: 'a',
+        projects: ['Volcano', 'etcd', 'gRPC', 'Backstage'],
+        industries: ['Travel', 'iGaming', 'Transportation'],
+        countries: ['Canada', 'austria'],
+      }),
+      study({
+        id: 'b',
+        projects: ['cert-manager', 'Cilium'],
+        industries: ['Financial'],
+        countries: ['Canada'],
+      }),
+    ],
+  });
+  const options = (id) => optionValues(elementById(view.tree, id));
+  assert.deepEqual(options('case-study-project'), [
+    'Backstage',
+    'cert-manager',
+    'Cilium',
+    'etcd',
+    'gRPC',
+    'Volcano',
+  ]);
+  assert.deepEqual(options('case-study-industry'), [
+    'Financial',
+    'iGaming',
+    'Transportation',
+    'Travel',
+  ]);
+  assert.deepEqual(options('case-study-country'), ['austria', 'Canada']);
+});
 
 test('a mirror with no case-studies list renders an empty table', async () => {
   const view = await renderWithData({ generatedAt: '2026-01-02' });

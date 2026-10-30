@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { compareLabels } from '../shared/compareLabels';
 
 export const MEMBERSHIP_FILTERS = [
   { value: 'member', label: 'End User Members' },
@@ -18,8 +19,8 @@ export function useFilterOptions(members) {
       member.projects.forEach((p) => projects.add(p));
     }
     return {
-      industries: Array.from(industries).sort(),
-      projects: Array.from(projects).sort(),
+      industries: Array.from(industries).sort(compareLabels),
+      projects: Array.from(projects).sort(compareLabels),
       membershipStatuses: MEMBERSHIP_FILTERS,
     };
   }, [members]);
