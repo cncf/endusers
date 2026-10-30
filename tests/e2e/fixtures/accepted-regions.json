@@ -8,7 +8,7 @@
   "entries": [
     {
       "file": "src/components/CaseStudies/index.js",
-      "span": "52:38-52:44",
+      "span": "53:38-53:44",
       "class": "data-shape-guard",
       "reason": "`|| []` fallback taken only when data/case-studies.json has no caseStudies array."
     },

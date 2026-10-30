@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useFilterToolbar } from '../shared/useFilterToolbar';
 import FilterToolbar from '../shared/FilterToolbar';
+import { compareLabels } from '../shared/compareLabels';
 
 const DEFAULT_FILTERS = {
   query: '',
@@ -59,9 +60,9 @@ export function useArchitectureFilterOptions(architectures) {
       });
     }
     return {
-      industries: Array.from(industries).sort(),
-      projects: Array.from(projects).sort(),
-      organizations: Array.from(organizations).sort(),
+      industries: Array.from(industries).sort(compareLabels),
+      projects: Array.from(projects).sort(compareLabels),
+      organizations: Array.from(organizations).sort(compareLabels),
       tags: Array.from(tags.values()).sort((a, b) =>
         tagKey(a).localeCompare(tagKey(b)),
       ),

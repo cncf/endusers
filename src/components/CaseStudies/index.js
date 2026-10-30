@@ -4,6 +4,7 @@ import MirrorSyncStatus from '../shared/MirrorSyncStatus';
 import { formatDate } from '../shared/formatDate';
 import { useFilterToolbar } from '../shared/useFilterToolbar';
 import FilterToolbar from '../shared/FilterToolbar';
+import { compareLabels } from '../shared/compareLabels';
 import styles from './styles.module.css';
 
 const DEFAULT_FILTERS = { query: '', project: '', industry: '', country: '' };
@@ -19,9 +20,9 @@ function useCaseStudyFilterOptions(caseStudies) {
       study.countries.forEach((c) => countries.add(c));
     }
     return {
-      projects: Array.from(projects).sort(),
-      industries: Array.from(industries).sort(),
-      countries: Array.from(countries).sort(),
+      projects: Array.from(projects).sort(compareLabels),
+      industries: Array.from(industries).sort(compareLabels),
+      countries: Array.from(countries).sort(compareLabels),
     };
   }, [caseStudies]);
 }

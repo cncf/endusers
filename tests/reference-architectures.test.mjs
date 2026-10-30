@@ -213,9 +213,12 @@ test('the toolbar is told how many results of how many total are shown', () => {
     'an unfiltered catalog shows every entry',
   );
   assert.equal(props.activeCount, 0);
+  // Collation order, so CERN follows Capital One rather than preceding it.
   assert.deepEqual(
     props.options.organizations,
-    [...new Set(catalog.map((a) => a.organization))].sort(),
+    [...new Set(catalog.map((a) => a.organization))].sort((a, b) =>
+      a.localeCompare(b, 'en'),
+    ),
   );
 });
 

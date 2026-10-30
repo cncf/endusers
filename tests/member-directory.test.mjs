@@ -396,12 +396,15 @@ test('membership labels and filters distinguish every status', () => {
 test('useFilterOptions returns the sorted distinct industries and projects', () => {
   const { tree: result } = render(() => useFilterOptions(MEMBERS));
 
+  // Published casing is kept (cert-manager, containerd), so the expected
+  // order is collation order rather than code-point order.
+  const collate = (a, b) => a.localeCompare(b, 'en');
   const expectedIndustries = [
     ...new Set(MEMBERS.flatMap((member) => member.industries)),
-  ].sort();
+  ].sort(collate);
   const expectedProjects = [
     ...new Set(MEMBERS.flatMap((member) => member.projects)),
-  ].sort();
+  ].sort(collate);
 
   assert.deepEqual(result.industries, expectedIndustries);
   assert.deepEqual(result.projects, expectedProjects);
@@ -411,6 +414,35 @@ test('useFilterOptions returns the sorted distinct industries and projects', () 
     result.membershipStatuses.map((option) => option.value),
     ['member', 'contributor', 'unknown'],
   );
+});
+
+test('useFilterOptions lists lowercase project and industry names in alphabetical position', () => {
+  const { tree: result } = render(() =>
+    useFilterOptions([
+      {
+        industries: ['Transport', 'gaming', 'Telecommunication'],
+        projects: ['Talos Linux', 'containerd', 'cert-manager', 'Cilium'],
+      },
+      {
+        industries: ['optics', 'Financial'],
+        projects: ['stargz-snapshotter', 'Cilium'],
+      },
+    ]),
+  );
+  assert.deepEqual(result.industries, [
+    'Financial',
+    'gaming',
+    'optics',
+    'Telecommunication',
+    'Transport',
+  ]);
+  assert.deepEqual(result.projects, [
+    'cert-manager',
+    'Cilium',
+    'containerd',
+    'stargz-snapshotter',
+    'Talos Linux',
+  ]);
 });
 
 test('useFilterOptions recomputes its options when the member list changes', () => {
@@ -621,12 +653,13 @@ test('each select names its facet and offers an "all" option first', () => {
 
 test('the industry and project selects list every distinct value, sorted', () => {
   const { view } = renderDirectory();
+  const collate = (a, b) => a.localeCompare(b, 'en');
   const industries = [
     ...new Set(MEMBERS.flatMap((member) => member.industries)),
-  ].sort();
+  ].sort(collate);
   const projects = [
     ...new Set(MEMBERS.flatMap((member) => member.projects)),
-  ].sort();
+  ].sort(collate);
 
   assert.deepEqual(optionValues(view.tree, 'member-industry'), [
     '',

@@ -82,6 +82,37 @@ test('option lists are de-duplicated and alphabetically sorted', () => {
   ]);
 });
 
+test('lowercase project, industry and organization names sort in alphabetical position', () => {
+  const { result } = renderHook(() =>
+    useArchitectureFilterOptions([
+      architecture({
+        organization: 'Zeiss',
+        industries: ['optics', 'Manufacturing'],
+        projects: ['Talos Linux', 'containerd', 'cert-manager'],
+      }),
+      architecture({
+        organization: 'adidas',
+        industries: ['gaming', 'Retail'],
+        projects: ['Cilium', 'stargz-snapshotter'],
+      }),
+    ]),
+  );
+  assert.deepEqual(result.organizations, ['adidas', 'Zeiss']);
+  assert.deepEqual(result.industries, [
+    'gaming',
+    'Manufacturing',
+    'optics',
+    'Retail',
+  ]);
+  assert.deepEqual(result.projects, [
+    'cert-manager',
+    'Cilium',
+    'containerd',
+    'stargz-snapshotter',
+    'Talos Linux',
+  ]);
+});
+
 test('tags differing only in separators are listed once', () => {
   const { result } = renderHook(() =>
     useArchitectureFilterOptions([
