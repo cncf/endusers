@@ -108,10 +108,30 @@ jobs:
           npm run validate:members
       - name: Check content contracts
         if: ${{ !cancelled() && env.CONTENT_ONLY == 'true' }}
-        run: >-
-          node --test tests/docs-contract.test.mjs
-          tests/markdown-references.test.mjs
-          tests/community-group-coverage.test.mjs
+        # Every unit suite that reads an authored document (docs/, blog/,
+        # adr/ or a root document). tests/audit-gate.test.mjs also reads
+        # SECURITY.md but spends ~40s exercising npm audit, so it stays on
+        # the full path.
+        run: |
+          node --test \
+            tests/docs-contract.test.mjs \
+            tests/markdown-references.test.mjs \
+            tests/community-group-coverage.test.mjs \
+            tests/adr-contract.test.mjs \
+            tests/architectures-sidebar-contract.test.mjs \
+            tests/blog-frontmatter.test.mjs \
+            tests/community-people-data.test.mjs \
+            tests/content-security-contract.test.mjs \
+            tests/contributing-e2e-setup.test.mjs \
+            tests/contributing-just-build-parity.test.mjs \
+            tests/dev-environment.test.mjs \
+            tests/docs-threshold-parity.test.mjs \
+            tests/e2e-docs-threshold-parity.test.mjs \
+            tests/enduser-directory-copy.test.mjs \
+            tests/governance-hygiene-parity.test.mjs \
+            tests/root-docs-links.test.mjs \
+            tests/sitemap-exclusions.test.mjs \
+            tests/static-assets.test.mjs
       - name: Build production site
         run: npm run build:production
 

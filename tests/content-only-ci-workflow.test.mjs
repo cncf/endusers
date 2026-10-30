@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
 import { resolveRepoRoot } from './helpers.mjs';
 import { readWorkflow } from './helpers-workflows.mjs';
 
+const repoRoot = resolveRepoRoot(import.meta.url);
 const workflow = readWorkflow('ci.yml').doc;
 
 function step(jobName, name) {
@@ -49,10 +50,31 @@ test('keeps content contracts and the production build on the focused path', () 
     workflow.jobs.validate.env.CONTENT_ONLY,
     /document_only == 'true'/u,
   );
+  const contracts = step('validate', 'Check content contracts');
   assert.equal(
-    step('validate', 'Check content contracts').if,
+    contracts.if,
     "${{ !cancelled() && env.CONTENT_ONLY == 'true' }}",
   );
+  // The focused path must run every suite that reads an authored document,
+  // or a broken README link or unlisted ADR merges unnoticed (#2002).
+  const suites = contracts.run
+    .replaceAll('\\\n', ' ')
+    .trim()
+    .split(/\s+/u)
+    .slice(2);
+  for (const required of [
+    'tests/docs-contract.test.mjs',
+    'tests/markdown-references.test.mjs',
+    'tests/adr-contract.test.mjs',
+    'tests/blog-frontmatter.test.mjs',
+    'tests/root-docs-links.test.mjs',
+    'tests/static-assets.test.mjs',
+  ]) {
+    assert.ok(suites.includes(required), `focused path omits ${required}`);
+  }
+  for (const suite of suites) {
+    assert.ok(existsSync(join(repoRoot, suite)), `${suite} does not exist`);
+  }
   assert.equal(
     step('validate', 'Build production site').run,
     'npm run build:production',
