@@ -414,7 +414,7 @@ test('runs changed-document formatting, spelling, and Markdown checks', () => {
   assert.deepEqual(calls, [
     {
       command: 'npx',
-      args: ['prettier', '--check', '--ignore-path', '', 'README.md'],
+      args: ['prettier', '--check', 'README.md'],
       options,
     },
     {
@@ -434,6 +434,28 @@ test('runs changed-document formatting, spelling, and Markdown checks', () => {
       options,
     },
   ]);
+});
+
+test('preserves repository Prettier ignores for blog documents', () => {
+  const calls = [];
+  runDocumentLint(
+    Buffer.from(
+      JSON.stringify(['blog/2026-07-22-welcome-to-endusers-cncf-io.md']),
+    ).toString('base64'),
+    (command, args) => {
+      calls.push({ command, args });
+      return { status: 0 };
+    },
+  );
+
+  assert.deepEqual(calls[0], {
+    command: 'npx',
+    args: [
+      'prettier',
+      '--check',
+      'blog/2026-07-22-welcome-to-endusers-cncf-io.md',
+    ],
+  });
 });
 
 test('runs only formatting and spelling for MDX documents', () => {

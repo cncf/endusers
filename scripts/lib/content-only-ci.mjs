@@ -219,7 +219,7 @@ export function runDocumentLint(encoded, runCommand = spawnSync) {
 
   const markdown = documents.filter((path) => path.endsWith('.md'));
   const commands = [
-    ['npx', ['prettier', '--check', '--ignore-path', '', ...documents]],
+    ['npx', ['prettier', '--check', ...documents]],
     ['npx', ['cspell', '--no-progress', '-c', '.cspell.yml', ...documents]],
   ];
   if (markdown.length > 0) {
