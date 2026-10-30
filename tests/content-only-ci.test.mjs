@@ -414,7 +414,7 @@ function quietLint(encoded, runCommand, extra = {}) {
   const summaries = [];
   const result = runDocumentLint(encoded, runCommand, {
     log: (line) => logged.push(line),
-    summaryPath: undefined,
+    summaryPath: null,
     appendSummary: (path, text) => summaries.push({ path, text }),
     ...extra,
   });
