@@ -8,7 +8,8 @@ slug: /community/user-groups/telecom
 # Telecom User Group
 
 The [CNCF Telecom User Group](https://github.com/cncf/telecom-user-group) is a community for telecom operators, vendors
-and other organizations adopting and operating cloud native technologies. The group shares best practices, resources, use cases, and practical guidance for network functions, edge deployments, and carrier-grade platforms.
+and other organizations adopting and operating cloud native technologies. The group shares best practices, resources,
+use cases, and practical guidance for network functions, edge deployments, and carrier-grade platforms.
 
 > **Status:** the group is under a renewal process and the co-chairs of the group are working on re-establishing the
   group meetings. 
@@ -28,7 +29,7 @@ and other organizations adopting and operating cloud native technologies. The gr
 
 ## Related resources
 
-- [Reference architectures](/architectures/) from telecom end users (search for *Telecommmunication* in
+- [Reference architectures](/architectures/) from telecom end users (search for *Telecommunication* in
   *All industries*)
 - [CNCF case studies](https://www.cncf.io/case-studies/) for adoption narratives
 - [Cloud Native Maturity Model](https://maturitymodel.cncf.io/) for adoption guidance
