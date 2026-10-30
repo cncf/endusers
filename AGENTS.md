@@ -40,8 +40,13 @@ Before opening a PR, read
 fork/branch/PR process. Two CI-enforced requirements to note up front: the
 "Validate repository" check runs `npm run test:unit:coverage:check` (coverage
 thresholds 99% lines / 100% source / 96% regions / 100% source regions) on every
-PR, and every commit must carry a DCO `Signed-off-by` trailer (`git commit -s`)
-or CI will fail the PR.
+PR that changes code, and every commit must carry a DCO `Signed-off-by` trailer
+(`git commit -s`) or CI will fail the PR. A PR that changes only documents takes
+a focused path
+([ADR 0011](./adr/0011-content-focused-validation-for-documentation.md)): the
+coverage gate, advisory audit, data validators and browser suites are skipped,
+and the changed documents alone are linted and checked against the document
+contracts.
 
 ## Build & Test
 
@@ -50,15 +55,17 @@ or CI will fail the PR.
   purpose; it re-resolves the semver ranges and rewrites the lockfile.
 - **Start Dev Server**: `npm run docus:start`
 - **Build**: `npm run build`
-- **Unit Tests**: `npm run test:unit:coverage:check` — required "Validate
-  repository" CI check on every PR; it runs the suite under the coverage gate
-  whose thresholds are listed in
+- **Unit Tests**: `npm run test:unit:coverage:check` — part of the required
+  "Validate repository" CI check on every PR that changes code (a document-only
+  PR takes the focused path described above); it runs the suite under the
+  coverage gate whose thresholds are listed in
   [`CONTRIBUTING.md`](CONTRIBUTING.md#making-changes). The thresholds are frozen
   regression gates, not targets
   ([ADR 0008](./adr/0008-scope-agent-findings-to-user-observable-change.md)).
   `npm run test:unit` alone skips the gate.
-- **End-to-end Tests**: required "End-to-end tests" CI check on every PR. Needs
-  a production build first, then a one-time browser install:
+- **End-to-end Tests**: required "End-to-end tests" CI check on every PR that
+  changes code (skipped when a PR changes only documents). Needs a production
+  build first, then a one-time browser install:
   `npm run build:production && npx playwright install --with-deps chromium && npm run test:e2e`.
   Specs live in `tests/e2e/`; the suite serves `build/` on `localhost:3000`
   (override with `E2E_PORT`) and does not rebuild it for you.
@@ -69,8 +76,10 @@ or CI will fail the PR.
   those files and tighten the assertions for any survivor it lists. A survivor
   in a file a PR does not touch is not a finding. See
   [`CONTRIBUTING.md`](CONTRIBUTING.md#mutation-testing).
-- **Lint**: required "Lint repository" CI check on every PR runs
-  `npm run check:format`, `npm run check:spelling`, `npm run check:markdown`,
+- **Lint**: the required "Lint repository" CI check runs on every PR. When a PR
+  changes only documents it lints just the changed files (formatting, spelling
+  and Markdown); otherwise it runs `npm run check:format`,
+  `npm run check:spelling`, `npm run check:markdown`,
   `npm run check:duplication`, `npm run check:lint` and `npm run check:unused`.
   `check:lint` runs ESLint (`eslint.config.mjs`) over `src/`, `scripts/`,
   `tests/` and the root config files. `check:unused` runs knip
