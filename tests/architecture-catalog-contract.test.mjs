@@ -294,3 +294,44 @@ test('no project is listed under two spellings across the catalog', () => {
     'one project is spelled two ways, so the catalog filter offers it twice and each option hides the other spelling',
   );
 });
+
+// The industry filter on /architectures and /community/members works the same
+// way, but industries are prose labels rather than project names, so two pages
+// split one vertical by wording rather than by spelling ("Financial" against
+// "Financial Services") and normalising case and punctuation does not catch it.
+// Comparing word sets does: an industry whose words are all contained in
+// another industry's words names the same vertical less completely.
+function industryWords(industry) {
+  return new Set(
+    industry
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean),
+  );
+}
+
+function isSubsetOf(words, other) {
+  return [...words].every((word) => other.has(word));
+}
+
+test('no industry is listed under two labels across the catalog', () => {
+  const industries = [
+    ...new Set(catalog.flatMap((record) => record.industries)),
+  ];
+  const words = new Map(
+    industries.map((industry) => [industry, industryWords(industry)]),
+  );
+  const collisions = [];
+  for (const [index, industry] of industries.entries())
+    for (const other of industries.slice(index + 1))
+      if (
+        isSubsetOf(words.get(industry), words.get(other)) ||
+        isSubsetOf(words.get(other), words.get(industry))
+      )
+        collisions.push(`${industry} vs ${other}`);
+  assert.deepEqual(
+    collisions.sort(),
+    [],
+    'one industry is labelled two ways, so the industry filter offers it twice and each option hides the architectures filed under the other',
+  );
+});
