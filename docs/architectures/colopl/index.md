@@ -5,7 +5,7 @@ architecture:
   organization: Colopl Inc.
   summary: At COLOPL, our API servers run on Google Kubernetes Engine (GKE) with Cloud Spanner as the backend database. While that combination is somewhat distinctive, the overall structure is not far from a typical web service.
   industries:
-    - gaming
+    - Gaming
   tags:
     - agones
     - gaming
