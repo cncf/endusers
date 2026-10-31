@@ -6,6 +6,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 const sourceUrl =
   'https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/';
 const apiUrl = 'https://sessionize.com/api/v2/svi82w6c/view/All';
+// Sessionize timestamps are local to Salt Lake City, on MST in November 2026.
+const utcOffset = '-07:00';
 const response = await fetch(apiUrl);
 if (!response.ok) throw new Error(`Sessionize API returned ${response.status}`);
 const schedule = await response.json();
@@ -65,13 +67,13 @@ for (const session of sessions) {
     });
   }
   const day = days.get(date);
-  let slot = day.slots.find(
-    (item) => item.start === session.startsAt && item.end === session.endsAt,
-  );
+  const start = `${session.startsAt}${utcOffset}`;
+  const end = `${session.endsAt}${utcOffset}`;
+  let slot = day.slots.find((item) => item.start === start && item.end === end);
   if (!slot) {
     slot = {
-      start: session.startsAt,
-      end: session.endsAt,
+      start,
+      end,
       startLabel: timeLabel(session.startsAt),
       endLabel: timeLabel(session.endsAt),
       talks: [],

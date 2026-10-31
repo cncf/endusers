@@ -74,6 +74,16 @@ test('collect-end-user-talks queries Sessionize and outputs filtered talks catal
   assert.equal(catalog.days.length, 1);
   assert.equal(catalog.days[0].date, '2026-11-10');
   assert.equal(catalog.days[0].slots.length, 1);
+  assert.equal(catalog.days[0].slots[0].start, '2026-11-10T10:30:00-07:00');
+  assert.equal(catalog.days[0].slots[0].end, '2026-11-10T11:00:00-07:00');
+  assert.equal(
+    new Date(catalog.days[0].slots[0].start).toISOString(),
+    '2026-11-10T17:30:00.000Z',
+  );
+  assert.equal(
+    new Date(catalog.days[0].slots[0].end).toISOString(),
+    '2026-11-10T18:00:00.000Z',
+  );
   assert.equal(catalog.days[0].slots[0].startLabel, '10:30 AM');
   assert.equal(catalog.days[0].slots[0].endLabel, '11:00 AM');
   const talk = catalog.days[0].slots[0].talks[0];

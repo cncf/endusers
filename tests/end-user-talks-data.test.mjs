@@ -48,7 +48,7 @@ const schedule = JSON.parse(
 );
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;
-const STAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/u;
+const STAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/u;
 
 // The collector's day label: Intl's en-US long weekday/month rendering of the
 // calendar date, formatted in UTC so the machine's timezone cannot shift which
@@ -81,7 +81,7 @@ function dayId(label) {
  * `hour < 12 ? 'AM' : 'PM'` so the expectation has no arm of its own that the
  * committed data might leave unvisited.
  *
- * @param {string} stamp `YYYY-MM-DDTHH:MM:SS`, event-local
+ * @param {string} stamp `YYYY-MM-DDTHH:MM:SS-07:00`, event-local with UTC offset
  * @returns {string} label, e.g. `11:30 AM`
  */
 function timeLabel(stamp) {
