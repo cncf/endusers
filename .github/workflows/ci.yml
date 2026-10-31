@@ -110,8 +110,10 @@ jobs:
         if: ${{ !cancelled() && env.CONTENT_ONLY == 'true' }}
         # Every unit suite that reads an authored document (docs/, blog/,
         # adr/ or a root document). tests/audit-gate.test.mjs also reads
-        # SECURITY.md but spends ~40s exercising npm audit, so it stays on
-        # the full path.
+        # SECURITY.md, but only in the register checks that now live in
+        # tests/security-advisory-register.test.mjs; what stays behind there
+        # spends ~40s on the CLI retry and deadline arms, so it stays on the
+        # full path.
         run: |
           node --test \
             tests/docs-contract.test.mjs \
@@ -130,6 +132,7 @@ jobs:
             tests/enduser-directory-copy.test.mjs \
             tests/governance-hygiene-parity.test.mjs \
             tests/root-docs-links.test.mjs \
+            tests/security-advisory-register.test.mjs \
             tests/sitemap-exclusions.test.mjs \
             tests/static-assets.test.mjs
       - name: Build production site
