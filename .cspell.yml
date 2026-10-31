@@ -54,6 +54,11 @@ words:
   - cloudnativeplatforms
   - Swisscom
   - Flipkart
+  # End user organizations named on docs/events pages
+  - Enpal
+  - Rakuten
+  - Synspective
+  - Pilani
   - blobless
   - nojekyll
   - smol

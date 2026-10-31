@@ -23,6 +23,7 @@ export const RENDERED_DATA_FILES = [
   'data/community-groups.json',
   'data/community-people.json',
   'data/end-user-talks/kubecon-china-2026.json',
+  'data/end-user-talks/kubecon-japan-2026.json',
   'data/end-user-talks/kubecon-na-2026.json',
   'data/members.json',
   'data/metrics.json',

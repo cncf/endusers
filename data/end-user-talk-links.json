@@ -2,12 +2,156 @@
   "$comment": "Hand-maintained. Slides and recordings for End User Talks, keyed by the Sessionize session id that data/end-user-talks/<slug>.json carries as `talk.id`. `npm run collect:end-user-talks` merges each entry into its talk; `npm run validate:end-user-talks` requires ids to be unique, sorted and present in the schedule, `slides` to be an https URL and `recording` to be a youtube.com or youtu.be URL. Keep entries sorted by id and give each at least one link.",
   "links": [
     {
+      "id": "1145821",
+      "recording": "https://www.youtube.com/watch?v=FH_fNfE90sU"
+    },
+    {
+      "id": "1154416",
+      "recording": "https://www.youtube.com/watch?v=6NLiR8uP1hE"
+    },
+    {
+      "id": "1171327",
+      "recording": "https://www.youtube.com/watch?v=LX4YZeqXWck"
+    },
+    {
       "id": "1174542",
       "recording": "https://www.youtube.com/watch?v=KerhT-0ZCRQ"
     },
     {
+      "id": "1182713",
+      "recording": "https://www.youtube.com/watch?v=bZ6O1l8MpC4"
+    },
+    {
+      "id": "1186424",
+      "recording": "https://www.youtube.com/watch?v=AMDE02bLCpY"
+    },
+    {
       "id": "1189573",
       "recording": "https://www.youtube.com/watch?v=WsswXfiMnYU"
+    },
+    {
+      "id": "1190934",
+      "recording": "https://www.youtube.com/watch?v=AC37KBk363A"
+    },
+    {
+      "id": "1191835",
+      "recording": "https://www.youtube.com/watch?v=Qhtq9IuBKxg"
+    },
+    {
+      "id": "1191836",
+      "recording": "https://www.youtube.com/watch?v=-0gJNQogilQ"
+    },
+    {
+      "id": "1192547",
+      "recording": "https://www.youtube.com/watch?v=5GFxb8SNVug"
+    },
+    {
+      "id": "1192623",
+      "recording": "https://www.youtube.com/watch?v=G8yOpne_T04"
+    },
+    {
+      "id": "1192943",
+      "recording": "https://www.youtube.com/watch?v=qvSrzTC7RL8"
+    },
+    {
+      "id": "1193066",
+      "recording": "https://www.youtube.com/watch?v=HaeGagUpOVY"
+    },
+    {
+      "id": "1193243",
+      "recording": "https://www.youtube.com/watch?v=aFX_6HL_i80"
+    },
+    {
+      "id": "1193296",
+      "recording": "https://www.youtube.com/watch?v=K6_KQm1lMn8"
+    },
+    {
+      "id": "1193361",
+      "recording": "https://www.youtube.com/watch?v=In_2tY-0Kc4"
+    },
+    {
+      "id": "1193392",
+      "recording": "https://www.youtube.com/watch?v=x2OxcxlOTR8"
+    },
+    {
+      "id": "1193404",
+      "recording": "https://www.youtube.com/watch?v=wpIoiYAwMmA"
+    },
+    {
+      "id": "1193536",
+      "recording": "https://www.youtube.com/watch?v=uJ__5OjJOh8"
+    },
+    {
+      "id": "1193722",
+      "recording": "https://www.youtube.com/watch?v=JZCqxYJY6A8"
+    },
+    {
+      "id": "1194062",
+      "recording": "https://www.youtube.com/watch?v=wI_nKRNjdxo"
+    },
+    {
+      "id": "1194119",
+      "recording": "https://www.youtube.com/watch?v=9ZF7bmwn_kI"
+    },
+    {
+      "id": "1194272",
+      "recording": "https://www.youtube.com/watch?v=BxMFE0wwjbA"
+    },
+    {
+      "id": "1194287",
+      "recording": "https://www.youtube.com/watch?v=Fhrorq7FQfE"
+    },
+    {
+      "id": "1194386",
+      "recording": "https://www.youtube.com/watch?v=8CjVANBzDWs"
+    },
+    {
+      "id": "1194563",
+      "recording": "https://www.youtube.com/watch?v=wK4AHU041KI"
+    },
+    {
+      "id": "1194684",
+      "recording": "https://www.youtube.com/watch?v=zvdaQXDRRXQ"
+    },
+    {
+      "id": "1194751",
+      "recording": "https://www.youtube.com/watch?v=VH9tvsB37KY"
+    },
+    {
+      "id": "1194757",
+      "recording": "https://www.youtube.com/watch?v=5es7m1R7ZqY"
+    },
+    {
+      "id": "1194825",
+      "recording": "https://www.youtube.com/watch?v=YFkHhcyPF3M"
+    },
+    {
+      "id": "1194844",
+      "recording": "https://www.youtube.com/watch?v=32RGaUtPe5o"
+    },
+    {
+      "id": "1194846",
+      "recording": "https://www.youtube.com/watch?v=yS6a0hxMVb0"
+    },
+    {
+      "id": "1194861",
+      "recording": "https://www.youtube.com/watch?v=68VhjKfv7KQ"
+    },
+    {
+      "id": "1194881",
+      "recording": "https://www.youtube.com/watch?v=15oOxokfnac"
+    },
+    {
+      "id": "1194921",
+      "recording": "https://www.youtube.com/watch?v=afMinubkPF8"
+    },
+    {
+      "id": "1194974",
+      "recording": "https://www.youtube.com/watch?v=pHHiHRaTRpE"
+    },
+    {
+      "id": "1194977",
+      "recording": "https://www.youtube.com/watch?v=GIjm9CtWcK0"
     },
     {
       "id": "1219464",
@@ -20,6 +164,70 @@
     {
       "id": "1224524",
       "recording": "https://www.youtube.com/watch?v=OozAaQTEZ7s"
+    },
+    {
+      "id": "1228174",
+      "recording": "https://www.youtube.com/watch?v=W4_EyfH77jg"
+    },
+    {
+      "id": "1228175",
+      "recording": "https://www.youtube.com/watch?v=3--dwy9q5rA"
+    },
+    {
+      "id": "1228185",
+      "recording": "https://www.youtube.com/watch?v=OZgNM2OCmq4"
+    },
+    {
+      "id": "1228186",
+      "recording": "https://www.youtube.com/watch?v=tJQjBzfELpM"
+    },
+    {
+      "id": "1228187",
+      "recording": "https://www.youtube.com/watch?v=j7zSa_XiGzE"
+    },
+    {
+      "id": "1228189",
+      "recording": "https://www.youtube.com/watch?v=jfEk2KRTk-Y"
+    },
+    {
+      "id": "1228195",
+      "recording": "https://www.youtube.com/watch?v=TrXfYqUKjeI"
+    },
+    {
+      "id": "1283170",
+      "recording": "https://www.youtube.com/watch?v=NXl1MlaEpeg"
+    },
+    {
+      "id": "1283172",
+      "recording": "https://www.youtube.com/watch?v=t_toCHRtgAI"
+    },
+    {
+      "id": "1283173",
+      "recording": "https://www.youtube.com/watch?v=kg5lhVhdCLc"
+    },
+    {
+      "id": "1283174",
+      "recording": "https://www.youtube.com/watch?v=rOoDsAeKDLw"
+    },
+    {
+      "id": "1283176",
+      "recording": "https://www.youtube.com/watch?v=2exuP_qDWBA"
+    },
+    {
+      "id": "1283189",
+      "recording": "https://www.youtube.com/watch?v=W3WSCDURjvg"
+    },
+    {
+      "id": "1283245",
+      "recording": "https://www.youtube.com/watch?v=4qV9lrg3FBc"
+    },
+    {
+      "id": "1283250",
+      "recording": "https://www.youtube.com/watch?v=vfPb0NXs8JU"
+    },
+    {
+      "id": "1289569",
+      "recording": "https://www.youtube.com/watch?v=q3x9Ok3MC1M"
     },
     {
       "id": "1308539",
