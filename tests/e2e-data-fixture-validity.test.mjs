@@ -51,7 +51,7 @@
 
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join, sep } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
 import test from 'node:test';
 
 import {
@@ -62,6 +62,8 @@ import {
   overlayDirFor,
 } from './tools/e2e-data-fixtures.cjs';
 import { runScriptInSandbox } from './helpers-script-sandbox.mjs';
+
+const ARCHITECTURE_DOCS_DIR = join(dirname(DATA_DIR), 'docs', 'architectures');
 
 // The gate that governs each overlayable data file. Keyed by the data file
 // rather than by the overlay so a second overlay of the same file -- which is
@@ -95,8 +97,10 @@ const EXPECTED = new Map([
   [
     'data/architectures/catalog.json',
     {
-      why: "clears one entry's industries and reshapes two entries' assets; the catalog is regenerated from the architecture pages' front matter, which the sandbox does not carry, so validate-architectures reports the catalog as behind the pages with and without the overlay and the overlay adds nothing it can observe",
-      adds: [],
+      why: "clears one entry's industries and reshapes two entries' assets to reach ArchitectureCard's fallback arms; the catalog is a generated mirror of the architecture pages, so any hand edit to it is drift from their front matter and images/ listings",
+      adds: [
+        "data/architectures/catalog.json: catalog is behind the pages' front matter; run `npm run generate:architectures` and commit the result",
+      ],
     },
   ],
   [
@@ -258,12 +262,28 @@ const EXPECTED = new Map([
 
 // Every data file as the sandbox should see it, so a validator that reads more
 // than the file its name suggests still finds the rest of the tree.
-const REAL_DATA = Object.fromEntries(
-  jsonFilesUnder(DATA_DIR).map((name) => [
+//
+// The architecture pages ride along because data/architectures/catalog.json is
+// generated from them -- each record from a page's front matter, its `assets`
+// from the listing of the page's images/ directory -- and
+// validate-architectures rejects a catalog that differs from what it would
+// regenerate. Without the pages that comparison fails identically with and
+// without an overlay, so the catalog overlay's delta would always be empty
+// and this file would be pinning nothing about it. The pages are copied
+// verbatim; the images only need to exist under their names, so they are
+// written empty.
+const REAL_DATA = Object.fromEntries([
+  ...jsonFilesUnder(DATA_DIR).map((name) => [
     `data/${name}`,
     readFileSync(join(DATA_DIR, name), 'utf8'),
   ]),
-);
+  ...filesUnder(ARCHITECTURE_DOCS_DIR).map((name) => [
+    `docs/architectures/${name}`,
+    name.endsWith('.md')
+      ? readFileSync(join(ARCHITECTURE_DOCS_DIR, name), 'utf8')
+      : '',
+  ]),
+]);
 
 /** The `[error]` lines of a validator run, with the prefix removed. */
 function errorsOf({ stdout, stderr }) {
@@ -289,16 +309,22 @@ function baselineFor(script) {
 }
 
 /**
- * Every JSON file under a directory as a slash-separated path relative to it,
- * so a data file in a subdirectory (data/end-user-talks/<slug>.json) and its
- * overlay are found the same way as one at the top.
+ * Every regular file under a directory as a slash-separated path relative to
+ * it, so a data file in a subdirectory (data/end-user-talks/<slug>.json) and
+ * its overlay are found the same way as one at the top.
  */
-function jsonFilesUnder(dir) {
-  return readdirSync(dir, { recursive: true })
-    .map(String)
-    .filter((entry) => entry.endsWith('.json'))
-    .map((entry) => entry.split(sep).join('/'))
+function filesUnder(dir) {
+  return readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) =>
+      relative(dir, join(entry.parentPath, entry.name)).split(sep).join('/'),
+    )
     .sort();
+}
+
+/** The JSON files under a directory, the same way. */
+function jsonFilesUnder(dir) {
+  return filesUnder(dir).filter((name) => name.endsWith('.json'));
 }
 
 /** The data file an overlay key names, relative to data/. */
