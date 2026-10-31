@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { formatDate } from '../src/components/shared/formatDate.js';
+import {
+  formatDate,
+  formatDateRange,
+} from '../src/components/shared/formatDate.js';
 
 // formatDate() is the single date formatter behind AwardsTimeline,
 // PeopleFreshness, CaseStudies, RadarReports and GroupLinkStatus, and the
@@ -163,4 +166,53 @@ test('an unparseable or missing value is null, not a rendered string', () => {
 // comment says the strict helper exists to refuse.
 test('null is formatted as the epoch, and is kept out by the data gate', () => {
   assert.equal(formatDate(null), 'January 1, 1970');
+});
+
+// formatDateRange() renders an event's `start`/`end` pair on the events
+// index (ADR 0012). Each arm is a distinct output shape, so each is asserted
+// by value; the UTC pin is asserted the same way formatDate's is, in the one
+// zone that would move a date-only value onto the previous day.
+const RANGE_CASES = [
+  {
+    label: 'a single day collapses to one date',
+    start: '2026-11-09',
+    end: '2026-11-09',
+    expected: 'November 9, 2026',
+  },
+  {
+    label: 'a range inside one month shares month and year',
+    start: '2026-11-09',
+    end: '2026-11-12',
+    expected: 'November 9–12, 2026',
+  },
+  {
+    label: 'a range across months shares the year',
+    start: '2026-03-30',
+    end: '2026-04-02',
+    expected: 'March 30 – April 2, 2026',
+  },
+  {
+    label: 'a range across years spells out both ends',
+    start: '2026-12-30',
+    end: '2027-01-02',
+    expected: 'December 30, 2026 – January 2, 2027',
+  },
+];
+
+for (const { label, start, end, expected } of RANGE_CASES) {
+  test(`formatDateRange: ${label}`, () => {
+    assert.equal(formatDateRange(start, end), expected);
+  });
+}
+
+test('formatDateRange renders the UTC calendar days west of UTC', () => {
+  const rendered = withTimeZone(WEST, () =>
+    formatDateRange('2026-11-01', '2026-12-01'),
+  );
+  assert.equal(rendered, 'November 1 – December 1, 2026');
+});
+
+test('formatDateRange is null when either end does not parse', () => {
+  assert.equal(formatDateRange('not a date', '2026-11-12'), null);
+  assert.equal(formatDateRange('2026-11-09', undefined), null);
 });

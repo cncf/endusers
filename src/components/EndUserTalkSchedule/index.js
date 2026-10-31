@@ -34,9 +34,9 @@ export default function EndUserTalkSchedule() {
       </p>
       {schedule.days.map((day) => (
         <section key={day.date} className={styles.day} aria-labelledby={day.id}>
-          <h5 id={day.id} className={styles.dayHeading}>
+          <h3 id={day.id} className={styles.dayHeading}>
             {day.label}
-          </h5>
+          </h3>
           {day.slots.map((slot) => (
             <div key={`${slot.start}/${slot.end}`} className={styles.slot}>
               <div className={styles.time}>
@@ -53,11 +53,11 @@ export default function EndUserTalkSchedule() {
                 {slot.talks.map((talk) => (
                   <li key={talk.id} className={styles.card}>
                     <div className={styles.content}>
-                      <h6 className={styles.title}>
+                      <h4 className={styles.title}>
                         <a href={talk.url} rel="noreferrer">
                           {talk.title}
                         </a>
-                      </h6>
+                      </h4>
                       <p className={styles.speakers}>{talk.speakers}</p>
                     </div>
                     <div className={styles.location}>

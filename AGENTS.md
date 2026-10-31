@@ -145,10 +145,13 @@ takes the full path.
 - **Lazy Loading**: Use the `.agents/skills/` manifest to discover detailed
   instructions for specific tasks (e.g., blog posts, documentation updates).
 - **Structure**: Maintain Docusaurus file layout and sidebar configurations
-  (`sidebars.js`). Single-page sections (practitioners, events) intentionally
-  have no sidebar; multi-page sections (architectures, which lists only its
+  (`sidebars.js`). The single-page practitioners section intentionally has
+  no sidebar; multi-page sections (architectures, which lists only its
   catalog and submission pages so imported architecture pages stay full-width;
-  community which includes awards and members; resources) do.
+  community which includes awards and members; events, whose sidebar is
+  derived from the `event:` front matter of `docs/events/<year>/*.md` per
+  [ADR 0012](./adr/0012-event-pages-are-the-source-of-the-events-section.md);
+  resources) do.
 - **Facts**: Verify CNCF facts (award winners, TAB scope, architecture counts)
   against authoritative sources: cncf/tab, cncf/architecture, cncf/landscape,
   and cncf.io announcements. Never assert numbers without a source.

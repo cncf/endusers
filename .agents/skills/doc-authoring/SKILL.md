@@ -45,7 +45,11 @@ Guidelines for technical documentation within this repository.
   Community Groups, Awards, and Members — plus engagement pathways.
 - `docs/resources/metrics.md`: The metrics dashboard, rendered from
   `data/metrics.json`.
-- `docs/events/`: End user events at KubeCon + CloudNativeCon.
+- `docs/events/`: End user events at KubeCon + CloudNativeCon, one page per
+  event at `docs/events/<year>/<slug>.md` with an `event:` front matter block
+  (`start`, `end`, `location`, `url`; `start` must fall in the year directory).
+  The index and sidebar are derived from those blocks (ADR 0012), so add an
+  event by adding a page; never list it in `docs/events/index.md`.
 - `docs/resources/`: Case studies and Technology Radar reports, rendered from
   `data/case-studies.json` and `data/radar-reports.json` (see the data
   contribution model in CONTRIBUTING.md); do not hand-edit generated listings.

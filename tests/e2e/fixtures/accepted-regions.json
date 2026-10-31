@@ -67,6 +67,12 @@
       "reason": "Bare `input` arm of the `searchChips ? ... : input` render; the member directory and case studies toolbars take it and the architecture catalog does not, in different chunks."
     },
     {
+      "file": "src/components/shared/formatDate.js",
+      "span": "42:66-42:78",
+      "class": "data-shape-guard",
+      "reason": "`return null` when an event's start or end is not a parseable date; scripts/lib/events-catalog.mjs rejects such a page at build time, so no published or fixture catalog carries one."
+    },
+    {
       "file": "src/components/shared/OrgAvatar.js",
       "span": "30:20-30:56",
       "class": "span-drift",

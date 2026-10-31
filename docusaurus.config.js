@@ -5,6 +5,7 @@
 // See: https://docusaurus.io/docs/api/docusaurus-config
 
 import { themes as prismThemes } from 'prism-react-renderer';
+import eventsCatalogPlugin from './scripts/lib/events-catalog-plugin.mjs';
 
 const siteUrl = process.env.SITE_URL || 'https://endusers.cncf.io';
 const baseUrl = process.env.BASE_URL || '/';
@@ -547,9 +548,10 @@ const config = {
             label: 'Resources',
           },
           {
-            to: '/events/',
-            label: 'Events',
+            type: 'docSidebar',
+            sidebarId: 'eventsSidebar',
             position: 'right',
+            label: 'Events',
           },
           { to: '/blog', label: 'Blog', position: 'right' },
         ],
@@ -569,6 +571,9 @@ const config = {
     E2E_SOURCE_MAP_PLUGIN,
     E2E_DATA_FIXTURE_PLUGIN,
     E2E_FIXTURE_DOCS_PLUGIN,
+    // Event pages' front matter, published as global data for EventsIndex
+    // (ADR 0012).
+    eventsCatalogPlugin,
     [
       require.resolve('docusaurus-plugin-search-local'),
       /** @type {import('docusaurus-plugin-search-local').PluginOptions} */

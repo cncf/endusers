@@ -1,32 +1,34 @@
-// End-to-end coverage for /events, the one top-level navbar destination with
-// no spec of its own. navigation.spec.js and practitioners-home.spec.js name
-// the route only as a link target, so the sole assertion it has ever received
-// is the generic "main is visible" check in the navbar loop.
+// End-to-end coverage for the events section ADR 0012 shapes: the /events
+// index that renders the latest year's events through <EventsIndex />, the
+// year-grouped sidebar sidebars.js builds from the same pages, and the event
+// pages themselves.
 //
-// tests/events-page.test.mjs is a thorough contract for the *source* of
-// docs/events/index.md — frontmatter, the Upcoming/Past sections, the
-// "Last verified" date, that every `require('@site/...')` asset exists on
-// disk, and that every internal link names a real doc route. It reads Markdown
-// off disk, so three failure modes survive it:
+// tests/events-catalog.test.mjs, tests/events-sidebar-contract.test.mjs and
+// tests/events-index.test.mjs are thorough contracts for the *source*: the
+// reader that turns `event:` front matter into records, the sidebar shape it
+// yields, and the element tree the component returns for it. All three run in
+// Node against the files on disk, so these failure modes survive them:
 //
-//   * The hero photo is embedded as
-//     `require('@site/static/img/...').default`, which webpack resolves during
-//     the build into a hashed URL under baseUrl. The unit test proves only
-//     that the source file exists; it cannot see whether the served page
-//     emits an <img> a browser can actually fetch and decode.
-//   * The figcaption's `<Link to="/community/awards">` is checked against the
-//     set of known doc routes in the source. Nothing proves the built anchor
-//     resolves under baseUrl and navigates.
-//   * The Upcoming/Past structure is asserted in Markdown but never in the
-//     rendered DOM, so an MDX compile or theme regression can leave the route
-//     reachable while rendering an empty shell.
+//   * The plugin publishes the catalog as Docusaurus global data at build
+//     time and the component reads it through usePluginData. Only the built
+//     page proves the plugin is registered, ran, and handed the component the
+//     same years the sidebar shows.
+//   * The hero photo on the 2025 page is `require('@site/static/img/...')`,
+//     which webpack resolves into a hashed URL. The unit test proves the file
+//     exists; it cannot see whether the served <img> decodes.
+//   * The sidebar is derived from the pages at config load. Nothing but the
+//     served DOM proves the year categories render newest first with the
+//     current year expanded.
 //
-// The expectations below are derived from docs/events/index.md rather than
-// hardcoded, the way awards.spec.js drives itself from data/awards.json: an
-// edit to the page is covered on arrival instead of needing this spec
-// rewritten.
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+// Every expectation is derived from docs/events/<year>/*.md rather than
+// hardcoded, the way awards.spec.js drives itself from data/awards.json: a new
+// event page is covered on arrival instead of needing this spec rewritten. The
+// front matter is read with the same `yaml` package scripts/lib/events-catalog.mjs
+// uses, but the ordering rule is restated here on purpose so that an
+// unintended change to the reader fails in both places.
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { parse as parseYaml } from 'yaml';
 import { test, expect } from '../tools/e2e-coverage.cjs';
 
 const EVENTS_PATH = '/events/';
@@ -34,59 +36,71 @@ const AWARDS_PATH = '/community/awards';
 
 // Playwright transpiles these .js specs to CommonJS (the package is not
 // "type": "module"), so import.meta is unavailable. Playwright runs from the
-// directory holding playwright.config.js, so the doc is addressed from the
+// directory holding playwright.config.js, so docs are addressed from the
 // project root.
-const source = readFileSync(resolve('docs/events/index.md'), 'utf8');
-const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(source);
-const body = frontmatter ? source.slice(frontmatter[0].length) : source;
+const EVENTS_DIR = resolve('docs/events');
 
-function frontmatterValue(key) {
-  const matched = new RegExp(`^${key}:\\s*(.+)$`, 'm').exec(
-    frontmatter ? frontmatter[1] : '',
+function frontMatter(file) {
+  const matched = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/.exec(
+    readFileSync(file, 'utf8'),
   );
-  return matched ? matched[1].trim().replace(/^['"]|['"]$/g, '') : '';
+  return {
+    data: matched ? parseYaml(matched[1]) : {},
+    body: matched?.[2] ?? '',
+  };
 }
 
-const pageTitle = frontmatterValue('title');
-const pageDescription = frontmatterValue('description');
+const index = frontMatter(join(EVENTS_DIR, 'index.md'));
+
+// One record per docs/events/<yyyy>/<slug>.md, newest start date first, the
+// order sidebars.js and EventsIndex both present.
+const events = readdirSync(EVENTS_DIR)
+  .filter((entry) => /^\d{4}$/.test(entry))
+  .flatMap((year) =>
+    readdirSync(join(EVENTS_DIR, year))
+      .filter((entry) => /\.mdx?$/.test(entry))
+      .map((entry) => {
+        const file = join(EVENTS_DIR, year, entry);
+        const { data, body } = frontMatter(file);
+        return {
+          year: Number(year),
+          route: `/events/${year}/${entry.replace(/\.mdx?$/, '')}`,
+          title: data.title,
+          start: data.event.start,
+          end: data.event.end,
+          location: data.event.location,
+          url: data.event.url,
+          heroAlt: /<img\b[\s\S]*?\balt="([^"]+)"/.exec(body)?.[1],
+        };
+      }),
+  )
+  .sort(
+    (a, b) =>
+      b.start.localeCompare(a.start) ||
+      b.end.localeCompare(a.end) ||
+      a.title.localeCompare(b.title, 'en'),
+  );
+
+const years = [...new Set(events.map((event) => event.year))];
+const latestYear = years[0];
+const latestEvents = events.filter((event) => event.year === latestYear);
+const heroEvent = events.find((event) => event.heroAlt);
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Section headings in document order. The page's own contract is that
-// "Upcoming" precedes "Past"; asserting the order in the DOM is what proves
-// a reader is not shown last year's events first.
-const sectionHeadings = [...body.matchAll(/^##\s+(.+?)\s*$/gm)].map(
-  ([, heading]) => heading,
-);
-
-// The alt text is the stable handle on the hero <img>: the src is a
-// build-hashed URL that cannot be predicted from the source.
-const heroAlt = /<img\b[\s\S]*?\balt="([^"]+)"/.exec(body)?.[1];
-
-// Outbound links, deduplicated. Asserted as rendered hrefs only — never
-// requested, so the suite makes no third-party traffic from CI.
-const externalHosts = [
-  ...new Set(
-    [...body.matchAll(/\]\(\s*(https?:\/\/[^)\s]+)/g)].map(
-      ([, url]) => new URL(url).host,
-    ),
-  ),
-];
-
-// Docusaurus renders a zero-width hash-link anchor inside every heading, so
-// the rendered text carries a U+200B the source never had.
-function stripAnchor(text) {
-  return text.replace(/\u200b/g, '').trim();
+function normalise(pathname) {
+  const trimmed = pathname.replace(/\/+$/, '');
+  return trimmed === '' ? '/' : trimmed;
 }
 
-async function gotoEvents(page) {
-  const response = await page.goto(EVENTS_PATH);
+async function gotoDoc(page, path) {
+  const response = await page.goto(path);
 
   // `docusaurus serve` answers an unknown path with the 404 page, so the
   // status alone is not conclusive; both are asserted.
-  expect(response?.status(), `${EVENTS_PATH} should not 404`).toBeLessThan(400);
+  expect(response?.status(), `${path} should not 404`).toBeLessThan(400);
   await expect(
     page.getByRole('heading', { name: 'Page Not Found' }),
   ).toHaveCount(0);
@@ -94,71 +108,154 @@ async function gotoEvents(page) {
   return response;
 }
 
-test.describe('events page', () => {
+test.describe('events index', () => {
   test('renders its title and frontmatter metadata', async ({ page }) => {
-    await gotoEvents(page);
+    await gotoDoc(page, EVENTS_PATH);
 
     await expect(
-      page.getByRole('heading', { name: pageTitle, level: 1 }),
+      page.getByRole('heading', { name: index.data.title, level: 1 }),
     ).toBeVisible();
     await expect(page.locator('article').first()).toBeVisible();
-
-    // The document title and meta description are emitted by the docs plugin
-    // from this page's frontmatter. They are what a search engine and a shared
-    // link show, and nothing else in either suite reads them off the built
-    // page: tests/events-page.test.mjs only asserts the frontmatter keys are
-    // present in the source.
     await expect(page).toHaveTitle(
-      new RegExp(`^${escapeRegExp(pageTitle)}\\b`),
+      new RegExp(`^${escapeRegExp(index.data.title)}\\b`),
     );
     await expect(page.locator('meta[name="description"]')).toHaveAttribute(
       'content',
-      pageDescription,
+      index.data.description,
     );
   });
 
-  test('renders every section heading in source order', async ({ page }) => {
-    await gotoEvents(page);
+  test('lists the latest year with events, newest first', async ({ page }) => {
+    await gotoDoc(page, EVENTS_PATH);
 
     expect(
-      sectionHeadings.length,
-      'docs/events/index.md has no "##" sections; this spec needs updating if the page stopped using them',
+      latestEvents.length,
+      'docs/events/ has no event pages; this spec needs updating if the section emptied',
     ).toBeGreaterThan(0);
 
     const article = page.locator('article');
-    for (const heading of sectionHeadings) {
-      // Docusaurus appends a zero-width hash-link anchor inside every heading,
-      // so the accessible name is never an exact match for the source text.
-      await expect(
-        article.getByRole('heading', { name: heading }),
-      ).toBeVisible();
-    }
+    // The year heading is the component's h2 and carries the id the section
+    // is labelled by; a year typed into docs/events/index.md would not.
+    await expect(
+      article.getByRole('heading', { level: 2, name: String(latestYear) }),
+    ).toBeVisible();
 
-    const rendered = await article
-      .getByRole('heading', { level: 2 })
-      .allInnerTexts();
-    const positions = sectionHeadings.map((heading) =>
-      rendered.findIndex((text) => stripAnchor(text) === heading),
-    );
-    expect(
-      positions,
-      'a section heading declared in docs/events/index.md did not render',
-    ).not.toContain(-1);
-    expect(
-      positions,
-      'section headings render in a different order than docs/events/index.md declares them',
-    ).toEqual([...positions].sort((a, b) => a - b));
+    const rows = article.locator('ol > li');
+    await expect(rows).toHaveCount(latestEvents.length);
+
+    for (const [position, event] of latestEvents.entries()) {
+      const row = rows.nth(position);
+      const link = row.getByRole('link', { name: event.title });
+      await expect(link).toBeVisible();
+      await expect(link).toHaveAttribute(
+        'href',
+        new RegExp(`^${escapeRegExp(event.route)}/?$`),
+      );
+      await expect(row.locator('time')).toHaveAttribute(
+        'dateTime',
+        event.start,
+      );
+      await expect(row).toContainText(event.location);
+    }
   });
 
-  test('serves the hero photo the page requires', async ({ page }) => {
-    await gotoEvents(page);
-
+  test('links earlier years to their most recent event', async ({ page }) => {
+    // Fails rather than skips when a single year is left (see
+    // tests/e2e-data-dependent-skips.test.mjs): the earlier-years row renders
+    // nothing then, and this case would need rewriting, not silencing.
     expect(
-      heroAlt,
-      'docs/events/index.md no longer embeds an <img> with alt text; this spec needs updating',
-    ).toBeTruthy();
+      years.length,
+      'only one year has events; this spec needs updating',
+    ).toBeGreaterThan(1);
+    await gotoDoc(page, EVENTS_PATH);
 
-    const hero = page.locator('article').getByAltText(heroAlt, { exact: true });
+    for (const year of years.slice(1)) {
+      const target = events.find((event) => event.year === year);
+      const link = page
+        .locator('article')
+        .getByRole('link', { name: String(year), exact: true });
+      await expect(link).toHaveAttribute(
+        'href',
+        new RegExp(`^${escapeRegExp(target.route)}/?$`),
+      );
+    }
+
+    const earliest = events.find((event) => event.year === years.at(-1));
+    await page
+      .locator('article')
+      .getByRole('link', { name: String(earliest.year), exact: true })
+      .click();
+    expect(normalise(new URL(page.url()).pathname)).toBe(earliest.route);
+    await expect(
+      page.getByRole('heading', { name: earliest.title, level: 1 }),
+    ).toBeVisible();
+  });
+
+  test('groups the sidebar by year, newest first, with the latest expanded', async ({
+    page,
+  }) => {
+    await gotoDoc(page, EVENTS_PATH);
+
+    const sidebar = page.locator('nav.menu').first();
+    await expect(sidebar).toBeVisible();
+
+    // Each year is a collapsible category whose label is the year. The
+    // category links carry the `menu__link--sublist` class in the classic
+    // theme; the order of their labels is the order sidebars.js emitted.
+    const categories = sidebar.locator('a.menu__link--sublist');
+    await expect(categories).toHaveCount(years.length);
+    expect(
+      (await categories.allInnerTexts()).map((text) => text.trim()),
+    ).toEqual(years.map(String));
+
+    // Only the latest year is expanded on arrival, so its event links are the
+    // visible doc links below the index entry; the older years' links are
+    // collapsed and therefore absent from the accessibility tree.
+    for (const event of latestEvents) {
+      await expect(
+        sidebar.getByRole('link', { name: event.title, exact: true }),
+      ).toBeVisible();
+    }
+    for (const event of events.filter((event) => event.year !== latestYear)) {
+      await expect(
+        sidebar.getByRole('link', { name: event.title, exact: true }),
+      ).toBeHidden();
+    }
+  });
+});
+
+test.describe('event pages', () => {
+  for (const event of events) {
+    test(`${event.route} renders its title and cites the event site`, async ({
+      page,
+    }) => {
+      await gotoDoc(page, event.route);
+
+      await expect(
+        page.getByRole('heading', { name: event.title, level: 1 }),
+      ).toBeVisible();
+      await expect(page.locator('nav.menu').first()).toBeVisible();
+
+      // Asserted as a rendered href only, never requested, so the suite makes
+      // no third-party traffic from CI.
+      const host = new URL(event.url).host;
+      await expect(
+        page.locator('article').locator(`a[href*="${host}"]`).first(),
+        `no link to ${host} rendered on ${event.route}`,
+      ).toBeVisible();
+    });
+  }
+
+  test('serves the hero photo the page requires', async ({ page }) => {
+    expect(
+      heroEvent,
+      'no event page embeds an <img> with alt text; this spec needs updating',
+    ).toBeTruthy();
+    await gotoDoc(page, heroEvent.route);
+
+    const hero = page
+      .locator('article')
+      .getByAltText(heroEvent.heroAlt, { exact: true });
     await expect(hero).toBeVisible();
 
     // Visibility alone passes on an <img> whose src 404s — the element still
@@ -167,44 +264,22 @@ test.describe('events page', () => {
     // webpack's `require('@site/...')` URL resolves under the served baseUrl.
     await expect
       .poll(() => hero.evaluate((img) => img.naturalWidth), {
-        message: `the hero photo (alt: ${heroAlt}) never decoded; its built src does not resolve`,
+        message: `the hero photo (alt: ${heroEvent.heroAlt}) never decoded; its built src does not resolve`,
       })
       .toBeGreaterThan(0);
   });
 
   test('the figcaption link navigates to the awards page', async ({ page }) => {
-    await gotoEvents(page);
+    await gotoDoc(page, heroEvent.route);
 
-    // Located by role within the figure rather than by class: the caption's
-    // styling is presentation, the link out to the awards timeline is the
-    // contract.
     const link = page.locator('article figcaption').getByRole('link').first();
     await expect(link).toBeVisible();
-
     await link.click();
 
-    expect(new URL(page.url()).pathname.replace(/\/$/, '')).toBe(
-      AWARDS_PATH.replace(/\/$/, ''),
-    );
+    expect(normalise(new URL(page.url()).pathname)).toBe(AWARDS_PATH);
     await expect(
       page.getByRole('heading', { name: 'Page Not Found' }),
     ).toHaveCount(0);
     await expect(page.locator('article').first()).toBeVisible();
-  });
-
-  test('renders the outbound event links it cites', async ({ page }) => {
-    await gotoEvents(page);
-
-    expect(
-      externalHosts.length,
-      'docs/events/index.md cites no external event pages; this spec needs updating if that changed',
-    ).toBeGreaterThan(0);
-
-    for (const host of externalHosts) {
-      await expect(
-        page.locator('article').locator(`a[href*="${host}"]`).first(),
-        `no link to ${host} rendered`,
-      ).toBeVisible();
-    }
   });
 });

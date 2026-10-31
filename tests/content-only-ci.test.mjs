@@ -44,6 +44,7 @@ test('accepts authored documents in supported content locations', () => {
     'docs/community/user-groups/research/index.md',
     'docs/architectures/index.md',
     'docs/architectures/submit.md',
+    'docs/events/2025/kubecon-na.md',
   ]) {
     assert.equal(isAuthoredDocumentPath(path), true, path);
   }
@@ -56,6 +57,7 @@ test('rejects generated and data-backed documents', () => {
     'docs/community/members.md',
     'docs/community/projects-born.md',
     'docs/events/index.md',
+    'docs/events/2026/kubecon-na.md',
     'docs/resources/case-studies.md',
     'docs/resources/changelog.md',
     'docs/resources/metrics.md',
