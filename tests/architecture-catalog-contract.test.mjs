@@ -380,10 +380,21 @@ function isSubsetOf(words, other) {
   return [...words].every((word) => other.has(word));
 }
 
-test('no industry is listed under two labels across the catalog', () => {
-  const industries = [
-    ...new Set(catalog.flatMap((record) => record.industries)),
-  ];
+// Word containment catches the wordings that overlap, but a vertical can be
+// split by two labels that share no word at all ("Banking" against "Financial
+// Services"), and no comparison of the strings themselves recovers that. Each
+// group below is one vertical: a catalog carrying two labels from one group
+// offers the filter two options that hide each other's architectures, exactly
+// as a containment collision does. Add a group when a submission proposes a
+// second wording the catalog already files under another name.
+const INDUSTRY_SYNONYMS = [['banking', 'financial services']];
+
+function synonymGroup(industry) {
+  const label = industry.toLowerCase();
+  return INDUSTRY_SYNONYMS.findIndex((group) => group.includes(label));
+}
+
+function industryCollisions(industries) {
   const words = new Map(
     industries.map((industry) => [industry, industryWords(industry)]),
   );
@@ -392,11 +403,27 @@ test('no industry is listed under two labels across the catalog', () => {
     for (const other of industries.slice(index + 1))
       if (
         isSubsetOf(words.get(industry), words.get(other)) ||
-        isSubsetOf(words.get(other), words.get(industry))
+        isSubsetOf(words.get(other), words.get(industry)) ||
+        (synonymGroup(industry) >= 0 &&
+          synonymGroup(industry) === synonymGroup(other))
       )
         collisions.push(`${industry} vs ${other}`);
+  return collisions.sort();
+}
+
+test('the industry guard reports a vertical whose two wordings share no word', () => {
+  assert.deepEqual(industryCollisions(['Banking', 'Financial Services']), [
+    'Banking vs Financial Services',
+  ]);
+  assert.deepEqual(industryCollisions(['Banking', 'Gaming']), []);
+});
+
+test('no industry is listed under two labels across the catalog', () => {
+  const industries = [
+    ...new Set(catalog.flatMap((record) => record.industries)),
+  ];
   assert.deepEqual(
-    collisions.sort(),
+    industryCollisions(industries),
     [],
     'one industry is labelled two ways, so the industry filter offers it twice and each option hides the architectures filed under the other',
   );
