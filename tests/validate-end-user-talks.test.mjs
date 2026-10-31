@@ -13,7 +13,9 @@ const validTalk = {
   speakers: 'Dakota Sullivan, Isaac Wilson',
   room: 'Salt Palace | Level 1 | Grand Ballroom ACE',
   url: `${SCHEDULE}?id=1250350`,
+  description: 'How the cluster was saturated by design.',
 };
+const LINKS = 'data/end-user-talk-links.json';
 
 function schedule(overrides = {}, talks = [validTalk]) {
   return {
@@ -36,12 +38,14 @@ function schedule(overrides = {}, talks = [validTalk]) {
   };
 }
 
-function fixture(data) {
-  return { 'data/end-user-talks.json': JSON.stringify(data) };
+function fixture(data, links) {
+  const files = { 'data/end-user-talks.json': JSON.stringify(data) };
+  if (links !== undefined) files[LINKS] = JSON.stringify(links);
+  return files;
 }
 
-function run(data) {
-  return runScriptWithFixtures(SCRIPT, fixture(data));
+function run(data, links) {
+  return runScriptWithFixtures(SCRIPT, fixture(data, links));
 }
 
 test('accepts a valid snapshot', () => {
@@ -258,4 +262,139 @@ test('tolerates a null day and a null slot', () => {
   const result = run(data);
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Validated 1 end user talk links/);
+});
+
+// The curated overlay: slides and recordings the collector merges into the
+// generated talks, keyed by Sessionize id.
+const RECORDING = 'https://www.youtube.com/watch?v=abc123';
+const SLIDES = 'https://example.com/slides.pdf';
+
+function linkedTalk(links = {}) {
+  return { ...validTalk, ...links };
+}
+
+test('accepts a talk carrying curated slides and a YouTube recording', () => {
+  const links = {
+    links: [{ id: validTalk.id, slides: SLIDES, recording: RECORDING }],
+  };
+  const result = run(
+    schedule({}, [linkedTalk({ slides: SLIDES, recording: RECORDING })]),
+    links,
+  );
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('accepts a youtu.be recording and an overlay with only one link', () => {
+  const short = 'https://youtu.be/abc123';
+  const links = { links: [{ id: validTalk.id, recording: short }] };
+  const result = run(schedule({}, [linkedTalk({ recording: short })]), links);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('rejects a recording hosted anywhere but YouTube', () => {
+  const links = {
+    links: [{ id: validTalk.id, recording: 'https://vimeo.com/123' }],
+  };
+  const result = run(
+    schedule({}, [linkedTalk({ recording: 'https://vimeo.com/123' })]),
+    links,
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /recording must be on youtube\.com or youtu\.be/);
+});
+
+test('rejects a non-https slides link', () => {
+  const links = {
+    links: [{ id: validTalk.id, slides: 'http://example.com/slides.pdf' }],
+  };
+  const result = run(
+    schedule({}, [linkedTalk({ slides: 'http://example.com/slides.pdf' })]),
+    links,
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /slides must use https, got http:/);
+});
+
+test('rejects an overlay entry that names no talk in the schedule', () => {
+  const links = { links: [{ id: '999999', recording: RECORDING }] };
+  const result = run(schedule(), links);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /id 999999 names no talk/);
+});
+
+test('rejects an overlay the collector has not been re-run against', () => {
+  const links = {
+    links: [{ id: validTalk.id, slides: SLIDES, recording: RECORDING }],
+  };
+  const result = run(schedule({}, [linkedTalk({ slides: SLIDES })]), links);
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /recording does not match end-user-talk-links\.json/,
+  );
+  assert.doesNotMatch(result.stderr, /slides does not match/);
+
+  const slidesStale = run(
+    schedule({}, [linkedTalk({ recording: RECORDING })]),
+    links,
+  );
+  assert.equal(slidesStale.status, 1);
+  assert.match(
+    slidesStale.stderr,
+    /slides does not match end-user-talk-links\.json/,
+  );
+});
+
+test('rejects an overlay entry without any link, a duplicate and an unsorted id', () => {
+  const second = { ...validTalk, id: '1250351', url: `${SCHEDULE}?id=1250351` };
+  const links = {
+    links: [
+      { id: '1250351', recording: RECORDING },
+      { id: '1250350' },
+      { id: '1250350', slides: SLIDES },
+    ],
+  };
+  const result = run(
+    schedule({}, [
+      linkedTalk({ slides: SLIDES }),
+      { ...second, recording: RECORDING },
+    ]),
+    links,
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /links\[1\].*id 1250350 is out of order/);
+  assert.match(
+    result.stderr,
+    /links\[1\].*must carry slides, recording or both/,
+  );
+  assert.match(result.stderr, /links\[2\].*duplicate id 1250350/);
+});
+
+test('rejects an overlay that is not a links array and an entry without an id', () => {
+  const noArray = run(schedule(), { links: 'nope' });
+  assert.equal(noArray.status, 1);
+  assert.match(noArray.stderr, /must carry a links array/);
+
+  const noId = run(schedule(), { links: [{ recording: RECORDING }] });
+  assert.equal(noId.status, 1);
+  assert.match(noId.stderr, /links\[0\].*id must be a non-empty string/);
+});
+
+test('rejects a talk whose description is missing', () => {
+  const { description, ...withoutDescription } = validTalk;
+  assert.ok(description);
+  const result = run(schedule({}, [withoutDescription]));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /description must be a string/);
+});
+
+test('rejects generated links that fail the URL rules even without an overlay', () => {
+  const result = run(
+    schedule({}, [linkedTalk({ recording: 'https://vimeo.com/123' })]),
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /end-user-talks 1250350.*recording must be on youtube\.com or youtu\.be/,
+  );
 });

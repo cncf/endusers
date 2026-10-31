@@ -1,0 +1,4 @@
+{
+  "$comment": "Hand-maintained. Slides and recordings for End User Talks, keyed by the Sessionize session id that data/end-user-talks.json carries as `talk.id`. `npm run collect:end-user-talks` merges each entry into its talk; `npm run validate:end-user-talks` requires ids to be unique, sorted and present in the schedule, `slides` to be an https URL and `recording` to be a youtube.com or youtu.be URL. Keep entries sorted by id and give each at least one link.",
+  "links": []
+}

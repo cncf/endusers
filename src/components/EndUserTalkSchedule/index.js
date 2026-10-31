@@ -4,6 +4,56 @@ import styles from './styles.module.css';
 
 const verifiedDate = formatDate(schedule.generatedAt);
 
+// Sessionize abstracts separate paragraphs with blank lines (the collector
+// normalizes CRLFs and trims the text); a run of blank lines, with or without
+// stray spaces on them, is one break, and a trailing break adds no paragraph.
+function paragraphs(text) {
+  return text.split(/\n\s*\n/).filter((part) => part !== '');
+}
+
+// The abstract and the slides and recording links a talk carries. The
+// abstract is collapsed: 83 talks at several paragraphs each would bury the
+// schedule, and <details> gives a keyboard-operable toggle without any
+// script. The links repeat the same two labels down the page, so each names
+// the talk in its accessible name while showing only the short label.
+function TalkDetails({ talk }) {
+  const hasLinks = Boolean(talk.slides || talk.recording);
+  return (
+    <>
+      {talk.description && (
+        <details className={styles.abstract}>
+          <summary>Abstract</summary>
+          {paragraphs(talk.description).map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
+        </details>
+      )}
+      {hasLinks && (
+        <p className={styles.links}>
+          {talk.slides && (
+            <a
+              href={talk.slides}
+              rel="noreferrer"
+              aria-label={`Slides: ${talk.title}`}
+            >
+              Slides
+            </a>
+          )}
+          {talk.recording && (
+            <a
+              href={talk.recording}
+              rel="noreferrer"
+              aria-label={`Recording (YouTube): ${talk.title}`}
+            >
+              Recording (YouTube)
+            </a>
+          )}
+        </p>
+      )}
+    </>
+  );
+}
+
 export default function EndUserTalkSchedule() {
   return (
     <div className={styles.schedule}>
@@ -59,6 +109,7 @@ export default function EndUserTalkSchedule() {
                         </a>
                       </h4>
                       <p className={styles.speakers}>{talk.speakers}</p>
+                      <TalkDetails talk={talk} />
                     </div>
                     <div className={styles.location}>
                       <span className={styles.label}>Room</span>

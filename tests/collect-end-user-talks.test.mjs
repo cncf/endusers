@@ -3,6 +3,7 @@ import test from 'node:test';
 import { runScriptInSandbox } from './helpers-script-sandbox.mjs';
 
 const OUTPUT = 'data/end-user-talks.json';
+const LINKS = 'data/end-user-talk-links.json';
 
 function sessionizeFixture() {
   return {
@@ -10,7 +11,7 @@ function sessionizeFixture() {
       {
         id: '1001',
         title: 'Platform Engineering at Acme',
-        description: 'How Acme runs Kubernetes.',
+        description: 'How Acme runs Kubernetes.\r\n\r\nAnd what broke.  ',
         startsAt: '2026-11-10T10:30:00',
         endsAt: '2026-11-10T11:00:00',
         roomId: 1,
@@ -86,6 +87,67 @@ test('collect-end-user-talks queries Sessionize and outputs filtered talks catal
   assert.equal(talk.title, 'Platform Engineering at Acme');
   assert.equal(talk.speakers, 'Alice Doe');
   assert.equal(talk.room, 'Grand Ballroom A');
+  // The abstract is copied with Sessionize's CRLF paragraph breaks normalized
+  // and the trailing whitespace trimmed; slides and recording are absent, not
+  // null, when nothing supplies them.
+  assert.equal(
+    talk.description,
+    'How Acme runs Kubernetes.\n\nAnd what broke.',
+  );
+  assert.ok(!('slides' in talk) && !('recording' in talk));
+});
+
+test('a session without an abstract yields an empty description', () => {
+  const fixture = sessionizeFixture();
+  delete fixture.sessions[0].description;
+  const result = collect(fixture);
+  assert.equal(result.status, 0, result.stderr);
+  const talk = JSON.parse(result.outputs[OUTPUT]).days[0].slots[0].talks[0];
+  assert.equal(talk.description, '');
+});
+
+test('merges curated slides and recording links by session id', () => {
+  const links = {
+    links: [
+      {
+        id: '1001',
+        slides: 'https://example.com/acme.pdf',
+        recording: 'https://youtu.be/acme',
+      },
+      { id: '1002', recording: 'https://youtu.be/ignored' },
+    ],
+  };
+  const result = collect(sessionizeFixture(), {
+    fixtures: { [LINKS]: JSON.stringify(links) },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const talk = JSON.parse(result.outputs[OUTPUT]).days[0].slots[0].talks[0];
+  assert.equal(talk.slides, 'https://example.com/acme.pdf');
+  assert.equal(talk.recording, 'https://youtu.be/acme');
+});
+
+test('falls back to the feed recordingUrl and lets a curated recording win', () => {
+  const fixture = sessionizeFixture();
+  fixture.sessions[0].recordingUrl = 'https://youtu.be/from-feed';
+  const fromFeed = collect(fixture);
+  assert.equal(fromFeed.status, 0, fromFeed.stderr);
+  const feedTalk = JSON.parse(fromFeed.outputs[OUTPUT]).days[0].slots[0]
+    .talks[0];
+  assert.equal(feedTalk.recording, 'https://youtu.be/from-feed');
+  assert.ok(!('slides' in feedTalk));
+
+  const curated = collect(fixture, {
+    fixtures: {
+      [LINKS]: JSON.stringify({
+        links: [{ id: '1001', recording: 'https://youtu.be/curated' }],
+      }),
+    },
+  });
+  assert.equal(curated.status, 0, curated.stderr);
+  assert.equal(
+    JSON.parse(curated.outputs[OUTPUT]).days[0].slots[0].talks[0].recording,
+    'https://youtu.be/curated',
+  );
 });
 
 test('leaves the schedule untouched when nothing changed', () => {
