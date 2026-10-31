@@ -1,4 +1,37 @@
 {
-  "$comment": "Hand-maintained. Slides and recordings for End User Talks, keyed by the Sessionize session id that data/end-user-talks.json carries as `talk.id`. `npm run collect:end-user-talks` merges each entry into its talk; `npm run validate:end-user-talks` requires ids to be unique, sorted and present in the schedule, `slides` to be an https URL and `recording` to be a youtube.com or youtu.be URL. Keep entries sorted by id and give each at least one link.",
-  "links": []
+  "$comment": "Hand-maintained. Slides and recordings for End User Talks, keyed by the Sessionize session id that data/end-user-talks/<slug>.json carries as `talk.id`. `npm run collect:end-user-talks` merges each entry into its talk; `npm run validate:end-user-talks` requires ids to be unique, sorted and present in the schedule, `slides` to be an https URL and `recording` to be a youtube.com or youtu.be URL. Keep entries sorted by id and give each at least one link.",
+  "links": [
+    {
+      "id": "1174542",
+      "recording": "https://www.youtube.com/watch?v=KerhT-0ZCRQ"
+    },
+    {
+      "id": "1189573",
+      "recording": "https://www.youtube.com/watch?v=WsswXfiMnYU"
+    },
+    {
+      "id": "1219464",
+      "recording": "https://www.youtube.com/watch?v=-tratkapeJg"
+    },
+    {
+      "id": "1220661",
+      "recording": "https://www.youtube.com/watch?v=mmDKe9nOBnU"
+    },
+    {
+      "id": "1224524",
+      "recording": "https://www.youtube.com/watch?v=OozAaQTEZ7s"
+    },
+    {
+      "id": "1308539",
+      "recording": "https://www.youtube.com/watch?v=ruayWfZvcxw"
+    },
+    {
+      "id": "1309274",
+      "recording": "https://www.youtube.com/watch?v=_OqDVRdhOdE"
+    },
+    {
+      "id": "1309304",
+      "recording": "https://www.youtube.com/watch?v=lIqf6GLalXo"
+    }
+  ]
 }
