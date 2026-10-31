@@ -235,11 +235,14 @@ Two consequences worth knowing:
 
 - GitHub Flavored Markdown for all content.
 - No emojis in content, code, or commit messages.
-- Maintain the Docusaurus layout and `sidebars.js` configuration. Single-page
-  sections (practitioners, events) intentionally have no sidebar; multi-page
+- Maintain the Docusaurus layout and `sidebars.js` configuration. The
+  single-page practitioners section intentionally has no sidebar; multi-page
   sections (architectures, which lists only its catalog and submission pages so
   imported architecture pages stay full-width; community which includes awards
-  and members; resources) do.
+  and members; events, whose sidebar is derived from the `event:` front matter
+  of `docs/events/<year>/*.md` per
+  [ADR 0012](./adr/0012-event-pages-are-the-source-of-the-events-section.md);
+  resources) do.
 - References in Markdown prose are machine-checked by
   `tests/markdown-references.test.mjs` across every Markdown file in the
   repository except the numbered decision records under `adr/` and the generated
