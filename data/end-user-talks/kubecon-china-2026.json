@@ -4,7 +4,7 @@
   "apiUrl": "https://sessionize.com/api/v2/yo76vzdv/view/All",
   "selection": "presented by speakers from CNCF End User member organizations",
   "location": "Shanghai",
-  "generatedAt": "2026-10-31T18:52:37.230Z",
+  "generatedAt": "2026-10-31T19:40:42.964Z",
   "timezone": "CST (UTC+8)",
   "talkCount": 8,
   "days": [
@@ -25,7 +25,8 @@
               "speakers": "Yaya Xia",
               "room": "7F | Grand Ballroom II + III",
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1308539",
-              "description": "AI agents create a demanding kind of workload. They generate and run code, interact with external systems, and often need an isolated execution environment for only a few minutes.\nThe cloud native and open infrastructure communities have spent years building the foundations this workload now needs. This keynote examines how those existing capabilities can be assembled into an agent runtime, supported by new ecosystem evidence from CNCF and OpenInfra.\n\nThe idea becomes concrete through an open-source runtime stack. Kubernetes Agent Sandbox manages the sandbox lifecycle, while Kata Containers provides workload isolation, with other cloud native components supporting execution and resource delivery. Together, these existing technologies form an agent runtime designed for the needs of agentic AI."
+              "description": "AI agents create a demanding kind of workload. They generate and run code, interact with external systems, and often need an isolated execution environment for only a few minutes.\nThe cloud native and open infrastructure communities have spent years building the foundations this workload now needs. This keynote examines how those existing capabilities can be assembled into an agent runtime, supported by new ecosystem evidence from CNCF and OpenInfra.\n\nThe idea becomes concrete through an open-source runtime stack. Kubernetes Agent Sandbox manages the sandbox lifecycle, while Kata Containers provides workload isolation, with other cloud native components supporting execution and resource delivery. Together, these existing technologies form an agent runtime designed for the needs of agentic AI.",
+              "recording": "https://www.youtube.com/watch?v=ruayWfZvcxw"
             }
           ]
         },
@@ -41,7 +42,8 @@
               "speakers": "Yaya Xia, Xu Wang",
               "room": "7F | Grand Ballroom II + III",
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1309274",
-              "description": "An agent runtime has to create a working environment on demand, isolate code the platform may not trust, and release resources when the task ends. Much of this machinery already exists across cloud native and open infrastructure projects.\n\nThis keynote follows one agent task through an open-source runtime stack. \nKubernetes Agent Sandbox manages its lifecycle, while Kata Containers provides a dedicated guest-kernel boundary. The rest of the chain handles container execution and efficient delivery of images and model artifacts. Seen together, these projects offer a practical foundation for secure, short-lived agent workloads and a shared path for the ecosystem to improve it."
+              "description": "An agent runtime has to create a working environment on demand, isolate code the platform may not trust, and release resources when the task ends. Much of this machinery already exists across cloud native and open infrastructure projects.\n\nThis keynote follows one agent task through an open-source runtime stack. \nKubernetes Agent Sandbox manages its lifecycle, while Kata Containers provides a dedicated guest-kernel boundary. The rest of the chain handles container execution and efficient delivery of images and model artifacts. Seen together, these projects offer a practical foundation for secure, short-lived agent workloads and a shared path for the ecosystem to improve it.",
+              "recording": "https://www.youtube.com/watch?v=_OqDVRdhOdE"
             }
           ]
         },
@@ -57,7 +59,8 @@
               "speakers": "Fengjun Lyu, Wenbo Qi",
               "room": "1F | Mandarin Hall II",
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1189573",
-              "description": "In 2025, after nearly eight years of incubation within CNCF, the Dragonfly project officially graduated. But getting there wasn't easy. Growing from an internal project at Alibaba to a full-community-driven CNCF graduated project came with its fair share of challenges. In this talk, we will discuss the inner workings of Dragonfly's journey to its current state.\n\nWe’ll cover our lessons in community governance, including how we evolved from a small group of maintainers to transparent decision-making and attracted global contributors through effective open-source practices. \n\nOn the technical side, the increasing popularity of LLMs has made the efficient distribution of model files at the GB or even TB scale a significant challenge. We'll dive into how Dragonfly's P2P capabilities have evolved to tackle the challenge of pulling massive model files concurrently across Kubernetes clusters, along with best practices we've developed for AI inference and training workloads."
+              "description": "In 2025, after nearly eight years of incubation within CNCF, the Dragonfly project officially graduated. But getting there wasn't easy. Growing from an internal project at Alibaba to a full-community-driven CNCF graduated project came with its fair share of challenges. In this talk, we will discuss the inner workings of Dragonfly's journey to its current state.\n\nWe’ll cover our lessons in community governance, including how we evolved from a small group of maintainers to transparent decision-making and attracted global contributors through effective open-source practices. \n\nOn the technical side, the increasing popularity of LLMs has made the efficient distribution of model files at the GB or even TB scale a significant challenge. We'll dive into how Dragonfly's P2P capabilities have evolved to tackle the challenge of pulling massive model files concurrently across Kubernetes clusters, along with best practices we've developed for AI inference and training workloads.",
+              "recording": "https://www.youtube.com/watch?v=WsswXfiMnYU"
             }
           ]
         },
@@ -73,7 +76,8 @@
               "speakers": "Wenbo Qi, Chenyu Zhang",
               "room": "5F | 5B + C",
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1174542",
-              "description": "Dragonfly provides efficient, stable, and secure file distribution and image acceleration using P2P technology within cloud-native architectures. This talk will briefly introduce Dragonfly and highlight the features of its latest version. Key updates include enhanced security and new functionalities tailored for more efficient and robust model distribution. We will also demonstrate how Dragonfly preheats and distributes AI models (packaged as OCI Artifacts) to read-only volumes in Kubernetes, enabling faster deployments. Additionally, we will introduce P2P-based state snapshot and restore capabilities in AI agent scenarios."
+              "description": "Dragonfly provides efficient, stable, and secure file distribution and image acceleration using P2P technology within cloud-native architectures. This talk will briefly introduce Dragonfly and highlight the features of its latest version. Key updates include enhanced security and new functionalities tailored for more efficient and robust model distribution. We will also demonstrate how Dragonfly preheats and distributes AI models (packaged as OCI Artifacts) to read-only volumes in Kubernetes, enabling faster deployments. Additionally, we will introduce P2P-based state snapshot and restore capabilities in AI agent scenarios.",
+              "recording": "https://www.youtube.com/watch?v=KerhT-0ZCRQ"
             }
           ]
         },
@@ -89,7 +93,8 @@
               "speakers": "Yihang Li",
               "room": "1F | Mandarin Hall I",
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1219464",
-              "description": "Every AI app eventually needs memory. Most teams hit the same walls: choosing a backend locks them into a later rewrite, wiring retrieval and lifecycle bleeds into every layer, and non-Python teammates have no clean way in.\n\nPowerMem is an open-source (Apache 2.0) memory library that treats these as developer-experience problems. The talk covers the design choices: auto-loading config from .env so the first example is under ten lines of Python; one memory API across five surfaces (Python SDK, pmem CLI with shell, HTTP API with OpenAPI docs, MCP server over SSE/stdio/streamable-http, web dashboard); pluggable storage (OceanBase, PostgreSQL, SQLite) and model providers so prototype and production share one code path; schema migration and backup/restore baked into the CLI.\n\nAttendees leave with patterns for multi-surface developer experience and a practical checklist for evaluating memory libraries."
+              "description": "Every AI app eventually needs memory. Most teams hit the same walls: choosing a backend locks them into a later rewrite, wiring retrieval and lifecycle bleeds into every layer, and non-Python teammates have no clean way in.\n\nPowerMem is an open-source (Apache 2.0) memory library that treats these as developer-experience problems. The talk covers the design choices: auto-loading config from .env so the first example is under ten lines of Python; one memory API across five surfaces (Python SDK, pmem CLI with shell, HTTP API with OpenAPI docs, MCP server over SSE/stdio/streamable-http, web dashboard); pluggable storage (OceanBase, PostgreSQL, SQLite) and model providers so prototype and production share one code path; schema migration and backup/restore baked into the CLI.\n\nAttendees leave with patterns for multi-surface developer experience and a practical checklist for evaluating memory libraries.",
+              "recording": "https://www.youtube.com/watch?v=-tratkapeJg"
             }
           ]
         }
@@ -112,7 +117,8 @@
               "speakers": "Jane Lyu, Fupan Li, Zesheng Zong, Hiu Yeung, Sunny Chan",
               "room": "7F | Grand Ballroom II + III",
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1309304",
-              "description": "No single project, company, or community builds the AI stack alone. Behind the models, frameworks, cloud native technologies, and infrastructure powering AI is a global open source community working across every layer. This session brings together contributors from across the stack to share how collaboration between projects and communities turns individual technologies into an open, interoperable AI ecosystem—and why that collaboration matters even more as AI evolves."
+              "description": "No single project, company, or community builds the AI stack alone. Behind the models, frameworks, cloud native technologies, and infrastructure powering AI is a global open source community working across every layer. This session brings together contributors from across the stack to share how collaboration between projects and communities turns individual technologies into an open, interoperable AI ecosystem—and why that collaboration matters even more as AI evolves.",
+              "recording": "https://www.youtube.com/watch?v=lIqf6GLalXo"
             }
           ]
         },
@@ -128,7 +134,8 @@
               "speakers": "ChongKang Tan",
               "room": "1F | Mandarin Hall I",
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1224524",
-              "description": "As AI infrastructure evolves, fragmented GPU clusters and bursty AI workloads make large-scale multi-cluster operations increasingly difficult. \nIn this talk, we share how we built an Elastic Compute Pool that federates fragmented GPU capacity across clusters into a unified global scheduling domain.\nWhile Kubernetes Dynamic Resource Allocation (DRA) and Kueue provide a strong foundation for AI scheduling, we found critical gaps in applying them to global-scale GPU pools—particularly around application-level topology awareness, failover-aware placement, and cross-cluster resource modeling.\nWe will dive into how we extended DRA to address these limitations and how we unified the orchestration of training and inference workloads across hundred-thousand-GPU-scale infrastructure.\nAttendees will learn the architectural tradeoffs, scheduler and resource management extensions, and operational lessons required to make Kubernetes federation practical for AI-native compute platforms."
+              "description": "As AI infrastructure evolves, fragmented GPU clusters and bursty AI workloads make large-scale multi-cluster operations increasingly difficult. \nIn this talk, we share how we built an Elastic Compute Pool that federates fragmented GPU capacity across clusters into a unified global scheduling domain.\nWhile Kubernetes Dynamic Resource Allocation (DRA) and Kueue provide a strong foundation for AI scheduling, we found critical gaps in applying them to global-scale GPU pools—particularly around application-level topology awareness, failover-aware placement, and cross-cluster resource modeling.\nWe will dive into how we extended DRA to address these limitations and how we unified the orchestration of training and inference workloads across hundred-thousand-GPU-scale infrastructure.\nAttendees will learn the architectural tradeoffs, scheduler and resource management extensions, and operational lessons required to make Kubernetes federation practical for AI-native compute platforms.",
+              "recording": "https://www.youtube.com/watch?v=OozAaQTEZ7s"
             }
           ]
         },
@@ -144,7 +151,8 @@
               "speakers": "Fupan Li, Xuewei Niu",
               "room": "7F | Pearl Hall",
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1220661",
-              "description": "AI agents need more than Linux. Kata Containers 4.0 delivers a universal secure sandbox for the agent era. A new Rust-based default runtime replaces Go for superior safety and speed. Multi-hypervisor support — QEMU, Dragonball, Cloud Hypervisor, Firecracker — adapts to any infrastructure. Template-based instant startup achieves sub-100ms sandbox launch, enabling elastic agent scaling at cloud speed. Confidential Computing via Intel TDX, AMD SEV-SNP, Hygon CSV, and DCU protects sensitive workloads at hardware level. And for the first time, Kata breaks beyond Linux: Android, OSWorld, and Windows sandboxes unify under one runtime, powering diverse AI agent environments securely and instantly. The future of sandboxing is multi-world — and it starts with Kata 4.0."
+              "description": "AI agents need more than Linux. Kata Containers 4.0 delivers a universal secure sandbox for the agent era. A new Rust-based default runtime replaces Go for superior safety and speed. Multi-hypervisor support — QEMU, Dragonball, Cloud Hypervisor, Firecracker — adapts to any infrastructure. Template-based instant startup achieves sub-100ms sandbox launch, enabling elastic agent scaling at cloud speed. Confidential Computing via Intel TDX, AMD SEV-SNP, Hygon CSV, and DCU protects sensitive workloads at hardware level. And for the first time, Kata breaks beyond Linux: Android, OSWorld, and Windows sandboxes unify under one runtime, powering diverse AI agent environments securely and instantly. The future of sandboxing is multi-world — and it starts with Kata 4.0.",
+              "recording": "https://www.youtube.com/watch?v=mmDKe9nOBnU"
             }
           ]
         }
