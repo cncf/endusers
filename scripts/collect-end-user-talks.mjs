@@ -6,6 +6,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 const sourceUrl =
   'https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/';
 const apiUrl = 'https://sessionize.com/api/v2/svi82w6c/view/All';
+// Sessionize publishes event-local timestamps with no zone. Salt Lake City is
+// on MST for the November dates (US DST ends 2026-11-01), so this offset makes
+// each published stamp absolute instead of a local date-and-time string that
+// every machine reader of <time dateTime> resolves in its own zone (#2038).
+// Keep it in step with the human-readable `timezone` label below.
+const timezone = 'MST (UTC−7)';
+const utcOffset = '-07:00';
 const response = await fetch(apiUrl);
 if (!response.ok) throw new Error(`Sessionize API returned ${response.status}`);
 const schedule = await response.json();
@@ -65,13 +72,13 @@ for (const session of sessions) {
     });
   }
   const day = days.get(date);
-  let slot = day.slots.find(
-    (item) => item.start === session.startsAt && item.end === session.endsAt,
-  );
+  const start = `${session.startsAt}${utcOffset}`;
+  const end = `${session.endsAt}${utcOffset}`;
+  let slot = day.slots.find((item) => item.start === start && item.end === end);
   if (!slot) {
     slot = {
-      start: session.startsAt,
-      end: session.endsAt,
+      start,
+      end,
       startLabel: timeLabel(session.startsAt),
       endLabel: timeLabel(session.endsAt),
       talks: [],
@@ -94,7 +101,7 @@ const data = {
   apiUrl,
   category: 'End User Programming / End User Talk',
   generatedAt: new Date().toISOString(),
-  timezone: 'MST (UTC−7)',
+  timezone,
   talkCount: sessions.length,
   days: [...days.values()],
 };
