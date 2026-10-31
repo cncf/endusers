@@ -1,5 +1,5 @@
 {
-  "description": "Appends one fixture day whose single slot holds two talks so the TalkDetails element in src/components/EndUserTalkSchedule/index.js renders the arms the published corpus cannot reach: a talk carrying both a slides link and a YouTube recording but no abstract, and a talk carrying a recording alone with a two-paragraph abstract. data/end-user-talks.json is regenerated from Sessionize, where no session has published a recording yet, and data/end-user-talk-links.json is empty until the event has happened. The day is dated after every real day so the schedule order the published spec asserts is unchanged.",
+  "description": "Appends one fixture day whose single slot holds two talks so the TalkDetails element in src/components/EndUserTalkSchedule/index.js renders the arms the published corpus cannot reach: a talk carrying both a slides link and a YouTube recording but no abstract, and a talk carrying a recording alone with a two-paragraph abstract. data/end-user-talks/kubecon-na-2026.json is regenerated from Sessionize, where no session has published a recording yet, and data/end-user-talk-links.json is empty until the event has happened. The day is dated after every real day so the schedule order the published spec asserts is unchanged.",
   "append": {
     "days": [
       {

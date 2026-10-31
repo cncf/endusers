@@ -29,10 +29,12 @@
 //     Those hrefs are asserted here as rendered attributes only — never
 //     requested — so this spec makes no third-party traffic from CI.
 //
-// Every expectation is derived from data/end-user-talks.json
+// Every expectation is derived from data/end-user-talks/kubecon-na-2026.json
 // rather than hardcoded, the way awards.spec.js drives itself from
 // data/awards.json: re-running `npm run collect:end-user-talks` is covered on
 // arrival instead of needing this spec rewritten.
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 
@@ -40,7 +42,7 @@ const EVENTS_PATH = '/events/2026/kubecon-na/';
 
 // Read through loadSiteData so this spec describes whichever build it is
 // running against, as CONTRIBUTING.md asks of specs that assert on data files.
-const schedule = loadSiteData('end-user-talks.json');
+const schedule = loadSiteData('end-user-talks/kubecon-na-2026.json');
 const days = schedule.days ?? [];
 const talks = days.flatMap((day) =>
   (day.slots ?? []).flatMap((slot) => slot.talks ?? []),
@@ -74,13 +76,13 @@ function dayNav(page) {
 // degrade into a check over an empty list and this file would pass while
 // proving the schedule renders nothing at all. The count is checked against
 // the checked-in file: the coverage build appends a fixture day
-// (tests/e2e/fixtures/data/end-user-talks.json) that the collector's
+// (tests/e2e/fixtures/data/end-user-talks/kubecon-na-2026.json) that the collector's
 // talkCount cannot know about.
 test('the end user talks data exposes a schedule to cover', () => {
   expect(Array.isArray(days)).toBe(true);
   expect(days.length).toBeGreaterThan(0);
   expect(talks.length).toBeGreaterThan(0);
-  const published = loadSiteData('end-user-talks.json', {});
+  const published = loadSiteData('end-user-talks/kubecon-na-2026.json', {});
   const publishedTalks = published.days.flatMap((day) =>
     day.slots.flatMap((slot) => slot.talks),
   );
@@ -103,7 +105,7 @@ test.describe('end user talk schedule on the KubeCon NA 2026 page', () => {
     // are asserted against the data rather than against prose.
     const article = page.locator('article');
     await expect(
-      article.getByText(`${schedule.talkCount} sessions in`, { exact: false }),
+      article.getByText(`${schedule.talkCount} sessions, `, { exact: false }),
     ).toBeVisible();
     await expect(
       article.getByText(schedule.timezone, { exact: false }).first(),
@@ -282,4 +284,67 @@ test.describe('end user talk schedule on the KubeCon NA 2026 page', () => {
       provenance.getByText(`Verified ${verified}`, { exact: false }),
     ).toBeVisible();
   });
+});
+
+// Every conference in data/end-user-talk-events.json is rendered by the page
+// that imports its snapshot, so a second event cannot ship an empty schedule
+// while the NA assertions above stay green. Each page is found by the import
+// in its source rather than by a route table that would have to be kept in
+// step with the events file.
+// Resolved from the working directory, as events.spec.js does: Playwright
+// runs from the repository root and this file is CommonJS to it.
+const DOCS_EVENTS = resolve('docs/events');
+const { events } = loadSiteData('end-user-talk-events.json', {});
+const pages = readdirSync(DOCS_EVENTS)
+  .filter((entry) => /^\d{4}$/.test(entry))
+  .flatMap((year) =>
+    readdirSync(join(DOCS_EVENTS, year))
+      .filter((entry) => /\.mdx?$/.test(entry))
+      .map((entry) => ({
+        route: `/events/${year}/${entry.replace(/\.mdx?$/, '')}/`,
+        source: readFileSync(join(DOCS_EVENTS, year, entry), 'utf8'),
+      })),
+  );
+
+test.describe('every snapshotted conference renders its schedule', () => {
+  for (const event of events) {
+    const page = pages.find((candidate) =>
+      candidate.source.includes(`end-user-talks/${event.slug}.json`),
+    );
+    test(`${event.slug} is imported by one event page`, () => {
+      expect(
+        page,
+        `no page under docs/events imports ${event.slug}`,
+      ).toBeTruthy();
+    });
+    test(`${event.slug} renders its talks at ${page?.route}`, async ({
+      page: browser,
+    }) => {
+      // The coverage build appends fixture talks the collector's talkCount
+      // cannot know about, so the card count comes from the days as served.
+      const snapshot = loadSiteData(`end-user-talks/${event.slug}.json`);
+      const served = snapshot.days.flatMap((day) =>
+        day.slots.flatMap((slot) => slot.talks),
+      );
+      const response = await browser.goto(page.route);
+      expect(response?.status()).toBeLessThan(400);
+      const article = browser.locator('article');
+      await expect(article.locator(dayNav(browser))).toBeVisible();
+      await expect(
+        article.getByText(
+          `${snapshot.talkCount} sessions, ${event.selection}`,
+          {
+            exact: false,
+          },
+        ),
+      ).toBeVisible();
+      await expect(
+        article.getByText(`local to ${event.location}`, { exact: false }),
+      ).toBeVisible();
+      const cards = article.locator(
+        `a[href^="${event.sessionUrl.split('{id}')[0]}"]`,
+      );
+      await expect(cards).toHaveCount(served.length);
+    });
+  }
 });

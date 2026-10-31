@@ -1,8 +1,5 @@
-import schedule from '@site/data/end-user-talks.json';
 import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
-
-const verifiedDate = formatDate(schedule.generatedAt);
 
 // Sessionize abstracts separate paragraphs with blank lines (the collector
 // normalizes CRLFs and trims the text); a run of blank lines, with or without
@@ -54,14 +51,17 @@ function TalkDetails({ talk }) {
   );
 }
 
-export default function EndUserTalkSchedule() {
+// One conference's snapshot from data/end-user-talks/, imported by the event
+// page that renders it so the component stays free of any one event's data.
+export default function EndUserTalkSchedule({ schedule }) {
+  const verifiedDate = formatDate(schedule.generatedAt);
   return (
     <div className={styles.schedule}>
       <p>
-        {schedule.talkCount} sessions in{' '}
-        <strong>End User Programming → End User Talk</strong>. All times are{' '}
-        <strong>{schedule.timezone}</strong>, local to Salt Lake City. Some
-        sessions overlap; talks in the same time slot run concurrently.
+        {schedule.talkCount} sessions, <strong>{schedule.selection}</strong>.
+        All times are <strong>{schedule.timezone}</strong>, local to{' '}
+        {schedule.location}. Some sessions overlap; talks in the same time slot
+        run concurrently.
       </p>
       <nav className={styles.days} aria-label="End user talk days">
         {schedule.days.map((day) => (

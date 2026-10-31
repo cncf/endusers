@@ -11,6 +11,7 @@ event:
 ---
 
 import EndUserTalkSchedule from '@site/src/components/EndUserTalkSchedule';
+import schedule from '@site/data/end-user-talks/kubecon-na-2026.json';
 
 **November 9–12, 2026 · Salt Lake City, Utah.** Explore the end user talks
 scheduled for the main conference on November 10–12.
@@ -20,4 +21,4 @@ scheduled for the main conference on November 10–12.
 
 ## End user talks
 
-<EndUserTalkSchedule />
+<EndUserTalkSchedule schedule={schedule} />

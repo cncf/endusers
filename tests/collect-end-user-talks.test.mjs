@@ -2,8 +2,24 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { runScriptInSandbox } from './helpers-script-sandbox.mjs';
 
-const OUTPUT = 'data/end-user-talks.json';
+const OUTPUT = 'data/end-user-talks/kubecon-na-2026.json';
 const LINKS = 'data/end-user-talk-links.json';
+const EVENTS = 'data/end-user-talk-events.json';
+const API = 'https://sessionize.com/api/v2/svi82w6c/view/All';
+const SCHEDULE =
+  'https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/';
+
+const naEvent = {
+  slug: 'kubecon-na-2026',
+  sourceUrl: SCHEDULE,
+  apiUrl: API,
+  sessionUrl: `${SCHEDULE}?id={id}`,
+  location: 'Salt Lake City',
+  timezone: 'MST (UTC-7)',
+  utcOffset: '-07:00',
+  select: { category: 'End User Programming', item: 'End User Talk' },
+  selection: 'End User Programming → End User Talk',
+};
 
 function sessionizeFixture() {
   return {
@@ -52,7 +68,10 @@ function sessionizeFixture() {
   };
 }
 
-function collect(fixture = sessionizeFixture(), { fixtures = {} } = {}) {
+function collect(
+  fixture = sessionizeFixture(),
+  { fixtures = {}, events = [naEvent], routes = [], outputs = [] } = {},
+) {
   return runScriptInSandbox({
     script: 'collect-end-user-talks.mjs',
     routes: [
@@ -60,9 +79,10 @@ function collect(fixture = sessionizeFixture(), { fixtures = {} } = {}) {
         match: 'sessionize.com/api/v2/svi82w6c/view/All',
         body: fixture,
       },
+      ...routes,
     ],
-    outputs: [OUTPUT],
-    fixtures,
+    outputs: [OUTPUT, ...outputs],
+    fixtures: { [EVENTS]: JSON.stringify({ events }), ...fixtures },
   });
 }
 
@@ -196,7 +216,10 @@ test('throws an error if End User Programming category is missing', () => {
   fixture.categories = [];
   const result = collect(fixture);
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Official End User Talk category is missing/);
+  assert.match(
+    result.stderr,
+    /kubecon-na-2026: official End User Talk category is missing/,
+  );
 });
 
 test('throws an error if End User Talk category has no sessions', () => {
@@ -204,7 +227,7 @@ test('throws an error if End User Talk category has no sessions', () => {
   fixture.sessions = [];
   const result = collect(fixture);
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Official End User Talk category is empty/);
+  assert.match(result.stderr, /kubecon-na-2026: no end user talks selected/);
 });
 
 test('throws an error if session has incomplete data', () => {
@@ -226,6 +249,7 @@ test('throws an error if Sessionize API returns non-200', () => {
       },
     ],
     outputs: [OUTPUT],
+    fixtures: { [EVENTS]: JSON.stringify({ events: [naEvent] }) },
   });
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Sessionize API returned 500/);
@@ -269,4 +293,67 @@ test('groups multiple sessions in the same slot correctly and handles afternoon/
   assert.equal(catalog.days[0].slots[0].talks.length, 2);
   assert.equal(catalog.days[0].slots[1].startLabel, '12:00 PM');
   assert.equal(catalog.days[0].slots[2].endLabel, '1:00 PM');
+});
+
+// A conference with no end user track is snapshotted from a curated id list
+// in its own file, deep-linked through its own session URL and stamped with
+// its own offset, alongside the category-selected one.
+const CHINA_OUTPUT = 'data/end-user-talks/kubecon-china-2026.json';
+const chinaEvent = {
+  slug: 'kubecon-china-2026',
+  sourceUrl: 'https://china-2026.sessionize.com/',
+  apiUrl: 'https://sessionize.com/api/v2/china/view/All',
+  sessionUrl: 'https://china-2026.sessionize.com/session/{id}',
+  location: 'Shanghai',
+  timezone: 'CST (UTC+8)',
+  utcOffset: '+08:00',
+  select: { sessionIds: ['1002', '1001'] },
+  selection: 'presented by End User member speakers',
+};
+
+function collectBoth(
+  fixture = sessionizeFixture(),
+  events = [naEvent, chinaEvent],
+) {
+  return collect(sessionizeFixture(), {
+    events,
+    routes: [{ match: 'sessionize.com/api/v2/china/view/All', body: fixture }],
+    outputs: [CHINA_OUTPUT],
+  });
+}
+
+test('selects curated session ids for an event without an official category and writes each event its own snapshot', () => {
+  const result = collectBoth();
+  assert.equal(result.status, 0, result.stderr);
+  const na = JSON.parse(result.outputs[OUTPUT]);
+  const china = JSON.parse(result.outputs[CHINA_OUTPUT]);
+  assert.equal(na.talkCount, 1);
+  assert.equal(china.talkCount, 2);
+  assert.equal(china.selection, chinaEvent.selection);
+  assert.equal(china.location, 'Shanghai');
+  assert.equal(china.sourceUrl, chinaEvent.sourceUrl);
+  assert.equal(china.apiUrl, chinaEvent.apiUrl);
+  // Curated ids are listed in any order; the snapshot still runs by start.
+  const talks = china.days[0].slots.flatMap((slot) => slot.talks);
+  assert.deepEqual(
+    talks.map((talk) => talk.id),
+    ['1002', '1001'],
+  );
+  assert.equal(talks[0].url, 'https://china-2026.sessionize.com/session/1002');
+  assert.equal(china.days[0].slots[0].start, '2026-11-10T09:00:00+08:00');
+  assert.match(
+    result.stdout,
+    /Collected 2 End User Talks across 1 days from https:\/\/sessionize.com\/api\/v2\/china\/view\/All/,
+  );
+});
+
+test('fails when a curated session id has left the feed', () => {
+  const fixture = sessionizeFixture();
+  fixture.sessions = fixture.sessions.filter((s) => s.id !== '1002');
+  const result = collectBoth(fixture);
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /kubecon-china-2026: curated session ids are missing from the feed: 1002/,
+  );
 });

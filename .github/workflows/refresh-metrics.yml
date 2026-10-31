@@ -51,6 +51,6 @@ jobs:
           title: 'chore: refresh metrics'
           body: |
             Automated refresh of `data/metrics.json`,
-            `data/case-studies.json` and `data/end-user-talks.json`.
+            `data/case-studies.json` and `data/end-user-talks/`.
 
             Validation, the unit tests and the production build passed.
