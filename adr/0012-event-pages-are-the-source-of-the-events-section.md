@@ -1,6 +1,6 @@
 # ADR 0012: Event pages are the source of the events section
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Date**: 2026-10-31
 - **Related**:
   [ADR 0008](./0008-scope-agent-findings-to-user-observable-change.md),
@@ -123,7 +123,7 @@ unit tests consume it outside the build. An events list has no such consumer.
   when one changes.
 - `src/components/EventsIndex/` reads the plugin data with `usePluginData` and
   renders the newest year: a heading naming the year, then a list of rows, each
-  with the date range as `<time dateTime>` elements, the title linking to the
+  with the date range in a `<time>` element carrying the start date, the title linking to the
   page through `<Link>`, the location and the description. Below the list, an
   "Earlier years" line links to each older year's newest event; the sidebar
   carries the full list. A `formatDateRange(start, end)` helper beside the

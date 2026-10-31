@@ -70,7 +70,9 @@ export default [
     languageOptions: { sourceType: 'commonjs' },
   },
   {
-    files: ['*.{js,mjs}', 'scripts/**', 'tests/**'],
+    // src/plugins/ holds Docusaurus build-time plugins, which run in Node at
+    // config load rather than in the browser like the rest of src/.
+    files: ['*.{js,mjs}', 'scripts/**', 'tests/**', 'src/plugins/**'],
     languageOptions: { globals: globals.node },
   },
   {

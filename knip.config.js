@@ -42,6 +42,9 @@ const config = {
   ignoreIssues: {
     // Tests load it through importSource(), a dynamic import knip cannot follow.
     'src/components/MemberDirectory/hooks.js': ['exports'],
+    // The `usePluginData` named export stands in for @docusaurus/useGlobalData
+    // inside importSource()-transpiled components; nothing imports it statically.
+    'tests/tools/docusaurus-stubs/useGlobalData.mjs': ['exports'],
   },
   // Coreutils, used by tests to create named pipes.
   ignoreBinaries: ['mkfifo'],

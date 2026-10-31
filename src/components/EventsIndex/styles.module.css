@@ -1,0 +1,99 @@
+.index {
+  margin-top: 1.5rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: flex;
+  gap: 1.25rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.row:last-child {
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.calendar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 4.5rem;
+  padding: 0.5rem 0;
+  border-radius: var(--ifm-global-radius);
+  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-font-color-base);
+  line-height: 1.1;
+}
+
+.month {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.days {
+  font-size: 1.35rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.details {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.title {
+  font-size: 1.15rem;
+  margin: 0 0 0.25rem;
+}
+
+.meta {
+  margin: 0 0 0.4rem;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.95rem;
+}
+
+.separator {
+  margin: 0 0.5rem;
+}
+
+.description {
+  margin: 0;
+}
+
+.earlier {
+  margin-top: 1.25rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.empty {
+  color: var(--ifm-color-emphasis-700);
+}
+
+@media (max-width: 576px) {
+  .row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .calendar {
+    flex-direction: row;
+    gap: 0.4rem;
+    align-self: flex-start;
+    flex-basis: auto;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .days {
+    font-size: 1rem;
+  }
+}

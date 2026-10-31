@@ -43,7 +43,7 @@ test('renders day jump links that match every day section id', () => {
   const nav = findByType(tree, 'nav');
   assert.ok(nav, 'expected day navigation');
   const navLinks = findAllByType(nav, 'a');
-  const dayHeadings = findAllByType(tree, 'h5');
+  const dayHeadings = findAllByType(tree, 'h3');
 
   assert.deepEqual(
     navLinks.map((node) => node.props.href),

@@ -41,7 +41,7 @@ const STUB_ROOT = new URL('./docusaurus-stubs/', import.meta.url);
 
 // Only the `@docusaurus/...` aliases that src/ actually imports are stubbed;
 // anything else keeps failing loudly rather than resolving to a silent no-op.
-const DOCUSAURUS_STUBS = new Set(['useBaseUrl', 'Link']);
+const DOCUSAURUS_STUBS = new Set(['useBaseUrl', 'Link', 'useGlobalData']);
 
 const CSS_STUB =
   'data:text/javascript,export default new Proxy({},{get:(_,key)=>' +

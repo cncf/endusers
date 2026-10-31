@@ -1,26 +1,26 @@
 // End-to-end coverage for the KubeCon NA 2026 end user talk schedule that
-// `<EndUserTalkSchedule />` renders into /events.
+// `<EndUserTalkSchedule />` renders into the KubeCon NA 2026 event page.
 //
 // The component reports 100.00% lines and 100.00% regions in the browser
 // coverage report, but that number is incidental: tests/e2e/events.spec.js
-// predates the component (it was added with the schedule) and
-// asserts only the page's Markdown-sourced headings, hero photo, figcaption
-// link and outbound hosts. Loading /events for any of those executes every
-// line of the component, so the schedule is *executed* by the suite without a
-// single assertion being made about what it produced. A regression here keeps
-// the coverage number at 100% while the page shows the reader nothing.
+// asserts only the event page's title and outbound event link. Loading the
+// page for those executes every line of the component, so the schedule is
+// *executed* by the suite without a single assertion being made about what it
+// produced. A regression here keeps the coverage number at 100% while the
+// page shows the reader nothing.
 //
 // tests/end-user-talk-schedule.test.mjs is a thorough unit contract, but it
 // calls `EndUserTalkSchedule()` and walks the returned React element tree
 // through tests/tools/react-element-tree.mjs. Three failure modes survive
 // that, in the same way awards.spec.js records for AwardsTimeline:
 //
-//   * The component is imported into docs/events/index.md as MDX. The element
-//     tree proves what the function returns; it cannot prove MDX compiled the
-//     import and mounted it, so a build or theme regression can leave /events
-//     serving its Markdown sections with the schedule silently absent.
+//   * The component is imported into docs/events/2026/kubecon-na.md as MDX.
+//     The element tree proves what the function returns; it cannot prove MDX
+//     compiled the import and mounted it, so a build or theme regression can
+//     leave the page serving its Markdown sections with the schedule silently
+//     absent.
 //   * The day navigation is a row of in-page `#<day.id>` anchors pointing at
-//     `<h5 id={day.id}>` headings. The unit test matches those hrefs against
+//     `<h3 id={day.id}>` headings. The unit test matches those hrefs against
 //     ids in the element tree. Only the built document proves the ids survive
 //     into the DOM Docusaurus serves and that each anchor therefore resolves
 //     to a real target rather than scrolling nowhere.
@@ -36,7 +36,7 @@
 import { test, expect } from '../tools/e2e-coverage.cjs';
 import { loadSiteData } from '../tools/e2e-data-fixtures.cjs';
 
-const EVENTS_PATH = '/events/';
+const EVENTS_PATH = '/events/2026/kubecon-na/';
 
 // Read through loadSiteData so this spec describes whichever build it is
 // running against, as CONTRIBUTING.md asks of specs that assert on data files.
@@ -80,7 +80,7 @@ test('the end user talks data exposes a schedule to cover', () => {
   expect(talks.length).toBe(schedule.talkCount);
 });
 
-test.describe('end user talk schedule on /events', () => {
+test.describe('end user talk schedule on the KubeCon NA 2026 page', () => {
   test('mounts under the "End user talks" heading with its summary', async ({
     page,
   }) => {
@@ -215,7 +215,7 @@ test.describe('end user talk schedule on /events', () => {
     const article = page.locator('article');
 
     // Scoped to the component's own provenance paragraph rather than the
-    // article: docs/events/index.md links the same official schedule URL from
+    // article: docs/events/2026/kubecon-na.md links the same official schedule URL from
     // its "Full schedule" bullet, so an article-wide match would pass on that
     // bullet alone even with the component's citation gone.
     const provenance = article.locator('[class*="source"]');

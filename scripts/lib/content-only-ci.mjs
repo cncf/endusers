@@ -20,6 +20,7 @@ const DATA_BACKED_DOCUMENTS = new Set([
   'docs/community/members.md',
   'docs/community/projects-born.md',
   'docs/events/index.md',
+  'docs/events/2026/kubecon-na.md',
   'docs/resources/case-studies.md',
   'docs/resources/changelog.md',
   'docs/resources/metrics.md',

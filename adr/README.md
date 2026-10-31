@@ -22,7 +22,7 @@ still pending) so future contributors understand why, not just what.
 | [0009](./0009-refresh-generated-data-only-on-content-change.md)      | Refresh generated data only when its content changes                         | Accepted |
 | [0010](./0010-architecture-pages-are-the-metadata-source.md)         | Architecture pages are the source of their catalog metadata                  | Accepted |
 | [0011](./0011-content-focused-validation-for-documentation.md)       | Content-only pull requests use focused validation                            | Accepted |
-| [0012](./0012-event-pages-are-the-source-of-the-events-section.md)   | Event pages are the source of the events section                             | Proposed |
+| [0012](./0012-event-pages-are-the-source-of-the-events-section.md)   | Event pages are the source of the events section                             | Accepted |
 
 Supporting material is not part of the numbered ADR sequence and is not assigned
 an ADR number, but is listed here for discoverability:

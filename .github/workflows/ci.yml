@@ -133,6 +133,9 @@ jobs:
             tests/docs-threshold-parity.test.mjs \
             tests/e2e-docs-threshold-parity.test.mjs \
             tests/enduser-directory-copy.test.mjs \
+            tests/events-catalog.test.mjs \
+            tests/events-page.test.mjs \
+            tests/events-sidebar-contract.test.mjs \
             tests/governance-hygiene-parity.test.mjs \
             tests/mdx-components.test.mjs \
             tests/mdx-paragraph-nesting.test.mjs \
