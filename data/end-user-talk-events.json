@@ -36,6 +36,33 @@
         ]
       },
       "selection": "presented by speakers from CNCF End User member organizations"
+    },
+    {
+      "slug": "kubecon-japan-2026",
+      "sourceUrl": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/",
+      "apiUrl": "https://sessionize.com/api/v2/t0vgv3tv/view/All",
+      "sessionUrl": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id={id}",
+      "location": "Yokohama",
+      "timezone": "JST (UTC+9)",
+      "utcOffset": "+09:00",
+      "select": {
+        "sessionIds": [
+          "1145821",
+          "1154416",
+          "1171327",
+          "1186424",
+          "1193243",
+          "1194386",
+          "1194684",
+          "1194825",
+          "1194846",
+          "1194974",
+          "1228195",
+          "1283174",
+          "1283189"
+        ]
+      },
+      "selection": "presented by speakers from CNCF End User member organizations"
     }
   ]
 }
