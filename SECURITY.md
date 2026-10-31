@@ -104,7 +104,12 @@ advisories do not block on their own, but the gate also fails when one of them
 has a patched release reachable without a semver-major change, so a fix that is
 one `npm audit fix --package-lock-only` away (typically an `overrides` floor
 that no longer reaches the patched release) cannot sit under the threshold
-indefinitely. When an advisory listed here gains a patched release, apply the
+indefinitely. Because npm's `fixAvailable` flag is a prediction (npm 10
+reports a fix for an advisory whose vulnerable range still covers every
+published release), the gate first runs `npm audit fix --package-lock-only` on
+a scratch copy of the lockfile and only fails when the named package actually
+moves; a finding the fix cannot apply is logged as a warning instead. When an
+advisory listed here gains a patched release, apply the
 fix and remove both the table row and the matching allowlist entry in
 `scripts/audit-gate.mjs` — a unit test keeps the two in sync.
 

@@ -627,35 +627,53 @@ test('describeFix falls back to a generic phrase when npm names no release', () 
 // index into the list, and the log is what lets a test assert which flags the
 // gate passed. The last entry repeats once the list runs out, which is what
 // makes a single-entry list behave exactly like the fixed stub it replaces.
+//
+// A step may also carry `lockfile`, which the stub writes to
+// package-lock.json in its working directory: that is how a test decides what
+// the gate's scratch `npm audit fix` run "moved". The argv line records the
+// working directory and whether an .npmrc was copied beside the lockfile, so
+// a test can check the scratch copy is complete and is not the project tree.
 const NPM_STUB = `#!/usr/bin/env node
-const { appendFileSync, readFileSync } = require('node:fs');
+const { appendFileSync, existsSync, readFileSync, writeFileSync } = require('node:fs');
 const log = process.env.AUDIT_STUB_ARGV;
 const responses = JSON.parse(process.env.AUDIT_STUB_RESPONSES);
 let seen = 0;
 try {
   seen = readFileSync(log, 'utf8').split('\\n').filter(Boolean).length;
 } catch {}
-appendFileSync(log, process.argv.slice(2).join(' ') + '\\n');
+const marks = [];
+if (process.argv[3] === 'fix') {
+  marks.push('cwd=' + process.cwd());
+  if (existsSync('.npmrc')) marks.push('npmrc');
+}
+appendFileSync(log, [...process.argv.slice(2), ...marks].join(' ') + '\\n');
 const step = responses[Math.min(seen, responses.length - 1)];
+if (step.lockfile !== undefined) {
+  writeFileSync('package-lock.json', JSON.stringify(step.lockfile));
+}
 process.stdout.write(step.stdout);
 process.exit(step.status);
 `;
 
 // Capture the actual CLI's subprocess options and synthesize deadline errors
 // without making the suite wait a minute for each timed-out attempt.
+// AUDIT_STUB_FIX_TIMEOUT times out the scratch `npm audit fix` run instead,
+// which the gate does not retry.
 const SPAWN_PRELOAD = `import childProcess from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 
 const spawn = childProcess.spawnSync;
 let timeouts = Number(process.env.AUDIT_STUB_TIMEOUTS);
+const fixTimeout = process.env.AUDIT_STUB_FIX_TIMEOUT === '1';
 childProcess.spawnSync = (command, args, options) => {
   appendFileSync(process.env.AUDIT_STUB_SPAWNS, JSON.stringify({
     timeout: options.timeout,
     killSignal: options.killSignal,
   }) + '\\n');
-  if (timeouts > 0) {
-    timeouts -= 1;
+  const isFix = args[1] === 'fix';
+  if ((isFix && fixTimeout) || (!isFix && timeouts > 0)) {
+    if (!isFix) timeouts -= 1;
     return {
       error: Object.assign(new Error('spawnSync npm ETIMEDOUT'), {
         code: 'ETIMEDOUT',
@@ -683,12 +701,19 @@ syncBuiltinESMExports();
  * @param {boolean} [options.withNpm] install the stub at all; false makes
  *   spawnSync fail with ENOENT to exercise the spawn-error arm
  * @param {number} [options.timeouts] deadline errors before npm can run
+ * @param {boolean} [options.fixTimeout] deadline error on the scratch
+ *   `npm audit fix` run
+ * @param {object} [options.lockfile] package-lock.json to place in the
+ *   sandbox the gate runs in (with a minimal package.json beside it); omitted,
+ *   the sandbox has no lockfile at all
+ * @param {string} [options.npmrc] an .npmrc to place beside the lockfile
  * @param {Iterable<string>} [options.allowlist] GHSA ids to run the gate
  *   with, through a wrapper entry that calls main(); omitted, the script runs
  *   as the CLI does with its shipped allowlist
  * @returns {{status: number, stdout: string, stderr: string,
- *   attempts: number, argv: string[], spawns: object[]}} `argv` holds the
- *   invocations that reached npm; `spawns` includes timed-out attempts.
+ *   attempts: number, argv: string[], spawns: object[], work: string}} `argv`
+ *   holds the invocations that reached npm; `spawns` includes timed-out
+ *   attempts; `work` is the (since removed) sandbox the gate ran in.
  */
 function runGate({
   stdout = '',
@@ -696,6 +721,9 @@ function runGate({
   responses,
   withNpm = true,
   timeouts = 0,
+  fixTimeout = false,
+  lockfile,
+  npmrc,
   allowlist,
 } = {}) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-audit-'));
@@ -703,6 +731,11 @@ function runGate({
     const script = join(work, 'scripts', 'audit-gate.mjs');
     mkdirSync(dirname(script), { recursive: true });
     cpSync(join(repoRoot, 'scripts', 'audit-gate.mjs'), script);
+    if (lockfile) {
+      writeFileSync(join(work, 'package.json'), '{"name":"sandbox"}\n');
+      writeFileSync(join(work, 'package-lock.json'), JSON.stringify(lockfile));
+    }
+    if (npmrc) writeFileSync(join(work, '.npmrc'), npmrc);
 
     let entrypoint = script;
     if (allowlist) {
@@ -732,6 +765,7 @@ function runGate({
       process.execPath,
       ['--import', preload, entrypoint],
       {
+        cwd: work,
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
@@ -740,6 +774,7 @@ function runGate({
           AUDIT_STUB_ARGV: argvLog,
           AUDIT_STUB_SPAWNS: spawnLog,
           AUDIT_STUB_TIMEOUTS: String(timeouts),
+          AUDIT_STUB_FIX_TIMEOUT: fixTimeout ? '1' : '0',
           AUDIT_STUB_RESPONSES: JSON.stringify(
             responses ?? [{ stdout, status: Number(status) }],
           ),
@@ -761,6 +796,7 @@ function runGate({
       attempts: spawns.length,
       argv,
       spawns,
+      work,
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -845,17 +881,68 @@ test('cli: exits 1 naming a new advisory outside the allowlist', () => {
   assert.match(result.stderr, /SECURITY\.md/);
 });
 
-test('cli: exits 1 when a low advisory is fixable in range', () => {
-  const report = {
-    vulnerabilities: {
-      'serialize-javascript': lowEntry({
-        name: 'serialize-javascript',
-        version: '7.1.3',
-        isSemVerMajor: false,
-      }),
+// --- in-range fixes, confirmed against a scratch `npm audit fix` ---
+
+// The lockfile the sandbox starts from. `serialize-javascript` is nested
+// under a parent as well as hoisted, so a test can show that every depth is
+// compared, not just the top-level entry.
+const LOCK_BEFORE = {
+  packages: {
+    '': { name: 'sandbox' },
+    'node_modules/serialize-javascript': { version: '7.1.2' },
+    'node_modules/parent': { version: '1.0.0' },
+    'node_modules/parent/node_modules/serialize-javascript': {
+      version: '7.1.2',
     },
-  };
-  const result = runGate({ stdout: JSON.stringify(report), status: '1' });
+    'node_modules/deepmerge': { version: '4.3.1' },
+  },
+};
+
+/** @returns {object} LOCK_BEFORE with the given package entries replaced */
+function lockAfter(changes) {
+  const packages = { ...LOCK_BEFORE.packages };
+  for (const [path, pkg] of Object.entries(changes)) {
+    if (pkg === null) delete packages[path];
+    else packages[path] = pkg;
+  }
+  return { packages };
+}
+
+// What a completed `npm audit fix --json` prints: the post-fix audit report,
+// with npm exiting 1 because advisories remain.
+const FIX_COMPLETED = {
+  stdout: JSON.stringify({
+    added: 0,
+    removed: 0,
+    changed: 0,
+    audit: { vulnerabilities: {} },
+  }),
+  status: 1,
+};
+
+const IN_RANGE_REPORT = JSON.stringify({
+  vulnerabilities: {
+    'serialize-javascript': lowEntry({
+      name: 'serialize-javascript',
+      version: '7.1.3',
+      isSemVerMajor: false,
+    }),
+  },
+});
+
+test('cli: exits 1 when a low advisory is fixable in range and the fix moves the package', () => {
+  const result = runGate({
+    responses: [
+      { stdout: IN_RANGE_REPORT, status: 1 },
+      {
+        ...FIX_COMPLETED,
+        lockfile: lockAfter({
+          'node_modules/serialize-javascript': { version: '7.1.3' },
+        }),
+      },
+    ],
+    lockfile: LOCK_BEFORE,
+  });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /moderate\/low advisories npm can fix/);
   assert.match(
@@ -865,7 +952,209 @@ test('cli: exits 1 when a low advisory is fixable in range', () => {
     ),
   );
   assert.match(result.stderr, /npm audit fix --package-lock-only/);
+  assert.doesNotMatch(result.stderr, /warning/);
   assert.doesNotMatch(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: the scratch fix runs on a copy of the project files, never the project tree', () => {
+  const result = runGate({
+    responses: [
+      { stdout: IN_RANGE_REPORT, status: 1 },
+      { ...FIX_COMPLETED, lockfile: LOCK_BEFORE },
+    ],
+    lockfile: LOCK_BEFORE,
+    npmrc: 'fund=false\n',
+  });
+  assert.equal(result.argv.length, 2);
+  const [, fix] = result.argv;
+  assert.match(
+    fix,
+    /^audit fix --package-lock-only --ignore-scripts --no-fund --json --fetch-timeout=60000 cwd=/,
+  );
+  const cwd = /cwd=(\S+)/.exec(fix)[1];
+  assert.notEqual(cwd, result.work);
+  assert.match(cwd, /audit-gate-fix-/);
+  assert.ok(!existsSync(cwd), 'the scratch copy is removed afterwards');
+  assert.match(fix, / npmrc$/, 'the .npmrc travels with the lockfile');
+  for (const options of result.spawns) {
+    assert.equal(options.timeout, 60000);
+    assert.equal(options.killSignal, 'SIGKILL');
+  }
+});
+
+test('cli: exits 0 with a warning when the reported fix leaves the package where it is', () => {
+  // npm 10 reports deepmerge's GHSA-gcqx-w48m-w2h4 as fixable although every
+  // published release sits inside the vulnerable range. `npm audit fix`
+  // moves nothing, so the finding cannot be acted on and must not red the
+  // gate; it is named in the log so the phantom is visible, not hidden.
+  const report = JSON.stringify({
+    vulnerabilities: { deepmerge: lowEntry(true) },
+  });
+  const result = runGate({
+    responses: [
+      { stdout: report, status: 1 },
+      { ...FIX_COMPLETED, lockfile: LOCK_BEFORE },
+    ],
+    lockfile: LOCK_BEFORE,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(
+    result.stderr,
+    new RegExp(
+      `warning — deepmerge \\(low\\): ${NEW_BAD} is reported as fixable`,
+    ),
+  );
+  assert.match(result.stderr, /leaves its locked version unchanged/);
+  assert.doesNotMatch(result.stderr, /moderate\/low advisories npm can fix/);
+  assert.match(result.stdout, /audit-gate: ok/);
+});
+
+test('cli: a nested copy moving counts as a real fix', () => {
+  const result = runGate({
+    responses: [
+      { stdout: IN_RANGE_REPORT, status: 1 },
+      {
+        ...FIX_COMPLETED,
+        lockfile: lockAfter({
+          'node_modules/parent/node_modules/serialize-javascript': {
+            version: '7.1.3',
+          },
+        }),
+      },
+    ],
+    lockfile: LOCK_BEFORE,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /moderate\/low advisories npm can fix/);
+});
+
+test('cli: a fix that removes the package altogether counts as real', () => {
+  const result = runGate({
+    responses: [
+      { stdout: IN_RANGE_REPORT, status: 1 },
+      {
+        ...FIX_COMPLETED,
+        lockfile: lockAfter({
+          'node_modules/serialize-javascript': null,
+          'node_modules/parent/node_modules/serialize-javascript': null,
+        }),
+      },
+    ],
+    lockfile: LOCK_BEFORE,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /moderate\/low advisories npm can fix/);
+});
+
+test('cli: lists only the confirmed fixes and warns about the phantom ones', () => {
+  const report = JSON.stringify({
+    vulnerabilities: {
+      deepmerge: lowEntry(true),
+      'serialize-javascript': lowEntry(true, 'moderate'),
+    },
+  });
+  const result = runGate({
+    responses: [
+      { stdout: report, status: 1 },
+      {
+        ...FIX_COMPLETED,
+        lockfile: lockAfter({
+          'node_modules/serialize-javascript': { version: '7.1.3' },
+          'node_modules/parent/node_modules/serialize-javascript': {
+            version: '7.1.3',
+          },
+        }),
+      },
+    ],
+    lockfile: LOCK_BEFORE,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /warning — deepmerge \(low\)/);
+  assert.match(result.stderr, /^ {2}serialize-javascript \(moderate\)/m);
+  assert.doesNotMatch(result.stderr, /^ {2}deepmerge/m);
+});
+
+test('cli: a lockfile without a packages map, or a version-less link entry, compares as absent', () => {
+  // A v1 lockfile has `dependencies` rather than `packages`, and a workspace
+  // link entry has no `version`; neither can show a move, so the finding is
+  // treated as a phantom rather than crashing the comparison.
+  const result = runGate({
+    responses: [
+      { stdout: IN_RANGE_REPORT, status: 1 },
+      {
+        ...FIX_COMPLETED,
+        lockfile: {
+          packages: {
+            'node_modules/serialize-javascript': { link: true },
+          },
+        },
+      },
+    ],
+    lockfile: { lockfileVersion: 1, dependencies: {} },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /warning — serialize-javascript \(low\)/);
+});
+
+test('cli: fails closed when the scratch fix reports an npm error document', () => {
+  const result = runGate({
+    responses: [
+      { stdout: IN_RANGE_REPORT, status: 1 },
+      { stdout: QUICK_ENDPOINT_FAILURE, status: 1 },
+    ],
+    lockfile: LOCK_BEFORE,
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /could not confirm the reported fixes \(npm audit fix did not complete \(exit code 1\)/,
+  );
+  assert.match(result.stderr, /treating each as real/);
+  assert.match(result.stderr, /moderate\/low advisories npm can fix/);
+  assert.equal(result.argv.length, 2, 'the scratch fix is not retried');
+});
+
+test('cli: fails closed when the scratch fix prints no JSON', () => {
+  const result = runGate({
+    responses: [
+      { stdout: IN_RANGE_REPORT, status: 1 },
+      { stdout: 'npm ERR! something', status: 1 },
+    ],
+    lockfile: LOCK_BEFORE,
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /could not confirm the reported fixes \(npm audit fix did not produce parseable JSON/,
+  );
+  assert.match(result.stderr, /moderate\/low advisories npm can fix/);
+});
+
+test('cli: fails closed when the scratch fix hits its deadline', () => {
+  const result = runGate({
+    stdout: IN_RANGE_REPORT,
+    status: '1',
+    fixTimeout: true,
+    lockfile: LOCK_BEFORE,
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /could not confirm the reported fixes \(npm audit fix did not run: .*ETIMEDOUT/,
+  );
+  assert.match(result.stderr, /moderate\/low advisories npm can fix/);
+  assert.equal(result.argv.length, 1);
+});
+
+test('cli: fails closed when there is no lockfile to compare against', () => {
+  const result = runGate({ stdout: IN_RANGE_REPORT, status: '1' });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /could not confirm the reported fixes \(cannot read .*package-lock\.json/,
+  );
+  assert.match(result.stderr, /moderate\/low advisories npm can fix/);
+  assert.equal(result.argv.length, 1, 'nothing to copy, so npm is not asked');
 });
 
 test('cli: exits 0 when the only low advisory needs a semver-major upgrade', () => {
