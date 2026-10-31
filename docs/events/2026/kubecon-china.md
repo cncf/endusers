@@ -29,13 +29,18 @@ Kubernetes, OpenStack, PyTorch and dozens of other open technologies.
 Speakers who shared their slides have them attached to their sessions in the
 schedule.
 
-## Sessions from End User member organizations
+## Sessions from end user organizations
 
 The event published no end user track, so the sessions below are those whose
-speakers listed a [CNCF End User member](/community/members) as their company
-in the official schedule. One member organization appears: Ant Group, listed
-in the [CNCF landscape](https://landscape.cncf.io/?group=members&view-mode=grid&members=end-user-member)
-as Ant Financial.
+speakers listed an organization that meets the
+[CNCF End User definition](https://www.cncf.io/enduser/#end-user-definition)
+as their company in the official schedule: an organization that uses cloud
+native technologies internally rather than selling or supporting them. They
+include the [CNCF End User member](/community/members) Ant Group alongside
+adopters such as ANTA Group, China Merchants Bank, China Mobile, City Storage
+Systems, Horizon Robotics, INTSIG, Meta, NTT DOCOMO, Sony, Tiger Brokers,
+Trip.com and Viettel, plus researchers from the Beijing Academy of Artificial
+Intelligence, Peng Cheng Laboratory and East China Normal University.
 
 <EndUserTalkSchedule schedule={schedule} />
 
