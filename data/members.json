@@ -34,7 +34,7 @@
       "name": "Adobe",
       "slug": "adobe",
       "logo": "/img/architectures/adobe/Adobe_Wordmark_RGB_Red.svg",
-      "industries": ["Digital Experience", "Digital Media", "Software"],
+      "industries": ["Digital Media", "Software"],
       "projects": ["Argo", "Backstage", "Helm", "Kubernetes"],
       "architectures": [
         {
@@ -1210,7 +1210,7 @@
       "name": "Flipkart",
       "slug": "flipkart",
       "logo": "/img/architectures/flipkart-chaos-engineering/logo.png",
-      "industries": ["Digital Commerce", "E-commerce", "Retail"],
+      "industries": ["Retail"],
       "projects": [
         "Argo",
         "Helm",
@@ -2338,7 +2338,7 @@
       "name": "SNCF",
       "slug": "sncf",
       "logo": "/img/architectures/sncf-onprem/logo.png",
-      "industries": ["Cloud", "Rail", "Software", "Transport"],
+      "industries": ["Cloud", "Software", "Transport"],
       "projects": [
         "Argo",
         "Cluster API",
@@ -2631,7 +2631,7 @@
       "name": "Swisscom",
       "slug": "swisscom",
       "logo": "/img/architectures/swisscom-cloud-native-telco/logo.png",
-      "industries": ["Cloud", "Communication", "Software", "Telecommunication"],
+      "industries": ["Cloud", "Software", "Telecommunication"],
       "projects": [
         "Argo",
         "Cilium",
@@ -3018,7 +3018,7 @@
       "name": "ZEISS",
       "slug": "zeiss",
       "logo": "/img/architectures/zeiss/zeiss-logo-rgb.svg",
-      "industries": ["Optical Manufacturing", "Optics"],
+      "industries": ["Optics"],
       "projects": ["Dapr", "Helm", "KEDA", "Kubernetes", "OpenTelemetry"],
       "architectures": [
         {

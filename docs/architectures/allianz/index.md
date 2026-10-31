@@ -8,7 +8,7 @@ architecture:
     - Financial Services
     - Insurance
   tags:
-    - finance
+    - financial-services
     - insurance
     - europe
     - public cloud

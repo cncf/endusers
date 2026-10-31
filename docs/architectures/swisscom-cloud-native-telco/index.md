@@ -5,7 +5,6 @@ architecture:
   organization: Swisscom (Switzerland) Ltd
   summary: Swisscom has built a cloud native telco platform for the end-to-end automation of its 5G standalone core network and cross-domain resource orchestration.
   industries:
-    - Communication
     - Telecommunication
   tags:
     - cloud native
