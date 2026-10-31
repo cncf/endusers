@@ -13,6 +13,20 @@ const apiUrl = 'https://sessionize.com/api/v2/svi82w6c/view/All';
 // Keep it in step with the human-readable `timezone` label below.
 const timezone = 'MST (UTC−7)';
 const utcOffset = '-07:00';
+
+// Slides and recordings are not part of the Sessionize feed (its recordingUrl
+// is empty for every End User Talk), so maintainers curate them by session id
+// in data/end-user-talk-links.json and the collector merges them into each
+// talk on every refresh. scripts/validate-end-user-talks.mjs checks the
+// overlay's shape and that every id still names a talk.
+const linksPath = new URL('../data/end-user-talk-links.json', import.meta.url);
+const links = new Map(
+  (existsSync(linksPath)
+    ? JSON.parse(readFileSync(linksPath, 'utf8')).links
+    : []
+  ).map((entry) => [entry.id, entry]),
+);
+
 const response = await fetch(apiUrl);
 if (!response.ok) throw new Error(`Sessionize API returned ${response.status}`);
 const schedule = await response.json();
@@ -85,13 +99,23 @@ for (const session of sessions) {
     };
     day.slots.push(slot);
   }
-  slot.talks.push({
+  const curated = links.get(session.id) ?? {};
+  const talk = {
     id: session.id,
     title: session.title,
     speakers: names.join(', '),
     room,
     url: `${sourceUrl}?id=${session.id}`,
-  });
+    // Sessionize separates abstract paragraphs with CRLF; the component splits
+    // on blank lines, so normalize to LF and trim stray whitespace.
+    description: session.description?.replaceAll('\r\n', '\n').trim() || '',
+  };
+  if (curated.slides) talk.slides = curated.slides;
+  // A curated recording wins over the feed's, which the feed has never
+  // carried; the fallback is there for the day Sessionize starts to.
+  const recording = curated.recording || session.recordingUrl;
+  if (recording) talk.recording = recording;
+  slot.talks.push(talk);
 }
 
 const data = {

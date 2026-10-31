@@ -72,12 +72,19 @@ function dayNav(page) {
 
 // A guard on the fixture itself. Without it every assertion below would
 // degrade into a check over an empty list and this file would pass while
-// proving the schedule renders nothing at all.
+// proving the schedule renders nothing at all. The count is checked against
+// the checked-in file: the coverage build appends a fixture day
+// (tests/e2e/fixtures/data/end-user-talks.json) that the collector's
+// talkCount cannot know about.
 test('the end user talks data exposes a schedule to cover', () => {
   expect(Array.isArray(days)).toBe(true);
   expect(days.length).toBeGreaterThan(0);
   expect(talks.length).toBeGreaterThan(0);
-  expect(talks.length).toBe(schedule.talkCount);
+  const published = loadSiteData('end-user-talks.json', {});
+  const publishedTalks = published.days.flatMap((day) =>
+    day.slots.flatMap((slot) => slot.talks),
+  );
+  expect(publishedTalks.length).toBe(published.talkCount);
 });
 
 test.describe('end user talk schedule on the KubeCon NA 2026 page', () => {
@@ -177,6 +184,37 @@ test.describe('end user talk schedule on the KubeCon NA 2026 page', () => {
         speakers: talk.speakers,
         room: talk.room,
       })),
+    );
+  });
+
+  test('collapses each abstract behind a toggle that opens to its paragraphs', async ({
+    page,
+  }) => {
+    await gotoEvents(page);
+
+    const withAbstract = talks.filter((talk) => talk.description);
+    expect(withAbstract.length).toBeGreaterThan(0);
+
+    // One <details> per talk that has an abstract, all closed on load: the
+    // schedule is a timeline first, and 80+ open abstracts would bury it.
+    const abstracts = page.locator('article').locator('details');
+    await expect(abstracts).toHaveCount(withAbstract.length);
+    expect(
+      await abstracts.evaluateAll((nodes) => nodes.some((node) => node.open)),
+    ).toBe(false);
+
+    // The first abstract is opened the way a reader does, by activating its
+    // summary, and its paragraphs compared to the data split on blank lines.
+    const first = abstracts.first();
+    await first.getByText('Abstract', { exact: true }).click();
+    await expect(first).toHaveJSProperty('open', true);
+    const paragraphs = await first
+      .locator('p')
+      .evaluateAll((nodes) => nodes.map((node) => node.textContent));
+    expect(paragraphs).toEqual(
+      withAbstract[0].description
+        .split(/\n\s*\n/)
+        .filter((part) => part.trim() !== ''),
     );
   });
 

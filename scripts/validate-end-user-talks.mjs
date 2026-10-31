@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { checkUrl, reportAndExit } from './lib/validate-utils.mjs';
 
 // src/components/EndUserTalkSchedule renders `sourceUrl`, `apiUrl` and every
@@ -22,10 +22,21 @@ import { checkUrl, reportAndExit } from './lib/validate-utils.mjs';
 // the same characters.
 const SCHEDULE_HOST = 'events.linuxfoundation.org';
 const API_HOST = 'sessionize.com';
+// Recordings are published on the CNCF YouTube channel; the short host is
+// what a share button hands a maintainer.
+const RECORDING_HOSTS = ['youtube.com', 'youtu.be'];
 
 const data = JSON.parse(
   readFileSync(new URL('../data/end-user-talks.json', import.meta.url)),
 );
+// The hand-maintained overlay the collector merges into each talk. Its ids
+// are checked against the schedule below so a talk that leaves Sessionize
+// cannot leave an orphaned link behind, and each generated talk is checked
+// against it so a snapshot regenerated before the overlay was edited fails.
+const linksPath = new URL('../data/end-user-talk-links.json', import.meta.url);
+const linksDocument = existsSync(linksPath)
+  ? JSON.parse(readFileSync(linksPath))
+  : { links: [] };
 const errors = [];
 
 function checkLink(path, field, value, host) {
@@ -50,12 +61,98 @@ try {
   schedulePath = null;
 }
 
+const LINKS_PATH = 'end-user-talk-links';
+const curated = new Map();
+if (!Array.isArray(linksDocument?.links)) {
+  errors.push({
+    path: LINKS_PATH,
+    severity: 'error',
+    message: 'must carry a links array',
+  });
+}
+for (const [index, entry] of (Array.isArray(linksDocument?.links)
+  ? linksDocument.links
+  : []
+).entries()) {
+  const path = `${LINKS_PATH} links[${index}]`;
+  if (typeof entry?.id !== 'string' || !entry.id) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: 'id must be a non-empty string',
+    });
+    continue;
+  }
+  if (curated.has(entry.id)) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: `duplicate id ${entry.id}`,
+    });
+    continue;
+  }
+  const previous = Array.from(curated.keys()).at(-1);
+  if (previous !== undefined && previous.localeCompare(entry.id, 'en') > 0) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: `id ${entry.id} is out of order; keep links sorted by id`,
+    });
+  }
+  if (!entry.slides && !entry.recording) {
+    errors.push({
+      path,
+      severity: 'error',
+      message: 'must carry slides, recording or both',
+    });
+  }
+  checkUrl(errors, path, 'slides', entry.slides, { allowEmpty: true });
+  checkUrl(errors, path, 'recording', entry.recording, {
+    allowEmpty: true,
+    allowedHostSuffixes: RECORDING_HOSTS,
+  });
+  curated.set(entry.id, entry);
+}
+const seenIds = new Set();
+
 let talkCount = 0;
 for (const day of Array.isArray(data?.days) ? data.days : []) {
   for (const slot of Array.isArray(day?.slots) ? day.slots : []) {
     for (const talk of Array.isArray(slot?.talks) ? slot.talks : []) {
       talkCount += 1;
       const path = `end-user-talks ${typeof talk?.id === 'string' ? talk.id : 'unknown'}`;
+      seenIds.add(talk?.id);
+      if (typeof talk?.description !== 'string') {
+        errors.push({
+          path,
+          severity: 'error',
+          message:
+            'description must be a string (empty when Sessionize has none)',
+        });
+      }
+      // The generated links are the overlay's, or the feed's recording when
+      // the overlay has none for this talk; a curated slides link the
+      // snapshot lacks means the collector has not been re-run.
+      const entry = curated.get(talk?.id);
+      if (entry?.slides && talk.slides !== entry.slides) {
+        errors.push({
+          path,
+          severity: 'error',
+          message: `slides does not match end-user-talk-links.json; re-run npm run collect:end-user-talks`,
+        });
+      }
+      if (entry?.recording && talk.recording !== entry.recording) {
+        errors.push({
+          path,
+          severity: 'error',
+          message: `recording does not match end-user-talk-links.json; re-run npm run collect:end-user-talks`,
+        });
+      }
+      checkUrl(errors, path, 'slides', talk?.slides, { allowEmpty: true });
+      checkUrl(errors, path, 'recording', talk?.recording, {
+        allowEmpty: true,
+        allowedHostSuffixes: RECORDING_HOSTS,
+      });
       const before = errors.length;
       checkLink(path, 'url', talk?.url, SCHEDULE_HOST);
 
@@ -71,6 +168,16 @@ for (const day of Array.isArray(data?.days) ? data.days : []) {
         });
       }
     }
+  }
+}
+
+for (const id of curated.keys()) {
+  if (!seenIds.has(id)) {
+    errors.push({
+      path: LINKS_PATH,
+      severity: 'error',
+      message: `id ${id} names no talk in end-user-talks.json; remove the stale entry`,
+    });
   }
 }
 

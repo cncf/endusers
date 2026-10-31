@@ -53,6 +53,7 @@ const COVERAGE_GATED = [
   'community-people-unknown-section.spec.js',
   'data-fixtures.spec.js',
   'data-variants.spec.js',
+  'end-user-talk-links.spec.js',
   'events-catalog-fixture.spec.js',
   'focus-trap-empty-dialog.spec.js',
   'group-link-status-variant.spec.js',

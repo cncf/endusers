@@ -74,6 +74,7 @@ const VALIDATORS = new Map([
   ['case-studies.json', 'validate-case-studies.mjs'],
   ['community-groups.json', 'validate-community-groups.mjs'],
   ['community-people.json', 'validate-community-people.mjs'],
+  ['end-user-talks.json', 'validate-end-user-talks.mjs'],
   ['members.json', 'validate-members.mjs'],
   ['metrics.json', 'validate-metrics.mjs'],
   ['radar-reports.json', 'validate-radar-reports.mjs'],
@@ -120,6 +121,13 @@ const EXPECTED = new Map([
         'people.staff: Coverage Fixture Unparseable Website image must be an https URL on an allowed host: "/img/favicon.svg"',
         'people.staff: Coverage Fixture Unparseable Website is not on the roster',
       ],
+    },
+  ],
+  [
+    'data/end-user-talks.json',
+    {
+      why: 'appends one fixture day whose two talks carry slides and recording links on the hosts the validator admits, which is a shape the real file will hold once the event has happened',
+      adds: [],
     },
   ],
   [

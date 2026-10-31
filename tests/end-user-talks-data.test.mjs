@@ -246,6 +246,33 @@ test('each talk carries the text the card renders', () => {
   }
 });
 
+// The card splits the abstract on blank lines and renders slides and recording
+// links when present, so a missing description or a non-URL link reaches the
+// page as a broken toggle or a dead anchor.
+test('each talk carries a string abstract and only https links', () => {
+  for (const { talk, where } of talks) {
+    assert.equal(
+      typeof talk.description,
+      'string',
+      `${where}: description must be a string`,
+    );
+    assert.equal(
+      talk.description.includes('\r'),
+      false,
+      `${where}: description keeps a CRLF the collector should drop`,
+    );
+    for (const field of ['slides', 'recording']) {
+      if (field in talk) {
+        assert.match(
+          talk[field],
+          /^https:\/\//,
+          `${where}: ${field} must be an https URL`,
+        );
+      }
+    }
+  }
+});
+
 // Talk ids are session ids, which are unique upstream. A duplicate means two
 // cards were built from one session, so the page claims a talk that is not on
 // the official schedule.

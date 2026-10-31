@@ -117,6 +117,38 @@
   margin: 0;
 }
 
+.abstract {
+  color: var(--ifm-color-emphasis-800);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  margin-top: 0.6rem;
+}
+
+.abstract summary {
+  color: var(--ifm-color-primary);
+  cursor: pointer;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.abstract summary:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 4px;
+}
+
+.schedule .abstract p {
+  margin: 0.5rem 0 0;
+}
+
+.schedule .links {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  font-weight: 700;
+  gap: 0.4rem 1.25rem;
+  margin: 0.6rem 0 0;
+}
+
 .location {
   border-left: 1px solid var(--ifm-color-emphasis-200);
   padding-left: 1.25rem;
