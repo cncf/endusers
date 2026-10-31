@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -8,6 +8,61 @@ import { readWorkflow } from './helpers-workflows.mjs';
 
 const repoRoot = resolveRepoRoot(import.meta.url);
 const workflow = readWorkflow('ci.yml').doc;
+
+// A suite is a candidate for the focused path when its source resolves the
+// repository root and names an authored tree or a root document. The scan
+// over-approximates on purpose (fixture strings match too); each hit must be
+// on the focused list or in FULL_PATH_ONLY with the reason it stays off it, so
+// the next doc-reading suite fails here instead of being skipped silently.
+const RESOLVES_REPO_ROOT =
+  /resolveRepoRoot\(import\.meta\.url\)|new URL\('\.\.\/?', import\.meta\.url\)/u;
+const NAMES_AUTHORED_DOCUMENT =
+  /['"`](?:docs|blog|adr)(?:\/[^'"`]*)?['"`]|['"`](?:CODE_OF_CONDUCT|CONTENT-SECURITY|CONTRIBUTING|GOVERNANCE|MAINTAINERS|README|SECURITY)\.md['"`]/u;
+const FULL_PATH_ONLY = new Map([
+  [
+    'tests/architecture-catalog-contract.test.mjs',
+    'docs/architectures/ pages are generated; isAuthoredDocumentPath() excludes them',
+  ],
+  [
+    'tests/architecture-submission-contract.test.mjs',
+    'docs/architectures/ pages are generated; isAuthoredDocumentPath() excludes them',
+  ],
+  [
+    'tests/events-page.test.mjs',
+    'docs/events/index.md is data-backed; the classifier sends it down the full path',
+  ],
+  [
+    'tests/issue-template-contract.test.mjs',
+    'blog/authors.yml is data, not a Markdown document',
+  ],
+  [
+    'tests/content-only-ci.test.mjs',
+    'classifier fixtures name documents as inputs, not as contracts',
+  ],
+  ['tests/coverage-report-source-files.test.mjs', 'fixture file names only'],
+  ['tests/e2e-coverage-accepted-regions.test.mjs', 'fixture file names only'],
+  [
+    'tests/e2e-data-dependent-skips.test.mjs',
+    'the match is a social-link handle, not a tree',
+  ],
+  [
+    'tests/ignore-file-contract.test.mjs',
+    'ignore-file globs, not document reads',
+  ],
+  ['tests/mdx-active-content.test.mjs', 'fixture file names only'],
+]);
+
+function documentReadingSuites() {
+  return readdirSync(join(repoRoot, 'tests'))
+    .filter((name) => name.endsWith('.test.mjs'))
+    .map((name) => `tests/${name}`)
+    .filter((suite) => {
+      const source = readFileSync(join(repoRoot, suite), 'utf8');
+      return (
+        RESOLVES_REPO_ROOT.test(source) && NAMES_AUTHORED_DOCUMENT.test(source)
+      );
+    });
+}
 
 function step(jobName, name) {
   const found = workflow.jobs[jobName]?.steps.find(
@@ -75,7 +130,24 @@ test('keeps content contracts and the production build on the focused path', () 
   }
   for (const suite of suites) {
     assert.ok(existsSync(join(repoRoot, suite)), `${suite} does not exist`);
+    assert.ok(
+      !FULL_PATH_ONLY.has(suite),
+      `${suite} is on the focused path and in FULL_PATH_ONLY; drop one`,
+    );
   }
+  const candidates = documentReadingSuites();
+  assert.deepEqual(
+    candidates.filter(
+      (suite) => !suites.includes(suite) && !FULL_PATH_ONLY.has(suite),
+    ),
+    [],
+    'a suite reads an authored tree but is neither on the focused path nor excluded with a reason',
+  );
+  assert.deepEqual(
+    [...FULL_PATH_ONLY.keys()].filter((suite) => !candidates.includes(suite)),
+    [],
+    'FULL_PATH_ONLY names a suite the scan no longer detects; drop the stale entry',
+  );
   assert.equal(
     step('validate', 'Build production site').run,
     'npm run build:production',
