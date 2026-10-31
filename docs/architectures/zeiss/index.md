@@ -6,7 +6,6 @@ architecture:
   summary: Our Business Enablement & IT team develops, designs, and operates the order fulfillment platform that underpins this process.
   industries:
     - Optics
-    - Optical Manufacturing
   tags:
     - public cloud
     - mass-manufacturing

@@ -7,7 +7,6 @@ architecture:
   industries:
     - Software
     - Digital Media
-    - Digital Experience
   tags:
     - adobe
     - ci-cd

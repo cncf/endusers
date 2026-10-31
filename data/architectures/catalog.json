@@ -4,7 +4,7 @@
     "title": "Scaling Adobe’s Service Delivery Foundation with a Cell-based Architecture",
     "organization": "Adobe",
     "summary": "Security, Compliance, Support and Cost Efficiency are cross-cutting concerns for both infrastructure and developer experience.",
-    "industries": ["Software", "Digital Media", "Digital Experience"],
+    "industries": ["Software", "Digital Media"],
     "tags": [
       "adobe",
       "ci-cd",
@@ -33,7 +33,13 @@
     "organization": "Allianz Direct",
     "summary": "The PE team is internally organised in DDOs - Distributed DevOps, where each ddo owns a Domain. This setup follows the reverse Conway manoeuver where the reference architecture structure dictates the teams setup.",
     "industries": ["Financial Services", "Insurance"],
-    "tags": ["finance", "insurance", "europe", "public cloud", "aws"],
+    "tags": [
+      "financial-services",
+      "insurance",
+      "europe",
+      "public cloud",
+      "aws"
+    ],
     "projects": ["Kubernetes", "Helm", "Argo"],
     "sourceUrl": "https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/allianz",
     "sourceCommit": "3ddf917facd0aea9694cc9c12c52e583fd2f86cb",
@@ -127,7 +133,7 @@
     "title": "From Afterthought to Practice: Flipkart’s Multi-Tenant Chaos Engineering Platform on LitmusChaos",
     "organization": "Flipkart Internet Pvt. Ltd.",
     "summary": "Flipkart is one of India’s leading digital commerce companies, running hundreds of tightly coupled microservices across Kubernetes and VM workloads that must withstand the traffic surges of Big Billion Days and other festive sales.",
-    "industries": ["E-commerce", "Retail", "Digital Commerce"],
+    "industries": ["Retail"],
     "tags": [
       "Chaos engineering",
       "Resilience",
@@ -135,7 +141,7 @@
       "Multi-tenancy",
       "India",
       "E-commerce",
-      "Site reliability"
+      "reliability"
     ],
     "projects": [
       "LitmusChaos",
@@ -160,13 +166,14 @@
     "title": "A Private Cloud \"Kubernetes Service\" deployable anywhere.",
     "organization": "SNCF",
     "summary": "This reference architecture describes SNCF's second generation on-premise Kubernetes platform, built on a bare-metal, open source OpenStack infrastructure to provide container orchestration and scheduling at scale.",
-    "industries": ["Transport", "Rail", "Software", "Cloud"],
+    "industries": ["Transport", "Software", "Cloud"],
     "tags": [
       "cloud native",
       "private cloud",
       "kubernetes",
       "france",
-      "sovereignty"
+      "sovereignty",
+      "rail"
     ],
     "projects": [
       "Argo",
@@ -194,7 +201,7 @@
     "title": "End-to-End Cloud Native Telco Platform Automation at Swisscom",
     "organization": "Swisscom (Switzerland) Ltd",
     "summary": "Swisscom has built a cloud native telco platform for the end-to-end automation of its 5G standalone core network and cross-domain resource orchestration.",
-    "industries": ["Communication", "Telecommunication"],
+    "industries": ["Telecommunication"],
     "tags": [
       "cloud native",
       "telco",
@@ -233,7 +240,7 @@
     "title": "A modern and sovereign Private Cloud «Kubernetes Service» for Swiss-based enterprises",
     "organization": "Swisscom (Switzerland) Ltd",
     "summary": "Our next generation Private Cloud Container as a Service offering «Kubernetes Service» for the B2B market addresses customer's need for scalable and highly available Kubernetes workload as a flexible and secure IT foundation.",
-    "industries": ["Communication", "Telecommunication", "Software", "Cloud"],
+    "industries": ["Telecommunication", "Software", "Cloud"],
     "tags": [
       "service-delivery",
       "cloud native",
@@ -272,7 +279,7 @@
     "title": "ZEISS Vision Care - Order Fulfillment",
     "organization": "ZEISS",
     "summary": "Our Business Enablement & IT team develops, designs, and operates the order fulfillment platform that underpins this process.",
-    "industries": ["Optics", "Optical Manufacturing"],
+    "industries": ["Optics"],
     "tags": [
       "public cloud",
       "mass-manufacturing",

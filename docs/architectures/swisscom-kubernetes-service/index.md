@@ -5,7 +5,6 @@ architecture:
   organization: Swisscom (Switzerland) Ltd
   summary: Our next generation Private Cloud Container as a Service offering «Kubernetes Service» for the B2B market addresses customer's need for scalable and highly available Kubernetes workload as a flexible and secure IT foundation.
   industries:
-    - Communication
     - Telecommunication
     - Software
     - Cloud

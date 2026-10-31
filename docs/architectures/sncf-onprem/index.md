@@ -6,7 +6,6 @@ architecture:
   summary: This reference architecture describes SNCF's second generation on-premise Kubernetes platform, built on a bare-metal, open source OpenStack infrastructure to provide container orchestration and scheduling at scale.
   industries:
     - Transport
-    - Rail
     - Software
     - Cloud
   tags:
@@ -15,6 +14,7 @@ architecture:
     - kubernetes
     - france
     - sovereignty
+    - rail
   projects:
     - Argo
     - Cluster API
