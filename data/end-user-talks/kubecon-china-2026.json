@@ -2,17 +2,34 @@
   "description": "Generated from the official Sessionize API by npm run collect:end-user-talks. Do not hand-edit.",
   "sourceUrl": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/",
   "apiUrl": "https://sessionize.com/api/v2/yo76vzdv/view/All",
-  "selection": "presented by speakers from CNCF End User member organizations",
+  "selection": "presented by speakers from organizations that meet the CNCF End User definition",
   "location": "Shanghai",
-  "generatedAt": "2026-10-31T19:40:42.964Z",
+  "generatedAt": "2026-10-31T20:45:58.529Z",
   "timezone": "CST (UTC+8)",
-  "talkCount": 8,
+  "talkCount": 29,
   "days": [
     {
       "date": "2026-09-08",
       "id": "tuesday-september-8",
       "label": "Tuesday, September 8",
       "slots": [
+        {
+          "start": "2026-09-08T09:24:00+08:00",
+          "end": "2026-09-08T09:30:00+08:00",
+          "startLabel": "9:24 AM",
+          "endLabel": "9:30 AM",
+          "talks": [
+            {
+              "id": "1317065",
+              "title": "Tidal Auto-scaling for Training and Inference Based on Kubernetes + KEDA",
+              "speakers": "Jun Zheng, Tan Pei Xiang",
+              "room": "7F | Grand Ballroom II + III",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1317065",
+              "description": "CMB AI assistants exhibit distinct peak and off-peak traffic patterns. During off-peak hours, the platform allocates idle GPUs to LoRA incremental training. As peak traffic arrives, KEDA scales out vLLM inference services based on request load, prompting training tasks to save progress at secure checkpoints and proactively release capacity. Once traffic subsides, training automatically resumes from the saved checkpoints. This solution prioritizes online services to meet latency targets while continuously leveraging off-peak resources for model iteration, achieving coordinated optimization between inference SLOs and training efficiency.",
+              "recording": "https://www.youtube.com/watch?v=x19cukPbgkk"
+            }
+          ]
+        },
         {
           "start": "2026-09-08T10:13:00+08:00",
           "end": "2026-09-08T10:18:00+08:00",
@@ -48,6 +65,57 @@
           ]
         },
         {
+          "start": "2026-09-08T11:00:00+08:00",
+          "end": "2026-09-08T12:15:00+08:00",
+          "startLabel": "11:00 AM",
+          "endLabel": "12:15 PM",
+          "talks": [
+            {
+              "id": "1224095",
+              "title": "📚 Building Portable Large Models on Heterogeneous AI Accelerators with FlagOS",
+              "speakers": "Mengsi Lyu, Hongjun Zhang, Yufeng Lyu",
+              "room": "7F | Pearl Hall",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1224095",
+              "description": "Porting large models across diverse accelerators and running them efficiently remains difficult. Developers can download LLMs and multimodal models such as Qwen, MiniMax, and DeepSeek, yet the runtime path below PyTorch, vLLM, or SGLang is still fragmented across vendor libraries, compiler stacks, communication backends, and framework patches.\nThis tutorial introduces how to port large models onto various AI accelerators by using the FlagOS open-source stack. we will walk through the path from PyTorch operators to training and inference with vLLM and SGLang.\nAudiences will learn how Triton enables portable kernel programming, how FlagGems provide PyTorch operator coverage, how unified plugins of FlagOS for vLLM, Megatron, VeRL etc. support training and inference on different AI accelerators, and KernelGen help auto-coding for different accelerators. This tutorial shows how developers can bring open models to more hardware, with less porting effort and stronger community collaboration.",
+              "recording": "https://www.youtube.com/watch?v=OD06dDCjU6w"
+            }
+          ]
+        },
+        {
+          "start": "2026-09-08T11:00:00+08:00",
+          "end": "2026-09-08T11:30:00+08:00",
+          "startLabel": "11:00 AM",
+          "endLabel": "11:30 AM",
+          "talks": [
+            {
+              "id": "1225136",
+              "title": "8 Million Tasks Daily: Driving Efficiency in Multi-Tenant Data Platforms at Horizon Robotics",
+              "speakers": "JIanxiang Sun, Shuangkun Tian",
+              "room": "1F | Mandarin Hall I",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1225136",
+              "description": "As autonomous driving shifts to end-to-end models, Horizon Robotics faces unprecedented scale. Thousands of concurrent, sub-minute workflows pushed infrastructure to its limits, where traditional orchestration and \"Informer Choke\" caused severe instability and resource waste.\nWe re-architected our platform to handle 8 million daily tasks, saving 1,000+ CPU nodes. We will dive into:\n1. Orchestration Re-engineering: Replacing per-workflow agents with a centralized Argo Workflows Agent Service. This \"Agentless\" approach cut infrastructure costs by 2.4M CNY/month and saved 1,000+ CPU nodes.\n2. Scheduling & State Optimization: Overcoming Informer bottlenecks by refactoring metadata, reducing VolcanoJob size by 30%, and slashing sync latency from 4 minutes to <10 seconds.\n3. Stability & Multi-Tenancy: Leveraging Kueue and Volcano to implement elastic quotas and resolve preemption conflicts, ensuring system stability in large-scale multi-tenant environments.",
+              "recording": "https://www.youtube.com/watch?v=23CtXewRvZM"
+            }
+          ]
+        },
+        {
+          "start": "2026-09-08T11:28:00+08:00",
+          "end": "2026-09-08T11:33:00+08:00",
+          "startLabel": "11:28 AM",
+          "endLabel": "11:33 AM",
+          "talks": [
+            {
+              "id": "1222021",
+              "title": "Project Lightning Talk: Multi-cluster Orchestration System: Karmada Updates and Use Cases",
+              "speakers": "Hongcai Ren, Yiheng Ci",
+              "room": "5F | 5B + C",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1222021",
+              "description": "Karmada (Kubernetes Armada) is a Kubernetes management system that enables you to run your cloud-native applications across multiple Kubernetes clusters and clouds. \n\nIn this presentation, the maintainer of the Karmada project will share: \n\n- A Brief introduction to Karmada.\n- New features over the last year\n- Real-world case studies\n- Overview of the community  \n- Roadmap",
+              "recording": "https://www.youtube.com/watch?v=iH420G8zjQ4"
+            }
+          ]
+        },
+        {
           "start": "2026-09-08T11:45:00+08:00",
           "end": "2026-09-08T12:15:00+08:00",
           "startLabel": "11:45 AM",
@@ -61,6 +129,15 @@
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1189573",
               "description": "In 2025, after nearly eight years of incubation within CNCF, the Dragonfly project officially graduated. But getting there wasn't easy. Growing from an internal project at Alibaba to a full-community-driven CNCF graduated project came with its fair share of challenges. In this talk, we will discuss the inner workings of Dragonfly's journey to its current state.\n\nWe’ll cover our lessons in community governance, including how we evolved from a small group of maintainers to transparent decision-making and attracted global contributors through effective open-source practices. \n\nOn the technical side, the increasing popularity of LLMs has made the efficient distribution of model files at the GB or even TB scale a significant challenge. We'll dive into how Dragonfly's P2P capabilities have evolved to tackle the challenge of pulling massive model files concurrently across Kubernetes clusters, along with best practices we've developed for AI inference and training workloads.",
               "recording": "https://www.youtube.com/watch?v=WsswXfiMnYU"
+            },
+            {
+              "id": "1225364",
+              "title": "Scaling Digital Employees at China Merchants Bank in Production: A Controlled AI Agents Approach",
+              "speakers": "Jiahang Xu",
+              "room": "1F | Mandarin Hall I",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1225364",
+              "description": "China Merchants Bank has transitioned from AI prototypes to large-scale internal deployment of Large Language Models, AI Agents for Digital Employees. To manage the inherent unpredictability of these autonomous systems in the regulated banking sector, the bank utilizes an “In-Control” architectural pattern built on Platform Engineering principles for its internal operations. This framework rests on three pillars: Platform Engineering for AI: Streamlines internal deployment using standardized “AI Agent-as-a-Service” templates to empower Digital Employees. Secure Sandboxing: Employs Kubernetes-native micro-VMs to execute agent-generated code in isolation, protecting core infrastructure. Financial Guardrails: Implements real-time monitoring and deterministic policies to ensure compliance and budget control within the enterprise. This structured approach allows the bank to manage internal Digital Employees in cloud environments while maintaining strict data sovereignty and auditability.",
+              "recording": "https://www.youtube.com/watch?v=KRuU_nhoMH0"
             }
           ]
         },
@@ -78,6 +155,24 @@
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1174542",
               "description": "Dragonfly provides efficient, stable, and secure file distribution and image acceleration using P2P technology within cloud-native architectures. This talk will briefly introduce Dragonfly and highlight the features of its latest version. Key updates include enhanced security and new functionalities tailored for more efficient and robust model distribution. We will also demonstrate how Dragonfly preheats and distributes AI models (packaged as OCI Artifacts) to read-only volumes in Kubernetes, enabling faster deployments. Additionally, we will introduce P2P-based state snapshot and restore capabilities in AI agent scenarios.",
               "recording": "https://www.youtube.com/watch?v=KerhT-0ZCRQ"
+            },
+            {
+              "id": "1221808",
+              "title": "How Intsig Serves Billions of Document Scans: GPU Virtualization at Scale with HAMi",
+              "speakers": "Xiao Zhang, Walter Duan",
+              "room": "7F | Grand Ballroom II + III",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1221808",
+              "description": "Intsig built CamScanner (300M downloads) and runs one of China's busiest document processing platforms. Their GPU problem is unusual: they don't juggle dozens of models — they run one thing (OCR) at absurd concurrency across ~1,000 cards. The bottleneck isn't placement, it's queue time. People waiting in line.\n\nThey moved from Tencent QGPU to HAMi, the CNCF Sandbox project, and got virtualization, scheduling, and monitoring in one package. Queue times dropped. Utilization went up.\n\nThis isn't just an Intsig talk. HAMi runs in production at SF Express (GPU fleet cut from 1,400 to 1,000 cards), China Merchants Bank (10,000+ GPUs, utilization 20%→80%), NIO (10x CI efficiency), and ICBC (utilization 20%→70%). We'll share patterns that work and anti-patterns that waste money — like why slicing GPUs below 1/6 backfires.\n\nA quick Chaterm demo closes the talk — Intsig's open-source AI terminal for GPU cluster ops in plain language.",
+              "recording": "https://www.youtube.com/watch?v=h_Ofrf1_poE"
+            },
+            {
+              "id": "1224932",
+              "title": "Spec-Driven Evolution: How AI Agents are Rewriting the OpenStack/K8s Playbook",
+              "speakers": "Bertrand Souville, Muhammad Hamza",
+              "room": "1F | Mandarin Hall I",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1224932",
+              "description": "How do you turn complex Telco standards into production-ready code—without months of manual design and validation?\n\nThis session introduces a spec-driven development workflow using AI coding agents to accelerate the design, implementation, and testing of features in OpenStack Tacker. \nWe show how AI agents navigate large codebases to propose architectural solutions and generate test suites directly from specifications.\n\nTwo use cases are presented: (1) Cloud-native high availability, with AI-assisted design of Kubernetes Operators enabling redundancy and fast failover toward 99.999% SLA; and (2) Massive-scale vRAN, with a Leader–Conductor style coordination model inspired by OpenStack orchestration systems coordinating thousands of VNFs/CNFs, along with automated edge-case test generation.\n\nAttendees will learn a repeatable workflow for combining AI with upstream collaboration to accelerate the delivery of carrier-grade systems while maintaining OpenInfra and Kubernetes standards.",
+              "recording": "https://www.youtube.com/watch?v=zwrBAzEkOlk"
             }
           ]
         },
@@ -88,6 +183,15 @@
           "endLabel": "4:00 PM",
           "talks": [
             {
+              "id": "1209151",
+              "title": "KernelAgent: Hardware-Guided GPU Kernel Optimization via Multi-Agent Orchestration",
+              "speakers": "Kaiming Cheng, Jack Khuu, Laura Wang",
+              "room": "7F | Grand Ballroom II + III",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1209151",
+              "description": "Recently, the PyTorch team released KernelAgent, an open agentic system achieving 100% correctness across all 250 L1/L2/L3 KernelBench tasks. We extend that work by adding a hardware-guided optimization layer to the existing framework. Building on the previous correctness-focused pipeline, KernelAgent integrates GPU hardware-performance signals into a closed-loop multi-agent workflow to guide the optimization for Triton Kernels.\n\nWe evaluate the kernels generated by KernelAgent on all 100 L1 KernelBench tasks. Overall, it achieved 2.02x speedup over generated kernels from earlier versions. On average, KernelAgent generated 1.56x speedup when compared to default torch.compile, outperforming 65 of 100 KernelBench L1 tasks and achieving 89% of the hardware roofline efficiency on the H100.\n\nThe optimization codebase is located at KernelAgent repo with documentation to get started. We also share a selection of end-to-end KernelAgent optimization artifacts in the open-source repo.",
+              "recording": "https://www.youtube.com/watch?v=vacxLz4jVMQ"
+            },
+            {
               "id": "1219464",
               "title": "Minutes, Not Weeks: Long-Term Memory for AI Applications with PowerMem",
               "speakers": "Yihang Li",
@@ -95,6 +199,92 @@
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1219464",
               "description": "Every AI app eventually needs memory. Most teams hit the same walls: choosing a backend locks them into a later rewrite, wiring retrieval and lifecycle bleeds into every layer, and non-Python teammates have no clean way in.\n\nPowerMem is an open-source (Apache 2.0) memory library that treats these as developer-experience problems. The talk covers the design choices: auto-loading config from .env so the first example is under ten lines of Python; one memory API across five surfaces (Python SDK, pmem CLI with shell, HTTP API with OpenAPI docs, MCP server over SSE/stdio/streamable-http, web dashboard); pluggable storage (OceanBase, PostgreSQL, SQLite) and model providers so prototype and production share one code path; schema migration and backup/restore baked into the CLI.\n\nAttendees leave with patterns for multi-surface developer experience and a practical checklist for evaluating memory libraries.",
               "recording": "https://www.youtube.com/watch?v=-tratkapeJg"
+            },
+            {
+              "id": "1224322",
+              "title": "Building AI4S Systems for Scientific Research on Kubernetes",
+              "speakers": "Jiamu Liu, Yanjun Chen",
+              "room": "1F | Mandarin Hall II",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1224322",
+              "description": "Researchers are exploring how AI workflows can accelerate science in recent AI waves. Most existing workflows are built for AI/ML model training, and they fall short for domain-specific scientific work that demands traceable, and reproducible workflows.\nTo bridge this gap, China Mobile Research Institute built an AI4S system that unifies computing infrastructure and a zero-code software platform. The infrastructure uses Kubernetes to federate multiple cross-region clusters into a pool of heterogeneous resources. The platform covers the entire research lifecycle, form model training to scientific agent development, allowing researchers to build customized assistants without coding.\nIn collaboration with an RNA-focused biology lab, the system was applied to train a RNA structure prediction model. The resulting model achieved very well performance.\nThis presentation will share the system architecture, design decisions, and key lessons learned from deploying AI in real scientific research.",
+              "recording": "https://www.youtube.com/watch?v=ckgpe95Kz_A"
+            },
+            {
+              "id": "1227863",
+              "title": "10 Years of Cilium: Connecting, Securing, and Simplifying the Cloud Native Stack",
+              "speakers": "Liyi Huang, Tingjin Ye, Yashi Su",
+              "room": "5F | 5B + C",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1227863",
+              "description": "Join us as we celebrate a decade of Cilium, now the de-facto standard CNI for Kubernetes and a cornerstone of cloud native networking and security. This session provides updates on the latest Cilium release and highlights how its unified eBPF-powered stack is transforming Kubernetes environments and beyond by replacing fragmented toolchains with seamless, secure, scalable, and simplified solutions.\n\nWe’ll showcase how Anta Group used the 'Less is More' approach in their data center architecture by consolidating core networking, load balancing, and observability into Cilium and how Alibaba is using Tetragon to secure AI agents beyond just prompt guardrails. These stories will demonstrate how Cilium is streamlining operations and reshaping the cloud native stack, cementing Cilium’s role as the networking and security data plane for modern infrastructure for the next decade to come.",
+              "recording": "https://www.youtube.com/watch?v=pg2ZXH9rAqE"
+            }
+          ]
+        },
+        {
+          "start": "2026-09-08T16:15:00+08:00",
+          "end": "2026-09-08T16:45:00+08:00",
+          "startLabel": "4:15 PM",
+          "endLabel": "4:45 PM",
+          "talks": [
+            {
+              "id": "1224457",
+              "title": "Cybertwin-based Cloud Native Network (CCNN): Network Architecture Innovation and Practice",
+              "speakers": "Dandan Liang, Weizhou Lan",
+              "room": "1F | Mandarin Hall II",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1224457",
+              "description": "Driven by IoT and AI, future networks demand an architectural revolution. A CCNN is proposed that converges RAN, IP bearer and data center networks, using Kubernetes as the network OS to unify virtualization, scheduling, and management of compute, storage and network resources, thus enabling secure, cross-domain resource integration. The demo comprises: a Cybertwin-based personal agent service; the security agent function of Cybertwin that implements zero-trust; the data agent function that provides secure multi-dimensional personal data services; the communication agent function that delivers a cloud-native wireless access method for users; finally, a distributed medical collaborative inference based on the user’s personal agent, which demonstrates application-centric unified scheduling and intelligent orchestration of transmission, computing, and storage resources, laying an original, cutting-edge foundation for resource networking and intelligent scheduling in cloud-native networks.",
+              "recording": "https://www.youtube.com/watch?v=VsqfXMa09ao"
+            }
+          ]
+        },
+        {
+          "start": "2026-09-08T16:22:00+08:00",
+          "end": "2026-09-08T16:27:00+08:00",
+          "startLabel": "4:22 PM",
+          "endLabel": "4:27 PM",
+          "talks": [
+            {
+              "id": "1212199",
+              "title": "⚡Edge Resource Control in KubeEdge:Safely Holding and Releasing Pod Updates for Critical Edge Device",
+              "speakers": "Feng Gao",
+              "room": "7F | Pearl Hall",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1212199",
+              "description": "In safety-critical edge scenarios like drones in flight, autonomous robots, or AGVs/AMRs, an unplanned pod restart can cause motion interruption, safety hazards, or crashes. Traditional Kubernetes assumes updates can happen anytime, but many edge applications need explicit confirmation that the device is safe (landed, parked, or idle) before upgrading.This lightning talk introduces Edge Resource Upgrade Control, a new feature in KubeEdge v1.22.0. By adding the annotation edge.kubeedge.io/hold-upgrade: \"true\" to Deployments, StatefulSets, DaemonSets, or Pods, the edge node intercepts the new Pod and holds it in a pending state inside edged. A new HeldUpgrade PodCondition is reported back to the cloud.On the edge, local logic decides when it is safe. Operators release the hold with:keadm ctl unhold-upgrade pod (pod-name)\nkeadm ctl unhold-upgrade node (node-wide)",
+              "recording": "https://www.youtube.com/watch?v=i9kCcNiwlWo"
+            }
+          ]
+        },
+        {
+          "start": "2026-09-08T16:50:00+08:00",
+          "end": "2026-09-08T16:55:00+08:00",
+          "startLabel": "4:50 PM",
+          "endLabel": "4:55 PM",
+          "talks": [
+            {
+              "id": "1224946",
+              "title": "⚡ Speedy But Sturdy PyTorch Optimizers",
+              "speakers": "Jane Xu",
+              "room": "7F | Pearl Hall",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1224946",
+              "description": "PyTorch strives to offer tested and proven optimizers (think SGD, AdamW, Muon) and we want them to be fast, consistent, and simple to use. We want people to trust our optimizers :D This session will cover how we pushed along each of those dimensions with our latest developments on newer optimizers like Muon, adding more mixed precision (BF16 AdamW), and lifting out-of-the-box performance. We’ll share the new features and algorithms you can try out for driving down your loss curves and, if you’re curious, give insight on how we make things speedier but keep them just as sturdy.",
+              "recording": "https://www.youtube.com/watch?v=uRB3atpKVrM"
+            }
+          ]
+        },
+        {
+          "start": "2026-09-08T17:00:00+08:00",
+          "end": "2026-09-08T17:30:00+08:00",
+          "startLabel": "5:00 PM",
+          "endLabel": "5:30 PM",
+          "talks": [
+            {
+              "id": "1224575",
+              "title": "Redefining LLM Training through Atomic Components and Serverless TaaS",
+              "speakers": "Tan Pei Xiang",
+              "room": "7F | Grand Ballroom II + III",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1224575",
+              "description": "RL (e.g., GRPO) is vital for LLM reasoning, yet current tools are either too rigid or engineering-heavy. Twinkle, co-developed by ModelScope and China Merchants Bank, offers a breakthrough via:\n- Atomic Design: Orchestrate RL loops in ~150 lines. Swap modules (Reward/Loss) like Lego without touching the core.\n- C-S Architecture: Decouples algorithm semantics from GPU orchestration (torchrun/Ray/HTTP).\n- Serverless TaaS: Multi-tenant LoRA pools enable 8+ concurrent tasks on one base model, maximizing resource utility.\nAs a superset of the Tinker API, Twinkle supports FSDP2 and Megatron backends. It solves the flexibility-scale trade-off, enabling true \"Training-as-a-Service.\" We will explore its architecture, rapid GRPO/DPO integration, and financial sector case studies, concluding with the shift toward \"micro-service training\" for Agent RL.",
+              "recording": "https://www.youtube.com/watch?v=qQYzYW0LFNQ"
             }
           ]
         }
@@ -123,6 +313,66 @@
           ]
         },
         {
+          "start": "2026-09-09T10:00:00+08:00",
+          "end": "2026-09-09T10:05:00+08:00",
+          "startLabel": "10:00 AM",
+          "endLabel": "10:05 AM",
+          "talks": [
+            {
+              "id": "1308448",
+              "title": "A Cloud Native Stack from Bare Metal to Tokens for Large-Scale AI Inference",
+              "speakers": "Trong Vinh Nguyen",
+              "room": "7F | Grand Ballroom II + III",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1308448",
+              "description": "We didn't buy all our GPUs/AI chips at once. Years of procurement across different budget cycles left us with a fleet spanning multiple generations-from T4s that still run fine, to L40Ss, A100s, H200s, and the newer B200s-each with different memory capacities, compute profiles, and driver requirements. Managing these as isolated, team-specific bare-metal allocations meant we were sitting on underutilized assets while other teams waited in queue.\n\nThis talk is about how we unified that messy reality into a single platform by layering three open-source ecosystems: OIF at the bare-metal layer, CNCF tooling for GPU pooling and multi-tenant slicing, and PyTorch Foundation projects for serving optimization.\n\nThe result is a Token-as-a-Service platform that treats every GPU in the fleet (old or new) as a productive contributor. We'll share what it took to get there, what we're still figuring out, and where we see this going as model complexity and multi-agent workloads continue to grow.",
+              "recording": "https://www.youtube.com/watch?v=5nTqhPoz9Hs"
+            }
+          ]
+        },
+        {
+          "start": "2026-09-09T11:00:00+08:00",
+          "end": "2026-09-09T11:30:00+08:00",
+          "startLabel": "11:00 AM",
+          "endLabel": "11:30 AM",
+          "talks": [
+            {
+              "id": "1219415",
+              "title": "Escaping the Vendor Trap: A Journey for Migrating Legacy Infrastructure to OpenStack and K8s",
+              "speakers": "Trong Vinh Nguyen, Quoc Dat Le",
+              "room": "7F | Grand Ballroom II + III",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1219415",
+              "description": "In 2018, most of IT and Telco infras of Viettel (largest telco in Vietnam) run on VMware or legacy on-premise solutions. The utilization of physical infra was low, need hundreds of people to operate all the infras, MTTR was nightmare, depends on support tickets from vendors... Recently, VMWare licenses price went high. That's why we have to migrate our infras to open source tech stacks and solutions. OpenStak, Ceph, Kubernetes, Prometheus... are our choices. By the end of 2025, over 80% of our massive infra had been migrated to open source Cloud and Cloud Native solutions.\nThis talk will be about how we choose the starting point, how we move from here to there, and the way we achieve the current state, how we collaborated with open source community in Vietnam and Asia.",
+              "recording": "https://www.youtube.com/watch?v=7V_SDWYBNgw"
+            },
+            {
+              "id": "1224867",
+              "title": "In-Place PVC Re-Binding: Zero-Downtime Disk Migration Using Only the Kubernetes API",
+              "speakers": "Maxim Nazarenko, Nibir Bora",
+              "room": "7F | Pearl Hall",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1224867",
+              "description": "Running stateful workloads in Kubernetes is challenging; migrating the storage beneath them is even harder. Migrating hundreds of live storage volumes without downtime might seem nearly impossible. In this session, we present a battle-tested approach for doing exactly that: migrating hundreds of Azure Disk-backed PersistentVolumes from deprecated in-tree drivers to CSI with zero downtime and minimal service disruption. By leveraging a deep understanding of Kubernetes internals, we accomplished this using only standard user-facing Kubernetes APIs without control plane forks, risky hacks, or even custom operators.\n\nWe’ll break down the critical mechanics that make it possible, touching upon immutability constraints, claimRef behavior, finalizers, and StorageClass interactions. Through real-world examples from large-scale production data platforms, this talk demonstrates how advanced Kubernetes systems expertise can unlock operational capabilities that many teams assume are out of reach.",
+              "recording": "https://www.youtube.com/watch?v=e29gRRrQYVw"
+            }
+          ]
+        },
+        {
+          "start": "2026-09-09T11:45:00+08:00",
+          "end": "2026-09-09T12:15:00+08:00",
+          "startLabel": "11:45 AM",
+          "endLabel": "12:15 PM",
+          "talks": [
+            {
+              "id": "1223450",
+              "title": "Training Through Failures: How Meta Keeps 100k-GPU Jobs Alive with Open-Source Fault Tolerance",
+              "speakers": "Tristan Rice, Amir Afzali",
+              "room": "1F | Mandarin Hall I",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1223450",
+              "description": "GPU failures at scale are not exceptions — they are scheduled events. At Meta, training jobs spanning tens of thousands of GPUs encounter hardware faults daily, yet training continues without missing a step. In this talk, we discuss open-source tools that make this possible.\n\nWe introduce the fault tolerance APIs in torchcomms, covering NCCL, MCCL and Gloo backends. MCCL is Meta's production fault tolerance collective communication library and we will deep dive into its design and fault tolerance capabilities. We also show how torchcomms uses NCCL's new primitives — ncclShrink, ncclGrow, and ncclCommRevoke — to gracefully shrink or grow communicator membership  without deadlocking the cluster.\n\nWe'll cover novel checkpointing approaches — including checkpoint-to-peer-memory and checkpoint-to-local-disk — using torchstore as one example of how fast RDMA transfers between GPU peers can replace slow distributed filesystem writes and enable live recovery.",
+              "recording": "https://www.youtube.com/watch?v=SqIvMRiOkqY"
+            }
+          ]
+        },
+        {
           "start": "2026-09-09T13:45:00+08:00",
           "end": "2026-09-09T14:15:00+08:00",
           "startLabel": "1:45 PM",
@@ -136,6 +386,15 @@
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1224524",
               "description": "As AI infrastructure evolves, fragmented GPU clusters and bursty AI workloads make large-scale multi-cluster operations increasingly difficult. \nIn this talk, we share how we built an Elastic Compute Pool that federates fragmented GPU capacity across clusters into a unified global scheduling domain.\nWhile Kubernetes Dynamic Resource Allocation (DRA) and Kueue provide a strong foundation for AI scheduling, we found critical gaps in applying them to global-scale GPU pools—particularly around application-level topology awareness, failover-aware placement, and cross-cluster resource modeling.\nWe will dive into how we extended DRA to address these limitations and how we unified the orchestration of training and inference workloads across hundred-thousand-GPU-scale infrastructure.\nAttendees will learn the architectural tradeoffs, scheduler and resource management extensions, and operational lessons required to make Kubernetes federation practical for AI-native compute platforms.",
               "recording": "https://www.youtube.com/watch?v=OozAaQTEZ7s"
+            },
+            {
+              "id": "1293054",
+              "title": "Helion's New CuTe DSL and Pallas Backends and How we Built Them via Agents",
+              "speakers": "Dunfan Lu, Jason Ansel",
+              "room": "5F | 5B + C",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1293054",
+              "description": "Helion is a Python DSL that raises kernel authoring above languages like CUDA and Triton: you describe a kernel at a high level, and a compiler and autotuner generate the device code. This talk introduces two new compiler backends.\n\nThe motivation is hardware heterogeneity and performance. Accelerators are diverging, and reaching state-of-the-art performance on each one normally means hand-writing kernels in that vendor's low-level language. The new backends lower a Helion kernel through CuteDSL for recent NVIDIA GPUs and through Pallas for TPUs. The same source targets different hardware without giving up that performance or rewriting per vendor.\n\nThe second half covers code generation by LLM agents. Because Helion sits above the languages it compiles to, a kernel takes fewer tokens to express and offers less surface area for mistakes, and the autotuner handles the performance tuning that agents do poorly. We cover where this holds up and where it doesn't.",
+              "recording": "https://www.youtube.com/watch?v=8wBxRKPiUK4"
             }
           ]
         },
@@ -153,6 +412,32 @@
               "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1220661",
               "description": "AI agents need more than Linux. Kata Containers 4.0 delivers a universal secure sandbox for the agent era. A new Rust-based default runtime replaces Go for superior safety and speed. Multi-hypervisor support — QEMU, Dragonball, Cloud Hypervisor, Firecracker — adapts to any infrastructure. Template-based instant startup achieves sub-100ms sandbox launch, enabling elastic agent scaling at cloud speed. Confidential Computing via Intel TDX, AMD SEV-SNP, Hygon CSV, and DCU protects sensitive workloads at hardware level. And for the first time, Kata breaks beyond Linux: Android, OSWorld, and Windows sandboxes unify under one runtime, powering diverse AI agent environments securely and instantly. The future of sandboxing is multi-world — and it starts with Kata 4.0.",
               "recording": "https://www.youtube.com/watch?v=mmDKe9nOBnU"
+            },
+            {
+              "id": "1222012",
+              "title": "Multi-cluster Orchestration System: Karmada Updates and Use Cases",
+              "speakers": "Hongcai Ren, Zongqing Li",
+              "room": "5F | 5B + C",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1222012",
+              "description": "Karmada (Kubernetes Armada) is a Kubernetes management system that enables you to run your cloud-native applications across multiple Kubernetes clusters and clouds. \n\nIn this presentation, the maintainer of the Karmada project will share: \n\n- A Brief introduction to Karmada.\n- New features over the last year\n    Application Priority Scheduling\n    Stateful Application Cluster Failover\n    Federated ResourceQuota Enforcement\n    Workload Affinity\n    AI Jobs Scheduling Enhancements\n- Real-world case studies\n- Overview of the community  \n- Roadmap\n- QA",
+              "recording": "https://www.youtube.com/watch?v=OTi5DGIIfZg"
+            }
+          ]
+        },
+        {
+          "start": "2026-09-09T15:30:00+08:00",
+          "end": "2026-09-09T16:00:00+08:00",
+          "startLabel": "3:30 PM",
+          "endLabel": "4:00 PM",
+          "talks": [
+            {
+              "id": "1225138",
+              "title": "The State of the PyTorch Ecosystem in 2026: Global Trends and China’s Rising Role",
+              "speakers": "Wei Wang",
+              "room": "7F | Grand Ballroom II + III",
+              "url": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/1225138",
+              "description": "In 2026, PyTorch stands at the center of a rapidly expanding global AI ecosystem. Through a data-driven analysis of activity across GitHub, Hugging Face, and related open platforms, this talk reveals a clear upward trajectory in contributions from China—spanning code, models, tools, and community engagement. Yet as domestic efforts in AI frameworks and hardware accelerate, the risk of fragmentation grows. We argue that China’s homegrown AI infrastructure should actively converge with mainstream ecosystems like PyTorch, not to replace them, but to co-develop interoperable standards that benefit the entire global community. The path forward lies not in isolated stacks, but in shared foundations.",
+              "recording": "https://www.youtube.com/watch?v=HvAYMDicW90"
             }
           ]
         }

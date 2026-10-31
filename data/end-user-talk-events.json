@@ -27,15 +27,36 @@
         "sessionIds": [
           "1174542",
           "1189573",
+          "1209151",
+          "1212199",
+          "1219415",
           "1219464",
           "1220661",
+          "1221808",
+          "1222012",
+          "1222021",
+          "1223450",
+          "1224095",
+          "1224322",
+          "1224457",
           "1224524",
+          "1224575",
+          "1224867",
+          "1224932",
+          "1224946",
+          "1225136",
+          "1225138",
+          "1225364",
+          "1227863",
+          "1293054",
+          "1308448",
           "1308539",
           "1309274",
-          "1309304"
+          "1309304",
+          "1317065"
         ]
       },
-      "selection": "presented by speakers from CNCF End User member organizations"
+      "selection": "presented by speakers from organizations that meet the CNCF End User definition"
     },
     {
       "slug": "kubecon-japan-2026",
