@@ -2,12 +2,52 @@
   "$comment": "Hand-maintained. Slides and recordings for End User Talks, keyed by the Sessionize session id that data/end-user-talks/<slug>.json carries as `talk.id`. `npm run collect:end-user-talks` merges each entry into its talk; `npm run validate:end-user-talks` requires ids to be unique, sorted and present in the schedule, `slides` to be an https URL and `recording` to be a youtube.com or youtu.be URL. Keep entries sorted by id and give each at least one link.",
   "links": [
     {
+      "id": "1145821",
+      "recording": "https://www.youtube.com/watch?v=FH_fNfE90sU"
+    },
+    {
+      "id": "1154416",
+      "recording": "https://www.youtube.com/watch?v=6NLiR8uP1hE"
+    },
+    {
+      "id": "1171327",
+      "recording": "https://www.youtube.com/watch?v=LX4YZeqXWck"
+    },
+    {
       "id": "1174542",
       "recording": "https://www.youtube.com/watch?v=KerhT-0ZCRQ"
     },
     {
+      "id": "1186424",
+      "recording": "https://www.youtube.com/watch?v=AMDE02bLCpY"
+    },
+    {
       "id": "1189573",
       "recording": "https://www.youtube.com/watch?v=WsswXfiMnYU"
+    },
+    {
+      "id": "1193243",
+      "recording": "https://www.youtube.com/watch?v=aFX_6HL_i80"
+    },
+    {
+      "id": "1194386",
+      "recording": "https://www.youtube.com/watch?v=8CjVANBzDWs"
+    },
+    {
+      "id": "1194684",
+      "recording": "https://www.youtube.com/watch?v=zvdaQXDRRXQ"
+    },
+    {
+      "id": "1194825",
+      "recording": "https://www.youtube.com/watch?v=YFkHhcyPF3M"
+    },
+    {
+      "id": "1194846",
+      "recording": "https://www.youtube.com/watch?v=yS6a0hxMVb0"
+    },
+    {
+      "id": "1194974",
+      "recording": "https://www.youtube.com/watch?v=pHHiHRaTRpE"
     },
     {
       "id": "1219464",
@@ -20,6 +60,18 @@
     {
       "id": "1224524",
       "recording": "https://www.youtube.com/watch?v=OozAaQTEZ7s"
+    },
+    {
+      "id": "1228195",
+      "recording": "https://www.youtube.com/watch?v=TrXfYqUKjeI"
+    },
+    {
+      "id": "1283174",
+      "recording": "https://www.youtube.com/watch?v=rOoDsAeKDLw"
+    },
+    {
+      "id": "1283189",
+      "recording": "https://www.youtube.com/watch?v=W3WSCDURjvg"
     },
     {
       "id": "1308539",
