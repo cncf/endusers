@@ -686,7 +686,7 @@
       "name": "China Merchants Bank",
       "slug": "china-merchants-bank",
       "logo": null,
-      "industries": ["Banking", "Financial Services"],
+      "industries": ["Financial Services"],
       "projects": ["Fluid", "HAMi", "KEDA", "Kubernetes", "Prometheus"],
       "architectures": [
         {
