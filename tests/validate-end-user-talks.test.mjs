@@ -39,6 +39,7 @@ function event(overrides = {}) {
 function schedule(overrides = {}, talks = [validTalk]) {
   return {
     description: 'Generated from the official Sessionize API.',
+    source: 'sessionize',
     sourceUrl: SCHEDULE,
     apiUrl: API,
     selection: 'End User Programming → End User Talk',
@@ -188,7 +189,7 @@ for (const [label, overrides, message] of [
   [
     'a sourceUrl on another host',
     { sourceUrl: 'https://evil.example/s/' },
-    /events\[0\]: sourceUrl must be on events\.linuxfoundation\.org or lfopensource\.cn or sessionize\.com, got evil\.example/,
+    /events\[0\]: sourceUrl must be on events\.linuxfoundation\.org or lfopensource\.cn or sessionize\.com or sched\.com, got evil\.example/,
   ],
   [
     'a lookalike schedule host',
@@ -257,6 +258,26 @@ for (const [label, overrides, message] of [
   ],
   ['an empty id list', { select: { sessionIds: [] } }, /select must be/],
   ['a non-string id', { select: { sessionIds: [1] } }, /select must be/],
+  [
+    'an unknown source',
+    { source: 'eventbrite' },
+    /events\[0\]: source must be one of sessionize, sched/,
+  ],
+  [
+    'a Sessionize apiUrl under a sched source',
+    { source: 'sched', select: { sessionIds: ['1'] } },
+    /events\[0\]: apiUrl must be on sched\.com, got sessionize\.com/,
+  ],
+  [
+    'a sched source selecting by category',
+    {
+      source: 'sched',
+      sourceUrl: 'https://kccncind2026.sched.com/',
+      apiUrl: 'https://kccncind2026.sched.com/list/descriptions',
+      sessionUrl: 'https://kccncind2026.sched.com/event/{id}',
+    },
+    /events\[0\]: a sched event must select \{ sessionIds \}/,
+  ],
 ]) {
   test(`rejects an event with ${label}`, () => {
     const result = run(schedule(), undefined, [event(overrides)]);
@@ -308,16 +329,70 @@ test('rejects a missing snapshot and a snapshot no event names', () => {
 
 test("rejects a snapshot whose provenance is not its event's", () => {
   const result = run(
-    schedule({ sourceUrl: `${SCHEDULE}other/`, apiUrl: undefined }),
+    schedule({
+      source: 'sched',
+      sourceUrl: `${SCHEDULE}other/`,
+      apiUrl: undefined,
+    }),
   );
+  assert.equal(result.status, 1);
+  for (const field of ['source', 'sourceUrl', 'apiUrl']) {
+    assert.match(
+      result.stderr,
+      new RegExp(
+        `kubecon-na-2026: ${field} does not match end-user-talk-events\\.json; re-run`,
+      ),
+    );
+  }
+});
+
+// A Sched event: the listing is its "API", the id is a short Sched code and
+// the snapshot says so.
+const SCHED = 'https://kccncind2026.sched.com/';
+function indiaEvent(overrides = {}) {
+  return event({
+    slug: 'kubecon-india-2026',
+    source: 'sched',
+    sourceUrl: SCHED,
+    apiUrl: `${SCHED}list/descriptions`,
+    sessionUrl: `${SCHED}event/{id}`,
+    location: 'Mumbai',
+    timezone: 'IST (UTC+5:30)',
+    utcOffset: '+05:30',
+    select: { sessionIds: ['2IW2R'] },
+    selection: 'presented by end user speakers',
+    ...overrides,
+  });
+}
+
+test('accepts a Sched event whose snapshot was generated from its listing', () => {
+  const talk = { ...validTalk, id: '2IW2R', url: `${SCHED}event/2IW2R` };
+  const result = runEvents([event(), indiaEvent()], {
+    'kubecon-india-2026': schedule(
+      {
+        source: 'sched',
+        sourceUrl: SCHED,
+        apiUrl: `${SCHED}list/descriptions`,
+      },
+      [talk],
+    ),
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 2 end user talk links/);
+});
+
+test('rejects a Sched snapshot that still claims the Sessionize source', () => {
+  const talk = { ...validTalk, id: '2IW2R', url: `${SCHED}event/2IW2R` };
+  const result = runEvents([event(), indiaEvent()], {
+    'kubecon-india-2026': schedule(
+      { sourceUrl: SCHED, apiUrl: `${SCHED}list/descriptions` },
+      [talk],
+    ),
+  });
   assert.equal(result.status, 1);
   assert.match(
     result.stderr,
-    /kubecon-na-2026: sourceUrl does not match end-user-talk-events\.json; re-run/,
-  );
-  assert.match(
-    result.stderr,
-    /kubecon-na-2026: apiUrl does not match end-user-talk-events\.json; re-run/,
+    /kubecon-india-2026: source does not match end-user-talk-events\.json/,
   );
 });
 

@@ -1,5 +1,5 @@
 {
-  "$comment": "Hand-maintained. Slides and recordings for End User Talks, keyed by the Sessionize session id that data/end-user-talks/<slug>.json carries as `talk.id`. `npm run collect:end-user-talks` merges each entry into its talk; `npm run validate:end-user-talks` requires ids to be unique, sorted and present in the schedule, `slides` to be an https URL and `recording` to be a youtube.com or youtu.be URL. Keep entries sorted by id and give each at least one link.",
+  "$comment": "Hand-maintained. Slides and recordings for End User Talks, keyed by the session id (Sessionize or Sched) that data/end-user-talks/<slug>.json carries as `talk.id`. `npm run collect:end-user-talks` merges each entry into its talk; `npm run validate:end-user-talks` requires ids to be unique, sorted and present in the schedule, `slides` to be an https URL and `recording` to be a youtube.com or youtu.be URL. Keep entries sorted by id and give each at least one link.",
   "links": [
     {
       "id": "1145821",
@@ -324,6 +324,118 @@
     {
       "id": "1317065",
       "recording": "https://www.youtube.com/watch?v=x19cukPbgkk"
+    },
+    {
+      "id": "2IljH",
+      "recording": "https://www.youtube.com/watch?v=NL02NnmrE4o"
+    },
+    {
+      "id": "2IW1r",
+      "recording": "https://www.youtube.com/watch?v=MeJCUVnSvJM"
+    },
+    {
+      "id": "2IW2F",
+      "recording": "https://www.youtube.com/watch?v=vZXJfJtgEQc"
+    },
+    {
+      "id": "2IW2O",
+      "recording": "https://www.youtube.com/watch?v=eIjOe3f1Yi0"
+    },
+    {
+      "id": "2IW2p",
+      "recording": "https://www.youtube.com/watch?v=iis-ycOGeDc"
+    },
+    {
+      "id": "2IW2R",
+      "recording": "https://www.youtube.com/watch?v=nYxLSHljwxQ"
+    },
+    {
+      "id": "2IW2s",
+      "recording": "https://www.youtube.com/watch?v=nlegiU15dss"
+    },
+    {
+      "id": "2IW2v",
+      "recording": "https://www.youtube.com/watch?v=-Fr26VOeX4E"
+    },
+    {
+      "id": "2IW2X",
+      "recording": "https://www.youtube.com/watch?v=mLvuEGfk8us"
+    },
+    {
+      "id": "2IW2y",
+      "recording": "https://www.youtube.com/watch?v=_aYRf5xmm4M"
+    },
+    {
+      "id": "2IW3M",
+      "recording": "https://www.youtube.com/watch?v=g2De-JXEJ1Q"
+    },
+    {
+      "id": "2IW3n",
+      "recording": "https://www.youtube.com/watch?v=BG9XGouyM9c"
+    },
+    {
+      "id": "2IW3S",
+      "recording": "https://www.youtube.com/watch?v=Gdh9BymgBZo"
+    },
+    {
+      "id": "2IW3t",
+      "recording": "https://www.youtube.com/watch?v=Vn5OkBWVV5o"
+    },
+    {
+      "id": "2IW4c",
+      "recording": "https://www.youtube.com/watch?v=opyZZ0Ephhw"
+    },
+    {
+      "id": "2IW4H",
+      "recording": "https://www.youtube.com/watch?v=4PXcoIambCU"
+    },
+    {
+      "id": "2IW4K",
+      "recording": "https://www.youtube.com/watch?v=yw14kzbVaj0"
+    },
+    {
+      "id": "2IW4l",
+      "recording": "https://www.youtube.com/watch?v=3zr_smC81Ec"
+    },
+    {
+      "id": "2IW4Q",
+      "recording": "https://www.youtube.com/watch?v=SLScAomR_lY"
+    },
+    {
+      "id": "2NlyU",
+      "recording": "https://www.youtube.com/watch?v=ibIa0dw3AGg"
+    },
+    {
+      "id": "2Nrov",
+      "recording": "https://www.youtube.com/watch?v=jHA68KZRWKc"
+    },
+    {
+      "id": "2NrzP",
+      "recording": "https://www.youtube.com/watch?v=xL6-u-LSN4w"
+    },
+    {
+      "id": "2OBPO",
+      "recording": "https://www.youtube.com/watch?v=DR5fjsd1fUY"
+    },
+    {
+      "id": "2OtOq",
+      "recording": "https://www.youtube.com/watch?v=Bkux_VdjZB8"
+    },
+    {
+      "id": "2OtP3",
+      "recording": "https://www.youtube.com/watch?v=Pz8UXjwLZio"
+    },
+    {
+      "id": "2OymT",
+      "recording": "https://www.youtube.com/watch?v=cAS9x-cCPy0"
+    },
+    {
+      "id": "2PCNB",
+      "recording": "https://www.youtube.com/watch?v=KeMwzY54Q5A"
+    },
+    {
+      "id": "2PEvQ",
+      "recording": "https://www.youtube.com/watch?v=R3L-6LF2ZZU"
     }
   ]
 }

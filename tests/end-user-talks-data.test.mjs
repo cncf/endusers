@@ -105,15 +105,16 @@ function timeLabel(stamp) {
 
 // The hosts scripts/collect-end-user-talks.mjs may build a snapshot from:
 // `sourceUrl` and every `talk.url` deep-link into the Linux Foundation or LF
-// Open Source China schedule, or the event's Sessionize subdomain; `apiUrl` is
-// the Sessionize endpoint the corpus is generated from.
+// Open Source China schedule, the event's Sessionize subdomain, or its Sched
+// site; `apiUrl` is the endpoint of the source the corpus is generated from.
 const SCHEDULE_HOSTS = [
   'events.linuxfoundation.org',
   'lfopensource.cn',
   'sessionize.com',
+  'sched.com',
 ];
 const SCHEDULE_HOST = SCHEDULE_HOSTS[0];
-const API_HOST = 'sessionize.com';
+const API_HOSTS = { sessionize: 'sessionize.com', sched: 'sched.com' };
 
 function urlErrors(field, value, hosts) {
   const errors = [];
@@ -141,6 +142,7 @@ for (const { event, schedule } of snapshots) {
     test('the snapshot carries the provenance fields the collector writes', () => {
       for (const field of [
         'description',
+        'source',
         'sourceUrl',
         'apiUrl',
         'selection',
@@ -343,7 +345,11 @@ for (const { event, schedule } of snapshots) {
         urlErrors('sourceUrl', schedule.sourceUrl, SCHEDULE_HOSTS),
         [],
       );
-      assert.deepEqual(urlErrors('apiUrl', schedule.apiUrl, [API_HOST]), []);
+      assert.equal(schedule.source, event.source ?? 'sessionize');
+      assert.deepEqual(
+        urlErrors('apiUrl', schedule.apiUrl, [API_HOSTS[schedule.source]]),
+        [],
+      );
       assert.equal(schedule.sourceUrl, event.sourceUrl);
       assert.equal(schedule.apiUrl, event.apiUrl);
     });

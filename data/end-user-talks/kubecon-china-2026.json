@@ -1,10 +1,11 @@
 {
   "description": "Generated from the official Sessionize API by npm run collect:end-user-talks. Do not hand-edit.",
+  "source": "sessionize",
   "sourceUrl": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/",
   "apiUrl": "https://sessionize.com/api/v2/yo76vzdv/view/All",
   "selection": "presented by speakers from organizations that meet the CNCF End User definition",
   "location": "Shanghai",
-  "generatedAt": "2026-10-31T20:45:58.529Z",
+  "generatedAt": "2026-10-31T21:36:37.583Z",
   "timezone": "CST (UTC+8)",
   "talkCount": 29,
   "days": [

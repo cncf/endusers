@@ -123,6 +123,51 @@
         ]
       },
       "selection": "presented by speakers from organizations that meet the CNCF End User definition"
+    },
+    {
+      "slug": "kubecon-india-2026",
+      "source": "sched",
+      "sourceUrl": "https://kccncind2026.sched.com/",
+      "apiUrl": "https://kccncind2026.sched.com/list/descriptions",
+      "sessionUrl": "https://kccncind2026.sched.com/event/{id}",
+      "location": "Mumbai",
+      "timezone": "IST (UTC+5:30)",
+      "utcOffset": "+05:30",
+      "selection": "presented by speakers from organizations that meet the CNCF End User definition",
+      "select": {
+        "sessionIds": [
+          "2IW1r",
+          "2IW23",
+          "2IW2F",
+          "2IW2O",
+          "2IW2R",
+          "2IW2X",
+          "2IW2p",
+          "2IW2s",
+          "2IW2v",
+          "2IW2y",
+          "2IW3M",
+          "2IW3S",
+          "2IW3n",
+          "2IW3t",
+          "2IW4H",
+          "2IW4K",
+          "2IW4Q",
+          "2IW4c",
+          "2IW4l",
+          "2IljH",
+          "2NlyU",
+          "2Nrov",
+          "2NrzP",
+          "2OBPO",
+          "2OtOq",
+          "2OtP3",
+          "2OymT",
+          "2Oymd",
+          "2PCNB",
+          "2PEvQ"
+        ]
+      }
     }
   ]
 }

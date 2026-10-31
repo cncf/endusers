@@ -1,10 +1,11 @@
 {
   "description": "Generated from the official Sessionize API by npm run collect:end-user-talks. Do not hand-edit.",
+  "source": "sessionize",
   "sourceUrl": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/",
   "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
   "selection": "End User Programming → End User Talk",
   "location": "Salt Lake City",
-  "generatedAt": "2026-10-31T18:52:36.822Z",
+  "generatedAt": "2026-10-31T21:36:37.270Z",
   "timezone": "MST (UTC−7)",
   "talkCount": 83,
   "days": [

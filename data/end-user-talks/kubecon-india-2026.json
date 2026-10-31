@@ -1,0 +1,471 @@
+{
+  "description": "Generated from the official Sched listing by npm run collect:end-user-talks. Do not hand-edit.",
+  "source": "sched",
+  "sourceUrl": "https://kccncind2026.sched.com/",
+  "apiUrl": "https://kccncind2026.sched.com/list/descriptions",
+  "selection": "presented by speakers from organizations that meet the CNCF End User definition",
+  "location": "Mumbai",
+  "generatedAt": "2026-10-31T22:13:17.902Z",
+  "timezone": "IST (UTC+5:30)",
+  "talkCount": 30,
+  "days": [
+    {
+      "date": "2026-06-18",
+      "id": "thursday-june-18",
+      "label": "Thursday, June 18",
+      "slots": [
+        {
+          "start": "2026-06-18T10:22:00+05:30",
+          "end": "2026-06-18T10:27:00+05:30",
+          "startLabel": "10:22 AM",
+          "endLabel": "10:27 AM",
+          "talks": [
+            {
+              "id": "2OtP3",
+              "title": "Keynote: Sovereign AI at Population Scale. How Sarvam Runs 100 Million+ Conversations Across India's Languages on a CNCF Stack",
+              "speakers": "Avi Kothari, Vinayak Gavariya",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2OtP3",
+              "description": "India speaks in 22 languages. Sarvam ensures AI speaks back in every one of those languages, whether in Marathi to a farmer confirming her crops, in Tamil to a citizen accessing a government scheme, or in Hindi to a customer resolving a loan query. Delivering that across millions of API calls and voice conversations daily, at sub-second latency, and while remaining auditable, is as much an infrastructure challenge as an AI one.\n\nIn this keynote, we explore how Sarvam uses CNCF technologies to power its conversational AI agent platform and how that platform drove a national crop-verification program that reached 17 million farmers across 4 states in a single 24-day campaign, with a roadmap to 8 crore farmers for the next season. The stack includes Linkerd for a zero-trust service mesh, Strimzi-managed Kafka for event streaming, Argo CD and Helm for GitOps-based delivery across roughly 20 components, Prometheus and Thanos for unified multi-cluster observability, and CloudNativePG as the database of record.",
+              "recording": "https://www.youtube.com/watch?v=Pz8UXjwLZio"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T10:29:00+05:30",
+          "end": "2026-06-18T10:34:00+05:30",
+          "startLabel": "10:29 AM",
+          "endLabel": "10:34 AM",
+          "talks": [
+            {
+              "id": "2OBPO",
+              "title": "Keynote: From Afterthought to Practice: How Flipkart Built a Multi-tenant Chaos Platform on LitmusChaos",
+              "speakers": "Aditya Sridasyam, Uma Mukkara",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2OBPO",
+              "description": "Flipkart, one of India's leading digital commerce entities, runs hundreds of tightly coupled microservices that must withstand the massive traffic surges of Big Billion Days and festive sales. To stop treating outages as an afterthought, Flipkart's Central Reliability Engineering team built a centralized chaos engineering platform on top of Litmus Chaos. To make it work at their scale, they customized Litmus in four meaningful ways: a hybrid multi-tenancy architecture that splits the difference between cluster-wide and namespace-wide installs, a DaemonSet-based high-availability model for chaos injection, a first-class Script Runner fault for dynamic target selection and context chaining, and a hybrid VM chaos extension for workloads that don't run on Kubernetes. This talk shares what they built, why, and what they contributed back upstream.",
+              "recording": "https://www.youtube.com/watch?v=DR5fjsd1fUY"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T10:36:00+05:30",
+          "end": "2026-06-18T10:46:00+05:30",
+          "startLabel": "10:36 AM",
+          "endLabel": "10:46 AM",
+          "talks": [
+            {
+              "id": "2IW3S",
+              "title": "Keynote: Plug in and Scale: Serving LLM Models on Kubernetes Made Simple",
+              "speakers": "Shrinidhi, Nithin R",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW3S",
+              "description": "Our session introduces a cloud-native, in-house platform for modular LLM inference at enterprise scale. Built on Kubernetes, the architecture unifies open-source and vendor models via OpenAI-compatible APIs and supports distributed serving with popular inference runtimes like vLLM, SGLang, and Triton.\n\nPowered by NVIDIA Dynamo, the system optimizes GPU fleets through intelligent scheduling, KV-aware routing, prefix caching, and NIXL-based GPU-to-GPU data transfer, further optimized by allocating fractions of a GPU using KAI-Scheduler. The platform delivers streaming, speculative decoding, quantization, and autoscaling to zero via KEDA.\n\nWe ensure comprehensive observability with Prometheus, Grafana, and ELK, all governed by GitOps principles using ArgoCD and secured with enterprise-grade practices. For end-user consumption, the platform integrates with Open WebUI via standard APIs. We’ll cover the architecture, key components, and cloudability-driven cost governance strategies that empower data science teams while accelerating safe, sustainable AI innovation across AstraZeneca.\nOur session introduces a cloud-native, in-house platform for modular LLM inference at enterprise scale. Built on Kubernetes, the architecture unifies open-source and vendor models via OpenAI-compatible APIs and supports distributed serving with popular inference runtimes like vLLM, SGLang, and Triton.",
+              "recording": "https://www.youtube.com/watch?v=Gdh9BymgBZo"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T11:00:00+05:30",
+          "end": "2026-06-18T11:03:00+05:30",
+          "startLabel": "11:00 AM",
+          "endLabel": "11:03 AM",
+          "talks": [
+            {
+              "id": "2NlyU",
+              "title": "Keynote: Engineering Population-Scale AI & AI Infrastructure with Cloud Native Technologies at NPCI",
+              "speakers": "Tittu Varghese",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2NlyU",
+              "description": "National Payments Corporation of India (NPCI) processes more than 24 billion monthly transactions and 700 million daily payments on one of the world’s largest real-time payment systems, all powered by open source, cloud native infrastructure. In this keynote, NPCI will share how they built their AI infrastructure using Kubernetes, Kubeflow, Prometheus, vLLM, OpenStack, NVIDIA AI platforms and many more open-source components to deliver real-time fraud detection in under sub second latency at national scale. The session will explore the architecture behind their payment rail including GPU-accelerated AI inference, distributed cloud infrastructure, and cloud-native tooling powering fraud and AI infrastructure, and financial AI models. Get a look inside their reference architecture and how cloud-native technologies are becoming critical infrastructure for AI at scale with sovereignty.",
+              "recording": "https://www.youtube.com/watch?v=ibIa0dw3AGg"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T11:05:00+05:30",
+          "end": "2026-06-18T11:08:00+05:30",
+          "startLabel": "11:05 AM",
+          "endLabel": "11:08 AM",
+          "talks": [
+            {
+              "id": "2Nrov",
+              "title": "Keynote: Cloud Native at Bharat Scale, How Rapido Scaled to 7+ Million Rides",
+              "speakers": "Adarsh K Kumar, Srivatsa Katta",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2Nrov",
+              "description": "India moves on Rapido. The country's largest taxi platform serves over 4 million rides daily, matching riders to drivers in real time across 150+ microservices at 200K requests per second.\n\nNone of this would exist without the CNCF ecosystem. In this keynote, we walk through how Kubernetes, Istio, Prometheus, Thanos, Cert Manager, and External DNS work together to power a platform where every second of latency means a rider waiting in the heat.\n\nThis is the story of what cloud native makes possible when the stakes involve millions of livelihoods, not just uptime metrics.",
+              "recording": "https://www.youtube.com/watch?v=jHA68KZRWKc"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T12:40:00+05:30",
+          "end": "2026-06-18T13:10:00+05:30",
+          "startLabel": "12:40 PM",
+          "endLabel": "1:10 PM",
+          "talks": [
+            {
+              "id": "2IW2F",
+              "title": "When Kafka Goes Cloud Native: Observability That Actually Works!",
+              "speakers": "Mary Vinothini, Roopadharsini K",
+              "room": "Lotus 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW2F",
+              "description": "In the fast-paced world of cloud-native infrastructure, monitoring Kubernetes Kafka clusters shouldn’t feel like a puzzle or a last-minute audit surprise. In financial organisations, Kafka on Kubernetes powers critical needs, from regulatory compliance to real-time client updates. But legacy monitoring couldn’t keep up, and relying on sleep-deprived SREs wasn’t an option. We overcame this challenge by building custom dashboards in a unified observability platform using OpenTelemetry for vendor-agnostic collection, deployed natively on Kubernetes, and integrating Grafana and OpenSearch for real-time visibility and faster troubleshooting.\n\nAttendees will learn how to meet compliance needs, speed up incident response, and design reliable Kafka observability at enterprise scale and also walk away with a practical blueprint for modernizing monitoring and adopting open-source practices in Kubernetes.",
+              "recording": "https://www.youtube.com/watch?v=vZXJfJtgEQc"
+            },
+            {
+              "id": "2IljH",
+              "title": "In-toto Attestations for What Really Happens in Your Build Pipeline, With Witness",
+              "speakers": "Vyom Yadav, Rahul Vishwakarma",
+              "room": "204 (Level 2)",
+              "url": "https://kccncind2026.sched.com/event/2IljH",
+              "description": "State-sponsored supply chain attacks, like the Shai Hulud worm, highlight the urgent need for automated, cryptographically verifiable attestations generated at the moment the supply chain executes, capturing execution details that directly improve the accuracy of secure SDLC documents like SBOMs.\n\nWitness, an in-toto subproject, is one such tool that records various aspects of a system during supply chain execution. Unlike static lock files generated by toolchains, which often miss components and lack cryptographically verifiable metadata, Witness captures a complete and verifiable picture of what was actually executed. New observability features now enable Witness to enrich SBOMs with accurate, runtime-derived data, while also establishing a network baseline for supply chain execution.",
+              "recording": "https://www.youtube.com/watch?v=NL02NnmrE4o"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T14:30:00+05:30",
+          "end": "2026-06-18T15:00:00+05:30",
+          "startLabel": "2:30 PM",
+          "endLabel": "3:00 PM",
+          "talks": [
+            {
+              "id": "2IW2O",
+              "title": "Unity in Diversity: Architecting “Shared-First” Kubernetes Platforms for Life-Critical Workloads",
+              "speakers": "Rishi Nikhilesh Damerla, Geethika Chappidi, Manoj K R, Siddiq Tanveer M A",
+              "room": "Lotus 1 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW2O",
+              "description": "In life-critical systems such as 911 dispatch, emergency call handling, and public safety platforms, the traditional “one cluster per application” model creates operational silos that limit resilience, scalability, and cost efficiency. This session describes how we challenged that model by building a Shared First Kubernetes platform that allows many sensitive services to coexist without compromising isolation or availability\nWe operate 25+ production Kubernetes clusters across multiple clouds. Each shared cluster runs 50–60 independent products and supports 2,000–4,000 microservices processing real-time emergency workloads where downtime can impact human lives.\nThe talk covers zero-touch workload isolation using a custom Kubernetes Admission Controller, per-tenant NGINX Ingress Controllers, automated DNS and certificate management and safe upgrade practices. We conclude by showing 50–60% infrastructure cost savings while improving reliability for mission-critical public safety systems.",
+              "recording": "https://www.youtube.com/watch?v=eIjOe3f1Yi0"
+            },
+            {
+              "id": "2IW2R",
+              "title": "Who Watches the Watchers? From Closed Observability To Open Control at Scale",
+              "speakers": "Sandeep Kanabar, Aditi Gupta, Madhu Patel",
+              "room": "Lotus 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW2R",
+              "description": "Observability is your safety net - but at scale, it often fails first. As our Kubernetes platform grew, rising traffic produced more telemetry, overwhelming our stack and leaving us blind during incidents. High-cardinality metrics exhausted memory, and ingestion brownouts became recurring nightmares. We didn't have too much data; we had too little control.\nIn this talk, we dissect the concrete failure modes and show how we rebuilt observability by treating telemetry pipelines as first-class distributed systems with OpenTelemetry, Prometheus, Loki, and Tempo.\n\nWe will walk through production fixes:\n\n- Active Traffic Shaping: OTel Collectors for batching and tail sampling.\n- Defusing Cardinality Bombs: Prometheus recording rules to stabilise memory.\n- Back pressure & Limits: Surviving 10x traffic spikes.\n\nThis isn't a tool comparison. It's a blueprint for building observability you can reason about under stress, so your monitoring doesn't become the “next outage” you're explaining.",
+              "recording": "https://www.youtube.com/watch?v=nYxLSHljwxQ"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T14:30:00+05:30",
+          "end": "2026-06-18T14:50:00+05:30",
+          "startLabel": "2:30 PM",
+          "endLabel": "2:50 PM",
+          "talks": [
+            {
+              "id": "2PCNB",
+              "title": "Sponsored Demo: Scaling EdTech at Hyperspeed: How PhysicsWallah Reduced Kubernetes Costs Without Slowing Down",
+              "speakers": "Gaurang Singh, Avinash Gupta",
+              "room": "205 (Level 2)",
+              "url": "https://kccncind2026.sched.com/event/2PCNB",
+              "description": "PhysicsWallah serves 10 million learners across India, running live classes 24/7 on Amazon EKS. As the platform scaled, Karpenter hit its limits. Spot interruptions were hard to handle gracefully, manual rightsizing consumed SRE bandwidth, and nodes were chronically over-provisioned for traffic spikes that came and went unpredictably.\nIn this talk, Avinash (Engineering Lead, PW) and Gaurang Singh (Field CTO APAC, CAST AI) walk through how PW adopted CAST AI to automate Kubernetes cost optimization without risking a single live class. Starting with a read-only POC, the team validated 48.67% cost savings before touching production. They then rolled out workload rightsizing (WOOP) and node autoscaling incrementally, cutting CPU requests by 35% in production.\nThe session covers the adoption playbook, lessons on configuring Pod Disruption Budgets before enabling rightsizing, and why multi-family spot pools outperform manual over-provisioning for spiky edtech workloads.\n\n**In order to facilitate networking and business relationships at the event, you may choose to visit a third party’s booth or access sponsored content. You are never required to visit third party booths or to access sponsored content. When visiting a booth or participating in sponsored activities, the third party will receive some of your registration data. This data includes your first name, last name, title, company, address, email, standard demographics questions (i.e. job function, industry), and details about the sponsored content or resources you interacted with. If you choose to interact with a booth or access sponsored content, you are explicitly consenting to receipt and use of such data by the third-party recipients, which will be subject to their own privacy policies.**",
+              "recording": "https://www.youtube.com/watch?v=KeMwzY54Q5A"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T15:10:00+05:30",
+          "end": "2026-06-18T15:40:00+05:30",
+          "startLabel": "3:10 PM",
+          "endLabel": "3:40 PM",
+          "talks": [
+            {
+              "id": "2IW2X",
+              "title": "Zero-GPU Autopilot: Orchestrating Kagent and Kgateway for Private, Self-Healing Clusters",
+              "speakers": "Ashok M, Dillibabu Sampath",
+              "room": "Lotus 1 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW2X",
+              "description": "Modern Kubernetes environments have outpaced human operational capacity. While observability data is abundant, the Mean Time to Remediation (MTTR) remains high due to manual intervention. This session introduces a paradigm shift: an autonomous operations model that is entirely private, secure, and requires zero GPUs.\n\nWe demonstrate how to use Kagent, a CNCF sandbox reasoning framework, coupled with vLLM optimized for CPU-only inference to create a Sovereign SRE. By integrating Kgateway, we enforce policy driven traffic management that allows the agent to safely reroute traffic, isolate failing pods, and execute rollbacks based on real-time health intelligence. Attendees will walk away with a blueprint for a self-healing platform that uses local, file-based RAG to follow organizational rules without any data leaving the VPC or a single dollar spent on external AI APIs.",
+              "recording": "https://www.youtube.com/watch?v=mLvuEGfk8us"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T16:50:00+05:30",
+          "end": "2026-06-18T16:55:00+05:30",
+          "startLabel": "4:50 PM",
+          "endLabel": "4:55 PM",
+          "talks": [
+            {
+              "id": "2IW2p",
+              "title": "⚡ Lightning Talk: 5 Tactics To Forging a Hardened Software Chain",
+              "speakers": "Pronomita Dey",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW2p",
+              "description": "In the fast-paced world of Cloud Native, the transition from \"code commit\" to \"production pod\" is often a fragmented journey. As platform engineering matures, the responsibility for security has shifted from being a final gatekeeper to a continuous thread woven into the software lifecycle. Gone is the era where a simple image scan was enough. Today’s threats require a multi-layered defence-in-depth strategy that treats security as an automated, immutable property of the platform. This talk provides a tactical blueprint for engineers looking to secure their platforms from the supply chain to runtime.",
+              "recording": "https://www.youtube.com/watch?v=iis-ycOGeDc"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T16:50:00+05:30",
+          "end": "2026-06-18T17:20:00+05:30",
+          "startLabel": "4:50 PM",
+          "endLabel": "5:20 PM",
+          "talks": [
+            {
+              "id": "2IW2s",
+              "title": "From API Events To Production in Minutes: Backstage as the Front Door To Multi-Tenant Provisioning",
+              "speakers": "Aditya Soni, Atul Bhardwaj",
+              "room": "Lotus 1 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW2s",
+              "description": "A common challenge for SaaS platforms on K8s is handling the full tenant lifecycle, onboarding, upgrades, and teardown, without manual provisioning or tenant-per-cluster architectures. As tenant counts rise, manual workflows slow customer time-to-value and create operational toil.\n\nThis session shows how we built an event-driven tenant lifecycle engine using Backstage as the self-service entry point and Argo Workflows, argo-events, NATS, and GitOps as the automation backbone. It handles onboarding, provisioning, feature enablement, scaling, migrations, and teardown without human intervention. The platform reduced onboarding from hours to minutes and supported ~10,000 tenant-specific deployments across clusters while avoiding cluster-per-tenant explosion.\n\nAttendees will learn how Backstage can drive self-service provisioning flows while Argo Workflows and GitOps execute lifecycle operations reliably, with patterns that reduce toil and improve reliability and SLO compliance.",
+              "recording": "https://www.youtube.com/watch?v=nlegiU15dss"
+            },
+            {
+              "id": "2IW2v",
+              "title": "Observability 2.0: Shifting Left From Reactive Monitoring To GenAI-Powered Insights",
+              "speakers": "Sivakumar Krishnamurthy, Kokilavani Kathiresan, Suresh Kumar Khemka, RK Gupta",
+              "room": "Lotus 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW2v",
+              "description": "In this panel, engineering leaders from Intuit, Atlassian, and Cloudera discuss how they transitioned from fragmented monitoring to a unified, OTel-based observability strategy across 1000+ microservices, built on CNCF standards like OpenTelemetry and Argo.\n\nKey discussion points include:\n- Standardization at Scale: How to drive OpenTelemetry adoption across thousands of microservices without slowing down feature delivery.\n- The Cost of Insight: How to move beyond the \"collect everything\" mentality. We’ll discuss the architectural shift from mindless ingestion to intelligent sampling\n- AIOps & The Future: Moving beyond dashboards to predictive incident response and AI-augmented root cause analysis.\n- 'Signal' vs. 'Noise':How are teams leveraging AI to separate true signals from the noise of thousands of clusters?\n\nJoin us for a candid conversation on the technical hurdles, cultural shifts, and architectural \"oops\" moments encountered while scaling observability for millions of customers.",
+              "recording": "https://www.youtube.com/watch?v=-Fr26VOeX4E"
+            },
+            {
+              "id": "2IW2y",
+              "title": "The 900-Second Ghost: Debugging Half-Open TCP",
+              "speakers": "Dhruv Jain",
+              "room": "Lotus 3 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW2y",
+              "description": "What happens when a production incident lasts 15 minutes, yet monitoring systems report everything as “green”? At hyperscale, supporting on-demand services in Southeast Asia’s most populous countries, a team encountered a silent and elusive failure mode: half-open TCP connections.\n\nIn this deep-dive session, the speaker conducts a packet-level autopsy of a real-world incident that impacted millions of messages. The talk examines the critical differences between FIN and RST packets, demonstrating how the absence of a single 40-byte segment resulted in 900 seconds of effective downtime. Attendees will learn why relying on default Linux kernel tcp_keepalive settings is unsafe for high-availability systems.\n\nThe session also explores the Zero Window phenomenon and how TCP backpressure can cause message timestamp drift. This is a story of persistence, spanning detailed packet captures and collaboration with a major cloud provider’s networking team to fix load balancer FIN-delivery behavior.",
+              "recording": "https://www.youtube.com/watch?v=_aYRf5xmm4M"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-18T17:32:00+05:30",
+          "end": "2026-06-18T17:37:00+05:30",
+          "startLabel": "5:32 PM",
+          "endLabel": "5:37 PM",
+          "talks": [
+            {
+              "id": "2IW3M",
+              "title": "⚡ Lightning Talk: Why Your Cluster-Wide Policies Are a Risk (And What To Do About It)",
+              "speakers": "Dhruv Puri",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW3M",
+              "description": "As Kubernetes evolves, so must policy enforcement. ValidatingAdmissionPolicy and MutatingAdmissionPolicy set new standards using CEL for policy logic. Kyverno aligned with these patterns and introduced CEL-based policy types.\n\nHowever, cluster-scoped resources created challenges: RBAC complexity, isolation concerns, and performance bottlenecks. Kyverno addressed this with namespace-scoped policy types - limiting blast radius, simplifying permissions, and improving admission latency.\n\nDhruv Puri (Kyverno LFX Mentee) explains why namespace-scoped policies matter, how they secure multi-tenant environments, and how Kyverno internals can help you optimize admission performance.\nAttendees leave with actionable strategies for namespace-scoped policies and a deeper understanding of Kyverno's architecture.",
+              "recording": "https://www.youtube.com/watch?v=g2De-JXEJ1Q"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-06-19",
+      "id": "friday-june-19",
+      "label": "Friday, June 19",
+      "slots": [
+        {
+          "start": "2026-06-19T10:12:00+05:30",
+          "end": "2026-06-19T10:15:00+05:30",
+          "startLabel": "10:12 AM",
+          "endLabel": "10:15 AM",
+          "talks": [
+            {
+              "id": "2OtOq",
+              "title": "Keynote: Running 911 & Mission-Critical Workloads on Shared Kubernetes Platforms",
+              "speakers": "Manoj K R",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2OtOq",
+              "description": "Manoj K R, a Kubeastronaut and Senior Software Engineer at Motorola Solutions, CPS, shares how Kubernetes and CNCF technologies such as cert-manager, KEDA, HPA/VPA, Cilium, Kyverno, and multi-tenant platform automation are being used to support 911 and other mission-critical enterprise applications on shared Kubernetes platforms across cloud environments. This keynote preview will highlight how cloud-native platform engineering enables workload isolation, scalable traffic management, DNS automation, security governance, and reliable operations for critical workloads at scale.",
+              "recording": "https://www.youtube.com/watch?v=Bkux_VdjZB8"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-19T10:29:00+05:30",
+          "end": "2026-06-19T10:39:00+05:30",
+          "startLabel": "10:29 AM",
+          "endLabel": "10:39 AM",
+          "talks": [
+            {
+              "id": "2IW1r",
+              "title": "Keynote: Automating RBI Compliance With Unified Policy-as-Code",
+              "speakers": "Jim Bugwadia, Ashwath Kumar",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW1r",
+              "description": "In highly regulated fintech environments like Razorpay, compliance with RBI and PCI DSS mandates is a license to operate. A single misconfiguration can trigger severe penalties or risk payment licenses. However, traditional manual \"audit toil\" and late-stage production fixes create massive engineering friction and business risk.\n\nThis session explores a multi-layered, automated framework to map complex mandates directly into \"Policy-as-Code\" (PaC) controls. The speakers demonstrate how to move from periodic audit woes to \"steady-state ops hygiene\" using PaC across three critical layers: Proactive Controls (Shift-Left) to catch issues in CI/CD, Preventive Controls to block non-compliant workloads, and Detective Controls for continuous, automated evidence gathering.\n\nYou will learn how to translate abstract compliance standards into enforceable policies and immutable audit trails, reducing technical debt and satisfying regulators without slowing down innovation.",
+              "recording": "https://www.youtube.com/watch?v=MeJCUVnSvJM"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-19T10:41:00+05:30",
+          "end": "2026-06-19T10:44:00+05:30",
+          "startLabel": "10:41 AM",
+          "endLabel": "10:44 AM",
+          "talks": [
+            {
+              "id": "2OymT",
+              "title": "Keynote: The Vertically Integrated Bank: Scaling from NBFC to Integrated on Kubernetes",
+              "speakers": "Faeka Ansari",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2OymT",
+              "description": "This talk shares slice's platform engineering journey from monolithic systems to 100s of cloud native microservices on K8s. It explores how ownership, GitOps, container security, observability, clone spaces, custom CI runners, and AI agent infrastructure helped build security, compliance, reliability, and speed into the platform.\n\nA practical story of how owning the core, building strong platform capabilities, and making the Secure path the fast path can turn cloud native engineering into a competitive advantage.",
+              "recording": "https://www.youtube.com/watch?v=cAS9x-cCPy0"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-19T10:46:00+05:30",
+          "end": "2026-06-19T10:49:00+05:30",
+          "startLabel": "10:46 AM",
+          "endLabel": "10:49 AM",
+          "talks": [
+            {
+              "id": "2Oymd",
+              "title": "Keynote: SBI Meghdoot - Modern Sovereign Cloud Serving Millions of Customers",
+              "speakers": "Rajesh Singh",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2Oymd",
+              "description": "SBI is the largest public sector bank in India catering to more than 52 Crore customers ranging from rural to NRI Customers. Given such dynamic geography to address, the Bank needs a robust cloud platform to not only serve high-volume digital transactions for applications like UPI but also provide flexibility to host modern container & AI apps.\nThis session focuses on how SBI has built a robust Sovereign Cloud Platform Meghdoot to cater the varied application demands\n\nLearn how this Sovereign Cloud stack supporting an enterprise Kubernetes platform provides strict compliance, zero-trust security, and the flexibility needed to support the daily digital transactions of millions of citizens. You can expect practical lessons on managing large enterprise workloads, connecting legacy infrastructure with cloud-native design, and setting a new global standard for sovereign digital banking."
+            }
+          ]
+        },
+        {
+          "start": "2026-06-19T10:51:00+05:30",
+          "end": "2026-06-19T10:54:00+05:30",
+          "startLabel": "10:51 AM",
+          "endLabel": "10:54 AM",
+          "talks": [
+            {
+              "id": "2PEvQ",
+              "title": "Keynote: One Deploy Plane, Every Runtime: How Shopify Generalized Cloud Native Beyond Kubernetes",
+              "speakers": "Aqeel Nazeer",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2PEvQ",
+              "description": "At Shopify, applications don't all live on Kubernetes. They live on Kubernetes, on VMs, and on serverless. Hundreds of services across multiple regions, reached through a single deploy plane. At peak last Black Friday, this fleet served 489 million requests per minute and ran across 3.18 million CPU cores.\n\nNone of this would exist without the CNCF ecosystem. A request to Shopify flows through a layered edge — CDN, regional load balancers, and tenant-routing proxies — before reaching a workload on Kubernetes, VMs, or serverless. In this keynote, we walk through how Kubernetes, Envoy with xDS, custom resources and controllers, and an observability stack built on Prometheus, Thanos, and OpenTelemetry compose into a single orchestrator that ships code safely across every runtime in our fleet — with phased traffic shifting, automated rollback against live error metrics, and an audit trail expressed in git.\n\nAttendees will leave with a mental model for using cloud-native primitives to build a deploy control plane that scales beyond Kubernetes. This is the story of what cloud native makes possible when AI is writing the code faster than humans can review it — and the deploys still have to be safe.",
+              "recording": "https://www.youtube.com/watch?v=R3L-6LF2ZZU"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-19T12:00:00+05:30",
+          "end": "2026-06-19T12:30:00+05:30",
+          "startLabel": "12:00 PM",
+          "endLabel": "12:30 PM",
+          "talks": [
+            {
+              "id": "2IW23",
+              "title": "Transforming the DNA: How the Indian Banking Sector Is Leading the Cloud Native Revolution",
+              "speakers": "K Sriram Kumar, Sudheesh Sudhakaran, Komila Jain, Rajesh Singh, RanVijay Pandey",
+              "room": "Lotus 3 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW23",
+              "description": "The Indian BFSI sector is shifting to cloud-native architectures to enhance operational efficiency, scalability, and digital customer experiences. This panel of industry leaders, Architects from India's largest Bank (SBI) to leading Banking software firms (Infosys Finacle, TCS, I-exceed), is here in India's financial capital, to discuss:\n- Cloud Native adoption and growth in the BFSI sector\nBanking-specific, unique real-world use cases, role of Agentic AI\n- Developing and operating applications at scale, e.g 1.7B accounts serving 1.3B people across the globe\n- Security safeguards, governance, and change management, with the use of the CNCF project Flagger\n- Tackling challenges with cloud-native technologies and the feedback loop with the community and maintainers.\n\nThis panel shares insights on cloud-native adoption in India's BFSI sector, incorporating global perspectives. Be inspired by how popular technologies are architected at scale to deliver innovative banking solutions."
+            }
+          ]
+        },
+        {
+          "start": "2026-06-19T12:40:00+05:30",
+          "end": "2026-06-19T13:10:00+05:30",
+          "startLabel": "12:40 PM",
+          "endLabel": "1:10 PM",
+          "talks": [
+            {
+              "id": "2IW3n",
+              "title": "When Kubeflow Fights Cilium: Debugging 60% Idle GPUs in Kubernetes",
+              "speakers": "Bingi Narasimha Karthik, Ramkumar Nagaraj",
+              "room": "Lotus 1 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW3n",
+              "description": "We built a research testbed to validate ML workload scalability on Kubernetes with Kubeflow and Cilium. During 500-node stress tests, GPUs sat idle 60% of the time while pods waited for available resources.\n\nThrough controlled experiments, we isolated the cause: Kubeflow's pipeline scheduler and Cilium's network-aware pod placement make conflicting decisions. Kubeflow schedules pods without considering network topology. Cilium optimizes networking but can't move scheduled pods. Result? GPUs unused while the scheduler searches for placement that won't happen.\n\nThis talk shares our systematic investigation, diagnostic methodology, and scheduling constraints that resolved it. Lab tests show GPU utilization improved from 40% to 85%. You'll see the problem reproduced live, understand why it's hard to detect, and get tested Kubernetes configs. This matters for anyone planning distributed training with Kubeflow or similar orchestrators on network-optimized clusters.",
+              "recording": "https://www.youtube.com/watch?v=BG9XGouyM9c"
+            },
+            {
+              "id": "2IW3t",
+              "title": "Patients as Time-Series: High-Stakes Clinical Alerting With OpenSearch & K8s",
+              "speakers": "Seema Saharan, Aakanksha Saharan",
+              "room": "Lotus 3 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW3t",
+              "description": "Patients aren’t static records; they are evolving systems. Neurology makes this clear, but the technical lesson applies to any domain where \"normal\" changes over time. This session treats longitudinal data as time-series to reshape search, relevance, and alerting in OpenSearch.\n\nWe move beyond \"snapshot\" queries to focus on evidence drift and trajectories via three pillars:\n\nLongitudinal Indexing: Strategies for time-dependent data to support trend-based retrieval.\n\nDetecting Trajectory Drift: Using OpenSearch Anomaly Detection to identify when patterns deviate from expected ranges.\n\nProbabilistic Alerting: Moving from hard thresholds to uncertainty-aware alerts factoring in clinical noise and data gaps.\n\nAttendees will learn to build systems that reason over time and trends rather than isolated documents—a blueprint for healthcare, AIOps, and beyond. This session bridges OpenSearch with the CNCF ecosystem (Kubernetes/OpenTelemetry) for mission-critical workloads.",
+              "recording": "https://www.youtube.com/watch?v=Vn5OkBWVV5o"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-19T15:10:00+05:30",
+          "end": "2026-06-19T15:40:00+05:30",
+          "startLabel": "3:10 PM",
+          "endLabel": "3:40 PM",
+          "talks": [
+            {
+              "id": "2IW4H",
+              "title": "From Textbooks To YAML: Mapping Your CS Degree To the Cloud Native World",
+              "speakers": "Parvathy Nair, Sudhish Nair",
+              "room": "Lotus 1 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW4H",
+              "description": "Students graduate with strong OS and Networking knowledge but often feel lost facing the \"Wall of YAML\" in Cloud Native. They understand \"Processes\" and \"TCP/IP\" but struggle to connect them to \"Pods\" and \"Service Meshes.\"\n\nThis session features a University Professor and a Industry Expert strictly mapping standard Computer Science curriculum to Kubernetes primitives. We will translate three core domains live on stage:\n\nCompute: Moving from OS-level fork()/exec() to Containers, and mapping Process Groups to Pods.\n\nNetworking: Translating the OSI Model and physical switching to CNIs, Services, and Ingress.\n\nStorage: Mapping Block Devices and File Systems to Persistent Volumes (PVs), Claims (PVCs), and CSI.\n\nAttendees will leave with a mental bridge connecting their academic foundation to modern cloud architecture, realizing they already possess the core knowledge required—they just need to learn the new vocabulary.",
+              "recording": "https://www.youtube.com/watch?v=4PXcoIambCU"
+            },
+            {
+              "id": "2IW4K",
+              "title": "Why We Ditched Kube-proxy: Scaling 10M Daily Browser Sessions With Kubernetes EndpointSlices",
+              "speakers": "Rajat Khanna",
+              "room": "Lotus 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW4K",
+              "description": "At CommerceIQ, we scrape 850+ retailers daily through Kubernetes-orchestrated headless browsers — 10M pages, thousands of ephemeral pods per hour.\n\nThis talk covers when our networking broke at scale and how we fixed it with native Kubernetes.\n\nAt 8K+ concurrent pods, kube-proxy's iptables rules and conntrack exhaustion caused latency spikes. We bypassed kube-proxy with direct pod-to-pod routing via the EndpointSlice API — achieving 40% latency improvement while handling stale endpoints and scale-up race conditions.\n\nWe also built custom HPA metrics tied to scrape queues, scaled from 4K to 16K concurrent scrapes with spot VMs, and used MinIO as in-cluster cache to cut egress by 60%.\n\nNo fancy tooling — just deep Kubernetes knowledge solving hard problems with what's already there.",
+              "recording": "https://www.youtube.com/watch?v=yw14kzbVaj0"
+            },
+            {
+              "id": "2IW4Q",
+              "title": "When Kubernetes Becomes an Interface, Not a Cluster",
+              "speakers": "Goutam Verma, Samarth Sharma",
+              "room": "205 (Level 2)",
+              "url": "https://kccncind2026.sched.com/event/2IW4Q",
+              "description": "We often treat Kubernetes as a system you must continuously run and operate. But in practice, many teams interact with Kubernetes primarily as an API contract rather than as an always on control plane.\nIn this talk we'll explore a different way to think about Kubernetes, what if the Kubernetes API mattered more than the cluster itself?\n\nInstead of running a full control plane with etcd, schedulers, and nodes, workloads are executed locally using lightweight runtimes, while applications continue to interact through Kubernetes-style APIs.\n\nWe'll see:\n\n=> Which Kubernetes components are actually required to run workloads\n=> Running workloads without etcd, schedulers, or nodes\n=> Local-first execution with Kubernetes-compatible APIs\n=> Clear limitations and failure modes of this approach\n=> What this model enables for edge, disaster recovery, and local development\n\nThe goal is not to replace Kubernetes, but to understand which parts of it are essential and which are incidental. with a demo",
+              "recording": "https://www.youtube.com/watch?v=SLScAomR_lY"
+            },
+            {
+              "id": "2NrzP",
+              "title": "From Flaky Builds to Self-Healing Deployments: An OTel-Driven CI/CD Tale",
+              "speakers": "Shivay Lamba, Chamod Perera",
+              "room": "Jasmine 2 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2NrzP",
+              "description": "This session is based on real production experience building and operating an observability-driven CI/CD platform using CNCF projects. It shows how OpenTelemetry can extend beyond application monitoring to become a core primitive for modern CI/CD systems.While running dozens of Kubernetes clusters and handling 60M+ requests per minute, costly east-west network load balancers and fragmented CI metrics created blind spots that hid deployment failures. Traditional dashboards showed healthy systems, while rollouts quietly broke.We share how treating Jenkins pipelines as distributed systems enabled end-to-end tracing across builds, deployments, and runtime behavior. By correlating CI signals with OpenTelemetry traces, we detected cascading failures and closed the loop with automated GitOps rollbacks. The talk covers real challenges, trade-offs, and lessons learned to build reliable, self-healing delivery pipelines.",
+              "recording": "https://www.youtube.com/watch?v=xL6-u-LSN4w"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-19T16:10:00+05:30",
+          "end": "2026-06-19T16:40:00+05:30",
+          "startLabel": "4:10 PM",
+          "endLabel": "4:40 PM",
+          "talks": [
+            {
+              "id": "2IW4c",
+              "title": "The Leapfrog Upgrade Playbook",
+              "speakers": "Yug Gupta",
+              "room": "Lotus 3 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW4c",
+              "description": "This is a story of how Walmart Leapfrogged 11 Kubernetes Releases Without Customer Downtime.\n\nIf that sounds impossible, wait untill you see the constraints: Millions of k8s resources, an etcd database nearing ~7GB, and a version gap so wide that “just upgrade” wasn’t a plan. We needed a method that was safe across API removals, predictable under extreme object counts, and repeatable enough to become a standard operating procedure.\n\nAttendees will learn: (1) how to preflight deprecated APIs and CRDs using upstream guidance (2) how to design restore ordering and “selective restore” boundaries to avoid bringing back broken objects, (3) how to tune API server concurrency so backup/restore doesn’t become a self-inflicted outage, and (4) how to validate correctness and plan rollbacks.\n\nThis is a field guide for anyone who’s fallen far behind and needs a safe way forward without betting production on a one-shot upgrade.\n\nNo secret sauce, just the hard-earned physics of Kubernetes at scale.",
+              "recording": "https://www.youtube.com/watch?v=opyZZ0Ephhw"
+            }
+          ]
+        },
+        {
+          "start": "2026-06-19T16:50:00+05:30",
+          "end": "2026-06-19T17:20:00+05:30",
+          "startLabel": "4:50 PM",
+          "endLabel": "5:20 PM",
+          "talks": [
+            {
+              "id": "2IW4l",
+              "title": "Zero Trust for Fintech: Building Secure Banking Infrastructure With Cilium",
+              "speakers": "Herbert Sianturi, Prasta Maha",
+              "room": "Lotus 1 (Level 3)",
+              "url": "https://kccncind2026.sched.com/event/2IW4l",
+              "description": "In the highly regulated world of banking, \"security by default\" isn't just a buzzword, but it is a compliance requirement. As financial institutions migrate to Kubernetes, they face a critical challenge: How do you enforce strict network segregation, achieve Zero Trust, and maintain deep observability.\n\nThis session explores how to leverage Cilium and eBPF to build a battle-hardened banking infrastructure. We will move beyond standard Kubernetes Network Policies, demonstrating how to implement Layer 7 filtering, transparent encryption, and deep observability in service communications.\n\nAttendees will receive a practical roadmap for:\n- Enforcing Zero Trust: Using Cilium Network Policies to restrict traffic based on identity and fqdn, not just IP addresses.\n- Achieving Compliance: implementing Transparent Encryption (WireGuard/IPsec) to meet data-in-transit requirements.\n- Auditing: Utilizing Hubble for deep visibility into dropped packets and flow logs to satisfy security audits.",
+              "recording": "https://www.youtube.com/watch?v=3zr_smC81Ec"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -35,12 +35,20 @@ globalThis.fetch = async (input, init) => {
   const route = routes.find((candidate) => url.includes(candidate.match));
   if (!route) throw new Error('unstubbed request: ' + url);
   if (route.networkError) throw new Error(route.networkError);
-  const status = route.status ?? 200;
+  // A route with a sequence answers each call with the next entry and then
+  // keeps repeating the last one, so a script's retry path can be driven.
+  const reply = route.sequence
+    ? route.sequence[Math.min(route.calls ?? 0, route.sequence.length - 1)]
+    : route;
+  route.calls = (route.calls ?? 0) + 1;
+  const status = reply.status ?? 200;
+  const body = reply.body ?? [];
   return {
     ok: status >= 200 && status < 300,
     status,
     headers: new Headers(route.headers ?? {}),
-    json: async () => route.body ?? [],
+    json: async () => body,
+    text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
   };
 };
 `;
@@ -141,7 +149,11 @@ exit 0
  *   shim copies the fixture with `cp -R`, which preserves symlinks, so these
  *   reach the script the same way a symlink committed upstream would.
  * @param {Array<{match: string, status?: number, body?: unknown,
+ *   sequence?: Array<{status?: number, body?: unknown}>,
  *   headers?: Record<string, string>, networkError?: string}>} [options.routes]
+ *   a route's `body` is returned from `json()` as is and from `text()` as a
+ *   string (verbatim when it already is one); `sequence` answers successive
+ *   calls in order, repeating its last entry
  * @param {string[]} [options.outputs] repo-relative paths to read back afterwards
  * @param {Record<string, string>} [options.env] extra environment variables
  * @returns {{status: number, stdout: string, stderr: string,

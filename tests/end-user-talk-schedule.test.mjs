@@ -152,9 +152,13 @@ for (const { event, schedule } of snapshots) {
           day: 'numeric',
         },
       );
+      const label = {
+        sessionize: 'official Sessionize API',
+        sched: 'official Sched listing',
+      }[schedule.source];
       assert.equal(
         textOf(source),
-        `Source: official Sessionize API · Verified ${verified}. Times, rooms, and speakers may change; check the live official schedule for updates.`,
+        `Source: ${label} · Verified ${verified}. Times, rooms, and speakers may change; check the live official schedule for updates.`,
       );
       assert.deepEqual(
         findAllByType(source, 'a').map((node) => node.props.href),

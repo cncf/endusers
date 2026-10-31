@@ -1,8 +1,15 @@
 import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
 
-// Sessionize abstracts separate paragraphs with blank lines (the collector
-// normalizes CRLFs and trims the text); a run of blank lines, with or without
+// The provenance link names what the collector read, keyed by the snapshot's
+// `source`, so a reader can tell a Sessionize API feed from a Sched listing.
+const SOURCE_LABELS = {
+  sessionize: 'official Sessionize API',
+  sched: 'official Sched listing',
+};
+
+// Abstracts separate paragraphs with blank lines (the collector normalizes
+// line endings and trims the text); a run of blank lines, with or without
 // stray spaces on them, is one break, and a trailing break adds no paragraph.
 function paragraphs(text) {
   return text.split(/\n\s*\n/).filter((part) => part !== '');
@@ -73,7 +80,7 @@ export default function EndUserTalkSchedule({ schedule }) {
       <p className={styles.source}>
         Source:{' '}
         <a href={schedule.apiUrl} rel="noreferrer">
-          official Sessionize API
+          {SOURCE_LABELS[schedule.source]}
         </a>{' '}
         · Verified {verifiedDate}. Times, rooms, and speakers may change; check
         the{' '}

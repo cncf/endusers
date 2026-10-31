@@ -17,17 +17,20 @@ import { checkUrl, reportAndExit } from './lib/validate-utils.mjs';
 // dataset under data/ is already covered by a validate:* script.
 //
 // The hosts are the ones data/end-user-talk-events.json may point a snapshot
-// at: the Linux Foundation and LF Open Source China schedules, and Sessionize,
-// which also serves the event subdomains the China schedule lives on. A
-// suffix match, not an equality test: checkUrl() accepts the host itself or
-// any subdomain of it, and rejects a lookalike that merely ends in the same
-// characters.
+// at: the Linux Foundation and LF Open Source China schedules, Sessionize,
+// which also serves the event subdomains the China schedule lives on, and
+// Sched, where the India schedule is published. A suffix match, not an
+// equality test: checkUrl() accepts the host itself or any subdomain of it,
+// and rejects a lookalike that merely ends in the same characters.
 const SCHEDULE_HOSTS = [
   'events.linuxfoundation.org',
   'lfopensource.cn',
   'sessionize.com',
+  'sched.com',
 ];
-const API_HOST = 'sessionize.com';
+// Each schedule source the collector can read, with the host its data comes
+// from. An event names its source, or is a Sessionize event when it does not.
+const SOURCES = { sessionize: 'sessionize.com', sched: 'sched.com' };
 // Recordings are published on the CNCF YouTube channel; the short host is
 // what a share button hands a maintainer.
 const RECORDING_HOSTS = ['youtube.com', 'youtu.be'];
@@ -81,8 +84,12 @@ for (const [index, event] of (Array.isArray(eventsDocument?.events)
     continue;
   }
   slugs.add(event.slug);
+  const source = event.source ?? 'sessionize';
+  if (!Object.hasOwn(SOURCES, source)) {
+    fail(path, `source must be one of ${Object.keys(SOURCES).join(', ')}`);
+  }
   checkLink(path, 'sourceUrl', event.sourceUrl, SCHEDULE_HOSTS);
-  checkLink(path, 'apiUrl', event.apiUrl, [API_HOST]);
+  checkLink(path, 'apiUrl', event.apiUrl, [SOURCES[source] ?? '']);
   if (
     typeof event.sessionUrl !== 'string' ||
     !event.sessionUrl.includes('{id}')
@@ -118,6 +125,9 @@ for (const [index, event] of (Array.isArray(eventsDocument?.events)
       path,
       'select must be { category, item } or { sessionIds } with at least one id',
     );
+  } else if (source === 'sched' && !byIds) {
+    // Sched has no track categories to select by; its sessions are curated.
+    fail(path, 'a sched event must select { sessionIds }');
   }
   events.push(event);
 }
@@ -182,8 +192,9 @@ for (const event of events) {
   const data = JSON.parse(readFileSync(snapshotPath));
   // The snapshot's provenance must be the event's own, not a stale copy of
   // another conference's feed that happens to parse.
-  for (const field of ['sourceUrl', 'apiUrl']) {
-    if (data?.[field] !== event[field]) {
+  const expected = { ...event, source: event.source ?? 'sessionize' };
+  for (const field of ['source', 'sourceUrl', 'apiUrl']) {
+    if (data?.[field] !== expected[field]) {
       fail(
         pathPrefix,
         `${field} does not match ${EVENTS_PATH}.json; re-run npm run collect:end-user-talks`,
@@ -200,7 +211,7 @@ for (const event of events) {
         if (typeof talk?.description !== 'string') {
           fail(
             path,
-            'description must be a string (empty when Sessionize has none)',
+            'description must be a string (empty when the schedule has none)',
           );
         }
         // The generated links are the overlay's, or the feed's recording when
