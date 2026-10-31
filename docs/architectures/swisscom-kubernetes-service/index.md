@@ -51,7 +51,7 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
   <CNCFProjectCard name={"Kyverno"} href={"https://www.cncf.io/projects/kyverno/"} logo={"/img/cncf-projects/kyverno-kyverno-horizontal-color.svg"} since={"2024"} version={"v1.13.4 (CNIP)"} description={"- Kyverno serves as the default policy engine for infrastructure and user clusters, providing robust security constraints. In addition to Kyverno, also Chainsaw (a Kyverno sub-project) is used for automated, declarative e2e testing."} />
 
-  <CNCFProjectCard name={"ArgoCD"} href={"https://www.cncf.io/projects/argo/"} logo={"/img/cncf-projects/argo-argo-horizontal-color.svg"} since={"2024"} version={"v3.2.0 (CNIP)"} description={"- ArgoCD allows us to deliver comprehensive infrastructure using a fully automated GitOps methodology."} />
+  <CNCFProjectCard name={"Argo CD"} href={"https://www.cncf.io/projects/argo/"} logo={"/img/cncf-projects/argo-argo-horizontal-color.svg"} since={"2024"} version={"v3.2.0 (CNIP)"} description={"- Argo CD allows us to deliver comprehensive infrastructure using a fully automated GitOps methodology."} />
 
   <CNCFProjectCard name={"Helm"} href={"https://www.cncf.io/projects/helm/"} logo={"/img/cncf-projects/helm-helm-horizontal-color.svg"} since={"2024"} version={"v3.5.1 (CNIP), v3.19.4 (SKP)"} description={"- Helm automates the creation, packaging, configuration, and deployment of Kubernetes applications by creating reusable charts."} />
 

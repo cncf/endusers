@@ -87,12 +87,12 @@
     "tags": ["cloud native", "private cloud", "kubernetes", "switzerland"],
     "projects": [
       "Argo",
-      "Bootc",
+      "bootc",
       "ContainerSSH",
       "Longhorn",
       "Kubernetes",
       "Kubeflow",
-      "Kserve",
+      "KServe",
       "Kyverno",
       "Kueue",
       "Prometheus",
@@ -144,7 +144,7 @@
       "reliability"
     ],
     "projects": [
-      "LitmusChaos",
+      "Litmus",
       "Kubernetes",
       "Argo",
       "Prometheus",
@@ -179,7 +179,7 @@
       "Argo",
       "Cluster API",
       "ExternalDNS",
-      "External Secrets Operator",
+      "external-secrets",
       "Harbor",
       "Kubernetes",
       "OpenStack",

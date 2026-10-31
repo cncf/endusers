@@ -15,7 +15,7 @@ architecture:
     - E-commerce
     - reliability
   projects:
-    - LitmusChaos
+    - Litmus
     - Kubernetes
     - Argo
     - Prometheus
@@ -33,7 +33,7 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
 ## Relevant CNCF projects
 
-  <CNCFProjectCard name={"LitmusChaos"} href={"https://www.cncf.io/projects/litmus/"} logo={"/img/cncf-projects/litmus-litmus-icon-color.svg"} since={"2023"} description={"Central chaos engineering platform. Provides Kubernetes-native chaos orchestration, a workflow controller, a probe framework, a drag-and-drop UI, and resilience scoring. Flipkart deploys a single centralized control plane (operator \\+ workflow controller) and federates tenant access through subscribers — forming the foundation of the multi-tenant chaos platform."} />
+  <CNCFProjectCard name={"Litmus"} href={"https://www.cncf.io/projects/litmus/"} logo={"/img/cncf-projects/litmus-litmus-icon-color.svg"} since={"2023"} description={"Central chaos engineering platform. Provides Kubernetes-native chaos orchestration, a workflow controller, a probe framework, a drag-and-drop UI, and resilience scoring. Flipkart deploys a single centralized control plane (operator \\+ workflow controller) and federates tenant access through subscribers — forming the foundation of the multi-tenant chaos platform."} />
 
   <CNCFProjectCard name={"Kubernetes"} href={"https://www.cncf.io/projects/kubernetes/"} logo={"/img/cncf-projects/kubernetes-kubernetes-icon-color.svg"} since={"2021"} description={"Runtime substrate for hundreds of Flipkart microservices and for the LitmusChaos control plane itself. Custom Resource Definitions (ChaosEngine, ChaosExperiment, ChaosResult) model chaos as Kubernetes objects. DaemonSets are used to provide a node-local, long-lived chaos injection surface for high-availability experiment execution."} />
 
