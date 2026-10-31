@@ -188,32 +188,37 @@ Rules:
   `npm run validate:community-groups`. The weekly "Refresh community profiles"
   workflow re-runs both and opens a pull request with the result.
 - **Never edit `data/end-user-talks/` by hand.** Each file mirrors one
-  conference's official schedule from the public Sessionize API. The
+  conference's official schedule from its public source: the Sessionize API
+  the Linux Foundation schedules embed, or, for a conference published on
+  Sched (`source: "sched"`), the Sched listing and session pages. The
   conferences are listed in the curated `data/end-user-talk-events.json`: each
   entry names the schedule, API and per-session URLs, the event-local UTC
   offset, and the rule that selects the end user talks, either the official
   Sessionize category (`select.category` and `select.item`, as KubeCon North
   America publishes) or a curated list of session ids (`select.sessionIds`)
-  when the conference has no end user track. An event page renders its
-  snapshot by importing it and passing it to `EndUserTalkSchedule`. The weekly
-  "Refresh metrics" workflow re-runs `npm run collect:end-user-talks` (no
-  `GH_TOKEN` needed) and opens a pull request with the result; a maintainer
-  can also run it by hand when a conference schedule changes.
+  when the conference has no end user track; a Sched event always curates
+  ids. An event page renders its snapshot by importing it and passing it to
+  `EndUserTalkSchedule`. No workflow refreshes the snapshots: a conference
+  schedule is fixed once the event has run, so run
+  `npm run collect:end-user-talks` (no `GH_TOKEN` needed) when adding an event
+  or curating its links and commit the result. The Sched source fetches one
+  page per curated session and waits out Sched's intermittent maintenance
+  page, so a run can take several minutes.
   `npm run validate:end-user-talks` checks the events file, enforces the link
   host allow-list (`events.linuxfoundation.org`, `lfopensource.cn`,
-  `sessionize.com`) and the per-session URL shape, and runs as part of
-  `validate:all`, so it gates the Netlify publish build as well as CI; the
-  schedule's rendering and the collector's output are additionally covered by
-  the unit tests.
+  `sessionize.com`, `sched.com`) and the per-session URL shape, and runs as
+  part of `validate:all`, so it gates the Netlify publish build as well as CI;
+  the schedule's rendering and the collector's output are additionally covered
+  by the unit tests.
 - **Curate slides and recordings in `data/end-user-talk-links.json`.** Each
-  entry names a talk by its Sessionize session `id` (the id in its official
-  schedule link) and carries a `slides` URL (https) and/or a YouTube
-  `recording` URL; keep the entries sorted by `id`. The collector merges them
-  into the matching talk in `data/end-user-talks/`, so re-run
-  `npm run collect:end-user-talks` after editing the file and commit both. The
-  talk's abstract comes from Sessionize and needs no curation. The validator
-  rejects an entry whose id names no talk and a snapshot that disagrees with
-  the curated links.
+  entry names a talk by its session `id` (the id in its official schedule
+  link, a Sessionize number or a short Sched code) and carries a `slides` URL
+  (https) and/or a YouTube `recording` URL; keep the entries sorted by `id`.
+  The collector merges them into the matching talk in `data/end-user-talks/`,
+  so re-run `npm run collect:end-user-talks` after editing the file and commit
+  both. The talk's abstract comes from the official schedule and needs no
+  curation. The validator rejects an entry whose id names no talk and a
+  snapshot that disagrees with the curated links.
 
 ## Blog contributions
 

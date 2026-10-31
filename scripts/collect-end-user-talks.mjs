@@ -4,6 +4,9 @@
 // schedule's public data -- the Sessionize JSON API the Linux Foundation
 // schedules embed, or the Sched listing and session pages when a conference
 // publishes on Sched instead -- and written to data/end-user-talks/<slug>.json.
+// No workflow runs this: a schedule is fixed once its event has run, so a
+// maintainer runs it when adding an event or curating its slides and
+// recording links, and commits the result.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import {
   isSchedOutage,

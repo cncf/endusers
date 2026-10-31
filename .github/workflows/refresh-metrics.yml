@@ -3,11 +3,15 @@ name: Refresh metrics
 on:
   # Weekly, offset from the other scheduled workflows so they do not contend
   # for runners. Everything this lane collects (metrics, the case study
-  # catalog, the End User Talks schedule) is rendered on the live site and
-  # goes visibly stale when it is only refreshed by hand. The end user member
-  # list is refreshed by refresh-members.yml: it is the only refresh that
-  # mirrors third-party binary assets, and an upstream logo that breaks the
-  # 2 MB publish limit must not hold these datasets back (#1980).
+  # catalog) is rendered on the live site and goes visibly stale when it is
+  # only refreshed by hand. The end user member list is refreshed by
+  # refresh-members.yml: it is the only refresh that mirrors third-party
+  # binary assets, and an upstream logo that breaks the 2 MB publish limit
+  # must not hold these datasets back (#1980). The End User Talks schedules
+  # are not refreshed here: a conference schedule is fixed once the event has
+  # run, so a maintainer runs `npm run collect:end-user-talks` when adding an
+  # event or curating its links (CONTRIBUTING.md, "Never edit
+  # data/end-user-talks/ by hand").
   # A maintainer can still trigger it from the Actions tab or `gh workflow
   # run` when upstream changes should land sooner.
   schedule:
@@ -37,11 +41,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - run: npm run collect:case-studies
-      - run: npm run collect:end-user-talks
       - run: npm run fix:format
       - run: npm run validate:metrics
       - run: npm run validate:case-studies
-      - run: npm run validate:end-user-talks
       - run: npm run test:unit
       - run: npm run build
       - uses: ./.github/actions/open-automation-pr
@@ -50,7 +52,7 @@ jobs:
           commit-message: 'chore: refresh metrics'
           title: 'chore: refresh metrics'
           body: |
-            Automated refresh of `data/metrics.json`,
-            `data/case-studies.json` and `data/end-user-talks/`.
+            Automated refresh of `data/metrics.json` and
+            `data/case-studies.json`.
 
             Validation, the unit tests and the production build passed.
