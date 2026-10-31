@@ -159,7 +159,7 @@ understood, and states what would make the acceptance expire.
 
 | Advisory                                                                 | Package     | Installed                    | Reached through                                                                                 | Exposure                                                                                                                                          |
 | ------------------------------------------------------------------------ | ----------- | ---------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) | `minimatch` | 3.1.5 (6 copies), 10.2.6 (1) | `serve-handler` (exact pin), `@stryker-mutator/*`, `markdownlint-cli`, `eslint` and its plugins | Build-time and developer tooling only — every glob pattern `minimatch` reads here is authored in this repository, not supplied by untrusted input |
+| [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) | `minimatch` | 3.1.5 (6 copies), 10.2.6 (3) | `serve-handler` (exact pin), `@stryker-mutator/*`, `markdownlint-cli`, `eslint` and its plugins | Build-time and developer tooling only — every glob pattern `minimatch` reads here is authored in this repository, not supplied by untrusted input |
 
 GHSA-g3hv-75wg-m249 is a denial of service via glob-pattern amplification,
 patched only in `minimatch` 11.0.1 — outside every consumer's declared
