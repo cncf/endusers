@@ -72,6 +72,21 @@ words:
   - Adobe
   - Allianz
   - CERN
+  # docs/events/2026/kubecon-china.md (speaker names and projects from the official schedule)
+  - Chenyu
+  - Chong
+  - Fengjun
+  - Fupan
+  - Kang
+  - Kata
+  - Wenbo
+  - Xuewei
+  - Yaya
+  - Yeung
+  - Yihang
+  - Zesheng
+  - Zhang
+  - Zong
   # docs/architectures/capital-one/index.md (imported upstream prose and collector config)
   - reinstrumentation
   - reinstrumenting
