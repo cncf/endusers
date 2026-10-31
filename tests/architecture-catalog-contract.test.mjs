@@ -307,11 +307,21 @@ test('no project is listed under two spellings across the catalog', () => {
 // pages link to the same project are one filter option listed twice.
 const PROJECT_CARD = /<CNCFProjectCard\s([^>]*?)\/>/g;
 
+// Pages reach the catalog two ways and quote card attributes differently. The
+// unattended import writes the braced `name={"Argo"}` form
+// (scripts/lib/jsx-attributes.mjs); a hand-written submission writes the plain
+// `name="Argo"` form, which the MDX active-content allowlist accepts
+// (scripts/lib/mdx-active-content.mjs) and the site renders identically.
+// Reading only the braced form leaves every card on a hand-written page
+// unparsed, and the check below then has no labels to compare for that
+// architecture and passes without covering it.
+const QUOTED = '("(?:[^"\\\\]|\\\\.)*")';
+
 function cardAttribute(attributes, name) {
   const match = attributes.match(
-    new RegExp(`(?:^|\\s)${name}=\\{("(?:[^"\\\\]|\\\\.)*")\\}`),
+    new RegExp(`(?:^|\\s)${name}=(?:\\{\\s*${QUOTED}\\s*\\}|${QUOTED})`),
   );
-  return match ? JSON.parse(match[1]) : null;
+  return match ? JSON.parse(match[1] ?? match[2]) : null;
 }
 
 function cncfProjectSlug(href) {
@@ -320,18 +330,44 @@ function cncfProjectSlug(href) {
   return slug.replace(/\/$/, '');
 }
 
+function projectSlugsInPage(page) {
+  const slugs = new Map();
+  for (const [, attributes] of page.matchAll(PROJECT_CARD)) {
+    const name = cardAttribute(attributes, 'name');
+    const slug = cncfProjectSlug(cardAttribute(attributes, 'href'));
+    if (name && slug) slugs.set(name, slug);
+  }
+  return slugs;
+}
+
 function projectSlugsByLabel() {
   const slugs = new Map();
   for (const record of catalog) {
     const page = readFileSync(join(docsDir, record.id, 'index.md'), 'utf8');
-    for (const [, attributes] of page.matchAll(PROJECT_CARD)) {
-      const name = cardAttribute(attributes, 'name');
-      const slug = cncfProjectSlug(cardAttribute(attributes, 'href'));
-      if (name && slug) slugs.set(name, slug);
-    }
+    for (const [name, slug] of projectSlugsInPage(page)) slugs.set(name, slug);
   }
   return slugs;
 }
+
+// Guard self-check: every page on `main` happens to use the braced form, so
+// nothing in the catalog would report a parser that reads only that form. These
+// cards stand in for the hand-written page the check must cover too.
+test('project cards are read in both attribute forms the pages use', () => {
+  const page = [
+    '<CNCFProjectCard name={"Argo"} href={"https://www.cncf.io/projects/argo/"} />',
+    '<CNCFProjectCard name="HAMi" href="https://www.cncf.io/projects/hami/" />',
+    '<CNCFProjectCard name={ "Fluid" } href={ "https://www.cncf.io/projects/fluid/" } />',
+  ].join('\n\n');
+  assert.deepEqual(
+    [...projectSlugsInPage(page)],
+    [
+      ['Argo', 'argo'],
+      ['HAMi', 'hami'],
+      ['Fluid', 'fluid'],
+    ],
+    'a card the parser cannot read drops its project out of the two-label check below',
+  );
+});
 
 test('no CNCF project is listed under two labels across the catalog', () => {
   const slugs = projectSlugsByLabel();
