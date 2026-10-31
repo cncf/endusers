@@ -109,11 +109,13 @@ jobs:
       - name: Check content contracts
         if: ${{ !cancelled() && env.CONTENT_ONLY == 'true' }}
         # Every unit suite that reads an authored document (docs/, blog/,
-        # adr/ or a root document). tests/audit-gate.test.mjs also reads
-        # SECURITY.md, but only in the register checks that now live in
-        # tests/security-advisory-register.test.mjs; what stays behind there
-        # spends ~40s on the CLI retry and deadline arms, so it stays on the
-        # full path.
+        # adr/ or a root document). tests/content-only-ci-workflow.test.mjs
+        # scans tests/ for suites that read those trees and fails when one is
+        # missing here without a stated reason. tests/audit-gate.test.mjs
+        # also reads SECURITY.md, but only in the register checks that now
+        # live in tests/security-advisory-register.test.mjs; what stays
+        # behind there spends ~40s on the CLI retry and deadline arms, so it
+        # stays on the full path.
         run: |
           node --test \
             tests/docs-contract.test.mjs \
@@ -123,6 +125,7 @@ jobs:
             tests/architectures-sidebar-contract.test.mjs \
             tests/blog-frontmatter.test.mjs \
             tests/community-people-data.test.mjs \
+            tests/content-only-ci-workflow.test.mjs \
             tests/content-security-contract.test.mjs \
             tests/contributing-e2e-setup.test.mjs \
             tests/contributing-just-build-parity.test.mjs \
@@ -131,10 +134,14 @@ jobs:
             tests/e2e-docs-threshold-parity.test.mjs \
             tests/enduser-directory-copy.test.mjs \
             tests/governance-hygiene-parity.test.mjs \
+            tests/mdx-components.test.mjs \
+            tests/mdx-paragraph-nesting.test.mjs \
             tests/root-docs-links.test.mjs \
             tests/security-advisory-register.test.mjs \
+            tests/site-config.test.mjs \
             tests/sitemap-exclusions.test.mjs \
-            tests/static-assets.test.mjs
+            tests/static-assets.test.mjs \
+            tests/static-orphans.test.mjs
       - name: Build production site
         run: npm run build:production
 
