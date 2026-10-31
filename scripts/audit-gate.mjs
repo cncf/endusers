@@ -20,11 +20,17 @@
 // tolerated while it is unfixable or needs a semver-major upgrade, but fails
 // the gate as soon as npm can patch it in range, so `npm audit fix` (and the
 // audit-fix workflow that runs it when this gate is red on main) is asked
-// for rather than left until someone reads the report.
+// for rather than left until someone reads the report. Because npm's
+// `fixAvailable` is a prediction that can name a fix no published release
+// satisfies, each such finding is confirmed by running `npm audit fix` on a
+// scratch copy of the lockfile first (see confirmInRangeFixes()).
 //
 // Usage: node scripts/audit-gate.mjs  (CI: `npm run check:audit`)
 
 import { spawnSync } from 'node:child_process';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 // Advisories npm cannot fix because no patched release exists. Every entry
 // must correspond to a row in SECURITY.md's "Known unpatched dependency
@@ -349,6 +355,136 @@ function runAudit() {
   return { report, failure: null, output, status: result.status };
 }
 
+/**
+ * Lists the versions of `name` the lockfile resolves, at every nesting
+ * depth, as a sorted comparable string.
+ *
+ * @param {{packages?: Record<string, {version?: string}>}} lock a parsed
+ *   package-lock.json
+ * @param {string} name the package to look up
+ * @returns {string} e.g. `4.3.1` or `1.16.1,1.16.2`; empty when absent
+ */
+function lockedVersions(lock, name) {
+  const suffix = `node_modules/${name}`;
+  return Object.entries(lock.packages ?? {})
+    .filter(([path]) => path === suffix || path.endsWith(`/${suffix}`))
+    .map(([, pkg]) => String(pkg.version ?? ''))
+    .sort()
+    .join(',');
+}
+
+/**
+ * Checks, for each in-range finding, whether `npm audit fix` really moves
+ * the package it names.
+ *
+ * `fixAvailable: true` is npm's prediction, and the prediction can be wrong:
+ * when a registry advisory is published with a bounded vulnerable range but
+ * no patched release yet exists (every published version falls inside the
+ * range), npm 10 still reports a fix, while `npm audit fix` leaves the
+ * lockfile where it was. Taken at face value, that reds every full-path PR
+ * with an instruction nobody can carry out. So the gate asks the only
+ * authority on the question -- `npm audit fix` itself -- by running it on a
+ * scratch copy of package.json and package-lock.json and comparing the
+ * named package's locked versions before and after. A finding whose
+ * versions did not move is a phantom and is reported as a warning rather
+ * than a failure.
+ *
+ * The scratch run is judged by the same contract as runAudit(): a completed
+ * `npm audit fix --json` carries `audit.vulnerabilities` (npm exits 1 either
+ * way while any advisory remains), an outage prints an error document. When
+ * the run cannot be judged, nothing here is trusted and every finding is
+ * returned as confirmed, so a registry fault fails closed exactly as it did
+ * before this check existed.
+ *
+ * @param {Array<{name: string}>} inRange findings from
+ *   inRangeFixableAdvisories()
+ * @param {string} [cwd] project root holding package.json and
+ *   package-lock.json
+ * @returns {{confirmed: object[], phantom: object[], failure: string|null}}
+ */
+export function confirmInRangeFixes(inRange, cwd = process.cwd()) {
+  const lockPath = join(cwd, 'package-lock.json');
+  let before;
+  try {
+    before = JSON.parse(readFileSync(lockPath, 'utf8'));
+  } catch (error) {
+    return {
+      confirmed: inRange,
+      phantom: [],
+      failure: `cannot read ${lockPath}: ${error.message}`,
+    };
+  }
+  const scratch = mkdtempSync(join(tmpdir(), 'audit-gate-fix-'));
+  try {
+    for (const file of ['package.json', 'package-lock.json', '.npmrc']) {
+      const source = join(cwd, file);
+      if (existsSync(source)) cpSync(source, join(scratch, file));
+    }
+    const result = spawnSync(
+      'npm',
+      [
+        'audit',
+        'fix',
+        '--package-lock-only',
+        '--ignore-scripts',
+        '--no-fund',
+        '--json',
+        `--fetch-timeout=${AUDIT_FETCH_TIMEOUT_MS}`,
+      ],
+      {
+        cwd: scratch,
+        encoding: 'utf8',
+        maxBuffer: 64 * 1024 * 1024,
+        timeout: AUDIT_FETCH_TIMEOUT_MS,
+        killSignal: 'SIGKILL',
+      },
+    );
+    if (result.error) {
+      return {
+        confirmed: inRange,
+        phantom: [],
+        failure: `npm audit fix did not run: ${result.error}`,
+      };
+    }
+    let outcome;
+    let after;
+    try {
+      outcome = JSON.parse(result.stdout);
+      after = JSON.parse(
+        readFileSync(join(scratch, 'package-lock.json'), 'utf8'),
+      );
+    } catch {
+      return {
+        confirmed: inRange,
+        phantom: [],
+        failure: 'npm audit fix did not produce parseable JSON and a lockfile',
+      };
+    }
+    if (
+      typeof outcome?.audit?.vulnerabilities !== 'object' ||
+      outcome.audit.vulnerabilities === null
+    ) {
+      return {
+        confirmed: inRange,
+        phantom: [],
+        failure:
+          `npm audit fix did not complete (exit code ${result.status}): ` +
+          (result.stderr || result.stdout).trim(),
+      };
+    }
+    const confirmed = [];
+    const phantom = [];
+    for (const item of inRange) {
+      const moved =
+        lockedVersions(before, item.name) !== lockedVersions(after, item.name);
+      (moved ? confirmed : phantom).push(item);
+    }
+    return { confirmed, phantom, failure: null };
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
 // The allowlist is a parameter so the unit tests can drive every arm of the
 // gate whatever the shipped allowlist happens to contain; the CLI entry below
 // always runs with ALLOWLISTED_ADVISORIES.
@@ -450,24 +586,42 @@ export function main(allowlist = ALLOWLISTED_ADVISORIES) {
   // published and in range, so the remedy is mechanical.
   const inRange = inRangeFixableAdvisories(report, allowlist);
   if (inRange.length > 0) {
-    console.error(
-      'audit-gate: moderate/low advisories npm can fix within the declared ranges:',
-    );
-    for (const item of inRange) {
+    const { confirmed, phantom, failure } = confirmInRangeFixes(inRange);
+    if (failure !== null) {
       console.error(
-        `  ${item.name} (${item.severity}): ${item.advisories.join(', ')} — ` +
-          describeFix(item.fixAvailable),
+        `audit-gate: could not confirm the reported fixes (${failure}); ` +
+          'treating each as real',
       );
     }
-    console.error(
-      'These sit below the high/critical threshold but have a patched ' +
-        'release reachable without a semver-major change. Run ' +
-        '`npm audit fix --package-lock-only` (raise the matching override ' +
-        'floor in package.json if one pins the package) and commit the ' +
-        'lockfile; on main the "Dependency audit fix" workflow opens that ' +
-        'PR automatically.',
-    );
-    process.exit(1);
+    for (const item of phantom) {
+      console.error(
+        `audit-gate: warning — ${item.name} (${item.severity}): ` +
+          `${item.advisories.join(', ')} is reported as fixable, but ` +
+          '`npm audit fix --package-lock-only` leaves its locked version ' +
+          'unchanged; no release outside the vulnerable range is reachable ' +
+          'yet. Ignoring the finding until npm can actually apply the fix.',
+      );
+    }
+    if (confirmed.length > 0) {
+      console.error(
+        'audit-gate: moderate/low advisories npm can fix within the declared ranges:',
+      );
+      for (const item of confirmed) {
+        console.error(
+          `  ${item.name} (${item.severity}): ${item.advisories.join(', ')} — ` +
+            describeFix(item.fixAvailable),
+        );
+      }
+      console.error(
+        'These sit below the high/critical threshold but have a patched ' +
+          'release reachable without a semver-major change. Run ' +
+          '`npm audit fix --package-lock-only` (raise the matching override ' +
+          'floor in package.json if one pins the package) and commit the ' +
+          'lockfile; on main the "Dependency audit fix" workflow opens that ' +
+          'PR automatically.',
+      );
+      process.exit(1);
+    }
   }
   console.log(
     `audit-gate: ok — ${allowlisted.length} high/critical finding(s), all ` +
