@@ -68,9 +68,20 @@ function sessionizeFixture() {
   };
 }
 
+// The fixtures schedule the NA event for November 2026; pinning the
+// collector's idea of today keeps that an upcoming event on any machine.
+const TODAY = '2026-01-01';
+
 function collect(
   fixture = sessionizeFixture(),
-  { fixtures = {}, events = [naEvent], routes = [], outputs = [] } = {},
+  {
+    fixtures = {},
+    events = [naEvent],
+    routes = [],
+    outputs = [],
+    args = [],
+    env = {},
+  } = {},
 ) {
   return runScriptInSandbox({
     script: 'collect-end-user-talks.mjs',
@@ -83,6 +94,8 @@ function collect(
     ],
     outputs: [OUTPUT, ...outputs],
     fixtures: { [EVENTS]: JSON.stringify({ events }), ...fixtures },
+    args,
+    env: { ENDUSERS_TODAY: TODAY, ...env },
   });
 }
 
@@ -190,6 +203,69 @@ test('leaves the schedule untouched when nothing changed', () => {
     JSON.parse(second.outputs[OUTPUT]).generatedAt,
     firstCatalog.generatedAt,
   );
+});
+
+// A schedule is final once its event has run; the weekly run must not spend
+// a request (or, for Sched, a request per session) re-reading one.
+test('skips an event whose snapshot ends before today unless it is asked for', () => {
+  const first = collect();
+  assert.equal(first.status, 0, first.stderr);
+  const snapshot = first.outputs[OUTPUT];
+  const after = { env: { ENDUSERS_TODAY: '2026-11-11' } };
+
+  const skipped = collect(sessionizeFixture(), {
+    fixtures: { [OUTPUT]: snapshot },
+    ...after,
+  });
+  assert.equal(skipped.status, 0, skipped.stderr);
+  assert.match(
+    skipped.stdout,
+    /Skipping kubecon-na-2026; its schedule is final\. Run npm run collect:end-user-talks -- kubecon-na-2026 to refresh it anyway\./,
+  );
+  assert.equal(skipped.requests.length, 0);
+  assert.equal(skipped.outputs[OUTPUT], snapshot);
+
+  // The last day of the event is still today, not yet past.
+  const onTheDay = collect(sessionizeFixture(), {
+    fixtures: { [OUTPUT]: snapshot },
+    env: { ENDUSERS_TODAY: '2026-11-10' },
+  });
+  assert.equal(onTheDay.status, 0, onTheDay.stderr);
+  assert.equal(onTheDay.requests.length, 1);
+
+  const changed = sessionizeFixture();
+  changed.sessions[0].title = 'Platform Engineering at Acme, Revisited';
+  for (const args of [['kubecon-na-2026'], ['--all']]) {
+    const forced = collect(changed, {
+      fixtures: { [OUTPUT]: snapshot },
+      args,
+      ...after,
+    });
+    assert.equal(forced.status, 0, forced.stderr);
+    assert.equal(forced.requests.length, 1, args.join(' '));
+    assert.equal(
+      JSON.parse(forced.outputs[OUTPUT]).days[0].slots[0].talks[0].title,
+      'Platform Engineering at Acme, Revisited',
+    );
+  }
+});
+
+test('collects an event with no snapshot yet whatever the date', () => {
+  const result = collect(sessionizeFixture(), {
+    env: { ENDUSERS_TODAY: '2030-01-01' },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.outputs[OUTPUT]).talkCount, 1);
+});
+
+test('rejects a slug that names no event', () => {
+  const result = collect(sessionizeFixture(), { args: ['kubecon-mars-2026'] });
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /no such event in data\/end-user-talk-events\.json: kubecon-mars-2026/,
+  );
+  assert.equal(result.requests.length, 0);
 });
 
 test('rewrites the schedule and bumps generatedAt when a talk actually changes', () => {
@@ -446,7 +522,7 @@ function collectSched({
     ],
     outputs: [INDIA_OUTPUT],
     fixtures: { [EVENTS]: JSON.stringify({ events: [event] }) },
-    env: { ENDUSERS_SCHED_RETRY_DELAYS_MS: '1,1,1' },
+    env: { ENDUSERS_SCHED_RETRY_DELAYS_MS: '1,1,1', ENDUSERS_TODAY: TODAY },
   });
 }
 

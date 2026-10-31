@@ -155,6 +155,7 @@ exit 0
  *   string (verbatim when it already is one); `sequence` answers successive
  *   calls in order, repeating its last entry
  * @param {string[]} [options.outputs] repo-relative paths to read back afterwards
+ * @param {string[]} [options.args] command-line arguments passed to the script
  * @param {Record<string, string>} [options.env] extra environment variables
  * @returns {{status: number, stdout: string, stderr: string,
  *   outputs: Record<string, string | null>,
@@ -170,6 +171,7 @@ export function runScriptInSandbox({
   repoSymlinks = {},
   routes = [],
   outputs = [],
+  args = [],
   env = {},
 }) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-sandbox-'));
@@ -233,7 +235,7 @@ export function runScriptInSandbox({
 
     const result = spawnSync(
       'node',
-      ['--import', stubPath, join(work, 'scripts', script)],
+      ['--import', stubPath, join(work, 'scripts', script), ...args],
       {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],

@@ -198,12 +198,16 @@ Rules:
   America publishes) or a curated list of session ids (`select.sessionIds`)
   when the conference has no end user track; a Sched event always curates
   ids. An event page renders its snapshot by importing it and passing it to
-  `EndUserTalkSchedule`. No workflow refreshes the snapshots: a conference
-  schedule is fixed once the event has run, so run
-  `npm run collect:end-user-talks` (no `GH_TOKEN` needed) when adding an event
-  or curating its links and commit the result. The Sched source fetches one
-  page per curated session and waits out Sched's intermittent maintenance
-  page, so a run can take several minutes.
+  `EndUserTalkSchedule`. The weekly "Refresh metrics" workflow re-runs
+  `npm run collect:end-user-talks` (no `GH_TOKEN` needed) and opens a pull
+  request with the result. A conference schedule is final once the event has
+  run, so the collector skips an event whose snapshot ends before today unless
+  it is named on the command line or `--all` is passed: run
+  `npm run collect:end-user-talks` when adding an event, and
+  `npm run collect:end-user-talks -- <slug>` after curating a past event's
+  links, then commit the result. The Sched source fetches one page per curated
+  session and waits out Sched's intermittent maintenance page, so a run can
+  take several minutes.
   `npm run validate:end-user-talks` checks the events file, enforces the link
   host allow-list (`events.linuxfoundation.org`, `lfopensource.cn`,
   `sessionize.com`, `sched.com`) and the per-session URL shape, and runs as

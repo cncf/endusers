@@ -45,14 +45,8 @@ const REFRESH_NAMESPACES = ['collect:', 'fetch:', 'import:', 'generate:'];
 // tests/workflow-scripts.test.mjs. Delete an entry when its script joins a
 // workflow; the staleness guards below fail if one is left behind.
 const REFRESH_NOT_RUN_BY_CI = new Map([
-  [
-    'collect:end-user-talks',
-    'A conference schedule is fixed once the event has run, so the snapshots ' +
-      'cannot go stale the way metrics do, and the Sched source fetches one ' +
-      'page per session. A maintainer runs scripts/collect-end-user-talks.mjs ' +
-      'when adding an event or curating data/end-user-talk-links.json; ' +
-      'validate:end-user-talks fails a snapshot that is behind either.',
-  ],
+  // Empty since refresh-metrics.yml started running every collector on its
+  // weekly schedule; record a new omission here before unscheduling one.
 ]);
 
 // `npm run foo`, `npm run foo -- --bar`, `npm run -s foo`, `npm -s run foo`.

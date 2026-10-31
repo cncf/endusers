@@ -488,16 +488,9 @@ const REFRESH_SCRIPT_PATTERN = /^(?:collect|fetch):/;
 // on the record rather than an omission nobody can distinguish from a
 // regression.
 const REFRESH_SCRIPTS_NOT_RUN_BY_CI = new Map([
-  [
-    'collect:end-user-talks',
-    'A conference schedule is fixed once the event has run, and the Sched ' +
-      'source fetches one page per session, so a weekly run would spend ' +
-      'minutes to change nothing. scripts/collect-end-user-talks.mjs is run ' +
-      'by a maintainer when adding an event to data/end-user-talk-events.json ' +
-      'or curating data/end-user-talk-links.json; validate:end-user-talks ' +
-      'fails a snapshot that is behind either (CONTRIBUTING.md, "Never edit ' +
-      'data/end-user-talks/ by hand").',
-  ],
+  // Empty since refresh-metrics.yml started running every collector on its
+  // weekly schedule. Add an entry here, with the file that records the
+  // decision, before taking a collector back out of a workflow.
 ]);
 
 function refreshScripts() {

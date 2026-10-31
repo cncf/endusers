@@ -4,9 +4,11 @@
 // schedule's public data -- the Sessionize JSON API the Linux Foundation
 // schedules embed, or the Sched listing and session pages when a conference
 // publishes on Sched instead -- and written to data/end-user-talks/<slug>.json.
-// No workflow runs this: a schedule is fixed once its event has run, so a
-// maintainer runs it when adding an event or curating its slides and
-// recording links, and commits the result.
+//
+// A schedule is final once its event has run, so an event whose snapshot ends
+// before today is skipped, and the weekly refresh-metrics.yml run fetches only
+// upcoming conferences. Name an event's slug (or pass --all) to refresh it
+// anyway, as after curating a past event's slides and recording links.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import {
   isSchedOutage,
@@ -261,10 +263,36 @@ const contentOnly = (value) =>
     key === 'generatedAt' ? undefined : field,
   );
 
+const requested = process.argv.slice(2);
+const refreshAll = requested.includes('--all');
+const unknown = requested.filter(
+  (slug) => slug !== '--all' && !events.some((event) => event.slug === slug),
+);
+if (unknown.length) {
+  throw new Error(
+    `no such event in data/end-user-talk-events.json: ${unknown.join(', ')}`,
+  );
+}
+// The environment override keeps the skip testable on any date.
+const today =
+  process.env.ENDUSERS_TODAY ?? new Date().toISOString().slice(0, 10);
+
+function isFinal(outputPath) {
+  if (!existsSync(outputPath)) return false;
+  const { days } = JSON.parse(readFileSync(outputPath, 'utf8'));
+  return days.at(-1).date < today;
+}
+
 mkdirSync(new URL('end-user-talks/', dataDir), { recursive: true });
 for (const event of events) {
-  const data = await collect(event);
   const outputPath = new URL(`end-user-talks/${event.slug}.json`, dataDir);
+  if (!refreshAll && !requested.includes(event.slug) && isFinal(outputPath)) {
+    console.log(
+      `Skipping ${event.slug}; its schedule is final. Run npm run collect:end-user-talks -- ${event.slug} to refresh it anyway.`,
+    );
+    continue;
+  }
+  const data = await collect(event);
   if (
     existsSync(outputPath) &&
     contentOnly(JSON.parse(readFileSync(outputPath, 'utf8'))) ===
