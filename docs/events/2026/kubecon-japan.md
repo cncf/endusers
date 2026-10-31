@@ -27,13 +27,20 @@ and the Solutions Showcase on July 29–30.
 Speakers who shared their slides have them attached to their sessions in the
 schedule.
 
-## Sessions from End User member organizations
+## Sessions from end user organizations
 
 The event published no end user track, so the sessions below are those whose
-speakers listed a [CNCF End User member](/community/members) as their company
-in the official schedule: Adobe, Airbnb, Ant Group (listed in the
-[CNCF landscape](https://landscape.cncf.io/?group=members&view-mode=grid&members=end-user-member)
-as Ant Financial), Apple, Cybozu, Intuit and LY Corporation.
+speakers listed an organization that meets the
+[CNCF End User definition](https://www.cncf.io/enduser/#end-user-definition)
+as their company in the official schedule: an organization that uses cloud
+native technologies internally rather than selling or supporting them. They
+include [CNCF End User members](/community/members) such as Adobe, Airbnb, Ant
+Group, Apple, Cybozu, Intuit and LY Corporation alongside adopters such as
+Atlassian, CyberAgent, Enpal, Hyundai AutoEver, Japan Airlines, Mercari,
+Netflix, NTT, Preferred Networks, Rakuten Mobile, Recruit, Reddit, Shopify,
+SoftBank, Sony Interactive Entertainment, Subaru and Synspective, plus
+researchers from Keio University, GIST and NYU and a student maintainer from
+BITS Pilani.
 
 <EndUserTalkSchedule schedule={schedule} />
 

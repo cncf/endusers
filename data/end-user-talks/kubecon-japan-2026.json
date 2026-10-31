@@ -2,17 +2,68 @@
   "description": "Generated from the official Sessionize API by npm run collect:end-user-talks. Do not hand-edit.",
   "sourceUrl": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/",
   "apiUrl": "https://sessionize.com/api/v2/t0vgv3tv/view/All",
-  "selection": "presented by speakers from CNCF End User member organizations",
+  "selection": "presented by speakers from organizations that meet the CNCF End User definition",
   "location": "Yokohama",
-  "generatedAt": "2026-10-31T20:04:48.259Z",
+  "generatedAt": "2026-10-31T20:14:37.294Z",
   "timezone": "JST (UTC+9)",
-  "talkCount": 13,
+  "talkCount": 52,
   "days": [
     {
       "date": "2026-07-29",
       "id": "wednesday-july-29",
       "label": "Wednesday, July 29",
       "slots": [
+        {
+          "start": "2026-07-29T09:47:00+09:00",
+          "end": "2026-07-29T09:50:00+09:00",
+          "startLabel": "9:47 AM",
+          "endLabel": "9:50 AM",
+          "talks": [
+            {
+              "id": "1283170",
+              "title": "Infinite Agents, Finite Kubernetes",
+              "speakers": "Mohammad Mikal Bin Amrul Halim Gan",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1283170",
+              "description": "The rise of autonomous agents introduces a radically volatile workload profile: short-lived, heavy-compute pods that demand instant GPU/CPU access and vanish. In this keynote, we deconstruct a fundamental Infrastructure paradox: infinite agent demand versus strictly finite physical compute, space, and power. Using a simple trade-off curve as our focal point, we present an architectural vision to safely scale for the autonomous future.",
+              "recording": "https://www.youtube.com/watch?v=NXl1MlaEpeg"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-29T09:57:00+09:00",
+          "end": "2026-07-29T10:07:00+09:00",
+          "startLabel": "9:57 AM",
+          "endLabel": "10:07 AM",
+          "talks": [
+            {
+              "id": "1283172",
+              "title": "Building a Multi-Tenant AI Platform with the CNCF Ecosystem",
+              "speakers": "Aya Igarashi",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1283172",
+              "description": "As AI technology advances, a multi-tenant computing infrastructure has become essential for supporting diverse user workloads. Building a multi-tenant platform to handle various workloads, including AI and ML, relies heavily on Kubernetes' powerful extensibility and careful integration with CNCF ecosystem technologies. In this session, we will share the design philosophy behind our Kubernetes platform. We will provide a high-level overview of our platform's architecture and discuss how we leverage cloud-native projects to orchestrate complex workloads. \n\nAttendees will gain practical insights into building infrastructure that keeps pace with the evolving open-source landscape.",
+              "recording": "https://www.youtube.com/watch?v=t_toCHRtgAI"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-29T10:09:00+09:00",
+          "end": "2026-07-29T10:14:00+09:00",
+          "startLabel": "10:09 AM",
+          "endLabel": "10:14 AM",
+          "talks": [
+            {
+              "id": "1283173",
+              "title": "How Subaru Accelerated AI Model Development for Next-Generation EyeSight with Kubernetes",
+              "speakers": "Ryoji Kobayashi",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1283173",
+              "description": "Subaru is developing AI models in-house to further improve the recognition accuracy of next-generation EyeSight.\n\nAs AI development activities expanded, the team faced several challenges, including large ML container images, manual deployment operations, and increasingly complex machine learning workflows.\n\nTo address these challenges, Subaru built a Kubernetes-based AI model development platform using cloud native technologies such as Harbor, Envoy Gateway, MetalLB, Argo CD, Helm, and Argo Workflows.\n\nThese improvements reduced container image pull time from approximately three hours to three minutes, enabled GitOps management for 25 application definitions, and automated machine learning workflows.\n\nIn this session, Subaru will share how it used Kubernetes and CNCF technologies to address key challenges in AI model development and accelerate its development workflow.",
+              "recording": "https://www.youtube.com/watch?v=kg5lhVhdCLc"
+            }
+          ]
+        },
         {
           "start": "2026-07-29T10:16:00+09:00",
           "end": "2026-07-29T10:19:00+09:00",
@@ -31,6 +82,23 @@
           ]
         },
         {
+          "start": "2026-07-29T10:21:00+09:00",
+          "end": "2026-07-29T10:24:00+09:00",
+          "startLabel": "10:21 AM",
+          "endLabel": "10:24 AM",
+          "talks": [
+            {
+              "id": "1283176",
+              "title": "Out of the Box, at Multi-Region Scale: How Hyundai Scales Its Platform",
+              "speakers": "Jaewoo Choi",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1283176",
+              "description": "Hyundai Motor Group runs its global platform on hCloud, its own in-house private cloud, and provides open source tooling for its CI/CD pipelines. A single Argo CD instance now manages 5,000+ Applications across 300+ Kubernetes clusters worldwide, growing by hundreds of new Applications every month, while a multi-region Harbor registry holds 60k+ artifacts across 5k+ repositories, replicated across 3 regions to balance data-residency regulation with performance.",
+              "recording": "https://www.youtube.com/watch?v=2exuP_qDWBA"
+            }
+          ]
+        },
+        {
           "start": "2026-07-29T11:30:00+09:00",
           "end": "2026-07-29T12:00:00+09:00",
           "startLabel": "11:30 AM",
@@ -44,6 +112,15 @@
               "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194386",
               "description": "GitOps started with a simple idea: Git is the source of truth. But as the ecosystem matures, OCI is increasingly used to ship Kubernetes config, and the gaps are becoming hard to ignore. Git gives you history, blame, diffing, and PR-based review for free. OCI gives you content-addressable, distribution-ready, airgap-compatible artifacts. Yet the industry is replacing one with the other as though the properties of Git were incidental, not foundational.\n\nThis talk introduces Kokumi, an experimental config delivery tool designed for an OCI-first world. Kokumi integrates with Helm and Kustomize to define per-environment config, renders OCI artifacts, and delivers them via Argo CD. This functionality is wrapped in a beautiful UI that feels like the future of Kubernetes deployment.\n\nWhat does the future of OCI-Ops look like? This talk won’t have all the answers. But it will offer a glimpse into the future and spark the audience’s imagination so that we can build that future together.",
               "recording": "https://www.youtube.com/watch?v=8CjVANBzDWs"
+            },
+            {
+              "id": "1194757",
+              "title": "User Namespaces in Production: Enabling Root in Containers with RWX",
+              "speakers": "Kohei Sugihara, Toru Komatsu",
+              "room": "4F | 414+415",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194757",
+              "description": "User Namespaces improve the security of multi-tenant Kubernetes by separating UID/GID between container and host. However, bringing them into production faces a big wall on providing ReadWriteMany (RWX) shared storage. With User Namespaces, volume mounts used on the ID-mapped mount in Linux, but its file system support depends on each filesystem implementation, so there is a case where we cannot apply it for existing remote filesystems.\n\nOur Kubernetes AI/ML platform has multiple storage systems already, and migrating all existing data to another supported filesystem was not a realistic option. Instead of replacing the storage layer, we chose to use NRI to adjust mount definitions at container startup, allowing both User Namespaces and RWX shared volume for existing storage environments.\n\nIn this session, we will share the design decisions behind this approach, and practical lessons for introducing User Namespaces into a production Kubernetes platform with existing data assets.",
+              "recording": "https://www.youtube.com/watch?v=5es7m1R7ZqY"
             },
             {
               "id": "1194846",
@@ -81,6 +158,33 @@
               "recording": "https://www.youtube.com/watch?v=FH_fNfE90sU"
             },
             {
+              "id": "1191836",
+              "title": "Don't Start With 500 Clusters: Patterns in Scaling Multi-Cluster Kubernetes Using Cluster API",
+              "speakers": "Nibir Bora, Matt Morrison",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1191836",
+              "description": "This session presents case studies from two companies that independently arrived at the same conclusion: Cluster API as the declarative foundation for fleet-scale Kubernetes. One runs 100+ multi-tenant clusters with its entire stack running on Kubernetes. The other provisions isolated clusters per customer across SaaS, BYOC, and self-managed deployments. Both replaced days of manual toil with automated pipelines.\n\nKubernetes was designed for a single cluster. But scale ceilings, blast radius, tenant isolation, compliance, and cloud migrations force real businesses into managing 100s of clusters. Most companies should not start here: this talk covers why. But some have no choice.\n\nAttendees will leave with:\n- A decision framework for when multi-cluster is necessary versus premature.\n- What forced scale-out and how it was solved at two companies.\n- A tested pattern for managing 100s of Kubernetes clusters using Cluster API.\n- When to build custom operators versus compose existing tools.",
+              "recording": "https://www.youtube.com/watch?v=-0gJNQogilQ"
+            },
+            {
+              "id": "1193392",
+              "title": "kube-scheduler-evaluator: Evaluating Kubernetes Schedulers at Hyperscaler Scale in Seconds",
+              "speakers": "Rihito Bannai, Hidehito Yabuuchi",
+              "room": "5F | 502",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1193392",
+              "description": "As AI/ML workloads grow in importance on Kubernetes, evaluating schedulers at scale is critical yet costly. Running tens of thousands of real jobs across thousands of nodes is expensive, and training jobs can take days — making real-time evaluation impractical. Existing tools fall short: scheduler_perf is limited to micro-benchmarks, and kwok/kind still run in real time.\n\nWe developed kube-scheduler-evaluator, an open-source framework with three key capabilities:\n\nGo-Based Scenarios: Define large-scale workloads programmatically using Go, not static YAML.\nVirtual Time: Decouple simulation from wall-clock time — a multi-day cluster trace with thousands of GPU jobs can complete in seconds.\nFlexible Execution: Run as a single binary with emulated controllers, or connect to kwok, kind, or a real cluster.\n\nAttendees will learn how to evaluate schedulers using kube-scheduler-evaluator and how to apply the results to accelerate scheduler development.",
+              "recording": "https://www.youtube.com/watch?v=x2OxcxlOTR8"
+            },
+            {
+              "id": "1194287",
+              "title": "Ground Control to Cloud Native: Safe Deployments for a Growing SAR Satellite Constellation",
+              "speakers": "Upendra Gurugubelli, Masaya Arai",
+              "room": "3F | 315",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194287",
+              "description": "When your Kubernetes deployments must avoid interrupting a live satellite link 500km above Earth, standard rollout strategies fall short. Synspective operates a constellation of SAR observation satellites where ground systems maintain stateful connections during passes. A deployment at the wrong moment risks losing contact with a satellite in orbit. Each satellite has different communication windows, and as the constellation scales toward 30+ satellites by 2030, manual coordination becomes impossible.\n\nThis session presents how Synspective adopted cloud native practices across two mission-critical ground subsystems. First, how Argo CD replaced manual CIOps with declarative GitOps pipelines, delivering auditable, reproducible deployments across multiple environments. Second, how Argo Rollouts enables progressive delivery gated by real-time satellite pass schedules (AOS/LOS windows) from ground station APIs, ensuring releases never interrupt active communications.",
+              "recording": "https://www.youtube.com/watch?v=Fhrorq7FQfE"
+            },
+            {
               "id": "1194825",
               "title": "Scaling In Kubernetes Safely on On-Prem KaaS Across 1,300+ Clusters and 40,000+ Nodes",
               "speakers": "Shota Yoshimura",
@@ -88,6 +192,57 @@
               "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194825",
               "description": "Many Kubernetes talks focus on scaling out to support growth, but large platforms also need safe ways to scale in. This is especially true for on-premises Kubernetes as a Service, where unused node capacity affects hardware procurement, rack capacity, and long-term operations.\n\nThis talk shares how we built a custom controller to consolidate underutilized worker nodes safely across 1,300+ clusters and 40,000+ nodes. At this scale, underutilized nodes were no longer isolated inefficiencies but a meaningful capacity problem. We needed a more conservative model than a general-purpose autoscaler could provide, so the controller uses observed node usage, seven-day peak metrics, minimum replica guarantees, and machine-group-level safety checks before taking action.\n\nWe will also cover safeguards including graceful shutdown expectations, DaemonSet termination ordering, and node deletion behavior designed to minimize user impact.",
               "recording": "https://www.youtube.com/watch?v=YFkHhcyPF3M"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-29T12:24:00+09:00",
+          "end": "2026-07-29T12:29:00+09:00",
+          "startLabel": "12:24 PM",
+          "endLabel": "12:29 PM",
+          "talks": [
+            {
+              "id": "1228174",
+              "title": "Project Lightning Talk: youki: What's New and What's Next?",
+              "speakers": "Yuta Nagai",
+              "room": "3F | 313+314",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1228174",
+              "description": "youki is a Rust-based OCI runtime and the only low-level container runtime within the CNCF ecosystem. It is invoked by Kubernetes and containerd to create and manage isolated Linux processes based on OCI bundles.\n\nWhile established runtimes like runc and crun are widely adopted, youki continues to evolve through active development and contributions.\n\nIn this session, we will explore youki's architecture and its path toward the 1.0.0 release, with a primary focus on improving compatibility with runc as a key requirement for real-world adoption.\n\nBeyond this, we will highlight additional efforts, including integration with libkrun for VM-based container isolation and the implementation of seccomp support natively in Rust to remove the dependency on libseccomp. We will also share how youki collaborates with related CNCF projects in these areas.\n\nAttendees will leave with a clear understanding of youki's current state, its challenges, and how to get involved.",
+              "recording": "https://www.youtube.com/watch?v=W4_EyfH77jg"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-29T12:31:00+09:00",
+          "end": "2026-07-29T12:36:00+09:00",
+          "startLabel": "12:31 PM",
+          "endLabel": "12:36 PM",
+          "talks": [
+            {
+              "id": "1228175",
+              "title": "Project Lightning Talk: Lima in 5 Minutes: From Containers to AI Sandboxing",
+              "speakers": "Ansuman Sahoo",
+              "room": "3F | 313+314",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1228175",
+              "description": "Initially created for local containers, Lima has since grown into a universal sandboxing tool for developers. In this talk, I will introduce Lima!\n\nWhat would you do if an AI coding assistant hallucinated and attempted to delete your local workspace? As AI agents become integrated into our daily workflows, running them locally on your host machine is becoming a security risk.\n\nYou'll also learn about Lima's new support for GPU acceleration, MCP servers, and protective sync modes, and how you can safely run your AI agents entirely in a VM or connect to the VMs from the host. Come see how Lima is helping to make local container development and AI experimentation fast, easy, and safe!",
+              "recording": "https://www.youtube.com/watch?v=3--dwy9q5rA"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-29T14:10:00+09:00",
+          "end": "2026-07-29T14:40:00+09:00",
+          "startLabel": "2:10 PM",
+          "endLabel": "2:40 PM",
+          "talks": [
+            {
+              "id": "1193536",
+              "title": "Towards Sustainable Multi-Cluster Management in Real-World Academic Infrastructure",
+              "speakers": "Jinwang Mok, ChangHyeon Im",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1193536",
+              "description": "Research labs face distinct challenges: heterogeneous hardware, stateful services, and student operators who learned Kubernetes on the job—accumulating legacy no one dares untangle.\n\nOur environment: four bare-metal clusters over 100GbE—a 2PB Rook-Ceph lake, a 22-GPU cluster (7 types incl. L40S,  A100), edge devices—run by grad students. We call our unified multi-cluster target \"ScaleX-POD\". Migrating demands two hurdles: risk-free live migration and tenant isolation.\n\nFirst, extracting a management cluster from production while external tenants actively run—transferring ArgoCD ownership without orphaning pods or storage, dry-running via vcluster. We share what broke and what we would change. Second, Kyverno-enforced isolation: PSS Restricted, default-deny NetworkPolicies, namespace-scoped RBAC—containing blast radius during and after migration. \n\nAttendees gain failure lessons, migration trade-offs, and a PR-based workflow to reduce knowledge loss across operator transitions.",
+              "recording": "https://www.youtube.com/watch?v=uJ__5OjJOh8"
             }
           ]
         },
@@ -105,6 +260,24 @@
               "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1154416",
               "description": "With Kubernetes established as the foundation of platform deployment, the cloud native ecosystem continued to evolve to meet the demands of the growing end user community. Today, the landscape stands at an inflection point, beyond containers, where AI is rapidly becoming an integral part of established and emerging projects.\n\nThis talk examines the current state of the ecosystem through the lens of the AI shift. It explores the established patterns, governance models, and community structures that stabilized the cloud native landscape and are now becoming the blueprint for a mature open source AI landscape. \n\nThe session takes a reverse engineering approach to understanding where the ecosystem is headed. The attendees will learn how core principles, such as openness, vendor neutrality, interoperability, and an open community, are becoming the driving forces behind this next wave of transformation and the shift towards AI.",
               "recording": "https://www.youtube.com/watch?v=6NLiR8uP1hE"
+            },
+            {
+              "id": "1193296",
+              "title": "Running Wasm Inside Your Storage Cluster with CSI and Gateway API",
+              "speakers": "Ho Kim, SangJoon Park",
+              "room": "4F | 414+415",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1193296",
+              "description": "The cloud-native world has long embraced separating compute from storage. But AI workloads are exposing a new bottleneck: the network itself.\n\nVendors respond by preprocessing data to cut bandwidth, or integrating RDMA and specialized hardware for faster transfers. The first still saturates the network during preprocessing. The second trades openness for hardware lock-in.\n\nWe took a third path: running user-defined WebAssembly code directly inside the storage cluster, as close to the NVMe devices as possible. Unlike SQL pushdown, computation is free-form. Unlike a compute cluster, data never leaves the storage nodes.\nWe will share how we used CSI and Gateway API on Kubernetes to expose this as a cloud-native, open-source capability.\nAlong with the dead ends we hit, the benchmarks we ran, and the security boundaries we have not yet crossed.\n\nThe project is open source. We want the community to tell us what comes next!",
+              "recording": "https://www.youtube.com/watch?v=K6_KQm1lMn8"
+            },
+            {
+              "id": "1194881",
+              "title": "Manufacturing Alerts to ReActive Agents: Self-Evolving AI Agents on K8S for Predictive Maintenance",
+              "speakers": "Seungtae Moon",
+              "room": "5F | 502",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194881",
+              "description": "Most predictive maintenance systems send alerts based on thresholds – notify when a sensor reading crosses a limit, then leave root-cause analysis and decision making to engineers.\n\nThis session presents the architecture of a self-evolving AI Agent system designed for manufacture domain on a Kubernetes-based platform. Rather than building a single monolithic agent, the speaker shows three key design decisions: (1) a ReAct-based cognitive architecture with a modular skills engine, (2) a hierarchical multi-agent deep search architecture using a multi-perspective pattern with cross-reference synthesis, and (3) a self-evolving mechanism where the agent detect repeated interaction patterns via reflection and autonomously registers new skills.\n\nAttendees will leave with a concrete architecture for building AI Agent systems that run as cloud native microservices on Kubernetes – designed to be modular, observable, and extensible across any industrial domain.",
+              "recording": "https://www.youtube.com/watch?v=15oOxokfnac"
             }
           ]
         },
@@ -122,6 +295,24 @@
               "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1193243",
               "description": "Now a days, the applications are moving to agentic. On the other hand, as the codes fetched or generated by agents can not be treated as trusted product and we should keep our confidential data and infra control plane untouchable by the agent directly.\n\nBased on existing (proved) Kubernetes infrastructure, we (kata container developers, ant open source team, and Japan AI team) build the sandbox services with agent-sandbox, Kata Containers, dragonfly, and  pvm kernel virtualization driver, which make the service not only secure, but also secure enough.\n\nLive demo will be shown in this session.",
               "recording": "https://www.youtube.com/watch?v=aFX_6HL_i80"
+            },
+            {
+              "id": "1194119",
+              "title": "From Experiment to Enterprise: Scaling an AI Agent for Code Review",
+              "speakers": "Adam Phan",
+              "room": "5F | 502",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194119",
+              "description": "At enterprise scale, rolling out internal AI Agents in production becomes a platform challenge that spans confidentiality, governance, review quality, and cost. This session examines how Sony Interactive Entertainment’s Engineering Enablement team took a code review AI Agent from early experimentation to production rollout across more than 400 internal PlayStation repositories.\n\nThe talk explores the architectural and operational tradeoffs behind introducing AI-assisted reviews on a shared enterprise platform while protecting confidential code, satisfying security and compliance requirements, and scaling Kubernetes workloads to meet demand. It covers rollout and governance patterns, quality evaluation, cost control, and the operational boundaries between human judgment and AI-generated feedback.\n\nAttendees will leave with practical patterns for introducing and operating AI-assisted development workflows on a shared enterprise platform.",
+              "recording": "https://www.youtube.com/watch?v=9ZF7bmwn_kI"
+            },
+            {
+              "id": "1194844",
+              "title": "Taming Billions of Rows: Data Lifecycle Management Lessons from a Cloud-Native Database Migration",
+              "speakers": "Ruslan Kadyrov",
+              "room": "4F | 414+415",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194844",
+              "description": "As systems scale, data rarely disappears - only accumulates. For large-scale platforms, this creates a hidden but critical problem: unbounded data growth becomes a primary driver of infrastructure cost and migration risk.\n\nAt Mercari, one of our core MySQL tables reached billions-scale records as the platform expanded. During our migration to a cloud-native distributed database (TiDB), we discovered that historical, inactive data - not live traffic - had become a significant factor influencing cost and migration complexity.\n\nThis talk presents a real-world case study of designing and executing a large-scale data lifecycle management strategy, focusing on reducing the impact of dormant records that no longer contribute to active user workflows, while preserving full user-facing functionality and data accessibility.\n\nThis session focuses on practical patterns for managing data growth in cloud-native environments and highlights why data lifecycle management must be part of any scalable platform strategy - not an afterthought.",
+              "recording": "https://www.youtube.com/watch?v=32RGaUtPe5o"
             }
           ]
         },
@@ -139,6 +330,32 @@
               "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194974",
               "description": "For active contributors in the cloud-native ecosystem, the greatest challenge is often not code, but transitioning to a broader perspective: how to leverage influence to guide a project toward a healthier, sustainable community. True open-source leadership is never about power grabbing or acquiring titles; it is rooted in facilitating consensus and building a shared vision across a diverse, multi-vendor ecosystem.\nIn this panel, CNCF technical and community leaders will combine their macro-level perspectives with hands-on governance experience to deconstruct how to naturally establish technical influence by fostering consensus.\n\nKey topics to be covered:\n- The Mindset Shift: Evolving from a tactical \"issue solver\" to a strategic community steward.\n- Shared Vision: Transcending corporate interests for genuine, vendor-neutral consensus.\n- Navigating Conflicts: Resolving technical disagreements to keep projects moving forward.\n- Sustainability: Empowering others and building healthy mentorship pipelines.",
               "recording": "https://www.youtube.com/watch?v=pHHiHRaTRpE"
+            },
+            {
+              "id": "1228185",
+              "title": "SIG Scheduling Update: Transition from Pod to Workload Scheduling",
+              "speakers": "Kensei Nakada, Yuki Iwai",
+              "room": "5F | 503",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1228185",
+              "description": "\"Over the past year, SIG Scheduling has been redefining how Kubernetes approaches scheduling—moving from a Pod-centric model toward a holistic, Workload-aware architecture. This shift influences not only the scheduler internals, but also many external components which interact or integrate with kube-scheduler over a new set of APIs.\n\nIn this session, we will walk through the major scheduling enhancements introduced in recent releases and explain how they fit into the broader Workload-Aware Scheduling initiative. We will also share updates from related sub-projects, including Kueue and the Descheduler.\n\nFinally, we will present what is on the agenda for the future releases, summarize community contributions and outline opportunities to help in shaping the future of Kubernetes scheduling.\"",
+              "recording": "https://www.youtube.com/watch?v=OZgNM2OCmq4"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-29T17:10:00+09:00",
+          "end": "2026-07-29T17:40:00+09:00",
+          "startLabel": "5:10 PM",
+          "endLabel": "5:40 PM",
+          "talks": [
+            {
+              "id": "1192547",
+              "title": "From 165 Days to 30 Minutes: Breaking Enterprise Silos with Platform Engineering",
+              "speakers": "Aoi Nishijima, Moeka Okamura, Kohei Yamamoto",
+              "room": "3F | 315",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1192547",
+              "description": "How can an enterprise developer start coding in 30 mins instead of 165 days? Platform Engineering is often idealized in greenfield environments, but large enterprises face a labyrinth of legacy processes. At JAL Digital, 4,000 engineers supporting 500 systems were bound by silos—requiring 15 departments and 40+ forms for environment setup, hitting a staggering 165-day lead time.\nWe share our journey of transforming this rigid organization through a true cultural shift focusing on three pillars: Mixed Teams to end \"us vs. them\" conflicts, Autonomy as Fuel by letting teams choose their own tech like Backstage to ignite passion, and Small Wins by targeting high-friction bottlenecks first to gain trust.\nWe will demonstrate an architecture that automates legacy approvals into a \"one-click\" experience. This story is for every engineer—especially the next generation—trapped in bureaucracy. Learn practical, human-centric steps to build a platform developers actually want to use.",
+              "recording": "https://www.youtube.com/watch?v=5GFxb8SNVug"
             }
           ]
         }
@@ -167,6 +384,57 @@
           ]
         },
         {
+          "start": "2026-07-30T09:59:00+09:00",
+          "end": "2026-07-30T10:02:00+09:00",
+          "startLabel": "9:59 AM",
+          "endLabel": "10:02 AM",
+          "talks": [
+            {
+              "id": "1283245",
+              "title": "Large-Scale Edge Management with Kubernetes: The Tech Behind Stable Operation of 200 EV Chargers",
+              "speakers": "Ryota Yonekura",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1283245",
+              "description": "PowerX operates more than 200 EV chargers around Japan, and keeping them running reliably is the single most critical challenge for our service. Managing software across a large number of edge devices while maintaining reliability has always been a major burden for our SRE team. In particular, achieving consistent operations in an environment where devices with limited resources are intermixed proved especially difficult.\nIn this keynote, we'll summarize the solution we put into practice to address these challenges: building a large-scale edge management system on top of Kubernetes.\n\nWhy did we choose Kubernetes from among the many available options, and why did we then adopt k0s specifically?\n\nHow did we design a hybrid cluster connecting the cloud (GKE) with the edge?\n\nHow do we efficiently collect metrics from resource-constrained devices, and how do we switch between OpenTelemetry's push-based and pull-based approaches to ensure observability?",
+              "recording": "https://www.youtube.com/watch?v=4qV9lrg3FBc"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-30T10:16:00+09:00",
+          "end": "2026-07-30T10:19:00+09:00",
+          "startLabel": "10:16 AM",
+          "endLabel": "10:19 AM",
+          "talks": [
+            {
+              "id": "1283250",
+              "title": "What is a Virtual Power Plant (VPP) ? : Green Tech and the Modernization of the Grid",
+              "speakers": "LeRenzo Malcom",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1283250",
+              "description": "The Grid Is Becoming a Distributed System\n\nEnergy systems face pressure from geopolitical shocks, electrification, extreme weather, and digital infrastructure. The grid needs more than new generation; it needs flexibility.\n\nJapan makes this challenge tangible. Its energy self-sufficiency rate is around 15%, while roughly 70% of electricity generation depends on fossil fuels. Yet Japan targets 40–50% renewable electricity by FY2040 as demand rises from data centers, semiconductor manufacturing, and electrification.\n\nAs solar, batteries, EVs, and heat pumps spread, valuable grid resources are moving into homes and cities. Virtual Power Plants coordinate these devices as one software-defined energy asset, shifting demand, storing renewable energy, and improving resilience.\n\nThis keynote explores why the grid behaves like a distributed system, and how cloud-native patterns can help operate it.\nThe next power plant may be one million homes, batteries, and EVs, coordinated by software.",
+              "recording": "https://www.youtube.com/watch?v=vfPb0NXs8JU"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-30T10:21:00+09:00",
+          "end": "2026-07-30T10:24:00+09:00",
+          "startLabel": "10:21 AM",
+          "endLabel": "10:24 AM",
+          "talks": [
+            {
+              "id": "1289569",
+              "title": "How CNCF Projects United Two Countries' Engineers to Solve AI's Power-and-Land Problem",
+              "speakers": "Kazuki Sato",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1289569",
+              "description": "As AI's appetite for compute keeps growing, a single urban data center hits a hard physical wall — not racks, but power and land. No amount of expansion at one site solves it. It's a challenge the whole world shares, and one that hits especially hard in Japan, where land is scarce.\n\nSo instead of expanding one site, NTT DOCOMO BUSINESS distributed GPUs across Japan. Over a wide-area L2 network built on IOWN APN (All-Photonics Network) technology, we operate eight data centers — more than 2,000 km from Sapporo to Fukuoka — as a single Kubernetes cluster. But a fast network alone isn't enough. The real challenge is making that distributed capacity usable as one: multiple tenants in secure isolation, existing workloads running as-is, with the feel of a single site. We made that real with cloud native technologies — above all, KubeVirt.\n\nWhat matters most is who built it: engineers from Japan and Korea, brought together by open source. Because Kubernetes and KubeVirt gave us a shared language, NTT DOCOMO BUSINESS and SK Telecom could design as equals across a national border. Our takeaway: a challenge the whole world shares can be addressed on the common ground of CNCF, where companies and countries co-create a solution together. This one was built by engineers in Japan and Korea — and from here in Japan, we want to take this distributed architecture to a world facing the same wall.",
+              "recording": "https://www.youtube.com/watch?v=q3x9Ok3MC1M"
+            }
+          ]
+        },
+        {
           "start": "2026-07-30T11:30:00+09:00",
           "end": "2026-07-30T12:00:00+09:00",
           "startLabel": "11:30 AM",
@@ -180,6 +448,165 @@
               "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1186424",
               "description": "What happens when “observability” meets industrial “IoT”? \nIn this session, we will dive into where OpenTelemetry can be used in IIoT environments. We will also cover how to use OTel’s flexible architecture to observe industrial equipment, inform preventative maintenance, and ensure quality control (QC). \nJoin in to learn about how to configure the OpenTelemetry Collector to handle industrial protocols (e.g., MQTT, OPC-UA) alongside standard OTLP (OpenTelemetry Protocol) to bridge “shop floor” data to cloud-native “top floor” pipelines. And learn to leverage OpenTelemetry metrics and traces for preventative maintenance and real-time QC alerting.",
               "recording": "https://www.youtube.com/watch?v=AMDE02bLCpY"
+            },
+            {
+              "id": "1193066",
+              "title": "SBOMit: Making SBOMs Accurate with Attestations",
+              "speakers": "Marco De Vincenzi, Justin Cappos",
+              "room": "3F | 313+314",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1193066",
+              "description": "Software Bill of Materials (SBOM) adoption is accelerating, driven by regulatory mandates and high-profile supply chain incidents. However, a critical and underappreciated problem persists: SBOMs can be inaccurate. Traditional SBOM generation tools rely on static analysis or package manifests, approaches that routinely miss dynamically downloaded dependencies, build-time artifacts, and network-fetched components. \nThis talk introduces SBOMit, an OpenSSF project, a supply-chain security framework that solves the accuracy problem by generating SBOMs from in-toto attestations captured at build time. Rather than inferring what was used, SBOMit observes and records it, leveraging the witness tool to trace filesystem reads and writes, process execution, and outbound network connections during the actual build. Every dependency encountered during the build is captured and cryptographically authenticated. The resulting SBOM is not a best guess; it is a verified record of what was built.",
+              "recording": "https://www.youtube.com/watch?v=HaeGagUpOVY"
+            },
+            {
+              "id": "1194751",
+              "title": "Running OpenSearch at Scale in High-Traffic Gaming Systems",
+              "speakers": "Siddharth Vijay",
+              "room": "5F | 501",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194751",
+              "description": "Running OpenSearch in a poker platform means no margin for error. Fraud detection can't wait. Player stats APIs can't lag. And the cluster doesn't care about your traffic spikes.\nWe operate OpenSearch under mixed workloads: high-volume writes from hand histories and gameplay events, aggregation-heavy fraud queries, and latency-sensitive reads serving live player statistics. Standard deployment advice doesn't survive this combination.\nThis talk is purely operational. We cover JVM heap sizing under write pressure, threadpool tuning for bulk ingestion and search isolation, shard sizing, rollover strategies, and capacity planning for uneven traffic — with the specific mitigations we applied after hitting queue saturation, GC pauses, and hot shards in production.\nWe also cover index lifecycle management, retention tradeoffs, and monitoring signals that matter when OpenSearch sits in your request path.\nYou'll leave with concrete operational guidance well beyond basic deployment patterns.",
+              "recording": "https://www.youtube.com/watch?v=VH9tvsB37KY"
+            },
+            {
+              "id": "1228189",
+              "title": "Beyond Translation: The Journey of Building the Japanese Kubernetes SIG Docs Community",
+              "speakers": "Aoi Takahashi, Junya Okabe",
+              "room": "4F | 414+415",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1228189",
+              "description": "While Kubernetes powers the world, its \"\"English-first\"\" nature can be a daunting barrier. SIG Docs bridges this gap through localization, but how do we keep these efforts sustainable? This session explores the Japanese team’s journey in cultivating one of the project's most active localization communities. Forget dry history lessons – we’re delivering a hands-on roadmap and examples for new contributors. You’ll walk away knowing exactly how to navigate the SIG Docs repository and land your first PR.\n\nWe’ll also \"\"pull back the curtain\"\" on our real-world struggles: managing relentless upstream velocity, ensuring technical accuracy at scale, and the honest debates shaping our future workflow. Whether you’re a documentation veteran or a first-time contributor, you’ll learn how we built a localized ecosystem in Japan that empowers users worldwide.",
+              "recording": "https://www.youtube.com/watch?v=jfEk2KRTk-Y"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-30T12:10:00+09:00",
+          "end": "2026-07-30T12:40:00+09:00",
+          "startLabel": "12:10 PM",
+          "endLabel": "12:40 PM",
+          "talks": [
+            {
+              "id": "1191835",
+              "title": "From Statsd to OpenTelemetry: Atlassian's Metrics Platform Migration at Scale",
+              "speakers": "Iris Grace Endozo, Farzad Vazirnia",
+              "room": "3F | 315",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1191835",
+              "description": "OpenTelemetry has become the industry standard for Observability: a single, vendor-neutral framework for metrics, traces and logs backed by CNCF. But adopting it is a different story when you already have a legacy but stable\nobservability platform that \"works\" from collection to pipeline processing to storage.\n\nAt Atlassian, the Observability team ran statsd as a bespoke metrics pipeline for years: high-performance statsd servers collecting and aggregating metrics from around 100k hosts across 14 regions. It served the team well but the cracks were showing: UDP-only ingestion, no support for traces or logs and standards increasingly out of step with where the ecosystem was heading.\n\nThis talk walks through why the team migrated to an OpenTelemetry Collector-based pipeline and landed everything in their metrics backend without downtime or data loss. It covers how they executed at scale and the strategy for full OTLP-native adoption and what it unlocks for unified Observability.",
+              "recording": "https://www.youtube.com/watch?v=Qhtq9IuBKxg"
+            },
+            {
+              "id": "1192623",
+              "title": "Score-Driven Multi-Cluster Management: An Evaluation Framework for Decision-Making",
+              "speakers": "Kazuma Takeuchi, Joydeep Banerjee",
+              "room": "5F | 501",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1192623",
+              "description": "As large AI platforms scale across multiple clusters, static placement policies are reaching their limits. Decisions must reflect live conditions such as GPU utilization, power efficiency, and other operational metrics rather than fixed rules alone.\n\nIn this talk, we introduce the Dynamic Scoring Framework, a new Add-on for Open Cluster Management that brings real-time telemetry into multi-cluster placement and policy decisions. Lightweight agents collect metrics from sources such as Prometheus, evaluate them through modular scoring APIs, and feed results into the central hub. This hybrid design balances distributed scoring and centralized control for scalable, flexible decision-making.\n\nThrough an architecture deep dive and a demo of resource optimization with the framework, we show how score-based decisions improve resource efficiency in AI infrastructure. Attendees will learn score-based management patterns and how to apply them beyond AI workloads.",
+              "recording": "https://www.youtube.com/watch?v=G8yOpne_T04"
+            },
+            {
+              "id": "1194563",
+              "title": "Breaking the Single-Network Barrier: A Cross-Domain Look at Kubernetes Multi-Networking",
+              "speakers": "Lionel Jouin, Sunyanan Choochotkaew, Masaharu Kanda, Surya Seetharaman, Sara Qasmi",
+              "room": "5F | 502",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194563",
+              "description": "Kubernetes multi-network support has been a long-standing challenge, the journey toward native multi-network capabilities has been complex and slow. But why? This panel brings together experts from diverse domains to discuss scenarios such as high-performance networking with advanced capabilities like RDMA for AI/ML, telco, and cloud gaming, network isolation for security, compliance, and multi-tenancy, VM connectivity and connectivity to on-premises infrastructure such as datacenter VLANs or EVPN fabrics. Together, they will examine the architectural challenges of integrating multiple networks into Kubernetes, recent upstream developments such as the DRA feature, and how communities such as SIG Network and WG Device Management are driving progress across the ecosystem. Join this interactive session to learn where multi-network support stands today, where it's heading, and to engage directly with upstream contributors and maintainers to share questions and real-world use cases.",
+              "recording": "https://www.youtube.com/watch?v=wK4AHU041KI"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-30T14:10:00+09:00",
+          "end": "2026-07-30T14:40:00+09:00",
+          "startLabel": "2:10 PM",
+          "endLabel": "2:40 PM",
+          "talks": [
+            {
+              "id": "1182713",
+              "title": "Shared GPU Scheduling & Proactive Autoscaling: A Production Blueprint for 1000+ GPUs",
+              "speakers": "Jeonghyun Kim, Reza Jelveh",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1182713",
+              "description": "SNOW Corp. operates 1,000+ A100 GPUs serving 200 million users across three top-ranked GenAI applications (Snow, Epik, B612), handling 1,200+ AI workflows subject to extreme traffic volatility from viral AI trends.\n\nThe core bottleneck was Kubernetes' native GPU scheduling, which treats GPUs as atomic resources — forcing a 2x over-provisioning penalty on Train-to-Inference pipelines with no reliable visibility into actual GPU saturation.\n\nThis talk covers integrating HAMi for vGPU virtualization and extending KEDA with a custom Consumer Saturation metric for proactive autoscaling, hiding warm-up latency by scaling before traffic arrives.\n\nWe’ll detail the implementation: scheduler config, Prometheus metrics, and multi-region scaling via Helm GitOps. Results: >50% GPU waste cut and 91% faster recovery during surges. You’ll get a production blueprint for efficient, shared GPU platforms.",
+              "recording": "https://www.youtube.com/watch?v=bZ6O1l8MpC4"
+            },
+            {
+              "id": "1192943",
+              "title": "Beyond Wasm: How Dynamic Modules Let You Extend Envoy Proxy in Go, Rust, or Any Language",
+              "speakers": "Rohit Agrawal, Takeshi Yoneda",
+              "room": "5F | 502",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1192943",
+              "description": "Envoy powers Istio, Cilium Proxy, Envoy Gateway, and thousands of production deployments. But extending it is hard today. C++ filters mean maintaining a fork. WASM delivered sandbox overhead, limited extension points, and a stalling ecosystem.\n\nWe built Dynamic Modules to fix this and are now using it at Databricks and Netflix. They let you write Envoy extensions as shared libraries in Go, Rust, or any language with a C ABI. Near-native performance, no sandbox, no rebuild. Both companies are replacing C++ forks and Wasm with native Rust, cutting tail latency and memory use while shipping features faster.\n\nAs Envoy maintainers and co-authors, we cover how Go/Rust SDKs work across 12+ extension points including network filters, LB policies, and custom clusters. We'll have a live demo of a Rust TLS Transport Socket enabling kernel TLS (kTLS) which is impossible today with BoringSSL and what this means for Istio, Cilium, and Envoy Gateway users who need extensibility without C++ or WASM.",
+              "recording": "https://www.youtube.com/watch?v=qvSrzTC7RL8"
+            },
+            {
+              "id": "1193404",
+              "title": "Runtime Security at Scale with eBPF: Hybrid Detection and Root Cause Analysis in CloudNative Systems",
+              "speakers": "Yogeshwara Krishna Kota, Rutuj Waghare",
+              "room": "3F | 313+314",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1193404",
+              "description": "Modern Kubernetes workloads make it increasingly difficult to understand what is really happening at runtime. Traditional observability tools often miss critical low-level behaviours, especially across process execution.\nIn this talk, we present a kernel-level observability approach powered by Sauron eBPF that captures high-fidelity runtime signals directly from the Linux kernel. By tracking process lifecycle events, the system builds a unified, real-time view of workload behaviour.\nOn top of this telemetry, we introduce a Graph-AI analytics layer: data feed an AI engine that learns semantically meaningful node embeddings and models the process tree as a temporal graph. This allows the system to capture both node-level behaviour and inter-node temporal relationships, enabling the detection of anomalies that traditional approaches typically miss.",
+              "recording": "https://www.youtube.com/watch?v=wpIoiYAwMmA"
+            },
+            {
+              "id": "1194062",
+              "title": "Designing for High-cardinality Metrics",
+              "speakers": "Walther Lee, Aleksandr Krivoshchekov",
+              "room": "3F | 315",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194062",
+              "description": "Large applications will overload your monitoring system. In Kubernetes, every pod created has the side effect of adding new series to your metrics. Even a simple rollout and rollback triples your cardinality!\n\nWhile Prometheus and OTel have solutions like recording rules, stream aggregation, and sharding, all of them come with tradeoffs.\n\nAt Reddit, we found these options insufficient until we decided to look at the problem from a different angle. We designed a stateless algorithm for collecting metrics, that doesn’t sacrifice accuracy or performance, and doesn’t spike cardinality as pods come and go. In production, it cut compute costs by 90%.\n\nThis talk is an intuitive and visual look at the algorithm, the challenges and experiments. You’ll learn about why it works where current options don’t, and will leave with a solid grasp of how to implement it in any time-series database.",
+              "recording": "https://www.youtube.com/watch?v=wI_nKRNjdxo"
+            }
+          ]
+        },
+        {
+          "start": "2026-07-30T14:50:00+09:00",
+          "end": "2026-07-30T15:20:00+09:00",
+          "startLabel": "2:50 PM",
+          "endLabel": "3:20 PM",
+          "talks": [
+            {
+              "id": "1193361",
+              "title": "Shared Yet Isolated at Scale: Building Multi-Tenant Inference Platform on Kubernetes",
+              "speakers": "Yuto Hiraki, Yusuke Tanaka",
+              "room": "1F | Main Hall",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1193361",
+              "description": "As AI Agent adoption grows, so does LLM usage and the cost of running it. A self-hosted LLM inference platform is one approach enterprises are exploring to regain control over costs, security, and governance. But it comes with a real challenge: teams have different use cases, access patterns, and security requirements. Some only need an API endpoint, while others need full administrative control. Traditional namespace isolation falls short of meeting both. At the same time, high GPU utilization is critical to keeping cost per token low. Shared yet isolated, at scale - how do you resolve that contradiction?\nIn this talk, we share practical insights from building an LLM inference platform on Kubernetes - covering tenant isolation, dynamic and granular GPU allocation, and the trade-offs in between. We'll show how we resolved that contradiction, with practical patterns.",
+              "recording": "https://www.youtube.com/watch?v=In_2tY-0Kc4"
+            },
+            {
+              "id": "1193722",
+              "title": "What is a Virtual Power Plant (VPP) ? : Green Tech and the Modernization of the Grid",
+              "speakers": "LeRenzo Malcom",
+              "room": "5F | 502",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1193722",
+              "description": "Virtual Power Plants (VPPs) are reshaping the energy grid by turning thousands of distributed IoT devices—solar systems, batteries, EV chargers—into one coordinated, cloud-native asset. At Enpal, we operate one of Europe’s largest residential solar fleets and are building a next-generation VPP platform to orchestrate it.\n\nThis talk explores what it really means to build a power plant in software—and why developing for IoT looks nothing like typical cloud app development.\n\nYou’ll learn:\n\n1. How the electrical grid works (with examples!)\n\n2. How a Virtual Power Plant works—from household solar to market bidding\n\n3. How Enpal’s IoT and cloud systems coordinate to optimize energy use and revenue in real time\n\n4. What design patterns (Kubernetes, KubeEdge, Dapr, event streaming) make it possible to treat 100,000+ homes like a distributed cluster\n\n5. How VPPs make money—through flexibility markets, load shifting, and price arbitrage",
+              "recording": "https://www.youtube.com/watch?v=JZCqxYJY6A8"
+            },
+            {
+              "id": "1194861",
+              "title": "Repurposing OpenTelemetry Traces as Test Data: Breaking the Cost Barrier in System Migration",
+              "speakers": "Yoshiki Fujikane",
+              "room": "3F | 315",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194861",
+              "description": "Proving a new system matches the old one is the hardest part of legacy migration. Writing equivalence tests from scratch is slow and expensive.\n\nThe fix is to repurpose what the live system already emits: capture request/response pairs as OTel trace spans and treat them as ground truth for testing the replacement.\n\nA PoC on a Java-to-Go migration confirmed this works. Four CRUD endpoints were instrumented; the spans drove E2E tests covering all four.\n\nOTel's standard conventions don't capture HTTP response bodies, so observability traces aren't automatically useful for testing. Custom attributes are required.\n\nThe PoC also tested OBI (opentelemetry-ebpf-instrumentation), which traces without code changes. Basic coverage works. But adding custom attributes via eBPF is impractical, so OBI alone isn't enough for test-quality traces.\n\nYou'll leave knowing when OTel traces are sufficient for migration testing, when they're not, and whether OBI closes the gap.",
+              "recording": "https://www.youtube.com/watch?v=68VhjKfv7KQ"
+            },
+            {
+              "id": "1194977",
+              "title": "Sealed for All: Multi-Party Confidential Computing, No Trust",
+              "speakers": "Ryota Hashimoto, Takahiro Kambara",
+              "room": "3F | 313+314",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194977",
+              "description": "As cross-organizational data collaboration becomes central to modern computing, protecting sensitive data and proprietary code during joint processing is a growing challenge. Confidential Computing (CC), based on hardware-enforced Trusted Execution Environments (TEEs), enables data to be processed securely without being exposed. This session introduces \"Multi-Party Confidential Computing (MPCC),\" a concept where multiple data providers and application owners contribute their assets to a shared computation while keeping both data and applications confidential from one another. Rather than relying on access control or mutual trust, this model uses TEEs and file encryption to enforce runtime isolation between parties. The speakers will show how key mechanisms — attestation coordination across multiple TEEs, auditability after execution, and isolation from the underlying cloud — can be realized with open source technologies including Kata Containers and Confidential Containers.",
+              "recording": "https://www.youtube.com/watch?v=GIjm9CtWcK0"
+            },
+            {
+              "id": "1228186",
+              "title": "WG-Batch Updates: What’s New and What Is Next?",
+              "speakers": "Michał Woźniak, Yuki Iwai",
+              "room": "4F | 414+415",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1228186",
+              "description": "This session explores recent developments in the Kubernetes ecosystem designed to meet the growing demand for AI training and inference workloads. \n\nFirst, we survey the landscape of ecosystem projects, highlighting recent enhancements to the core Kubernetes Job API - the foundational building block for these initiatives - alongside the latest updates to JobSet.\n\nSecond, we demonstrate Kueue’s capabilities as a robust AI/ML platform, showcasing how features like Multi-Cluster dispatching, Fair Sharing, and Topology-Aware Scheduling maximize hardware utilization across tenants. \n\nFinally, we detail our collaboration with SIG Scheduling on \"Workload-Aware Scheduling,\" which aims to deeply integrate batch semantics into the core scheduler.",
+              "recording": "https://www.youtube.com/watch?v=tJQjBzfELpM"
             }
           ]
         },
@@ -190,6 +617,15 @@
           "endLabel": "4:20 PM",
           "talks": [
             {
+              "id": "1190934",
+              "title": "CoHDI: A CNCF Sandbox Project for Dynamic Hardware Composability in Kubernetes",
+              "speakers": "Naoki Oguchi, Hidetsugu Sugiyama, Michele Gazzetti, Jyothsna Deshpande, Kensuke Koda",
+              "room": "5F | 502",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1190934",
+              "description": "The CoHDI (Composable Hardware in Disaggregated Infrastructure) project enables the dynamic attachment and detachment of hardware resources, such as GPUs, in Kubernetes-based cloud native environments. Recently accepted as a CNCF Sandbox project, CoHDI marks an important step toward flexible and efficient infrastructure orchestration. This session introduces the paradigm established by CoHDI and its core value, including improved resource utilization and cross-vendor interoperability. It outlines CoHDI's internal architecture, focusing on three components: the Composable DRA Driver, Dynamic Device Scaler, and Composable Resource Operator. The talk explains Kubernetes integration and how CoHDI connects multi-vendor composable infrastructure into containerized platforms. Through real-world use cases such as on-demand GPU scaling, dynamic device reuse, and resource sharing in multi-tenant environments, it shows how CoHDI improves operational efficiency and concludes with future direction.",
+              "recording": "https://www.youtube.com/watch?v=AC37KBk363A"
+            },
+            {
               "id": "1194684",
               "title": "OTel meets Wasm: Rethinking OpenTelemetry Collector Extensibility",
               "speakers": "Kotaro Inoue, Tsuzuki Tsuchiya",
@@ -197,6 +633,15 @@
               "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194684",
               "description": "OpenTelemetry Collector is a flexible, vendor-neutral telemetry pipeline, but extensibility is still more operationally expensive than it should be. The contrib distribution offers many community components, yet some teams cannot adopt the full binary as-is because they require tighter control over included functionality and security posture. Building a smaller collector with only the necessary components is possible, but in practice, it often means maintaining a custom build pipeline just to support relatively small extensions. This talk explores an alternative model for dynamically customizing the OpenTelemetry Collector with WebAssembly. Instead of rebuilding and redistributing the entire collector binary for each change, custom receiver, processor, and exporter logic can be introduced in a more decoupled way. The session examines what this model enables, where it fits, where it falls short, and what trade-offs emerge around safety, portability, performance, and operations.",
               "recording": "https://www.youtube.com/watch?v=zvdaQXDRRXQ"
+            },
+            {
+              "id": "1194921",
+              "title": "Container Forensics for Kubernetes: Building an Evidence Pipeline with Open Source Tools",
+              "speakers": "Jie Wu, Pulkit Garg",
+              "room": "3F | 313+314",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194921",
+              "description": "Your container just got compromised. But Kubernetes is ephemeral by design: the pod restarts in 30 seconds, and when it does, the memory, processes, and ephemeral filesystem are gone. How do you investigate something that no longer exists?\n\nThe cloud native ecosystem has gotten good at prevention and detection, but once an alert fires, actually figuring out what happened is still a gap.\n\nThis session walks through a forensics pipeline we built from open source tools, with a live demo of a simulated attack. Falco detects suspicious activity, Falco Talon automatically captures syscalls and network traffic, and we analyze the evidence in StratoShark, a Wireshark-style tool for system calls. We'll also show how the Kubernetes Checkpoint API can freeze container runtime state for offline inspection.\n\nAttendees will walk away knowing how to set up automated evidence capture with Falco Talon, analyze captures in StratoShark, and trigger forensic checkpoints in their clusters.",
+              "recording": "https://www.youtube.com/watch?v=afMinubkPF8"
             }
           ]
         },
@@ -214,6 +659,24 @@
               "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1171327",
               "description": "Airbnb migrated from AWS VPC CNI to Cilium across 150+ Kubernetes clusters to unlock eBPF-based capabilities like kube-proxy replacement and cluster-wide network policy. This talk shares lessons from that journey. While grounded in Airbnb’s experience, the patterns and lessons apply broadly to teams operating Kubernetes at scale.\n\nWe cover pod lifecycle performance testing at scale, using AWS VPC CNI as a reference. We’ll dive into how differences in IPAM configuration, EC2 API interactions, and workload identity allocation introduce scalability bottlenecks, particularly under high-churn data and batch workloads (e.g., Spark).\n\nWe also discuss rollout strategies across cluster, node, and pod levels, exploring the trade-offs of each. Finally, we’ll walk through practical solutions for challenges like dual-stack environments and circular dependencies during bootstrap. Attendees will leave with a safe, incremental rollout approach for large-scale Cilium adoption.",
               "recording": "https://www.youtube.com/watch?v=LX4YZeqXWck"
+            },
+            {
+              "id": "1194272",
+              "title": "Beyond the DC Walls: Building a Nationwide GPU Fabric with KubeVirt and Wide-Area L2",
+              "speakers": "Kazuki Sato, Jian Li",
+              "room": "5F | 503",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1194272",
+              "description": "Cloud-native AI infrastructure faces a \"physical wall\" of power and land limits. To solve this, NTT and SKT built a \"Nationwide GPU Fabric\", merging a 1,000km+ high-speed L2 network (IOWN APN) with Kubernetes and KubeVirt to operate distributed DCs (Sapporo to Fukuoka) as a single cluster.\n\nWe deep-dive into the architecture, performance, and future of GPU orchestration beyond a single DC.\n\n- Distributed vs. Traditional DCs: Achievable workloads and trade-offs across a 1,000km+ fabric from Sapporo to Fukuoka.\n- Fabric-Aware Topology Alignment: We demonstrate how our solution maps long-haul IOWN APN constraints into KubeVirt VMs, maintaining high-performance GPU peer communication (NCCL) across 1,000km as a single, virtualized cluster.\n- DRA Feature: We share KubeVirt’s static limits and the potential of DRA for dynamic orchestration.\n\nAttendees walk away with a concrete blueprint to shatter the \"walls\" of a single DC — a scalable solution for global urban AI infrastructure challenges.",
+              "recording": "https://www.youtube.com/watch?v=BxMFE0wwjbA"
+            },
+            {
+              "id": "1228187",
+              "title": "Dynamic Modules in Envoy Gateway: API Design, Safety, and Operability",
+              "speakers": "Kota Kimura, Huabing (Robin) Zhao",
+              "room": "4F | 414+415",
+              "url": "https://events.linuxfoundation.org/archive/2026/kubecon-cloudnativecon-japan/program/schedule/?id=1228187",
+              "description": "Envoy’s dynamic modules provide a high-performance way to extend HTTP processing, but turning that capability into a gateway feature introduces important questions around safety, API design, and operability. This talk shows how Envoy Gateway supports dynamic modules with Kubernetes-native APIs that separate infrastructure registration from policy-based attachment on Gateways and Routes. We explain how this maps to Envoy’s `dynamic_modules` HTTP filter and discuss the practical issues that make extensibility supportable in production, including filter ordering, invalid references, lifecycle behavior, and packaging. Using a real module composition approach as a case study, we compare bundled shared libraries with runtime-loaded plugins and highlight the tradeoffs for gateway and platform maintainers.",
+              "recording": "https://www.youtube.com/watch?v=j7zSa_XiGzE"
             }
           ]
         }
