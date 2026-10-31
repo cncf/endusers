@@ -51,13 +51,18 @@ function EventRow({ event }) {
 }
 
 /**
- * The newest year's events, latest first, from the events-catalog plugin's
- * global data. Earlier years are reachable from the sidebar; the trailing
- * line links to each one's newest event so a reader on a narrow screen,
- * where the sidebar is behind the menu button, still has a path to them.
+ * The newest year's events, latest first. Earlier years are reachable from
+ * the sidebar; the trailing line links to each one's newest event so a reader
+ * on a narrow screen, where the sidebar is behind the menu button, still has
+ * a path to them.
+ *
+ * Exported apart from the data-reading default so the end-to-end coverage
+ * build can render the shapes the published catalog does not hold (see
+ * tests/e2e/fixtures/docs/events-catalog.mdx).
+ *
+ * @param {{ years: Array<{ year: number, events: Array<object> }> }} props
  */
-export default function EventsIndex() {
-  const { years } = usePluginData(PLUGIN_NAME);
+export function EventsCatalog({ years }) {
   if (years.length === 0) {
     return <p className={styles.empty}>No events have been announced yet.</p>;
   }
@@ -83,4 +88,10 @@ export default function EventsIndex() {
       )}
     </section>
   );
+}
+
+/** The published index: EventsCatalog over the events-catalog plugin's data. */
+export default function EventsIndex() {
+  const { years } = usePluginData(PLUGIN_NAME);
+  return <EventsCatalog years={years} />;
 }

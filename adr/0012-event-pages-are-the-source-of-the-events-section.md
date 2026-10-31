@@ -116,11 +116,14 @@ unit tests consume it outside the build. An events list has no such consumer.
   docs in catalog order. The newest year is expanded; older years are
   collapsed. Events therefore stop being a single-page section; the comment in
   `sidebars.js` and the agent instructions that list it as one are updated.
-- `src/plugins/events-catalog.mjs` is a local Docusaurus plugin registered in
-  `docusaurus.config.js`. Its `loadContent` calls `collectEvents`, its
-  `contentLoaded` publishes `{ years }` with `setGlobalData`, and its
-  `getPathsToWatch` returns the event pages so the dev server reloads the index
-  when one changes.
+- `scripts/lib/events-catalog-plugin.mjs` is a local Docusaurus plugin
+  registered in `docusaurus.config.js`. Its `loadContent` calls
+  `collectEvents`, its `contentLoaded` publishes `{ years }` with
+  `setGlobalData`, and its `getPathsToWatch` returns the event pages so the dev
+  server reloads the index when one changes. It lives under `scripts/lib/`
+  rather than `src/` because it runs in Node at config load and never ships to
+  the browser, which the end-to-end coverage lane requires of every `src/`
+  file.
 - `src/components/EventsIndex/` reads the plugin data with `usePluginData` and
   renders the newest year: a heading naming the year, then a list of rows, each
   with the date range in a `<time>` element carrying the start date, the title linking to the

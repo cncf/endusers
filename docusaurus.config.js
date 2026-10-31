@@ -5,7 +5,7 @@
 // See: https://docusaurus.io/docs/api/docusaurus-config
 
 import { themes as prismThemes } from 'prism-react-renderer';
-import eventsCatalogPlugin from './src/plugins/events-catalog.mjs';
+import eventsCatalogPlugin from './scripts/lib/events-catalog-plugin.mjs';
 
 const siteUrl = process.env.SITE_URL || 'https://endusers.cncf.io';
 const baseUrl = process.env.BASE_URL || '/';

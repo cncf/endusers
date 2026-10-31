@@ -1,5 +1,5 @@
 // Contract for scripts/lib/events-catalog.mjs, the only reader of event page
-// front matter (ADR 0012). sidebars.js and src/plugins/events-catalog.mjs
+// front matter (ADR 0012). sidebars.js and scripts/lib/events-catalog-plugin.mjs
 // both consume it, so a rule it fails to enforce is a page the build accepts
 // and then lists in the wrong place, and an ordering it gets wrong is wrong
 // on the index and in the sidebar at once.

@@ -1,7 +1,7 @@
 // The front matter of docs/events/<year>/<slug>.md is the only place an
 // event's metadata is written (ADR 0012). This module is the only code that
 // reads it: sidebars.js builds the events sidebar from collectEvents() and
-// src/plugins/events-catalog.mjs publishes the same list as plugin global
+// ./events-catalog-plugin.mjs publishes the same list as plugin global
 // data for the EventsIndex component, so the two orderings cannot disagree.
 //
 // There is no committed catalog file. Nothing outside the Docusaurus build

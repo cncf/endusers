@@ -28,10 +28,6 @@ const FULL_PATH_ONLY = new Map([
     'docs/architectures/ pages are generated; isAuthoredDocumentPath() excludes them',
   ],
   [
-    'tests/events-page.test.mjs',
-    'docs/events/index.md is data-backed; the classifier sends it down the full path',
-  ],
-  [
     'tests/issue-template-contract.test.mjs',
     'blog/authors.yml is data, not a Markdown document',
   ],

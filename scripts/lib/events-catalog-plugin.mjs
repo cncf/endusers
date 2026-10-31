@@ -1,13 +1,13 @@
-// Publishes the event catalog as Docusaurus plugin global data so the
+// Docusaurus plugin that publishes the event catalog as global data so the
 // EventsIndex component can render it. The list comes from
-// scripts/lib/events-catalog.mjs, the one reader of event front matter that
-// sidebars.js also builds from, so the index and the sidebar agree (ADR 0012).
+// ./events-catalog.mjs, the one reader of event front matter that sidebars.js
+// also builds from, so the index and the sidebar agree (ADR 0012). It lives
+// under scripts/lib/ rather than src/ because it runs in Node at config load
+// and never ships to the browser, which the end-to-end coverage lane requires
+// of everything under src/.
 
 import { join } from 'node:path';
-import {
-  collectEvents,
-  groupByYear,
-} from '../../scripts/lib/events-catalog.mjs';
+import { collectEvents, groupByYear } from './events-catalog.mjs';
 
 /** The name the component passes to usePluginData(). */
 export const PLUGIN_NAME = 'events-catalog';

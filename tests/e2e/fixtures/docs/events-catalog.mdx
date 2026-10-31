@@ -1,0 +1,69 @@
+---
+title: EventsCatalog coverage fixture
+description:
+  Renders <EventsCatalog> with the year shapes the published event pages do not
+  hold.
+---
+
+import { EventsCatalog } from '@site/src/components/EventsIndex';
+
+# EventsCatalog coverage fixture
+
+This page exists only in the end-to-end coverage build. `/events` renders
+`EventsIndex`, which hands the events-catalog plugin's years to
+`EventsCatalog`. The published pages under `docs/events/<year>/` are all
+multi-day events within one calendar month, and there is always at least one,
+so three arms of the component and of `formatDateRange()` in
+`src/components/shared/formatDate.js` are unreachable from published content:
+the empty state, the start-day-only calendar block for a single-day or
+month-spanning event, and the range text for an event that crosses a month or
+a year. A data overlay cannot reach them either; the catalog is read from
+Markdown front matter, not from a `data/*.json` file.
+
+The first render below is the empty catalog. The second holds one year with an
+event for each of those date shapes, latest first. Each row links to a
+published event page because the build rejects broken links; the fixture is
+about the dates, not the destinations.
+
+## Empty catalog
+
+<EventsCatalog years={[]} />
+
+## Date shapes
+
+<EventsCatalog
+  years={[
+    {
+      year: 2031,
+      events: [
+        {
+          id: '2031/cross-year',
+          route: '/events/2026/kubecon-na',
+          title: 'Cross-year fixture event',
+          description: 'Starts in one year and ends in the next.',
+          start: '2031-12-30',
+          end: '2032-01-02',
+          location: 'Fixture City',
+        },
+        {
+          id: '2031/cross-month',
+          route: '/events/2026/kubecon-na',
+          title: 'Cross-month fixture event',
+          description: 'Starts in one month and ends in the next.',
+          start: '2031-03-30',
+          end: '2031-04-02',
+          location: 'Fixture City',
+        },
+        {
+          id: '2031/single-day',
+          route: '/events/2026/kubecon-na',
+          title: 'Single-day fixture event',
+          description: 'Starts and ends on the same day.',
+          start: '2031-02-14',
+          end: '2031-02-14',
+          location: 'Fixture City',
+        },
+      ],
+    },
+  ]}
+/>

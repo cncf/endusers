@@ -1,8 +1,9 @@
 // Contract for src/components/EventsIndex, the component that renders the
 // events-catalog plugin's global data on /events (ADR 0012), and for the
-// plugin that publishes it. The component calls only usePluginData, stubbed
-// by tests/tools/docusaurus-stubs/useGlobalData.mjs, so it can be invoked
-// directly and its element tree walked; EventRow is hook-free, so the walker
+// plugin that publishes it. The default export calls only usePluginData,
+// stubbed by tests/tools/docusaurus-stubs/useGlobalData.mjs, so it can be
+// invoked directly; it hands the plugin's years to the hook-free EventsCatalog,
+// which renderElement() expands, and EventRow is hook-free too, so the walker
 // expands it inline.
 
 import assert from 'node:assert/strict';
@@ -17,14 +18,15 @@ import {
   findAllByType,
   findByType,
   textOf,
+  renderElement,
   walkElements,
 } from './tools/react-element-tree.mjs';
 
-const { default: EventsIndex } = await importSource(
+const { default: EventsIndex, EventsCatalog } = await importSource(
   'src/components/EventsIndex/index.js',
 );
 const { default: eventsCatalogPlugin, PLUGIN_NAME } =
-  await import('../src/plugins/events-catalog.mjs');
+  await import('../scripts/lib/events-catalog-plugin.mjs');
 const { collectEvents, groupByYear } =
   await import('../scripts/lib/events-catalog.mjs');
 
@@ -93,10 +95,16 @@ const TWO_YEARS = {
   ],
 };
 
+// The tree EventsCatalog returns for the plugin data `data`, via the default
+// export, so every assertion below also proves the container passes the
+// plugin's years through unchanged.
 function render(data) {
   const restore = setPluginData(PLUGIN_NAME, data);
   try {
-    return EventsIndex();
+    const container = EventsIndex();
+    assert.equal(container.type, EventsCatalog);
+    assert.equal(container.props.years, data.years);
+    return renderElement(container);
   } finally {
     restore();
   }
@@ -245,9 +253,8 @@ test('nested seeding restores the outer plugin data, not an empty store', () => 
       years: [{ year: 1, events: [] }],
     });
     restoreInner();
-    // The outer seed has no years, so the component renders the empty state
-    // rather than the inner seed's single year.
-    assert.equal(EventsIndex().type, 'p');
+    // The store holds the outer seed again, not the inner one and not nothing.
+    assert.equal(EventsIndex().props.years, outer.years);
   } finally {
     restoreOuter();
   }
