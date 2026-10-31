@@ -682,6 +682,25 @@
       "membershipStatus": "member"
     },
     {
+      "id": "china-merchants-bank",
+      "name": "China Merchants Bank",
+      "slug": "china-merchants-bank",
+      "logo": null,
+      "industries": ["Financial Services"],
+      "projects": ["Fluid", "HAMi", "KEDA", "Kubernetes", "Prometheus"],
+      "architectures": [
+        {
+          "id": "china-merchants-bank",
+          "title": "Unified Training and Inference on Kubernetes for Heterogeneous AI Compute at China Merchants Bank",
+          "sourceUrl": "https://github.com/cncf/tab/issues/140"
+        }
+      ],
+      "awards": [],
+      "sourceAttribution": ["https://github.com/cncf/tab/issues/140"],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
       "id": "citi",
       "name": "Citi",
       "slug": "citi",

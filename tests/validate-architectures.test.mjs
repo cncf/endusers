@@ -318,9 +318,10 @@ for (const [label, sourceUrl] of [
   });
 }
 
-// A page is either pinned to the cncf/architecture commit it was taken from or
-// cites the submission issue it came from; the attribution line on the page
-// and the member directory both depend on knowing which.
+// A page is pinned to the cncf/architecture commit it was taken from, cites
+// the submission issue it came from, or (when authored directly in this
+// repository from another source) carries only its sourceUrl; it never claims
+// two origins, because the attribution line on the page depends on which.
 test('rejects a page that sets both sourceCommit and sourceIssue', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
@@ -329,17 +330,16 @@ test('rejects a page that sets both sourceCommit and sourceIssue', () => {
   assert.equal(result.status, 1);
   assert.match(
     result.stderr,
-    /must set exactly one of sourceCommit \(cncf\/architecture import\) or sourceIssue \(submission issue\)/,
+    /must set at most one of sourceCommit \(cncf\/architecture import\) or sourceIssue \(submission issue\)/,
   );
 });
 
-test('rejects a page that sets neither sourceCommit nor sourceIssue', () => {
+test('accepts a page that sets neither sourceCommit nor sourceIssue', () => {
   const result = runScriptWithFixtures(
     SCRIPT,
     pageFixture([withAuthored({ sourceCommit: undefined })]),
   );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /must set exactly one of sourceCommit/);
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test('accepts an issue-sourced page', () => {

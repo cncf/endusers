@@ -260,7 +260,7 @@ test('member logos live under /img/ and exist in the repository', () => {
 test('member architecture entries carry their provenance', () => {
   for (const member of members) {
     for (const architecture of member.architectures) {
-      for (const field of ['id', 'title', 'sourceUrl', 'sourceCommit']) {
+      for (const field of ['id', 'title', 'sourceUrl']) {
         assert.ok(
           architecture[field],
           `${member.id} architecture is missing ${field}`,
@@ -270,11 +270,25 @@ test('member architecture entries carry their provenance', () => {
         architecture.sourceUrl,
         `${member.id} architecture sourceUrl`,
       );
-      assert.match(
-        architecture.sourceCommit,
-        /^[0-9a-f]{40}$/,
-        `${member.id} architecture sourceCommit must be a full commit sha`,
+      // Provenance mirrors the catalog record: at most one of a pinned
+      // cncf/architecture commit or a submission issue, or neither for a
+      // page authored directly in this repository.
+      assert.ok(
+        !('sourceCommit' in architecture && 'sourceIssue' in architecture),
+        `${member.id} architecture must not carry both sourceCommit and sourceIssue`,
       );
+      if ('sourceCommit' in architecture)
+        assert.match(
+          architecture.sourceCommit,
+          /^[0-9a-f]{40}$/,
+          `${member.id} architecture sourceCommit must be a full commit sha`,
+        );
+      if ('sourceIssue' in architecture)
+        assert.ok(
+          Number.isInteger(architecture.sourceIssue) &&
+            architecture.sourceIssue > 0,
+          `${member.id} architecture sourceIssue must be a positive issue number`,
+        );
     }
   }
 });

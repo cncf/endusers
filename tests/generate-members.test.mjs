@@ -583,6 +583,31 @@ test('projects only the documented architecture and award fields', () => {
   assert.equal(member.awards[0].talkUrl, null);
 });
 
+test('forwards whichever provenance field a catalog record carries', () => {
+  const result = run({
+    catalog: [
+      catalogEntry({
+        id: 'acme-issue',
+        sourceCommit: undefined,
+        sourceIssue: 42,
+      }),
+      catalogEntry({ id: 'acme-direct', sourceCommit: undefined }),
+    ],
+  });
+
+  const { architectures } = memberById(result, 'acme');
+  const issue = architectures.find((entry) => entry.id === 'acme-issue');
+  const direct = architectures.find((entry) => entry.id === 'acme-direct');
+  assert.deepEqual(Object.keys(issue).sort(), [
+    'id',
+    'sourceIssue',
+    'sourceUrl',
+    'title',
+  ]);
+  assert.equal(issue.sourceIssue, 42);
+  assert.deepEqual(Object.keys(direct).sort(), ['id', 'sourceUrl', 'title']);
+});
+
 test('collects source attribution from catalog and award URLs, skipping nulls', () => {
   const result = run({
     catalog: [catalogEntry({ sourceUrl: 'https://example.test/architecture' })],
@@ -701,6 +726,18 @@ test('falls back to a PNG when no SVG asset exists', () => {
     memberById(result, 'acme').logo,
     '/img/architectures/acme/diagram.png',
   );
+});
+
+test('does not use an architecture diagram as a member logo', () => {
+  const result = run({
+    catalog: [
+      catalogEntry({
+        assets: ['/img/architectures/acme/architecture.png'],
+      }),
+    ],
+  });
+
+  assert.equal(memberById(result, 'acme').logo, null);
 });
 
 test('falls back to the award logo when no usable catalog asset exists', () => {

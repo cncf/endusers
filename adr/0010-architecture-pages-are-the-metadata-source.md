@@ -70,8 +70,9 @@ pages), and a nested block keeps the catalog's vocabulary out of the theme's.
 - The front matter of `docs/architectures/<id>/index.md` is the only place an
   architecture's metadata is written. Alongside `title`, an `architecture:`
   block carries `organization`, `summary`, `industries`, `tags`, `projects`,
-  `sourceUrl`, exactly one of `sourceCommit` or `sourceIssue`, `published` and
-  `updated`.
+  `sourceUrl`, at most one of `sourceCommit` or `sourceIssue` (amended
+  2026-10-28: a page authored directly from another source sets neither),
+  `published` and `updated`.
 - `id` is the directory name and `assets` is the sorted listing of regular files
   in `images/`. Neither is authored; both are derived when the catalog is
   generated.

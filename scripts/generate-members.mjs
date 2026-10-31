@@ -75,12 +75,15 @@ function pickLogo(allAssets, awardEntries, slug) {
   if (namedLogo) return namedLogo;
   const exactMatch = allAssets.find((a) => basename(a) === slug);
   if (exactMatch) return exactMatch;
-  const svgs = allAssets.filter((a) => a.toLowerCase().endsWith('.svg'));
+  const logoCandidates = allAssets.filter(
+    (a) => basename(a) !== 'architecture',
+  );
+  const svgs = logoCandidates.filter((a) => a.toLowerCase().endsWith('.svg'));
   if (svgs.length > 0) {
     svgs.sort((a, b) => basename(a).length - basename(b).length);
     return svgs[0];
   }
-  const png = allAssets.find((a) => a.toLowerCase().endsWith('.png'));
+  const png = logoCandidates.find((a) => a.toLowerCase().endsWith('.png'));
   if (png) return png;
   return awardEntries[0]?.logo || null;
 }
@@ -115,11 +118,15 @@ function legacyMembers(catalog, awardsData) {
     const projects = [
       ...new Set(catalogEntries.flatMap((e) => e.projects || [])),
     ].sort();
+    // A catalog record carries at most one provenance field (sourceCommit for
+    // a cncf/architecture import, sourceIssue for a submission issue) or none
+    // when the page was authored directly; forward whichever is present.
     const architectures = catalogEntries.map((e) => ({
       id: e.id,
       title: e.title,
       sourceUrl: e.sourceUrl,
-      sourceCommit: e.sourceCommit,
+      ...(e.sourceCommit !== undefined && { sourceCommit: e.sourceCommit }),
+      ...(e.sourceIssue !== undefined && { sourceIssue: e.sourceIssue }),
     }));
     const awards = awardEntries.map((a) => ({
       year: a.year,
