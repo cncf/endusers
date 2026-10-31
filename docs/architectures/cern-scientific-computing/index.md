@@ -14,12 +14,12 @@ architecture:
     - switzerland
   projects:
     - Argo
-    - Bootc
+    - bootc
     - ContainerSSH
     - Longhorn
     - Kubernetes
     - Kubeflow
-    - Kserve
+    - KServe
     - Kyverno
     - Kueue
     - Prometheus
@@ -38,7 +38,7 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
   <CNCFProjectCard name={"Argo"} href={"https://www.cncf.io/projects/argo/"} logo={"/img/cncf-projects/argo-argo-icon-color.svg"} description={"ArgoCD is used to manage deployments of all services across multiple clusters and environments. Argo Workflows is used to manage multiple day-2 cluster operations."} />
 
-  <CNCFProjectCard name={"Bootc"} href={"https://www.cncf.io/projects/bootc/"} logo={"/img/cncf-projects/bootc-bootc-icon-color.svg"} description={"Bootc provides transactional, in-place operating system images and updates using OCI/Docker container images. Bootc is used to build the minimal base images for our cluster nodes."} />
+  <CNCFProjectCard name={"bootc"} href={"https://www.cncf.io/projects/bootc/"} logo={"/img/cncf-projects/bootc-bootc-icon-color.svg"} description={"bootc provides transactional, in-place operating system images and updates using OCI/Docker container images. bootc is used to build the minimal base images for our cluster nodes."} />
 
   <CNCFProjectCard name={"ContainerSSH"} href={"https://www.cncf.io/projects/containerssh/"} logo={"/img/cncf-projects/containerssh-containerssh-icon-dark.svg"} description={"ContainerSSH offers a SSH frontend to containers/pods running on Kubernetes clusters. Used to expose SSH as a way to access existing sessions in the cluster, with multiple authentication mechanisms offered (Kerberos, OIDC/OAuth2)."} />
 
@@ -48,7 +48,7 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
   <CNCFProjectCard name={"Kubeflow"} href={"https://www.cncf.io/projects/kubeflow/"} logo={"/img/cncf-projects/kubeflow-kubeflow-icon.svg"} description={"Kubeflow offers tools to manage the complete MLOps lifecycle. Used for profile management and quotas for users and teams, instantiation of notebook servers, pipelines for common and reusable tasks, hyper-parameter tuning with Katib and managing inference endpoints."} />
 
-  <CNCFProjectCard name={"Kserve"} href={"https://www.cncf.io/projects/kserve/"} logo={"/img/cncf-projects/kserve-k-serve-icon-color.svg"} description={"Kserve standardizes hosting of inference endpoints. Used to encapsulate multiple runtime flavors, such as ONNX, Triton and several others, and offering a declarative way to define inference servers."} />
+  <CNCFProjectCard name={"KServe"} href={"https://www.cncf.io/projects/kserve/"} logo={"/img/cncf-projects/kserve-k-serve-icon-color.svg"} description={"KServe standardizes hosting of inference endpoints. Used to encapsulate multiple runtime flavors, such as ONNX, Triton and several others, and offering a declarative way to define inference servers."} />
 
   <CNCFProjectCard name={"Kyverno"} href={"https://www.cncf.io/projects/kyverno/"} logo={"/img/cncf-projects/kyverno-kyverno-icon-color.svg"} description={"Kyverno offers policy as code with support for YAML and CEL based policies. Used as a key component for policy enforcement and mutating workloads according to those policies, adding required settings to expose storage systems, set resources based on GPUs, etc."} />
 

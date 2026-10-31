@@ -628,15 +628,15 @@
       "industries": ["Public Sector", "Research"],
       "projects": [
         "Argo",
-        "Bootc",
         "ContainerSSH",
-        "Kserve",
+        "KServe",
         "Kubeflow",
         "Kubernetes",
         "Kueue",
         "Kyverno",
         "Longhorn",
         "Prometheus",
+        "bootc",
         "stargz-snapshotter"
       ],
       "architectures": [
