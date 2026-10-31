@@ -30,8 +30,9 @@ schedule.
 
 The event published no end user track, so the sessions below are those whose
 speakers listed a [CNCF End User member](/community/members) as their company
-in the official schedule. One member organization, Ant Group, appears. Times
-are China Standard Time (UTC+8).
+in the official schedule. One member organization appears: Ant Group, listed
+in the [CNCF landscape](https://landscape.cncf.io/?group=members&view-mode=grid&members=end-user-member)
+as Ant Financial. Times are China Standard Time (UTC+8).
 
 ### Tuesday, September 8
 
