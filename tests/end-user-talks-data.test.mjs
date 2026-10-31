@@ -48,7 +48,10 @@ const schedule = JSON.parse(
 );
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;
-const STAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/u;
+// A slot boundary must carry its UTC offset: without one, `<time dateTime>` is
+// a local date-and-time string that a calendar importer or crawler resolves in
+// its own zone rather than the event's.
+const STAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/u;
 
 // The collector's day label: Intl's en-US long weekday/month rendering of the
 // calendar date, formatted in UTC so the machine's timezone cannot shift which

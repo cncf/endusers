@@ -74,6 +74,11 @@ test('collect-end-user-talks queries Sessionize and outputs filtered talks catal
   assert.equal(catalog.days.length, 1);
   assert.equal(catalog.days[0].date, '2026-11-10');
   assert.equal(catalog.days[0].slots.length, 1);
+  // The machine-readable boundaries carry the event's UTC offset so a reader
+  // outside Mountain Time resolves them to the same instant; the labels stay
+  // the event-local wall-clock time a human reads.
+  assert.equal(catalog.days[0].slots[0].start, '2026-11-10T10:30:00-07:00');
+  assert.equal(catalog.days[0].slots[0].end, '2026-11-10T11:00:00-07:00');
   assert.equal(catalog.days[0].slots[0].startLabel, '10:30 AM');
   assert.equal(catalog.days[0].slots[0].endLabel, '11:00 AM');
   const talk = catalog.days[0].slots[0].talks[0];

@@ -3,7 +3,7 @@
   "sourceUrl": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/",
   "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
   "category": "End User Programming / End User Talk",
-  "generatedAt": "2026-10-29T11:55:31.231Z",
+  "generatedAt": "2026-10-31T16:43:23.341Z",
   "timezone": "MST (UTC−7)",
   "talkCount": 83,
   "days": [
@@ -13,8 +13,8 @@
       "label": "Tuesday, November 10",
       "slots": [
         {
-          "start": "2026-11-10T11:30:00",
-          "end": "2026-11-10T12:00:00",
+          "start": "2026-11-10T11:30:00-07:00",
+          "end": "2026-11-10T12:00:00-07:00",
           "startLabel": "11:30 AM",
           "endLabel": "12:00 PM",
           "talks": [
@@ -56,8 +56,8 @@
           ]
         },
         {
-          "start": "2026-11-10T12:20:00",
-          "end": "2026-11-10T12:50:00",
+          "start": "2026-11-10T12:20:00-07:00",
+          "end": "2026-11-10T12:50:00-07:00",
           "startLabel": "12:20 PM",
           "endLabel": "12:50 PM",
           "talks": [
@@ -99,8 +99,8 @@
           ]
         },
         {
-          "start": "2026-11-10T14:50:00",
-          "end": "2026-11-10T15:20:00",
+          "start": "2026-11-10T14:50:00-07:00",
+          "end": "2026-11-10T15:20:00-07:00",
           "startLabel": "2:50 PM",
           "endLabel": "3:20 PM",
           "talks": [
@@ -142,8 +142,8 @@
           ]
         },
         {
-          "start": "2026-11-10T15:40:00",
-          "end": "2026-11-10T16:10:00",
+          "start": "2026-11-10T15:40:00-07:00",
+          "end": "2026-11-10T16:10:00-07:00",
           "startLabel": "3:40 PM",
           "endLabel": "4:10 PM",
           "talks": [
@@ -177,7 +177,7 @@
             },
             {
               "id": "1244963",
-              "title": "Triaging 1,800 Alerts/Month at $0.33 Each: Verkada's MCP Agent on Nine Production Clusters",
+              "title": "Triaging 4,700 Alerts/Month at $0.33 Each: Verkada's MCP Agent on Nine Production Clusters",
               "speakers": "Rohan Sood, Adrian Ng",
               "room": "Salt Palace | Level 1 | 151",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1244963"
@@ -185,8 +185,8 @@
           ]
         },
         {
-          "start": "2026-11-10T16:40:00",
-          "end": "2026-11-10T17:10:00",
+          "start": "2026-11-10T16:40:00-07:00",
+          "end": "2026-11-10T17:10:00-07:00",
           "startLabel": "4:40 PM",
           "endLabel": "5:10 PM",
           "talks": [
@@ -228,8 +228,8 @@
           ]
         },
         {
-          "start": "2026-11-10T17:30:00",
-          "end": "2026-11-10T18:00:00",
+          "start": "2026-11-10T17:30:00-07:00",
+          "end": "2026-11-10T18:00:00-07:00",
           "startLabel": "5:30 PM",
           "endLabel": "6:00 PM",
           "talks": [
@@ -278,8 +278,8 @@
       "label": "Wednesday, November 11",
       "slots": [
         {
-          "start": "2026-11-11T11:00:00",
-          "end": "2026-11-11T11:30:00",
+          "start": "2026-11-11T11:00:00-07:00",
+          "end": "2026-11-11T11:30:00-07:00",
           "startLabel": "11:00 AM",
           "endLabel": "11:30 AM",
           "talks": [
@@ -321,8 +321,8 @@
           ]
         },
         {
-          "start": "2026-11-11T11:50:00",
-          "end": "2026-11-11T12:20:00",
+          "start": "2026-11-11T11:50:00-07:00",
+          "end": "2026-11-11T12:20:00-07:00",
           "startLabel": "11:50 AM",
           "endLabel": "12:20 PM",
           "talks": [
@@ -357,8 +357,8 @@
           ]
         },
         {
-          "start": "2026-11-11T13:20:00",
-          "end": "2026-11-11T14:20:00",
+          "start": "2026-11-11T13:20:00-07:00",
+          "end": "2026-11-11T14:20:00-07:00",
           "startLabel": "1:20 PM",
           "endLabel": "2:20 PM",
           "talks": [
@@ -379,8 +379,8 @@
           ]
         },
         {
-          "start": "2026-11-11T14:20:00",
-          "end": "2026-11-11T14:50:00",
+          "start": "2026-11-11T14:20:00-07:00",
+          "end": "2026-11-11T14:50:00-07:00",
           "startLabel": "2:20 PM",
           "endLabel": "2:50 PM",
           "talks": [
@@ -415,8 +415,8 @@
           ]
         },
         {
-          "start": "2026-11-11T14:48:00",
-          "end": "2026-11-11T14:53:00",
+          "start": "2026-11-11T14:48:00-07:00",
+          "end": "2026-11-11T14:53:00-07:00",
           "startLabel": "2:48 PM",
           "endLabel": "2:53 PM",
           "talks": [
@@ -430,8 +430,8 @@
           ]
         },
         {
-          "start": "2026-11-11T15:02:00",
-          "end": "2026-11-11T15:07:00",
+          "start": "2026-11-11T15:02:00-07:00",
+          "end": "2026-11-11T15:07:00-07:00",
           "startLabel": "3:02 PM",
           "endLabel": "3:07 PM",
           "talks": [
@@ -445,8 +445,8 @@
           ]
         },
         {
-          "start": "2026-11-11T15:10:00",
-          "end": "2026-11-11T15:40:00",
+          "start": "2026-11-11T15:10:00-07:00",
+          "end": "2026-11-11T15:40:00-07:00",
           "startLabel": "3:10 PM",
           "endLabel": "3:40 PM",
           "talks": [
@@ -481,8 +481,8 @@
           ]
         },
         {
-          "start": "2026-11-11T15:16:00",
-          "end": "2026-11-11T15:21:00",
+          "start": "2026-11-11T15:16:00-07:00",
+          "end": "2026-11-11T15:21:00-07:00",
           "startLabel": "3:16 PM",
           "endLabel": "3:21 PM",
           "talks": [
@@ -496,8 +496,8 @@
           ]
         },
         {
-          "start": "2026-11-11T16:10:00",
-          "end": "2026-11-11T16:40:00",
+          "start": "2026-11-11T16:10:00-07:00",
+          "end": "2026-11-11T16:40:00-07:00",
           "startLabel": "4:10 PM",
           "endLabel": "4:40 PM",
           "talks": [
@@ -532,8 +532,8 @@
           ]
         },
         {
-          "start": "2026-11-11T17:00:00",
-          "end": "2026-11-11T17:30:00",
+          "start": "2026-11-11T17:00:00-07:00",
+          "end": "2026-11-11T17:30:00-07:00",
           "startLabel": "5:00 PM",
           "endLabel": "5:30 PM",
           "talks": [
@@ -553,8 +553,8 @@
             },
             {
               "id": "1250522",
-              "title": "Pushing beyond the Breaking Point: Linked Runners and TEEs for Frontier AI",
-              "speakers": "David Porter, Evan Sheng",
+              "title": "Pushing Beyond the Breaking Point: Linked Runners and TEEs for Frontier AI",
+              "speakers": "David Porter, Evan Sheng, Ning Liao",
               "room": "Salt Palace | Level 1 | Grand Ballroom H",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250522"
             },
@@ -575,8 +575,8 @@
       "label": "Thursday, November 12",
       "slots": [
         {
-          "start": "2026-11-12T11:00:00",
-          "end": "2026-11-12T11:30:00",
+          "start": "2026-11-12T11:00:00-07:00",
+          "end": "2026-11-12T11:30:00-07:00",
           "startLabel": "11:00 AM",
           "endLabel": "11:30 AM",
           "talks": [
@@ -618,8 +618,8 @@
           ]
         },
         {
-          "start": "2026-11-12T11:50:00",
-          "end": "2026-11-12T12:20:00",
+          "start": "2026-11-12T11:50:00-07:00",
+          "end": "2026-11-12T12:20:00-07:00",
           "startLabel": "11:50 AM",
           "endLabel": "12:20 PM",
           "talks": [
@@ -661,8 +661,8 @@
           ]
         },
         {
-          "start": "2026-11-12T13:50:00",
-          "end": "2026-11-12T14:20:00",
+          "start": "2026-11-12T13:50:00-07:00",
+          "end": "2026-11-12T14:20:00-07:00",
           "startLabel": "1:50 PM",
           "endLabel": "2:20 PM",
           "talks": [
@@ -697,8 +697,8 @@
           ]
         },
         {
-          "start": "2026-11-12T14:40:00",
-          "end": "2026-11-12T15:10:00",
+          "start": "2026-11-12T14:40:00-07:00",
+          "end": "2026-11-12T15:10:00-07:00",
           "startLabel": "2:40 PM",
           "endLabel": "3:10 PM",
           "talks": [
@@ -740,8 +740,8 @@
           ]
         },
         {
-          "start": "2026-11-12T15:30:00",
-          "end": "2026-11-12T16:00:00",
+          "start": "2026-11-12T15:30:00-07:00",
+          "end": "2026-11-12T16:00:00-07:00",
           "startLabel": "3:30 PM",
           "endLabel": "4:00 PM",
           "talks": [
