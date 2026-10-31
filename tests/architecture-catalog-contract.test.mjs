@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { resolveRepoRoot } from './helpers.mjs';
 import { parse as parseYaml } from 'yaml';
 import { REPO_AUTHORED_PAGES } from '../scripts/lib/architecture-pages.mjs';
+import { isCncfProjectHref } from '../scripts/lib/project-card-links.mjs';
 import {
   catalogRecords,
   collectArchitectureRecords,
@@ -292,6 +293,71 @@ test('no project is listed under two spellings across the catalog', () => {
     collisions,
     [],
     'one project is spelled two ways, so the catalog filter offers it twice and each option hides the other spelling',
+  );
+});
+
+// Spelling is not the only way one project reaches the filter twice. A page
+// may name a component of a project ("ArgoCD", "Argo Workflows") where another
+// names the project ("Argo"); the labels are spelled differently on purpose, so
+// the check above cannot see them, yet the filter still offers three options
+// where the catalog holds one project and each option hides the architectures
+// filed under the others. The pages say which project a label belongs to: every
+// <CNCFProjectCard /> imported with them links its project to its page on
+// cncf.io, and all three Argo labels link to /projects/argo/. Two labels the
+// pages link to the same project are one filter option listed twice.
+const PROJECT_CARD = /<CNCFProjectCard\s([^>]*?)\/>/g;
+
+function cardAttribute(attributes, name) {
+  const match = attributes.match(
+    new RegExp(`(?:^|\\s)${name}=\\{("(?:[^"\\\\]|\\\\.)*")\\}`),
+  );
+  return match ? JSON.parse(match[1]) : null;
+}
+
+function cncfProjectSlug(href) {
+  if (!isCncfProjectHref(href)) return null;
+  const slug = new URL(href).pathname.replace(/^\/projects\/?/, '');
+  return slug.replace(/\/$/, '');
+}
+
+function projectSlugsByLabel() {
+  const slugs = new Map();
+  for (const record of catalog) {
+    const page = readFileSync(join(docsDir, record.id, 'index.md'), 'utf8');
+    for (const [, attributes] of page.matchAll(PROJECT_CARD)) {
+      const name = cardAttribute(attributes, 'name');
+      const slug = cncfProjectSlug(cardAttribute(attributes, 'href'));
+      if (name && slug) slugs.set(name, slug);
+    }
+  }
+  return slugs;
+}
+
+test('no CNCF project is listed under two labels across the catalog', () => {
+  const slugs = projectSlugsByLabel();
+  const byProject = new Map();
+  for (const record of catalog)
+    for (const project of record.projects) {
+      // A label with no project card, or one linked outside cncf.io/projects,
+      // names nothing the pages agree on; leave it to the spelling check.
+      const slug = slugs.get(project);
+      if (!slug) continue;
+      if (!byProject.has(slug)) byProject.set(slug, new Map());
+      const byLabel = byProject.get(slug);
+      byLabel.set(project, [...(byLabel.get(project) ?? []), record.id]);
+    }
+  const collisions = [...byProject]
+    .filter(([, byLabel]) => byLabel.size > 1)
+    .map(
+      ([slug, byLabel]) =>
+        `${slug}: ${[...byLabel]
+          .map(([project, ids]) => `${project} (${ids.join(', ')})`)
+          .join(' vs ')}`,
+    );
+  assert.deepEqual(
+    collisions.sort(),
+    [],
+    'one CNCF project is listed under two labels, so the catalog filter offers it twice and each option hides the architectures filed under the other',
   );
 });
 

@@ -22,7 +22,7 @@ architecture:
     - MetalLB
     - Container Storage Interface (CSI)
     - Kyverno
-    - ArgoCD
+    - Argo
     - Helm
     - CloudNativePG
     - Cilium
