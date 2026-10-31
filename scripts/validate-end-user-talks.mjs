@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { checkUrl, reportAndExit } from './lib/validate-utils.mjs';
 
 // src/components/EndUserTalkSchedule renders `sourceUrl`, `apiUrl` and every
-// `talk.url` out of data/end-user-talks.json as an <a href>, under anchor text
-// (a talk title, a provenance label) that never shows the destination. A
-// re-pointed link therefore reads as fine in a JSON diff and ships to every
-// visitor of /events.
+// `talk.url` out of data/end-user-talks/<slug>.json as an <a href>, under
+// anchor text (a talk title, a provenance label) that never shows the
+// destination. A re-pointed link therefore reads as fine in a JSON diff and
+// ships to every visitor of /events.
 //
 // tests/end-user-talks-data.test.mjs already asserts this contract, but a unit
 // test only gates the pull-request lane. The Netlify build -- which netlify.toml
@@ -16,59 +16,116 @@ import { checkUrl, reportAndExit } from './lib/validate-utils.mjs';
 // This validator is what puts the allow-list on that path, the way every other
 // dataset under data/ is already covered by a validate:* script.
 //
-// The hosts are the two scripts/collect-end-user-talks.mjs builds its output
-// from. A suffix match, not an equality test: checkUrl() accepts the host
-// itself or any subdomain of it, and rejects a lookalike that merely ends in
-// the same characters.
-const SCHEDULE_HOST = 'events.linuxfoundation.org';
+// The hosts are the ones data/end-user-talk-events.json may point a snapshot
+// at: the Linux Foundation and LF Open Source China schedules, and Sessionize,
+// which also serves the event subdomains the China schedule lives on. A
+// suffix match, not an equality test: checkUrl() accepts the host itself or
+// any subdomain of it, and rejects a lookalike that merely ends in the same
+// characters.
+const SCHEDULE_HOSTS = [
+  'events.linuxfoundation.org',
+  'lfopensource.cn',
+  'sessionize.com',
+];
 const API_HOST = 'sessionize.com';
 // Recordings are published on the CNCF YouTube channel; the short host is
 // what a share button hands a maintainer.
 const RECORDING_HOSTS = ['youtube.com', 'youtu.be'];
+const UTC_OFFSET = /^[+-]\d{2}:\d{2}$/;
 
-const data = JSON.parse(
-  readFileSync(new URL('../data/end-user-talks.json', import.meta.url)),
+const dataDir = new URL('../data/', import.meta.url);
+const EVENTS_PATH = 'end-user-talk-events';
+const eventsDocument = JSON.parse(
+  readFileSync(new URL(`${EVENTS_PATH}.json`, dataDir)),
 );
 // The hand-maintained overlay the collector merges into each talk. Its ids
-// are checked against the schedule below so a talk that leaves Sessionize
+// are checked against the schedules below so a talk that leaves Sessionize
 // cannot leave an orphaned link behind, and each generated talk is checked
 // against it so a snapshot regenerated before the overlay was edited fails.
-const linksPath = new URL('../data/end-user-talk-links.json', import.meta.url);
+const linksPath = new URL('end-user-talk-links.json', dataDir);
 const linksDocument = existsSync(linksPath)
   ? JSON.parse(readFileSync(linksPath))
   : { links: [] };
 const errors = [];
 
-function checkLink(path, field, value, host) {
+function fail(path, message) {
+  errors.push({ path, severity: 'error', message });
+}
+
+function checkLink(path, field, value, hosts) {
   checkUrl(errors, path, field, value, {
     requireNonEmptyString: true,
-    allowedHostSuffixes: [host],
+    allowedHostSuffixes: hosts,
     unparsedMessage: `${field} must be an absolute https URL: ${JSON.stringify(value)}`,
   });
 }
 
-checkLink('end-user-talks', 'sourceUrl', data?.sourceUrl, SCHEDULE_HOST);
-checkLink('end-user-talks', 'apiUrl', data?.apiUrl, API_HOST);
-
-// The path every talk link must share with sourceUrl. Derived rather than
-// hardcoded so the check follows the conference the snapshot was generated
-// for; when sourceUrl is itself unusable there is no path to compare against,
-// and the error above is the finding.
-let schedulePath;
-try {
-  schedulePath = new URL(data.sourceUrl).pathname;
-} catch {
-  schedulePath = null;
+// The curated conference list the collector reads. A bad entry here is what
+// a bad snapshot would be generated from, so it is reported at its source.
+const events = [];
+const slugs = new Set();
+if (!Array.isArray(eventsDocument?.events)) {
+  fail(EVENTS_PATH, 'must carry an events array');
+}
+for (const [index, event] of (Array.isArray(eventsDocument?.events)
+  ? eventsDocument.events
+  : []
+).entries()) {
+  const path = `${EVENTS_PATH} events[${index}]`;
+  if (typeof event?.slug !== 'string' || !/^[a-z0-9-]+$/.test(event.slug)) {
+    fail(path, 'slug must be lowercase letters, digits and hyphens');
+    continue;
+  }
+  if (slugs.has(event.slug)) {
+    fail(path, `duplicate slug ${event.slug}`);
+    continue;
+  }
+  slugs.add(event.slug);
+  checkLink(path, 'sourceUrl', event.sourceUrl, SCHEDULE_HOSTS);
+  checkLink(path, 'apiUrl', event.apiUrl, [API_HOST]);
+  if (
+    typeof event.sessionUrl !== 'string' ||
+    !event.sessionUrl.includes('{id}')
+  ) {
+    fail(path, 'sessionUrl must be a template containing {id}');
+  } else {
+    checkLink(path, 'sessionUrl', event.sessionUrl, SCHEDULE_HOSTS);
+  }
+  for (const field of ['location', 'timezone', 'selection']) {
+    if (typeof event[field] !== 'string' || !event[field]) {
+      fail(path, `${field} must be a non-empty string`);
+    }
+  }
+  if (
+    typeof event.utcOffset !== 'string' ||
+    !UTC_OFFSET.test(event.utcOffset)
+  ) {
+    fail(path, 'utcOffset must look like +08:00 or -07:00');
+  }
+  const { select } = event;
+  const ids = select?.sessionIds;
+  const byIds =
+    Array.isArray(ids) &&
+    ids.length > 0 &&
+    ids.every((id) => typeof id === 'string' && id);
+  const byCategory =
+    typeof select?.category === 'string' &&
+    select.category &&
+    typeof select?.item === 'string' &&
+    select.item;
+  if (!byIds && !byCategory) {
+    fail(
+      path,
+      'select must be { category, item } or { sessionIds } with at least one id',
+    );
+  }
+  events.push(event);
 }
 
 const LINKS_PATH = 'end-user-talk-links';
 const curated = new Map();
 if (!Array.isArray(linksDocument?.links)) {
-  errors.push({
-    path: LINKS_PATH,
-    severity: 'error',
-    message: 'must carry a links array',
-  });
+  fail(LINKS_PATH, 'must carry a links array');
 }
 for (const [index, entry] of (Array.isArray(linksDocument?.links)
   ? linksDocument.links
@@ -76,35 +133,19 @@ for (const [index, entry] of (Array.isArray(linksDocument?.links)
 ).entries()) {
   const path = `${LINKS_PATH} links[${index}]`;
   if (typeof entry?.id !== 'string' || !entry.id) {
-    errors.push({
-      path,
-      severity: 'error',
-      message: 'id must be a non-empty string',
-    });
+    fail(path, 'id must be a non-empty string');
     continue;
   }
   if (curated.has(entry.id)) {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `duplicate id ${entry.id}`,
-    });
+    fail(path, `duplicate id ${entry.id}`);
     continue;
   }
   const previous = Array.from(curated.keys()).at(-1);
   if (previous !== undefined && previous.localeCompare(entry.id, 'en') > 0) {
-    errors.push({
-      path,
-      severity: 'error',
-      message: `id ${entry.id} is out of order; keep links sorted by id`,
-    });
+    fail(path, `id ${entry.id} is out of order; keep links sorted by id`);
   }
   if (!entry.slides && !entry.recording) {
-    errors.push({
-      path,
-      severity: 'error',
-      message: 'must carry slides, recording or both',
-    });
+    fail(path, 'must carry slides, recording or both');
   }
   checkUrl(errors, path, 'slides', entry.slides, { allowEmpty: true });
   checkUrl(errors, path, 'recording', entry.recording, {
@@ -113,59 +154,85 @@ for (const [index, entry] of (Array.isArray(linksDocument?.links)
   });
   curated.set(entry.id, entry);
 }
+
+// One snapshot per configured event, and no snapshot without an event: a
+// stray file under data/end-user-talks/ would never be refreshed again.
+const snapshotDir = new URL('end-user-talks/', dataDir);
+const snapshots = existsSync(snapshotDir)
+  ? readdirSync(snapshotDir).filter((name) => name.endsWith('.json'))
+  : [];
+for (const name of snapshots) {
+  if (!slugs.has(name.slice(0, -'.json'.length))) {
+    fail(
+      `end-user-talks/${name}`,
+      `names no event in ${EVENTS_PATH}.json; remove the stale snapshot or add its event`,
+    );
+  }
+}
+
 const seenIds = new Set();
-
 let talkCount = 0;
-for (const day of Array.isArray(data?.days) ? data.days : []) {
-  for (const slot of Array.isArray(day?.slots) ? day.slots : []) {
-    for (const talk of Array.isArray(slot?.talks) ? slot.talks : []) {
-      talkCount += 1;
-      const path = `end-user-talks ${typeof talk?.id === 'string' ? talk.id : 'unknown'}`;
-      seenIds.add(talk?.id);
-      if (typeof talk?.description !== 'string') {
-        errors.push({
-          path,
-          severity: 'error',
-          message:
+for (const event of events) {
+  const snapshotPath = new URL(`${event.slug}.json`, snapshotDir);
+  const pathPrefix = `end-user-talks/${event.slug}`;
+  if (!existsSync(snapshotPath)) {
+    fail(pathPrefix, 'snapshot is missing; run npm run collect:end-user-talks');
+    continue;
+  }
+  const data = JSON.parse(readFileSync(snapshotPath));
+  // The snapshot's provenance must be the event's own, not a stale copy of
+  // another conference's feed that happens to parse.
+  for (const field of ['sourceUrl', 'apiUrl']) {
+    if (data?.[field] !== event[field]) {
+      fail(
+        pathPrefix,
+        `${field} does not match ${EVENTS_PATH}.json; re-run npm run collect:end-user-talks`,
+      );
+    }
+  }
+  for (const day of Array.isArray(data?.days) ? data.days : []) {
+    for (const slot of Array.isArray(day?.slots) ? day.slots : []) {
+      for (const talk of Array.isArray(slot?.talks) ? slot.talks : []) {
+        talkCount += 1;
+        const id = typeof talk?.id === 'string' ? talk.id : 'unknown';
+        const path = `${pathPrefix} ${id}`;
+        seenIds.add(talk?.id);
+        if (typeof talk?.description !== 'string') {
+          fail(
+            path,
             'description must be a string (empty when Sessionize has none)',
+          );
+        }
+        // The generated links are the overlay's, or the feed's recording when
+        // the overlay has none for this talk; a curated slides link the
+        // snapshot lacks means the collector has not been re-run.
+        const entry = curated.get(talk?.id);
+        if (entry?.slides && talk.slides !== entry.slides) {
+          fail(
+            path,
+            `slides does not match end-user-talk-links.json; re-run npm run collect:end-user-talks`,
+          );
+        }
+        if (entry?.recording && talk.recording !== entry.recording) {
+          fail(
+            path,
+            `recording does not match end-user-talk-links.json; re-run npm run collect:end-user-talks`,
+          );
+        }
+        checkUrl(errors, path, 'slides', talk?.slides, { allowEmpty: true });
+        checkUrl(errors, path, 'recording', talk?.recording, {
+          allowEmpty: true,
+          allowedHostSuffixes: RECORDING_HOSTS,
         });
-      }
-      // The generated links are the overlay's, or the feed's recording when
-      // the overlay has none for this talk; a curated slides link the
-      // snapshot lacks means the collector has not been re-run.
-      const entry = curated.get(talk?.id);
-      if (entry?.slides && talk.slides !== entry.slides) {
-        errors.push({
-          path,
-          severity: 'error',
-          message: `slides does not match end-user-talk-links.json; re-run npm run collect:end-user-talks`,
-        });
-      }
-      if (entry?.recording && talk.recording !== entry.recording) {
-        errors.push({
-          path,
-          severity: 'error',
-          message: `recording does not match end-user-talk-links.json; re-run npm run collect:end-user-talks`,
-        });
-      }
-      checkUrl(errors, path, 'slides', talk?.slides, { allowEmpty: true });
-      checkUrl(errors, path, 'recording', talk?.recording, {
-        allowEmpty: true,
-        allowedHostSuffixes: RECORDING_HOSTS,
-      });
-      const before = errors.length;
-      checkLink(path, 'url', talk?.url, SCHEDULE_HOST);
-
-      // Only once the link is known to be an https URL on the allowed host is
-      // its path meaningful; otherwise this would report a second finding
-      // about the same bad value.
-      if (errors.length !== before || schedulePath === null) continue;
-      if (new URL(talk.url).pathname !== schedulePath) {
-        errors.push({
-          path,
-          severity: 'error',
-          message: `url must be a deep link into ${schedulePath}, got ${new URL(talk.url).pathname}`,
-        });
+        // Each talk link is the event's deep link for that id and nothing
+        // else, so a re-pointed url cannot pass on its host alone.
+        const expected = event.sessionUrl.replace('{id}', id);
+        if (talk?.url !== expected) {
+          fail(
+            path,
+            `url must be ${expected}, got ${JSON.stringify(talk?.url)}`,
+          );
+        }
       }
     }
   }
@@ -173,11 +240,10 @@ for (const day of Array.isArray(data?.days) ? data.days : []) {
 
 for (const id of curated.keys()) {
   if (!seenIds.has(id)) {
-    errors.push({
-      path: LINKS_PATH,
-      severity: 'error',
-      message: `id ${id} names no talk in end-user-talks.json; remove the stale entry`,
-    });
+    fail(
+      LINKS_PATH,
+      `id ${id} names no talk in data/end-user-talks/; remove the stale entry`,
+    );
   }
 }
 

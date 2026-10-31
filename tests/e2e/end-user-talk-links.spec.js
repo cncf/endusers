@@ -2,11 +2,11 @@
 // KubeCon NA 2026 page carries once they are curated.
 //
 // `<EndUserTalkSchedule />` renders those links from `slides` and `recording`
-// on each talk in data/end-user-talks.json, which the collector fills from
+// on each talk in data/end-user-talks/kubecon-na-2026.json, which the collector fills from
 // data/end-user-talk-links.json. Nothing has been published yet, so against
 // `npm run build:production` neither arm is reachable and the file is skipped.
 // The E2E_COVERAGE=1 build appends a fixture day
-// (tests/e2e/fixtures/data/end-user-talks.json) whose two talks hold both
+// (tests/e2e/fixtures/data/end-user-talks/kubecon-na-2026.json) whose two talks hold both
 // arms open: one with slides and a recording and no abstract, one with a
 // recording alone and a two-paragraph abstract.
 //
@@ -25,8 +25,8 @@ const EVENTS_PATH = '/events/2026/kubecon-na/';
 
 // Addressed through the overlay rather than by hard-coded strings so a
 // renamed fixture fails here instead of silently passing on the real data.
-const talks = loadSiteData('end-user-talks.json').days.flatMap((day) =>
-  day.slots.flatMap((slot) => slot.talks),
+const talks = loadSiteData('end-user-talks/kubecon-na-2026.json').days.flatMap(
+  (day) => day.slots.flatMap((slot) => slot.talks),
 );
 const bothLinks = talks.find((talk) => talk.slides && talk.recording);
 const recordingOnly = talks.find(

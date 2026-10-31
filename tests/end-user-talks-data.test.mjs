@@ -4,8 +4,8 @@ import test from 'node:test';
 
 import { checkUrl } from '../scripts/lib/validate-utils.mjs';
 
-// This file is the pull-request lane's data contract for
-// data/end-user-talks.json. When it was written the dataset was the
+// This file is the pull-request lane's data contract for every snapshot in
+// data/end-user-talks/. When it was written the dataset was the
 // only committed one under data/ with no gate of its own, which is what the
 // rest of this header argues from; scripts/validate-end-user-talks.mjs has
 // since put the same link allow-list on the Netlify publish path,
@@ -43,9 +43,18 @@ import { checkUrl } from '../scripts/lib/validate-utils.mjs';
 // the shared checkUrl(). The rendering test cannot supply that: it derives its
 // expectations from the same file, so it stays green on a re-pointed URL.
 
-const schedule = JSON.parse(
-  readFileSync(new URL('../data/end-user-talks.json', import.meta.url), 'utf8'),
+const dataDir = new URL('../data/', import.meta.url);
+const { events } = JSON.parse(
+  readFileSync(new URL('end-user-talk-events.json', dataDir), 'utf8'),
 );
+// Every snapshot is held to the same contract, each against its own event
+// entry, so a second conference cannot ship a shape the first never had.
+const snapshots = events.map((event) => ({
+  event,
+  schedule: JSON.parse(
+    readFileSync(new URL(`end-user-talks/${event.slug}.json`, dataDir), 'utf8'),
+  ),
+}));
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;
 // A slot boundary must carry its UTC offset: without one, `<time dateTime>` is
@@ -94,235 +103,271 @@ function timeLabel(stamp) {
   return `${hour12}:${stamp.slice(14, 16)} ${meridiem}`;
 }
 
-const days = schedule.days;
-const slots = days.flatMap((day) =>
-  day.slots.map((slot) => ({ day, slot, where: `${day.date} ${slot.start}` })),
-);
-const talks = slots.flatMap(({ slot, where }) =>
-  slot.talks.map((talk) => ({ talk, where: `${where} talk ${talk.id}` })),
-);
-
-test('the snapshot carries the provenance fields the collector writes', () => {
-  for (const field of [
-    'description',
-    'sourceUrl',
-    'apiUrl',
-    'category',
-    'generatedAt',
-    'timezone',
-  ]) {
-    assert.equal(typeof schedule[field], 'string', `${field} must be a string`);
-    assert.notEqual(schedule[field].trim(), '', `${field} must not be empty`);
-  }
-  assert.ok(Array.isArray(days), 'days must be an array');
-  assert.ok(days.length > 0, 'days must not be empty');
-});
-
-// A future stamp means the snapshot was written against a clock that is not
-// this repository's, which is the signature of a hand-edited file.
-test('generatedAt is a real instant that is not in the future', () => {
-  const generated = new Date(schedule.generatedAt);
-  assert.ok(
-    !Number.isNaN(generated.getTime()),
-    `generatedAt ${schedule.generatedAt} is not a real instant`,
-  );
-  assert.ok(
-    generated.getTime() <= Date.now(),
-    `generatedAt ${schedule.generatedAt} is in the future`,
-  );
-});
-
-// EndUserTalkSchedule renders every talk it is given and reports nothing about
-// the count, so a talkCount that disagrees with the array is invisible on the
-// page while every consumer that trusts the field is wrong.
-test('talkCount matches the talks the days actually contain', () => {
-  assert.equal(schedule.talkCount, talks.length);
-});
-
-test('each day is a calendar date with a non-empty slot list', () => {
-  for (const day of days) {
-    assert.match(day.date, DATE, `day ${day.id} has a malformed date`);
-    assert.ok(Array.isArray(day.slots), `day ${day.id} has no slot array`);
-    assert.ok(day.slots.length > 0, `day ${day.id} has no slots`);
-  }
-});
-
-// The component emits `id={day.id}` on each heading and `href={'#' + day.id}`
-// in the jump nav. Both come from this array, so
-// tests/end-user-talk-schedule.test.mjs compares a duplicate against itself and
-// passes while the rendered page carries duplicate DOM ids and jump links that
-// land on the wrong day.
-test('day ids and day dates are unique across the snapshot', () => {
-  assert.equal(new Set(days.map((day) => day.id)).size, days.length);
-  assert.equal(new Set(days.map((day) => day.date)).size, days.length);
-});
-
-test('each day id and label is the collector derivation of its date', () => {
-  for (const day of days) {
-    const label = dayLabelFormat.format(new Date(`${day.date}T00:00:00Z`));
-    assert.equal(day.label, label, `day ${day.date} has a stale label`);
-    assert.equal(day.id, dayId(label), `day ${day.date} has a stale id`);
-  }
-});
-
-// The collector sorts sessions by start before grouping, so both orders hold by
-// construction; the page renders the arrays as they are, so losing either one
-// silently reorders the schedule.
-test('days ascend by date and each day ascends by slot start', () => {
-  const dates = days.map((day) => day.date);
-  assert.deepEqual(dates, [...dates].sort());
-  for (const day of days) {
-    const starts = day.slots.map((slot) => slot.start);
-    assert.deepEqual(starts, [...starts].sort(), `day ${day.id} is unsorted`);
-  }
-});
-
-test('each slot is an event-local interval inside the day that holds it', () => {
-  for (const { day, slot, where } of slots) {
-    assert.match(slot.start, STAMP, `slot ${where} has a malformed start`);
-    assert.match(slot.end, STAMP, `slot ${where} has a malformed end`);
-    assert.equal(
-      slot.start.slice(0, 10),
-      day.date,
-      `slot ${where} starts outside its day`,
-    );
-    assert.equal(
-      slot.end.slice(0, 10),
-      day.date,
-      `slot ${where} ends outside its day`,
-    );
-    assert.ok(
-      slot.end > slot.start,
-      `slot ${where} ends at or before it starts`,
-    );
-  }
-});
-
-test('each slot label matches the timestamp it is drawn from', () => {
-  for (const { slot, where } of slots) {
-    assert.equal(
-      slot.startLabel,
-      timeLabel(slot.start),
-      `slot ${where} has a stale startLabel`,
-    );
-    assert.equal(
-      slot.endLabel,
-      timeLabel(slot.end),
-      `slot ${where} has a stale endLabel`,
-    );
-  }
-});
-
-// The collector folds sessions sharing a start and end into one slot, so a
-// repeated pair is a snapshot that was not produced by it -- and the page would
-// render the same time heading twice.
-test('a day never repeats a start and end pair', () => {
-  for (const day of days) {
-    const pairs = day.slots.map((slot) => `${slot.start}/${slot.end}`);
-    assert.equal(new Set(pairs).size, pairs.length, `day ${day.id} repeats`);
-  }
-});
-
-test('every slot holds at least one talk', () => {
-  for (const { slot, where } of slots) {
-    assert.ok(Array.isArray(slot.talks), `slot ${where} has no talk array`);
-    assert.ok(slot.talks.length > 0, `slot ${where} holds no talks`);
-  }
-});
-
-// The component renders these three as bare text, and the collector refuses a
-// session missing any of them, so an empty one here is corruption rather than
-// an upstream gap.
-test('each talk carries the text the card renders', () => {
-  for (const { talk, where } of talks) {
-    for (const field of ['id', 'title', 'speakers', 'room']) {
-      assert.equal(
-        typeof talk[field],
-        'string',
-        `${where}: ${field} must be a string`,
-      );
-      assert.notEqual(talk[field].trim(), '', `${where}: ${field} is empty`);
-    }
-  }
-});
-
-// The card splits the abstract on blank lines and renders slides and recording
-// links when present, so a missing description or a non-URL link reaches the
-// page as a broken toggle or a dead anchor.
-test('each talk carries a string abstract and only https links', () => {
-  for (const { talk, where } of talks) {
-    assert.equal(
-      typeof talk.description,
-      'string',
-      `${where}: description must be a string`,
-    );
-    assert.equal(
-      talk.description.includes('\r'),
-      false,
-      `${where}: description keeps a CRLF the collector should drop`,
-    );
-    for (const field of ['slides', 'recording']) {
-      if (field in talk) {
-        assert.match(
-          talk[field],
-          /^https:\/\//,
-          `${where}: ${field} must be an https URL`,
-        );
-      }
-    }
-  }
-});
-
-// Talk ids are session ids, which are unique upstream. A duplicate means two
-// cards were built from one session, so the page claims a talk that is not on
-// the official schedule.
-test('talk ids are unique across the snapshot', () => {
-  const ids = talks.map(({ talk }) => talk.id);
-  assert.equal(new Set(ids).size, ids.length, 'a talk id appears twice');
-});
-
-// The two hosts scripts/collect-end-user-talks.mjs builds its output from:
-// `sourceUrl` and every `talk.url` deep-link into the Linux Foundation event
-// schedule, `apiUrl` is the Sessionize endpoint the corpus is generated from.
-const SCHEDULE_HOST = 'events.linuxfoundation.org';
+// The hosts scripts/collect-end-user-talks.mjs may build a snapshot from:
+// `sourceUrl` and every `talk.url` deep-link into the Linux Foundation or LF
+// Open Source China schedule, or the event's Sessionize subdomain; `apiUrl` is
+// the Sessionize endpoint the corpus is generated from.
+const SCHEDULE_HOSTS = [
+  'events.linuxfoundation.org',
+  'lfopensource.cn',
+  'sessionize.com',
+];
+const SCHEDULE_HOST = SCHEDULE_HOSTS[0];
 const API_HOST = 'sessionize.com';
 
-function urlErrors(field, value, host) {
+function urlErrors(field, value, hosts) {
   const errors = [];
   checkUrl(errors, 'end-user-talks', field, value, {
     requireNonEmptyString: true,
-    allowedHostSuffixes: [host],
+    allowedHostSuffixes: hosts,
   });
   return errors.map((error) => error.message);
 }
 
-test('the provenance links resolve to their own documented hosts', () => {
-  assert.deepEqual(
-    urlErrors('sourceUrl', schedule.sourceUrl, SCHEDULE_HOST),
-    [],
-  );
-  assert.deepEqual(urlErrors('apiUrl', schedule.apiUrl, API_HOST), []);
-});
+for (const { event, schedule } of snapshots) {
+  test.describe(event.slug, () => {
+    const days = schedule.days;
+    const slots = days.flatMap((day) =>
+      day.slots.map((slot) => ({
+        day,
+        slot,
+        where: `${day.date} ${slot.start}`,
+      })),
+    );
+    const talks = slots.flatMap(({ slot, where }) =>
+      slot.talks.map((talk) => ({ talk, where: `${where} talk ${talk.id}` })),
+    );
 
-// A talk's title says nothing about where its link goes, so a hostile host, a
-// userinfo component that disguises one, or a path elsewhere on the real host
-// all read as fine in a JSON diff. Hold every link to the schedule page the
-// collector deep-links into.
-test('every talk link is a deep link into the official schedule page', () => {
-  const schedulePath = new URL(schedule.sourceUrl).pathname;
-  for (const { talk, where } of talks) {
-    assert.deepEqual(
-      urlErrors('url', talk.url, SCHEDULE_HOST),
-      [],
-      `${where}: ${JSON.stringify(talk.url)}`,
-    );
-    assert.equal(
-      new URL(talk.url).pathname,
-      schedulePath,
-      `${where}: url must stay on the schedule page ${schedulePath}`,
-    );
-  }
-});
+    test('the snapshot carries the provenance fields the collector writes', () => {
+      for (const field of [
+        'description',
+        'sourceUrl',
+        'apiUrl',
+        'selection',
+        'location',
+        'generatedAt',
+        'timezone',
+      ]) {
+        assert.equal(
+          typeof schedule[field],
+          'string',
+          `${field} must be a string`,
+        );
+        assert.notEqual(
+          schedule[field].trim(),
+          '',
+          `${field} must not be empty`,
+        );
+      }
+      assert.ok(Array.isArray(days), 'days must be an array');
+      assert.ok(days.length > 0, 'days must not be empty');
+    });
+
+    // A future stamp means the snapshot was written against a clock that is not
+    // this repository's, which is the signature of a hand-edited file.
+    test('generatedAt is a real instant that is not in the future', () => {
+      const generated = new Date(schedule.generatedAt);
+      assert.ok(
+        !Number.isNaN(generated.getTime()),
+        `generatedAt ${schedule.generatedAt} is not a real instant`,
+      );
+      assert.ok(
+        generated.getTime() <= Date.now(),
+        `generatedAt ${schedule.generatedAt} is in the future`,
+      );
+    });
+
+    // EndUserTalkSchedule renders every talk it is given and reports nothing about
+    // the count, so a talkCount that disagrees with the array is invisible on the
+    // page while every consumer that trusts the field is wrong.
+    test('talkCount matches the talks the days actually contain', () => {
+      assert.equal(schedule.talkCount, talks.length);
+    });
+
+    test('each day is a calendar date with a non-empty slot list', () => {
+      for (const day of days) {
+        assert.match(day.date, DATE, `day ${day.id} has a malformed date`);
+        assert.ok(Array.isArray(day.slots), `day ${day.id} has no slot array`);
+        assert.ok(day.slots.length > 0, `day ${day.id} has no slots`);
+      }
+    });
+
+    // The component emits `id={day.id}` on each heading and `href={'#' + day.id}`
+    // in the jump nav. Both come from this array, so
+    // tests/end-user-talk-schedule.test.mjs compares a duplicate against itself and
+    // passes while the rendered page carries duplicate DOM ids and jump links that
+    // land on the wrong day.
+    test('day ids and day dates are unique across the snapshot', () => {
+      assert.equal(new Set(days.map((day) => day.id)).size, days.length);
+      assert.equal(new Set(days.map((day) => day.date)).size, days.length);
+    });
+
+    test('each day id and label is the collector derivation of its date', () => {
+      for (const day of days) {
+        const label = dayLabelFormat.format(new Date(`${day.date}T00:00:00Z`));
+        assert.equal(day.label, label, `day ${day.date} has a stale label`);
+        assert.equal(day.id, dayId(label), `day ${day.date} has a stale id`);
+      }
+    });
+
+    // The collector sorts sessions by start before grouping, so both orders hold by
+    // construction; the page renders the arrays as they are, so losing either one
+    // silently reorders the schedule.
+    test('days ascend by date and each day ascends by slot start', () => {
+      const dates = days.map((day) => day.date);
+      assert.deepEqual(dates, [...dates].sort());
+      for (const day of days) {
+        const starts = day.slots.map((slot) => slot.start);
+        assert.deepEqual(
+          starts,
+          [...starts].sort(),
+          `day ${day.id} is unsorted`,
+        );
+      }
+    });
+
+    test('each slot is an event-local interval inside the day that holds it', () => {
+      for (const { day, slot, where } of slots) {
+        assert.match(slot.start, STAMP, `slot ${where} has a malformed start`);
+        assert.match(slot.end, STAMP, `slot ${where} has a malformed end`);
+        assert.equal(
+          slot.start.slice(0, 10),
+          day.date,
+          `slot ${where} starts outside its day`,
+        );
+        assert.equal(
+          slot.end.slice(0, 10),
+          day.date,
+          `slot ${where} ends outside its day`,
+        );
+        assert.ok(
+          slot.end > slot.start,
+          `slot ${where} ends at or before it starts`,
+        );
+      }
+    });
+
+    test('each slot label matches the timestamp it is drawn from', () => {
+      for (const { slot, where } of slots) {
+        assert.equal(
+          slot.startLabel,
+          timeLabel(slot.start),
+          `slot ${where} has a stale startLabel`,
+        );
+        assert.equal(
+          slot.endLabel,
+          timeLabel(slot.end),
+          `slot ${where} has a stale endLabel`,
+        );
+      }
+    });
+
+    // The collector folds sessions sharing a start and end into one slot, so a
+    // repeated pair is a snapshot that was not produced by it -- and the page would
+    // render the same time heading twice.
+    test('a day never repeats a start and end pair', () => {
+      for (const day of days) {
+        const pairs = day.slots.map((slot) => `${slot.start}/${slot.end}`);
+        assert.equal(
+          new Set(pairs).size,
+          pairs.length,
+          `day ${day.id} repeats`,
+        );
+      }
+    });
+
+    test('every slot holds at least one talk', () => {
+      for (const { slot, where } of slots) {
+        assert.ok(Array.isArray(slot.talks), `slot ${where} has no talk array`);
+        assert.ok(slot.talks.length > 0, `slot ${where} holds no talks`);
+      }
+    });
+
+    // The component renders these three as bare text, and the collector refuses a
+    // session missing any of them, so an empty one here is corruption rather than
+    // an upstream gap.
+    test('each talk carries the text the card renders', () => {
+      for (const { talk, where } of talks) {
+        for (const field of ['id', 'title', 'speakers', 'room']) {
+          assert.equal(
+            typeof talk[field],
+            'string',
+            `${where}: ${field} must be a string`,
+          );
+          assert.notEqual(
+            talk[field].trim(),
+            '',
+            `${where}: ${field} is empty`,
+          );
+        }
+      }
+    });
+
+    // The card splits the abstract on blank lines and renders slides and recording
+    // links when present, so a missing description or a non-URL link reaches the
+    // page as a broken toggle or a dead anchor.
+    test('each talk carries a string abstract and only https links', () => {
+      for (const { talk, where } of talks) {
+        assert.equal(
+          typeof talk.description,
+          'string',
+          `${where}: description must be a string`,
+        );
+        assert.equal(
+          talk.description.includes('\r'),
+          false,
+          `${where}: description keeps a CRLF the collector should drop`,
+        );
+        for (const field of ['slides', 'recording']) {
+          if (field in talk) {
+            assert.match(
+              talk[field],
+              /^https:\/\//,
+              `${where}: ${field} must be an https URL`,
+            );
+          }
+        }
+      }
+    });
+
+    // Talk ids are session ids, which are unique upstream. A duplicate means two
+    // cards were built from one session, so the page claims a talk that is not on
+    // the official schedule.
+    test('talk ids are unique across the snapshot', () => {
+      const ids = talks.map(({ talk }) => talk.id);
+      assert.equal(new Set(ids).size, ids.length, 'a talk id appears twice');
+    });
+
+    test('the provenance links resolve to their own documented hosts', () => {
+      assert.deepEqual(
+        urlErrors('sourceUrl', schedule.sourceUrl, SCHEDULE_HOSTS),
+        [],
+      );
+      assert.deepEqual(urlErrors('apiUrl', schedule.apiUrl, [API_HOST]), []);
+      assert.equal(schedule.sourceUrl, event.sourceUrl);
+      assert.equal(schedule.apiUrl, event.apiUrl);
+    });
+
+    // A talk's title says nothing about where its link goes, so a hostile host, a
+    // userinfo component that disguises one, or a path elsewhere on the real host
+    // all read as fine in a JSON diff. Hold every link to the event's own deep
+    // link for that session and nothing else.
+    test('every talk link is the official deep link for its session', () => {
+      for (const { talk, where } of talks) {
+        assert.deepEqual(
+          urlErrors('url', talk.url, SCHEDULE_HOSTS),
+          [],
+          `${where}: ${JSON.stringify(talk.url)}`,
+        );
+        assert.equal(
+          talk.url,
+          event.sessionUrl.replace('{id}', talk.id),
+          where,
+        );
+      }
+    });
+  });
+}
 
 // Pins the gate to evidence: the forms a re-pointed corpus would take must
 // each produce an error, or the loops above pass while asserting nothing.
@@ -331,7 +376,7 @@ test('the talk link gate rejects the forms a re-pointed corpus would use', () =>
     urlErrors(
       'url',
       `https://${SCHEDULE_HOST}/program/schedule/?id=1`,
-      SCHEDULE_HOST,
+      SCHEDULE_HOSTS,
     ),
     [],
   );
@@ -346,7 +391,7 @@ test('the talk link gate rejects the forms a re-pointed corpus would use', () =>
     'https://evil.example/program/schedule/?id=1',
   ]) {
     assert.notEqual(
-      urlErrors('url', bad, SCHEDULE_HOST).length,
+      urlErrors('url', bad, SCHEDULE_HOSTS).length,
       0,
       `expected ${JSON.stringify(bad)} to be rejected`,
     );

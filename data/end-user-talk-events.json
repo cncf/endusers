@@ -1,0 +1,41 @@
+{
+  "$comment": "Hand-maintained. The conferences npm run collect:end-user-talks snapshots into data/end-user-talks/<slug>.json, one entry each. `sourceUrl` is the human schedule, `apiUrl` the Sessionize feed, `sessionUrl` the deep link for one session with `{id}` in place of its Sessionize id, `utcOffset` the event-local offset Sessionize omits from its timestamps (keep it in step with the `timezone` label) and `select` the rule that picks the end user talks out of the feed: `{ category, item }` names the official Sessionize category when the conference has one, `{ sessionIds }` lists curated ids when it does not. `selection` is the phrase the schedule component shows for the rule. npm run validate:end-user-talks checks this file and every snapshot.",
+  "events": [
+    {
+      "slug": "kubecon-na-2026",
+      "sourceUrl": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/",
+      "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
+      "sessionUrl": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id={id}",
+      "location": "Salt Lake City",
+      "timezone": "MST (UTC−7)",
+      "utcOffset": "-07:00",
+      "select": {
+        "category": "End User Programming",
+        "item": "End User Talk"
+      },
+      "selection": "End User Programming → End User Talk"
+    },
+    {
+      "slug": "kubecon-china-2026",
+      "sourceUrl": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/",
+      "apiUrl": "https://sessionize.com/api/v2/yo76vzdv/view/All",
+      "sessionUrl": "https://kubecon-cloudnativecon-openinfra-pytorch-2026.sessionize.com/session/{id}",
+      "location": "Shanghai",
+      "timezone": "CST (UTC+8)",
+      "utcOffset": "+08:00",
+      "select": {
+        "sessionIds": [
+          "1174542",
+          "1189573",
+          "1219464",
+          "1220661",
+          "1224524",
+          "1308539",
+          "1309274",
+          "1309304"
+        ]
+      },
+      "selection": "presented by speakers from CNCF End User member organizations"
+    }
+  ]
+}

@@ -51,7 +51,7 @@
 
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { join, sep } from 'node:path';
 import test from 'node:test';
 
 import {
@@ -70,11 +70,12 @@ import { runScriptInSandbox } from './helpers-script-sandbox.mjs';
 // an overlay whose merged document nothing validates is the case this file
 // exists to make impossible.
 const VALIDATORS = new Map([
+  ['architectures/catalog.json', 'validate-architectures.mjs'],
   ['awards.json', 'validate-awards.mjs'],
   ['case-studies.json', 'validate-case-studies.mjs'],
   ['community-groups.json', 'validate-community-groups.mjs'],
   ['community-people.json', 'validate-community-people.mjs'],
-  ['end-user-talks.json', 'validate-end-user-talks.mjs'],
+  ['end-user-talks/kubecon-na-2026.json', 'validate-end-user-talks.mjs'],
   ['members.json', 'validate-members.mjs'],
   ['metrics.json', 'validate-metrics.mjs'],
   ['radar-reports.json', 'validate-radar-reports.mjs'],
@@ -91,6 +92,13 @@ const VALIDATORS = new Map([
 // the degraded shape is for, so that a diff removing an entry can be read as
 // the claim it is: that the arm no longer needs a document the gate rejects.
 const EXPECTED = new Map([
+  [
+    'data/architectures/catalog.json',
+    {
+      why: "clears one entry's industries and reshapes two entries' assets; the catalog is regenerated from the architecture pages' front matter, which the sandbox does not carry, so validate-architectures reports the catalog as behind the pages with and without the overlay and the overlay adds nothing it can observe",
+      adds: [],
+    },
+  ],
   [
     'data/case-studies.json',
     {
@@ -124,7 +132,7 @@ const EXPECTED = new Map([
     },
   ],
   [
-    'data/end-user-talks.json',
+    'data/end-user-talks/kubecon-na-2026.json',
     {
       why: 'appends one fixture day whose two talks carry slides and recording links on the hosts the validator admits, which is a shape the real file will hold once the event has happened',
       adds: [],
@@ -251,12 +259,10 @@ const EXPECTED = new Map([
 // Every data file as the sandbox should see it, so a validator that reads more
 // than the file its name suggests still finds the rest of the tree.
 const REAL_DATA = Object.fromEntries(
-  readdirSync(DATA_DIR)
-    .filter((name) => name.endsWith('.json'))
-    .map((name) => [
-      `data/${name}`,
-      readFileSync(join(DATA_DIR, name), 'utf8'),
-    ]),
+  jsonFilesUnder(DATA_DIR).map((name) => [
+    `data/${name}`,
+    readFileSync(join(DATA_DIR, name), 'utf8'),
+  ]),
 );
 
 /** The `[error]` lines of a validator run, with the prefix removed. */
@@ -282,6 +288,24 @@ function baselineFor(script) {
   return baselines.get(script);
 }
 
+/**
+ * Every JSON file under a directory as a slash-separated path relative to it,
+ * so a data file in a subdirectory (data/end-user-talks/<slug>.json) and its
+ * overlay are found the same way as one at the top.
+ */
+function jsonFilesUnder(dir) {
+  return readdirSync(dir, { recursive: true })
+    .map(String)
+    .filter((entry) => entry.endsWith('.json'))
+    .map((entry) => entry.split(sep).join('/'))
+    .sort();
+}
+
+/** The data file an overlay key names, relative to data/. */
+function dataFileOf(key) {
+  return key.slice(key.indexOf('/') + 1);
+}
+
 /** Every committed overlay as `<fixture dir>/<data file>` -> absolute path. */
 function committedOverlays() {
   const dirs = [
@@ -293,9 +317,7 @@ function committedOverlays() {
   ];
   const found = new Map();
   for (const [label, dir] of dirs)
-    for (const name of readdirSync(dir).filter((entry) =>
-      entry.endsWith('.json'),
-    ))
+    for (const name of jsonFilesUnder(dir))
       found.set(`${label}/${name}`, join(dir, name));
   return found;
 }
@@ -304,7 +326,7 @@ const OVERLAYS = committedOverlays();
 
 test('every committed overlay patches a data file some validator gates', () => {
   const ungated = [...OVERLAYS.keys()]
-    .filter((key) => !VALIDATORS.has(basename(key)))
+    .filter((key) => !VALIDATORS.has(dataFileOf(key)))
     .sort();
   assert.deepEqual(
     ungated,
@@ -325,12 +347,12 @@ test('every committed overlay is registered with its validator effect', () => {
 // A fixture they report on is named by their failure, not by a second one
 // here raising on a missing table entry.
 const REGISTERED = [...OVERLAYS].filter(
-  ([key]) => EXPECTED.has(key) && VALIDATORS.has(basename(key)),
+  ([key]) => EXPECTED.has(key) && VALIDATORS.has(dataFileOf(key)),
 );
 
 for (const [key, overlayPath] of REGISTERED) {
   const expected = EXPECTED.get(key);
-  const dataFile = basename(key);
+  const dataFile = dataFileOf(key);
   const script = VALIDATORS.get(dataFile);
 
   test(`${key} affects ${script} exactly as recorded`, () => {

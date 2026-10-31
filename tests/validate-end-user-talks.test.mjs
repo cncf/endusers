@@ -17,12 +17,32 @@ const validTalk = {
 };
 const LINKS = 'data/end-user-talk-links.json';
 
+const API = 'https://sessionize.com/api/v2/svi82w6c/view/All';
+const EVENTS = 'data/end-user-talk-events.json';
+const SNAPSHOT = 'data/end-user-talks/kubecon-na-2026.json';
+
+function event(overrides = {}) {
+  return {
+    slug: 'kubecon-na-2026',
+    sourceUrl: SCHEDULE,
+    apiUrl: API,
+    sessionUrl: `${SCHEDULE}?id={id}`,
+    location: 'Salt Lake City',
+    timezone: 'MST (UTC-7)',
+    utcOffset: '-07:00',
+    select: { category: 'End User Programming', item: 'End User Talk' },
+    selection: 'End User Programming → End User Talk',
+    ...overrides,
+  };
+}
+
 function schedule(overrides = {}, talks = [validTalk]) {
   return {
     description: 'Generated from the official Sessionize API.',
     sourceUrl: SCHEDULE,
-    apiUrl: 'https://sessionize.com/api/v2/svi82w6c/view/All',
-    category: 'End User Programming / End User Talk',
+    apiUrl: API,
+    selection: 'End User Programming → End User Talk',
+    location: 'Salt Lake City',
     generatedAt: '2026-10-12T19:41:29.093Z',
     timezone: 'MST (UTC-7)',
     talkCount: talks.length,
@@ -38,14 +58,49 @@ function schedule(overrides = {}, talks = [validTalk]) {
   };
 }
 
-function fixture(data, links) {
-  const files = { 'data/end-user-talks.json': JSON.stringify(data) };
+function fixture(data, links, events = [event()]) {
+  const files = {
+    [EVENTS]: JSON.stringify({ events }),
+    [SNAPSHOT]: JSON.stringify(data),
+  };
   if (links !== undefined) files[LINKS] = JSON.stringify(links);
   return files;
 }
 
-function run(data, links) {
-  return runScriptWithFixtures(SCRIPT, fixture(data, links));
+function run(data, links, events) {
+  return runScriptWithFixtures(SCRIPT, fixture(data, links, events));
+}
+
+// An event whose only schedule is its Sessionize subdomain and whose talks
+// are a curated id list, the shape a conference without an end user track
+// takes.
+const CHINA = 'https://china-2026.sessionize.com/';
+function chinaEvent(overrides = {}) {
+  return event({
+    slug: 'kubecon-china-2026',
+    sourceUrl: CHINA,
+    apiUrl: 'https://sessionize.com/api/v2/china/view/All',
+    sessionUrl: `${CHINA}session/{id}`,
+    location: 'Shanghai',
+    timezone: 'CST (UTC+8)',
+    utcOffset: '+08:00',
+    select: { sessionIds: ['1'] },
+    selection: 'presented by End User member speakers',
+    ...overrides,
+  });
+}
+
+function runEvents(events, snapshots = {}) {
+  return runScriptWithFixtures(SCRIPT, {
+    [EVENTS]: JSON.stringify({ events }),
+    [SNAPSHOT]: JSON.stringify(schedule()),
+    ...Object.fromEntries(
+      Object.entries(snapshots).map(([slug, data]) => [
+        `data/end-user-talks/${slug}.json`,
+        JSON.stringify(data),
+      ]),
+    ),
+  });
 }
 
 test('accepts a valid snapshot', () => {
@@ -70,165 +125,200 @@ test('counts every talk across days and slots', () => {
   assert.match(result.stdout, /Validated 4 end user talk links/);
 });
 
-// The control this validator exists for: the visible prefix reads as the
-// official schedule host while the request resolves to the userinfo-suffixed
-// host.
-test('rejects a talk url carrying a userinfo component', () => {
-  const result = run(
-    schedule({}, [
-      {
-        ...validTalk,
-        url: 'https://events.linuxfoundation.org@evil.example/?id=1',
-      },
-    ]),
-  );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /must not carry a userinfo component/);
-  assert.match(result.stderr, /evil\.example/);
-});
-
-test('rejects a talk url on another host', () => {
-  const result = run(
-    schedule({}, [{ ...validTalk, url: 'https://evil.example/?id=1' }]),
-  );
-  assert.equal(result.status, 1);
-  assert.match(
-    result.stderr,
-    /url must be on events\.linuxfoundation\.org, got evil\.example/,
-  );
-});
-
-// A lookalike that merely ends in the allowed characters is not a subdomain
-// of it, so the suffix match must reject it.
-test('rejects a host that only ends in the allowed host string', () => {
-  const result = run(
-    schedule({}, [
-      { ...validTalk, url: 'https://notevents.linuxfoundation.org/?id=1' },
-    ]),
-  );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /must be on events\.linuxfoundation\.org/);
-});
-
-test('rejects a non-https talk url', () => {
-  const result = run(
-    schedule({}, [
-      {
-        ...validTalk,
-        url: SCHEDULE.replace('https:', 'http:'),
-      },
-    ]),
-  );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /must use https, got http:/);
-});
-
-test('rejects a javascript: talk url', () => {
-  const result = run(
-    schedule({}, [{ ...validTalk, url: 'javascript:alert(1)' }]),
-  );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /must use https, got javascript:/);
-});
-
-test('rejects an unparseable talk url', () => {
-  const result = run(
-    schedule({}, [{ ...validTalk, url: 'events.linuxfoundation.org' }]),
-  );
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /url must be an absolute https URL/);
-});
-
+// A talk's link is the event's own deep link for its id and nothing else, so
+// every form a re-pointed corpus could take -- another host, a userinfo
+// disguise, a plain-http copy, a path elsewhere on the real host, another
+// session, a missing value -- is one finding that names the expected link.
 for (const [label, value] of [
+  ['on another host', 'https://evil.example/?id=1250350'],
+  [
+    'with a userinfo component',
+    'https://events.linuxfoundation.org@evil.example/?id=1250350',
+  ],
+  ['over plain http', `${SCHEDULE.replace('https:', 'http:')}?id=1250350`],
+  [
+    'off the schedule page',
+    'https://events.linuxfoundation.org/sponsor/?id=1250350',
+  ],
+  ['for another session', `${SCHEDULE}?id=1`],
   ['missing', undefined],
-  ['blank', '   '],
   ['non-string', 42],
 ]) {
-  test(`rejects a ${label} talk url`, () => {
+  test(`rejects a talk url ${label}`, () => {
     const result = run(schedule({}, [{ ...validTalk, url: value }]));
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /url must be a non-empty string/);
+    const finding = `end-user-talks/kubecon-na-2026 1250350: url must be ${SCHEDULE}?id=1250350, got ${JSON.stringify(value) ?? 'undefined'}`;
+    assert.ok(result.stderr.includes(finding), result.stderr);
   });
 }
 
 // A talk whose id is not a string must still produce a readable error path
 // rather than crashing the report.
 test('labels a talk with a non-string id as unknown', () => {
-  const result = run(schedule({}, [{ ...validTalk, id: 7, url: undefined }]));
+  const result = run(schedule({}, [{ ...validTalk, id: 7 }]));
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /unknown: url must be a non-empty string/);
+  assert.match(result.stderr, /unknown: url must be .*\?id=unknown, got/);
 });
 
 test('reports a null talk instead of throwing', () => {
   const result = run(schedule({}, [null]));
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /unknown: url must be a non-empty string/);
+  assert.match(result.stderr, /unknown: url must be .*, got undefined/);
 });
 
-// The whole point of the path check: the host is right and the scheme is
-// right, but the link leaves the schedule page.
-test('rejects a talk url that is not a deep link into the schedule page', () => {
-  const result = run(
-    schedule({}, [
+// The events file is what every snapshot is generated from, so a bad entry is
+// reported there, by index, before any snapshot is read against it.
+test('accepts a curated-id event on its Sessionize subdomain and an lfopensource.cn schedule', () => {
+  const source = 'https://www.lfopensource.cn/kubecon-china/';
+  const talk = { ...validTalk, id: '1', url: `${CHINA}session/1` };
+  const result = runEvents([event(), chinaEvent({ sourceUrl: source })], {
+    'kubecon-china-2026': schedule(
       {
-        ...validTalk,
-        url: 'https://events.linuxfoundation.org/sponsor/?id=1250350',
+        sourceUrl: source,
+        apiUrl: 'https://sessionize.com/api/v2/china/view/All',
       },
-    ]),
-  );
-  assert.equal(result.status, 1);
-  assert.match(
-    result.stderr,
-    /url must be a deep link into \/kubecon-cloudnativecon-north-america\/program\/schedule\/, got \/sponsor\//,
-  );
-});
-
-test('follows sourceUrl when the conference changes', () => {
-  const next = 'https://events.linuxfoundation.org/kubecon-europe/schedule/';
-  const result = run(
-    schedule({ sourceUrl: next }, [{ ...validTalk, url: `${next}?id=1` }]),
-  );
+      [talk],
+    ),
+  });
   assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Validated 2 end user talk links/);
 });
 
-test('rejects a sourceUrl on another host', () => {
-  const result = run(schedule({ sourceUrl: 'https://evil.example/schedule/' }));
+for (const [label, overrides, message] of [
+  [
+    'a sourceUrl on another host',
+    { sourceUrl: 'https://evil.example/s/' },
+    /events\[0\]: sourceUrl must be on events\.linuxfoundation\.org or lfopensource\.cn or sessionize\.com, got evil\.example/,
+  ],
+  [
+    'a lookalike schedule host',
+    { sourceUrl: 'https://notevents.linuxfoundation.org/' },
+    /events\[0\]: sourceUrl must be on/,
+  ],
+  [
+    'an unparseable sourceUrl',
+    { sourceUrl: 'events.linuxfoundation.org' },
+    /events\[0\]: sourceUrl must be an absolute https URL/,
+  ],
+  [
+    'a missing sourceUrl',
+    { sourceUrl: undefined },
+    /events\[0\]: sourceUrl must be a non-empty string/,
+  ],
+  [
+    'an apiUrl on another host',
+    { apiUrl: 'https://evil.example/api' },
+    /events\[0\]: apiUrl must be on sessionize\.com, got evil\.example/,
+  ],
+  [
+    'a missing apiUrl',
+    { apiUrl: undefined },
+    /events\[0\]: apiUrl must be a non-empty string/,
+  ],
+  [
+    'a sessionUrl without an id placeholder',
+    { sessionUrl: `${SCHEDULE}?id=1` },
+    /events\[0\]: sessionUrl must be a template containing \{id\}/,
+  ],
+  [
+    'a sessionUrl on another host',
+    { sessionUrl: 'https://evil.example/{id}' },
+    /events\[0\]: sessionUrl must be on/,
+  ],
+  [
+    'a missing location',
+    { location: '' },
+    /events\[0\]: location must be a non-empty string/,
+  ],
+  [
+    'a missing timezone',
+    { timezone: undefined },
+    /events\[0\]: timezone must be a non-empty string/,
+  ],
+  [
+    'a missing selection',
+    { selection: 7 },
+    /events\[0\]: selection must be a non-empty string/,
+  ],
+  [
+    'an offset without a colon',
+    { utcOffset: '-0700' },
+    /events\[0\]: utcOffset must look like \+08:00 or -07:00/,
+  ],
+  [
+    'a select with neither rule',
+    { select: {} },
+    /events\[0\]: select must be \{ category, item \} or \{ sessionIds \}/,
+  ],
+  [
+    'a category select without an item',
+    { select: { category: 'End User Programming' } },
+    /events\[0\]: select must be/,
+  ],
+  ['an empty id list', { select: { sessionIds: [] } }, /select must be/],
+  ['a non-string id', { select: { sessionIds: [1] } }, /select must be/],
+]) {
+  test(`rejects an event with ${label}`, () => {
+    const result = run(schedule(), undefined, [event(overrides)]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, message);
+  });
+}
+
+test('rejects a malformed slug and a duplicate slug, and skips their snapshots', () => {
+  const result = run(schedule(), undefined, [
+    event({ slug: 'KubeCon NA' }),
+    event(),
+    event(),
+  ]);
   assert.equal(result.status, 1);
   assert.match(
     result.stderr,
-    /sourceUrl must be on events\.linuxfoundation\.org, got evil\.example/,
+    /events\[0\]: slug must be lowercase letters, digits and hyphens/,
   );
+  assert.match(result.stderr, /events\[2\]: duplicate slug kubecon-na-2026/);
+  assert.doesNotMatch(result.stderr, /events\[1\]/);
 });
 
-test('rejects an apiUrl on another host', () => {
-  const result = run(schedule({ apiUrl: 'https://evil.example/api' }));
+test('rejects an events file without an events array', () => {
+  const result = runScriptWithFixtures(SCRIPT, {
+    [EVENTS]: JSON.stringify({ events: 'nope' }),
+  });
   assert.equal(result.status, 1);
   assert.match(
     result.stderr,
-    /apiUrl must be on sessionize\.com, got evil\.example/,
+    /end-user-talk-events: must carry an events array/,
   );
 });
 
-test('rejects a missing apiUrl', () => {
-  const result = run(schedule({ apiUrl: undefined }));
+test('rejects a missing snapshot and a snapshot no event names', () => {
+  const result = runEvents([event(), chinaEvent()], {
+    'kubecon-eu-2027': schedule(),
+  });
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /apiUrl must be a non-empty string/);
+  assert.match(
+    result.stderr,
+    /end-user-talks\/kubecon-china-2026: snapshot is missing; run npm run collect:end-user-talks/,
+  );
+  assert.match(
+    result.stderr,
+    /end-user-talks\/kubecon-eu-2027\.json: names no event in end-user-talk-events\.json/,
+  );
 });
 
-// An unusable sourceUrl is reported once, as itself; with no path to compare
-// against, the talk links must not also be reported as off-path.
-test('reports an unparseable sourceUrl without cascading onto the talks', () => {
-  const result = run(schedule({ sourceUrl: 'events.linuxfoundation.org' }));
+test("rejects a snapshot whose provenance is not its event's", () => {
+  const result = run(
+    schedule({ sourceUrl: `${SCHEDULE}other/`, apiUrl: undefined }),
+  );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /sourceUrl must be an absolute https URL/);
-  assert.doesNotMatch(result.stderr, /must be a deep link/);
-});
-
-test('reports a missing sourceUrl without cascading onto the talks', () => {
-  const result = run(schedule({ sourceUrl: undefined }));
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /sourceUrl must be a non-empty string/);
-  assert.doesNotMatch(result.stderr, /must be a deep link/);
+  assert.match(
+    result.stderr,
+    /kubecon-na-2026: sourceUrl does not match end-user-talk-events\.json; re-run/,
+  );
+  assert.match(
+    result.stderr,
+    /kubecon-na-2026: apiUrl does not match end-user-talk-events\.json; re-run/,
+  );
 });
 
 // Shape guards: a snapshot missing the arrays the collector guarantees must
@@ -395,6 +485,6 @@ test('rejects generated links that fail the URL rules even without an overlay', 
   assert.equal(result.status, 1);
   assert.match(
     result.stderr,
-    /end-user-talks 1250350.*recording must be on youtube\.com or youtu\.be/,
+    /end-user-talks\/kubecon-na-2026 1250350.*recording must be on youtube\.com or youtu\.be/,
   );
 });
