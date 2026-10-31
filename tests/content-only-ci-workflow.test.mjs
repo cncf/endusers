@@ -68,6 +68,7 @@ test('keeps content contracts and the production build on the focused path', () 
     'tests/adr-contract.test.mjs',
     'tests/blog-frontmatter.test.mjs',
     'tests/root-docs-links.test.mjs',
+    'tests/security-advisory-register.test.mjs',
     'tests/static-assets.test.mjs',
   ]) {
     assert.ok(suites.includes(required), `focused path omits ${required}`);
