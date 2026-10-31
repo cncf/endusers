@@ -27,10 +27,14 @@ export const SORT_OPTIONS = [
 
 const DEFAULT_SORT = SORT_OPTIONS[0].value;
 
+// Every comparator here goes through compareLabels so the build host and the
+// visitor's browser order the catalog the same way: Czech collates "ch" as one
+// letter after "h", which would otherwise move "Chaos engineering" past "ci-cd"
+// between the served HTML and hydration.
 function compareAlphabetical(a, b) {
   return (
-    a.organization.localeCompare(b.organization) ||
-    a.title.localeCompare(b.title)
+    compareLabels(a.organization, b.organization) ||
+    compareLabels(a.title, b.title)
   );
 }
 
@@ -64,7 +68,7 @@ export function useArchitectureFilterOptions(architectures) {
       projects: Array.from(projects).sort(compareLabels),
       organizations: Array.from(organizations).sort(compareLabels),
       tags: Array.from(tags.values()).sort((a, b) =>
-        tagKey(a).localeCompare(tagKey(b)),
+        compareLabels(tagKey(a), tagKey(b)),
       ),
     };
   }, [architectures]);

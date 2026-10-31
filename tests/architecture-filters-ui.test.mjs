@@ -127,6 +127,23 @@ test('tags differing only in separators are listed once', () => {
   assert.deepEqual(result.tags, ['public cloud', 'publiccloud']);
 });
 
+test('tag order is pinned to English collation, not the runtime locale', () => {
+  // Czech collates the digraph "ch" as a letter after "h", so this pair is the
+  // one a visitor on a cs-family locale would see reordered if the comparator
+  // took the runtime default. The literal order below must hold everywhere.
+  assert.ok(
+    'chaos engineering'.localeCompare('ci-cd', 'cs') > 0,
+    'fixture pair must discriminate between locales',
+  );
+  const { result } = renderHook(() =>
+    useArchitectureFilterOptions([
+      architecture({ tags: ['ci-cd', 'cloud native'] }),
+      architecture({ tags: ['Chaos engineering'] }),
+    ]),
+  );
+  assert.deepEqual(result.tags, ['Chaos engineering', 'ci-cd', 'cloud native']);
+});
+
 test('addTag selects a tag and removeTag drops it', () => {
   const hook = renderHook(() => useArchitectureFilters(CORPUS));
 
