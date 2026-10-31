@@ -146,3 +146,30 @@ it to merge once the required checks, including `npm run check:audit`, pass (see
 "Low-risk merge classes" in [`GOVERNANCE.md`](GOVERNANCE.md)). Check for either
 pull request before hand-filing a lockfile bump. A fix that needs a
 `package.json` change or a major version still waits for a maintainer.
+
+## Accepted moderate-risk advisories
+
+The register above lists high and critical advisories the audit gate
+suppresses. Moderate advisories never trip that gate, so they need no
+allowlist entry — but one with no reachable fix still deserves a written
+decision. This section records the moderate advisories the project has
+reviewed and accepted. An entry here changes nothing in CI: it records the
+reasoning so the Dependabot security-update runs that keep failing on it are
+understood, and states what would make the acceptance expire.
+
+| Advisory                                                                 | Package     | Installed                    | Reached through                                                                                 | Exposure                                                                                                                                          |
+| ------------------------------------------------------------------------ | ----------- | ---------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) | `minimatch` | 3.1.5 (6 copies), 10.2.6 (3) | `serve-handler` (exact pin), `@stryker-mutator/*`, `markdownlint-cli`, `eslint` and its plugins | Build-time and developer tooling only — every glob pattern `minimatch` reads here is authored in this repository, not supplied by untrusted input |
+
+GHSA-g3hv-75wg-m249 is a denial of service via glob-pattern amplification,
+patched only in `minimatch` 11.0.1 — outside every consumer's declared
+range, so Dependabot security updates for it fail with
+`security_update_not_possible`. Accepted in #2036. The acceptance expires
+when the eslint plugin chain (and ideally `serve-handler` and
+`@stryker-mutator/*`) widens its ranges to accept `minimatch` ^11: then add
+`"minimatch": "^11.0.1"` to the `overrides` block in `package.json` (a
+floor, per the override rule above), verify `npm run check:lint` and
+`npm run test:unit` both pass, and remove this row. Forcing the override
+today crashes `eslint-plugin-jsx-a11y` (`_minimatch.default is not a
+function`), so accepting the moderate risk is preferred over weakening lint
+coverage.
