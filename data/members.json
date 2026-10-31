@@ -1215,7 +1215,7 @@
         "Argo",
         "Helm",
         "Kubernetes",
-        "LitmusChaos",
+        "Litmus",
         "Prometheus",
         "containerd"
       ],
@@ -2342,13 +2342,13 @@
       "projects": [
         "Argo",
         "Cluster API",
-        "External Secrets Operator",
         "ExternalDNS",
         "Harbor",
         "Kubernetes",
         "OpenStack",
         "Renovate",
-        "Talos Linux"
+        "Talos Linux",
+        "external-secrets"
       ],
       "architectures": [
         {

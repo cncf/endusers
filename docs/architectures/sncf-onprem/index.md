@@ -19,7 +19,7 @@ architecture:
     - Argo
     - Cluster API
     - ExternalDNS
-    - External Secrets Operator
+    - external-secrets
     - Harbor
     - Kubernetes
     - OpenStack
@@ -37,13 +37,13 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
 ## Relevant projects
 
-  <CNCFProjectCard name={"ArgoCD"} href={"https://www.cncf.io/projects/argo/"} logo={"/img/cncf-projects/argo-argo-horizontal-color.svg"} since={"2024"} version={"v3.3.6"} description={"- ArgoCD is used here as our main infrastructure engine. We've configured it so it can manage Day 1 and Day 2 operations seamlessly: Cluster APIs primitives on the management cluster to manage control plane operations, and helm applications to manage tooling and configuration of workload clusters. This infrastructure ArgoCD is centralized and dedicated to the platform team."} />
+  <CNCFProjectCard name={"Argo CD"} href={"https://www.cncf.io/projects/argo/"} logo={"/img/cncf-projects/argo-argo-horizontal-color.svg"} since={"2024"} version={"v3.3.6"} description={"- Argo CD is used here as our main infrastructure engine. We've configured it so it can manage Day 1 and Day 2 operations seamlessly: Cluster APIs primitives on the management cluster to manage control plane operations, and helm applications to manage tooling and configuration of workload clusters. This infrastructure Argo CD is centralized and dedicated to the platform team."} />
 
   <CNCFProjectCard name={"Cluster API"} since={"2024"} version={"v1.10.5"} description={"- Cluster API manages K8s control planes & machines at scale leaning on the ad hoc infrastructure providers (CAPO for OpenStack. CABPT and CACPPT for Talos), and serves as autoscaling & autohealing provider."} />
 
   <CNCFProjectCard name={"ExternalDNS"} since={"2021"} version={"v2.0.1"} description={"- External-dns automates Designate DNS records management for workload Clusters."} />
 
-  <CNCFProjectCard name={"External Secrets Operator"} href={"https://www.cncf.io/projects/external-secrets/"} logo={"/img/cncf-projects/external-secrets-operator-eso-horizontal-color.svg"} since={"2022"} version={"v1.3.2"} description={"- External Secrets Operator is the glue between Hashicorp Vault and workload clusters, allowing for secure and centralized secrets management."} />
+  <CNCFProjectCard name={"external-secrets"} href={"https://www.cncf.io/projects/external-secrets/"} logo={"/img/cncf-projects/external-secrets-operator-eso-horizontal-color.svg"} since={"2022"} version={"v1.3.2"} description={"- External Secrets Operator is the glue between Hashicorp Vault and workload clusters, allowing for secure and centralized secrets management."} />
 
   <CNCFProjectCard name={"Harbor"} href={"https://www.cncf.io/projects/harbor/"} logo={"/img/cncf-projects/harbor-harbor-horizontal-color.svg"} since={"2021"} version={"v2.14"} description={"- Harbor is the centralized registry: storing and distributing every image used on any container based infrastructure at SNCF."} />
 

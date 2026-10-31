@@ -138,7 +138,7 @@
       "Site reliability"
     ],
     "projects": [
-      "LitmusChaos",
+      "Litmus",
       "Kubernetes",
       "Argo",
       "Prometheus",
@@ -172,7 +172,7 @@
       "Argo",
       "Cluster API",
       "ExternalDNS",
-      "External Secrets Operator",
+      "external-secrets",
       "Harbor",
       "Kubernetes",
       "OpenStack",
