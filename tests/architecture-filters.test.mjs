@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
+import { resolveRepoRoot } from './helpers.mjs';
 import { importSource } from './helpers-jsx.mjs';
+
+const repoRoot = resolveRepoRoot(import.meta.url);
 
 const { filterArchitectures, sortArchitectures } = await importSource(
   'src/components/ArchitectureFilters/index.js',
@@ -290,4 +294,36 @@ test('selected tags still combine with the other filters', () => {
     }),
     [],
   );
+});
+
+test('alphabetical sort gives every runtime locale the same order', () => {
+  // Czech collates "ch" after "h", so an unpinned comparator would place
+  // "Chaos Labs" after "CI Corp" on a cs-family runtime. Run the sort in a
+  // child process under that locale and require the English order.
+  const probe = `
+    import { importSource } from './tests/helpers-jsx.mjs';
+    const { sortArchitectures } = await importSource(
+      'src/components/ArchitectureFilters/index.js',
+    );
+    const rows = [
+      { organization: 'CI Corp', title: 'Pipelines', updated: '2026-01-01' },
+      { organization: 'Chaos Labs', title: 'Faults', updated: '2026-01-01' },
+    ];
+    console.log(
+      sortArchitectures(rows, 'alphabetical')
+        .map((a) => a.organization)
+        .join('|'),
+    );
+  `;
+  const result = spawnSync(
+    process.execPath,
+    ['--input-type=module', '-e', probe],
+    {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      env: { ...process.env, LC_ALL: 'cs_CZ.UTF-8', LANG: 'cs_CZ.UTF-8' },
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), 'Chaos Labs|CI Corp');
 });
