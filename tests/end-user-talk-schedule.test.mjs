@@ -138,7 +138,7 @@ for (const { event, schedule } of snapshots) {
       );
     });
 
-    test('the source line links the API and the live schedule in one sentence', () => {
+    test('the source line links the API and the official schedule, with wording for the event state', () => {
       const tree = render(schedule);
       const source = findAllByType(tree, 'p').find(
         (node) => node.props.className === 'source',
@@ -156,9 +156,18 @@ for (const { event, schedule } of snapshots) {
         sessionize: 'official Sessionize API',
         sched: 'official Sched listing',
       }[schedule.source];
+      // A snapshot verified after its last day is the final record of a
+      // concluded conference; anything newer can still move. The fixture test
+      // below pins which wording each arm gets, so this check can derive the
+      // arm from the snapshot without mirroring a bug in the component.
+      const isFinal =
+        schedule.days.at(-1).date < schedule.generatedAt.slice(0, 10);
+      const closing = isFinal
+        ? 'This conference has ended; the schedule below is the final record. See the official schedule for the full program.'
+        : 'Times, rooms, and speakers may change; check the live official schedule for updates.';
       assert.equal(
         textOf(source),
-        `Source: ${label} · Verified ${verified}. Times, rooms, and speakers may change; check the live official schedule for updates.`,
+        `Source: ${label} · Verified ${verified}. ${closing}`,
       );
       assert.deepEqual(
         findAllByType(source, 'a').map((node) => node.props.href),
@@ -311,5 +320,54 @@ test('TalkDetails renders slides and recording links only when present, naming t
       .slice(1)
       .map((node) => node.props.href),
     ['https://youtu.be/only'],
+  );
+});
+
+// The closing sentence promises updates only while the conference can still
+// move: a snapshot verified after its last day is the final record. The
+// corpus happens to carry both arms today, but a fixture keeps them covered
+// the day every committed snapshot is concluded — and the boundary (last day
+// equal to the verification date, matching the collector's isFinal rule)
+// stays on the upcoming wording.
+test('the closing sentence promises updates only for a conference still ahead of its verification', () => {
+  const [{ schedule }] = snapshots;
+  const sourceLine = (lastDay, generatedAt) => {
+    const tree = render({
+      ...schedule,
+      generatedAt,
+      days: schedule.days.map((day, index) =>
+        index === schedule.days.length - 1 ? { ...day, date: lastDay } : day,
+      ),
+    });
+    return textOf(
+      findAllByType(tree, 'p').find(
+        (node) => node.props.className === 'source',
+      ),
+    );
+  };
+  const verified = (iso) =>
+    new Date(iso).toLocaleDateString('en-US', {
+      timeZone: 'UTC',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  const label = {
+    sessionize: 'official Sessionize API',
+    sched: 'official Sched listing',
+  }[schedule.source];
+  const prefix = (iso) => `Source: ${label} · Verified ${verified(iso)}. `;
+
+  assert.equal(
+    sourceLine('2031-01-01', '2031-01-02T00:00:00.000Z'),
+    `${prefix('2031-01-02T00:00:00.000Z')}This conference has ended; the schedule below is the final record. See the official schedule for the full program.`,
+  );
+  assert.equal(
+    sourceLine('2031-01-03', '2031-01-02T00:00:00.000Z'),
+    `${prefix('2031-01-02T00:00:00.000Z')}Times, rooms, and speakers may change; check the live official schedule for updates.`,
+  );
+  assert.equal(
+    sourceLine('2031-01-02', '2031-01-02T00:00:00.000Z'),
+    `${prefix('2031-01-02T00:00:00.000Z')}Times, rooms, and speakers may change; check the live official schedule for updates.`,
   );
 });
