@@ -22,12 +22,18 @@ const DISPLAY_NAME_OVERRIDES = Object.assign(Object.create(null), {
   'Mercedes-Benz Tech Innovation': 'Mercedes-Benz',
 });
 
-// This is the only cross-source alias currently justified by authoritative CNCF
-// evidence: the 2019 Ant Financial Gold Member announcement and the 2025 Ant
-// Group award announcement identify the same organization. Do not generalize
-// this map into fuzzy matching.
+// Cross-source aliases justified by authoritative CNCF evidence, and nothing
+// else: the 2019 Ant Financial Gold Member announcement and the 2025 Ant Group
+// award announcement identify the same organization, and the 2023 Top End User
+// Award to Mercedes-Benz Tech Innovation, the wholly owned technology
+// subsidiary of Silver member Mercedes Benz AG, is published by CNCF under the
+// parent's case study (cncf.io/case-studies/mercedes-benz). Do not generalize
+// this map into fuzzy matching; the slug guard at the end of
+// mergeLandscapeMembers() names any record that needs an entry here.
 const LANDSCAPE_ALIASES = Object.assign(Object.create(null), {
   'cncf/landscape#CNCF Members/Gold/Ant Financial (member)': 'ant-group',
+  'cncf/landscape#CNCF Members/Silver/Mercedes Benz AG (member)':
+    'mercedes-benz-tech-innovation',
 });
 
 /** Converts an organisation display name to a URL-safe slug. */
@@ -272,7 +278,21 @@ function mergeLandscapeMembers(members, snapshot) {
     }
   }
 
+  // Two records whose names reduce to one slug are one brand shown twice
+  // ("Mercedes Benz AG" beside "Mercedes-Benz"), which the exact-name match
+  // above cannot see and the id check cannot either when the award record
+  // carries its own slug. Refuse the pair rather than publish two cards with
+  // opposing membership statements (#2058).
+  const bySlug = new Map();
   for (const member of members) {
+    const slug = orgToSlug(member.name);
+    const other = bySlug.get(slug);
+    if (other) {
+      throw new Error(
+        `members ${other.id} (${other.name}) and ${member.id} (${member.name}) are one organization by slug ${slug}; add a LANDSCAPE_ALIASES entry for the landscape record`,
+      );
+    }
+    bySlug.set(slug, member);
     member.membershipSources ||= [];
     member.membershipStatus = membershipStatus(member);
   }

@@ -1706,34 +1706,6 @@
       "membershipStatus": "member"
     },
     {
-      "id": "mercedes-benz",
-      "name": "Mercedes Benz AG",
-      "slug": "mercedes-benz",
-      "logo": "/img/end-user-members/2b7ea308940179e8-mercedes-benz.svg",
-      "industries": [],
-      "projects": [],
-      "architectures": [],
-      "awards": [],
-      "sourceAttribution": [
-        "https://github.com/cncf/landscape/blob/c239ac1c6d2e5e096c6cf9f12b9330ae8c832438/landscape.yml",
-        "https://group.mercedes-benz.com/"
-      ],
-      "membershipSources": [
-        {
-          "sourceId": "cncf/landscape#CNCF Members/Silver/Mercedes Benz AG (member)",
-          "role": "member",
-          "sourceName": "Mercedes Benz AG (member)",
-          "category": "CNCF Members",
-          "subcategory": "Silver",
-          "homepageUrl": "https://group.mercedes-benz.com/",
-          "joined": "2020-08-01",
-          "localLogo": "/img/end-user-members/2b7ea308940179e8-mercedes-benz.svg",
-          "sourceUrl": "https://github.com/cncf/landscape/blob/c239ac1c6d2e5e096c6cf9f12b9330ae8c832438/landscape.yml"
-        }
-      ],
-      "membershipStatus": "member"
-    },
-    {
       "id": "mercedes-benz-tech-innovation",
       "name": "Mercedes-Benz",
       "slug": "mercedes-benz-tech-innovation",
@@ -1755,10 +1727,24 @@
       ],
       "sourceAttribution": [
         "https://www.cncf.io/announcements/2023/04/21/cncf-presents-top-end-user-award-to-mercedes-benz-tech-innovation/",
-        "https://www.cncf.io/case-studies/mercedes-benz/"
+        "https://www.cncf.io/case-studies/mercedes-benz/",
+        "https://github.com/cncf/landscape/blob/c239ac1c6d2e5e096c6cf9f12b9330ae8c832438/landscape.yml",
+        "https://group.mercedes-benz.com/"
       ],
-      "membershipSources": [],
-      "membershipStatus": "unknown"
+      "membershipSources": [
+        {
+          "sourceId": "cncf/landscape#CNCF Members/Silver/Mercedes Benz AG (member)",
+          "role": "member",
+          "sourceName": "Mercedes Benz AG (member)",
+          "category": "CNCF Members",
+          "subcategory": "Silver",
+          "homepageUrl": "https://group.mercedes-benz.com/",
+          "joined": "2020-08-01",
+          "localLogo": "/img/end-user-members/2b7ea308940179e8-mercedes-benz.svg",
+          "sourceUrl": "https://github.com/cncf/landscape/blob/c239ac1c6d2e5e096c6cf9f12b9330ae8c832438/landscape.yml"
+        }
+      ],
+      "membershipStatus": "member"
     },
     {
       "id": "michelin",

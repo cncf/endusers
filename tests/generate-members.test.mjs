@@ -251,6 +251,61 @@ test('maps the sourced Ant Financial record to the existing ant-group ID', () =>
   assert.equal(result.output.members[0].membershipStatus, 'member');
 });
 
+test('maps the sourced Mercedes Benz AG record to the award winner it owns', () => {
+  const result = run({
+    awards: [
+      awardEntry({
+        slug: 'mercedes-benz-tech-innovation',
+        organization: 'Mercedes-Benz Tech Innovation',
+        logo: '/img/awards/mercedes-benz.svg',
+      }),
+    ],
+    snapshot: landscapeSnapshot([
+      landscapeRecord({
+        sourceId:
+          'cncf/landscape#CNCF Members/Silver/Mercedes Benz AG (member)',
+        sourceName: 'Mercedes Benz AG (member)',
+        displayName: 'Mercedes Benz AG',
+        subcategory: 'Silver',
+        localLogo: '/img/end-user-members/mercedes-benz.svg',
+      }),
+    ]),
+  });
+
+  assert.deepEqual(ids(result), ['mercedes-benz-tech-innovation']);
+  const [member] = result.output.members;
+  assert.equal(member.name, 'Mercedes-Benz');
+  assert.equal(member.membershipStatus, 'member');
+  assert.equal(member.awards.length, 1);
+  assert.equal(member.logo, '/img/awards/mercedes-benz.svg');
+});
+
+// An award record keeps the slug awards.json gives it, so a landscape record
+// for the same brand under its legal name creates a second card that the id
+// and exact-name checks both miss; the slug guard refuses the pair.
+test('fails two members whose names reduce to one slug instead of publishing both', () => {
+  const result = generateMembers(
+    fixtures({
+      awards: [
+        awardEntry({ slug: 'acme-innovation', organization: 'Acme Tech' }),
+      ],
+      snapshot: landscapeSnapshot([
+        landscapeRecord({
+          sourceId: 'cncf/landscape#CNCF Members/Silver/Acme Tech AG (member)',
+          sourceName: 'Acme Tech AG (member)',
+          displayName: 'Acme Tech AG',
+        }),
+      ]),
+    }),
+  );
+
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /members acme-innovation \(Acme Tech\) and acme-tech \(Acme Tech AG\) are one organization by slug acme-tech; add a LANDSCAPE_ALIASES entry/,
+  );
+});
+
 test('fails an ambiguous landscape slug collision instead of merging it', () => {
   const result = generateMembers(
     fixtures({
