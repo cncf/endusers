@@ -132,11 +132,16 @@ function splitStamp(stamp) {
 
 // Sched stores abstracts as HTML with <br> line breaks; the component splits
 // paragraphs on blank lines, so breaks become newlines, other tags go, and
-// runs of blank lines collapse to one.
+// runs of blank lines collapse to one. Tags are stripped until none remain,
+// so a tag nested inside another ("<scr<b>ipt>") does not survive the pass.
 function descriptionText(html) {
-  return decodeEntities(
-    html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, ''),
-  )
+  let text = html.replace(/<br\s*\/?>/gi, '\n');
+  let before;
+  do {
+    before = text;
+    text = text.replace(/<[^<>]*>/g, '');
+  } while (text !== before);
+  return decodeEntities(text)
     .split('\n')
     .map((line) => line.trim())
     .join('\n')

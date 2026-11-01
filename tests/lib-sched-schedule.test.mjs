@@ -141,6 +141,18 @@ test('parseSchedSession reads the schedule fields out of a session page', () => 
   });
 });
 
+// A tag nested inside another must not reassemble into markup once the inner
+// tag is stripped; the abstract is plain text by the time the page renders it.
+test('parseSchedSession strips tags that only appear once another tag is removed', () => {
+  const session = parseSchedSession(
+    sessionPage({
+      description:
+        'Watch <scr<b>ipt>the</scr<i>ipt> dashboards.<br>Then <em>act</em>.',
+    }),
+  );
+  assert.equal(session.description, 'Watch the dashboards.\nThen act.');
+});
+
 test('parseSchedSession decodes entities in names, rooms and text', () => {
   const session = parseSchedSession(
     sessionPage({
