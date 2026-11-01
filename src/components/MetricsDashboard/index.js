@@ -2,8 +2,12 @@ import metricsData from '@site/data/metrics.json';
 import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
 
+// Horizontal position within the 20..500 plot area of the 520x220 viewBox. A
+// lone sample has no span to spread across, so it sits at the midpoint rather
+// than on the left edge -- the centring Sparkline already applies to its own
+// single-sample case -- and the length-1 denominator is never zero.
 function pointX(index, length) {
-  return length <= 1 ? 20 : 20 + (index / (length - 1)) * 480;
+  return length <= 1 ? 260 : 20 + (index / (length - 1)) * 480;
 }
 function pointY(value, values) {
   const max = Math.max(...values.map((point) => point.value), 1);

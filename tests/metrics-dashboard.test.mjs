@@ -214,7 +214,12 @@ test('a single-point series is centred rather than divided by zero', () => {
   const points = parsePoints(
     findByType(findByType(section, 'svg'), 'polyline').props.points,
   );
-  assert.deepEqual(points, [{ x: 20, y: 30 }]);
+  assert.deepEqual(points, [{ x: 260, y: 30 }]);
+  // The polyline draws nothing from one point, so the marker is the whole
+  // chart for this series: it must sit at the same midpoint, not on the axis.
+  const circles = findAllByType(section, 'circle');
+  assert.equal(circles.length, 1);
+  assert.equal(circles[0].props.cx, 260);
 });
 
 test('every line chart point carries a hoverable date/value title', () => {
