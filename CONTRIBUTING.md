@@ -63,7 +63,7 @@ These recipes are a superset of the validation steps the "Refresh metrics" and
 `validate:*` set as `npm run validate:all`, which `npm run build:netlify` runs
 before the Netlify build. The recipes are **not** the same checks the "Validate
 repository" and "Lint repository" PR gates run, and a green
-`just build`/`just refresh` locally does **not** imply a green PR check. Before
+`just build`/`just refresh` locally does **not** imply a green PR check.
 For PRs that use the full-validation path, also run
 `npm run test:unit:coverage:check` and the local check scripts that match "Lint
 repository": `npm run check:format`, `npm run check:spelling`,
