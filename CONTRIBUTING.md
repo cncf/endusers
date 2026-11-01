@@ -190,7 +190,7 @@ Rules:
 - **Never edit `data/end-user-talks/` by hand.** Each file mirrors one
   conference's official schedule from its public source: the Sessionize API
   the Linux Foundation schedules embed, or, for a conference published on
-  Sched (`source: "sched"`), the Sched listing and session pages. The
+  Sched (`source: "sched"`), the Sched listing and calendar export. The
   conferences are listed in the curated `data/end-user-talk-events.json`: each
   entry names the schedule, API and per-session URLs, the event-local UTC
   offset, and the rule that selects the end user talks, either the official
@@ -205,9 +205,11 @@ Rules:
   it is named on the command line or `--all` is passed: run
   `npm run collect:end-user-talks` when adding an event, and
   `npm run collect:end-user-talks -- <slug>` after curating a past event's
-  links, then commit the result. The Sched source fetches one page per curated
-  session and waits out Sched's intermittent maintenance page, so a run can
-  take several minutes.
+  links, then commit the result. The Sched source reads the whole schedule
+  from two documents, the session listing and the `all.ics` calendar export,
+  and fetches a session's own page only when the export has
+  flattened its abstract's paragraph breaks; it waits out Sched's intermittent
+  maintenance page, so a run can still take a few minutes.
   `npm run validate:end-user-talks` checks the events file, enforces the link
   host allow-list (`events.linuxfoundation.org`, `lfopensource.cn`,
   `sessionize.com`, `sched.com`) and the per-session URL shape, and runs as

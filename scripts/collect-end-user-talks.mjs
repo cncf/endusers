@@ -2,7 +2,7 @@
 // Refresh the schedule snapshots with npm run collect:end-user-talks. Each
 // conference in data/end-user-talk-events.json is read from its official
 // schedule's public data -- the Sessionize JSON API the Linux Foundation
-// schedules embed, or the Sched listing and session pages when a conference
+// schedules embed, or the Sched listing and calendar export when a conference
 // publishes on Sched instead -- and written to data/end-user-talks/<slug>.json.
 //
 // A schedule is final once its event has run, so an event whose snapshot ends
@@ -12,8 +12,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import {
   isSchedOutage,
+  parseSchedCalendar,
+  parseSchedDescription,
   parseSchedListing,
-  parseSchedSession,
+  toLocalStamp,
 } from './lib/sched-schedule.mjs';
 
 const dataDir = new URL('../data/', import.meta.url);
@@ -137,6 +139,11 @@ async function fetchSched(url) {
   }
 }
 
+// Two documents cover a whole Sched schedule: the listing the event entry
+// names as apiUrl, and the calendar export next to it, which carries the full
+// abstracts. The export flattens paragraph breaks authored as HTML line
+// breaks, so an abstract it leaves without any newline is read from the
+// session page instead; the rest of the schedule costs no per-session fetch.
 async function loadSched(event) {
   const ids = event.select.sessionIds;
   const listed = parseSchedListing(await fetchSched(event.apiUrl));
@@ -146,18 +153,34 @@ async function loadSched(event) {
       `${event.slug}: curated session ids are missing from the feed: ${missing.join(', ')}`,
     );
   }
+  const calendar = parseSchedCalendar(
+    await fetchSched(new URL('all.ics', event.sourceUrl).href),
+  );
   const sessions = [];
   for (const id of ids) {
-    const url = event.sessionUrl.replace('{id}', id);
-    const { utcOffset, ...session } = parseSchedSession(await fetchSched(url));
-    // The page's own offset is the check that the configured one is right;
-    // a mismatch would shift every <time dateTime> on the page (#2038).
-    if (utcOffset !== event.utcOffset) {
+    const { uid, startsAt, endsAt, ...session } = listed.get(id);
+    const entry = calendar.get(uid);
+    if (!entry) {
       throw new Error(
-        `${event.slug}: session ${id} is published in UTC${utcOffset}, not the configured UTC${event.utcOffset}`,
+        `${event.slug}: session ${id} is listed but missing from the calendar export`,
       );
     }
-    sessions.push({ id, ...session });
+    // The listing prints event-local times and the calendar UTC ones; they
+    // agree only at the right configured offset, and a wrong one would shift
+    // every <time dateTime> on the page (#2038).
+    const localStart = toLocalStamp(entry.startsAt, event.utcOffset);
+    const localEnd = toLocalStamp(entry.endsAt, event.utcOffset);
+    if (localStart !== startsAt || localEnd !== endsAt) {
+      throw new Error(
+        `${event.slug}: session ${id} runs ${startsAt} to ${endsAt} locally but ${entry.startsAt} to ${entry.endsAt} UTC, which is not the configured UTC${event.utcOffset}`,
+      );
+    }
+    const description = entry.description.includes('\n')
+      ? entry.description
+      : parseSchedDescription(
+          await fetchSched(event.sessionUrl.replace('{id}', id)),
+        );
+    sessions.push({ id, ...session, startsAt, endsAt, description });
   }
   return sessions;
 }

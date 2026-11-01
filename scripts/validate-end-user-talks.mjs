@@ -19,7 +19,7 @@ import { checkUrl, reportAndExit } from './lib/validate-utils.mjs';
 // The hosts are the ones data/end-user-talk-events.json may point a snapshot
 // at: the Linux Foundation and LF Open Source China schedules, Sessionize,
 // which also serves the event subdomains the China schedule lives on, and
-// Sched, where the India schedule is published. A suffix match, not an
+// Sched, where the India and Europe schedules are published. A suffix match, not an
 // equality test: checkUrl() accepts the host itself or any subdomain of it,
 // and rejects a lookalike that merely ends in the same characters.
 const SCHEDULE_HOSTS = [

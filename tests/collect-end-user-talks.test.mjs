@@ -435,8 +435,9 @@ test('fails when a curated session id has left the feed', () => {
 });
 
 // A conference published on Sched has no JSON feed: the collector reads the
-// listing for the set of sessions and each curated session's own page for
-// its schedule fields, the way scripts/lib/sched-schedule.mjs parses them.
+// listing for every session's schedule fields and the calendar export for
+// the abstracts, the way scripts/lib/sched-schedule.mjs parses them, and a
+// session's own page only when the export flattened its paragraphs.
 const SCHED = 'https://kccncind2026.sched.com/';
 const INDIA_OUTPUT = 'data/end-user-talks/kubecon-india-2026.json';
 const indiaEvent = {
@@ -454,59 +455,75 @@ const indiaEvent = {
 const OUTAGE =
   '<html><head><title>We’ll be back in a minute – Sched</title></head></html>';
 
-function schedListing(ids) {
-  return ids
+const schedSessions = {
+  '2IW2R': {
+    uid: 'aaaa',
+    title: 'Who Watches the Watchers? - Sandeep Kanabar &amp; Aditi Gupta, Gen',
+    date: 'Thursday June 18, 2026 2:30pm - 3:00pm',
+    start: '20260618T090000Z',
+    end: '20260618T093000Z',
+    speakers: ['Sandeep Kanabar', 'Aditi Gupta'],
+    room: 'Lotus 2 (Level 3)',
+    description: 'Observability is your safety net.\\n\\nAt scale it fails.',
+  },
+  '2IW4c': {
+    uid: 'bbbb',
+    title: 'Keynote: Walmart at Scale - Priya Singh, Walmart',
+    date: 'Thursday June 18, 2026 9:00am - 9:15am',
+    start: '20260618T033000Z',
+    end: '20260618T034500Z',
+    speakers: ['Priya Singh'],
+    room: 'Grand Ballroom',
+    description: 'Walmart runs big. It scales.',
+  },
+  '2ZZZZ': {
+    uid: 'cccc',
+    title: 'Sponsor Lunch',
+    date: 'Thursday June 18, 2026 12:00pm - 1:00pm',
+    start: '20260618T063000Z',
+    end: '20260618T070000Z',
+    speakers: [],
+    room: 'Foyer',
+    description: '',
+  },
+};
+
+function schedListing(sessions) {
+  return Object.entries(sessions)
     .map(
-      (id) =>
-        `<a href="event/${id}/slug" id="00ff00ff00ff" class="name"><span class="session-title">Title - Someone, Org</span></a>`,
+      ([id, { uid, title, date, room, speakers }]) =>
+        `<div class="sched-container-inner"><a href="event/${id}/slug" id="${uid}" class="name"><span class="session-title">${title}</span></a>
+<div class="list-single__date">${date}<span class='tz'>IST</span></div>
+<div class="list-single__location"><a href="venue/x">${room}</a></div>
+${speakers.map((s) => `<h2><a href="speaker/${s}" title="${s}">${s}</a></h2>`).join('')}
+</div>`,
     )
     .join('\n');
 }
 
-function schedSession({
-  name,
-  startDate,
-  endDate,
-  description,
-  speakers,
-  room,
-}) {
-  return `<html><head><script type="application/ld+json">${JSON.stringify({
-    '@type': 'Event',
-    name,
-    startDate,
-    endDate,
-    description,
-  })}</script></head><body>
-<div class="sched-event-details-timeandplace">Thursday<br><a href='venue/x'>${room}</a></div>
-${speakers
-  .map((s) => `<h2><a href="speaker/${s}" title="${s}">${s}</a></h2>`)
-  .join('')}
-</body></html>`;
+function schedCalendar(sessions) {
+  return Object.values(sessions)
+    .map(
+      ({ uid, start, end, description }) =>
+        `BEGIN:VEVENT\r\nUID:${uid}\r\nDTSTART:${start}\r\nDTEND:${end}\r\nDESCRIPTION:${description}\r\nEND:VEVENT`,
+    )
+    .join('\r\n');
 }
 
-const schedPages = {
-  '2IW2R': schedSession({
-    name: 'Who Watches the Watchers? - Sandeep Kanabar &amp; Aditi Gupta, Gen',
-    startDate: '2026-06-18T14:30:00+0530',
-    endDate: '2026-06-18T15:00:00+0530',
-    description: 'Observability is your safety net.<br><br>At scale it fails.',
-    speakers: ['Sandeep Kanabar', 'Aditi Gupta'],
-    room: 'Lotus 2 (Level 3)',
-  }),
-  '2IW4c': schedSession({
-    name: 'Keynote: Walmart at Scale - Priya Singh, Walmart',
-    startDate: '2026-06-18T09:00:00+0530',
-    endDate: '2026-06-18T09:15:00+0530',
-    description: '',
-    speakers: ['Priya Singh'],
-    room: 'Grand Ballroom',
-  }),
-};
+function schedPage(description) {
+  return `<html><head><script type="application/ld+json">${JSON.stringify({
+    '@type': 'Event',
+    description,
+  })}</script></head><body></body></html>`;
+}
+
+const WALMART_PAGE = schedPage('Walmart runs big.<br><br>It scales.');
 
 function collectSched({
-  listing = schedListing(['2IW2R', '2IW4c', '2ZZZZ']),
-  pages = schedPages,
+  sessions = schedSessions,
+  listing = schedListing(sessions),
+  calendar = schedCalendar(sessions),
+  pages = { '2IW4c': WALMART_PAGE },
   routes = [],
   event = indiaEvent,
 } = {}) {
@@ -515,6 +532,7 @@ function collectSched({
     routes: [
       ...routes,
       { match: `${SCHED}list/descriptions`, body: listing },
+      { match: `${SCHED}all.ics`, body: calendar },
       ...Object.entries(pages).map(([id, body]) => ({
         match: `${SCHED}event/${id}`,
         body,
@@ -526,7 +544,7 @@ function collectSched({
   });
 }
 
-test('reads a Sched event from its listing and session pages', () => {
+test('reads a Sched event from its listing and calendar export', () => {
   const result = collectSched();
   assert.equal(result.status, 0, result.stderr);
   const india = JSON.parse(result.outputs[INDIA_OUTPUT]);
@@ -552,12 +570,13 @@ test('reads a Sched event from its listing and session pages', () => {
     url: `${SCHED}event/2IW2R`,
     description: 'Observability is your safety net.\n\nAt scale it fails.',
   });
-  assert.equal(talks[0].description, '');
+  // The export flattened this abstract, so its page restores the paragraphs.
+  assert.equal(talks[0].description, 'Walmart runs big.\n\nIt scales.');
   // Sched refuses Node's default agent; every request identifies the site
-  // and asks only for the listing and the curated pages, in that order.
+  // and asks for the listing, the calendar and only the flattened page.
   assert.deepEqual(
     result.requests.map((request) => request.url),
-    [`${SCHED}list/descriptions`, `${SCHED}event/2IW2R`, `${SCHED}event/2IW4c`],
+    [`${SCHED}list/descriptions`, `${SCHED}all.ics`, `${SCHED}event/2IW4c`],
   );
   for (const request of result.requests) {
     assert.equal(
@@ -578,15 +597,15 @@ test('a Sessionize snapshot records its source', () => {
   );
 });
 
-test('retries a Sched page through a 503 and a maintenance page', () => {
+test('retries a Sched document through a 503 and a maintenance page', () => {
   const result = collectSched({
     routes: [
       {
-        match: `${SCHED}event/2IW4c`,
+        match: `${SCHED}all.ics`,
         sequence: [
           { status: 503, body: OUTAGE },
           { status: 200, body: OUTAGE },
-          { status: 200, body: schedPages['2IW4c'] },
+          { status: 200, body: schedCalendar(schedSessions) },
         ],
       },
     ],
@@ -594,12 +613,12 @@ test('retries a Sched page through a 503 and a maintenance page', () => {
   assert.equal(result.status, 0, result.stderr);
   assert.equal(JSON.parse(result.outputs[INDIA_OUTPUT]).talkCount, 2);
   assert.equal(
-    result.requests.filter((request) => request.url.endsWith('2IW4c')).length,
+    result.requests.filter((request) => request.url.endsWith('all.ics')).length,
     3,
   );
 });
 
-test('gives up on a Sched page after the retries are spent', () => {
+test('gives up on a Sched document after the retries are spent', () => {
   const outage = collectSched({
     routes: [{ match: `${SCHED}list/descriptions`, body: OUTAGE }],
   });
@@ -611,17 +630,19 @@ test('gives up on a Sched page after the retries are spent', () => {
   assert.equal(outage.requests.length, 4);
 
   const forbidden = collectSched({
-    routes: [{ match: `${SCHED}event/2IW2R`, status: 403 }],
+    routes: [{ match: `${SCHED}event/2IW4c`, status: 403 }],
   });
   assert.notEqual(forbidden.status, 0);
   assert.match(
     forbidden.stderr,
-    /Sched returned 403 for https:\/\/kccncind2026.sched.com\/event\/2IW2R/,
+    /Sched returned 403 for https:\/\/kccncind2026.sched.com\/event\/2IW4c/,
   );
 });
 
 test('fails when a curated Sched session id has left the listing', () => {
-  const result = collectSched({ listing: schedListing(['2IW2R']) });
+  const { '2IW4c': dropped, ...rest } = schedSessions;
+  assert.ok(dropped);
+  const result = collectSched({ listing: schedListing(rest) });
   assert.notEqual(result.status, 0);
   assert.match(
     result.stderr,
@@ -630,29 +651,42 @@ test('fails when a curated Sched session id has left the listing', () => {
   assert.equal(result.requests.length, 1);
 });
 
-test('fails when a Sched page is published in a different offset than configured', () => {
+test('fails when a listed Sched session is missing from the calendar export', () => {
+  const { '2IW2R': dropped, ...rest } = schedSessions;
+  assert.ok(dropped);
+  const result = collectSched({ calendar: schedCalendar(rest) });
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /kubecon-india-2026: session 2IW2R is listed but missing from the calendar export/,
+  );
+});
+
+test('fails when the listing and calendar disagree with the configured offset', () => {
   const result = collectSched({
     event: { ...indiaEvent, utcOffset: '+08:00' },
   });
   assert.notEqual(result.status, 0);
   assert.match(
     result.stderr,
-    /kubecon-india-2026: session 2IW2R is published in UTC\+05:30, not the configured UTC\+08:00/,
+    /kubecon-india-2026: session 2IW2R runs 2026-06-18T14:30:00 to 2026-06-18T15:00:00 locally but 2026-06-18T09:00:00Z to 2026-06-18T09:30:00Z UTC, which is not the configured UTC\+08:00/,
   );
+  // An end time that drifts on its own is caught too.
+  const drifted = collectSched({
+    sessions: {
+      ...schedSessions,
+      '2IW2R': { ...schedSessions['2IW2R'], end: '20260618T100000Z' },
+    },
+  });
+  assert.notEqual(drifted.status, 0);
+  assert.match(drifted.stderr, /session 2IW2R runs/);
 });
 
-test('fails when a Sched page lacks a speaker or room', () => {
+test('fails when a Sched session lacks a speaker or room', () => {
   const result = collectSched({
-    pages: {
-      ...schedPages,
-      '2IW4c': schedSession({
-        name: 'Keynote: Walmart at Scale',
-        startDate: '2026-06-18T09:00:00+0530',
-        endDate: '2026-06-18T09:15:00+0530',
-        description: '',
-        speakers: [],
-        room: 'Grand Ballroom',
-      }),
+    sessions: {
+      ...schedSessions,
+      '2IW4c': { ...schedSessions['2IW4c'], speakers: [] },
     },
   });
   assert.notEqual(result.status, 0);
