@@ -1,0 +1,1157 @@
+{
+  "description": "Generated from the official Sched listing by npm run collect:end-user-talks. Do not hand-edit.",
+  "source": "sched",
+  "sourceUrl": "https://kccncna2025.sched.com/",
+  "apiUrl": "https://kccncna2025.sched.com/list/descriptions",
+  "selection": "presented by speakers from organizations that meet the CNCF End User definition",
+  "location": "Atlanta",
+  "generatedAt": "2026-11-01T15:19:58.301Z",
+  "timezone": "EST (UTC−5)",
+  "talkCount": 96,
+  "final": true,
+  "days": [
+    {
+      "date": "2025-11-11",
+      "id": "tuesday-november-11",
+      "label": "Tuesday, November 11",
+      "slots": [
+        {
+          "start": "2025-11-11T09:51:00-05:00",
+          "end": "2025-11-11T10:06:00-05:00",
+          "startLabel": "9:51 AM",
+          "endLabel": "10:06 AM",
+          "talks": [
+            {
+              "id": "27FUm",
+              "title": "Keynote: Scaling Geo-Temporal ML: How Pokémon Go Optimizes Global Gameplay With Kubernetes and Kubeflow",
+              "speakers": "Yunpeng Liu, Andy Zhang",
+              "room": "Building B | Level 1 | Exhibit Hall B2",
+              "url": "https://kccncna2025.sched.com/event/27FUm",
+              "description": "Pokémon Go continues to engage millions of players worldwide with its location-based gameplay. Behind the scenes, this presents a unique ML challenge: how to optimize real-world player experiences using massive volumes of geo-temporal data?\n\nIn 2024, a team of ML practitioners at Niantic started tackling this by optimizing Raid Battle spawns—across dimensions of location, time, and difficulty—at a global scale spanning millions of S2 cells. The complexity of this problem goes beyond pure modeling: it also demands high standards for player satisfaction, scalability, and privacy protection.\n\nThis talk shares how the team designed a geo-aware recommender system and operationalized it in a cloud-native environment. Attendees will learn:\n\n- Modeling recommendations across spatial, temporal, and difficulty axes\n- Geo-temporal feature engineering at scale\n- Building and scaling recommender systems using Kubernetes and Kubeflow\n- MLOps lessons from one of the most popular location-based games",
+              "recording": "https://www.youtube.com/watch?v=NbfyR_tNMXY"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T10:15:00-05:00",
+          "end": "2025-11-11T10:20:00-05:00",
+          "startLabel": "10:15 AM",
+          "endLabel": "10:20 AM",
+          "talks": [
+            {
+              "id": "27dD5",
+              "title": "Keynote: Apple Containerization: Secure, Private Containers on macOS",
+              "speakers": "Madhu Venugopal",
+              "room": "Building B | Level 1 | Exhibit Hall B2",
+              "url": "https://kccncna2025.sched.com/event/27dD5",
+              "description": "The past decade has transformed how we build server applications at scale. Solutions such as containerization and microservices enabled a new cloud native approach of building apps with the cloud in mind, in turn kickstarting an entire ecosystem of cloud native tools.\n\nYet containers themselves remain ripe for innovation—particularly in areas like security and privacy. Apple's newly open-sourced Containerization Framework addresses these gaps by letting developers build and run Linux containers directly on macOS while maintaining Apple's rigorous security and privacy standards.\n\nWe'll explain why we built this solution, the key design decisions that set it apart, and how this framework can enhance your cloud native development experience.",
+              "recording": "https://www.youtube.com/watch?v=TOYlKfA5R80"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T10:22:00-05:00",
+          "end": "2025-11-11T10:37:00-05:00",
+          "startLabel": "10:22 AM",
+          "endLabel": "10:37 AM",
+          "talks": [
+            {
+              "id": "2AD4y",
+              "title": "Keynote: Maximum Acceleration: Cloud Native at the Speed of AI",
+              "speakers": "Joseph Sandoval",
+              "room": "Building B | Level 1 | Exhibit Hall B2",
+              "url": "https://kccncna2025.sched.com/event/2AD4y",
+              "description": "Cloud Native is not the end of the journey; it has become the substrate for what comes next. Breakthroughs in AI promise a future where ideas move from research to reality at unprecedented speed, but the gap between experimentation and production is widening. The challenge is not AI capability, it is infrastructure. Today's platforms were built for predictable, human-driven workloads, not for adaptive models that demand scale, resilience, and portability. This keynote explores how the CNCF community can focus on the critical areas that matter most for AI adoption. It will highlight where attention and investment can deliver maximum acceleration, ensuring that Cloud Native continues to evolve as the foundation for deploying and operating intelligent systems into the future.",
+              "recording": "https://www.youtube.com/watch?v=BnXPfaAwzlc"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T11:15:00-05:00",
+          "end": "2025-11-11T11:45:00-05:00",
+          "startLabel": "11:15 AM",
+          "endLabel": "11:45 AM",
+          "talks": [
+            {
+              "id": "27FV7",
+              "title": "Fix First, Investigate Later: When an eBPF Rollout Brought Down Our Network",
+              "speakers": "Grzegorz Głąb, Zain Malik",
+              "room": "Building B | Level 4 | B405-406a",
+              "url": "https://kccncna2025.sched.com/event/27FV7",
+              "description": "When your production network suddenly starts dropping packets, the last thing you expect is that your cloud provider quietly deployed a new monitoring tool. This talk shares our journey from mysterious outage to desperate fix to surprising discovery.\n\nIt started with alerts: packet loss spiking, network throughput crashing from 800MB/s to near 250MB/s. No recent changes on our end. Hours into the crisis, we discovered an unfamiliar DaemonSet running eBPF programs - Retina, silently rolled out across our clusters. But here's the catch: we couldn't remove it. The daemonset was reconciled instantly back to original state after an update.\nWith users impacted and no time for root cause analysis, we took a leap: build a mutation webhook to intercept and neuter this mysterious DaemonSet. It worked instantly - networks recovered, crisis averted.\n\nOnly then could we investigate: How did an eBPF observability tool cause such devastation? And why didn't we know it was being deployed?",
+              "recording": "https://www.youtube.com/watch?v=J-Zx64mJzVk"
+            },
+            {
+              "id": "27Nnr",
+              "title": "10 Years of Cilium: Connecting, Securing, and Simplifying the Cloud Native Stack",
+              "speakers": "Satish Krishnan, Bill Mulligan, Neha Aggarwal, Paul Arah",
+              "room": "Building C | Level 3 | Georgia Ballroom 3",
+              "url": "https://kccncna2025.sched.com/event/27Nnr",
+              "description": "Join us as we celebrate a decade of Cilium, now the de-facto standard CNI for Kubernetes and a cornerstone of cloud native networking and security. This session provides updates on the latest Cilium release and showcases how its unified eBPF-powered stack is transforming Kubernetes environments and beyond by replacing fragmented toolchains with seamless, secure, scalable, and simplified solutions.\n\nWe’ll showcase advancements in multi-cluster connectivity and support for massively scalable clusters. You’ll also hear updates from sub-project Tetragon for runtime enforcement and security observability.\n\nContributors and adopters from Isovalent, Microsoft, and UBS will share how they’re using Cilium to streamline operations and reshape the cloud native stack cementing Cilium’s role as the networking and security data plane for modern infrastructure for the next decade to come.",
+              "recording": "https://www.youtube.com/watch?v=mCKwX74xIs4"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T12:00:00-05:00",
+          "end": "2025-11-11T12:30:00-05:00",
+          "startLabel": "12:00 PM",
+          "endLabel": "12:30 PM",
+          "talks": [
+            {
+              "id": "27FVb",
+              "title": "Simplifying Advanced AI Model Serving on Kubernetes Using Helm Charts",
+              "speakers": "Ajay Vohra, Caron Zhang",
+              "room": "Building B | Level 4 | B401-402",
+              "url": "https://kccncna2025.sched.com/event/27FVb",
+              "description": "The AI model serving landscape on Kubernetes presents practitioners with an overwhelming array of technology choices: From inference servers like Ray Serve and Triton Inference Server, inference engines like vLLM, and orchestration platforms like Ray Cluster and KServe. While this diversity drives innovation, it also creates complexity. Teams often prematurely standardize on limited technology stacks to manage this complexity.\nThis talk introduces an innovative Helm-based approach that abstracts the complexity of AI model serving while preserving the flexibility to leverage the best tools for each use case. Our solution is accelerator agnostic, and provides a consistent YAML interface for deploying and experimenting with various serving technologies.\nWe'll demonstrate this approach through two concrete examples of multi-node, multi-accelerator model serving with auto scaling: 1/ Ray Serve + vLLM + Ray Cluster, and 2/ LeaderWorkerSet + Triton Inference Server + vLLM + Ray Cluster + HPA.",
+              "recording": "https://www.youtube.com/watch?v=PVB2hW8PuAM"
+            },
+            {
+              "id": "27FVe",
+              "title": "On-Prem Load Balancing Reimagined: Serving 20 Million QPS With Gateway API and EnvoyGateway",
+              "speakers": "Isaac Wilson",
+              "room": "Building B | Level 4 | B405-406a",
+              "url": "https://kccncna2025.sched.com/event/27FVe",
+              "description": "In this session, The Trade Desk shares how we evolved our HAProxy Community Edition (open source) based load-balancing architecture running on bare metal into a cloud-native, Kubernetes-based Envoy Gateway platform powered by Gateway API. You’ll learn how we migrated core services, refactored service discovery, and extended EnvoyGateway with advanced controls such as Circuit Breakers and Zone Aware Routing (plus upstream Envoy contributions) to gain richer control, smarter traffic distribution, and higher resilience across topology zones. We’ll walk through our key architectural decisions, automation strategies, things we broke along the way, and lessons learned to help you execute a smooth, large-scale migration.",
+              "recording": "https://www.youtube.com/watch?v=kHChbblwVwk"
+            },
+            {
+              "id": "27FVh",
+              "title": "Taming Rollout Risks in Distributed Web Apps: A Location-Aware Gradual Deployment Approach",
+              "speakers": "Angela Victorio",
+              "room": "Building B | Level 4 | B406b-407",
+              "url": "https://kccncna2025.sched.com/event/27FVh",
+              "description": "Deploying updates to web apps installed on managed client devices—such as airport kiosks or retail POS systems—comes with unique challenges. In this session, we’ll share how we used Kubernetes, Istio, and CI/CD pipelines to implement a location-aware gradual rollout strategy. Rather than applying global traffic weights, we targeted per-location percentages to minimize localized risk. The solution includes release-aware routing, dynamic profile updates, and flexible tooling—adaptable across tech stacks for anyone managing applications deployed to physical sites or edge clients.",
+              "recording": "https://www.youtube.com/watch?v=-fhXEJD-ycs"
+            },
+            {
+              "id": "27FVS",
+              "title": "Talk To Your Dashboards: Using MCP and LLMs To Simplify Observability",
+              "speakers": "Raj Bhensadadia, Prashant Gupta",
+              "room": "Building B | Level 3 | B304-305",
+              "url": "https://kccncna2025.sched.com/event/27FVS",
+              "description": "In large-scale application services, dashboards serve as windows into system health. But as the number of systems grow, so does the complexity. Dashboards can become outdated, and queries may drift over time. Large Language Models (LLMs) offer a way to simplify the management of dashboards and alerts using natural language prompts. However, integrating this capability into open-source systems is challenging to scale due to fragmented APIs. Enter, Model Context Protocol (MCP), which addresses this challenge by exposing observability primitives—dashboards, datasources, alerts—through a standardized schema that LLMs can understand. In this session, we'll demonstrate how MCP servers & clients can bridge LLMs with dashboard & alert management tools via natural language. You'll leave with practical techniques to integrate LLMs into your observability visualization stack like Perses—no custom wrappers, & no brittle integrations.",
+              "recording": "https://www.youtube.com/watch?v=iS4-WC59a9s"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T13:15:00-05:00",
+          "end": "2025-11-11T13:30:00-05:00",
+          "startLabel": "1:15 PM",
+          "endLabel": "1:30 PM",
+          "talks": [
+            {
+              "id": "2AD14",
+              "title": "Learning Lounge: Bridging Skill Gaps to Train 30K in Africa",
+              "speakers": "Ibrahim Kabiru, Nicola Lyons",
+              "room": "Building B | Level 1 | Exhibit Hall B3-B5 | Learning Lounge",
+              "url": "https://kccncna2025.sched.com/event/2AD14",
+              "description": "10-Minute Tip Talk"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T14:30:00-05:00",
+          "end": "2025-11-11T15:00:00-05:00",
+          "startLabel": "2:30 PM",
+          "endLabel": "3:00 PM",
+          "talks": [
+            {
+              "id": "27FVt",
+              "title": "From Bespoke To Bulletproof: SPIFFE/SPIRE With ESO for Enterprise Zero Trust",
+              "speakers": "Mae Large, Ivy Alkhaz",
+              "room": "Building B | Level 3 | B302-303",
+              "url": "https://kccncna2025.sched.com/event/27FVt",
+              "description": "At State Farm, securing microservices across multi-cluster K8s environments demanded a robust zero-trust architecture. Our initial “bespoke” SPIFFE/SPIRE deployment provided workload identities but faltered under scale. To achieve enterprise-grade resilience, we transitioned to an HA nestedSpire architecture, enabling seamless integration with ESO for secure secret retrieval. This talk shares our journey, from debugging 500 errors in ESO’s webhook-based SecretStore to scaling SPIRE agents. We’ll detail how we configured nestedSpire for HA, integrated SPIFFE SVIDs with ESO’s webhook authentication, and automated secret rotation to remove credential leaks. Attendees will learn steps for deploying nestedSpire, troubleshooting common issues (like attestation failures). We’ll share lessons from our bespoke-to-bulletproof evolution. Whether you’re adopting SPIRE or optimizing an existing setup, this talk offers a blueprint for building scalable, secure zero-trust systems in Kubernetes.",
+              "recording": "https://www.youtube.com/watch?v=EVbFeCipis8"
+            },
+            {
+              "id": "27FVw",
+              "title": "Making Application Rollouts Observable, Actionable and Boring",
+              "speakers": "Vasudev Bongale",
+              "room": "Building B | Level 3 | B304-305",
+              "url": "https://kccncna2025.sched.com/event/27FVw",
+              "description": "Managing and understanding thousands of workload rollouts is challenging—especially in Kubernetes, where the system is always converging, making it difficult to track deployment origins, changes, and statuses. Developers and platform teams want clear answers: Did the rollout succeed? What changed? Is it stable?\n\nAt LinkedIn, we handle 50,000+ app deployments weekly, making visibility and quick debugging crucial. We’ve built a system that tracks every change—from pipeline-triggered rollouts and kubectl edits to controller-driven podSpec mutations—capturing both the source and the result. It helps surface failure reasons such as pod scheduling issues, app/init container crashes, and image pull delays.\n\nIn this talk, we’ll share our journey building a unified system, categorizing failures, simplifying interactions by abstracting Kubernetes, and delivering out-of-the-box app health metrics.\n\nOur goal: to enhance platform reliability and streamline the developer experience with Kubernetes.",
+              "recording": "https://www.youtube.com/watch?v=8QS3hmsDjNE"
+            },
+            {
+              "id": "27NnE",
+              "title": "Introducing TAG Workloads Foundation: Advancing the Core of Cloud Native Execution",
+              "speakers": "Yuan Tang, Paco Xu, Rajas Kakodkar, Alex Scammon, Stephen Rust",
+              "room": "Building C | Level 3 | Georgia Ballroom 2",
+              "url": "https://kccncna2025.sched.com/event/27NnE",
+              "description": "The CNCF Technical Advisory Groups (TAGs) play a vital role in shaping the future of cloud native. We’re excited to introduce a new addition: the TAG Workloads Foundation. This session will present the mission, scope, and early initiatives of TAG Workloads Foundation, focused on defining and advancing practices and standards for cloud native workload execution environments and lifecycle management. Attendees will learn how this TAG supports the CNCF's technical vision, why workload execution is critical for adopters, and how community members can get involved to help solve real-world challenges across container platforms, schedulers, orchestration systems, etc. Join us to help shape the next phase of cloud native maturity—from fundamental runtime environments to future-forward workload patterns.",
+              "recording": "https://www.youtube.com/watch?v=AgeD4piXQaE"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T14:30:00-05:00",
+          "end": "2025-11-11T15:45:00-05:00",
+          "startLabel": "2:30 PM",
+          "endLabel": "3:45 PM",
+          "talks": [
+            {
+              "id": "27Nko",
+              "title": "🚨 Contribfest: Argo: Configure Your Local Setup and Contribute!",
+              "speakers": "Alexandre Gaudreault, Nitish Kumar, Codey Jenkins, Peter Jiang",
+              "room": "Building B | Level 2 | B207",
+              "url": "https://kccncna2025.sched.com/event/27Nko",
+              "description": "Join the Argo maintainers for an interactive session designed to jumpstart your contribution journey! This workshop is perfect for aspiring contributors and experienced users who are ready to dive into the Argo CD codebase and resolve issues, but need a helping hand with their local development environment.\nWe will walk you through the essential steps to set up your local Argo CD development environment, provide practical guidance on debugging issues within the codebase and help you run the linter, unit tests and e2e tests locally.\nBy the end of this session, you'll have a fully functional local Argo CD development environment and the confidence to debug issues and submit your valuable contributions to the project! And if your environment is already configured, you can still join us to tackle open issues or to discuss future enhancements to the project.\nDon’t forget your laptop, join our thriving community and start contributing!"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T15:15:00-05:00",
+          "end": "2025-11-11T15:45:00-05:00",
+          "startLabel": "3:15 PM",
+          "endLabel": "3:45 PM",
+          "talks": [
+            {
+              "id": "27FWi",
+              "title": "Unveiling Automation: How Mercantil Transformed Data Streaming With Strimzi, Argo, and Kubernetes",
+              "speakers": "Marcelo Costa",
+              "room": "Building B | Level 4 | B406b-407",
+              "url": "https://kccncna2025.sched.com/event/27FWi",
+              "description": "Discover how Banco Mercantil in Brazil revolutionized its data streaming with Strimzi, Argo, and Kubernetes. The automation of data connector creation, previously manual and complex, is now efficient. The Integration Hub engineering team uses Git to request connectors; Argo automates creation in Kubernetes; and Strimzi creates the Kafka Connect connectors. This agile and persistent process, with GitOps, reduced errors and optimized delivery, supporting growth, as in Open Finance Project (Open Finance allows consumers to share their banking data between institutions, fostering competition, innovation, and personalized financial services). Learn how this modern architecture simplifies work and scales the data ecosystem.",
+              "recording": "https://www.youtube.com/watch?v=tWpspU_9ClE"
+            },
+            {
+              "id": "27FWT",
+              "title": "Just Do It: OpAMP",
+              "speakers": "Panos Tsilopoulos, Bob Johnson",
+              "room": "Building B | Level 3 | B304-305",
+              "url": "https://kccncna2025.sched.com/event/27FWT",
+              "description": "\"Just Do It: OpAMP\", is an in-depth session on building an enterprise-grade implementation of the Open Agent Management Protocol (OpAMP) specification that is part of the OpenTelemetry CNCF project. In today’s cloud-native environments, managing thousands of observability agents, and especially so OpenTelemetry Collectors for which most major vendors have no fleet management solution available, is a daunting task. This session explores how OpAMP enables efficient remote configuration, update, and real-time monitoring of a fleet of such agents.\n\nWe’ll break down the protocol’s core concepts by reviewing system design diagrams that address security, network and resiliency challenges. Finally, we'll go over practical strategies for a successful roll out and enterprise-wide adoption at scale.\n\nThis session aims to equip you with actionable insights and robust techniques to streamline agent management, ultimately enhancing operational efficiency in distributed environments.",
+              "recording": "https://www.youtube.com/watch?v=J68ThM9DqQ0"
+            },
+            {
+              "id": "27FWZ",
+              "title": "Shipping Secure, Reusable, and Composable Infrastructure as Code: GE HealthCare’s Journey With ORAS",
+              "speakers": "Feynman Zhou, Katherine Pitz",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27FWZ",
+              "description": "Before adopting a centralized approach, engineering teams at GE HealthCare managed their Infrastructure as Code (IaC) deployments independently—leading to fragmentation, inconsistent security practices, and operational overhead. Each team had its own tools, processes, and storage methods, making it difficult to scale, enforce standards, and ensure traceability across environments.\nTo solve this, GE HealthCare introduced a shared delivery model built on ORAS and OCI registries, enabling teams to package infrastructure definitions (e.g. Terraform modules) as OCI artifacts. This decouples infrastructure delivery from specific IaC tools, while providing a secure, consistent, and versioned distribution mechanism.\nIn this session, an engineer from GE HealthCare will share how they partnered with the ORAS community to build a SaaS platform that empowers teams to provision infrastructure using their preferred IaC technologies—without compromising on governance, consistency, or security.",
+              "recording": "https://www.youtube.com/watch?v=u4zinRUhtw8"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T16:15:00-05:00",
+          "end": "2025-11-11T16:45:00-05:00",
+          "startLabel": "4:15 PM",
+          "endLabel": "4:45 PM",
+          "talks": [
+            {
+              "id": "27FX0",
+              "title": "Reimagining Insurance Infrastructure: CopperPoint's Cloud Native Blueprint",
+              "speakers": "Sham Rao, Sid Dixit",
+              "room": "Building B | Level 3 | B308-309",
+              "url": "https://kccncna2025.sched.com/event/27FX0",
+              "description": "CopperPoint Insurance embarked on a bold transformation initiative—transitioning from legacy, on-premises infrastructure to a cloud-native foundation on AWS powered by CNCF-hosted technologies. This presentation is the real story of how CopperPoint leveraged Kubernetes on Amazon EKS, Prometheus, Fluent Bit, OpenTelemetry, and other CNCF projects to modernize its core systems, enhance observability, and build a composable integration layer that now powers over 100 enterprise integrations.We will share how this new platform has enabled agility, innovation, and rapid scalability via CopperPoint's ecosystem, thus directly contributing to premium growth of over $1 billion. You will find out the architecture blueprint, top-level decisions, governance model, and lessons learned from cost and environment management perspective that you may apply to replicate this kind of transformation within your company.",
+              "recording": "https://www.youtube.com/watch?v=jQRpHOm4Vts"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T16:15:00-05:00",
+          "end": "2025-11-11T17:30:00-05:00",
+          "startLabel": "4:15 PM",
+          "endLabel": "5:30 PM",
+          "talks": [
+            {
+              "id": "27FXL",
+              "title": "📚 Tutorial: A Cross-Industry Benchmarking Tutorial for Distributed LLM Inference on Kubernetes",
+              "speakers": "Samuel Monson, Junchen Jiang, Ganesh Kudleppanavar, Jason Kramberger, Jing Chen",
+              "room": "Building B | Level 5 | Thomas Murphy Ballroom 2-3",
+              "url": "https://kccncna2025.sched.com/event/27FXL",
+              "description": "As organizations deploy LLMs as distributed stacks in production Kubernetes environments, optimizing inference performance has been critical. This collaborative tutorial brings together experts from Google, NVIDIA, RedHat, IBM, and University of Chicago (LMCache) to provide practical benchmarking techniques for impactful LLM optimization strategies.\nUsing identified use cases as examples, we'll show how to benchmark key optimization strategies: KV Cache offloading, autoscaling, prefix/session-aware routing, KVCache-aware routing, and xPyD for prefill decode disaggregation. Attendees will learn a unified benchmarking approach integrating tools including vLLM, LMBenchmark, GuideLLM, GenAIperf, inference-perf, and fmperf. Through live demonstrations, participants gain hands-on experience with production-tested methodologies reflecting real-world scenarios. Attendees will be equipped to implement these approaches for data-driven LLM serving optimizations on Kubernetes.",
+              "recording": "https://www.youtube.com/watch?v=RVQwP-apF-A"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T17:00:00-05:00",
+          "end": "2025-11-11T17:30:00-05:00",
+          "startLabel": "5:00 PM",
+          "endLabel": "5:30 PM",
+          "talks": [
+            {
+              "id": "27FXa",
+              "title": "The Cloud Is Lying To You: What It Really Takes To Run On-Prem",
+              "speakers": "Paris Nakita Kejser",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27FXa",
+              "description": "Have you ever stopped to think about how much the cloud spoils us? Managed services, infinite scalability, auto-healing clusters, instant backups — all just a click away. But what happens when you're told: no cloud, no internet, on-prem only?\n\nThis session breaks down the brutal wake-up call that comes when cloud-native engineers are dropped into an air-gapped, on-prem world. Drawing from real-world experience rebuilding Kubernetes infrastructure in restricted environments, the talk explores what it really takes to replicate the cloud’s conveniences from scratch. From object storage and backup strategies to HA, deployment scalability, and monitoring — every layer of “magic” once taken for granted becomes a manual puzzle to solve.\n\nThis talk is for anyone facing compliance constraints, cost-driven on-prem mandates, or just curious about what lies beneath the surface of their cloud-native stack. Warning: you may never see the cloud the same way again.",
+              "recording": "https://www.youtube.com/watch?v=K5Wh7dfbr4s"
+            },
+            {
+              "id": "27FXj",
+              "title": "Zero Downtime Migration of Monolith To K8s Using Sidecar and Container Lifecycle Hooks",
+              "speakers": "James Dabbs, Deepak Kosaraju",
+              "room": "Building B | Level 4 | B406b-407",
+              "url": "https://kccncna2025.sched.com/event/27FXj",
+              "description": "Migrating a monolith to Kubernetes (k8s) with zero downtime comes with unique challenges depending on the tech stack. In this session, we’ll share our real-world journey, highlighting both strategy and a live demo that showcases our lessons learned—both wins and pitfalls.\n\nWe will cover:\n- Container Lifecycle Hooks: Why they matter and how they support seamless deployments\n- Using Lifecycle hooks to control termination of POD to avoid HTTP 503 errors during rolling deployment.\n- Real config examples, troubleshooting tips, and best practices to maintain high availability\n\nYou’ll leave with a solid grasp of how and when to use Lifecycle hooks to ensure smooth rolling deployments. Our live demo will dive into key issues to address for zero downtime migration of any service. By the end, you’ll understand the complexities of transitioning monolithic apps to Kubernetes using CNCF tools and gain insights to guide your own migration efforts.",
+              "recording": "https://www.youtube.com/watch?v=jR6Oex3wFCE"
+            },
+            {
+              "id": "27Y2M",
+              "title": "OpenTelemetry: Unpacking 2025, Charting 2026",
+              "speakers": "Josh Suereth, Morgan McLean, Alolita Sharma, Austin Parker",
+              "room": "Building C | Level 3 | Georgia Ballroom 3",
+              "url": "https://kccncna2025.sched.com/event/27Y2M",
+              "description": "Please join in for an insightful session which focuses on the impactful features and initiatives OpenTelemetry rolled out in 2025. You'll also get the inside scoop on what's coming in 2026 and how it's all going to shape the future of observability.\n\nThis session will also give you an opportunity to ask the awesome OpenTelemetry maintainers, TC and GC members, your questions about your favorite features or anything else OpenTelemetry. Join in and let’s chat!",
+              "recording": "https://www.youtube.com/watch?v=RRX_L1ZjMco"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T17:45:00-05:00",
+          "end": "2025-11-11T18:15:00-05:00",
+          "startLabel": "5:45 PM",
+          "endLabel": "6:15 PM",
+          "talks": [
+            {
+              "id": "27FVG",
+              "title": "Simplifying Cloud Native App Testing Across Environments",
+              "speakers": "Laurent Broudoux, Artur Ciocanu",
+              "room": "Building B | Level 5 | Thomas Murphy Ballroom 2-3",
+              "url": "https://kccncna2025.sched.com/event/27FVG",
+              "description": "You’re starting your new Cloud Native application and soon realize that running it across different environments can be daunting! You’re targeting Kubernetes or Cloud provider services, but how can you work and test effectively without spinning up full clusters?\n\nIn this presentation, we will look into how testing complex Cloud Native applications with heavy infrastructure and dependencies can be simplified using the right tools for the job. This talk will dig into projects like Testcontainers for local development, Microcks for mocking and testing, and Dapr for cross-environment portability.\n\nLearn how to eliminate drift between environments and improve efficiency and confidence without running applications on Kubernetes clusters!",
+              "recording": "https://www.youtube.com/watch?v=RvTEYp7QyzI"
+            },
+            {
+              "id": "27FXp",
+              "title": "Maximizing the Launch Reliability: Ensuring Stable Application Lift-off and Orbit on Kubernetes",
+              "speakers": "Hiroshi Hayakawa",
+              "room": "Building B | Level 4 | B406b-407",
+              "url": "https://kccncna2025.sched.com/event/27FXp",
+              "description": "Launch reliability is crucial for applications on Kubernetes that frequently restart. However, applications often struggle to achieve optimal performance immediately after starting, failing to handle the load and experiencing startup failures. This lack of launch reliability can result in service downtime during rollouts and make the horizontal pod autoscaler ineffective. To prevent these issues, it's essential to tune the application and apply various practices within manifests.\n\nThis session will cover best practices for maximizing the launch reliability of applications on Kubernetes, including application tuning, appropriate resource allocation, health check settings, and techniques for automated warm-up. Additionally, he will explore the practical use of Kubernetes' recent feature, in-place pod resize, particularly for CPU bursting at startup. By the end of the session, you will gain actionable insights to enhance application stability and achieve flexible scaling.",
+              "recording": "https://www.youtube.com/watch?v=vTmImF_mibY"
+            },
+            {
+              "id": "27FXy",
+              "title": "I’ve Got 99 Problems and They’re All Controllers",
+              "speakers": "Tim Goodwin",
+              "room": "Building B | Level 3 | B304-305",
+              "url": "https://kccncna2025.sched.com/event/27FXy",
+              "description": "Kubernetes is more than a container orchestrator; it is a platform for building custom compute abstractions. This extensibility is rooted in its modular architecture, where platform engineers can deploy custom resources and controllers to achieve specialized functionalities. Although powerful, this extensibility creates new challenges: complex interactions between controllers can lead to unintended behaviors that can cause outages or data loss. Worse yet, diagnosing these behaviors is notoriously difficult; the loosely coupled, asynchronous nature of the control plane offers poor visibility into the reconciliation process. This talk introduces Kamera, a new observability toolkit that empowers developers to quickly diagnose issues in custom control planes by tracing causality across controller reconciliations and the environmental events that trigger them. We will also show how Kamera uses model-checking and simulation techniques to catch problematic emergent behaviors pre-deployment.",
+              "recording": "https://www.youtube.com/watch?v=E1f87Z6mij0"
+            },
+            {
+              "id": "27FY4",
+              "title": "Sync or Swim: Building Platforms You Can See",
+              "speakers": "Heather Lee, Mike Cutsail",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27FY4",
+              "description": "Platform teams today face a growing challenge: understanding what’s happening across sprawling, multi-cluster environments where observability signals are scattered and context is missing. When infrastructure drifts or deployments fail, engineers dig through logs and piece together fragmented views.\nThis talk makes the case for a more connected, observable platform, showing how Crossplane, OpenTelemetry, and ArgoCD can work together to reduce blind spots in cluster provisioning. As the platform stack evolves, tools like Crossplane put the Kubernetes API at the center of infrastructure provisioning. While powerful, this shift complicates gaining a high level view of all moving parts.\nThis session will focus on how declarative infrastructure and well-instrumented conditions improve visibility into system health and intent. Attendees will learn strategies for tracking object state, correlating signals across clusters, and building feedback loops that clarify operations.",
+              "recording": "https://www.youtube.com/watch?v=g70y40Qk7bs"
+            },
+            {
+              "id": "27FY7",
+              "title": "RAG and Fine Tuning With Kubeflow",
+              "speakers": "Andrey Velichkevich, Francisco Javier Arceo",
+              "room": "Building B | Level 4 | B401-402",
+              "url": "https://kccncna2025.sched.com/event/27FY7",
+              "description": "In this session, we’ll show how to use the Kubeflow Trainer, KServe, and Feast to fine tune, deploy, and serve a scalable Production Retrieval Augmented Generation (RAG) application.\n\nWe’ll review the seminal 2020 RAG paper and demonstrate how you can use Kubernetes and distributed computing to fine tune a Retrieval model and Generator model for knowledge tasks. We will also show how to deploy this software application using Feast and KServe.\n\nThe session will review the challenges of production AI applications such as data preprocessing/transforming data with varying formats, data ingestion, data lineage, trade-offs in write patterns, scaling horizontally, customizing models to your domain, and serving latency.\n\nJoin us for a practical guide to implementing end-to-end RAG with Kubeflow!",
+              "recording": "https://www.youtube.com/watch?v=kpQh35r3d24"
+            },
+            {
+              "id": "27NmV",
+              "title": "Contributing To Kubernetes in an Age of AI",
+              "speakers": "Nabarun Pal, Priyanka Saggu, Madhav Jivrajani, Mario Fahlandt, Kaslin Fields",
+              "room": "Building C | Level 3 | Georgia Ballroom 1",
+              "url": "https://kccncna2025.sched.com/event/27NmV",
+              "description": "This session will discuss the challenges about helping the Kubernetes Project to steer through an era of AI. We will look at how ContribEx creates Guidelines for the usage of AI tools in an Open Source Project, as well as how to manage critical communications.\nAlso about the challenges of maintaining a contributor base in an age of shrinking contributors for Open Source by creating programs and possibilities to recruit new Contributors.",
+              "recording": "https://www.youtube.com/watch?v=f_HhK9crJp0"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-11T18:15:00-05:00",
+          "end": "2025-11-11T19:45:00-05:00",
+          "startLabel": "6:15 PM",
+          "endLabel": "7:45 PM",
+          "talks": [
+            {
+              "id": "27FYD",
+              "title": "🪧 Poster Session (PS1): Automated Rightsizing for Istio DaemonSet Workloads",
+              "speakers": "Rohan Sood, Artur Beznosyuk",
+              "room": "Building B | Level 1 | Exhibit Hall B3-B5 | Poster Pavilion",
+              "url": "https://kccncna2025.sched.com/event/27FYD",
+              "description": "In Kubernetes, DaemonSet workloads are constrained to a single set of CPU and memory requests across all nodes, regardless of instance size. This one-size-fits-all approach can be risky—what works for a 2xlarge node may be insufficient or wasteful on a 48xlarge. To ensure critical DaemonSets like Istio's ztunnel always receive adequate resources, especially during Ambient Mesh rollouts, we built a mechanism to dynamically rightsize resource requests based on node capacity. In this poster session, we’ll share how we implemented this automated rightsizing approach."
+            },
+            {
+              "id": "27FYG",
+              "title": "🪧 Poster Session (PS2): Building a Community With an Open Datalab Platform",
+              "speakers": "Joseph Garrone, Frédéric Comte",
+              "room": "Building B | Level 1 | Exhibit Hall B3-B5 | Poster Pavilion",
+              "url": "https://kccncna2025.sched.com/event/27FYG",
+              "description": "Statistical institutes and public organizations have faced increasing demand for secure, scalable, and user-friendly data platforms. At INSEE (France’s national statistics office), we created SSPCloud, a collaborative cloud-native sandbox, and Onyxia, its open-source front-end, to address these challenges.\n\nBut more than building platforms, we built a community.\n\nThis poster will explore how we’ve fostered an open and international ecosystem across National Statistical Institutes (NSIs), researchers, and developers. Our approach combines transparency,, and a design philosophy that places non-expert users at the center. Onyxia abstracts the complexity of the underlying cloud infrastructure while exposing its mechanisms for those who want to dig deeper.\n\nSSPCloud and Onyxia are now used as a shared reference by a growing number of NSIs beyond Europe, promoting interoperability, reproducibility, and innovation—all while respecting data sensitivity and sovereignty. SSPCloud serves as the sandbox infrastructure for Eurostat’s AIML4OS project, while Onyxia has been identified as a reference software solution by the UN Global Platform."
+            },
+            {
+              "id": "27FYM",
+              "title": "🪧 Poster Session (PS3): From Noise To Clarity: Humanizing Observability in Cloud Native Systems",
+              "speakers": "Nikita Verma, Harshita Varma",
+              "room": "Building B | Level 1 | Exhibit Hall B3-B5 | Poster Pavilion",
+              "url": "https://kccncna2025.sched.com/event/27FYM",
+              "description": "As cloud-native environments scale in complexity, observability is no longer just about collecting logs, metrics, and traces—it’s about making sense of them. While modern observability stacks deliver a wealth of data, the real challenge is translating this information into actionable insights that everyone on the team can understand and use, from SREs and developers to business stakeholders.\n\nThis talk explores the next evolution: From Noise to Clarity. We’ll dive into practical strategies and open source tools (like OpenTelemetry, Prometheus, and emerging AI/LLM-powered solutions) that help demystify observability data. Attendees will learn how to:\n\nCorrelate signals across distributed systems for a unified view\n\nUse AI and LLMs to generate human-friendly explanations of complex incidents\n\nBuild dashboards and alerts that surface root causes, not just symptoms\n\nEmpower teams to act quickly and confidently—regardless of their observability expertise\n\nWe’ll showcase real-world examples."
+            },
+            {
+              "id": "27FYP",
+              "title": "🪧 Poster Session (PS4): Optimising OpenCRVS Deployment With Kubernetes: Lessons for DPI Adoption in the Global South",
+              "speakers": "Andrew Amstrong Musoke, Samuel Emmanuel",
+              "room": "Building B | Level 1 | Exhibit Hall B3-B5 | Poster Pavilion",
+              "url": "https://kccncna2025.sched.com/event/27FYP",
+              "description": "Open source Digital Public Infrastructure, DPI is the leading approach for lowering the barrier of digital transformation for governments in the global south and boosting inclusive socio-economic development.\nLower technical skills, heterogeneous digital infrastructure and fragmented digital sovereignty significantly hinder the adoption and scalability of critical public services like OpenCRVS, a project for civil registration and vital statistics.\nLearn how a Kubernetes based architecture addresses these challenges, using OpenCRVS as a case study to demo a shift from inefficient, manual deployments with artisanal scripts to an out-of-box and automated process while reducing the resource footprint. Explore the practical strategies employed to optimize and deploy OpenCRVS in a heterogenous air-gapped environment, reducing development and deployment times from months to days while enhancing security and maintainability. The lessons we gleaned are recommendations for DPIs in general."
+            },
+            {
+              "id": "27FYS",
+              "title": "🪧 Poster Session (PS5): Performance Evaluation and Sizing of HAProxy for HTTP Communication in 5G Core Networks",
+              "speakers": "Diep Pham Quang",
+              "room": "Building B | Level 1 | Exhibit Hall B3-B5 | Poster Pavilion",
+              "url": "https://kccncna2025.sched.com/event/27FYS",
+              "description": "This presentation provides an in-depth analysis of how HAProxy can be configured and optimized to support HTTP-based communication within 5G core network environments. It focuses on performance benchmarking, tuning strategies, and system sizing to ensure scalability and reliability in carrier-grade deployments. In addition, the session highlights how HAProxy can be effectively used to facilitate service-based interactions between 5G network functions (NFs), acting as a high-performance intermediary for routing, load balancing, and health monitoring."
+            },
+            {
+              "id": "27FYV",
+              "title": "🪧 Poster Session (PS6): Private Computation Spaces Via Confidential Containers and KubeStellar",
+              "speakers": "Salman Abid, Shuangyu Lei",
+              "room": "Building B | Level 1 | Exhibit Hall B3-B5 | Poster Pavilion",
+              "url": "https://kccncna2025.sched.com/event/27FYV",
+              "description": "The recent popularity of generative AI in sensitive domains such as healthcare and digital agriculture presents new challenges for protecting user data and model intellectual property. We propose Private Computation Spaces (PCS), a distributed confidential computing framework that enables secure deployment of generative AI models inside hardware-protected enclaves. We use two open-source CNCF projects, Confidential Containers and KubeStellar, to enable multi-cluster orchestration particularly for digital agriculture workloads. The proposed framework is designed with agricultural users/researchers in mind and allows researchers to rapidly deploy/manage computational AI models for plant disease detection using NASA imagery without retaining confidential stakeholder information. The PCS enhances user trust, supports disconnected operation in rural environments with KubeStellar, and generalizes to other privacy-sensitive domains as a platform."
+            },
+            {
+              "id": "27FYY",
+              "title": "🪧 Poster Session (PS7): Security Attacks on Kubernetes Pods",
+              "speakers": "Yue Zhang",
+              "room": "Building B | Level 1 | Exhibit Hall B3-B5 | Poster Pavilion",
+              "url": "https://kccncna2025.sched.com/event/27FYY",
+              "description": "While Kubernetes-based computing infrastructure aids practitioners in rapid deployment of software, security weaknesses can make the computing infrastructure susceptible to security attacks. In order to secure their computing infrastructure, practitioners can benefit from a systematic analysis that derives what configuration parameters can facilitate security attacks related to pods, which is the most fundamental deployment unit of Kubernetes. We conduct an empirical investigation where we derive 7 security attacks, characterize the derived attacks using the MITRE ATT&CK framework, and identify pod-related configuration parameters that facilitate each of the attacks. We find 6 of the 7 attacks can be conducted using combinations of configuration parameters, whereas one attack can be conducted using only one configuration parameter.\n\nAs part of our investigation, we evaluate if t-way covering array, large language models, and existing static application security testing tools can detect the identified combinations of configuration parameters that facilitate security attacks. With respect to average precision and average recall, t-way covering array with t=4 performs the best among the investigated techniques, achieving average precision and average recall of 0.83 and 0.68, respectively. We conclude our paper by providing recommendations for practitioners on how to securely develop configuration scripts so that the identified attacks can be mitigated."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2025-11-12",
+      "id": "wednesday-november-12",
+      "label": "Wednesday, November 12",
+      "slots": [
+        {
+          "start": "2025-11-12T09:07:00-05:00",
+          "end": "2025-11-12T09:22:00-05:00",
+          "startLabel": "9:07 AM",
+          "endLabel": "9:22 AM",
+          "talks": [
+            {
+              "id": "27dEN",
+              "title": "Keynote: Turn Up the Heat: Driving Cloud Native Innovation into Real-World Impact",
+              "speakers": "Steven Bower, Liguang Xie, Maura Kelly, Adam Kocoloski",
+              "room": "Building B | Level 1 | Exhibit Hall B2",
+              "url": "https://kccncna2025.sched.com/event/27dEN",
+              "description": "In this keynote, leaders from end user companies will share how their organization leverages cloud native technologies to tackle real-world challenges, scale efficiently, and drive innovation. Through firsthand insights, you’ll learn key lessons, best practices, and the evolving needs of cloud native adopters.\n\nMAILCHIMP\nMaura Kelly, Engineering Director at Mailchimp, will share how the team migrated a massive on-prem monolith to Intuit’s cloud-native platform built on CNCF technologies, achieving 99.997% availability while development continued. She’ll highlight three key engineering practices that made this scale and reliability leap possible.\n\nBLOOMBERG\nLearn about Bloomberg's Kubernetes journey, which started with us building AI infrastructure and has led to us building cloud native platforms. Steve Bower, Manager of Bloomberg's Cloud Native Compute Services Engineering group, will briefly highlight some of the many different platforms our engineers have built atop Kubernetes using open source CNCF projects, and how his team is now using KServe, Karmada, and the Envoy AI Gateway to power the next generation of our enterprise Gen AI infrastructure and workloads.\n\nAIRBNB\nAirbnb was born in 2007 when two hosts welcomed three guests to their San Francisco home, and has since grown to over 5 million hosts who have welcomed over 2 billion guest arrivals in almost every country across the globe. The technology stack enabling those connections has seen a few changes along the way! What started as a single Rails monolith has become a rich cloud platform powered by a multitude of CNCF technologies. We’ll share some recent highlights of how projects like Karpenter, Argo, and OpenTelemetry help us continuously evolve Airbnb to better support our community.\n\nAIBRIX\nAIBrix was born from our mission to run large-scale model inference efficiently across heterogeneous accelerators, regions, and even clouds — all in a Kubernetes-native way that developers already love. Over the past year, we’ve evolved AIBrix into a powerful, modular GenAI inference infrastructure built on Kubernetes — featuring innovations like distributed KVCache offloading, multimodal serving, intelligent request routing, and flexible orchestration for disaggregated inference. Today, I’m thrilled to announce that AIBrix has been invited to join the CNCF — and we warmly invite the community to collaborate with us in shaping the next generation of open, scalable AI infrastructure.",
+              "recording": "https://www.youtube.com/watch?v=7KHenRXNGAw"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T09:24:00-05:00",
+          "end": "2025-11-12T09:29:00-05:00",
+          "startLabel": "9:24 AM",
+          "endLabel": "9:29 AM",
+          "talks": [
+            {
+              "id": "29Kgb",
+              "title": "Keynote: How One Line of Code Freed 30,000 CPU Cores: Deep-Diving Fluent Bit at Petabyte Scale",
+              "speakers": "Fabian Ponce",
+              "room": "Building B | Level 1 | Exhibit Hall B2",
+              "url": "https://kccncna2025.sched.com/event/29Kgb",
+              "description": "Processing 9+ petabytes of logs daily, OpenAI's Kubernetes fleet was maxed out; throttling events were dropping critical logs and there was no more CPU to allocate. Using perf to profile Fluent Bit revealed an unexpected culprit: millions of unnecessary syscalls from inotify's interaction with line-by-line log flushing. A one-line configuration change cut CPU usage by 50%, freed 30,000 cores for other workloads, and eliminated the largest source of  throttling events. Learn how understanding tools at the system level unlocks optimizations that benefit everyone, and why OpenAI is contributing this fix upstream to the CNCF community.",
+              "recording": "https://www.youtube.com/watch?v=pbOvWxuYPIU"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T10:05:00-05:00",
+          "end": "2025-11-12T10:20:00-05:00",
+          "startLabel": "10:05 AM",
+          "endLabel": "10:20 AM",
+          "talks": [
+            {
+              "id": "27FUj",
+              "title": "Keynote: Cloud Native for Good",
+              "speakers": "Faseela K, Omar Mohsine, Roberto Machorro, Bodhish Thomas, Jayson Workman",
+              "room": "Building B | Level 1 | Exhibit Hall B2",
+              "url": "https://kccncna2025.sched.com/event/27FUj",
+              "description": "Cloud native technologies have revolutionized industries across the board—but what about their role in solving real-world societal challenges? While we often celebrate enterprise success stories, the true transformative power of Kubernetes and its wider ecosystem is also unfolding in unexpected and deeply impactful ways.\n\nDid you know Kubernetes is helping over 30 governments map, monitor, and improve internet access for schools? Or that KubeVirt and Longhorn have helped rescue 3,800+ children from abuse, leading to the arrest of over 16,700+ online predators in over 105 countries? Or that Prometheus and OpenTelemetry not only power platforms that have saved millions from floods and pandemics, but—closer to home—team up with Kubernetes to steer the fleet, check its vitals, and trace every heartbeat of 2000+ TeleICU Bed edge nodes in perfect rhythm across geographically dispersed locations? Or that Kubernetes, ArgoCD, and other CNCF tools power mission-critical services like blood supply management, disaster response, and emergency training—stretching every dollar to maximize humanitarian impact?\n\nIn this compelling panel, Faseela brings together real-world end-user stories from around the globe, showcasing how open source and cloud-native technologies are being harnessed to tackle humanitarian issues. From disaster response and education to public health, child safety, and environmental conservation, learn how organizations are using cloud-native tooling to collaborate at scale, unlock powerful analytics, and reallocate resources from overhead to frontline impact.\n\nWith expert speakers from diverse domains, this session offers a unique look into how Kubernetes and its ecosystem are driving innovation and ultimately driving social good, sustainability and inclusivity beyond the enterprise world!",
+              "recording": "https://www.youtube.com/watch?v=TNl6ocszMyU"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T11:00:00-05:00",
+          "end": "2025-11-12T11:30:00-05:00",
+          "startLabel": "11:00 AM",
+          "endLabel": "11:30 AM",
+          "talks": [
+            {
+              "id": "27FYq",
+              "title": "Retrofitting OTEL Collectors & Prometheus - How To Overcome Scale/Design Limitations",
+              "speakers": "Vijay Samuel, Sandeep Raveesh",
+              "room": "Building B | Level 3 | B304-305",
+              "url": "https://kccncna2025.sched.com/event/27FYq",
+              "description": "We have all run into this problem - \"OTEL Collector/Prometheus does things differently and it doesn't fit my organization's design or can't really scale to my need\". Once that statement is made, the almost immediate goto is to either customize or ditch the project completely. With some of the connectors/processors in OTEL we ran into this issue where we were unable to operate them. Ex:\n* eBay's span traffic spans multiple kubernetes clusters and multiple regions. Service graph connector would need to see spans globally routed into a single collector. At scale, this requires a lot of memory to account for all kind of trace durations.\n* Prometheus has no support for long term retention for exemplars.\n\nIn this talk we discussion practical solutions of how we leveraged our Clickhouse based internal tracestore to provide spans to servicegraph connector in a sustainable way to generate metrics and how we used clickhouse to provide long term retention of exemplars.",
+              "recording": "https://www.youtube.com/watch?v=O5GdShQJCgE"
+            },
+            {
+              "id": "27FYz",
+              "title": "Models as Microservices, Platforms as Partners: Collaboratively Building ML Infra at Hinge",
+              "speakers": "Stephanie Pavlick",
+              "room": "Building B | Level 4 | B401-402",
+              "url": "https://kccncna2025.sched.com/event/27FYz",
+              "description": "What does it take to build an online model serving platform that ML engineers actually want to use? At Hinge, we’re building an ML platform that smooths the rough edges of OSS Kubernetes-native tools with interfaces aligned to internal conventions like gRPC and OTel, so ML engineers can focus on models that shine.\nIn this talk, Stephanie Pavlick shares how Hinge’s AI Platform Core team designed a self-serve platform for deploying and monitoring online models using Ray Serve, MLflow, Grafana, and more. The platform enables ML engineers to deploy models as microservices without touching Kubernetes or Helm while offering fine-grained observability and standardized SLIs.\nBut the story is more than just tooling. Stephanie will share how the team cut model production timelines by over 40% through early partnerships and a focus on developer experience. Along the way, they fostered a culture of collaboration and trust that helped drive broader adoption across Hinge’s engineering org.",
+              "recording": "https://www.youtube.com/watch?v=6H88ez69VmQ"
+            },
+            {
+              "id": "27FZ2",
+              "title": "Adopting a Fleet-first Mindset",
+              "speakers": "Andy Beane",
+              "room": "Building B | Level 4 | B405-406a",
+              "url": "https://kccncna2025.sched.com/event/27FZ2",
+              "description": "Navigating platform engineering at scale requires innovation. This talk explores Spotify’s 'Fleet-first' mindset—a strategic shift in managing and evolving our vast software ecosystem. More than just tools, it’s a cultural change: treating our software as a fleet to drive rapid, reliable, and scalable improvements.\n\nWe’ll cover how Golden Tech, Declarative Infrastructure, and Fleet Management tools support this approach. From identifying the target fleet of software, to rolling out migrations of varying complexity, we’ll share how Spotify enables efficient change at scale.\n\nReal-world examples will show how a Fleet-first approach saves engineers time and improves overall tech health. Whether you're managing large infrastructure or evolving engineering practices, you'll gain actionable insights and a framework to adopt Fleet-first thinking—boosting both efficiency and resilience in your organization.",
+              "recording": "https://www.youtube.com/watch?v=-E9ffAB3DoA"
+            },
+            {
+              "id": "27FZ5",
+              "title": "Rearchitecting Compute at Coinbase: Migrating To Karpenter for Fast, Reliable Scaling",
+              "speakers": "Frances Chong",
+              "room": "Building B | Level 4 | B406b-407",
+              "url": "https://kccncna2025.sched.com/event/27FZ5",
+              "description": "At Coinbase, we run thousands of workloads - from high-throughput APIs to long-lived blockchain nodes. As traffic patterns scale due to crypto’s volatility and expectations around reliability and cost got tighter, our prior cluster setup using cluster-autoscaler and EKS managed node groups couldn’t strike the right balance.\n\nThis talk covers why we moved to Karpenter (including pain points around scaling latency, bin packing, and satisfying unique topology and hardware requirements) and what it took to get there. You’ll learn how we implemented a scalable and tag-driven EC2NodeClass abstraction, tuned Karpenter for burst elasticity, and built observability and guardrails to make scaling safer and more predictable.\n\nFinally, we’ll share lessons from overly aggressive node consolidation, launch template drift, VPC-CNI coordination, and how we’ve adapted our platform to support rapid, responsive scaling under crypto-scale pressure.",
+              "recording": "https://www.youtube.com/watch?v=06MmxgGbg6U"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T11:45:00-05:00",
+          "end": "2025-11-12T12:15:00-05:00",
+          "startLabel": "11:45 AM",
+          "endLabel": "12:15 PM",
+          "talks": [
+            {
+              "id": "27FdL",
+              "title": "AI Models Are Huge, but Your GPUs Aren’t: Mastering Multi-Node Distributed Inference on Kubernetes",
+              "speakers": "Jiaxin Shan, Ernest Wong",
+              "room": "Building B | Level 2 | B206",
+              "url": "https://kccncna2025.sched.com/event/27FdL",
+              "description": "As AI models like DeepSeek-R1 grow beyond 600B parameters, deploying them for inference becomes a major infrastructure challenge. This talk goes beyond initial setup to show how Kubernetes can support massive AI workloads reliably and efficiently in production. We’ll cover day 0/1 operations with latency, cost, and accuracy tradeoffs in mind: selecting full-precision vs. quantized models; sizing worker nodes for GPU, memory, and networking; managing model parallelism; traffic routing; and adaptive strategies to balance cost and performance. We’ll explore Kubernetes-native challenges like topology-aware scheduling, GPU-NIC binding, and orchestrating inference phases with custom controllers. To support varied prompt lengths, we’ll discuss Prefill/Decode disaggregation in static and pooled modes. Insights come from benchmarks and production experience confirming what works at scale. Attendees leave with diagrams, checklists, and manifests to deploy confidently.",
+              "recording": "https://www.youtube.com/watch?v=MQR8jyTR5QE"
+            },
+            {
+              "id": "27FZf",
+              "title": "Unlocking Financial Progress: Credit Karma's AI Assistant Powered by Kubernetes for Personalized Ins",
+              "speakers": "Raj Katakam, Sukanya Moorthy",
+              "room": "Building B | Level 5 | Thomas Murphy Ballroom 1",
+              "url": "https://kccncna2025.sched.com/event/27FZf",
+              "description": "Credit Karma empowers 140M+ members toward financial progress with a personalized, data-driven Financial Assistant, offering secure insights and actionable recommendations. Building this requires a robust, scalable, and secure cloud-native architecture.\n\nThis session details how Kubernetes is foundational to Credit Karma's AI Financial Assistant by showcasing its critical role in:\n\nRetrieval Augmented Generation (RAG): K8s orchestrates RAG pipelines for accurate, context-aware LLM financial advice.\nLLM Guardrails for Safety: Discover our Kubernetes-native approach to dynamic guardrails, crucial for LLM safety and compliance in finance. K8s Sidecars enable agile deployment within our multi-infrastructure serving strategy (inc. Vertex/AWS).\n\nContent Quality Evaluation: K8s powers automated evaluation pipelines, continuously improving recommendation trustworthiness at scale.",
+              "recording": "https://www.youtube.com/watch?v=36aN6L0qSCc"
+            },
+            {
+              "id": "27FZQ",
+              "title": "Adapt, Include, Thrive: Disability-Informed Strategies for Cloud Native Resilience",
+              "speakers": "Catherine Paganini, Milad Vafaeifard, Travis Johnson, Alex Stine, Christopher Khanoyan",
+              "room": "Building B | Level 3 | B308-309",
+              "url": "https://kccncna2025.sched.com/event/27FZQ",
+              "description": "In the fast-paced, ever-evolving cloud native landscape, adaptability isn’t optional—it’s essential. Engineers with disabilities have long been experts in navigating shifting environments, not by choice, but by necessity. From working around inaccessible tooling to building inclusive, high-performing teams, they’ve developed techniques for thriving in the face of friction.\n\nJoin members of the CNCF Deaf and Hard of Hearing Working Group and the Blind and Visually Impaired Initiative as they share powerful, practical lessons in resilience, creativity, and community. This panel isn’t just about accessibility—it’s about learning to thrive in chaos and designing systems that welcome everyone.",
+              "recording": "https://www.youtube.com/watch?v=7s2GUGvVUL4"
+            },
+            {
+              "id": "27FZT",
+              "title": "Managing a Million Infra Resources at Spotify: Designing the Platform To Manage Change at Scale",
+              "speakers": "Oliver Soell, Fredrik Sommar",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27FZT",
+              "description": "Spotify’s “Declarative Infrastructure platform” (a Kubernetes-based infrastructure management platform) enables Spotify’s developers to manage almost a million infrastructure resources, and enables tens of Platform teams to support first- or third-party resources through the platform. The platform empowers Platform teams to manage all resources of a specific type, like Spotify’s Storage team managing all Bigtable instances.\n\nYou may ask, how do those Platform teams plug into the platform to support their specific resources? Depending on their use case, they can mix and match technologies such as KCC (GCP Config Connector), kro (Kube Resource Orchestrator), K-Poperator (an internal Spotify operator framework), and Kubebuilder to meet their needs.\n\nIn this talk you’ll learn how these platform primitives are used by Spotify’s platform teams, how these primitives support Spotify’s platform principles, and lessons learned from 5 years of running the platform.",
+              "recording": "https://www.youtube.com/watch?v=Vg2FiJZReDg"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T14:15:00-05:00",
+          "end": "2025-11-12T14:45:00-05:00",
+          "startLabel": "2:15 PM",
+          "endLabel": "2:45 PM",
+          "talks": [
+            {
+              "id": "27Fa0",
+              "title": "No More GPU Cold Starts: Making Serverless ML Inference Truly Real-Time",
+              "speakers": "Aditi Gupta, Nikunj Goyal",
+              "room": "Building B | Level 4 | B401-402",
+              "url": "https://kccncna2025.sched.com/event/27Fa0",
+              "description": "Serverless ML inference is great but when GPUs are involved, cold starts can turn milliseconds into minutes. Whether scaling transformer models or using custom inference services, the startup latency caused by container initialization, GPU driver loading, and heavyweight model deserialization can kill real-time performance and cost you tons of money.\n\nIn this talk, we'll break down the anatomy of GPU cold starts in modern ML serving stacks including why GPUs introduce unique cold-path delays, how CRI and device plugins contribute to it, and what really happens when a PyTorch model boot-up on a fresh pod.\n\nWe’ll walk through production-ready strategies to reduce startup latency:\n- Pre-warmed GPU pod pools to bypass init time\n- Model snapshotting with TorchScript or ONNX to speed up deserialization\n- Lazy loading techniques that delay model initialization until the first request\n\nThus helping you eliminate cold start pain and keep your services fast, efficient, and production-ready."
+            },
+            {
+              "id": "27FaC",
+              "title": "Beyond the Dashboard: Modern Observability for Platform Engineering at Scale",
+              "speakers": "Stevie Caldwell, Whitney Lee, Khallai Taylor, Danielle Cook, Payal Bagga",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27FaC",
+              "description": "Observability is everywhere, but understanding where to focus can be overwhelming. As platform teams build internal developer platforms and self-service capabilities, observability must evolve from a sea of dashboards to something far more strategic: actionable insights that support performance, reliability, and developer productivity.\nThis panel brings together a lineup of observability and platform engineering leaders—to share candid stories and hard-won lessons from end-user organizations like E.ON and Intuit. Together, they’ll break down the many layers of observability from telemetry pipelines and OpenTelemetry adoption to aligning SLOs with business goals and embedding observability directly into developer workflows.\nWe’ll also explore how teams are leveraging AI to reduce MTTR and turn noisy signals into clear, actionable intelligence, all while keeping costs in check. This conversation will offer guidance and help you rethink what “good observability” really looks like.",
+              "recording": "https://www.youtube.com/watch?v=46qRFcv_FDY"
+            },
+            {
+              "id": "27FZo",
+              "title": "Red Vs. Blue: A Live Attacker-Defender Showdown in Kubernetes Security",
+              "speakers": "Sandeep Kanabar, Lucy Sweet",
+              "room": "Building B | Level 3 | B302-303",
+              "url": "https://kccncna2025.sched.com/event/27FZo",
+              "description": "What if learning Kubernetes security could be thrilling, practical - and a little chaotic?\n\nIn this interactive session, we stage a live attacker-versus-defender \"chess match\" inside a Kubernetes cluster. One speaker plays the role of a determined attacker, exploiting common misconfigurations, privilege escalations, and overly permissive RBAC. The other, a vigilant defender, responds with best-practice mitigations and live troubleshooting.\n\nYou'll watch a Kubernetes environment come under siege - and see how thoughtful, layered defenses can stop even persistent attackers in their tracks. Expect live demos, sharp insights, and just enough chaos to keep it real.\n\nWe'll cover escalating security scenarios, from pod privilege abuse to namespace isolation, resource quotas and Admission Webhooks, showing not just what to do, but why it matters.\n\nThis isn't theory-it's security by example, performed live.",
+              "recording": "https://www.youtube.com/watch?v=q6ckwAXeeew"
+            },
+            {
+              "id": "27FZx",
+              "title": "Managing Netflix’s Compute Infrastructure With Kubernetes and Dynamic Capacity Management",
+              "speakers": "Chao Zheng, Nicholas Parker",
+              "room": "Building B | Level 5 | Thomas Murphy Ballroom 4",
+              "url": "https://kccncna2025.sched.com/event/27FZx",
+              "description": "Netflix runs large, multi-tenant Kubernetes clusters that power the company's compute infrastructure across streaming services and batch workloads. In this talk, we share lessons from managing these fleets while building a resilient and cost-efficient capacity management system at cloud scale. We explain how a federated cellular structure to share resources across teams, how we treat latency-sensitive services and throughput-heavy batch jobs, and how we organize hardware into managed pools of nodes across a variety of users. We cover our soft capacity reservations that monitor real-time demand with shared buffers to support traffic spikes, our extended disruption budgets that use health signals to limit service impact, and our automated scaling, and predictive resizing that reduce cost. Finally, we show how unused capacity is filled with preemptible, low-priority workloads to reduce waste. Throughout all of this we will discuss what has and hasn't worked along the way.",
+              "recording": "https://www.youtube.com/watch?v=vaTOiXR2KSM"
+            },
+            {
+              "id": "27Nlv",
+              "title": "Navigating the Rapid Evolution of Large Model Inference: Where Does Kubernetes Fit?",
+              "speakers": "Rita Zhang, Jiaxin Shan, Yuan Tang, Sergey Kanzhelev",
+              "room": "Building C | Level 1 | C111-112",
+              "url": "https://kccncna2025.sched.com/event/27Nlv",
+              "description": "Large model inference is evolving rapidly: model or expert parallelism, prefill/decode disaggregation, multi-lora and kv cache offloading push the limits of traditional serving. As infrastructure teams, we must decide — what belongs in Kubernetes core primitives vs engines vs ecosystem projects? In this session, WG-Serving chairs and industry leaders will share real-world lessons on managing these blurry boundaries. We’ll discuss how to evaluate new patterns, balance control vs observability, and adapt infrastructure to stay ahead in this dynamic landscape. Attendees will gain practical frameworks to decide when to extend Kubernetes vs offload to runtimes, and insights into top emerging demands from large-scale LLM workloads.",
+              "recording": "https://www.youtube.com/watch?v=bphNDWE8rGE"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T14:15:00-05:00",
+          "end": "2025-11-12T15:30:00-05:00",
+          "startLabel": "2:15 PM",
+          "endLabel": "3:30 PM",
+          "talks": [
+            {
+              "id": "27Nl0",
+              "title": "🚨 Contribfest: Hands-On With Helm 4: Wasm Plugins, OCI, and Resource Sequencing. Oh My!",
+              "speakers": "Andrew Block, Scott Rigby, George Jenkins",
+              "room": "Building B | Level 2 | B207",
+              "url": "https://kccncna2025.sched.com/event/27Nl0",
+              "description": "Join Helm maintainers for an interactive session contributing to core Helm and building integrations with some of Helm 4's emerging features. We'll guide contributors through creating Helm 4's newest enhancements including WebAssembly plugins, enhancements to how OCI content is manged, and implementing resource sequencing for controlled deployment order. Attendees will explore how to build Download/Postrender/CLI plugins in WebAssembly, develop capabilities related to changes to Helm's management of OCI content including repository prefixes and aliases, and use approaches for sequencing chart deployments beyond Helm's traditional mechanisms.\n\nThis session is geared toward anyone interested in Helm development including leveraging and building upon some of the latest features associated with Helm 4!"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T15:00:00-05:00",
+          "end": "2025-11-12T15:30:00-05:00",
+          "startLabel": "3:00 PM",
+          "endLabel": "3:30 PM",
+          "talks": [
+            {
+              "id": "27Fad",
+              "title": "Node Manager - How Yahoo Manages Thousands of Nodes at Scale?",
+              "speakers": "Payal Patel",
+              "room": "Building B | Level 4 | B406b-407",
+              "url": "https://kccncna2025.sched.com/event/27Fad",
+              "description": "Yahoo has been an early adopter of Kubernetes, operating 37 on-premises K8s clusters that host 2,700 applications across more than 8,000 physical nodes. The daily management of these clusters & their physical nodes presents significant challenges, including the process of upgrading the K8s version, applying security updates, upgrading the OS version of nodes, and addressing node failures & safely removing faulty nodes from rotation to prevent impact on application pods. Yahoo developed the Node Manager operator, which helps the execution of maintenance tasks, performs controlled K8s version upgrades for control plane & worker nodes, ensuring no impact to currently running applications & performs continuous health checks on nodes as configured per nodegroup & auto remediates nodes in the event of any issues. This talk will discuss how Yahoo manages these operations at scale through automation, reducing manual work for engineers & improving efficiency in their infrastructure management.",
+              "recording": "https://www.youtube.com/watch?v=_kAI0qEuoFA"
+            },
+            {
+              "id": "27Faj",
+              "title": "Building Scalable End-to-end Latency Metrics From Distributed Trace",
+              "speakers": "Kusha Maharshi",
+              "room": "Building B | Level 5 | Thomas Murphy Ballroom 4",
+              "url": "https://kccncna2025.sched.com/event/27Faj",
+              "description": "This talk shares how Bloomberg used distributed tracing, an OpenTelemetry standard, to address a prevalent need: timing requests from point A to point Z in a cloud native system where a whole alphabet's worth of steps occur in between. This real-time solution ingests more than 50 billion daily spans, modeled as streaming directed acyclic graphs with deep fan-outs and fan-ins. These fan-ins create scalability chokepoints but represent real-world scenarios like queuing systems for high-volume messaging, order processing or batched notifications.\n\nThis session will highlight the scalability challenges and lessons from building the architecture of an Apache Kafka and Kubernetes-based observability solution that turns complex trace data into actionable insight. The resulting end-to-end latency metrics power SLOs, alerts, and root-cause analysis. If you're into building low-latency, high-throughput telemetry systems, applying trace at scale, or just geeking over graphs, this talk is for you!",
+              "recording": "https://www.youtube.com/watch?v=6xxqm9LIhoU"
+            },
+            {
+              "id": "27FaO",
+              "title": "Where’s My Pod? End-to-End Tracing for Kubernetes With OpenTelemetry",
+              "speakers": "Artem Tkachuk, JP Phillips",
+              "room": "Building B | Level 3 | B304-305",
+              "url": "https://kccncna2025.sched.com/event/27FaO",
+              "description": "A Kubernetes developer opens the dashboard to check on a critical deployment, only to find the pod is stuck in \"Pending\". What happened? Where’s the bottleneck? In the journey to modernize its compute infrastructure, the Compute team at Netflix faced these same mysteries while migrating from a custom stack to open-source Kubernetes + containerd + CRI. To answer the perennial question, “What happened to my Pod?”, the Compute team built an end-to-end observability solution using OpenTelemetry tracing across the pod lifecycle. This talk demonstrates how connecting Netflix’s custom scheduler, kubelet’s syncPod, and container runtime traces enabled the team to visualize hidden delays, such as global locks being the bottleneck for launching pods at scale and container registry issues affecting container launch times. The session offers a practical, story-driven exploration of transforming pod observability—so you can finally answer your own “what happened?” with confidence.",
+              "recording": "https://www.youtube.com/watch?v=Dn0gvU2Czno"
+            },
+            {
+              "id": "27FaX",
+              "title": "Multi-Cluster Wars: The Scheduler Awakens",
+              "speakers": "Dejan Zele Pejchev, Priyanka Ravi",
+              "room": "Building B | Level 4 | B401-402",
+              "url": "https://kccncna2025.sched.com/event/27FaX",
+              "description": "AI/ML pipelines generate millions of diverse, resource-hungry batch jobs—GPU bursts for training or CPU and memory-intensive preprocessing—that push single-cluster schedulers beyond ETCD scalability limits and single-region failure domains.\n\nMulti-cluster batch schedulers federate Kubernetes clusters to dynamically extend capacity across on-prem and cloud environments, isolate tenants, and survive zone outages.\n\nIn a multi-cluster context, preemption must be coordinated globally to reclaim capacity where it’s most needed without starving distant workloads. Fair-share depends on quota enforcement so every team gets its entitled slice of compute. Gang scheduling reserves resources across clusters and only releases them when all parts of a multi-node job are ready to launch simultaneously.\n\nThis deep dive will explore how multi-cluster schedulers implement core batch scheduling features across federated Kubernetes clusters and their architectures.",
+              "recording": "https://www.youtube.com/watch?v=R0gDne5CuKs"
+            },
+            {
+              "id": "27Nmh",
+              "title": "Karmada in Action: Scaling AI Workloads Across Multi-Cluster at Scale",
+              "speakers": "Hongcai Ren, Tessa Pham, Wei-Cheng Lai",
+              "room": "Building C | Level 3 | Georgia Ballroom 1",
+              "url": "https://kccncna2025.sched.com/event/27Nmh",
+              "description": "In the era of rapidly evolving AI technology, efficiently running AI workloads across multiple clusters has become a critical challenge.\nKarmada, as a powerful open-source multi-cluster orchestration solution, is being increasingly adopted by users to run AI workloads.\nThis session will explore the practical strategies employed and the key capabilities that Karmada has built to support these AI workloads.\n\nSession Outline:​\n- Why do we need to run AI workloads on multi-clusters\n- What’s the challenge of it\n- How Karmada address these challenges\n- Key Capabilities of Karmada for AI\n- Multicluster Scheduling\n- Resource Interpreter\n- FederatedResourceQuota\n- Multi-Cluster Queue:\n- FederatedHPA\n- Real World Practices\n- QA\n\nBy the end of this session, attendees will have a comprehensive understanding of Karmada's capabilities in running AI applications across multiple clusters and be inspired to explore new possibilities for leveraging Karmada in their own AI projects.",
+              "recording": "https://www.youtube.com/watch?v=M1-yTjC2hTI"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T16:00:00-05:00",
+          "end": "2025-11-12T16:30:00-05:00",
+          "startLabel": "4:00 PM",
+          "endLabel": "4:30 PM",
+          "talks": [
+            {
+              "id": "27Fay",
+              "title": "Not Forking Around: Leveraging NRI To Extend Kubernetes at Scale",
+              "speakers": "Wesley Bermbach, Johan Jensen",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27Fay",
+              "description": "Transitioning a fleet to Kubernetes is challenging, even in the simplest environments. But what happens when hard business requirements demand features that Kubernetes doesn’t support yet? At Uber, we faced this challenge as we migrated over 200,000 database workloads from our proprietary infrastructure to Kubernetes.\n\nIn this talk, we’ll share how we used the Node Resource Interface (NRI) as a powerful interface to extend Kubernetes with custom features critical to our business, without forking the core. NRI enabled us to meet our immediate needs while providing a clear path to deprecate it once upstream Kubernetes has the features we need.\n\nWe’ll walk through our migration strategy, the missing features that drove our use of NRI, and how we successfully completed the transition. Finally, we’ll outline our plans to phase out NRI, adopt a fully vanilla Kubernetes stack, and share key lessons others can take from our journey.",
+              "recording": "https://www.youtube.com/watch?v=V0afXi4mOiU"
+            },
+            {
+              "id": "27Fb4",
+              "title": "Component Contributor Architecture: Democratizing Platform Engineering With CNCF Projects",
+              "speakers": "Jerome Guionnet, Anoop Gopalakrishnan",
+              "room": "Building B | Level 4 | B405-406a",
+              "url": "https://kccncna2025.sched.com/event/27Fb4",
+              "description": "At Guidewire, we needed a Kubernetes platform that reliably runs mission-critical insurance workloads while empowering teams to innovate rapidly. We developed the Component Contributor Model, combining Crossplane’s resource abstraction with KubeVela’s Open Application Model into a modular, extensible architecture. Application teams can now build and integrate platform components directly, eliminating centralized bottlenecks. We standardized a component lifecycle to scale across diverse cloud services. Explicit trust boundaries preserve security while granting developer autonomy. A governance layer balances speed with stability. In this session, you’ll discover how we configured a contributor-driven, secure platform; managed component lifecycles at scale; and applied practical governance frameworks. You’ll gain actionable patterns for leveraging Crossplane and KubeVela in production, plus strategies to evolve your platform as organizational demands grow.",
+              "recording": "https://www.youtube.com/watch?v=0yW79y48U3k"
+            },
+            {
+              "id": "27Nmk",
+              "title": "KubeEdge DeepDive: Extending Kubernetes To the Edge With Real-World Industry Use Cases",
+              "speakers": "Tina Tsou, Yin Ding, Huan Wei, Hongbing Zhang",
+              "room": "Building C | Level 3 | Georgia Ballroom 1",
+              "url": "https://kccncna2025.sched.com/event/27Nmk",
+              "description": "In this session, KubeEdge project maintainers will provide an overview of KubeEdge's architecture, explore how KubeEdge with its industry-specific use cases. The session will kick off with a brief introduction to edge computing and its growing importance in IoT and distributed systems. The maintainers will then delve into the core components and architecture of KubeEdge, showcasing how it extends the capabilities of Kubernetes to manage edge computing workloads efficiently. Drawing on a range of industry use cases, including smart cities, industrial IoT, edge AI, robotics, and retail, the maintainers will share success stories and insights from organizations that have deployed KubeEdge in their edge environments, highlighting the tangible benefits and transformational possibilities it offers. The session will provide a detailed introduction to the certified KubeEdge conformance test. The maintainers will also share the advancements in technology and community governance in KubeEdge.",
+              "recording": "https://www.youtube.com/watch?v=LwIiDmesgtw"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T16:45:00-05:00",
+          "end": "2025-11-12T17:15:00-05:00",
+          "startLabel": "4:45 PM",
+          "endLabel": "5:15 PM",
+          "talks": [
+            {
+              "id": "27Fbb",
+              "title": "Container Runtime Customization at Netflix: A Case Study With NRI and OCI Hooks",
+              "speakers": "Erikson Tung",
+              "room": "Building B | Level 4 | B405-406a",
+              "url": "https://kccncna2025.sched.com/event/27Fbb",
+              "description": "Titus, Netflix's Kubernetes-based container platform, runs hundreds of thousands of containers globally. This case study details Titus's use of ContainerD's Node Resource Interface (NRI) and OCI hooks to adapt a custom compute platform to a more conventional dataplane while operating at scale and maintaining Kubernetes compatibility. These extensions support Netflix's unique workload needs, custom business logic, sidecar management, and systemd-compatible runtime environments.\n\nThe session will cover an overview of Titus and its migration to a standard Kubernetes distribution while preserving specialized runtime capabilities. It will also provide a deep dive into the NRI plugin/OCI hook implementation, detailing Titus workload lifecycle management, special network configuration, storage handling, and sidecar management. The presentation will conclude with an examination of the challenges and lessons learned from scaling these runtime extensions.",
+              "recording": "https://www.youtube.com/watch?v=IPbamReWdss"
+            },
+            {
+              "id": "27FbS",
+              "title": "TikTok's IPv6 Journey To Cilium: Pitfalls and Lessons Learned",
+              "speakers": "Giri Kuncoro, Joseph Pallamidessi",
+              "room": "Building B | Level 3 | B308-309",
+              "url": "https://kccncna2025.sched.com/event/27FbS",
+              "description": "Cilium has been the standard for Kubernetes networking and security. TikTok migrated clusters to use Cilium for its advanced security features like mutual authentication, along with high performance networking and enhanced observability. The main challenge was executing this on TikTok IPv6 only datacenters, as Cilium has been battle tested with IPv4 and dual-stack, but not with IPv6 only environments.\n\nThis talk shares the journey of making Cilium work for IPv6 only Kubernetes, highlighting the limitations and techniques to overcome them. First, Cilium doesn't support tunneling over IPv6, native routing mode must be configured. Second, we encountered several bugs related to IPv6 only: NDP traffic getting dropped by Cilium Network Policy due to incorrect identification; DNS policy not allowing traffic for IPv6 DNS servers; broken cilium debug tools when IPv4 related BPF maps not found. Finally, the NodePort timeout issue was blocking us from enabling Cilium to fully replace kube-proxy.",
+              "recording": "https://www.youtube.com/watch?v=y0qlhiKtDGo"
+            },
+            {
+              "id": "27FbV",
+              "title": "On the Origin of Platforms: Evolution of a Capital One Enterprise Platform",
+              "speakers": "Bradley Whitfield, Jacob Walden",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27FbV",
+              "description": "In 2017, our team set out to build a Kubernetes developer platform for microservices at Capital One. This talk explores our platform evolution, from a proof-of-concept serving one team to a robust platform serving the enterprise.\n\nAttendees will learn how we leveraged the operator pattern to incorporate Capital One architectural patterns into the Kubernetes API. We’ll also explore how building trust and partnerships is a critical, yet often overlooked, aspect of platform engineering.\n\nExpanding on the operator pattern, our platform evolved its capabilities into managing cloud resources outside the cluster with Kubernetes controllers and a managed Kubernetes offering to deploy off-the-shelf applications.\n\nJoin us to hear more about the obstacles we overcame, practical lessons learned, and what we are exploring next as the platform continues its evolution.",
+              "recording": "https://www.youtube.com/watch?v=BY-mQH9VKAo"
+            },
+            {
+              "id": "27Nmn",
+              "title": "Kubernetes Infra SIG: Intro and Updates",
+              "speakers": "Mahamed Ali",
+              "room": "Building C | Level 3 | Georgia Ballroom 1",
+              "url": "https://kccncna2025.sched.com/event/27Nmn",
+              "description": "The Kubernetes Infrastructure SIG is responsible for maintaining the overall infrastructure of the Kubernetes project. In this session, we will take a deep dive into some of the projects that the SIG is currently working on, as well as existing collaborations with other platform providers and Kubernetes SIGs. We will also provide an update on the current state of the SIG and explore what's next.",
+              "recording": "https://www.youtube.com/watch?v=1VMhhZQWFmM"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T17:06:00-05:00",
+          "end": "2025-11-12T17:11:00-05:00",
+          "startLabel": "5:06 PM",
+          "endLabel": "5:11 PM",
+          "talks": [
+            {
+              "id": "27Fci",
+              "title": "⚡ Lightning Talk: Young? First-Gen? Female? New? Here’s Why You Belong Here Too",
+              "speakers": "Jennifer Weir",
+              "room": "Building C | Level 3 | Georgia Ballroom 2",
+              "url": "https://kccncna2025.sched.com/event/27Fci",
+              "description": "“Community” is derived from communis, meaning “shared by all”. You’re part of many communities—some by birth, others by choice—and the ones you’re born into shape the communities you choose to join. Now introduce the complexity of underrepresentation and you may start to wonder if you belong there at all.\n\nOpen source is the most inclusive solution to technology’s greatest problems, but did you know only 3% of the 2017 Open Source survey’s respondents were women? CNCF has the power to accept contributions based on merit and inspire community members (yes, that’s you!) to build confidence to take a seat at the table and contribute—whether it’s the 1st time or 100th. If communities are “shared”, but individuals belong to unique groups, how can you build and support a diverse cloud native community?\n\nThis talk explores key research on underrepresentation in open source contributions, highlights the value of diverse perspectives in business, and explains why representation matters to you.",
+              "recording": "https://www.youtube.com/watch?v=fx-6ZSFfScI"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T17:30:00-05:00",
+          "end": "2025-11-12T18:00:00-05:00",
+          "startLabel": "5:30 PM",
+          "endLabel": "6:00 PM",
+          "talks": [
+            {
+              "id": "27Fc5",
+              "title": "Security Theater or Real Defense? Navigating Open Source Security in a Cloud Native World",
+              "speakers": "Constanze Roedig, Rotem Refael, Megan Wolf, Stefana Muller, Oshrat Nir",
+              "room": "Building B | Level 3 | B302-303",
+              "url": "https://kccncna2025.sched.com/event/27Fc5",
+              "description": "Kubernetes teams are drowning in dashboards, buried in YAML, and haunted by the ghost of “shift left.” Everyone says security is built-in, but breaches still happen, compliance still bites and engineers are still burned out. So what’s actually working… and what’s just performative security theater?\nThis women-led panel cuts through the noise. Featuring OSS contributors, DevSecOps veterans, and security leads from production-grade, cloud-native environments, we’re here to talk honestly about what breaks, what works, and what’s pure illusion. They’re contributors and practitioners behind CNCF toolsets—and they’ve seen it all: what works, what fails, and what we wish we knew earlier. Explore what’s real vs. theater in Kubernetes security: how to measure impact, where CNCF tools help (or fall short), and how to stay effective under pressure. No fluff, no vendor pitches. Just battle-tested insights from engineers on the front lines of securing cloud-native infrastructure at scale.",
+              "recording": "https://www.youtube.com/watch?v=jETmMin6-_M"
+            },
+            {
+              "id": "27FcH",
+              "title": "Prepare for Disruptions: How We Upgrade the Whole ML Training Fleet Bi-weekly",
+              "speakers": "Ankit Goyal, Cong Gu",
+              "room": "Building B | Level 4 | B401-402",
+              "url": "https://kccncna2025.sched.com/event/27FcH",
+              "description": "Machine learning jobs are particularly vulnerable to node disruptions—whether planned (like host maintenance, kernel upgrades, or security patches) or unplanned (such as GPU ECC memory errors or sudden node failures). These interruptions can derail progress and waste valuable training time.\nIn this talk, we’ll explore how to build disruption-tolerant ML infrastructure on Kubernetes that balances platform reliability with job continuity. We’ll cover techniques we’ve developed and battle-tested at scale, including:\n• Automatic Multi-stage checkpoint and restore of training jobs to allow fast and seamless recovery after interruptions.\n• Intelligent scheduling and smart collocation to account for node health, job characteristics, and maintenance timing.\n• Job-aware backpressure mechanisms that coordinate updates and reduce the likelihood of disruption during critical job phases.\nAttendees will leave with practical strategies for managing infrastructure disruptions leveraging Kubernetes.",
+              "recording": "https://www.youtube.com/watch?v=qY46j--UrZk"
+            },
+            {
+              "id": "27FcN",
+              "title": "Why Is My Query Slow? Real AI Use Cases With Vitess + Kubernetes + Prometheus",
+              "speakers": "Brett Warminski, Gourav Khanijoe",
+              "room": "Building B | Level 4 | B406b-407",
+              "url": "https://kccncna2025.sched.com/event/27FcN",
+              "description": "Self-service database platforms help teams move fast—but only if engineers can help themselves. Over the past two years, the HubSpot data infrastructure team has built and evolved a suite of LLM-powered tools to assist developers working with their large Vitess installation running on Kubernetes. In this talk, the team will share what worked (and what didn't): from interpreting slow query plans to guiding self-scaling decisions to failed attempts at RAG-based documentation search. Participants will learn about latency workarounds, integrations with chat and UI flows, prompt pitfalls, and the essential glue work that made it all usable.",
+              "recording": "https://www.youtube.com/watch?v=qDBgHS2bE7s"
+            },
+            {
+              "id": "27NoL",
+              "title": "Dapr in 2026: Durable Execution and Resilient Eventing for AI Agents",
+              "speakers": "Yaron Schneider, Rajesh Iyer",
+              "room": "Building C | Level 3 | Georgia Ballroom 3",
+              "url": "https://kccncna2025.sched.com/event/27NoL",
+              "description": "In this maintainer track we'll cover existing and upcoming features that allow developers to more easily create complex workflow based applications, as well as Agentic AI systems. We will also showcase Dapr's role as an Application Developer Platform that is filling the gap required to govern and regulate access from applications to their underlying infrastructure and providing zero-trust security, agent-to-agent discovery and event ingestion to AI agent frameworks like LangGraph, CrewAI and others",
+              "recording": "https://www.youtube.com/watch?v=4I19FPwLCIQ"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-12T17:34:00-05:00",
+          "end": "2025-11-12T17:39:00-05:00",
+          "startLabel": "5:34 PM",
+          "endLabel": "5:39 PM",
+          "talks": [
+            {
+              "id": "27Fcc",
+              "title": "⚡ Lightning Talk: Threat Modeling Kubernetes: Fast, Practical, and LLM-Driven",
+              "speakers": "Maxime Coquerel",
+              "room": "Building C | Level 3 | Georgia Ballroom 2",
+              "url": "https://kccncna2025.sched.com/event/27Fcc",
+              "description": "Kubernetes environments are inherently complex especially in regulated industries due to integrations with service meshes, secrets management, and policy engines. Traditional threat modeling often struggles to keep up with this dynamic ecosystem.\n\nIn this 5-minute session, I’ll introduce a streamlined, Kubernetes-specific threat modeling approach that integrates naturally into dev and SRE workflows. You’ll learn how to quickly identify risks across clusters, workloads, and third-party components.\n\nWe’ll also cover how large language models (LLMs) can support this process by generating threat scenarios, mapping to MITRE ATT&CK, and helping teams continuously refine their security posture.\nYou’ll leave with actionable tactics to embed threat modeling into your engineering practices fast, repeatable, and built for modern cloud-native environments.",
+              "recording": "https://www.youtube.com/watch?v=48LKZ-lI_po"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2025-11-13",
+      "id": "thursday-november-13",
+      "label": "Thursday, November 13",
+      "slots": [
+        {
+          "start": "2025-11-13T11:00:00-05:00",
+          "end": "2025-11-13T11:30:00-05:00",
+          "startLabel": "11:00 AM",
+          "endLabel": "11:30 AM",
+          "talks": [
+            {
+              "id": "27Fcu",
+              "title": "The Journey of Deploying Backstage in a Large Organization",
+              "speakers": "Teddy Poingt, Mathieu Girard",
+              "room": "Building B | Level 3 | B304-305",
+              "url": "https://kccncna2025.sched.com/event/27Fcu",
+              "description": "Being a developer in 2025 means a lot more than it used to. The cognitive load and the number of development related activities other than coding that needs to be taken into consideration keeps growing every day (CI/CD, infra-as-code, cloud, finops, networking, monitoring, containers, security, etc.)\n\nInternal developer portals are meant to help with this issue but can be challenging to deploy successfully in a large organization.\n\nAt Beneva, we’ve been running Backstage for almost three years now and our developers are grateful. In our talk, we’ll deep dive in our journey, from the very beginning of sponsorship and financing for our portal initiative to the deployment of Backstage itself and how the mindset of our development teams as portal users evolved from “one more thing they would have to care about” to considering it the one thing that could help them manage and deliver their solutions more efficiently.",
+              "recording": "https://www.youtube.com/watch?v=l7OQdrUkoVI"
+            },
+            {
+              "id": "27Fd6",
+              "title": "Spark on Kubernetes, a Practical Guide",
+              "speakers": "Damon Cortesi",
+              "room": "Building B | Level 4 | B405-406a",
+              "url": "https://kccncna2025.sched.com/event/27Fd6",
+              "description": "If you're just getting started with Apache Spark on Kubernetes, this talk is for you. Especially if you're moving on from Spark on YARN where most components are tightly integrated with Spark.\n\nSpark on Kubernetes sounds great in theory, but as soon as you get started there are numerous decision to be made including how to submit your jobs (there are now 2 main operators), which shuffle service to use (again at least 2), which scheduler and queue management system to use (about 4 this time), and that doesn't even begin to touch how to optimize your storage and where to send logs.\n\nJoin me on our journey through all of the above, including how we benchmarked Spark on Kubernetes with existing systems using TPC-DS and simulating real-world workloads. This talk is your field guide for getting started with Spark on Kubernetes, built from real-world experimentation and hard-earned lessons.",
+              "recording": "https://www.youtube.com/watch?v=ejJ6A0sIdbw"
+            },
+            {
+              "id": "27Fd9",
+              "title": "Autoscaling Spring Boot Apps in Kubernetes With KEDA",
+              "speakers": "John Coyne",
+              "room": "Building B | Level 4 | B406b-407",
+              "url": "https://kccncna2025.sched.com/event/27Fd9",
+              "description": "The Horizonal Pod Autoscaler (HPA) in Kubernetes has limited functionality in offering container CPU or Memory as metrics to monitor pod scaling performance. However, the CNCF Graduated Project KEDA, short for Kubernetes-based Event Driven Autoscaling, offers a wide array of options. One of these includes using metrics exposed by Prometheus, another CNCF Graduated project. Another is Micrometer, an Open Source metrics facade that integrates nicely with Spring Boot, which can expose many different metrics from an application. Adding one additional dependency can help to expose those metrics in a format that is understood by Prometheus. Putting all of these together, we can expose any metric we desire from our application and use that to drive the scaling of an application in Kubernetes.",
+              "recording": "https://www.youtube.com/watch?v=41jPTzrUX4I"
+            },
+            {
+              "id": "27Nnc",
+              "title": "etcd V3.6 and Beyond + etcd-operator Updates",
+              "speakers": "Justin Santa Barbara, Wei Fu, Arka Saha, Siyuan Zhang, Ivan Valdes Castillo",
+              "room": "Building C | Level 3 | Georgia Ballroom 2",
+              "url": "https://kccncna2025.sched.com/event/27Nnc",
+              "description": "The recently released etcd 3.6 marks a significant milestone, bringing crucial advancements that directly impact the stability, performance, and operational efficiency of Kubernetes.\nThis session will delve into the key features of etcd 3.6, and provide an upgrade checklist and highlight changes users need to make before upgrading to the 3.6 release. We will also discuss the extended support of 3.4, and roadmap for 3.7.\nWe will also bring you the latest updates of the etcd-operator. Come join us and raise your etcd questions with the on-site etcd maintainers.\n\nEven though etcd 3.6 was announce in KubeCon London, due to its importance, we want to advocate again to make sure Kubernetes are aware of the changes and well-prepared for the upgrade by providing comprehensive guidance and support. We also would like to encourage contributions to the etcd and etcd-operator projects for further enhancements.",
+              "recording": "https://www.youtube.com/watch?v=tF7UOwhgetU"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-13T11:00:00-05:00",
+          "end": "2025-11-13T12:15:00-05:00",
+          "startLabel": "11:00 AM",
+          "endLabel": "12:15 PM",
+          "talks": [
+            {
+              "id": "27Nl6",
+              "title": "🚨 Contribfest: Level up Your Open Source Journey: Hands-On Backstage Contributions!",
+              "speakers": "Patrik Oldsberg, Andre Wanlin, Avantika Iyer, Aramis Sennyey, Kurt King",
+              "room": "Building B | Level 2 | B207",
+              "url": "https://kccncna2025.sched.com/event/27Nl6",
+              "description": "Jump into the world of Backstage at our interactive ContribFest session! Whether you’re just starting out or already building with Backstage, this event is designed to help you contribute confidently to this CNCF project that’s transforming Internal Developer Portals.\n\nWe’ll help you set up your development environment (think: Node.js, TypeScript, and more), walk you through the Backstage Contributing Guide, and connect you with beginner-friendly GitHub issues to get you started. Seasoned Backstage contributors can dive deeper—explore advanced topics, build plugins, or tackle more complex issues alongside maintainers and fellow developers.\n\nBring your questions, share your ideas, and collaborate in real time with the Backstage community. No matter your experience level, you’ll leave with practical knowledge and the satisfaction of making a real impact on Backstage!"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-13T11:45:00-05:00",
+          "end": "2025-11-13T12:15:00-05:00",
+          "startLabel": "11:45 AM",
+          "endLabel": "12:15 PM",
+          "talks": [
+            {
+              "id": "27Fc2",
+              "title": "Building a Kubernetes-native Experience for Your Multi-cluster Fleet",
+              "speakers": "James Munnelly, Andrea Tosatto",
+              "room": "Building B | Level 2 | B206",
+              "url": "https://kccncna2025.sched.com/event/27Fc2",
+              "description": "Operating multiple Kubernetes clusters is becoming par for the course in any enterprise-scale Kubernetes deployment. As the complexity of your infrastructure deployments grow, so do the opportunities for inefficiencies.\n\nOnce the boundaries of a single cluster have been broken, the first place this complexity goes to is the end-user, often the least-well-informed to make decisions about optimal resource placement across a global fleet.\n\nThis talk is a deep-dive into taming the user experience of multi-cluster scheduling in order to enable platform engineering teams to reclaim the power in placing workload across fleets of clusters, and will cover:\n\n* Multi-cluster resource views (‘pod aggregation’) and subresource proxying for a seamless multi-cluster experience.\n* Multi-cluster discovery, authentication and authorization patterns.\n* Using MultiKueue as the engine for multi-cluster quota abstractions.\n* Using the tenant as the scaling boundaries with scoped apiserver views.",
+              "recording": "https://www.youtube.com/watch?v=khUixjjwhAQ"
+            },
+            {
+              "id": "27Fdd",
+              "title": "Evicted! All the Ways Kubernetes Kills Your Pods (and How To Avoid Them)",
+              "speakers": "Ahmet Alp Balkan",
+              "room": "Building B | Level 4 | B405-406a",
+              "url": "https://kccncna2025.sched.com/event/27Fdd",
+              "description": "Anyone running Kubernetes in a large-scale production environment cares deeply about having a predictable Pod lifecycle. Having unknown actors in the system that can terminate your Pods is a scary thought — especially if you run stateful systems on Kubernetes.\n\nThere are many paths in the Kubernetes core that can abruptly terminate your workloads and cause your apps to dip below their Pod Disruption Budgets, risking unavailability for your customers. Documentation doesn’t go so far as to explain all these paths or how they work.\n\nIn this talk, we’ll focus on the lesser-known abrupt pod eviction modes caused by Kubernetes components — ranging from kubelet to scheduler to controller-manager — and do a deep dive into Kubernetes internals to explain exactly how these pod terminations happen and what guarantees you can expect. We’ll also debunk some myths like ‘kubelet restarts are safe’.\n\nAt the end, you’ll leave with a cheatsheet to help you reason about all eviction modes in Kubernetes.",
+              "recording": "https://www.youtube.com/watch?v=jVwXcuNEDYE"
+            },
+            {
+              "id": "27FdU",
+              "title": "Building AI/ML Pipelines on Kubernetes",
+              "speakers": "Ian Chakeres, Anant Vyas, Susan Wu, Lu Qiu, Lucy Sweet",
+              "room": "Building B | Level 3 | B308-309",
+              "url": "https://kccncna2025.sched.com/event/27FdU",
+              "description": "Kubernetes is becoming the standard container orchestration including AI/ML supporting use cases for extracting insights, parsing unstructured data, and filling-in missing multimodal data (images, text, audio, video)\n\nAI workflows used to waterfall development through one model at a time and are now trending towards data-driven, multi-path development. This means that platform engineers have to build data pipelines that support multi-model infrastructure, giving the AI app the granular ability to choose the right model for any request.\n\nHear from a panel of platform engineers on how they can build data pipelines in Kubernetes for multimodal AI that optimizes for data retrieval, advanced reasoning, and generation capabilities.",
+              "recording": "https://www.youtube.com/watch?v=jnCZ1T4nPLE"
+            },
+            {
+              "id": "27FdX",
+              "title": "Flip That Stack: Renovating Edge Infrastructure at the Home Depot",
+              "speakers": "Dillon TenBrink",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27FdX",
+              "description": "At The Home Depot, we know a solid foundation is key—whether you're laying tile or deploying edge infrastructure. In this session, we’ll walk through how we designed and built a scalable, resilient edge platform to support real-time retail operations across thousands of stores. You’ll learn how we approached hardware abstraction, workload orchestration, interactions between heritage and modern systems, and observability at the edge, all while keeping developer experience and operational simplicity front and center. We’ll share lessons learned, tools we used (and avoided), and how we’re evolving the platform to support future innovation. Whether you're just framing your edge strategy or ready to hang drywall, this talk will give you practical insights to take home.",
+              "recording": "https://www.youtube.com/watch?v=p5Vca4BoiJw"
+            },
+            {
+              "id": "27FVM",
+              "title": "CafeGPT: Serving LLMs Like Coffee With Kubernetes",
+              "speakers": "Madhav Jivrajani, Kartik Ramesh",
+              "room": "Building B | Level 3 | B302-303",
+              "url": "https://kccncna2025.sched.com/event/27FVM",
+              "description": "Kubernetes is quickly becoming the de-facto platform for serving LLM workloads and with the ecosystem evolving at a staggering pace, it can get quite difficult to not only decouple the fundamentals from the diversity of features that so many Kubernetes based solutions offer today, but also understand them in a way that is not overwhelming. What if we could explore the fundamentals of LLM inference, strategies of efficient deployment, GPU scheduling and where Kubernetes comes in, while learning about how to run a cafe? Join us as we tune out the world for some time, geek out and revisit the fundamentals to explore how Kubernetes and LLM inference systems make sense together, and maybe even learn how to run a cafe!",
+              "recording": "https://www.youtube.com/watch?v=zMArlA0rPsM"
+            },
+            {
+              "id": "27Nmw",
+              "title": "Open Policy Agent (OPA) Intro & Deep Dive",
+              "speakers": "Rita Zhang, Tyler Schade, Jaydip Gabani, Philip Conrad",
+              "room": "Building C | Level 3 | Georgia Ballroom 1",
+              "url": "https://kccncna2025.sched.com/event/27Nmw",
+              "description": "Come to this session to learn about the Open Policy Agent (OPA) project. OPA is a general-purpose policy engine that solves a number of policy-related use cases for authorization, Kubernetes, service mesh, CI/CD, infrastructure permissions, and more.\n\nThis session will begin with OPA maintainers welcoming newcomers by introducing the project and covering core concepts. Current users will then receive an overview of recent changes, highlighting exciting new features and improvements across OPA and its broader ecosystem. OPA Envoy maintainer Tyler Schade will also share some details about recent changes to the OPA Envoy project, including enhancements to Envoy integration and improved support for SPIFFE identities.\n\nA short Gatekeeper update will cover VAP integration (now beta & default), a new audit violations disk export driver, Rego v1 syntax support and more.\n\nIf you are interested in policy as code and security as it relates to cloud native technology, this session is for you. OPA maintainers will also be available for questions after the session.",
+              "recording": "https://www.youtube.com/watch?v=tDBYMF2XXLA"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-13T13:45:00-05:00",
+          "end": "2025-11-13T14:15:00-05:00",
+          "startLabel": "1:45 PM",
+          "endLabel": "2:15 PM",
+          "talks": [
+            {
+              "id": "27FdO",
+              "title": "Authenticating and Authorizing Every Connection at Uber",
+              "speakers": "Matt Mathew, Yangmin Zhu",
+              "room": "Building B | Level 3 | B302-303",
+              "url": "https://kccncna2025.sched.com/event/27FdO",
+              "description": "Uber operates one of the world’s largest and most complex microservice architectures, composed of thousands of services built in diverse languages and maintained by independent teams. Ensuring consistent, secure service-to-service communication, without requiring code changes, posed a massive challenge.\n\nIn this talk, we’ll share how we built and scaled a platform-level authentication and authorization solution based on Envoy, SPIRE, and the SPIFFE standard. Over a 3-year journey, we rolled out a Zero Trust architecture securing every service interaction with mTLS, authenticating workloads using SPIFFE identities, and enforcing fine-grained policies through a unified control plane.\n\nAttendees will learn about the architectural decisions, operational hurdles, and user-experience tradeoffs we faced along the way. Whether you’re starting your Zero Trust journey or looking to scale Envoy/SPIRE across a large org, this talk will offer practical insights from real-world deployment at scale.",
+              "recording": "https://www.youtube.com/watch?v=GYVNg0_FpwQ"
+            },
+            {
+              "id": "27Fdy",
+              "title": "Transforming Kubernetes Clusters Into a Multi-Tenant Powerhouse at Electronic Arts",
+              "speakers": "Ruben Vasconcelos, Michael Dundek",
+              "room": "Building B | Level 3 | B304-305",
+              "url": "https://kccncna2025.sched.com/event/27Fdy",
+              "description": "In the dynamic landscape of application development and efficiently managing Kubernetes clusters while ensuring security, isolation, and ease of use is a persistent challenge. Electronic Arts developed a Kubernetes framework that transforms standard clusters into secure, fully segregated multi-tenant platforms. Our custom operator and CRDs enable seamless tenant onboarding with complete isolation across network, RBAC, and resources. This approach allows teams to manage fewer clusters while reducing overall costs.\n\nOur solution simplifies complex deployments by handling ingress, certificates, secrets, GitOps, and daily operations through specialized CRDs. Development teams can leverage Kubernetes capabilities without managing its underlying complexity.\n\nThis presentation reveals our problem-solving strategies and technical implementation details - essential knowledge for anyone tackling Kubernetes multi-tenancy challenges or seeking to simplify Kubernetes adoption for end users."
+            },
+            {
+              "id": "27Fe1",
+              "title": "Effortlessly Build High-Performance AI/ML Processing Pipelines Within the ML Lifecycles",
+              "speakers": "Kazuki Yamamoto",
+              "room": "Building B | Level 3 | B308-309",
+              "url": "https://kccncna2025.sched.com/event/27Fe1",
+              "description": "Join us for an enlightening presentation on effortlessly building an advanced processing form called \"processing pipeline \"for AI/ML workloads.\n\nIn streaming processing, accelerators are assigned only to specific tasks in the workload. However, we can build high-performance processing infrastructure at the service level by assigning each task to a suitable accelerator and chaining them together.\n\nNative Kubernetes is a popular choice for deploying AI/ML workloads. However, more is needed to deploy a new processing form: the \"processing pipeline\" chaining accelerators.\n\nThis presentation will demonstrate how effortlessly a video inference system can be built using the \"processing pipeline\", which leverages Numaflow and \"Dynamic Resource Allocation\" (DRA). It will also introduce the \"processing pipeline \"that can be integrated into MLOps through Kubeflow Pipelines.\n\nYou will see a glimpse of future innovations, including high-speed communication between accelerators via the 2nd NIC.",
+              "recording": "https://www.youtube.com/watch?v=8s87fSa_Qmw"
+            },
+            {
+              "id": "27Fe4",
+              "title": "GitOps and the Manifest Dilemma: Helm, Kustomize, Crossplane, Kro, and Beyond",
+              "speakers": "Dag Bjerre Andersen",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27Fe4",
+              "description": "As Kubernetes adoption grows, so does the need to manage manifests in a scalable and maintainable way. We used to rely mainly on Helm and Kustomize for templating, but today the ecosystem is evolving rapidly - new manifest-generation tools appear regularly, each with its own syntax, execution model, and design philosophy.\n\nThis talk explores the fragmented landscape of manifest rendering tools and how well they align - or clash - with GitOps principles. We’ll examine the core differences between tools that render manifests outside the cluster (e.g., Helm, Kustomize) and those that rely on in-cluster controllers and CRDs (e.g., Crossplane, KubeVela, Kro). These two paradigms differ not only technically, but also in how they integrate with popular GitOps platforms like Argo CD and Flux.\n\nThrough practical comparisons, attendees will gain a clear understanding of the core paradigms behind these tools - their strengths, limitations, and how well they align with GitOps workflows.",
+              "recording": "https://www.youtube.com/watch?v=Tmiyf78sC24"
+            },
+            {
+              "id": "27FeA",
+              "title": "Fast and the Furious: CICD Pipeline for eBPF Programs at Meta Scale",
+              "speakers": "Prankur Gupta, Theophilus Benson",
+              "room": "Building B | Level 4 | B405-406a",
+              "url": "https://kccncna2025.sched.com/event/27FeA",
+              "description": "At Meta, we run over 150 eBPF programs on our machines which provide a range of custom functionality from network observability, load balancing, network stack specialization and security features. We update these eBPF programs at least once a week to cater to changes in our microservice stack which introduces opportunities for outages.\n\nWhile we maintain a custom and flexible in house CI/CD pipeline for ensuring high velocity of our microservices, we observed that we were unable to use the same pipeline for our eBPF programs because of nuances of the eBPF ecosystem and the fact our eBPF programs run in the kernel. Over the last five years, we have tailored our CI/CD pipeline to effectively support eBPF programs and their nuances.\n\nIn this talk, we describe challenges faced in tailoring our CI/CD pipeline, highlight lessons learned from several production outages, and discuss on-going work to further enhance our eBPF-centric CI/CD pipeline.",
+              "recording": "https://www.youtube.com/watch?v=wXuykaYSFCQ"
+            },
+            {
+              "id": "27FeD",
+              "title": "Creating and Maintaining Ephemeral Runtime Environments for 18,000 Developers",
+              "speakers": "Alexandre Thomaz",
+              "room": "Building B | Level 4 | B406b-407",
+              "url": "https://kccncna2025.sched.com/event/27FeD",
+              "description": "In this session, we will explore how Itaú Unibanco, the largest bank in Brazil and Latin America, successfully implemented and maintained ephemeral runtime environments to support its 18,000 developers. This case study will delve into the challenges faced, the solutions developed, and the benefits realized from this large-scale implementation. Attendees will gain insights into the technical and organizational strategies that enabled Itaú Unibanco to enhance developer productivity, reduce costs, and improve system stability.\nStandardizing technology stacks across an organization as large as Itaú Unibanco is crucial for simplifying maintenance, enhancing interoperability, and reducing the learning curve for developers. This standardization also played a key role in the successful implementation of ephemeral runtime environments, as it allowed for predictable and repeatable setups that could be easily managed and scaled.",
+              "recording": "https://www.youtube.com/watch?v=cTetyfWT4o0"
+            },
+            {
+              "id": "27Nmz",
+              "title": "Package Management for Your Cluster, Reimagined",
+              "speakers": "Joe Lanford, Attila Meszaros, Rashmi Gottipati, Jordan Keister",
+              "room": "Building C | Level 3 | Georgia Ballroom 1",
+              "url": "https://kccncna2025.sched.com/event/27Nmz",
+              "description": "This year, after a significant refactor, the Operator Lifecycle Manager (OLM) reached its 1.0 release, and the Java Operator SDK introduced several improvements and new features across multiple minor releases.\n\nThe Operator Framework team will discuss exciting new features in OLM such as declarative approaches to installation previews and policy-based approvals, dynamic workload configuration, and new content types. The team will also cover enhancements in the Java Operator SDK addressing common but complex challenges in building Kubernetes operators, including the expectation pattern.\n\nPlease join the team to talk shop about all things operators!",
+              "recording": "https://www.youtube.com/watch?v=HrwHh5Yh6AM"
+            },
+            {
+              "id": "27NoR",
+              "title": "Backstage Celebrations: Stable Foundations and MCP Innovations",
+              "speakers": "Patrik Oldsberg, Ben Lambert",
+              "room": "Building C | Level 3 | Georgia Ballroom 3",
+              "url": "https://kccncna2025.sched.com/event/27NoR",
+              "description": "Following on from the previous talk at KubeCon EU, the Backstage project has continued its push for stability and maturity. The last couple of years there has been a large effort to switch to a more drop-in method of installing plugins, through the introduction of the new backend and frontend systems. This is now coming to a close with the stable release of the new frontend system, and the maintainers are excited to talk about what this means for the present and future of Backstage.\n\nYou will also hear about the work towards an AI-Native Backstage, through new systems like the\nActions Registry and first-class support for MCP. They’ll also share what this means for authentication in Backstage, and how that system has been evolved to allow for more use-cases. As always, there will also be highlights from the different Project Areas and time for Q&A, so here’s your chance to ask any burning questions.",
+              "recording": "https://www.youtube.com/watch?v=evmmr-uxNsc"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-13T13:45:00-05:00",
+          "end": "2025-11-13T15:00:00-05:00",
+          "startLabel": "1:45 PM",
+          "endLabel": "3:00 PM",
+          "talks": [
+            {
+              "id": "27NlC",
+              "title": "🚨 Contribfest: Meshery Contribfest: Dive Deep Into Extending Cloud Native Management",
+              "speakers": "Shivay Lamba, Hussaina Begum, Lee Calcote, Yash Sharma",
+              "room": "Building B | Level 2 | B207",
+              "url": "https://kccncna2025.sched.com/event/27NlC",
+              "description": "Join us for an in-depth session on Meshery a leading cloud native management plane with Meshery maintainers and community. This is your chance to get hands-on with the tools shaping the future of collaborative cloud native management. We will walk through the Contributing Guide to help you familiarize yourself with the project and the contribution process with opportunities to work on core functionality in the Server (Golang) or UI (React) or extend Meshery by building your own plugin.\n\nContribute to the documentation by incorporating your own examples of cloud native architectures using Meshery Designer. You will gain experience with cloud native technologies, including essentially every CNCF project and open source development practices. This session will be led by Meshery maintainers and contributors. No Prior Experience Needed: We welcome contributions from all levels of experience. Join us at Meshery Contribfest and be part of the future of collaborative cloud native management."
+            }
+          ]
+        },
+        {
+          "start": "2025-11-13T14:30:00-05:00",
+          "end": "2025-11-13T15:00:00-05:00",
+          "startLabel": "2:30 PM",
+          "endLabel": "3:00 PM",
+          "talks": [
+            {
+              "id": "27Fdv",
+              "title": "Securing Data Applications at Pinterest With Finer Grained Access Control on Kubernetes",
+              "speakers": "Soam Acharya, William Tom",
+              "room": "Building B | Level 3 | B302-303",
+              "url": "https://kccncna2025.sched.com/event/27Fdv",
+              "description": "At Pinterest, our data processing platform runs nearly 90K jobs on 20K nodes ingesting about 200PB of data daily, powering ML models, user insights, data lakes, and more. This massive scale, while pushing the limits of cloud computing, requires secure, least-privileged data management that also has to meet evolving regulations. To address these needs, we introduced Finer Grained Access Control (FGAC) into Moka, our new Kubernetes-based processing platform. FGAC integrates Kubernetes and AWS features (namespaces, sidecars, service accounts, RBAC, STS, EKS, IRSA) to authenticate with internal services (servicemesh, mTLS, IAM proxy) for a secure multi-tenant environment supporting Spark, Ray, and Flink. In this talk, we detail our design for Moka FGAC and current migration status. We also share the trade-offs and design decisions that led to better data isolation, scale, improved resource utilization and an overall simpler approach compared to our previous Hadoop/Kerberos based solution.",
+              "recording": "https://www.youtube.com/watch?v=jPS6P3mTbqo"
+            },
+            {
+              "id": "27Feb",
+              "title": "Harmonizing Strategy and Engineering: Lessons Learnt in Building a Platform Plugin for Diverse Users",
+              "speakers": "Kate Klymkovska, Sri Chandrasekaran",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27Feb",
+              "description": "Creating a successful platform plugin or product is a strategic and technical journey requiring clear vision, deliberate engineering, and a focus on user needs. In this talk, Kate and I will share our experience at Spotify, from engineering and product perspectives, as we developed a Backstage plugin that evolved from a simple internal tool to support diverse user groups.\n\nWe’ll explore Spotify’s journey, balancing challenges and opportunities at scale, and share key lessons for addressing diverse user needs. Attendees will gain a practical framework to align product strategy with engineering execution and externalize internal tools effectively.\n\nUsing a real-world example, we’ll provide actionable insights on crafting a strong product vision, managing technical trade-offs, and prioritizing for impact. Whether building a plugin, platform, or product, this talk equips participants with tools to drive adoption, stakeholder satisfaction, and alignment between strategy and engineering.",
+              "recording": "https://www.youtube.com/watch?v=2t_Pdiu3B1E"
+            },
+            {
+              "id": "27Feh",
+              "title": "Final Boss Fights - What Zynga Monitors When Game Teams Perform World Wide Launches & How We Prepare",
+              "speakers": "Krunal Soni, Justin Schwartz, Molly Sheets, Steve Phillips",
+              "room": "Building B | Level 4 | B405-406a",
+              "url": "https://kccncna2025.sched.com/event/27Feh",
+              "description": "Zynga, a global leader in interactive entertainment and a wholly-owned subsidiary of Take-Two Interactive Software, Inc, launches new mobile games with our platform engineering team multiple times a year on Kubernetes. Join the central infrastructure teams behind the company that made mobile hits like Words with Friends, FarmVille, Zynga Poker, and many more. Learn from both Amazon and Zynga how together they support game teams and central teams to scale applications for game launches before, during, and after to make sure they are ready for everything.",
+              "recording": "https://www.youtube.com/watch?v=Bjphxuoia3U"
+            },
+            {
+              "id": "27Nm7",
+              "title": "Kubeflow Ecosystem: Navigating the Cloud Native AI/ML and LLMOps Frontier",
+              "speakers": "Johnu George, Akshay Chitneni, Josh Bottum, Yuki Iwai, Valentina Rodriguez Sosa",
+              "room": "Building C | Level 1 | C111-112",
+              "url": "https://kccncna2025.sched.com/event/27Nm7",
+              "description": "GenAI is redefining what a cloud-native ML platform must deliver. Kubeflow answers with a modular stack, from pipeline orchestration and data processing to distributed training, tuning, and inference. In this update, we will map that frontier for the entire ML workload lifecycle.\n\nIt unveils reproducible blueprints for fine-tuning and serving large language models on diverse GPU fleets driven by Kubeflow families and components that balance utilization with isolation.\n\nWe explain how declarative components, artifact versioning, and lineage tracking keep experiments portable between on-prem and cloud. Additionally, it outlines the twelve-month roadmap: security hardening, comprehensive ML user experience, and multi-cluster awareness.\n\nThe session ends with an open Q&A and contribution on-ramps for good-first issues, mentorship, and governance so that attendees depart with step-by-step recipes, architecture guides, and a concrete way to shape Kubeflow’s next chapter.",
+              "recording": "https://www.youtube.com/watch?v=Xr2xxwyPePQ"
+            },
+            {
+              "id": "27Nnl",
+              "title": "Supercharge Your Canary Deployments With Argo Rollouts Step Plugins",
+              "speakers": "Alexandre Gaudreault, Kostis Kapelonis",
+              "room": "Building C | Level 3 | Georgia Ballroom 2",
+              "url": "https://kccncna2025.sched.com/event/27Nnl",
+              "description": "Argo Rollouts is a Kubernetes controller for Progressive Delivery (blue/green and canary deployments). The controller already supports a plugin system for traffic providers (Istio, Traefik, Gateway API, etc.) and for metric providers (Prometheus, Datadog, etc.). In the latest release, the Argo team completed the trilogy by implementing support for Canary Step plugins. This extends Argo Rollouts capabilities and enriches the progressive delivery experience to accommodate a multitude of scenarios.\n\nWith Canary step plugins, you can now fully control what happens DURING the canary process and implement any custom functionality that you want within the canary steps. Did you always want to do canary gating? Deployment sync between different controllers? Custom notifications while the canary is running? Now you can!\n\nIn this talk we will see the architecture of the new plugin mechanism and explain how you can extend canary deployments with your own custom workflows.",
+              "recording": "https://www.youtube.com/watch?v=b2yYR9ARNaE"
+            }
+          ]
+        },
+        {
+          "start": "2025-11-13T15:15:00-05:00",
+          "end": "2025-11-13T15:45:00-05:00",
+          "startLabel": "3:15 PM",
+          "endLabel": "3:45 PM",
+          "talks": [
+            {
+              "id": "27Ff8",
+              "title": "From Code To Cluster: Orchestrating 100,000+ Kubernetes Deployments With 1 Pipeline",
+              "speakers": "Andrada Raducanu",
+              "room": "Building B | Level 3 | B312-314",
+              "url": "https://kccncna2025.sched.com/event/27Ff8",
+              "description": "There is a sea of tools one can use for the critical phase of Deployment during your SDLC. To keep our environment secure and reliable, ING chose to work with Kubernetes and Azure DevOps. In this talk, we will share the success story of how 1400 in-house developed APIs reached 100k+ Production deployments in half a year, using one single pipeline. In order to stay in control, we use Open Policy Agent. To ensure the reliability and the resilience of the APIs, we use tools like: QuotaAutoscaler (ING open source CRD) and HorizontalPodAustoscaler, native rollback mechanisms with Helm, automatic certificates using CertManager and Prometheus monitoring. The pipeline deploys code in Azure Kubernetes Service and on-prem Kubernetes clusters. This solution was built as a platform, designed to be agnostic to the target system, reducing the cognitive load on the teams and allowing them to focus on the application development. We call this The Kingsroad.",
+              "recording": "https://www.youtube.com/watch?v=cO4f7-JDG0Y"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
