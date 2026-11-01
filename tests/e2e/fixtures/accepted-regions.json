@@ -26,13 +26,13 @@
     },
     {
       "file": "src/components/MetricsDashboard/index.js",
-      "span": "65:21-65:31",
+      "span": "69:21-69:31",
       "class": "data-shape-guard",
       "reason": "`|| []` fallback taken only when data/metrics.json lifecycle has no cards array."
     },
     {
       "file": "src/components/MetricsDashboard/index.js",
-      "span": "89:21-89:33",
+      "span": "93:21-93:33",
       "class": "data-shape-guard",
       "reason": "`|| []` fallback taken only when data/metrics.json lifecycle has no omitted array."
     },
