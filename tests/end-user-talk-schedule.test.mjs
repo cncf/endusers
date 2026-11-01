@@ -156,15 +156,14 @@ for (const { event, schedule } of snapshots) {
         sessionize: 'official Sessionize API',
         sched: 'official Sched listing',
       }[schedule.source];
-      // A snapshot verified after its last day is the final record of a
-      // concluded conference; anything newer can still move. The fixture test
-      // below pins which wording each arm gets, so this check can derive the
-      // arm from the snapshot without mirroring a bug in the component.
-      const isFinal =
-        schedule.days.at(-1).date < schedule.generatedAt.slice(0, 10);
-      const closing = isFinal
-        ? 'This conference has ended; the schedule below is the final record. See the official schedule for the full program.'
-        : 'Times, rooms, and speakers may change; check the live official schedule for updates.';
+      // The collector stamps a concluded conference's snapshot `final: true`;
+      // anything without the flag can still move. The fixture test below pins
+      // which wording each arm gets, so this check can derive the arm from the
+      // snapshot without mirroring a bug in the component.
+      const closing =
+        schedule.final === true
+          ? 'This conference has ended; the schedule below is the final record. See the official schedule for the full program.'
+          : 'Times, rooms, and speakers may change; check the live official schedule for updates.';
       assert.equal(
         textOf(source),
         `Source: ${label} · Verified ${verified}. ${closing}`,
@@ -324,50 +323,50 @@ test('TalkDetails renders slides and recording links only when present, naming t
 });
 
 // The closing sentence promises updates only while the conference can still
-// move: a snapshot verified after its last day is the final record. The
-// corpus happens to carry both arms today, but a fixture keeps them covered
-// the day every committed snapshot is concluded — and the boundary (last day
-// equal to the verification date, matching the collector's isFinal rule)
-// stays on the upcoming wording.
-test('the closing sentence promises updates only for a conference still ahead of its verification', () => {
+// move: the collector stamps a snapshot `final: true` once its last day has
+// passed. The corpus happens to carry both arms today, but a fixture keeps
+// them covered the day every committed snapshot is concluded. The decision
+// reads the flag alone: a snapshot whose verification date is already past
+// its last day, but which the collector has not stamped, still says the
+// schedule may change, and generatedAt never enters into it.
+test('the closing sentence promises updates until the collector marks the snapshot final', () => {
   const [{ schedule }] = snapshots;
-  const sourceLine = (lastDay, generatedAt) => {
-    const tree = render({
-      ...schedule,
-      generatedAt,
-      days: schedule.days.map((day, index) =>
-        index === schedule.days.length - 1 ? { ...day, date: lastDay } : day,
-      ),
-    });
+  const sourceLine = (overrides) => {
+    const { final: _ignored, ...base } = schedule;
+    const tree = render({ ...base, ...overrides });
     return textOf(
       findAllByType(tree, 'p').find(
         (node) => node.props.className === 'source',
       ),
     );
   };
-  const verified = (iso) =>
-    new Date(iso).toLocaleDateString('en-US', {
-      timeZone: 'UTC',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
   const label = {
     sessionize: 'official Sessionize API',
     sched: 'official Sched listing',
   }[schedule.source];
-  const prefix = (iso) => `Source: ${label} · Verified ${verified(iso)}. `;
+  const generatedAt = '2031-01-02T00:00:00.000Z';
+  const prefix = `Source: ${label} · Verified January 2, 2031. `;
+  const concluded = `${prefix}This conference has ended; the schedule below is the final record. See the official schedule for the full program.`;
+  const upcoming = `${prefix}Times, rooms, and speakers may change; check the live official schedule for updates.`;
+  const lastDay = (date) =>
+    schedule.days.map((day, index) =>
+      index === schedule.days.length - 1 ? { ...day, date } : day,
+    );
 
   assert.equal(
-    sourceLine('2031-01-01', '2031-01-02T00:00:00.000Z'),
-    `${prefix('2031-01-02T00:00:00.000Z')}This conference has ended; the schedule below is the final record. See the official schedule for the full program.`,
+    sourceLine({ generatedAt, final: true, days: lastDay('2031-01-01') }),
+    concluded,
   );
   assert.equal(
-    sourceLine('2031-01-03', '2031-01-02T00:00:00.000Z'),
-    `${prefix('2031-01-02T00:00:00.000Z')}Times, rooms, and speakers may change; check the live official schedule for updates.`,
+    sourceLine({ generatedAt, days: lastDay('2031-01-01') }),
+    upcoming,
   );
   assert.equal(
-    sourceLine('2031-01-02', '2031-01-02T00:00:00.000Z'),
-    `${prefix('2031-01-02T00:00:00.000Z')}Times, rooms, and speakers may change; check the live official schedule for updates.`,
+    sourceLine({ generatedAt, final: false, days: lastDay('2031-01-01') }),
+    upcoming,
+  );
+  assert.equal(
+    sourceLine({ generatedAt, days: lastDay('2031-01-03') }),
+    upcoming,
   );
 });

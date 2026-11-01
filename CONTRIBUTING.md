@@ -201,8 +201,10 @@ Rules:
   `EndUserTalkSchedule`. The weekly "Refresh metrics" workflow re-runs
   `npm run collect:end-user-talks` (no `GH_TOKEN` needed) and opens a pull
   request with the result. A conference schedule is final once the event has
-  run, so the collector skips an event whose snapshot ends before today unless
-  it is named on the command line or `--all` is passed: run
+  run, so the collector stamps a snapshot `final: true` the first time its last
+  day has passed (the event page then calls the schedule a final record) and
+  afterwards skips the event unless it is named on the command line or `--all`
+  is passed: run
   `npm run collect:end-user-talks` when adding an event, and
   `npm run collect:end-user-talks -- <slug>` after curating a past event's
   links, then commit the result. The Sched source reads the whole schedule

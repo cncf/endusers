@@ -201,6 +201,15 @@ for (const event of events) {
       );
     }
   }
+  // The collector stamps `final: true` once the conference has ended and
+  // omits the flag otherwise; the event page reads it to call the schedule a
+  // final record. Any other value is a hand edit the page would misread.
+  if (data?.final !== undefined && data.final !== true) {
+    fail(
+      pathPrefix,
+      'final must be true when present; the collector omits it for an event that has not ended',
+    );
+  }
   for (const day of Array.isArray(data?.days) ? data.days : []) {
     for (const slot of Array.isArray(day?.slots) ? day.slots : []) {
       for (const talk of Array.isArray(slot?.talks) ? slot.talks : []) {

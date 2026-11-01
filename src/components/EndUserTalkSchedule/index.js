@@ -62,12 +62,12 @@ function TalkDetails({ talk }) {
 // page that renders it so the component stays free of any one event's data.
 export default function EndUserTalkSchedule({ schedule }) {
   const verifiedDate = formatDate(schedule.generatedAt);
-  // A snapshot whose last day precedes the day it was verified can no longer
-  // change — the collector's isFinal() applies the same rule and stops
-  // refreshing it — so the closing sentence stops promising updates that will
-  // never come. Both operands ship in the snapshot, so the server-rendered
-  // HTML and the hydrated page agree on a date new Date() could not give.
-  const isFinal = schedule.days.at(-1).date < schedule.generatedAt.slice(0, 10);
+  // The collector stamps a snapshot `final: true` once its last day has
+  // passed and stops refreshing it, so the closing sentence stops promising
+  // updates that will never come. The flag ships in the snapshot, so the
+  // server-rendered HTML and the hydrated page agree without consulting a
+  // clock; generatedAt would not do, since it only moves when talks change.
+  const isFinal = schedule.final === true;
   return (
     <div className={styles.schedule}>
       <p>

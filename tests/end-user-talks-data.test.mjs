@@ -165,6 +165,15 @@ for (const { event, schedule } of snapshots) {
       assert.ok(days.length > 0, 'days must not be empty');
     });
 
+    // The collector writes `final: true` once the conference has ended and
+    // nothing else; the event page reads the flag to call the schedule a
+    // final record, so any other value is a hand edit.
+    test('final, when present, is true', () => {
+      if (Object.hasOwn(schedule, 'final')) {
+        assert.equal(schedule.final, true);
+      }
+    });
+
     // A future stamp means the snapshot was written against a clock that is not
     // this repository's, which is the signature of a hand-edited file.
     test('generatedAt is a real instant that is not in the future', () => {

@@ -346,6 +346,22 @@ test("rejects a snapshot whose provenance is not its event's", () => {
   }
 });
 
+// The collector stamps `final: true` once the conference has ended and omits
+// the flag otherwise; any other value is a hand edit the event page would read
+// as an upcoming conference.
+test('accepts a snapshot stamped final and rejects any other value of the flag', () => {
+  const stamped = run(schedule({ final: true }));
+  assert.equal(stamped.status, 0, stamped.stderr);
+  for (const value of [false, 'yes']) {
+    const result = run(schedule({ final: value }));
+    assert.equal(result.status, 1, String(value));
+    assert.match(
+      result.stderr,
+      /kubecon-na-2026: final must be true when present; the collector omits it for an event that has not ended/,
+    );
+  }
+});
+
 // A Sched event: the listing is its "API", the id is a short Sched code and
 // the snapshot says so.
 const SCHED = 'https://kccncind2026.sched.com/';

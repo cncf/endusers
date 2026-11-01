@@ -36,6 +36,12 @@ const links = new Map(
   ).map((entry) => [entry.id, entry]),
 );
 
+// A conference is final once its last day is before today. The environment
+// override keeps the rule testable on any date.
+const today =
+  process.env.ENDUSERS_TODAY ?? new Date().toISOString().slice(0, 10);
+const hasEnded = (days) => days.at(-1).date < today;
+
 const dateFormat = new Intl.DateTimeFormat('en-US', {
   weekday: 'long',
   month: 'long',
@@ -263,7 +269,7 @@ async function collect(event) {
     slot.talks.push(talk);
   }
 
-  return {
+  return withFinal({
     description: `Generated from the ${SOURCES[source].label} by npm run collect:end-user-talks. Do not hand-edit.`,
     source,
     sourceUrl: event.sourceUrl,
@@ -274,7 +280,17 @@ async function collect(event) {
     timezone: event.timezone,
     talkCount: sessions.length,
     days: [...days.values()],
-  };
+  });
+}
+
+// A concluded conference's snapshot carries `final: true`, which the event
+// page reads to call the schedule a final record instead of one that may
+// still change; an upcoming one carries no flag. The flag sits before `days`
+// so a diff of the provenance fields stays readable.
+function withFinal(snapshot) {
+  if (!hasEnded(snapshot.days)) return snapshot;
+  const { days, ...fields } = snapshot;
+  return { ...fields, final: true, days };
 }
 
 // Only bump generatedAt and rewrite a schedule when its talks themselves
@@ -296,23 +312,35 @@ if (unknown.length) {
     `no such event in data/end-user-talk-events.json: ${unknown.join(', ')}`,
   );
 }
-// The environment override keeps the skip testable on any date.
-const today =
-  process.env.ENDUSERS_TODAY ?? new Date().toISOString().slice(0, 10);
-
-function isFinal(outputPath) {
+// A snapshot the weekly run would skip is stamped `final: true` the first time
+// its last day has passed, without a fetch and without touching generatedAt:
+// no talk was re-verified, the event page just learns the conference is over.
+// Once stamped, the file is left alone so the run opens no no-op PR.
+function finalizeExisting(event, outputPath) {
   if (!existsSync(outputPath)) return false;
-  const { days } = JSON.parse(readFileSync(outputPath, 'utf8'));
-  return days.at(-1).date < today;
+  const snapshot = JSON.parse(readFileSync(outputPath, 'utf8'));
+  if (!hasEnded(snapshot.days)) return false;
+  const hint = `Run npm run collect:end-user-talks -- ${event.slug} to refresh it anyway.`;
+  if (snapshot.final === true) {
+    console.log(`Skipping ${event.slug}; its schedule is final. ${hint}`);
+    return true;
+  }
+  writeFileSync(
+    outputPath,
+    JSON.stringify(withFinal(snapshot), null, 2) + '\n',
+  );
+  console.log(`Marked ${event.slug} final; its last day has passed. ${hint}`);
+  return true;
 }
 
 mkdirSync(new URL('end-user-talks/', dataDir), { recursive: true });
 for (const event of events) {
   const outputPath = new URL(`end-user-talks/${event.slug}.json`, dataDir);
-  if (!refreshAll && !requested.includes(event.slug) && isFinal(outputPath)) {
-    console.log(
-      `Skipping ${event.slug}; its schedule is final. Run npm run collect:end-user-talks -- ${event.slug} to refresh it anyway.`,
-    );
+  if (
+    !refreshAll &&
+    !requested.includes(event.slug) &&
+    finalizeExisting(event, outputPath)
+  ) {
     continue;
   }
   const data = await collect(event);

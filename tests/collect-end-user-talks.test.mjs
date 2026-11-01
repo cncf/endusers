@@ -206,15 +206,43 @@ test('leaves the schedule untouched when nothing changed', () => {
 });
 
 // A schedule is final once its event has run; the weekly run must not spend
-// a request (or, for Sched, a request per session) re-reading one.
-test('skips an event whose snapshot ends before today unless it is asked for', () => {
+// a request (or, for Sched, a request per session) re-reading one. The first
+// run after the last day stamps the snapshot `final: true` so the event page
+// can call it a final record; the runs after that leave it alone.
+test('stamps a snapshot final once its last day has passed, then skips it, unless it is asked for', () => {
   const first = collect();
   assert.equal(first.status, 0, first.stderr);
   const snapshot = first.outputs[OUTPUT];
+  const upcoming = JSON.parse(snapshot);
+  assert.ok(!('final' in upcoming), 'an upcoming snapshot carries no flag');
   const after = { env: { ENDUSERS_TODAY: '2026-11-11' } };
 
-  const skipped = collect(sessionizeFixture(), {
+  // generatedAt (2026-01-01) precedes the last day (2026-11-10) and the event
+  // has since ended: the case a comparison against generatedAt gets wrong.
+  const stamped = collect(sessionizeFixture(), {
     fixtures: { [OUTPUT]: snapshot },
+    ...after,
+  });
+  assert.equal(stamped.status, 0, stamped.stderr);
+  assert.match(
+    stamped.stdout,
+    /Marked kubecon-na-2026 final; its last day has passed\. Run npm run collect:end-user-talks -- kubecon-na-2026 to refresh it anyway\./,
+  );
+  assert.equal(stamped.requests.length, 0);
+  const finalSnapshot = stamped.outputs[OUTPUT];
+  const finalized = JSON.parse(finalSnapshot);
+  assert.equal(finalized.final, true);
+  // No talk was re-verified, so the verification date must not move, and the
+  // flag sits with the other provenance fields rather than after the days.
+  assert.equal(finalized.generatedAt, upcoming.generatedAt);
+  assert.deepEqual(
+    { ...finalized, final: undefined },
+    { ...upcoming, final: undefined },
+  );
+  assert.deepEqual(Object.keys(finalized).slice(-2), ['final', 'days']);
+
+  const skipped = collect(sessionizeFixture(), {
+    fixtures: { [OUTPUT]: finalSnapshot },
     ...after,
   });
   assert.equal(skipped.status, 0, skipped.stderr);
@@ -223,7 +251,7 @@ test('skips an event whose snapshot ends before today unless it is asked for', (
     /Skipping kubecon-na-2026; its schedule is final\. Run npm run collect:end-user-talks -- kubecon-na-2026 to refresh it anyway\./,
   );
   assert.equal(skipped.requests.length, 0);
-  assert.equal(skipped.outputs[OUTPUT], snapshot);
+  assert.equal(skipped.outputs[OUTPUT], finalSnapshot);
 
   // The last day of the event is still today, not yet past.
   const onTheDay = collect(sessionizeFixture(), {
@@ -232,21 +260,25 @@ test('skips an event whose snapshot ends before today unless it is asked for', (
   });
   assert.equal(onTheDay.status, 0, onTheDay.stderr);
   assert.equal(onTheDay.requests.length, 1);
+  assert.ok(!('final' in JSON.parse(onTheDay.outputs[OUTPUT])));
 
+  // A forced refresh fetches again and keeps the flag the snapshot earned.
   const changed = sessionizeFixture();
   changed.sessions[0].title = 'Platform Engineering at Acme, Revisited';
   for (const args of [['kubecon-na-2026'], ['--all']]) {
     const forced = collect(changed, {
-      fixtures: { [OUTPUT]: snapshot },
+      fixtures: { [OUTPUT]: finalSnapshot },
       args,
       ...after,
     });
     assert.equal(forced.status, 0, forced.stderr);
     assert.equal(forced.requests.length, 1, args.join(' '));
+    const refreshed = JSON.parse(forced.outputs[OUTPUT]);
     assert.equal(
-      JSON.parse(forced.outputs[OUTPUT]).days[0].slots[0].talks[0].title,
+      refreshed.days[0].slots[0].talks[0].title,
       'Platform Engineering at Acme, Revisited',
     );
+    assert.equal(refreshed.final, true, args.join(' '));
   }
 });
 
