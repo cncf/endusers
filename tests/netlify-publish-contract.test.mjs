@@ -338,35 +338,42 @@ test('every served SVG falls under an asset header rule', () => {
   );
 });
 
-// architecture.cncf.io resolves to this deploy, so without a host redirect the
-// whole site is published twice. Both rules must be forced permanent redirects
-// to the production host, and the path-preserving rule must come first:
+// architecture.cncf.io and its plural alias architectures.cncf.io resolve to
+// this deploy, so without a host redirect the whole site is published under
+// each of them. Every host gets the same pair of rules: both forced permanent
+// redirects to the production host, with the path-preserving rule first.
 // Netlify takes the first matching rule, so a catch-all above it would send
 // every deep link to the catalogue index.
-test('architecture.cncf.io redirects to the catalogue on the production host', () => {
-  const rules = (netlify.redirects ?? []).filter((rule) =>
-    rule.from.startsWith('https://architecture.cncf.io/'),
-  );
-  assert.deepEqual(
-    rules.map((rule) => rule.from),
-    [
-      'https://architecture.cncf.io/architectures/*',
-      'https://architecture.cncf.io/*',
-    ],
-    'the path-preserving rule precedes the catch-all',
-  );
-  for (const rule of rules) {
-    assert.equal(rule.status, 301, `${rule.from} is a permanent redirect`);
-    assert.equal(rule.force, true, `${rule.from} overrides a served file`);
-    assert.match(
-      rule.to,
-      /^https:\/\/endusers\.cncf\.io\/architectures\//,
-      `${rule.from} lands on the catalogue`,
+const ARCHITECTURE_HOSTS = ['architecture.cncf.io', 'architectures.cncf.io'];
+
+for (const host of ARCHITECTURE_HOSTS) {
+  test(`${host} redirects to the catalogue on the production host`, () => {
+    const rules = (netlify.redirects ?? []).filter((rule) =>
+      rule.from.startsWith(`https://${host}/`),
     );
-  }
-  assert.equal(
-    rules[0].to,
-    'https://endusers.cncf.io/architectures/:splat',
-    'deep links keep their architecture id',
-  );
-});
+    assert.deepEqual(
+      rules.map((rule) => rule.from),
+      [`https://${host}/architectures/*`, `https://${host}/*`],
+      'the path-preserving rule precedes the catch-all',
+    );
+    for (const rule of rules) {
+      assert.equal(rule.status, 301, `${rule.from} is a permanent redirect`);
+      assert.equal(rule.force, true, `${rule.from} overrides a served file`);
+      assert.match(
+        rule.to,
+        /^https:\/\/endusers\.cncf\.io\/architectures\//,
+        `${rule.from} lands on the catalogue`,
+      );
+    }
+    assert.equal(
+      rules[0].to,
+      'https://endusers.cncf.io/architectures/:splat',
+      'deep links keep their architecture id',
+    );
+    assert.equal(
+      rules[1].to,
+      'https://endusers.cncf.io/architectures/',
+      'everything else lands on the catalogue index',
+    );
+  });
+}

@@ -142,11 +142,13 @@
 # a host whose canonical URLs all say endusers.cncf.io. Every request on that
 # host is sent to the catalogue instead. Deep links keep their path because the
 # architecture ids did not change in the move; anything else lands on the
-# catalogue index. Rules are evaluated in order, so the path-preserving rule
-# must stay above the catch-all. The scheme is part of the match; Netlify
-# upgrades http:// to https:// before redirect rules run, so one https rule
-# covers both. force = true applies the rule even though the build holds a
-# file at the path.
+# catalogue index. architectures.cncf.io is the plural alias of the same host
+# and gets the same pair of rules; a Netlify rule matches one host, so each
+# alias needs its own pair. Rules are evaluated in order, so each host's
+# path-preserving rule must stay above its catch-all. The scheme is part of
+# the match; Netlify upgrades http:// to https:// before redirect rules run,
+# so one https rule covers both. force = true applies the rule even though the
+# build holds a file at the path.
 [[redirects]]
   from = "https://architecture.cncf.io/architectures/*"
   to = "https://endusers.cncf.io/architectures/:splat"
@@ -155,6 +157,18 @@
 
 [[redirects]]
   from = "https://architecture.cncf.io/*"
+  to = "https://endusers.cncf.io/architectures/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://architectures.cncf.io/architectures/*"
+  to = "https://endusers.cncf.io/architectures/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://architectures.cncf.io/*"
   to = "https://endusers.cncf.io/architectures/"
   status = 301
   force = true
