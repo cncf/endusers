@@ -25,7 +25,6 @@ architecture:
     - Helm
     - CloudNativePG
     - Cilium
-    - Longhorn
     - Envoy Gateway
   sourceUrl: https://github.com/cncf/architecture/tree/8af07d62851bc770130a6f942ca7cf9ab20eb784/content/en/architectures/swisscom-kubernetes-service
   sourceCommit: 8af07d62851bc770130a6f942ca7cf9ab20eb784
@@ -58,8 +57,6 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
   <CNCFProjectCard name={"CloudNativePG"} href={"https://www.cncf.io/projects/cloudnativepg/"} since={"2024"} version={"v1.27.0 (CNIP), v1.28.1 (SKP)"} description={"CloudNativePG (CNPG) manages PostgreSQL databases in cloud-native environments. It handles the full lifecycle of highly available PostgreSQL clusters (primary/standby with native streaming replication), including declarative deployment, scaling, backups, self-healing, failover and monitoring."} />
 
   <CNCFProjectCard name={"Cilium"} href={"https://www.cncf.io/projects/cilium/"} logo={"/img/cncf-projects/cilium-cilium_icon-color.svg"} since={"2024"} version={"v1.18.6 (SKP)"} description={"Cilium is an open source, cloud native solution for providing, securing, and observing network connectivity between workloads, fueled by the revolutionary Kernel technology eBPF. It provides a simple flat Layer 3 network with the ability to span multiple clusters in either a native routing or overlay mode. It is L7-protocol aware and can enforce network policies on L3-L7 using an identity based security model that is decoupled from network addressing."} />
-
-  <CNCFProjectCard name={"Longhorn"} href={"https://www.cncf.io/projects/longhorn/"} logo={"/img/cncf-projects/longhorn-longhorn-icon-color.svg"} since={"2024"} version={"v1.10.1 (SKP)"} description={"Longhorn is a lightweight, reliable, and powerful cloud-native distributed block storage system for Kubernetes, that implements distributed block storage using containers and microservices. Longhorn creates a dedicated storage controller for each block device volume and synchronously replicates the volume across multiple replicas stored on multiple nodes. The storage controller and replicas are themselves orchestrated using Kubernetes."} />
 
   <CNCFProjectCard name={"Envoy Gateway"} href={"https://www.cncf.io/projects/envoy/"} logo={"/img/cncf-projects/envoy-envoy-icon-color.svg"} since={"2025"} version={"v1.6.4 (SKP)"} description={"Part of the Envoy project, Envoy Gateway is an open source project for managing Envoy Proxy as a standalone or Kubernetes-based application gateway. Kubernetes Gateway API resources are used to dynamically provision and configure the managed Envoy Proxies."} />
 
