@@ -87,7 +87,10 @@ test('classifies PR and merge-queue changes with a complete diff base', () => {
     '${{ steps.classify.outputs.documents_b64 }}',
   );
   assert.equal(classify.steps[0].with['fetch-depth'], 0);
-  assert.match(classify.steps[1].run, /runClassifier\(\)/u);
+  assert.match(
+    step('classify', 'Classify changed documents').run,
+    /runClassifier\(\)/u,
+  );
 });
 
 test('keeps content contracts and the production build on the focused path', () => {
