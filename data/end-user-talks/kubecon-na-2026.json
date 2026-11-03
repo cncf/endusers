@@ -5,9 +5,9 @@
   "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
   "selection": "End User Programming → End User Talk",
   "location": "Salt Lake City",
-  "generatedAt": "2026-10-31T21:36:37.270Z",
+  "generatedAt": "2026-11-03T18:29:30.869Z",
   "timezone": "MST (UTC−7)",
-  "talkCount": 83,
+  "talkCount": 82,
   "days": [
     {
       "date": "2026-11-10",
@@ -245,12 +245,12 @@
               "description": "AI and agentic systems are becoming production workloads on cloud-native platforms, and the hard questions land with platform teams. How do agents identify themselves? What can they access? How fast can they act? What can they cost? How are their actions audited? What evidence does the platform need when something goes wrong?\n\nThis panel brings together four perspectives that usually handle these separately: an end-user platform practitioner, an OpenTelemetry maintainer, a security practitioner, and an AI infrastructure engineer. Together they examine what shared infrastructure must guarantee as AI systems become governable workloads: identity for non-human callers, observability beyond human dashboards, policy and blast-radius controls, inference and routing demands, build-versus-buy, and accountability across application, model, and vendor.\n\nAttendees leave with a practical frame: what today's CNCF substrate can support, where standards emerge, and what platform teams must own."
             },
             {
-              "id": "1250187",
-              "title": "Zero Downtime CNI Migration at Scale: Canal to Cilium Across Hundreds of Production Clusters",
-              "speakers": "Prathamesh Bhope",
+              "id": "1246066",
+              "title": "AI-DDoS: How AI-Generated Contributions Are Breaching OSS Communities, and What We Can Do about It",
+              "speakers": "Zixuan Feng",
               "room": "Salt Palace | Level 1 | 151",
-              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250187",
-              "description": "Migrating a CNI plugin in production is one of the most high-risk operations in Kubernetes infra. At Walmart running hundreds of clusters across cloud and on-premises environments, the team faced route-drop failures in Flannel beyond 300 nodes, iptables rule explosion as services grew and etcd v2 incompatibility blocking upgrades. No published playbook existed for zero-downtime CNI replacement at that scale.\n\nThis talk walks through the per-node hybrid migration strategy that enabled zero-downtime transitions from Canal to Cilium. Canal and Cilium coexist during transition with a hybrid tunneling mode maintaining full pod connectivity regardless of which CNI owns a given node. Result: 2.27x throughput improvement and 38% reduction in cross-node latency with no production incidents.\n\nAttendees leave with a reusable migration framework covering hybrid mode architecture, IPAM coordination, cloud provider pitfalls and a structured Cilium triage playbook for post-migration operations."
+              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1246066",
+              "description": "OSS communities are sounding the alarm that AI-generated contributions are flooding their projects. Much like a DDoS attack overwhelms a server with excessive requests until it goes offline, this flood can overwhelm maintainers and push projects to shut their doors. We call it AI-DDoS. Some projects are already responding defensively: closing bug bounties, moving to invitation-only models, or rejecting unsolicited pull requests. These responses may address the immediate symptoms, yet they risk closing the door to new contributors, upending their ecosystem.\n\nWe analyzed over 2 million PRs and issues from 350,000+ contributors across 294 widely used repositories. Our findings show that AI-DDoS is a structural, ecosystem-wide pressure on the OSS contribution pipeline. From this evidence, we developed 11 practitioner-driven strategies that projects can use to manage AI-DDoS while balancing openness, maintainer capacity, and their stance toward AI-assisted contributions."
             }
           ]
         },
@@ -291,14 +291,6 @@
               "room": "Salt Palace | Level 1 | Grand Ballroom GI",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250789",
               "description": "Once a GPU fleet outgrows a single Kubernetes cluster, optimizing its utilization becomes genuinely hard. At Snapchat, scarce GPUs serve a diverse mix of workloads: autoscaled latency-critical inference alongside batch training, Spark, and Ray across many clusters. Kubernetes' GPU ecosystem shines inside a cluster but stops at its edge: capacity sits idle in one cluster while work queues in another, or a low-priority job holds a GPU a critical service can't preempt on a separate cluster.\n\nLeveraging Virtual Kubelet, we built a virtualization layer that allows us to schedule workloads wherever capacity actually exists. Alongside our extension of Kueue that enforces priority across cluster boundaries, we built a platform that optimizes scarce compute across any number of Kubernetes clusters, regions, and even clouds.\n\nThe result was nearly 2x average GPU utilization and $XX million saved annually, while availability and latency for critical workloads improved."
-            },
-            {
-              "id": "1246066",
-              "title": "AI-DDoS: How AI-Generated Contributions Are Breaching OSS Communities, and What We Can Do about It",
-              "speakers": "Zixuan Feng",
-              "room": "Salt Palace | Level 1 | 151",
-              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1246066",
-              "description": "OSS communities are sounding the alarm that AI-generated contributions are flooding their projects. Much like a DDoS attack overwhelms a server with excessive requests until it goes offline, this flood can overwhelm maintainers and push projects to shut their doors. We call it AI-DDoS. Some projects are already responding defensively: closing bug bounties, moving to invitation-only models, or rejecting unsolicited pull requests. These responses may address the immediate symptoms, yet they risk closing the door to new contributors, upending their ecosystem.\n\nWe analyzed over 2 million PRs and issues from 350,000+ contributors across 294 widely used repositories. Our findings show that AI-DDoS is a structural, ecosystem-wide pressure on the OSS contribution pipeline. From this evidence, we developed 11 practitioner-driven strategies that projects can use to manage AI-DDoS while balancing openness, maintainer capacity, and their stance toward AI-assisted contributions."
             }
           ]
         }

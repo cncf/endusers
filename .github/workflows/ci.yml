@@ -31,6 +31,15 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Set up Node.js
+        # The classifier gates every other job and imports only `node:`
+        # builtins, so it needs a runtime but no dependencies. Without this it
+        # inherits whatever `node` the runner image happens to ship, and a
+        # self-hosted runner claiming the `ubuntu-24.04` label ships none
+        # (#2096).
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
       - name: Classify changed documents
         id: classify
         run:

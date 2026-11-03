@@ -21,6 +21,12 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # collect:metrics lists cncf/tab issues for the reference architecture
+  # submission cards. Without this grant the token sees only the pull request
+  # entries of that listing, the collector filters them out and the lane
+  # publishes 0 open submissions and a 0-day median against a real queue of
+  # a dozen (#1878).
+  issues: read
 
 # Serialised on the branch this workflow force-pushes; see the note in
 # refresh-radar-reports.yml. Not cancelled, for the same reason.

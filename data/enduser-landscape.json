@@ -1,11 +1,11 @@
 {
   "generated": true,
-  "collectedAt": "2026-10-28T15:32:12.765Z",
+  "collectedAt": "2026-11-03T03:50:08.397Z",
   "source": {
     "repository": "https://github.com/cncf/landscape",
-    "revision": "c239ac1c6d2e5e096c6cf9f12b9330ae8c832438",
+    "revision": "8c9f79de66c911f82af67c030e2546b8a7998607",
     "file": "landscape.yml",
-    "sourceUrl": "https://github.com/cncf/landscape/blob/c239ac1c6d2e5e096c6cf9f12b9330ae8c832438/landscape.yml"
+    "sourceUrl": "https://github.com/cncf/landscape/blob/8c9f79de66c911f82af67c030e2546b8a7998607/landscape.yml"
   },
   "selection": {
     "member": "CNCF Members item.enduser === true and name suffix \"(member)\"",
@@ -1531,22 +1531,6 @@
       "joined": "2022-06-01",
       "logoFilename": "decathlon.svg",
       "localLogo": "/img/end-user-members/bcca5d1a95559e53-decathlon.svg",
-      "logoWarning": null
-    },
-    {
-      "sourceId": "cncf/landscape#CNCF Members/End User Supporter and Contributor/DFDS (supporter)",
-      "sourceRole": "supporter",
-      "included": false,
-      "classificationReason": "legacy-supporter-audit-only",
-      "sourceName": "DFDS (supporter)",
-      "displayName": "DFDS",
-      "category": "CNCF Members",
-      "subcategory": "End User Supporter and Contributor",
-      "enduser": false,
-      "homepageUrl": "https://www.dfds.com/en",
-      "joined": "2021-11-01",
-      "logoFilename": "dfds.svg",
-      "localLogo": null,
       "logoWarning": null
     },
     {
