@@ -186,6 +186,7 @@
     },
     "markdownlint-cli": {
       "js-yaml": "^5.4.2",
+      "re2js": "^2.8.7",
       "smol-toml": "^1.9.0"
     },
     "tinypool": "^2.1.2",
