@@ -2,7 +2,7 @@
 title: Resources
 description:
   Case studies, Technology Radar reports, ecosystem metrics, and the site
-  changelog for CNCF end users.
+  changelog, plus a job board for CNCF end users.
 sidebar_position: 1
 ---
 
@@ -25,6 +25,10 @@ site.
   <div className="pillar">
     <h3><Link to="/resources/radar-reports">Radar Reports</Link></h3>
     <p>Brief summaries of every CNCF Technology Radar report, with links to the full survey-based research on cloud native technology adoption.</p>
+  </div>
+  <div className="pillar">
+    <h3><a href="https://gitjobs.dev/" target="_blank" rel="noopener noreferrer">Job Board</a></h3>
+    <p>Browse job listings on GitJobs.</p>
   </div>
   <div className="pillar">
     <h3><Link to="/resources/metrics">Metrics</Link></h3>
