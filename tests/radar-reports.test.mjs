@@ -15,6 +15,7 @@ import { importSource } from './helpers-jsx.mjs';
 import {
   findAllByType,
   findByType,
+  renderElement,
   textOf,
   walkElements,
 } from './tools/react-element-tree.mjs';
@@ -22,6 +23,11 @@ import {
 const { default: RadarReports } = await importSource(
   'src/components/RadarReports/index.js',
 );
+
+// RadarReports hands its corpus to the shared <ReportList /> in
+// src/components/shared, so the list itself is one level down: render that
+// element to reach the section, list items and provenance line.
+const render = () => renderElement(RadarReports());
 
 // The component imports the corpus through the `@site` alias at module scope,
 // so the test cannot inject a fixture through props. Importing the same JSON
@@ -92,13 +98,13 @@ function withCorpus(patch, run) {
 }
 
 test('the report list is a labelled landmark region', () => {
-  const tree = RadarReports();
+  const tree = render();
   assert.equal(tree.type, 'section');
   assert.equal(tree.props['aria-label'], 'CNCF Technology Radar reports');
 });
 
 test('one list item is rendered per mirrored report', () => {
-  const items = findAllByType(RadarReports(), 'li');
+  const items = findAllByType(render(), 'li');
   assert.equal(items.length, reports.length);
   assert.ok(
     reports.length > 0,
@@ -107,7 +113,7 @@ test('one list item is rendered per mirrored report', () => {
 });
 
 test('every list item carries a unique React key', () => {
-  const keys = findAllByType(RadarReports(), 'li').map((item) => item.key);
+  const keys = findAllByType(render(), 'li').map((item) => item.key);
   assert.ok(
     keys.every((key) => key !== null && key !== undefined),
     'a keyless list item would make React re-mount rows on every re-render',
@@ -116,7 +122,7 @@ test('every list item carries a unique React key', () => {
 });
 
 test('each report title links to its own cncf.io page', () => {
-  const items = findAllByType(RadarReports(), 'li');
+  const items = findAllByType(render(), 'li');
   items.forEach((item, index) => {
     const report = reports[index];
     const heading = findByType(item, 'h2');
@@ -129,7 +135,7 @@ test('each report title links to its own cncf.io page', () => {
 });
 
 test('each report summary is rendered as text', () => {
-  const items = findAllByType(RadarReports(), 'li');
+  const items = findAllByType(render(), 'li');
   items.forEach((item, index) => {
     assert.ok(
       textOf(item).includes(reports[index].summary),
@@ -139,7 +145,7 @@ test('each report summary is rendered as text', () => {
 });
 
 test('a publication date is shown as a long en-US date', () => {
-  const items = findAllByType(RadarReports(), 'li');
+  const items = findAllByType(render(), 'li');
   const dated = reports.filter((report) => report.publishedAt);
   assert.ok(
     dated.length > 0,
@@ -160,7 +166,7 @@ test('a publication date is shown as a long en-US date', () => {
 });
 
 test('the provenance line credits the upstream source and mirror date', () => {
-  const status = renderSyncStatus(RadarReports());
+  const status = renderSyncStatus(render());
   assert.ok(status, 'expected a provenance line for a corpus with generatedAt');
   const anchor = findByType(status, 'a');
   assert.ok(anchor, 'expected the provenance line to link to the source');
@@ -178,7 +184,7 @@ test('the provenance line credits the upstream source and mirror date', () => {
 });
 
 test('every outbound link opens in a new tab without leaking window.opener', () => {
-  const tree = RadarReports();
+  const tree = render();
   const anchors = [
     ...findAllByType(tree, 'a'),
     ...findAllByType(renderSyncStatus(tree), 'a'),
@@ -209,7 +215,7 @@ test('every outbound link opens in a new tab without leaking window.opener', () 
 test('no provenance line is rendered when the mirror date is missing', () => {
   withCorpus({ generatedAt: undefined }, () => {
     assert.equal(
-      renderSyncStatus(RadarReports()),
+      renderSyncStatus(render()),
       null,
       'a corpus with no generatedAt must render no provenance line',
     );
@@ -218,7 +224,7 @@ test('no provenance line is rendered when the mirror date is missing', () => {
 
 test('an empty page is rendered when the corpus holds no report list', () => {
   withCorpus({ radarReports: undefined }, () => {
-    const tree = RadarReports();
+    const tree = render();
     assert.equal(
       findAllByType(tree, 'li').length,
       0,
@@ -229,7 +235,7 @@ test('an empty page is rendered when the corpus holds no report list', () => {
   });
 
   withCorpus({ radarReports: [] }, () => {
-    assert.equal(findAllByType(RadarReports(), 'li').length, 0);
+    assert.equal(findAllByType(render(), 'li').length, 0);
   });
 });
 
@@ -241,7 +247,7 @@ test('a report with no publication date renders no date row', () => {
     summary: 'A mirrored report whose upstream page carries no date.',
   };
   withCorpus({ radarReports: [undated] }, () => {
-    const items = findAllByType(RadarReports(), 'li');
+    const items = findAllByType(render(), 'li');
     assert.equal(items.length, 1);
     const [item] = items;
     assert.equal(

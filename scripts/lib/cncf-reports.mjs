@@ -1,0 +1,199 @@
+// Shared machinery for the cncf.io report mirrors: the Radar reports behind
+// /resources/radar-reports and the Survey reports behind
+// /resources/survey-reports. Both lists come from the same `lf_report` post
+// type on the cncf.io WordPress REST API, differ only in the `lf-report-type`
+// term they filter on, and are refreshed by the same scheduled workflow, so
+// the collector and validator live here once and each report type is a short
+// configuration record passed in by its scripts/collect-*.mjs and
+// scripts/validate-*.mjs entry points.
+//
+// cncf.io does not publish an excerpt for these reports, so each entry keeps
+// a short hand-written `summary`. Existing summaries are preserved across
+// refreshes (matched by report id); new reports get a placeholder summary
+// that a maintainer should replace with a real one-sentence description in
+// the PR the refresh workflow opens.
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { decodeEntities, fetchAllPages } from './cncf-wp-api.mjs';
+import {
+  checkDuplicateOrMissingId,
+  checkNonEmptyArray,
+  checkParseableDate,
+  checkPublishableSourceUrl,
+  publishableCncfUrl,
+  reportAndExit,
+  CNCF_HOST_SUFFIXES,
+} from './validate-utils.mjs';
+
+const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
+const API = 'https://www.cncf.io/wp-json/wp/v2';
+const PLACEHOLDER_SUMMARY = 'Summary needed — see the report for details.';
+
+/**
+ * One mirrored report type.
+ *
+ * @typedef {object} ReportType
+ * @property {string} slug the `lf-report-type` term slug on cncf.io
+ * @property {string} name the term's display name, used in `source`
+ * @property {string} noun how the reports are named in log lines
+ * @property {string} key the array property in the data file
+ * @property {string} file the data file name under data/
+ * @property {string} route the site route the data renders at
+ * @property {string} collector the collector script name, for `description`
+ */
+
+/** @type {ReportType} */
+export const RADAR_REPORTS = {
+  slug: 'radar',
+  name: 'Radar',
+  noun: 'radar report',
+  key: 'radarReports',
+  file: 'radar-reports.json',
+  route: '/resources/radar-reports',
+  collector: 'scripts/collect-radar-reports.mjs',
+};
+
+/** @type {ReportType} */
+export const SURVEY_REPORTS = {
+  slug: 'survey',
+  name: 'Survey',
+  noun: 'survey report',
+  key: 'surveyReports',
+  file: 'survey-reports.json',
+  route: '/resources/survey-reports',
+  collector: 'scripts/collect-survey-reports.mjs',
+};
+
+/** The cncf.io listing a report type mirrors. */
+function reportListingUrl(type) {
+  return `https://www.cncf.io/reports?_sft_lf-report-type=${type.slug}`;
+}
+
+/**
+ * Collects the current reports of one type from cncf.io and writes the data
+ * file, leaving it untouched when nothing changed.
+ *
+ * @param {ReportType} type
+ * @param {{ root?: string }} [options] repository root holding data/
+ */
+export async function collectReports(type, { root = REPO_ROOT } = {}) {
+  const reportTypes = await fetchAllPages(API, 'lf-report-type');
+  const term = reportTypes.find((candidate) => candidate.slug === type.slug);
+  if (!term)
+    throw new Error(
+      `cncf.io no longer exposes an lf-report-type term with slug "${type.slug}"`,
+    );
+
+  const existingPath = join(root, 'data', type.file);
+  const existingSummaries = new Map();
+  let existingReports = [];
+  if (existsSync(existingPath)) {
+    const existing = JSON.parse(readFileSync(existingPath, 'utf8'));
+    existingReports = existing[type.key] || [];
+    for (const report of existingReports) {
+      if (report.summary) existingSummaries.set(report.id, report.summary);
+    }
+  }
+
+  const posts = await fetchAllPages(
+    API,
+    `lf_report?lf-report-type=${term.id}&_fields=id,slug,link,title,date`,
+  );
+
+  const reports = posts
+    .map((post) => ({
+      id: post.id,
+      title: decodeEntities(post.title?.rendered?.trim() || post.slug),
+      slug: post.slug,
+      url: post.link,
+      publishedAt: post.date ? post.date.slice(0, 10) : null,
+      summary: existingSummaries.get(post.id) || PLACEHOLDER_SUMMARY,
+    }))
+    .sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''));
+
+  // Only bump generatedAt and rewrite the catalog when the reports themselves
+  // changed. cncf.io content is checked daily but rarely changes day to day,
+  // so touching generatedAt on every run would open a no-op refresh PR each
+  // time (see #648).
+  if (
+    existsSync(existingPath) &&
+    JSON.stringify(reports) === JSON.stringify(existingReports)
+  ) {
+    console.log(`No ${type.noun} changes detected; leaving catalog untouched.`);
+    return;
+  }
+
+  const generatedAt = new Date().toISOString();
+  const data = {
+    description: `CNCF ${type.name} reports mirrored from cncf.io for ${type.route}. Regenerated by ${type.collector} via the refresh-radar-reports workflow (daily). \`summary\` is hand-written and preserved across refreshes; fill in PLACEHOLDER summaries in the automation PR.`,
+    generatedAt,
+    source: `cncf.io reports (${type.name} type)`,
+    sourceUrl: reportListingUrl(type),
+    apiUrl: `${API}/lf_report?lf-report-type=${term.id}`,
+    [type.key]: reports,
+  };
+
+  mkdirSync(join(root, 'data'), { recursive: true });
+  writeFileSync(existingPath, JSON.stringify(data, null, 2) + '\n');
+  console.log(`Collected ${reports.length} ${type.noun}s at ${generatedAt}`);
+}
+
+// The collector copies each post's `link` through verbatim, and the report
+// list component renders every one of them as an <a href> — the sourceUrl
+// link under the hard-coded anchor text "cncf.io/reports", so its real
+// destination is never visible. A scheme prefix test is not a gate: it
+// accepts any host, and it accepts a userinfo component
+// ("https://www.cncf.io@evil.example/") that resolves to a hostile host while
+// reading as CNCF to a maintainer skimming a generated JSON diff.
+// publishableCncfUrl() in ./validate-utils.mjs is the shared gate; it parses
+// the URL and holds the host to an allow-list, the same standard
+// scripts/validate-case-studies.mjs already applies to the sibling feed.
+
+/**
+ * Validates the data file of one report type and exits non-zero on error.
+ *
+ * @param {ReportType} type
+ * @param {{ root?: string }} [options] repository root holding data/
+ */
+export function validateReports(type, { root = REPO_ROOT } = {}) {
+  const data = JSON.parse(readFileSync(join(root, 'data', type.file), 'utf8'));
+  const errors = [];
+
+  checkParseableDate(errors, type.file, 'generatedAt', data.generatedAt);
+  checkPublishableSourceUrl(errors, type.file, data.sourceUrl);
+  checkNonEmptyArray(errors, type.file, type.key, data[type.key]);
+
+  const ids = new Set();
+  for (const entry of Array.isArray(data[type.key]) ? data[type.key] : []) {
+    const id = entry.id ?? entry.slug ?? 'unknown';
+    checkDuplicateOrMissingId(errors, String(id), entry.id, ids);
+    if (!entry.title)
+      errors.push({
+        path: String(id),
+        severity: 'error',
+        message: 'missing title',
+      });
+    if (!entry.url || !publishableCncfUrl(entry.url))
+      errors.push({
+        path: String(id),
+        severity: 'error',
+        message: `url must be an https URL, with no userinfo, on ${CNCF_HOST_SUFFIXES.join(' or ')}: ${JSON.stringify(entry.url)}`,
+      });
+    if (!entry.summary)
+      errors.push({
+        path: String(id),
+        severity: 'error',
+        message: 'missing summary',
+      });
+    if (entry.summary === PLACEHOLDER_SUMMARY)
+      errors.push({
+        path: String(id),
+        severity: 'warn',
+        message: 'summary is still the auto-generated placeholder',
+      });
+  }
+
+  reportAndExit(errors, `${type.noun}s`);
+  console.log(`Validated ${data[type.key].length} ${type.noun}s`);
+}

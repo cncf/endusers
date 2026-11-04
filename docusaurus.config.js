@@ -460,24 +460,24 @@ const config = {
               return items;
             }
 
-            const radarReportsIndex = items.findIndex(
+            const surveyReportsIndex = items.findIndex(
               (item) =>
-                item.type === 'doc' && item.id === 'resources/radar-reports',
+                item.type === 'doc' && item.id === 'resources/survey-reports',
             );
-            if (radarReportsIndex === -1) {
+            if (surveyReportsIndex === -1) {
               throw new Error(
-                'The Resources sidebar must include Radar Reports before the Job Board.',
+                'The Resources sidebar must include Survey Reports before the Job Board.',
               );
             }
 
             return [
-              ...items.slice(0, radarReportsIndex + 1),
+              ...items.slice(0, surveyReportsIndex + 1),
               {
                 type: 'html',
                 value:
                   '<a class="menu__link" href="https://gitjobs.dev/" target="_blank" rel="noopener noreferrer">Job Board</a>',
               },
-              ...items.slice(radarReportsIndex + 1),
+              ...items.slice(surveyReportsIndex + 1),
             ];
           },
           editUrl: 'https://github.com/cncf/endusers/tree/main',

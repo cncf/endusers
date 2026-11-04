@@ -74,6 +74,7 @@ const ROUTES = [
   { path: '/resources', label: 'resources landing' },
   { path: '/resources/case-studies', label: 'case studies' },
   { path: '/resources/radar-reports', label: 'radar reports' },
+  { path: '/resources/survey-reports', label: 'survey reports' },
   { path: '/blog', label: 'blog index' },
   { path: '/blog/welcome-to-endusers-cncf-io', label: 'blog post' },
   { path: '/blog/archive', label: 'blog archive' },

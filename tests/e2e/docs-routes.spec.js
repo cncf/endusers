@@ -57,6 +57,7 @@ test.describe('resources landing page', () => {
   for (const pillar of [
     { label: 'Case Studies', to: '/resources/case-studies' },
     { label: 'Radar Reports', to: '/resources/radar-reports' },
+    { label: 'Survey Reports', to: '/resources/survey-reports' },
     { label: 'Metrics', to: '/resources/metrics' },
     { label: 'Changelog', to: '/resources/changelog' },
   ]) {

@@ -77,21 +77,26 @@ test.describe('case studies', () => {
   });
 });
 
-test.describe('radar reports', () => {
-  test('lists published reports with links', async ({ page }) => {
-    await page.goto('/resources/radar-reports');
-    const section = page.getByRole('region', {
-      name: 'CNCF Technology Radar reports',
+// The two cncf.io report mirrors share one list component, so the same
+// contract is checked on each page it renders.
+for (const mirror of [
+  { path: '/resources/radar-reports', region: 'CNCF Technology Radar reports' },
+  { path: '/resources/survey-reports', region: 'CNCF survey reports' },
+]) {
+  test.describe(`report mirror at ${mirror.path}`, () => {
+    test('lists published reports with links', async ({ page }) => {
+      await page.goto(mirror.path);
+      const section = page.getByRole('region', { name: mirror.region });
+      await expect(section).toBeVisible();
+
+      const reports = section.locator('li');
+      expect(await reports.count()).toBeGreaterThan(0);
+
+      const firstLink = reports.first().getByRole('link').first();
+      await expect(firstLink).toHaveAttribute('href', /^https?:\/\//);
     });
-    await expect(section).toBeVisible();
-
-    const reports = section.locator('li');
-    expect(await reports.count()).toBeGreaterThan(0);
-
-    const firstLink = reports.first().getByRole('link').first();
-    await expect(firstLink).toHaveAttribute('href', /^https?:\/\//);
   });
-});
+}
 
 test.describe('projects born at end users', () => {
   test('renders project cards on the projects page', async ({ page }) => {

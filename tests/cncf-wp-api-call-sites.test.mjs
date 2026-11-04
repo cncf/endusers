@@ -75,7 +75,7 @@ const SHARED_DECODER = 'decodeEntities';
 // the rules vacuous, and a vacuous guard is the thing this file is against.
 const KNOWN_CALL_SITES = [
   'scripts/collect-case-studies.mjs',
-  'scripts/collect-radar-reports.mjs',
+  'scripts/lib/cncf-reports.mjs',
 ];
 
 function walk(dir) {
