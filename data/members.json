@@ -2672,7 +2672,6 @@
         "Kubebuilder / controller-runtime",
         "Kubernetes",
         "Kyverno",
-        "Longhorn",
         "MetalLB",
         "NetBox",
         "NetBox Operator",
