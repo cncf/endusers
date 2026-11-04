@@ -19,7 +19,7 @@ involvement typically grows over time, and who at CNCF is there to help.
 ## Start here
 
 <div className="action-row">
-  <a href="https://www.cncf.io/enduser/" className="secondary">Bring your organization in</a>
+  <a href="/community/get-involved/join" className="secondary">Bring your organization in</a>
   <a href="https://lists.cncf.io/g/cncf-enduser/join" className="secondary">Request mailing list access</a>
 </div>
 
@@ -32,8 +32,10 @@ while still building in the open.
   [mailing-list membership](https://lists.cncf.io/g/cncf-enduser/join) or
   [apply to the End User Contributor Program](https://www.cncf.io/end-user-contributor-application/)
   for access to End User-only discussion forums.
-- **Bring your organization in:** Learn about
-  [joining the CNCF End User Community](https://www.cncf.io/enduser/).
+- **Bring your organization in:** See
+  [Join CNCF as an End User](./join.md) for the End User Contributor Program
+  and CNCF membership options, or read about the
+  [CNCF End User Community](https://www.cncf.io/enduser/) on cncf.io.
 - **Find a peer group:** Browse the [User Groups](/community/user-groups).
 - **Share an architecture:** Submit using the
   [in-repo submission template](https://github.com/cncf/endusers/issues/new?template=reference-architecture.yml)
@@ -45,9 +47,9 @@ while still building in the open.
 
 ## Governance and leadership
 
-The [Technical Advisory Board](./technical-advisory-board/index.md) (TAB)
+The [Technical Advisory Board](../technical-advisory-board/index.md) (TAB)
 oversees the End User Community and its User Groups. See the
-[Governance](./technical-advisory-board/governance.md) page for how these groups
+[Governance](../technical-advisory-board/governance.md) page for how these groups
 are formed, run, and held accountable.
 
 ## Community meeting and communication channels
