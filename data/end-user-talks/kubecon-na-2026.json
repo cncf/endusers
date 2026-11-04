@@ -5,7 +5,7 @@
   "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
   "selection": "End User Programming → End User Talk",
   "location": "Salt Lake City",
-  "generatedAt": "2026-11-03T18:29:30.869Z",
+  "generatedAt": "2026-11-04T03:23:50.558Z",
   "timezone": "MST (UTC−7)",
   "talkCount": 82,
   "days": [
@@ -701,7 +701,7 @@
             {
               "id": "1250150",
               "title": "The Scheduling Stack: Real-World Lessons from Anthropic, Anyscale, Google, and CERN",
-              "speakers": "Wojciech Tyczyński, Robert Nishihara, Ricardo Rocha, Kaslin Fields, Decheng Dai",
+              "speakers": "Wojciech Tyczyński, Ricardo Rocha, Kaslin Fields, Decheng Dai, Jui-An Huang",
               "room": "Salt Palace | Level 1 | Grand Ballroom H",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250150",
               "description": "For years, Kubernetes treated individual pods as scheduling units, complicating the execution of complex distributed systems. With the explosive growth of AI workloads, the ecosystem demands a smarter control plane.\nIn this panel, scheduling experts from Google, Anthropic, Anyscale and CERN will unpack the paradigm shift of Workload Aware Scheduling. By teaching core Kubernetes to natively understand higher-level application semantics, we are bridging the critical gap between the scheduler and higher-level frameworks. This upstream evolution is essential for optimizing resource sharing and performance in massive multi-tenant environments.\nOur panelists will discuss how these foundational blocks enable a cohesive multi-layer scheduling stack. Furthermore, we will explore how this crucial first step unlocks the next frontiers of orchestration including seamless disruption management and tighter integration with infrastructure autoscaling."
