@@ -346,13 +346,63 @@ function projectSlugsInPage(page) {
   return slugs;
 }
 
-function projectSlugsByLabel() {
+function cardSlugsAcrossCatalog() {
   const slugs = new Map();
   for (const record of catalog) {
     const page = readFileSync(join(docsDir, record.id, 'index.md'), 'utf8');
     for (const [name, slug] of projectSlugsInPage(page)) slugs.set(name, slug);
   }
   return slugs;
+}
+
+// The same key the spelling check above uses, so "Kube-OVN" and the slug
+// "kube-ovn" compare equal.
+function projectKey(label) {
+  return label.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+// A label need not be a card's name to belong to a project. Catalog pages use
+// the project's own name as the `projects` label ("Argo", "Envoy") while the
+// card keeps the component the page describes ("Argo CD", "Envoy Gateway"),
+// so the label matches no card by name. The card's href still says which
+// project the component belongs to: a label that spells the slug of a linked
+// project is that project. Without this step such a label has no slug, drops
+// out of the collision check, and a later page filed under the component's
+// name splits the filter again unnoticed.
+function projectSlugsByLabel(records, cardSlugs) {
+  const slugs = new Map(cardSlugs);
+  const bySlugKey = new Map();
+  for (const slug of cardSlugs.values()) bySlugKey.set(projectKey(slug), slug);
+  for (const record of records)
+    for (const project of record.projects) {
+      if (slugs.has(project)) continue;
+      const slug = bySlugKey.get(projectKey(project));
+      if (slug) slugs.set(project, slug);
+    }
+  return slugs;
+}
+
+function projectLabelCollisions(records, slugs) {
+  const byProject = new Map();
+  for (const record of records)
+    for (const project of record.projects) {
+      // A label with no project card, or one linked outside cncf.io/projects,
+      // names nothing the pages agree on; leave it to the spelling check.
+      const slug = slugs.get(project);
+      if (!slug) continue;
+      if (!byProject.has(slug)) byProject.set(slug, new Map());
+      const byLabel = byProject.get(slug);
+      byLabel.set(project, [...(byLabel.get(project) ?? []), record.id]);
+    }
+  return [...byProject]
+    .filter(([, byLabel]) => byLabel.size > 1)
+    .map(
+      ([slug, byLabel]) =>
+        `${slug}: ${[...byLabel]
+          .map(([project, ids]) => `${project} (${ids.join(', ')})`)
+          .join(' vs ')}`,
+    )
+    .sort();
 }
 
 // Guard self-check: every page on `main` happens to use the braced form, so
@@ -375,29 +425,43 @@ test('project cards are read in both attribute forms the pages use', () => {
   );
 });
 
+// Guard self-check: on `main` the Envoy project is filed under "Envoy" by a
+// page whose only Envoy card is "Envoy Gateway". A reader of card names alone
+// gives that label no slug, and a second page filed under "Envoy Gateway"
+// would then pass the collision check with the filter split in two.
+test('a label naming the project resolves through the card of its component', () => {
+  const records = [
+    { id: 'alpha', projects: ['Envoy'] },
+    { id: 'beta', projects: ['Envoy Gateway'] },
+  ];
+  const slugs = projectSlugsByLabel(
+    records,
+    new Map([['Envoy Gateway', 'envoy']]),
+  );
+  assert.equal(slugs.get('Envoy'), 'envoy');
+  assert.deepEqual(projectLabelCollisions(records, slugs), [
+    'envoy: Envoy (alpha) vs Envoy Gateway (beta)',
+  ]);
+});
+
+test('a label that spells no linked project stays out of the collision check', () => {
+  const records = [{ id: 'alpha', projects: ['Envoy', 'Trident'] }];
+  const slugs = projectSlugsByLabel(
+    records,
+    new Map([['Envoy Gateway', 'envoy']]),
+  );
+  assert.equal(slugs.has('Trident'), false);
+  assert.deepEqual(projectLabelCollisions(records, slugs), []);
+});
+
 test('no CNCF project is listed under two labels across the catalog', () => {
-  const slugs = projectSlugsByLabel();
-  const byProject = new Map();
-  for (const record of catalog)
-    for (const project of record.projects) {
-      // A label with no project card, or one linked outside cncf.io/projects,
-      // names nothing the pages agree on; leave it to the spelling check.
-      const slug = slugs.get(project);
-      if (!slug) continue;
-      if (!byProject.has(slug)) byProject.set(slug, new Map());
-      const byLabel = byProject.get(slug);
-      byLabel.set(project, [...(byLabel.get(project) ?? []), record.id]);
-    }
-  const collisions = [...byProject]
-    .filter(([, byLabel]) => byLabel.size > 1)
-    .map(
-      ([slug, byLabel]) =>
-        `${slug}: ${[...byLabel]
-          .map(([project, ids]) => `${project} (${ids.join(', ')})`)
-          .join(' vs ')}`,
-    );
+  const slugs = projectSlugsByLabel(catalog, cardSlugsAcrossCatalog());
+  assert.ok(
+    slugs.has('Envoy'),
+    'the Swisscom page files Envoy Gateway under the Envoy label, so the label must resolve for this check to cover it',
+  );
   assert.deepEqual(
-    collisions.sort(),
+    projectLabelCollisions(catalog, slugs),
     [],
     'one CNCF project is listed under two labels, so the catalog filter offers it twice and each option hides the architectures filed under the other',
   );

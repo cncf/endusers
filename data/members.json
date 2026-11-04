@@ -2662,7 +2662,7 @@
         "CloudNativePG",
         "Container Storage Interface (CSI)",
         "CoreDNS",
-        "Envoy Gateway",
+        "Envoy",
         "ExternalDNS",
         "Flux",
         "Headlamp",

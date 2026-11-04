@@ -25,7 +25,7 @@ architecture:
     - Helm
     - CloudNativePG
     - Cilium
-    - Envoy Gateway
+    - Envoy
   sourceUrl: https://github.com/cncf/architecture/tree/8af07d62851bc770130a6f942ca7cf9ab20eb784/content/en/architectures/swisscom-kubernetes-service
   sourceCommit: 8af07d62851bc770130a6f942ca7cf9ab20eb784
   published: 2026-03-04
