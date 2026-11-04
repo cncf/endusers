@@ -451,6 +451,35 @@ const config = {
         docs: {
           routeBasePath: '/', // Serve the docs at the site's root
           sidebarPath: './sidebars.js',
+          sidebarItemsGenerator: ({
+            defaultSidebarItemsGenerator,
+            ...args
+          }) => {
+            const items = defaultSidebarItemsGenerator(args);
+            if (args.item.dirName !== 'resources') {
+              return items;
+            }
+
+            const radarReportsIndex = items.findIndex(
+              (item) =>
+                item.type === 'doc' && item.id === 'resources/radar-reports',
+            );
+            if (radarReportsIndex === -1) {
+              throw new Error(
+                'The Resources sidebar must include Radar Reports before the Job Board.',
+              );
+            }
+
+            return [
+              ...items.slice(0, radarReportsIndex + 1),
+              {
+                type: 'html',
+                value:
+                  '<a class="menu__link" href="https://gitjobs.dev/" target="_blank" rel="noopener noreferrer">Job Board</a>',
+              },
+              ...items.slice(radarReportsIndex + 1),
+            ];
+          },
           editUrl: 'https://github.com/cncf/endusers/tree/main',
         },
         blog: {
