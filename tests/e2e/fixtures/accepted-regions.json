@@ -37,10 +37,10 @@
       "reason": "`|| []` fallback taken only when data/metrics.json lifecycle has no omitted array."
     },
     {
-      "file": "src/components/RadarReports/index.js",
-      "span": "7:40-7:46",
+      "file": "src/components/shared/ReportList.js",
+      "span": "18:31-18:37",
       "class": "data-shape-guard",
-      "reason": "`|| []` fallback taken only when data/radar-reports.json has no radarReports array."
+      "reason": "`|| []` fallback taken only when data/radar-reports.json or data/survey-reports.json has no report array under its key."
     },
     {
       "file": "src/components/shared/MirrorSyncStatus.js",
