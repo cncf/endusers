@@ -25,7 +25,7 @@ const DATA_BACKED_DOCUMENTS = new Set([
   'docs/resources/changelog.md',
   'docs/resources/metrics.md',
   'docs/resources/radar-reports.md',
-  'docs/resources/survey-reports.md',
+  'docs/resources/surveys.md',
 ]);
 
 function isRegularDocumentFile(path) {

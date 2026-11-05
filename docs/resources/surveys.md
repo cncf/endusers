@@ -1,16 +1,16 @@
 ---
-title: Survey Reports
-description: Brief summaries of CNCF survey reports.
+title: Surveys
+description: Brief summaries of CNCF surveys.
 sidebar_position: 4
 hide_table_of_contents: true
 ---
 
-# Survey Reports
+# Surveys
 
-CNCF survey reports include the CNCF Annual Survey, the State of Cloud Native
+CNCF surveys include the CNCF Annual Survey, the State of Cloud Native
 Development series produced with [SlashData](https://www.slashdata.co/), and
 focused microsurveys on topics such as FinOps, GitOps, and training. Below is
-every published survey report, newest first, with a brief description and a
+every published survey, newest first, with a brief description and a
 link to the full report.
 
 import SurveyReports from '@site/src/components/SurveyReports';
