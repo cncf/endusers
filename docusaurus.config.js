@@ -461,12 +461,11 @@ const config = {
             }
 
             const surveyReportsIndex = items.findIndex(
-              (item) =>
-                item.type === 'doc' && item.id === 'resources/survey-reports',
+              (item) => item.type === 'doc' && item.id === 'resources/surveys',
             );
             if (surveyReportsIndex === -1) {
               throw new Error(
-                'The Resources sidebar must include Survey Reports before the Job Board.',
+                'The Resources sidebar must include Surveys before the Job Board.',
               );
             }
 

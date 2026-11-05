@@ -81,7 +81,7 @@ test.describe('case studies', () => {
 // contract is checked on each page it renders.
 for (const mirror of [
   { path: '/resources/radar-reports', region: 'CNCF Technology Radar reports' },
-  { path: '/resources/survey-reports', region: 'CNCF survey reports' },
+  { path: '/resources/surveys', region: 'CNCF surveys' },
 ]) {
   test.describe(`report mirror at ${mirror.path}`, () => {
     test('lists published reports with links', async ({ page }) => {

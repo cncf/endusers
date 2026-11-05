@@ -1,6 +1,6 @@
 // Shared machinery for the cncf.io report mirrors: the Radar reports behind
 // /resources/radar-reports and the Survey reports behind
-// /resources/survey-reports. Both lists come from the same `lf_report` post
+// /resources/surveys. Both lists come from the same `lf_report` post
 // type on the cncf.io WordPress REST API, differ only in the `lf-report-type`
 // term they filter on, and are refreshed by the same scheduled workflow, so
 // the collector and validator live here once and each report type is a short
@@ -61,7 +61,7 @@ export const SURVEY_REPORTS = {
   noun: 'survey report',
   key: 'surveyReports',
   file: 'survey-reports.json',
-  route: '/resources/survey-reports',
+  route: '/resources/surveys',
   collector: 'scripts/collect-survey-reports.mjs',
 };
 

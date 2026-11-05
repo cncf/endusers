@@ -62,7 +62,7 @@ test('rejects generated and data-backed documents', () => {
     'docs/resources/changelog.md',
     'docs/resources/metrics.md',
     'docs/resources/radar-reports.md',
-    'docs/resources/survey-reports.md',
+    'docs/resources/surveys.md',
   ]) {
     assert.equal(isAuthoredDocumentPath(path), false, path);
   }

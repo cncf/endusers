@@ -1,7 +1,7 @@
 ---
 title: Resources
 description:
-  Case studies, Technology Radar and survey reports, ecosystem metrics, and
+  Case studies, Technology Radar reports and surveys, ecosystem metrics, and
   the site changelog, plus a job board for CNCF end users.
 sidebar_position: 1
 ---
@@ -27,8 +27,8 @@ site.
     <p>Brief summaries of every CNCF Technology Radar report, with links to the full survey-based research on cloud native technology adoption.</p>
   </div>
   <div className="pillar">
-    <h3><Link to="/resources/survey-reports">Survey Reports</Link></h3>
-    <p>Brief summaries of every CNCF survey report, from the Annual Survey and the State of Cloud Native Development series to focused microsurveys, with links to the full reports.</p>
+    <h3><Link to="/resources/surveys">Surveys</Link></h3>
+    <p>Brief summaries of every CNCF survey, from the Annual Survey and the State of Cloud Native Development series to focused microsurveys, with links to the full reports.</p>
   </div>
   <div className="pillar">
     <h3><a href="https://gitjobs.dev/" target="_blank" rel="noopener noreferrer">Job Board</a></h3>

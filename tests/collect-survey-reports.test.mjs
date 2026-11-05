@@ -49,7 +49,7 @@ test('writes a survey catalog keyed off the discovered survey term id', () => {
     catalog.apiUrl,
     'https://www.cncf.io/wp-json/wp/v2/lf_report?lf-report-type=43',
   );
-  assert.match(catalog.description, /\/resources\/survey-reports/);
+  assert.match(catalog.description, /\/resources\/surveys/);
   assert.equal(catalog.radarReports, undefined);
   assert.deepEqual(
     catalog.surveyReports.map(({ id, title, publishedAt }) => [

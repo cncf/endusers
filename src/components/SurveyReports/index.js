@@ -3,10 +3,6 @@ import ReportList from '../shared/ReportList';
 
 export default function SurveyReports() {
   return (
-    <ReportList
-      data={data}
-      listKey="surveyReports"
-      ariaLabel="CNCF survey reports"
-    />
+    <ReportList data={data} listKey="surveyReports" ariaLabel="CNCF surveys" />
   );
 }

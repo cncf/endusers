@@ -26,12 +26,12 @@ test('the survey page renders the shared report list over the survey corpus', ()
   assert.equal(element.type, ReportList);
   assert.equal(element.props.data, data);
   assert.equal(element.props.listKey, 'surveyReports');
-  assert.equal(element.props.ariaLabel, 'CNCF survey reports');
+  assert.equal(element.props.ariaLabel, 'CNCF surveys');
 });
 
 test('one list item is rendered per mirrored survey report', () => {
   const tree = renderElement(SurveyReports());
-  assert.equal(tree.props['aria-label'], 'CNCF survey reports');
+  assert.equal(tree.props['aria-label'], 'CNCF surveys');
   assert.ok(data.surveyReports.length > 0, 'expected a non-empty corpus');
   assert.equal(findAllByType(tree, 'li').length, data.surveyReports.length);
 });
