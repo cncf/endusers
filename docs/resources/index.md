@@ -1,8 +1,8 @@
 ---
 title: Resources
 description:
-  Case studies, Technology Radar reports, ecosystem metrics, and the site
-  changelog, plus a job board for CNCF end users.
+  Case studies, Technology Radar and survey reports, ecosystem metrics, and
+  the site changelog, plus a job board for CNCF end users.
 sidebar_position: 1
 ---
 
@@ -27,6 +27,10 @@ site.
     <p>Brief summaries of every CNCF Technology Radar report, with links to the full survey-based research on cloud native technology adoption.</p>
   </div>
   <div className="pillar">
+    <h3><Link to="/resources/survey-reports">Survey Reports</Link></h3>
+    <p>Brief summaries of every CNCF survey report, from the Annual Survey and the State of Cloud Native Development series to focused microsurveys, with links to the full reports.</p>
+  </div>
+  <div className="pillar">
     <h3><a href="https://gitjobs.dev/" target="_blank" rel="noopener noreferrer">Job Board</a></h3>
     <p>Browse job listings on GitJobs.</p>
   </div>
@@ -41,16 +45,18 @@ site.
 </div>
 
 Case studies and Radar reports are generated from the public
-[cncf.io](https://www.cncf.io/) WordPress API. Radar reports refresh
+[cncf.io](https://www.cncf.io/) WordPress API. Radar and survey reports refresh
 automatically via the daily
 [`refresh-radar-reports.yml`](https://github.com/cncf/endusers/blob/main/.github/workflows/refresh-radar-reports.yml)
-workflow, which runs `npm run collect:radar-reports` and opens an automation PR;
+workflow, which runs `npm run collect:radar-reports` and
+`npm run collect:survey-reports` and opens an automation PR;
 case studies refresh the same way through the daily
 [`refresh-metrics.yml`](https://github.com/cncf/endusers/blob/main/.github/workflows/refresh-metrics.yml)
 workflow (`npm run collect:case-studies`). See
 [`data/case-studies.json`](https://github.com/cncf/endusers/blob/main/data/case-studies.json)
-and
 [`data/radar-reports.json`](https://github.com/cncf/endusers/blob/main/data/radar-reports.json)
+and
+[`data/survey-reports.json`](https://github.com/cncf/endusers/blob/main/data/survey-reports.json)
 for the raw, machine-readable data behind each page.
 
 Metrics are rendered from

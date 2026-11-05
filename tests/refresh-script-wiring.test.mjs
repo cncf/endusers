@@ -131,6 +131,7 @@ test('the scheduled collectors are detected as wired', () => {
   for (const name of [
     'collect:metrics',
     'collect:radar-reports',
+    'collect:survey-reports',
     'fetch:community-people',
     'collect:enduser-members',
     'generate:members',

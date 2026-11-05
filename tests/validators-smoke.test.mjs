@@ -18,6 +18,7 @@ const READ_ONLY_VALIDATORS = [
   'validate-button-contrast.mjs',
   'validate-case-studies.mjs',
   'validate-radar-reports.mjs',
+  'validate-survey-reports.mjs',
   'validate-community-people.mjs',
   'validate-community-groups.mjs',
   'validate-projects-born.mjs',

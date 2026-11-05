@@ -15,6 +15,7 @@ import { importWithData } from './helpers-component-data.mjs';
 import {
   findAllByType,
   findByType,
+  renderElement,
   textOf,
   walkElements,
 } from './tools/react-element-tree.mjs';
@@ -48,7 +49,7 @@ test('no generatedAt renders no provenance line while the list still renders', a
     },
   });
   try {
-    const tree = RadarReports();
+    const tree = renderElement(RadarReports());
     assert.equal(renderSyncStatus(tree), null);
     assert.ok(!textOf(tree).includes('Mirrored from'));
     assert.ok(!textOf(tree).includes('Invalid Date'));
@@ -63,7 +64,7 @@ test('a corpus with no radarReports key renders an empty labelled list without t
     [DATA_SPECIFIER]: {},
   });
   try {
-    const tree = RadarReports();
+    const tree = renderElement(RadarReports());
     assert.equal(tree.type, 'section');
     assert.equal(tree.props['aria-label'], 'CNCF Technology Radar reports');
     assert.ok(findByType(tree, 'ul'), 'expected the empty list to render');
@@ -83,7 +84,7 @@ test('a report without publishedAt renders no date row while a dated sibling kee
     },
   });
   try {
-    const [first, second] = findAllByType(RadarReports(), 'li');
+    const [first, second] = findAllByType(renderElement(RadarReports()), 'li');
     const expected = new Date(REPORT.publishedAt).toLocaleDateString('en-US', {
       timeZone: 'UTC',
       year: 'numeric',
@@ -105,7 +106,7 @@ test('the fixture path renders the same provenance contract as the live corpus',
     [DATA_SPECIFIER]: { generatedAt, sourceUrl, radarReports: [REPORT] },
   });
   try {
-    const status = renderSyncStatus(RadarReports());
+    const status = renderSyncStatus(renderElement(RadarReports()));
     assert.ok(status, 'expected a provenance line');
     const anchor = findByType(status, 'a');
     assert.equal(anchor.props.href, sourceUrl);

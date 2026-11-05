@@ -42,6 +42,7 @@ export const RENDERED_DATA_FILES = [
   'data/metrics.json',
   'data/projects-born.json',
   'data/radar-reports.json',
+  'data/survey-reports.json',
 ];
 
 /**

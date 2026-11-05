@@ -30,19 +30,24 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-deps
       - run: npm run collect:radar-reports
+      - run: npm run collect:survey-reports
       - run: npm run fix:format
       - run: npm run validate:radar-reports
+      - run: npm run validate:survey-reports
       - run: npm run test:unit
       - run: npm run build
       - uses: ./.github/actions/open-automation-pr
         with:
           branch: automation/refresh-radar-reports
-          commit-message: 'chore: refresh radar reports'
-          title: 'chore: refresh radar reports'
+          commit-message: 'chore: refresh radar and survey reports'
+          title: 'chore: refresh radar and survey reports'
           body: |
             Automated refresh of `data/radar-reports.json` from
-            https://www.cncf.io/reports?_sft_lf-report-type=radar.
+            https://www.cncf.io/reports?_sft_lf-report-type=radar and
+            `data/survey-reports.json` from
+            https://www.cncf.io/reports?_sft_lf-report-type=survey.
 
             New reports get a placeholder summary (flagged as a warning by
-            `npm run validate:radar-reports`); replace it with a real
+            `npm run validate:radar-reports` and
+            `npm run validate:survey-reports`); replace it with a real
             one-sentence description before merging.

@@ -1,7 +1,8 @@
 // Guards the CNCF_HOST_SUFFIXES export in scripts/lib/url-safety.mjs against
 // the drift it was extracted to close.
 //
-// scripts/validate-case-studies.mjs and scripts/validate-radar-reports.mjs
+// scripts/validate-case-studies.mjs and scripts/validate-radar-reports.mjs (now
+// scripts/lib/cncf-reports.mjs, shared with the Survey validator)
 // used to each declare their own `const ALLOWED_HOST_SUFFIXES = ['cncf.io']`,
 // kept in sync only by a cross-reference comment in each file pointing at the
 // other. scripts/validate-metrics.mjs declared a third, independent copy
@@ -28,7 +29,7 @@ const SHARED_MODULE = 'scripts/lib/url-safety.mjs';
 // "imports the shared constant" assertion below vacuous.
 const KNOWN_CALL_SITES = [
   'scripts/validate-case-studies.mjs',
-  'scripts/validate-radar-reports.mjs',
+  'scripts/lib/cncf-reports.mjs',
   'scripts/validate-metrics.mjs',
   // The two non-validator copies: the project-card link gate
   // passed the literal inline, and the profile-image host gate named it

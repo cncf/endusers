@@ -81,6 +81,7 @@ const VALIDATORS = new Map([
   ['members.json', 'validate-members.mjs'],
   ['metrics.json', 'validate-metrics.mjs'],
   ['radar-reports.json', 'validate-radar-reports.mjs'],
+  ['survey-reports.json', 'validate-survey-reports.mjs'],
 ]);
 
 // One entry per committed overlay, keyed `<fixture dir>/<data file>`.
