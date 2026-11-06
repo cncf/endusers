@@ -326,6 +326,48 @@
     ]
   },
   {
+    "id": "nytimes-developer-platform",
+    "title": "Shared Clusters, Separate Accounts: The New York Times's Multi-Tenant Developer Platform in the Public Cloud",
+    "organization": "The New York Times",
+    "summary": "The New York Times runs a multi-tenant developer platform on shared Kubernetes clusters in the public cloud, with cloud accounts per team, identity-based isolation, a versioned Helm chart as the contract and pre-scaling for breaking news.",
+    "industries": ["Digital Media", "Publishing"],
+    "tags": [
+      "kubernetes",
+      "multi-tenancy",
+      "public cloud",
+      "gitops",
+      "platform engineering",
+      "developer platforms",
+      "service mesh",
+      "autoscaling"
+    ],
+    "projects": [
+      "Kubernetes",
+      "Helm",
+      "Argo",
+      "Cilium",
+      "Istio",
+      "Envoy",
+      "kgateway",
+      "KEDA",
+      "Karpenter",
+      "Open Policy Agent (OPA)",
+      "OpenTelemetry",
+      "SPIFFE",
+      "Kubebuilder"
+    ],
+    "sourceUrl": "https://github.com/cncf/tab/issues/119",
+    "published": "2026-11-04",
+    "updated": "2026-11-06",
+    "assets": [
+      "/img/architectures/nytimes-developer-platform/dvsp-delivery.svg",
+      "/img/architectures/nytimes-developer-platform/dvsp-overview.svg",
+      "/img/architectures/nytimes-developer-platform/dvsp-tenant-model.svg",
+      "/img/architectures/nytimes-developer-platform/dvsp-traffic.svg",
+      "/img/architectures/nytimes-developer-platform/logo.svg"
+    ]
+  },
+  {
     "id": "zeiss",
     "title": "ZEISS Vision Care - Order Fulfillment",
     "organization": "ZEISS",

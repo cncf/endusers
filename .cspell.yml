@@ -36,6 +36,7 @@ words:
   - pkgs
   - reprioritizations
   - retag
+  - scaffolder
   - srcdoc
   - vbscript
   # Inkscape sodipodi:namedview attributes on the SVG metadata allowlist.
@@ -298,3 +299,19 @@ words:
   - clickjacking
   - nosniff
   - hivecommons
+  # docs/architectures/nytimes-developer-platform/index.md (product names and technical terms)
+  - autoscalers
+  - cron
+  - DVSP
+  - Istio
+  - Karpenter
+  - kgateway
+  - Knative
+  - Rego
+  - runbook
+  - SPIFFE
+  - stateful
+  - waypoint
+  - waypoints
+  - webhooks
+  - ztunnel

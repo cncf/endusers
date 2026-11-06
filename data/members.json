@@ -2786,6 +2786,39 @@
       "membershipStatus": "member"
     },
     {
+      "id": "the-new-york-times",
+      "name": "The New York Times",
+      "slug": "the-new-york-times",
+      "logo": "/img/architectures/nytimes-developer-platform/logo.svg",
+      "industries": ["Digital Media", "Publishing"],
+      "projects": [
+        "Argo",
+        "Cilium",
+        "Envoy",
+        "Helm",
+        "Istio",
+        "KEDA",
+        "Karpenter",
+        "Kubebuilder",
+        "Kubernetes",
+        "Open Policy Agent (OPA)",
+        "OpenTelemetry",
+        "SPIFFE",
+        "kgateway"
+      ],
+      "architectures": [
+        {
+          "id": "nytimes-developer-platform",
+          "title": "Shared Clusters, Separate Accounts: The New York Times's Multi-Tenant Developer Platform in the Public Cloud",
+          "sourceUrl": "https://github.com/cncf/tab/issues/119"
+        }
+      ],
+      "awards": [],
+      "sourceAttribution": ["https://github.com/cncf/tab/issues/119"],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
       "id": "toyota-motor-corporation",
       "name": "Toyota Motor Corporation",
       "slug": "toyota-motor-corporation",
