@@ -5,9 +5,9 @@
   "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
   "selection": "End User Programming → End User Talk",
   "location": "Salt Lake City",
-  "generatedAt": "2026-11-04T03:23:50.558Z",
+  "generatedAt": "2026-11-06T03:23:28.027Z",
   "timezone": "MST (UTC−7)",
-  "talkCount": 82,
+  "talkCount": 81,
   "days": [
     {
       "date": "2026-11-10",
@@ -522,22 +522,6 @@
               "room": "Salt Palace | Level 1 | Grand Ballroom GI",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1229970",
               "description": "We gave a bedrock assistant the keys to 30 EKS clusters and the AWS and GitLab control planes behind them. Read only by default, write capable with reviews. We did it without a vector store, without RAG, and without a 200K token prompt.\n\nThis talk is the engineering behind that claim. We will walk through some of the techniques behind it. A typed tool catalog the model plans against, server side projection that turns 40 MB of DescribeInstances into 800 bytes of data, an iterative plan loop with a hard token budget, and a consent layer that makes kubectl apply and git push safe to expose to a language model.\n\nEngineers will leave with a concrete pattern for letting an LLM operate a real fleet. One that scales with your control plane instead of your embeddings bill, and that fails closed when it matters. Example source code is open source so everyone can start their own journey."
-            }
-          ]
-        },
-        {
-          "start": "2026-11-11T15:16:00-07:00",
-          "end": "2026-11-11T15:21:00-07:00",
-          "startLabel": "3:16 PM",
-          "endLabel": "3:21 PM",
-          "talks": [
-            {
-              "id": "1250936",
-              "title": "When Agents Talk to Agents: Scaling A2A on Kubernetes Without Drowning in Connections",
-              "speakers": "Shriya Chaitanya Kamat Tarcar",
-              "room": "Hyatt Regency | Level 4 | Regency Ballroom CD",
-              "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250936",
-              "description": "Multi-agent systems are entering production and the Linux foundation’s Agent2Agent (A2A) protocol is fast becoming the standard method for agents to find one another on kubernetes and call each other. However, the architecture hides a scaling wall. When agents connect peer-to-peer, connections grow quadratically. Four agents need six links, fifty agents over twelve hundred. At scale, this N-squared explosion becomes impossible to route, secure, observe and keep reliable. This talk will show why direct A2A traffic does not scale, and how routing it through an A2A-aware gateway such as agentgateway, built on top of the Kubernetes Gateway API, collapses the tangled mesh into a manageable hub with load balancing & visibility. By the end of the talk, attendees will leave with the connection math, the infrastructure pattern that solves the problem, and one rule: design the connectivity layer before scaling the agents,not after."
             }
           ]
         },

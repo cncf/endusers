@@ -1,11 +1,11 @@
 {
   "generated": true,
-  "generatedAt": "2026-11-04T03:23:46.603Z",
+  "generatedAt": "2026-11-06T03:23:23.334Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
-      "revision": "a394da6da2f032b48e48208d3912d35ed4fc70c9",
-      "sourceUrl": "https://github.com/cncf/landscape/blob/a394da6da2f032b48e48208d3912d35ed4fc70c9/landscape.yml"
+      "revision": "401144ada9b8def3a324a3648b1ca5bf58197323",
+      "sourceUrl": "https://github.com/cncf/landscape/blob/401144ada9b8def3a324a3648b1ca5bf58197323/landscape.yml"
     },
     "architectures": {
       "repository": "https://github.com/cncf/architecture",
@@ -20,7 +20,7 @@
       "value": 259,
       "source": "landscape",
       "sourceUrl": "https://landscape.cncf.io/",
-      "collectedAt": "2026-11-04T03:23:46.603Z",
+      "collectedAt": "2026-11-06T03:23:23.334Z",
       "note": "Projects explicitly marked with a CNCF maturity level in landscape.yml."
     },
     {
@@ -29,7 +29,7 @@
       "value": 10,
       "source": "architectures",
       "sourceUrl": "https://github.com/cncf/architecture/tree/main/content/en/architectures",
-      "collectedAt": "2026-11-04T03:23:46.603Z",
+      "collectedAt": "2026-11-06T03:23:23.334Z",
       "note": "Published architecture directories under content/en/architectures."
     }
   ],
@@ -88,11 +88,11 @@
       "values": [
         {
           "name": "sandbox",
-          "value": 153
+          "value": 152
         },
         {
           "name": "graduated",
-          "value": 40
+          "value": 41
         },
         {
           "name": "incubating",
@@ -112,7 +112,7 @@
       "sourceUrl": "https://landscape.cncf.io/",
       "values": [
         {
-          "date": "2026-11-04",
+          "date": "2026-11-06",
           "value": 646
         }
       ]
@@ -157,7 +157,7 @@
     "generated": true,
     "source": "cncf/tab and cncf/architecture GitHub APIs",
     "sourceUrl": "https://github.com/cncf/tab/issues?q=is%3Aissue+label%3Aarea%2Freference-architecture",
-    "observedAt": "2026-11-04T03:23:46.603Z",
+    "observedAt": "2026-11-06T03:23:23.334Z",
     "cards": [
       {
         "id": "open-submissions",
@@ -174,7 +174,7 @@
       {
         "id": "median-submission-age",
         "label": "Median submission age",
-        "value": 203.7,
+        "value": 205.7,
         "sampleSize": 12,
         "suffix": "days",
         "note": "Time since open submission issue creation; not end-to-end review time."
