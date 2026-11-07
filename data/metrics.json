@@ -1,11 +1,11 @@
 {
   "generated": true,
-  "generatedAt": "2026-11-06T03:23:23.334Z",
+  "generatedAt": "2026-11-07T03:21:58.284Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
-      "revision": "401144ada9b8def3a324a3648b1ca5bf58197323",
-      "sourceUrl": "https://github.com/cncf/landscape/blob/401144ada9b8def3a324a3648b1ca5bf58197323/landscape.yml"
+      "revision": "c72279cf19a2703779eb73b52aa90809b6a43885",
+      "sourceUrl": "https://github.com/cncf/landscape/blob/c72279cf19a2703779eb73b52aa90809b6a43885/landscape.yml"
     },
     "architectures": {
       "repository": "https://github.com/cncf/architecture",
@@ -20,7 +20,7 @@
       "value": 259,
       "source": "landscape",
       "sourceUrl": "https://landscape.cncf.io/",
-      "collectedAt": "2026-11-06T03:23:23.334Z",
+      "collectedAt": "2026-11-07T03:21:58.284Z",
       "note": "Projects explicitly marked with a CNCF maturity level in landscape.yml."
     },
     {
@@ -29,7 +29,7 @@
       "value": 10,
       "source": "architectures",
       "sourceUrl": "https://github.com/cncf/architecture/tree/main/content/en/architectures",
-      "collectedAt": "2026-11-06T03:23:23.334Z",
+      "collectedAt": "2026-11-07T03:21:58.284Z",
       "note": "Published architecture directories under content/en/architectures."
     }
   ],
@@ -112,7 +112,7 @@
       "sourceUrl": "https://landscape.cncf.io/",
       "values": [
         {
-          "date": "2026-11-06",
+          "date": "2026-11-07",
           "value": 646
         }
       ]
@@ -157,7 +157,7 @@
     "generated": true,
     "source": "cncf/tab and cncf/architecture GitHub APIs",
     "sourceUrl": "https://github.com/cncf/tab/issues?q=is%3Aissue+label%3Aarea%2Freference-architecture",
-    "observedAt": "2026-11-06T03:23:23.334Z",
+    "observedAt": "2026-11-07T03:21:58.284Z",
     "cards": [
       {
         "id": "open-submissions",
@@ -174,7 +174,7 @@
       {
         "id": "median-submission-age",
         "label": "Median submission age",
-        "value": 205.7,
+        "value": 206.7,
         "sampleSize": 12,
         "suffix": "days",
         "note": "Time since open submission issue creation; not end-to-end review time."
