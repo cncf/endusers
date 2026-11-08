@@ -5,7 +5,7 @@
   "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
   "selection": "End User Programming → End User Talk",
   "location": "Salt Lake City",
-  "generatedAt": "2026-11-06T03:23:28.027Z",
+  "generatedAt": "2026-11-08T03:23:45.940Z",
   "timezone": "MST (UTC−7)",
   "talkCount": 81,
   "days": [
@@ -704,7 +704,7 @@
               "speakers": "Seth McCombs, Karim Alibhai",
               "room": "Salt Palace | Level 1 | 151",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250351",
-              "description": "DuckDB is one of the fastest analytical databases available today, but wasn't designed to run as a multi-tenant, cloud native service.\n\nAt Greybeam, we’ve been running DuckDB in production since before v1.0, serving millions of queries while migrating large-scale customer workloads away from traditional data warehouses. There are tradeoffs when choosing an embedded single-node engine vs. a distributed database, and this talk will cover the challenges of building a DuckDB-based data platform on Kubernetes. Hear about the operational realities of running a stateful engine, such as NVMe provisioning and running performant data systems in environments without swap memory. We’ll then touch on what’s next, such as object-store-native architectures.\n\nAttendees will leave with practical lessons for running stateful workloads on Kubernetes, the tradeoffs of an embedded database, and patterns for building scalable data systems on top of modern open source infrastructure."
+              "description": "DuckDB is one of the fastest analytical databases available today, but wasn't designed to run as a multi-tenant, cloud native service.\n\nGreybeam has been running DuckDB in production since before v1.0, serving millions of queries. AcuityMD uses DuckDB to power their medtech platform used by over 500 medical device companies. There are tradeoffs when choosing an embedded single-node engine vs. a distributed database, and this talk will cover the challenges of building a DuckDB-based data platform on Kubernetes. Hear about the operational realities of running a stateful engine, such as NVMe provisioning and running performant data systems in environments without swap memory. We’ll then touch on what’s next, such as object-store-native architectures.\n\nAttendees will leave with practical lessons for running stateful workloads on Kubernetes, the tradeoffs of an embedded database, and patterns for building scalable data systems on top of modern open source infrastructure."
             }
           ]
         },
