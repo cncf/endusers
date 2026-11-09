@@ -12,7 +12,7 @@ can also sort alphabetically.
 
 Want to add yours? [Submit a reference architecture](/architectures/submit)
 explains why end users share their architectures, what your organization gets
-back, and how to start.
+back, and how to start. Organizations who submit reference architectures will earn **free KubeCon+CloudNativeCon tickets**, possible keynote time, and end user contributor membership.
 
 ## The catalog
 
