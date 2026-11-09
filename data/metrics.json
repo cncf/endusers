@@ -1,6 +1,6 @@
 {
   "generated": true,
-  "generatedAt": "2026-11-08T03:23:42.387Z",
+  "generatedAt": "2026-11-09T03:25:38.993Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
@@ -20,7 +20,7 @@
       "value": 259,
       "source": "landscape",
       "sourceUrl": "https://landscape.cncf.io/",
-      "collectedAt": "2026-11-08T03:23:42.387Z",
+      "collectedAt": "2026-11-09T03:25:38.993Z",
       "note": "Projects explicitly marked with a CNCF maturity level in landscape.yml."
     },
     {
@@ -29,7 +29,7 @@
       "value": 10,
       "source": "architectures",
       "sourceUrl": "https://github.com/cncf/architecture/tree/main/content/en/architectures",
-      "collectedAt": "2026-11-08T03:23:42.387Z",
+      "collectedAt": "2026-11-09T03:25:38.993Z",
       "note": "Published architecture directories under content/en/architectures."
     }
   ],
@@ -112,7 +112,7 @@
       "sourceUrl": "https://landscape.cncf.io/",
       "values": [
         {
-          "date": "2026-11-08",
+          "date": "2026-11-09",
           "value": 646
         }
       ]
@@ -157,12 +157,12 @@
     "generated": true,
     "source": "cncf/tab and cncf/architecture GitHub APIs",
     "sourceUrl": "https://github.com/cncf/tab/issues?q=is%3Aissue+label%3Aarea%2Freference-architecture",
-    "observedAt": "2026-11-08T03:23:42.386Z",
+    "observedAt": "2026-11-09T03:25:38.992Z",
     "cards": [
       {
         "id": "open-submissions",
         "label": "Open submissions",
-        "value": 12,
+        "value": 11,
         "note": "Open TAB issues labeled as reference-architecture submissions."
       },
       {
@@ -174,8 +174,8 @@
       {
         "id": "median-submission-age",
         "label": "Median submission age",
-        "value": 207.7,
-        "sampleSize": 12,
+        "value": 208.7,
+        "sampleSize": 11,
         "suffix": "days",
         "note": "Time since open submission issue creation; not end-to-end review time."
       },
@@ -202,10 +202,6 @@
           },
           {
             "date": "2025-11",
-            "value": 1
-          },
-          {
-            "date": "2026-03",
             "value": 1
           },
           {

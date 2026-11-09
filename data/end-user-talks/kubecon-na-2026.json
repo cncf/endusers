@@ -5,7 +5,7 @@
   "apiUrl": "https://sessionize.com/api/v2/svi82w6c/view/All",
   "selection": "End User Programming → End User Talk",
   "location": "Salt Lake City",
-  "generatedAt": "2026-11-08T03:23:45.940Z",
+  "generatedAt": "2026-11-09T03:25:42.611Z",
   "timezone": "MST (UTC−7)",
   "talkCount": 81,
   "days": [
@@ -146,7 +146,7 @@
               "speakers": "Dolis Sharma",
               "room": "Salt Palace | Level 1 | Grand Ballroom GI",
               "url": "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/program/schedule/?id=1250487",
-              "description": "Kubernetes made infrastructure scalable, but not always cost-efficient.Organizations have adopted various resource optimization strategies to improve resource utilization and reduce overprovisioning. Some work well across a broad range of workloads, while others show limitations at scale.\nWith its GA graduation in Kubernetes 1.33, in-place pod resizing has become a new resource optimization capability for platform teams. Like any approach, it has its fit, limits, and ideal workloads. For some applications, it can be a game changer, improving utilization without disruption. For others, especially legacy applications, the journey is more complex and often requires alternatives.\nIn this session, Meghana from RBC and Dolis from Nirmata will share lessons from enterprise optimization efforts, focusing on in-place pod resizing. They will discuss where it works, where it falls short, common adoption challenges, and how to evaluate the right optimization strategy across workloads."
+              "description": "Kubernetes made infrastructure scalable, but not always cost-efficient.Organizations have adopted various resource optimization strategies to improve resource utilization and reduce overprovisioning. Some work well across a broad range of workloads, while others show limitations at scale.\nWith its GA graduation in Kubernetes 1.33, in-place pod resizing has become a new resource optimization capability for platform teams. Like any approach, it has its fit, limits, and ideal workloads. For some applications, it can be a game changer, improving utilization without disruption. For others, especially legacy applications, the journey is more complex and often requires alternatives.\n\nIn this session, Dolis from Nirmata will share lessons from enterprise optimization efforts, focusing on in-place pod resizing. They will discuss where it works, where it falls short, common adoption challenges, and how to evaluate the right optimization strategy across workloads."
             },
             {
               "id": "1247376",
