@@ -1,11 +1,11 @@
 {
   "generated": true,
-  "generatedAt": "2026-11-09T03:25:38.993Z",
+  "generatedAt": "2026-11-10T03:22:43.664Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
-      "revision": "c72279cf19a2703779eb73b52aa90809b6a43885",
-      "sourceUrl": "https://github.com/cncf/landscape/blob/c72279cf19a2703779eb73b52aa90809b6a43885/landscape.yml"
+      "revision": "278d59082b41d2453a7717532162d24def1ffdef",
+      "sourceUrl": "https://github.com/cncf/landscape/blob/278d59082b41d2453a7717532162d24def1ffdef/landscape.yml"
     },
     "architectures": {
       "repository": "https://github.com/cncf/architecture",
@@ -17,10 +17,10 @@
     {
       "id": "cncf-projects",
       "label": "CNCF projects",
-      "value": 259,
+      "value": 261,
       "source": "landscape",
       "sourceUrl": "https://landscape.cncf.io/",
-      "collectedAt": "2026-11-09T03:25:38.993Z",
+      "collectedAt": "2026-11-10T03:22:43.664Z",
       "note": "Projects explicitly marked with a CNCF maturity level in landscape.yml."
     },
     {
@@ -29,7 +29,7 @@
       "value": 10,
       "source": "architectures",
       "sourceUrl": "https://github.com/cncf/architecture/tree/main/content/en/architectures",
-      "collectedAt": "2026-11-09T03:25:38.993Z",
+      "collectedAt": "2026-11-10T03:22:43.664Z",
       "note": "Published architecture directories under content/en/architectures."
     }
   ],
@@ -41,7 +41,7 @@
       "values": [
         {
           "name": "Provisioning",
-          "value": 65
+          "value": 66
         },
         {
           "name": "Orchestration & Management",
@@ -78,6 +78,10 @@
         {
           "name": "AI Agent",
           "value": 1
+        },
+        {
+          "name": "AI Native Infra",
+          "value": 1
         }
       ]
     },
@@ -88,7 +92,7 @@
       "values": [
         {
           "name": "sandbox",
-          "value": 152
+          "value": 154
         },
         {
           "name": "graduated",
@@ -112,8 +116,8 @@
       "sourceUrl": "https://landscape.cncf.io/",
       "values": [
         {
-          "date": "2026-11-09",
-          "value": 646
+          "date": "2026-11-10",
+          "value": 647
         }
       ]
     },
@@ -157,7 +161,7 @@
     "generated": true,
     "source": "cncf/tab and cncf/architecture GitHub APIs",
     "sourceUrl": "https://github.com/cncf/tab/issues?q=is%3Aissue+label%3Aarea%2Freference-architecture",
-    "observedAt": "2026-11-09T03:25:38.992Z",
+    "observedAt": "2026-11-10T03:22:43.663Z",
     "cards": [
       {
         "id": "open-submissions",
@@ -174,7 +178,7 @@
       {
         "id": "median-submission-age",
         "label": "Median submission age",
-        "value": 208.7,
+        "value": 209.7,
         "sampleSize": 11,
         "suffix": "days",
         "note": "Time since open submission issue creation; not end-to-end review time."
