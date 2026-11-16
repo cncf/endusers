@@ -1,0 +1,12 @@
+---
+title: Upcoming talk schedule fixture
+---
+
+import EndUserTalkSchedule from '@site/src/components/EndUserTalkSchedule';
+import publishedSchedule from '@site/data/end-user-talks/kubecon-na-2026.json';
+
+export const { final, ...upcomingSchedule } = publishedSchedule;
+
+# Upcoming talk schedule fixture
+
+<EndUserTalkSchedule schedule={upcomingSchedule} />
