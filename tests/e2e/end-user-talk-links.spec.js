@@ -39,7 +39,7 @@ function cardFor(page, talk) {
   });
 }
 
-describeCoverage('end user talk slides and recording links', () => {
+describeCoverage('end user talk schedule links', () => {
   test('a talk with slides and a recording links both, named for the talk', async ({
     page,
   }) => {
@@ -88,5 +88,21 @@ describeCoverage('end user talk slides and recording links', () => {
     await expect(abstract.locator('p')).toHaveCount(
       recordingOnly.description.split(/\n\s*\n/).length,
     );
+  });
+  test('an upcoming schedule links to the live official schedule', async ({
+    page,
+  }) => {
+    const response = await page.goto(
+      '/e2e-coverage-fixtures/upcoming-talk-schedule',
+    );
+    expect(response?.status()).toBe(200);
+    const provenance = page.locator('article [class*="source"]');
+    await expect(provenance).toContainText(
+      'Times, rooms, and speakers may change',
+    );
+    await expect(
+      provenance.getByRole('link', { name: 'live official schedule' }),
+    ).toBeVisible();
+    await expect(provenance).not.toContainText('the final record');
   });
 });
