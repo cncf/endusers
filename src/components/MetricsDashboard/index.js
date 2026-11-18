@@ -1,6 +1,10 @@
+import { usePluginData } from '@docusaurus/useGlobalData';
 import metricsData from '@site/data/metrics.json';
 import { formatDate } from '../shared/formatDate';
 import styles from './styles.module.css';
+
+const BUILD_CLOCK = 'build-clock';
+const DAY_MS = 86400000;
 
 // Horizontal position within the 20..500 plot area of the 520x220 viewBox. A
 // lone sample has no span to spread across, so it sits at the midpoint rather
@@ -59,8 +63,24 @@ function cardUnit(value, suffix) {
   return value === 1 && suffix.endsWith('s') ? suffix.slice(0, -1) : suffix;
 }
 
+// A card that publishes `since` is an elapsed time measured from that
+// instant; the collector leaves the count out so the data file only changes
+// when the queue does. The count is taken against the build clock rather
+// than Date.now(): the server-rendered HTML and the hydrating client then
+// agree, and the value is as fresh as the last deploy. Whole days, never
+// negative: a submission opened after the build is a clock skew, not a
+// negative age.
+export function cardValue(card, builtAt) {
+  if (card.since === undefined) return card.value;
+  return Math.max(
+    0,
+    Math.round((Date.parse(builtAt) - Date.parse(card.since)) / DAY_MS),
+  );
+}
+
 function LifecycleSection() {
   const lifecycle = metricsData.referenceArchitectureLifecycle;
+  const { builtAt } = usePluginData(BUILD_CLOCK);
   return (
     <section className={styles.lifecycle} aria-labelledby="lifecycle-title">
       <div className={styles.chartHeader}>
@@ -75,19 +95,22 @@ function LifecycleSection() {
         validation times.
       </p>
       <div className={styles.lifecycleGrid}>
-        {(lifecycle?.cards || []).map((card) => (
-          <div className={styles.lifecycleCard} key={card.id}>
-            <span>{card.label}</span>
-            <strong>
-              {card.sampleSize === 0 ? (
-                <span className={styles.noTrend}>No data yet</span>
-              ) : (
-                `${card.value.toLocaleString()} ${cardUnit(card.value, card.suffix)}`
-              )}
-            </strong>
-            <small>{card.note}</small>
-          </div>
-        ))}
+        {(lifecycle?.cards || []).map((card) => {
+          const value = cardValue(card, builtAt);
+          return (
+            <div className={styles.lifecycleCard} key={card.id}>
+              <span>{card.label}</span>
+              <strong>
+                {card.sampleSize === 0 ? (
+                  <span className={styles.noTrend}>No data yet</span>
+                ) : (
+                  `${value.toLocaleString()} ${cardUnit(value, card.suffix)}`
+                )}
+              </strong>
+              <small>{card.note}</small>
+            </div>
+          );
+        })}
       </div>
       <div className={styles.trendGrid}>
         {Object.entries(lifecycle?.trends || {}).map(([id, trend]) => (

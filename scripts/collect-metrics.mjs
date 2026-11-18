@@ -171,8 +171,10 @@ try {
   // envelope: they record when the published data last changed, so they are
   // excluded from the comparison and stay pinned to the run that last
   // changed it. A real change still diffs: series gain points and counts
-  // move, and the median-age card is rounded coarsely enough to sit still
-  // between genuinely different readings.
+  // move. The median-submission-age card publishes the instant the median
+  // open submission was opened (`since`), not a day count: a count would
+  // grow by one every day the queue stood still and reopen this PR daily.
+  // The dashboard derives the age from `since` at build time.
   const outputPath = join(root, 'data/metrics.json');
   const contentOnly = (value) =>
     JSON.stringify(value, (key, field) =>
@@ -266,10 +268,9 @@ async function collectLifecycleMetrics() {
     )
       architecturePRs.push(pull);
   }
-  const now = Date.now();
-  const ages = submissions
+  const openedAt = submissions
     .filter((item) => item.state === 'open')
-    .map((item) => Math.max(0, now - Date.parse(item.created_at)) / 86400000);
+    .map((item) => Date.parse(item.created_at));
   const merged = architecturePRs.filter((item) => item.merged_at);
   const cycleDays = merged.map(
     (item) =>
@@ -298,10 +299,15 @@ async function collectLifecycleMetrics() {
       {
         id: 'median-submission-age',
         label: 'Median submission age',
-        value: median(ages),
-        // median() returns 0 for an empty sample; the dashboard needs the
-        // sample size to tell "no open submissions" from "zero days".
-        sampleSize: ages.length,
+        // The median opening instant rather than a day count, so the value
+        // only changes when the open queue does (see the no-op check above).
+        // The dashboard turns it into "N days" with the build clock. An
+        // empty sample has no instant: `since` is omitted and `value` is 0,
+        // and the dashboard uses the sample size to say "No data yet".
+        ...(openedAt.length
+          ? { since: new Date(median(openedAt)).toISOString() }
+          : { value: 0 }),
+        sampleSize: openedAt.length,
         suffix: 'days',
         note: 'Time since open submission issue creation; not end-to-end review time.',
       },
@@ -309,6 +315,8 @@ async function collectLifecycleMetrics() {
         id: 'median-pr-cycle',
         label: 'Median public PR cycle',
         value: median(cycleDays),
+        // median() returns 0 for an empty sample; the dashboard needs the
+        // sample size to tell "no merged PRs" from "zero days".
         sampleSize: cycleDays.length,
         suffix: 'days',
         note: 'Creation to merge for merged architecture PRs; a public GitHub proxy.',

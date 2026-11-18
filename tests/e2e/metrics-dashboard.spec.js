@@ -311,7 +311,23 @@ test.describe('reference architecture lifecycle panel', () => {
         await expect(rendered.first()).toContainText('No data yet');
         continue;
       }
-      await expect(rendered.first()).toContainText(card.value.toLocaleString());
+      if (card.since !== undefined) {
+        // An elapsed time is derived from `since` against the build clock,
+        // which this test cannot read; the build is recent, so the count
+        // is within a day of one taken now.
+        const expected = Math.round(
+          (Date.now() - Date.parse(card.since)) / 86400000,
+        );
+        // The deepest matching div is the card itself; its ancestors match
+        // too and hold every card's value.
+        const text = await rendered.last().locator('strong').innerText();
+        const days = Number(text.replace(/[^\d]/g, ''));
+        expect(Math.abs(days - expected)).toBeLessThanOrEqual(1);
+      } else {
+        await expect(rendered.first()).toContainText(
+          card.value.toLocaleString(),
+        );
+      }
       if (card.suffix) {
         await expect(rendered.first()).toContainText(card.suffix);
       }

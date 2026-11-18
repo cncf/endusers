@@ -355,6 +355,53 @@ test('accepts a lifecycle card with a zero sampleSize and one without any', () =
   assert.equal(result.status, 0, result.stderr);
 });
 
+// The median-submission-age card publishes the instant it is measured from
+// instead of a day count, so a card may carry `since` in place of `value`.
+test('accepts a lifecycle card measured from a past ISO instant without a value', () => {
+  const result = runScriptWithFixtures(
+    SCRIPT,
+    metricsFixture({
+      ...validData,
+      referenceArchitectureLifecycle: {
+        cards: [
+          {
+            id: 'median-age',
+            label: 'Median',
+            since: '2024-01-16T00:00:00.000Z',
+            sampleSize: 3,
+          },
+        ],
+      },
+    }),
+  );
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('rejects a lifecycle card whose since is not a strict ISO instant or lies in the future', () => {
+  const cases = [
+    ['January 16, 2024', /since must be ISO 8601/],
+    [null, /since must be ISO 8601/],
+    [
+      new Date(Date.now() + 86400000).toISOString(),
+      /since cannot be in the future/,
+    ],
+  ];
+  for (const [since, message] of cases) {
+    const result = runScriptWithFixtures(
+      SCRIPT,
+      metricsFixture({
+        ...validData,
+        referenceArchitectureLifecycle: {
+          // A finite value beside the bad instant must not rescue the card.
+          cards: [{ id: 'median-age', label: 'Median', value: 0, since }],
+        },
+      }),
+    );
+    assert.equal(result.status, 1, `since ${since} was accepted`);
+    assert.match(result.stderr, message);
+  }
+});
+
 test('rejects lifecycle omissions without a reason', () => {
   const result = runScriptWithFixtures(
     SCRIPT,

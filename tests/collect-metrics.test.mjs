@@ -372,8 +372,10 @@ test('collect-metrics tolerates a landscape with no projects', () => {
   assert.deepEqual(data.breakdowns.projectCategories.values, []);
   // median() returns 0 rather than NaN for an empty sample, and the card
   // carries the sample size so the dashboard can say "No data yet" instead
-  // of publishing a zero-day median.
+  // of publishing a zero-day median. An empty queue has no median instant,
+  // so the age card falls back to a zero value rather than a `since`.
   assert.equal(cardValue(data, 'median-submission-age'), 0);
+  assert.equal(card(data, 'median-submission-age').since, undefined);
   assert.equal(card(data, 'median-submission-age').sampleSize, 0);
   assert.equal(cardValue(data, 'median-pr-cycle'), 0);
   assert.equal(card(data, 'median-pr-cycle').sampleSize, 0);
@@ -470,13 +472,46 @@ test('collect-metrics reports median submission age and PR cycle time in days', 
     }),
   );
 
-  // Odd sample: the middle value, rounded to one decimal.
-  assert.ok(Math.abs(cardValue(data, 'median-submission-age') - 20) < 0.1);
-  assert.equal(card(data, 'median-submission-age').sampleSize, 3);
+  // The age card publishes the median opening instant, not a day count: a
+  // count would grow by one each day the queue stood still and defeat the
+  // no-op check, reopening the daily refresh PR (the dashboard derives the
+  // days at build time). Odd sample: the middle issue's own timestamp.
+  const age = card(data, 'median-submission-age');
+  assert.equal(age.since, daysAgo(20));
+  assert.equal(age.value, undefined);
+  assert.equal(age.sampleSize, 3);
+  assert.equal(age.suffix, 'days');
   // Even sample of merged PRs (2 and 8 days) averages the two middle values.
   assert.equal(cardValue(data, 'median-pr-cycle'), 5);
   assert.equal(card(data, 'median-pr-cycle').sampleSize, 2);
   assert.equal(cardValue(data, 'open-architecture-prs'), 1);
+});
+
+test('collect-metrics takes the midpoint of the two middle submissions for an even sample', () => {
+  const data = metricsFrom(
+    run({
+      routes: [
+        { match: FILES_ROUTE, body: [] },
+        {
+          match: ISSUE_ROUTE,
+          body: [
+            issue({ number: 1, created_at: '2024-01-01T00:00:00Z' }),
+            issue({ number: 2, created_at: '2024-01-11T00:00:00Z' }),
+            issue({ number: 3, created_at: '2024-03-01T00:00:00Z' }),
+            issue({ number: 4, created_at: '2024-01-21T00:00:00Z' }),
+          ],
+        },
+        { match: PULLS_ROUTE, body: [] },
+      ],
+    }),
+  );
+
+  // Sorted, the middle two open on Jan 11 and Jan 21; their midpoint is the
+  // median instant.
+  assert.equal(
+    card(data, 'median-submission-age').since,
+    '2024-01-16T00:00:00.000Z',
+  );
 });
 
 test('collect-metrics groups merged architecture PRs into a monthly trend', () => {
