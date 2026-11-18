@@ -5,6 +5,7 @@
 // See: https://docusaurus.io/docs/api/docusaurus-config
 
 import { themes as prismThemes } from 'prism-react-renderer';
+import buildClockPlugin from './scripts/lib/build-clock-plugin.mjs';
 import eventsCatalogPlugin from './scripts/lib/events-catalog-plugin.mjs';
 
 const siteUrl = process.env.SITE_URL || 'https://endusers.cncf.io';
@@ -602,6 +603,10 @@ const config = {
     // Event pages' front matter, published as global data for EventsIndex
     // (ADR 0012).
     eventsCatalogPlugin,
+    // The build instant, published as global data so MetricsDashboard can
+    // derive the median submission age from the collected timestamp with a
+    // clock the server and the hydrating client share.
+    buildClockPlugin,
     [
       require.resolve('docusaurus-plugin-search-local'),
       /** @type {import('docusaurus-plugin-search-local').PluginOptions} */

@@ -16,6 +16,7 @@ import test from 'node:test';
 import { formatDate } from '../src/components/shared/formatDate.js';
 import { importWithData } from './helpers-component-data.mjs';
 import { importSource } from './helpers-jsx.mjs';
+import { setPluginData } from './tools/docusaurus-stubs/useGlobalData.mjs';
 import {
   findAllByType,
   findByType,
@@ -24,10 +25,17 @@ import {
   walkElements,
 } from './tools/react-element-tree.mjs';
 
-const { default: MetricsDashboard } = await importSource(
+const { default: MetricsDashboard, cardValue } = await importSource(
   'src/components/MetricsDashboard/index.js',
 );
 const { default: metricsData } = await importSource('data/metrics.json');
+const { default: buildClockPlugin, PLUGIN_NAME: BUILD_CLOCK } =
+  await import('../scripts/lib/build-clock-plugin.mjs');
+
+// The build-clock plugin publishes the build instant; LifecycleSection reads
+// it to turn a card's `since` into a day count. Seeded once for the process.
+const BUILT_AT = '2026-11-17T12:00:00.000Z';
+setPluginData(BUILD_CLOCK, { builtAt: BUILT_AT });
 
 const dashboard = MetricsDashboard();
 
@@ -354,7 +362,7 @@ test('the lifecycle panel renders one card per leading indicator', () => {
       text,
       expected.sampleSize === 0
         ? /No data yet/
-        : new RegExp(expected.value.toLocaleString()),
+        : new RegExp(cardValue(expected, BUILT_AT).toLocaleString()),
     );
     assert.match(
       text,
@@ -371,7 +379,8 @@ test('a lifecycle card without a suffix renders no stray unit', () => {
     (element) => element.props?.className === 'lifecycleCard',
   );
   cards.forEach((card, index) => {
-    const { value, suffix, sampleSize } = source.cards[index];
+    const { suffix, sampleSize } = source.cards[index];
+    const value = cardValue(source.cards[index], BUILT_AT);
     const strong = findByType(card, 'strong');
     // A unit is a plain English plural, so a card whose value is exactly 1
     // publishes the singular ("1 day", never "1 days").
@@ -668,6 +677,97 @@ test('a lifecycle card whose value is exactly 1 publishes the singular unit', as
   assert.equal(textOf(fraction).trim(), '1.5 days');
   assert.equal(textOf(unitless).trim(), '1');
   assert.equal(textOf(percent).trim(), '1 %');
+});
+
+// The median-submission-age card publishes the instant it is measured from
+// (`since`) rather than a day count, so the data file stops changing on every
+// daily refresh while the queue stands still. The section derives whole days
+// against the build clock the build-clock plugin publishes -- a clock the
+// server-rendered HTML and the hydrating client share -- so the value is as
+// fresh as the last deploy without a hydration mismatch. Rounding is to the
+// nearest day, an exact day takes the singular unit, and an instant after the
+// build (clock skew between the collector and the build) is 0, not negative.
+test('a lifecycle card measured from an instant renders the days since it as of the build', async () => {
+  const day = 86400000;
+  const built = Date.parse(BUILT_AT);
+  const at = (offsetMs) => new Date(built - offsetMs).toISOString();
+  const panel = await renderWith(
+    baseData({
+      referenceArchitectureLifecycle: {
+        cards: [
+          {
+            id: 'median-age',
+            label: 'Median age',
+            since: at(215.6 * day),
+            sampleSize: 11,
+            suffix: 'days',
+            note: 'n',
+          },
+          {
+            id: 'one-day',
+            label: 'Median age',
+            since: at(1.2 * day),
+            sampleSize: 1,
+            suffix: 'days',
+            note: 'n',
+          },
+          {
+            id: 'ahead-of-the-build',
+            label: 'Median age',
+            since: at(-2 * day),
+            sampleSize: 1,
+            suffix: 'days',
+            note: 'n',
+          },
+          {
+            id: 'thousands',
+            label: 'Median age',
+            since: at(1234 * day),
+            sampleSize: 1,
+            suffix: 'days',
+            note: 'n',
+          },
+          {
+            id: 'empty',
+            label: 'Median age',
+            value: 0,
+            sampleSize: 0,
+            suffix: 'days',
+            note: 'n',
+          },
+        ],
+      },
+    }),
+    'LifecycleSection',
+  );
+  const [age, oneDay, ahead, thousands, empty] = findAllByType(panel, 'strong');
+  assert.equal(textOf(age).trim(), '216 days');
+  assert.equal(textOf(oneDay).trim(), '1 day');
+  assert.equal(textOf(ahead).trim(), '0 days');
+  assert.equal(textOf(thousands).trim(), `${(1234).toLocaleString()} days`);
+  assert.equal(textOf(empty).trim(), 'No data yet');
+});
+
+test('the build-clock plugin publishes the build instant under the name the dashboard reads', () => {
+  assert.equal(BUILD_CLOCK, 'build-clock');
+  const now = new Date('2026-11-17T12:00:00.000Z');
+  const plugin = buildClockPlugin(undefined, { now: () => now });
+  assert.equal(plugin.name, BUILD_CLOCK);
+
+  let published;
+  plugin.contentLoaded({
+    actions: { setGlobalData: (data) => (published = data) },
+  });
+  assert.deepEqual(published, { builtAt: now.toISOString() });
+
+  // Without an injected clock it stamps the real one; knip's docusaurus
+  // plugin also calls inline plugin functions with no arguments.
+  const before = Date.now();
+  buildClockPlugin().contentLoaded({
+    actions: { setGlobalData: (data) => (published = data) },
+  });
+  const builtAt = Date.parse(published.builtAt);
+  assert.ok(builtAt >= before && builtAt <= Date.now());
 });
 
 test('a metrics file with no series renders no line charts', async () => {

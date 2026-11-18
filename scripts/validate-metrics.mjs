@@ -103,7 +103,25 @@ for (const item of data.omitted || [])
       message: 'omitted metrics require id and reason',
     });
 for (const card of data.referenceArchitectureLifecycle?.cards || []) {
-  if (!card.id || !card.label || !Number.isFinite(card.value))
+  if (!card.id || !card.label)
+    errors.push({
+      path: 'metrics.json',
+      severity: 'error',
+      message: 'invalid lifecycle card',
+    });
+  // A card publishes either a finite value or, for an elapsed time the
+  // dashboard derives at build time, the ISO instant it is measured from.
+  if (card.since !== undefined)
+    checkIsoTimestamp(
+      errors,
+      'metrics.json',
+      'lifecycle card since',
+      card.since,
+      {
+        futureToleranceMs: 0,
+      },
+    );
+  else if (!Number.isFinite(card.value))
     errors.push({
       path: 'metrics.json',
       severity: 'error',

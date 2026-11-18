@@ -151,10 +151,25 @@ test('lifecycle cards expose the value the dashboard formats', () => {
   for (const card of cards) {
     assert.ok(card.id, 'lifecycle card needs an id for its React key');
     assert.ok(card.label, `${card.id} needs a label`);
-    assert.ok(
-      Number.isFinite(card.value),
-      `${card.id} value must be finite for toLocaleString()`,
-    );
+    // An elapsed-time card publishes the instant it is measured from and the
+    // dashboard derives the day count against the build clock; every other
+    // card publishes the number itself.
+    if (card.since !== undefined) {
+      assert.ok(
+        Number.isFinite(Date.parse(card.since)),
+        `${card.id} since must be a parseable instant`,
+      );
+      assert.equal(
+        card.value,
+        undefined,
+        `${card.id} publishes since, not value`,
+      );
+    } else {
+      assert.ok(
+        Number.isFinite(card.value),
+        `${card.id} value must be finite for toLocaleString()`,
+      );
+    }
   }
 });
 
