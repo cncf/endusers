@@ -12,9 +12,14 @@
 // npm's JSON report lists one entry per affected package. Each entry's `via`
 // array mixes direct advisories (objects carrying the GHSA URL) with the
 // names of other vulnerable packages the entry merely inherits from. An
-// entry is acceptable only when every advisory reachable through its `via`
-// chain is allowlisted; a single new advisory therefore blocks the whole
-// chain it poisons, however deeply it bubbles.
+// entry is acceptable only when every high or critical advisory reachable
+// through its `via` chain is allowlisted; a single new advisory therefore
+// blocks the whole chain it poisons, however deeply it bubbles. A moderate
+// or low advisory in the same chain does not: npm rates the entry by the
+// worst advisory it inherits, so a package that reaches an allowlisted high
+// advisory and an accepted moderate one is reported high, and counting the
+// moderate one here would block it on a finding the threshold below leaves
+// to the in-range check.
 //
 // Below that threshold the gate is narrower: a moderate or low advisory is
 // tolerated while it is unfixable or needs a semver-major upgrade, but fails
@@ -31,6 +36,7 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import semver from 'semver';
 
 // Advisories npm cannot fix because no patched release exists. Every entry
 // must correspond to a row in SECURITY.md's "Known unpatched dependency
@@ -42,14 +48,19 @@ import { join } from 'node:path';
 // advisory is still present, so that removal is prompted rather than left to
 // be noticed.
 //
-// Empty as of 2026-10-23: the last entry, GHSA-vfj7-8cjw-p6xm against
-// braces <= 3.0.3, was withdrawn upstream and npm audit stopped reporting it.
-export const ALLOWLISTED_ADVISORIES = new Set([]);
+// GHSA-fc5q-39xc-vjpf: picomatch <= 4.0.7, a ReDoS in extglob matching. The
+// current release (4.0.7) is inside the range and upstream has published no
+// fix; reached only through build-time tooling (Docusaurus globbing and file
+// watching, webpack-dev-server, cspell). Listed 2026-11-17.
+export const ALLOWLISTED_ADVISORIES = new Set(['GHSA-fc5q-39xc-vjpf']);
 
 // `npm audit --audit-level=high` semantics: moderate and low findings are
 // reported but do not gate the merge on their own; see
 // inRangeFixableAdvisories() for the one case where they do.
 const GATED_SEVERITIES = new Set(['high', 'critical']);
+// The severities a `via` advisory may carry without blocking the chain it
+// sits in; see classifyAudit().
+const UNGATED_SEVERITIES = new Set(['moderate', 'low', 'info']);
 
 // Names a `via` advisory object by its GHSA id so it can be matched against
 // the allowlist. The id lives in the advisory URL; when npm ever reports an
@@ -86,7 +97,10 @@ export function classifyAudit(report, allowlist = ALLOWLISTED_ADVISORIES) {
         for (const id of blockingAdvisories(via, trail)) found.add(id);
       } else {
         const id = advisoryId(via);
-        if (!allowlist.has(id)) found.add(id);
+        // Fails closed: only a severity npm reports as below the threshold
+        // is skipped, so an advisory with no severity at all still blocks.
+        if (!UNGATED_SEVERITIES.has(via.severity) && !allowlist.has(id))
+          found.add(id);
       }
     }
     return found;
@@ -164,9 +178,12 @@ export function unusedAllowlistEntries(
 // not an automatic upgrade). Only the entry that carries the advisory object
 // directly is consulted; a package that merely inherits the advisory through
 // its `via` chain reports the fix for its own dependency tree, not for the
-// advisory itself.
+// advisory itself. The result is a prediction, so main() confirms it against
+// the registry with confirmAllowlistedFixes() before failing on it.
 //
-// @returns {Array<{id: string, package: string, fixAvailable: unknown}>}
+// @returns {Array<{id: string, package: string, range: string,
+//   fixAvailable: unknown}>} `range` is the advisory's vulnerable range as
+//   npm reports it
 export function fixableAllowlistedAdvisories(
   report,
   allowlist = ALLOWLISTED_ADVISORIES,
@@ -178,13 +195,109 @@ export function fixableAllowlistedAdvisories(
       if (typeof via === 'string') continue;
       const id = advisoryId(via);
       if (allowlist.has(id)) {
-        fixable.push({ id, package: name, fixAvailable: entry.fixAvailable });
+        fixable.push({
+          id,
+          package: name,
+          range: String(via.range ?? '*'),
+          fixAvailable: entry.fixAvailable,
+        });
       }
     }
   }
   return fixable.sort(
     (a, b) => a.id.localeCompare(b.id) || a.package.localeCompare(b.package),
   );
+}
+
+/**
+ * Checks, for each allowlisted advisory npm reports as fixable, whether a
+ * patched release of the package actually exists.
+ *
+ * The allowlist's premise is "no patched release exists", and the direct
+ * evidence for it is the package's published version list, not npm's
+ * `fixAvailable`. That field is a prediction and, for the picomatch advisory
+ * this gate first allowlisted, an unstable one: the same lockfile audited
+ * twice came back `false` once and "upgrade to @docusaurus/preset-classic
+ * 3.6.3, semver-major" the next time, naming a downgrade of a package that
+ * does not resolve the advisory at all. Failing on that prediction alone
+ * would red CI at random. So each finding is checked against
+ * `npm view <package> versions`: a release above the advisory's vulnerable
+ * range (prereleases excluded) confirms the finding, and a package whose
+ * every release still falls inside the range is a phantom, reported as a
+ * warning rather than a failure.
+ *
+ * A version list that cannot be fetched or parsed confirms the finding, so a
+ * registry fault fails closed, as confirmInRangeFixes() does.
+ *
+ * @param {Array<{id: string, package: string, range: string}>} fixable
+ *   findings from fixableAllowlistedAdvisories()
+ * @param {(name: string) => string[]|null} [listVersions] returns a package's
+ *   published versions, or null when they cannot be fetched
+ * @returns {{confirmed: object[], phantom: object[], failures: string[]}}
+ *   `failures` names each lookup that produced no version list
+ */
+export function confirmAllowlistedFixes(
+  fixable,
+  listVersions = publishedVersions,
+) {
+  const confirmed = [];
+  const phantom = [];
+  const failures = [];
+  const cache = new Map();
+  for (const item of fixable) {
+    if (!cache.has(item.package)) {
+      const versions = listVersions(item.package);
+      cache.set(item.package, versions);
+      if (versions === null) failures.push(item.package);
+    }
+    const versions = cache.get(item.package);
+    if (versions === null) {
+      confirmed.push(item);
+      continue;
+    }
+    const patched = versions.some(
+      (version) =>
+        semver.valid(version) !== null &&
+        semver.prerelease(version) === null &&
+        semver.gtr(version, item.range),
+    );
+    (patched ? confirmed : phantom).push(item);
+  }
+  return { confirmed, phantom, failures };
+}
+
+/**
+ * Lists a package's published versions through `npm view`.
+ *
+ * @param {string} name
+ * @returns {string[]|null} null when the registry did not answer with a
+ *   version list
+ */
+function publishedVersions(name) {
+  const result = spawnSync(
+    'npm',
+    [
+      'view',
+      name,
+      'versions',
+      '--json',
+      `--fetch-timeout=${AUDIT_FETCH_TIMEOUT_MS}`,
+    ],
+    {
+      encoding: 'utf8',
+      maxBuffer: 16 * 1024 * 1024,
+      timeout: AUDIT_FETCH_TIMEOUT_MS,
+      killSignal: 'SIGKILL',
+    },
+  );
+  if (result.error || result.status !== 0) return null;
+  try {
+    const parsed = JSON.parse(result.stdout);
+    const versions = typeof parsed === 'string' ? [parsed] : parsed;
+    return Array.isArray(versions) ? versions.map(String) : null;
+  } catch {
+    return null;
+  }
 }
 
 // Reports the below-threshold (moderate/low) advisories that npm can fix
@@ -563,23 +676,40 @@ export function main(allowlist = ALLOWLISTED_ADVISORIES) {
   // stated reason ("no patched release exists") npm now contradicts.
   const fixable = fixableAllowlistedAdvisories(report, allowlist);
   if (fixable.length > 0) {
-    console.error(
-      'audit-gate: allowlisted advisories npm now reports as fixable:',
-    );
-    for (const item of fixable) {
+    const { confirmed, phantom, failures } = confirmAllowlistedFixes(fixable);
+    for (const name of failures) {
       console.error(
-        `  ${item.id} via ${item.package}: ${describeFix(item.fixAvailable)}`,
+        `audit-gate: could not list published versions of ${name}; ` +
+          'treating its reported fix as real',
       );
     }
-    console.error(
-      'Each allowlist entry exists only because no patched release existed. ' +
-        'npm now says one does, so the entry is suppressing a finding this ' +
-        'project can fix. Take the upgrade (it may be semver-major and need ' +
-        'a deliberate decision), then remove the advisory from ' +
-        'ALLOWLISTED_ADVISORIES in scripts/audit-gate.mjs and drop its row ' +
-        'from SECURITY.md\'s "Known unpatched dependency advisories" table.',
-    );
-    process.exit(1);
+    for (const item of phantom) {
+      console.error(
+        `audit-gate: warning — ${item.id} via ${item.package} is reported ` +
+          `as fixable (${describeFix(item.fixAvailable)}), but no published ` +
+          `release of ${item.package} lies outside the vulnerable range ` +
+          `${item.range}. Ignoring the prediction until one does.`,
+      );
+    }
+    if (confirmed.length > 0) {
+      console.error(
+        'audit-gate: allowlisted advisories npm now reports as fixable:',
+      );
+      for (const item of confirmed) {
+        console.error(
+          `  ${item.id} via ${item.package}: ${describeFix(item.fixAvailable)}`,
+        );
+      }
+      console.error(
+        'Each allowlist entry exists only because no patched release existed. ' +
+          'npm now says one does, so the entry is suppressing a finding this ' +
+          'project can fix. Take the upgrade (it may be semver-major and need ' +
+          'a deliberate decision), then remove the advisory from ' +
+          'ALLOWLISTED_ADVISORIES in scripts/audit-gate.mjs and drop its row ' +
+          'from SECURITY.md\'s "Known unpatched dependency advisories" table.',
+      );
+      process.exit(1);
+    }
   }
   // Reported last of all: nothing above is letting an unknown advisory
   // through; this one names below-threshold findings whose fix is already

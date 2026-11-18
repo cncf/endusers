@@ -28,6 +28,7 @@ import {
   classifyAudit,
   unusedAllowlistEntries,
   fixableAllowlistedAdvisories,
+  confirmAllowlistedFixes,
   inRangeFixableAdvisories,
   describeFix,
 } from '../scripts/audit-gate.mjs';
@@ -35,8 +36,10 @@ import {
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
 // A retired advisory (withdrawn upstream on 2026-10-23) reused as a fixture
-// id. The shipped allowlist is empty, so every case that needs an allowlisted
-// advisory passes its own Set rather than leaning on the default.
+// id. The CLI cases run with an empty allowlist unless they pass their own
+// Set, so none of them leans on what the shipped allowlist happens to hold;
+// the one case that exercises the shipped allowlist builds its report from
+// ALLOWLISTED_ADVISORIES itself.
 const BRACES = 'GHSA-vfj7-8cjw-p6xm';
 const NEW_BAD = 'GHSA-aaaa-bbbb-cccc';
 const ALLOWLIST = new Set([BRACES]);
@@ -122,6 +125,42 @@ test('an allowlisted advisory clears its whole bubbled chain', () => {
     'braces',
     'micromatch',
   ]);
+});
+
+// npm rates an entry by the worst advisory it inherits, so a package that
+// reaches an allowlisted high advisory through one dependency and a moderate
+// one through another is reported high. The moderate advisory is the
+// in-range check's business, not this one's: counting it here blocked
+// markdownlint-cli on the accepted minimatch advisory the moment picomatch
+// was allowlisted beside it.
+test("a moderate advisory in a high entry's chain does not block it", () => {
+  const report = {
+    vulnerabilities: {
+      braces: entry('high', [advisory(BRACES)]),
+      minimatch: entry('moderate', [advisory(NEW_BAD, 'moderate')]),
+      'markdownlint-cli': entry('high', ['braces', 'minimatch']),
+    },
+  };
+  const { blocked, allowlisted } = classifyAudit(report, ALLOWLIST);
+  assert.deepEqual(blocked, []);
+  assert.deepEqual(allowlisted.sort(), ['braces', 'markdownlint-cli']);
+});
+
+test('an advisory without a severity still blocks the chain it sits in', () => {
+  // The skip is for severities npm reports as below the threshold, not for
+  // whatever is not high or critical: an advisory the report does not rate
+  // fails closed.
+  const unrated = { ...advisory(NEW_BAD), severity: undefined };
+  const report = {
+    vulnerabilities: {
+      braces: entry('high', [advisory(BRACES)]),
+      odd: entry('high', [unrated]),
+      consumer: entry('high', ['braces', 'odd']),
+    },
+  };
+  const { blocked } = classifyAudit(report, ALLOWLIST);
+  assert.deepEqual(blocked.map((b) => b.name).sort(), ['consumer', 'odd']);
+  for (const b of blocked) assert.deepEqual(b.advisories, [NEW_BAD]);
 });
 
 test('moderate and low findings never block, even unallowlisted', () => {
@@ -283,12 +322,30 @@ test('fixableAllowlistedAdvisories names an entry npm can now fix', () => {
   const fix = { name: 'braces', version: '3.0.4', isSemVerMajor: false };
   const report = {
     vulnerabilities: {
-      braces: { ...entry('high', [advisory(BRACES)]), fixAvailable: fix },
+      braces: {
+        ...entry('high', [{ ...advisory(BRACES), range: '<3.0.4' }]),
+        fixAvailable: fix,
+      },
     },
   };
   assert.deepEqual(fixableAllowlistedAdvisories(report, new Set([BRACES])), [
-    { id: BRACES, package: 'braces', fixAvailable: fix },
+    { id: BRACES, package: 'braces', range: '<3.0.4', fixAvailable: fix },
   ]);
+});
+
+test('fixableAllowlistedAdvisories falls back to an open range when npm omits one', () => {
+  // confirmAllowlistedFixes() cannot place any release above `*`, so an
+  // advisory with no stated range can never be confirmed fixable from the
+  // version list alone; the fallback is recorded rather than crashing on it.
+  const report = {
+    vulnerabilities: {
+      braces: { ...entry('high', [advisory(BRACES)]), fixAvailable: true },
+    },
+  };
+  assert.equal(
+    fixableAllowlistedAdvisories(report, new Set([BRACES]))[0].range,
+    '*',
+  );
 });
 
 test('fixableAllowlistedAdvisories accepts a bare true fixAvailable', () => {
@@ -365,6 +422,85 @@ test('fixableAllowlistedAdvisories defaults to the shipped allowlist', () => {
     fixableAllowlistedAdvisories(report).map((f) => f.id),
     [...ALLOWLISTED_ADVISORIES].sort(),
   );
+});
+
+// --- confirmAllowlistedFixes ---
+
+const PICOMATCH_FINDING = {
+  id: NEW_BAD,
+  package: 'picomatch',
+  range: '<=4.0.7',
+  fixAvailable: { name: 'x', version: '1.0.0', isSemVerMajor: true },
+};
+
+test('confirmAllowlistedFixes confirms a finding once a release sits above the range', () => {
+  const lookups = [];
+  const { confirmed, phantom, failures } = confirmAllowlistedFixes(
+    [PICOMATCH_FINDING],
+    (name) => {
+      lookups.push(name);
+      return ['4.0.6', '4.0.7', '4.0.8'];
+    },
+  );
+  assert.deepEqual(lookups, ['picomatch']);
+  assert.deepEqual(confirmed, [PICOMATCH_FINDING]);
+  assert.deepEqual(phantom, []);
+  assert.deepEqual(failures, []);
+});
+
+test('confirmAllowlistedFixes calls a finding a phantom while every release is in range', () => {
+  // The picomatch case: npm predicted a semver-major fix through another
+  // package although 4.0.7 is the newest release and inside the range.
+  const { confirmed, phantom } = confirmAllowlistedFixes(
+    [PICOMATCH_FINDING],
+    () => ['2.3.2', '4.0.5', '4.0.7'],
+  );
+  assert.deepEqual(confirmed, []);
+  assert.deepEqual(phantom, [PICOMATCH_FINDING]);
+});
+
+test('confirmAllowlistedFixes does not count prereleases or unparseable versions as a fix', () => {
+  const { confirmed, phantom } = confirmAllowlistedFixes(
+    [PICOMATCH_FINDING],
+    () => ['4.0.7', '5.0.0-beta.1', 'latest', ''],
+  );
+  assert.deepEqual(confirmed, []);
+  assert.deepEqual(phantom, [PICOMATCH_FINDING]);
+});
+
+test('confirmAllowlistedFixes does not count a release below a bounded range as a fix', () => {
+  // A downgrade out of the range is not a patch.
+  const finding = { ...PICOMATCH_FINDING, range: '>=4.0.0 <=4.0.7' };
+  const { confirmed, phantom } = confirmAllowlistedFixes([finding], () => [
+    '3.9.9',
+    '4.0.7',
+  ]);
+  assert.deepEqual(confirmed, []);
+  assert.deepEqual(phantom, [finding]);
+});
+
+test('confirmAllowlistedFixes fails closed when the version list cannot be fetched', () => {
+  const { confirmed, phantom, failures } = confirmAllowlistedFixes(
+    [PICOMATCH_FINDING],
+    () => null,
+  );
+  assert.deepEqual(confirmed, [PICOMATCH_FINDING]);
+  assert.deepEqual(phantom, []);
+  assert.deepEqual(failures, ['picomatch']);
+});
+
+test('confirmAllowlistedFixes looks each package up once', () => {
+  // Two advisories on the same package share one registry call, and the
+  // failure list names the package once.
+  let calls = 0;
+  const other = { ...PICOMATCH_FINDING, id: BRACES };
+  const result = confirmAllowlistedFixes([PICOMATCH_FINDING, other], () => {
+    calls += 1;
+    return null;
+  });
+  assert.equal(calls, 1);
+  assert.deepEqual(result.failures, ['picomatch']);
+  assert.deepEqual(result.confirmed, [PICOMATCH_FINDING, other]);
 });
 
 // --- inRangeFixableAdvisories ---
@@ -624,9 +760,10 @@ syncBuiltinESMExports();
  *   sandbox the gate runs in (with a minimal package.json beside it); omitted,
  *   the sandbox has no lockfile at all
  * @param {string} [options.npmrc] an .npmrc to place beside the lockfile
- * @param {Iterable<string>} [options.allowlist] GHSA ids to run the gate
- *   with, through a wrapper entry that calls main(); omitted, the script runs
- *   as the CLI does with its shipped allowlist
+ * @param {Iterable<string>|null} [options.allowlist] GHSA ids to run the
+ *   gate with, through a wrapper entry that calls main(); defaults to none.
+ *   `null` runs the script directly, as the CLI does with its shipped
+ *   allowlist
  * @returns {{status: number, stdout: string, stderr: string,
  *   attempts: number, argv: string[], spawns: object[], sleeps: number[],
  *   work: string}} `argv` holds the invocations that reached npm; `spawns`
@@ -643,13 +780,20 @@ function runGate({
   fixTimeout = false,
   lockfile,
   npmrc,
-  allowlist,
+  allowlist = new Set(),
 } = {}) {
   const work = mkdtempSync(join(tmpdir(), 'endusers-audit-'));
   try {
     const script = join(work, 'scripts', 'audit-gate.mjs');
     mkdirSync(dirname(script), { recursive: true });
     cpSync(join(repoRoot, 'scripts', 'audit-gate.mjs'), script);
+    // The gate imports semver, which Node resolves by walking up from the
+    // copied script; point the sandbox at the project's installed packages.
+    symlinkSync(
+      join(repoRoot, 'node_modules'),
+      join(work, 'node_modules'),
+      'dir',
+    );
     if (lockfile) {
       writeFileSync(join(work, 'package.json'), '{"name":"sandbox"}\n');
       writeFileSync(join(work, 'package-lock.json'), JSON.stringify(lockfile));
@@ -743,15 +887,30 @@ test('cli: exits 1 on a clean report when the allowlist still has entries', () =
   assert.doesNotMatch(result.stdout, /audit-gate: ok/);
 });
 
-test('cli: exits 0 on a clean report with the shipped allowlist', () => {
-  // The repository's current state: nothing to suppress and nothing
-  // suppressed. Runs the script directly, so this is the CLI entry and the
-  // default allowlist that CI exercises, not the wrapper the other cases use.
+test('cli: exits 0 on a report of exactly the shipped allowlist', () => {
+  // The repository's current state: every allowlisted advisory present and
+  // unfixable, and nothing else. Runs the script directly, so this is the
+  // CLI entry and the default allowlist that CI exercises, not the wrapper
+  // the other cases use. Built from ALLOWLISTED_ADVISORIES so the case holds
+  // whatever the register currently lists, including nothing.
+  const vulnerabilities = Object.fromEntries(
+    [...ALLOWLISTED_ADVISORIES].map((id, index) => [
+      `allowlisted-${index}`,
+      entry('high', [advisory(id)]),
+    ]),
+  );
   const result = runGate({
-    stdout: JSON.stringify({ vulnerabilities: {} }),
+    stdout: JSON.stringify({ vulnerabilities }),
+    status: ALLOWLISTED_ADVISORIES.size ? '1' : '0',
+    allowlist: null,
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /audit-gate: ok — 0 high\/critical finding/);
+  assert.match(
+    result.stdout,
+    new RegExp(
+      `audit-gate: ok — ${ALLOWLISTED_ADVISORIES.size} high/critical finding`,
+    ),
+  );
 });
 
 test('cli: exits 0 when every finding is allowlisted, despite npm exiting 1', () => {
@@ -770,14 +929,16 @@ test('cli: exits 0 when every finding is allowlisted, despite npm exiting 1', ()
   assert.match(result.stdout, /2 high\/critical finding/);
 });
 
-test('cli: exits 1 when npm reports a fix for an allowlisted advisory', () => {
+test('cli: exits 1 when npm reports a fix for an allowlisted advisory and a patched release exists', () => {
   // The suppression's premise has expired: the advisory is still present, so
-  // the stale-entry check stays quiet, but npm says it is fixable now.
+  // the stale-entry check stays quiet, npm says it is fixable now, and the
+  // registry (the stub's second answer, to `npm view braces versions`)
+  // confirms a release above the vulnerable range.
   const report = {
     vulnerabilities: {
       braces: {
         severity: 'high',
-        via: [advisory(BRACES)],
+        via: [{ ...advisory(BRACES), range: '<3.0.4' }],
         range: '*',
         nodes: [],
         fixAvailable: { name: 'braces', version: '3.0.4', isSemVerMajor: true },
@@ -785,8 +946,10 @@ test('cli: exits 1 when npm reports a fix for an allowlisted advisory', () => {
     },
   };
   const result = runGate({
-    stdout: JSON.stringify(report),
-    status: '1',
+    responses: [
+      { stdout: JSON.stringify(report), status: 1 },
+      { stdout: JSON.stringify(['3.0.3', '3.0.4']), status: 0 },
+    ],
     allowlist: ALLOWLIST,
   });
   assert.equal(result.status, 1);
@@ -794,6 +957,101 @@ test('cli: exits 1 when npm reports a fix for an allowlisted advisory', () => {
   assert.match(result.stderr, new RegExp(`${BRACES} via braces`));
   assert.match(result.stderr, /upgrade to braces@3\.0\.4, semver-major/);
   assert.doesNotMatch(result.stdout, /audit-gate: ok/);
+  assert.deepEqual(result.argv, [
+    'audit --package-lock-only --json --fetch-timeout=60000',
+    'view braces versions --json --fetch-timeout=60000',
+  ]);
+});
+
+test('cli: warns and exits 0 when the reported fix for an allowlisted advisory is a phantom', () => {
+  // npm's prediction names a fix, but every published release of the
+  // package is still inside the vulnerable range: the allowlist's premise
+  // holds and the gate must not go red on the prediction.
+  const report = {
+    vulnerabilities: {
+      braces: {
+        severity: 'high',
+        via: [{ ...advisory(BRACES), range: '<=3.0.3' }],
+        range: '*',
+        nodes: [],
+        fixAvailable: { name: 'other', version: '1.0.0', isSemVerMajor: true },
+      },
+    },
+  };
+  const result = runGate({
+    responses: [
+      { stdout: JSON.stringify(report), status: 1 },
+      { stdout: JSON.stringify(['3.0.2', '3.0.3']), status: 0 },
+    ],
+    allowlist: ALLOWLIST,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(
+    result.stderr,
+    new RegExp(
+      `warning — ${BRACES} via braces is reported as fixable \\(upgrade to other@1\\.0\\.0, semver-major\\), but no published release of braces lies outside the vulnerable range <=3\\.0\\.3`,
+    ),
+  );
+  assert.doesNotMatch(result.stderr, /now reports as fixable/);
+  assert.match(result.stdout, /audit-gate: ok — 1 high\/critical finding/);
+});
+
+test('cli: treats the reported fix as real when the version list cannot be fetched', () => {
+  // A registry fault must not turn into a pass: an unanswerable lookup
+  // (non-zero exit, then unparseable output) keeps the finding blocking.
+  const report = {
+    vulnerabilities: {
+      braces: {
+        severity: 'high',
+        via: [{ ...advisory(BRACES), range: '<=3.0.3' }],
+        range: '*',
+        nodes: [],
+        fixAvailable: true,
+      },
+    },
+  };
+  for (const answer of [
+    { stdout: '', status: 1 },
+    { stdout: 'not json', status: 0 },
+    { stdout: '{"versions":[]}', status: 0 },
+  ]) {
+    const result = runGate({
+      responses: [{ stdout: JSON.stringify(report), status: 1 }, answer],
+      allowlist: ALLOWLIST,
+    });
+    assert.equal(result.status, 1);
+    assert.match(
+      result.stderr,
+      /could not list published versions of braces; treating its reported fix as real/,
+    );
+    assert.match(result.stderr, /now reports as fixable/);
+  }
+});
+
+test('cli: accepts a single-version package answered as a bare string', () => {
+  // `npm view <pkg> versions --json` prints a plain string, not a
+  // one-element array, when the package has exactly one release.
+  const report = {
+    vulnerabilities: {
+      braces: {
+        severity: 'high',
+        via: [{ ...advisory(BRACES), range: '<1.0.0' }],
+        range: '*',
+        nodes: [],
+        fixAvailable: true,
+      },
+    },
+  };
+  const result = runGate({
+    responses: [
+      { stdout: JSON.stringify(report), status: 1 },
+      { stdout: JSON.stringify('1.0.0'), status: 0 },
+    ],
+    allowlist: ALLOWLIST,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /now reports as fixable/);
+  assert.doesNotMatch(result.stderr, /could not list published versions/);
 });
 
 test('cli: exits 1 naming a new advisory outside the allowlist', () => {
