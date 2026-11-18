@@ -71,10 +71,20 @@ the import gates.
 
 This section is the register of high or critical `npm audit` advisories that
 `scripts/audit-gate.mjs` allowlists because no patched release exists upstream.
-It is currently empty: `npm audit` reports no high or critical advisory, and
-`ALLOWLISTED_ADVISORIES` in `scripts/audit-gate.mjs` has no entries.
 
-When one has to be added, record it as a table row here with the advisory,
+| Advisory                                                                 | Package     | Installed           | Reached through                                                                                                                   |
+| ------------------------------------------------------------------------ | ----------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) | `picomatch` | 2.3.2, 4.0.5, 4.0.7 | `@docusaurus/core` file watching and globbing, via `chokidar`, `micromatch` and `tinyglobby`; `webpack-dev-server`; `cspell-glob` |
+
+GHSA-fc5q-39xc-vjpf is a regular-expression denial of service in `picomatch`
+when a glob pattern repeats a single-branch extglob. Every release up to and
+including the current `4.0.7` is in the vulnerable range and upstream has
+published no fix. The package is build-time only: it matches file paths for the
+Docusaurus build, the dev server's file watcher and the spelling check, against
+globs this repository authors. No `picomatch` code ships to the browser, and no
+end-user input reaches it.
+
+When another has to be added, record it as a table row here with the advisory,
 package, installed version and the path it is reached through, plus a note on
 whether it is build-time only or reachable from the published site, and add the
 matching entry to `ALLOWLISTED_ADVISORIES`. Do not run `npm audit fix --force`
