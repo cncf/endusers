@@ -649,6 +649,7 @@
         "Argo",
         "ContainerSSH",
         "KServe",
+        "Kepler",
         "Kubeflow",
         "Kubernetes",
         "Kueue",
