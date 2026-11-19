@@ -48,11 +48,9 @@ import semver from 'semver';
 // advisory is still present, so that removal is prompted rather than left to
 // be noticed.
 //
-// GHSA-fc5q-39xc-vjpf: picomatch <= 4.0.7, a ReDoS in extglob matching. The
-// current release (4.0.7) is inside the range and upstream has published no
-// fix; reached only through build-time tooling (Docusaurus globbing and file
-// watching, webpack-dev-server, cspell). Listed 2026-11-17.
-export const ALLOWLISTED_ADVISORIES = new Set(['GHSA-fc5q-39xc-vjpf']);
+// Empty: the last entry, GHSA-fc5q-39xc-vjpf against picomatch, was withdrawn
+// by GitHub on 2026-11-18; SECURITY.md records it among the retired entries.
+export const ALLOWLISTED_ADVISORIES = new Set([]);
 
 // `npm audit --audit-level=high` semantics: moderate and low findings are
 // reported but do not gate the merge on their own; see
