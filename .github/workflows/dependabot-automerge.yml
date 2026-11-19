@@ -4,8 +4,10 @@ name: Dependabot auto-merge
 # GOVERNANCE.md ("Low-risk merge classes"): a lockfile-only npm update whose
 # highest semver change is patch or minor. `gh pr merge --auto` only arms
 # auto-merge; the PR still joins the merge queue after the required checks
-# ("Validate repository", "Lint repository", including `npm run check:audit`)
-# pass, and leaves the queue if any of them fail. Anything else, including
+# ("Validate repository", "Lint repository") pass, and leaves the queue if
+# any of them fail. `npm run check:audit` is not among them (adr/0013): the
+# daily "Dependency audit" workflow files an issue when a merged update
+# carries an advisory. Anything else, including
 # every package.json, workflow or major-version change, waits for a maintainer.
 #
 # `pull_request`, not `pull_request_target`: Dependabot branches live in this

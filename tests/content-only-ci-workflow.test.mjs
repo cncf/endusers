@@ -255,8 +255,8 @@ test('CONTRIBUTING claims a check runs on every PR only when CI never skips it',
       ),
   );
   assert.ok(
-    gatedScripts.has('check:audit'),
-    'expected ci.yml to gate npm run check:audit on FULL_VALIDATION; update this test if the gate moved',
+    gatedScripts.has('test:unit:coverage:check'),
+    'expected ci.yml to gate npm run test:unit:coverage:check on FULL_VALIDATION; update this test if the gate moved',
   );
 
   for (const [, script] of contributing.matchAll(

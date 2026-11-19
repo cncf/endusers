@@ -102,9 +102,13 @@ upstream publishes a patched release before this repository picks it up — the
 gate fails with the release to upgrade to, so a stale "no patched version" claim
 cannot sit here unnoticed the way GHSA-ch52-4w7c-c8xp did.
 
-CI enforces this register: `npm run check:audit` (`scripts/audit-gate.mjs`)
-fails the build on any high or critical advisory other than the allowlisted
-ones, so a new lockfile advisory cannot land silently. Moderate and low
+The daily "Dependency audit" workflow enforces this register:
+`npm run check:audit` (`scripts/audit-gate.mjs`) fails on any high or critical
+advisory other than the allowlisted ones, so a new lockfile advisory is
+reported within a day. It is not a pull-request check
+([ADR 0013](adr/0013-surface-dependency-advisories-through-a-daily-issue.md)):
+the advisory database moves independently of any change under review, so a
+gate on it turned red on unrelated pull requests. Moderate and low
 advisories do not block on their own, but the gate also fails when one of them
 has a patched release reachable without a semver-major change, so a fix that is
 one `npm audit fix --package-lock-only` away (typically an `overrides` floor
@@ -131,9 +135,11 @@ A new advisory that does have a patched release turns the gate red on `main`
 until the lockfile moves — and within a day: the scheduled "Dependency audit"
 workflow
 ([`.github/workflows/audit-schedule.yml`](.github/workflows/audit-schedule.yml))
-re-runs `npm run check:audit` on `main` daily, because the advisory database
-moves on its own while a quiet lockfile changes nothing. The red run is the
-notification; that workflow opens nothing. When
+runs `npm run check:audit` on `main` daily, because the advisory database
+moves on its own while a quiet lockfile changes nothing. A red run files an
+issue labelled `dependency-audit` carrying the gate's output, or comments on
+the one already open; the next green run closes it. That issue is the
+notification. When
 `npm audit fix --package-lock-only` can resolve every gated advisory inside the
 ranges `package.json` already allows, the "Dependency audit fix" workflow
 ([`.github/workflows/audit-fix.yml`](.github/workflows/audit-fix.yml)) runs it,
@@ -143,11 +149,11 @@ Dependabot-authored, so `dependabot-automerge.yml` does not queue it: a
 maintainer merges it by hand under the normal review rules, and closes and
 reopens it (or pushes to it) to start CI, which a workflow-token pull request
 does not trigger. When the patched release falls outside the ranges, the job
-fails and the red scheduled run stays the notification, as before. Dependabot
+fails and the issue stays the notification, as before. Dependabot
 security updates open the same lockfile bump, and when it changes only
 `package-lock.json` with a patch or minor version change,
 [`dependabot-automerge.yml`](.github/workflows/dependabot-automerge.yml) queues
-it to merge once the required checks, including `npm run check:audit`, pass (see
+it to merge once the required checks pass (see
 "Low-risk merge classes" in [`GOVERNANCE.md`](GOVERNANCE.md)). Check for either
 pull request before hand-filing a lockfile bump. A fix that needs a
 `package.json` change or a major version still waits for a maintainer.

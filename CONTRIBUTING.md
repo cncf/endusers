@@ -71,9 +71,10 @@ repository": `npm run check:format`, `npm run check:spelling`,
 `npm run check:markdown`, `npm run check:duplication`, `npm run check:lint` and
 `npm run check:unused`. Content-only PRs do not need to run the full unit
 coverage or lint suites locally; CI runs focused checks on the changed documents
-and builds the site. The full "Validate repository" gate also runs
-`npm run check:audit` (dependency advisory allowlist) — see step 5 below.
-`npm run check` runs the lint checks, but it additionally runs `check:audit`,
+and builds the site. `npm run check:audit` (dependency advisory allowlist) is
+not a PR check; the daily "Dependency audit" workflow runs it and files an
+issue — see step 5 below. `npm run check` runs the lint checks, but it
+additionally runs `check:audit`,
 `check:links` (network-dependent) and `check:community-group-links` (needs
 `GH_TOKEN` and rewrites `data/community-groups.json`) — see step 5 below before
 running the full `npm run check`. `just` is optional — the npm scripts remain
@@ -385,26 +386,24 @@ path.
      something is reached in a way it cannot see, add an ignore entry with a
      one-line reason to `knip.config.js`.
 
-   The full "Validate repository" path also runs `npm run check:audit`, which
-   fails differently from the lint checks:
-   - `check:audit` — fails the build on any high/critical dependency advisory
-     not in the allowlist (see "Known unpatched dependency advisories" in
-     [`SECURITY.md`](SECURITY.md)), and on any moderate/low advisory that
-     `npm audit fix --package-lock-only` can already patch in range. The
-     advisory database updates daily, so a branch that was green yesterday can
-     fail with no code change. Do **not** run `npm audit fix --force`; flag the
-     failure for maintainers, who own the allowlist in `scripts/audit-gate.mjs`.
-     When the advisory has a patched release, first look for the Dependabot
-     security update: a lockfile-only patch or minor fix is queued to merge
-     automatically (see "Low-risk merge classes" in
-     [`GOVERNANCE.md`](GOVERNANCE.md)), so a hand-made lockfile bump would
-     duplicate it.
-
-   `npm run check` runs the lint checks plus three more scripts that the PR
-   gates enforce separately ("Validate repository") or not at all, so treat it
-   as a superset rather than a drop-in for the CI checks:
-   - `check:audit` — see above; part of "Validate repository", not "Lint
-     repository".
+   `npm run check` runs the lint checks plus three more scripts that no PR
+   gate enforces, so treat it as a superset rather than a drop-in for the CI
+   checks:
+   - `check:audit` — fails on any high/critical dependency advisory not in the
+     allowlist (see "Known unpatched dependency advisories" in
+     [`SECURITY.md`](SECURITY.md)), on any moderate/low advisory that
+     `npm audit fix --package-lock-only` can already patch in range, and on an
+     allowlisted advisory that no longer appears. Its input is the advisory
+     database, which changes daily with no code change, so it is not a PR
+     check ([ADR 0013](adr/0013-surface-dependency-advisories-through-a-daily-issue.md)):
+     the "Dependency audit" workflow runs it on `main` every day and files or
+     updates a `dependency-audit` issue when it is red. If it fails for you
+     locally, do **not** run `npm audit fix --force`; check for that issue, or
+     flag it to the maintainers, who own the allowlist in
+     `scripts/audit-gate.mjs`. When the advisory has a patched release, first
+     look for the automated lockfile pull request (Dependabot's security
+     update, or the "Dependency audit fix" workflow's), so a hand-made bump does
+     not duplicate it.
    - `check:links` — runs `markdown-link-check` over every `*.md` file in the
      repository, including `docs/` and `blog/`, and then
      `scripts/check-data-links.mjs` over every outbound URL the site renders
