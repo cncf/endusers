@@ -22,6 +22,7 @@ architecture:
     - KServe
     - Kyverno
     - Kueue
+    - Kepler
     - Prometheus
     - stargz-snapshotter
   sourceUrl: https://github.com/cncf/architecture/tree/3ddf917facd0aea9694cc9c12c52e583fd2f86cb/content/en/architectures/cern-scientific-computing
@@ -53,6 +54,8 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
   <CNCFProjectCard name={"Kyverno"} href={"https://www.cncf.io/projects/kyverno/"} logo={"/img/cncf-projects/kyverno-kyverno-icon-color.svg"} description={"Kyverno offers policy as code with support for YAML and CEL based policies. Used as a key component for policy enforcement and mutating workloads according to those policies, adding required settings to expose storage systems, set resources based on GPUs, etc."} />
 
   <CNCFProjectCard name={"Kueue"} description={"Kueue is a kubernetes-native system offering advanced scheduling capabilities and quota management. Used to provide job queues and quotas, gang scheduling, fair sharing, among other capabilities."} />
+
+  <CNCFProjectCard name={"Kepler"} href={"https://www.cncf.io/projects/kepler/"} logo={"/img/cncf-projects/kepler-kepler-icon-color.svg"} description={"Kepler captures hardware-level power metrics alongside IPMI, using RAPL to attribute energy consumption to individual workloads."} />
 
   <CNCFProjectCard name={"Prometheus"} href={"https://www.cncf.io/projects/prometheus/"} logo={"/img/cncf-projects/prometheus-prometheus-icon-color.svg"} description={"Prometheus gathers the metrics and insights from all components in the cluster. Used for system and service metrics as well as providing individual workload performance insights on cpu, memory, power and other areas."} />
 

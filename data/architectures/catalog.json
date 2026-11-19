@@ -121,6 +121,7 @@
       "KServe",
       "Kyverno",
       "Kueue",
+      "Kepler",
       "Prometheus",
       "stargz-snapshotter"
     ],
