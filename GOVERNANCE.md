@@ -78,7 +78,10 @@ delegate an agent to merge these low-risk classes:
   when it is an npm update, its highest semver change is patch or minor, and it
   changes no file other than `package-lock.json` (so nothing under
   `.github/workflows/`). The merge queue merges it only after the required
-  checks pass, including `npm run check:audit`. Security updates within those
+  checks pass; `npm run check:audit` is not among them, so the daily
+  "Dependency audit" issue is where a merged update that still carries an
+  advisory surfaces ([ADR 0013](adr/0013-surface-dependency-advisories-through-a-daily-issue.md)).
+  Security updates within those
   bounds, the usual shape of a transitive advisory fix, take this path. Every
   other Dependabot pull request (`package.json` range bumps, major versions,
   GitHub Actions and dev container pins) waits for a maintainer. This standing

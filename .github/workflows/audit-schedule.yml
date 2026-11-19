@@ -1,15 +1,20 @@
 name: Dependency audit
 
-# ci.yml runs `npm run check:audit` on pull_request and merge_group, so a
-# lockfile *change* is always gated. The advisory database moves on its own,
-# though: an advisory published against the lockfile exactly as committed
-# changes no file here, so nothing re-runs the gate while main is quiet, and
-# the finding waits for whoever happens to open the next pull request. The
-# same reasoning already gives codeql.yml its weekly cron.
+# The only lane that runs `npm run check:audit`. ci.yml used to run it on
+# pull_request and merge_group as well, but the gate's input is the advisory
+# database, which moves on its own: an advisory published against the
+# lockfile exactly as committed changes no file here, and an allowlisted
+# advisory being fixed upstream does the same. A pull-request gate on that
+# input turned red on whichever unrelated change happened to be open, so
+# adr/0013 moved detection here and made the notification an issue.
+#
+# A red gate files, or updates, a single issue labelled `dependency-audit`
+# with the gate's output; a green gate closes it. The job still exits
+# non-zero on a red gate so audit-fix.yml, which triggers on this workflow's
+# failure, keeps opening its lockfile pull request.
 #
 # This runs only the audit gate, not ci.yml's full validate job, so the
 # scheduled cost stays at an `npm ci` plus one `npm audit --package-lock-only`.
-# A red run on this workflow is the notification; it opens nothing.
 on:
   schedule:
     # Daily, offset from codeql.yml's 07:31 so the two do not contend.
@@ -19,11 +24,31 @@ on:
 permissions:
   contents: read
 
+# Two overlapping runs (a dispatch during the daily cron) would both find no
+# open issue and both file one; the constant group serializes them. Not
+# cancelled, so a run that has already filed the issue finishes its exit.
+concurrency:
+  group: automation/audit-schedule
+  cancel-in-progress: false
+
+env:
+  AUDIT_LABEL: dependency-audit
+  AUDIT_TITLE: 'Dependency audit: action needed'
+
 jobs:
   audit:
     name: Audit dependencies against the advisory allowlist
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL:
+        ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{
+        github.run_id }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,4 +57,59 @@ jobs:
       - name: Set up Node.js and install dependencies
         uses: ./.github/actions/setup-node-deps
       - name: Audit dependencies against the advisory allowlist
-        run: npm run check:audit
+        id: gate
+        run: |
+          if npm run check:audit > audit-output.txt 2>&1; then
+            echo 'red=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'red=true' >> "$GITHUB_OUTPUT"
+          fi
+          cat audit-output.txt
+      - name: Find the open audit issue
+        id: issue
+        run: |
+          number="$(gh issue list --state open --label "$AUDIT_LABEL" --limit 1 --json number --jq '.[0].number // empty')"
+          case "$number" in
+            *[!0-9]*) number='' ;;
+          esac
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+      - name: File or update the audit issue
+        if: steps.gate.outputs.red == 'true'
+        env:
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
+        run: |
+          gh label create "$AUDIT_LABEL" --force \
+            --description 'The daily dependency audit gate is red on main' \
+            --color B60205
+          {
+            echo "The scheduled dependency audit is red on \`main\` ([workflow run]($RUN_URL))."
+            echo
+            echo '```text'
+            cat audit-output.txt
+            echo '```'
+            echo
+            echo 'What to do:'
+            echo
+            echo '- A patched release inside the current semver ranges: the "Dependency audit fix" workflow opens a lockfile-only pull request from `automation/audit-fix`; merge that.'
+            echo '- A patched release outside the ranges, or no patched release: follow the "Known unpatched dependency advisories" process in [SECURITY.md](https://github.com/cncf/endusers/blob/main/SECURITY.md).'
+            echo '- An allowlisted advisory that no longer appears: remove it from `ALLOWLISTED_ADVISORIES` in `scripts/audit-gate.mjs` and drop its row from SECURITY.md.'
+            echo
+            echo 'This issue closes itself when the daily audit next passes.'
+          } > issue-body.md
+          if [ -n "$ISSUE_NUMBER" ]; then
+            gh issue comment "$ISSUE_NUMBER" --body-file issue-body.md
+          else
+            gh issue create --title "$AUDIT_TITLE" --label "$AUDIT_LABEL" --body-file issue-body.md
+          fi
+      - name: Close the audit issue
+        if: steps.gate.outputs.red != 'true' && steps.issue.outputs.number != ''
+        env:
+          ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
+        run: |
+          gh issue close "$ISSUE_NUMBER" --comment "The daily dependency audit passed on \`main\` ([workflow run]($RUN_URL))."
+      # Red stays red: audit-fix.yml triggers on this workflow's failure.
+      - name: Report the gate result
+        if: steps.gate.outputs.red == 'true'
+        run: |
+          echo '::error::The dependency audit gate is red on main; see the dependency-audit issue.'
+          exit 1

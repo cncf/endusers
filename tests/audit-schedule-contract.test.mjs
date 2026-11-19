@@ -1,59 +1,48 @@
-// Guards where the dependency-audit gate runs.
+// Guards where the dependency-audit gate runs, and what a red gate does.
 //
-// `scripts/audit-gate.mjs` fails the build when `npm audit` reports a high or
-// critical advisory outside the documented allowlist. tests/audit-gate.test.mjs
-// covers that script thoroughly -- the classification, the allowlist, its
-// parity with SECURITY.md -- but it only ever asks what the gate decides, never
-// where it is run. Nothing in the suite reads either of the two lanes that
-// actually invoke it.
+// `scripts/audit-gate.mjs` fails when `npm audit` reports a high or critical
+// advisory outside the documented allowlist, or an allowlisted advisory that
+// no longer appears. tests/audit-gate.test.mjs covers that script thoroughly
+// -- the classification, the allowlist, its parity with SECURITY.md -- but it
+// only ever asks what the gate decides, never where it is run.
 //
-// Those lanes carry different halves of the same contract, and
-// .github/workflows/audit-schedule.yml states the split in its own header:
-// ci.yml runs the gate on `pull_request` and `merge_group`, so a lockfile
-// *change* is always gated, and the scheduled workflow exists because the
-// advisory database moves on its own -- an advisory published against the
-// lockfile exactly as committed changes no file in the repository, so nothing
-// re-runs the gate while main is quiet and the finding waits for whoever
-// happens to open the next pull request.
+// adr/0013 decided where: .github/workflows/audit-schedule.yml, daily and on
+// demand, and nowhere on the pull-request path. The gate's input is the
+// advisory database, which moves on its own, so a pull-request gate on it
+// turned red on whichever unrelated change happened to be open; adr/0013
+// records the instance. The scheduled lane files one issue labelled
+// `dependency-audit`, updates it on later red runs, closes it on green, and
+// still exits non-zero so audit-fix.yml -- which triggers on this workflow's
+// failure -- keeps opening its lockfile pull request.
 //
-// Neither half is asserted anywhere. tests/workflow-scripts.test.mjs only asks
-// whether *some* workflow runs each `check:*` gate, and ci.yml satisfies that
-// on its own, so deleting audit-schedule.yml outright, or dropping its
-// schedule block and leaving it `workflow_dispatch`-only, leaves the whole
-// suite green while reverting the repository to exactly the posture the
-// workflow was added to fix. The symmetric edit -- removing `merge_group` or
-// the `check:audit` step from ci.yml -- is caught by nothing either, and
-// tests/ci-gating-jobs.test.mjs reads the job's failure handling rather than
-// which gates it runs.
+// None of that was asserted anywhere before this file. tests/workflow-
+// scripts.test.mjs only asks whether *some* workflow runs each `check:*` gate,
+// so deleting audit-schedule.yml's schedule block, or re-adding the step to
+// ci.yml, leaves the suite green while reverting the decision. A scheduled,
+// advisory lane is also the easiest thing in the repository to delete by
+// accident, because no contributor's pull request turns red when it goes; this
+// file is the same shape as tests/check-links-schedule-contract.test.mjs for
+// that reason.
 //
-// audit-schedule.yml is, after tests/check-links-schedule-contract.test.mjs
-// closed the same hole for check-links.yml, the last workflow in the
-// repository with no contract test of its own. This file is deliberately the
-// same shape as that one, for the reason given there: a scheduled, advisory
-// lane is the easiest thing in the repository to delete by accident, because
-// no contributor's pull request turns red when it goes.
-//
-// Three further claims the workflow makes about itself are pinned below.
+// Further claims the workflow makes about itself are pinned below.
 //
 //   * It runs the audit gate and nothing else. The header justifies the
 //     scheduled cost as "an `npm ci` plus one `npm audit --package-lock-only`",
-//     explicitly not ci.yml's full validate job. Adding `npm test` here is a
-//     one-line change that nothing would report, and it would quietly put the
-//     daily cron on the same footing as the gate it was kept apart from.
+//     explicitly not ci.yml's full validate job.
 //
 //   * Its cron is offset from the other scheduled workflows "so the two do not
-//     contend" -- the comment names codeql.yml's 07:31, sixteen minutes
-//     earlier. That offset is the sort of detail a later workflow copies
-//     wholesale from a sibling, and two identical cron expressions reintroduce
-//     the contention the offset was chosen to avoid. The check below is over
-//     every scheduled workflow rather than this pair, because the next
-//     collision will be between files this comment cannot name yet.
+//     contend". The check is over every scheduled workflow rather than this
+//     pair, because the next collision will be between files this comment
+//     cannot name yet.
 //
-//   * "A red run on this workflow is the notification; it opens nothing." The
-//     generic permissions guards in tests/ci-supply-chain.test.mjs refuse an
-//     unconstrained token and `write-all`, which a narrow `issues: write`
-//     passes; this asserts the stronger thing the header claims, which is that
-//     the workflow holds no write scope at all.
+//   * It holds `issues: write` and nothing wider. The generic permissions
+//     guards in tests/ci-supply-chain.test.mjs refuse an unconstrained token
+//     and `write-all`; this asserts the narrower thing the header claims, so
+//     the lane that runs unattended daily cannot quietly gain contents or
+//     pull-requests scope.
+//
+//   * A red gate still fails the run. The issue is the notification for
+//     people; the failure is the trigger for audit-fix.yml.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -64,7 +53,7 @@ import { loadWorkflows, repoRoot } from './helpers-workflows.mjs';
 const AUDIT_GATE = 'check:audit';
 const AUDIT_WORKFLOW = 'audit-schedule.yml';
 const PR_WORKFLOW = 'ci.yml';
-const PR_TRIGGERS = ['pull_request', 'merge_group'];
+const AUDIT_LABEL = 'dependency-audit';
 
 const manifest = JSON.parse(
   readFileSync(join(repoRoot, 'package.json'), 'utf8'),
@@ -122,22 +111,12 @@ test(`package.json defines the ${AUDIT_GATE} gate`, () => {
   );
 });
 
-test(`${PR_WORKFLOW} runs ${AUDIT_GATE} on every pre-merge trigger`, () => {
-  const doc = workflow(PR_WORKFLOW);
-  const triggers = Object.keys(doc.on);
-  for (const trigger of PR_TRIGGERS) {
-    assert.ok(
-      triggers.includes(trigger),
-      `${PR_WORKFLOW} no longer runs on ${trigger}, so a lockfile change can ` +
-        `reach main without ${AUDIT_GATE}; ${AUDIT_WORKFLOW} is daily and ` +
-        'does not close that window',
-    );
-  }
+test(`${PR_WORKFLOW} does not run ${AUDIT_GATE}`, () => {
   assert.ok(
-    npmRunTargets(doc).includes(AUDIT_GATE),
-    `${PR_WORKFLOW} no longer runs ${AUDIT_GATE}; the only remaining audit ` +
-      `is ${AUDIT_WORKFLOW}'s daily cron, which cannot fail the pull ` +
-      'request that introduced the advisory',
+    !npmRunTargets(workflow(PR_WORKFLOW)).includes(AUDIT_GATE),
+    `${PR_WORKFLOW} runs ${AUDIT_GATE} again; adr/0013 moved it to ` +
+      `${AUDIT_WORKFLOW} because the advisory database moves independently ` +
+      'of any pull request and the gate turned red on unrelated changes',
   );
 });
 
@@ -187,19 +166,72 @@ test('no two scheduled workflows share a cron expression', () => {
   );
 });
 
-test(`${AUDIT_WORKFLOW} holds no write permission`, () => {
+test(`${AUDIT_WORKFLOW} holds issues: write and nothing wider`, () => {
   const doc = workflow(AUDIT_WORKFLOW);
-  const offenders = [
-    ...writeScopes(doc.permissions),
-    ...Object.values(doc.jobs).flatMap((job) => writeScopes(job.permissions)),
-  ];
   assert.deepEqual(
-    offenders,
+    writeScopes(doc.permissions),
     [],
-    `${AUDIT_WORKFLOW} states that a red run is the notification and that it ` +
-      'opens nothing, so it needs no write scope; granting one makes the ' +
-      'header false and widens the token on a workflow that runs ' +
-      `unattended: ${JSON.stringify(offenders)}`,
+    `${AUDIT_WORKFLOW} grants a write at the workflow level; the issue ` +
+      'steps need it on the audit job alone',
+  );
+  const jobScopes = Object.values(doc.jobs).flatMap((job) =>
+    writeScopes(job.permissions),
+  );
+  assert.deepEqual(
+    jobScopes,
+    [['issues', 'write']],
+    `${AUDIT_WORKFLOW} files and closes the dependency-audit issue, which ` +
+      'needs issues: write and nothing else; a wider token on a workflow ' +
+      `that runs unattended daily is what audit-fix.yml exists to isolate: ${JSON.stringify(jobScopes)}`,
+  );
+});
+
+test(`${AUDIT_WORKFLOW} files, updates and closes the ${AUDIT_LABEL} issue`, () => {
+  const steps = Object.values(workflow(AUDIT_WORKFLOW).jobs).flatMap(
+    (job) => job.steps,
+  );
+  const scripts = steps
+    .map((step) => step.run)
+    .filter((run) => typeof run === 'string');
+  const [label] = [workflow(AUDIT_WORKFLOW).env?.AUDIT_LABEL];
+  assert.equal(
+    label,
+    AUDIT_LABEL,
+    `${AUDIT_WORKFLOW} no longer names the ${AUDIT_LABEL} label; the dedupe ` +
+      'lookup and the create step have to agree on it',
+  );
+  for (const command of [
+    'gh issue list',
+    'gh issue create',
+    'gh issue comment',
+    'gh issue close',
+  ]) {
+    assert.ok(
+      scripts.some((run) => run.includes(command)),
+      `${AUDIT_WORKFLOW} no longer runs \`${command}\`; a red gate has to ` +
+        'find the open issue, file or update it, and a green gate has to ' +
+        'close it, or the issue stops being the notification adr/0013 made it',
+    );
+  }
+});
+
+test(`${AUDIT_WORKFLOW} still fails the run on a red gate`, () => {
+  const steps = Object.values(workflow(AUDIT_WORKFLOW).jobs).flatMap(
+    (job) => job.steps,
+  );
+  const failing = steps.filter(
+    (step) => typeof step.run === 'string' && /^\s*exit 1\s*$/mu.test(step.run),
+  );
+  assert.equal(
+    failing.length,
+    1,
+    `${AUDIT_WORKFLOW} no longer exits non-zero after filing the issue, so ` +
+      "audit-fix.yml's workflow_run trigger on its failure never fires",
+  );
+  assert.ok(
+    steps.every((step) => step['continue-on-error'] !== true),
+    `${AUDIT_WORKFLOW} suppresses a step failure with continue-on-error; ` +
+      'the gate step records its result as an output instead',
   );
 });
 

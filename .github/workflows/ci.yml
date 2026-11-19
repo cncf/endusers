@@ -74,9 +74,6 @@ jobs:
           persist-credentials: false
       - name: Set up Node.js and install dependencies
         uses: ./.github/actions/setup-node-deps
-      - name: Audit dependencies against the advisory allowlist
-        if: ${{ !cancelled() && env.FULL_VALIDATION == 'true' }}
-        run: npm run check:audit
       - name: Run unit tests with coverage
         if: ${{ !cancelled() && env.FULL_VALIDATION == 'true' }}
         # A zone fourteen hours ahead of UTC, so a date formatted in the

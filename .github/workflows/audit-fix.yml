@@ -1,22 +1,23 @@
 name: Dependency audit fix
 
-# audit-schedule.yml re-runs the advisory gate daily and, by its own contract,
-# opens nothing: a red run is the notification. Each of its last three red
-# runs was then resolved by hand with the same mechanical step, a lockfile
-# bump to a patched release that already sat inside the ranges package.json
-# allows. This workflow runs that step when the scheduled audit fails, and
-# opens the pull request if the gate is green on the result.
+# audit-schedule.yml runs the advisory gate daily and files a
+# `dependency-audit` issue when it is red. Each of its early red runs was
+# resolved by hand with the same mechanical step, a lockfile bump to a
+# patched release that already sat inside the ranges package.json allows.
+# This workflow runs that step when the scheduled audit fails, and opens the
+# pull request if the gate is green on the result.
 #
 # It is a separate workflow rather than a second job there so the audit lane
-# keeps its read-only token and single-gate cost (tests/audit-schedule-
-# contract.test.mjs pins both), and only this lane holds write scope.
+# keeps its issues-only token and single-gate cost (tests/audit-schedule-
+# contract.test.mjs pins both), and only this lane holds contents and
+# pull-requests write scope.
 #
 # `npm audit fix --package-lock-only` moves nothing outside the existing
 # semver ranges and never touches package.json, so the diff a reviewer sees is
 # the lockfile alone. When the gate is still red afterwards the patched release
 # is outside the ranges, which needs an `overrides` floor and a SECURITY.md row
-# a person has to choose; this job then fails and the scheduled red run stays
-# the notification, as before.
+# a person has to choose; this job then fails and the scheduled lane's issue
+# stays the notification, as before.
 #
 # A pull request opened with the workflow token does not itself trigger ci.yml;
 # a maintainer closes and reopens it, or pushes to it, to start the checks.

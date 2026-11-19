@@ -106,6 +106,13 @@ const SERIALISED_WORKFLOWS = new Map([
       'as refresh-metrics.yml. Triggered by workflow_run, not by a PR.',
   ],
   [
+    'audit-schedule.yml',
+    'Looks up the open dependency-audit issue and then files or comments ' +
+      'on it non-atomically, so two overlapping runs (a dispatch during the ' +
+      'daily cron) both find none and both file one. Pushes no branch; the ' +
+      'constant group serialises the issue lookup. Not PR-triggered.',
+  ],
+  [
     'pr-queue-hygiene.yml',
     'Keeps its state in a hidden marker comment that it reads and then ' +
       'writes non-atomically, so two overlapping runs both find no marker ' +
@@ -289,9 +296,7 @@ function racingBranchWorkflows(parsedWorkflows) {
 // A write permission is the mechanical signal for "writes something two runs
 // could both write", and it needs no per-workflow judgement. The rule holds
 // across the repository today with no exemption table: every workflow that
-// grants a write already declares a group, and the only workflow with no
-// concurrency block, audit-schedule.yml, is contents: read at the workflow
-// level with no job-level grant. It runs the audit gate and opens nothing.
+// grants a write already declares a group.
 //
 // Permissions are read with GitHub's own precedence -- a job's `permissions:`
 // replaces the workflow's rather than merging with it -- so a workflow that
@@ -597,8 +602,7 @@ test('the write-permission scan reports the workflows it exists to catch', () =>
   });
   assert.deepEqual(writersWithoutConcurrency(writerWithGroup), []);
 
-  // A read-only workflow with no group is outside the rule, which is what
-  // keeps audit-schedule.yml off this list.
+  // A read-only workflow with no group is outside the rule.
   const reader = fixture('audit.yml', {
     on: { schedule: [{ cron: '0 0 * * *' }] },
     permissions: { contents: 'read' },
