@@ -177,6 +177,21 @@ words:
   - reinstrumenting
   - rearchitected
   - awss
+  # docs/architectures/large-institution-2114/index.md (Kubeflow docs-agent implementation)
+  - Kagent
+  - Milvus
+  - Rohit
+  - Kumar
+  - Santhosh
+  - Toorpu
+  - Streamable
+  - chunker
+  - mpnet
+  - istiod
+  - pytest
+  - NDCG
+  - compileall
+  - cicd
   # docs/architectures/sncf-onprem/index.md (Cluster API provider acronyms and SNCF tooling)
   - autohealing
   - CABPT

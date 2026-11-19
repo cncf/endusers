@@ -214,6 +214,41 @@
     ]
   },
   {
+    "id": "large-institution-2114",
+    "title": "Agentic RAG on Kubeflow — Implementation Deep Dive",
+    "organization": "Large Institution",
+    "summary": "A Kubeflow docs agent combines Kagent, read-only MCP tools, Kubeflow Pipelines, Milvus hybrid retrieval, and KServe-hosted models to answer documentation questions with citations. The implementation and its gaps are documented as a community demo.",
+    "industries": ["Financial Services"],
+    "tags": [
+      "agentic ai",
+      "rag",
+      "kubeflow",
+      "kubernetes",
+      "kserve",
+      "mcp",
+      "vector search",
+      "observability",
+      "ai platform",
+      "gitops",
+      "demo"
+    ],
+    "projects": [
+      "Kubeflow",
+      "Kubernetes",
+      "KServe",
+      "Knative",
+      "Istio",
+      "Envoy",
+      "OpenTelemetry",
+      "Argo"
+    ],
+    "sourceUrl": "https://github.com/cncf/endusers/issues/2114",
+    "sourceIssue": 2114,
+    "published": "2026-11-08",
+    "updated": "2026-11-08",
+    "assets": []
+  },
+  {
     "id": "sncf-onprem",
     "title": "A Private Cloud \"Kubernetes Service\" deployable anywhere.",
     "organization": "SNCF",
