@@ -43,6 +43,12 @@ jobs:
     permissions:
       contents: read
       issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL:
+        ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{
+        github.run_id }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -61,9 +67,6 @@ jobs:
           cat audit-output.txt
       - name: Find the open audit issue
         id: issue
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
         run: |
           number="$(gh issue list --state open --label "$AUDIT_LABEL" --limit 1 --json number --jq '.[0].number // empty')"
           case "$number" in
@@ -73,12 +76,7 @@ jobs:
       - name: File or update the audit issue
         if: steps.gate.outputs.red == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
-          RUN_URL:
-            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{
-            github.run_id }}
         run: |
           gh label create "$AUDIT_LABEL" --force \
             --description 'The daily dependency audit gate is red on main' \
@@ -106,12 +104,7 @@ jobs:
       - name: Close the audit issue
         if: steps.gate.outputs.red != 'true' && steps.issue.outputs.number != ''
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
-          RUN_URL:
-            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{
-            github.run_id }}
         run: |
           gh issue close "$ISSUE_NUMBER" --comment "The daily dependency audit passed on \`main\` ([workflow run]($RUN_URL))."
       # Red stays red: audit-fix.yml triggers on this workflow's failure.
