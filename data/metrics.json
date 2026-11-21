@@ -1,11 +1,11 @@
 {
   "generated": true,
-  "generatedAt": "2026-11-18T02:31:35.705Z",
+  "generatedAt": "2026-11-21T03:23:00.070Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
-      "revision": "9701f7a5af7e7756adcd3dfc34c43ea5030e0356",
-      "sourceUrl": "https://github.com/cncf/landscape/blob/9701f7a5af7e7756adcd3dfc34c43ea5030e0356/landscape.yml"
+      "revision": "dad8b96a85dc5b11fb916be2f138b1ea8a067573",
+      "sourceUrl": "https://github.com/cncf/landscape/blob/dad8b96a85dc5b11fb916be2f138b1ea8a067573/landscape.yml"
     },
     "architectures": {
       "repository": "https://github.com/cncf/architecture",
@@ -17,10 +17,10 @@
     {
       "id": "cncf-projects",
       "label": "CNCF projects",
-      "value": 263,
+      "value": 268,
       "source": "landscape",
       "sourceUrl": "https://landscape.cncf.io/",
-      "collectedAt": "2026-11-18T02:31:35.705Z",
+      "collectedAt": "2026-11-21T03:23:00.070Z",
       "note": "Projects explicitly marked with a CNCF maturity level in landscape.yml."
     },
     {
@@ -29,7 +29,7 @@
       "value": 10,
       "source": "architectures",
       "sourceUrl": "https://github.com/cncf/architecture/tree/main/content/en/architectures",
-      "collectedAt": "2026-11-18T02:31:35.705Z",
+      "collectedAt": "2026-11-21T03:23:00.070Z",
       "note": "Published architecture directories under content/en/architectures."
     }
   ],
@@ -41,11 +41,11 @@
       "values": [
         {
           "name": "Provisioning",
-          "value": 67
+          "value": 68
         },
         {
           "name": "Orchestration & Management",
-          "value": 60
+          "value": 61
         },
         {
           "name": "App Definition and Development",
@@ -53,11 +53,15 @@
         },
         {
           "name": "Runtime",
-          "value": 40
+          "value": 41
         },
         {
           "name": "Observability and Analysis",
           "value": 26
+        },
+        {
+          "name": "Inference",
+          "value": 4
         },
         {
           "name": "Platform",
@@ -65,10 +69,6 @@
         },
         {
           "name": "Wasm",
-          "value": 3
-        },
-        {
-          "name": "Inference",
           "value": 3
         },
         {
@@ -82,6 +82,10 @@
         {
           "name": "AI Agent",
           "value": 1
+        },
+        {
+          "name": "Training",
+          "value": 1
         }
       ]
     },
@@ -92,7 +96,7 @@
       "values": [
         {
           "name": "sandbox",
-          "value": 156
+          "value": 161
         },
         {
           "name": "graduated",
@@ -116,7 +120,7 @@
       "sourceUrl": "https://landscape.cncf.io/",
       "values": [
         {
-          "date": "2026-11-18",
+          "date": "2026-11-21",
           "value": 648
         }
       ]
@@ -161,7 +165,7 @@
     "generated": true,
     "source": "cncf/tab and cncf/architecture GitHub APIs",
     "sourceUrl": "https://github.com/cncf/tab/issues?q=is%3Aissue+label%3Aarea%2Freference-architecture",
-    "observedAt": "2026-11-18T02:31:35.705Z",
+    "observedAt": "2026-11-21T03:23:00.069Z",
     "cards": [
       {
         "id": "open-submissions",
