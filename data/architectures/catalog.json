@@ -216,7 +216,7 @@
   },
   {
     "id": "linkedin-compute-platform",
-    "title": "Running self-managed Kubernetes on bare metal hosts at LinkedIn scale",
+    "title": "Running self-managed Kubernetes on 500,000+ bare metal hosts",
     "organization": "LinkedIn",
     "summary": "LinkedIn self-manages open source Kubernetes on 500,000+ bare metal servers, with fleet and workload management designed as one system and curated workload platforms that let application teams ship without learning Kubernetes.",
     "industries": ["Technology", "Social Networking", "Software"],
@@ -237,7 +237,11 @@
       "cert-manager",
       "Fluent Bit",
       "gRPC",
-      "Kyverno"
+      "Kyverno",
+      "OpenTelemetry",
+      "Argo",
+      "Envoy",
+      "SPIFFE"
     ],
     "sourceUrl": "https://www.linkedin.com/blog/engineering/infrastructure/how-linkedin-runs-compute-self-managed-kubernetes-on-500000-bare-metal-servers",
     "published": "2026-11-24",

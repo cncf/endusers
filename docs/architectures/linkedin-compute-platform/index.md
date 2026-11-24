@@ -1,5 +1,5 @@
 ---
-title: "Running self-managed Kubernetes on bare metal hosts at LinkedIn scale"
+title: "Running self-managed Kubernetes on 500,000+ bare metal hosts"
 sidebar_label: "LinkedIn"
 architecture:
   organization: "LinkedIn"
@@ -25,6 +25,10 @@ architecture:
     - "Fluent Bit"
     - "gRPC"
     - "Kyverno"
+    - "OpenTelemetry"
+    - "Argo"
+    - "Envoy"
+    - "SPIFFE"
   sourceUrl: https://www.linkedin.com/blog/engineering/infrastructure/how-linkedin-runs-compute-self-managed-kubernetes-on-500000-bare-metal-servers
   published: 2026-11-24
   updated: 2026-11-24
@@ -32,7 +36,7 @@ architecture:
 
 import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 
-> Submitted by LinkedIn to the CNCF End User Technical Advisory Board. Adapted from [How LinkedIn Runs Compute: Self-Managed Kubernetes on 500,000+ Bare-Metal Servers](https://www.linkedin.com/blog/engineering/infrastructure/how-linkedin-runs-compute-self-managed-kubernetes-on-500000-bare-metal-servers). Documentation is distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+> Submitted by LinkedIn to the CNCF End User Technical Advisory Board. Documentation is distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 ## Relevant CNCF projects
 
@@ -51,6 +55,14 @@ import CNCFProjectCard from '@site/src/components/CNCFProjectCard';
 <CNCFProjectCard name={"gRPC"} href={"https://www.cncf.io/projects/grpc/"} logo={"/img/cncf-projects/grpc-grpc-icon-color.svg"} since={"2019"} description={"Our machine layer is built as gRPC services, reconciliation daemons, and databases, with no Kubernetes in it. Compute Broker, our machine-as-a-service API, is one of those gRPC services."} />
 
 <CNCFProjectCard name={"Kyverno"} href={"https://www.cncf.io/projects/kyverno/"} logo={"/img/cncf-projects/kyverno-kyverno-icon-color.svg"} since={"2022"} description={"We use Kyverno as a policy engine to enforce cluster-wide guardrails and validate resources at admission across the fleet, alongside the custom admission webhooks we run for user-facing custom resources."} />
+
+<CNCFProjectCard name={"OpenTelemetry"} href={"https://www.cncf.io/projects/opentelemetry/"} logo={"/img/cncf-projects/opentelemetry-opentelemetry-icon-color.svg"} />
+
+<CNCFProjectCard name={"Argo"} href={"https://www.cncf.io/projects/argo/"} logo={"/img/cncf-projects/argo-argo-icon-color.svg"} />
+
+<CNCFProjectCard name={"Envoy"} href={"https://www.cncf.io/projects/envoy/"} logo={"/img/cncf-projects/envoy-envoy-icon-color.svg"} />
+
+<CNCFProjectCard name={"SPIFFE"} href={"https://www.cncf.io/projects/spiffe/"} logo={"/img/cncf-projects/spiffe-spiffe-icon-color.svg"} />
 
 ## TLDR; Synopsis
 
@@ -369,9 +381,10 @@ fleet of large clusters on bare metal hosts:
 - **Kubernetes** gives us declarative APIs and reconciliation loops to build our
   own platform APIs on, without adopting its cluster-scoped features wholesale.
 - **etcd** sets the ceiling on cluster size, so it's where we invest first.
-- **containerd**, **cert-manager**, and **Fluent Bit** each slot into a
-  fleet-wide system we already run (host configuration, PKI, and centralized
-  telemetry) instead of adding a per-cluster one.
+- **cert-manager** gives every pod an identity, and its extension points let us
+  plug in our own PKI.
+- **Fluent Bit** gives every pod observability, and its extension points let us
+  send telemetry to our own centralized storage.
 - **Helm** gives every application the same shape, so we validate and evolve
   workload APIs in one place.
 - **gRPC** keeps the machine layer independent of the Kubernetes API.
@@ -511,6 +524,7 @@ The rest is the operating experience every workload gets by default:
 - Blog: [*How LinkedIn Runs Compute: Self-Managed Kubernetes on 500,000+ Bare-Metal Servers*](https://www.linkedin.com/blog/engineering/infrastructure/how-linkedin-runs-compute-self-managed-kubernetes-on-500000-bare-metal-servers)
 - Blog: [*How LinkedIn moved its Kubernetes APIs to a different API group*](https://www.linkedin.com/blog/engineering/infrastructure/how-linkedin-moved-its-kubernetes-apis-to-a-different-api-group)
 - Blog: [*Stateful Workload Operator: Stateful Systems on Kubernetes at LinkedIn*](https://www.linkedin.com/blog/engineering/infrastructure/stateful-workload-operator-stateful-systems-on-kubernetes-at-linkedin)
+- Blog: [*How we scale deployments with a custom GitOps engine*](https://www.linkedin.com/blog/engineering/infrastructure/how-we-scale-deployments-with-a-custom-gitops-engine)
 
 KubeCon + CloudNativeCon North America 2026:
 
