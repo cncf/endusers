@@ -315,3 +315,9 @@ words:
   - waypoints
   - webhooks
   - ztunnel
+  - Flink
+  - fluentbit
+  - kops
+  - kubeadm
+  - reimage
+  - reimages

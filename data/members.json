@@ -1605,6 +1605,38 @@
       "membershipStatus": "member"
     },
     {
+      "id": "linkedin",
+      "name": "LinkedIn",
+      "slug": "linkedin",
+      "logo": "/img/architectures/linkedin-compute-platform/logo.svg",
+      "industries": ["Social Networking", "Software", "Technology"],
+      "projects": [
+        "Argo",
+        "Envoy",
+        "Fluent Bit",
+        "Helm",
+        "Kubernetes",
+        "Kyverno",
+        "OpenTelemetry",
+        "SPIFFE",
+        "cert-manager",
+        "containerd",
+        "etcd",
+        "gRPC"
+      ],
+      "architectures": [
+        {
+          "id": "linkedin-compute-platform",
+          "title": "Running self-managed Kubernetes on 500,000+ bare metal hosts",
+          "sourceUrl": "https://github.com/cncf/endusers/pull/2137"
+        }
+      ],
+      "awards": [],
+      "sourceAttribution": ["https://github.com/cncf/endusers/pull/2137"],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
       "id": "lockheed-martin",
       "name": "Lockheed Martin",
       "slug": "lockheed-martin",

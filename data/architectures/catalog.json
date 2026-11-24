@@ -215,6 +215,51 @@
     ]
   },
   {
+    "id": "linkedin-compute-platform",
+    "title": "Running self-managed Kubernetes on 500,000+ bare metal hosts",
+    "organization": "LinkedIn",
+    "summary": "LinkedIn self-manages open source Kubernetes on 500,000+ bare metal servers, with fleet and workload management designed as one system and curated workload platforms that let application teams ship without learning Kubernetes.",
+    "industries": ["Technology", "Social Networking", "Software"],
+    "tags": [
+      "kubernetes",
+      "cloud native",
+      "platform engineering",
+      "private cloud",
+      "bare metal",
+      "multi-tenancy",
+      "multi-cluster"
+    ],
+    "projects": [
+      "Kubernetes",
+      "etcd",
+      "containerd",
+      "Helm",
+      "cert-manager",
+      "Fluent Bit",
+      "gRPC",
+      "Kyverno",
+      "OpenTelemetry",
+      "Argo",
+      "Envoy",
+      "SPIFFE"
+    ],
+    "sourceUrl": "https://github.com/cncf/endusers/pull/2137",
+    "published": "2026-11-24",
+    "updated": "2026-11-24",
+    "assets": [
+      "/img/architectures/linkedin-compute-platform/deployment-flow.png",
+      "/img/architectures/linkedin-compute-platform/disruption-protocol.png",
+      "/img/architectures/linkedin-compute-platform/helm-to-manifest-to-pod.png",
+      "/img/architectures/linkedin-compute-platform/k8s-objects-in-mysql.png",
+      "/img/architectures/linkedin-compute-platform/linkedin-compute-platform-layers.png",
+      "/img/architectures/linkedin-compute-platform/linkedin-compute-scale.png",
+      "/img/architectures/linkedin-compute-platform/logo.svg",
+      "/img/architectures/linkedin-compute-platform/node-join.png",
+      "/img/architectures/linkedin-compute-platform/pool-autoscaling.png",
+      "/img/architectures/linkedin-compute-platform/rollout-status-cli.png"
+    ]
+  },
+  {
     "id": "sncf-onprem",
     "title": "A Private Cloud \"Kubernetes Service\" deployable anywhere.",
     "organization": "SNCF",
