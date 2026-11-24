@@ -24,6 +24,7 @@ carrier-grade platforms.
 
 ## How to participate
 
+- Join the mailing list by [clicking here](https://lists.cncf.io/g/telecom-user-group)
 - Visit the [GitHub repository](https://github.com/cncf/telecom-user-group) for
   meeting details, resources, and how to join
 - Join `#ug-telecom` on [CNCF Slack](https://slack.cncf.io/)
