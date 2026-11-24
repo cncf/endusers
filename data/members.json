@@ -1605,6 +1605,40 @@
       "membershipStatus": "member"
     },
     {
+      "id": "linkedin",
+      "name": "LinkedIn",
+      "slug": "linkedin",
+      "logo": "/img/architectures/linkedin-compute-platform/logo.svg",
+      "industries": ["Social Networking", "Software", "Technology"],
+      "projects": [
+        "Argo",
+        "Envoy",
+        "Fluent Bit",
+        "Helm",
+        "Kubernetes",
+        "Kyverno",
+        "OpenTelemetry",
+        "SPIFFE",
+        "cert-manager",
+        "containerd",
+        "etcd",
+        "gRPC"
+      ],
+      "architectures": [
+        {
+          "id": "linkedin-compute-platform",
+          "title": "Running self-managed Kubernetes on 500,000+ bare metal hosts",
+          "sourceUrl": "https://www.linkedin.com/blog/engineering/infrastructure/how-linkedin-runs-compute-self-managed-kubernetes-on-500000-bare-metal-servers"
+        }
+      ],
+      "awards": [],
+      "sourceAttribution": [
+        "https://www.linkedin.com/blog/engineering/infrastructure/how-linkedin-runs-compute-self-managed-kubernetes-on-500000-bare-metal-servers"
+      ],
+      "membershipSources": [],
+      "membershipStatus": "unknown"
+    },
+    {
       "id": "lockheed-martin",
       "name": "Lockheed Martin",
       "slug": "lockheed-martin",
