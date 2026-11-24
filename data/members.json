@@ -1628,13 +1628,11 @@
         {
           "id": "linkedin-compute-platform",
           "title": "Running self-managed Kubernetes on 500,000+ bare metal hosts",
-          "sourceUrl": "https://www.linkedin.com/blog/engineering/infrastructure/how-linkedin-runs-compute-self-managed-kubernetes-on-500000-bare-metal-servers"
+          "sourceUrl": "https://github.com/cncf/endusers/pull/2137"
         }
       ],
       "awards": [],
-      "sourceAttribution": [
-        "https://www.linkedin.com/blog/engineering/infrastructure/how-linkedin-runs-compute-self-managed-kubernetes-on-500000-bare-metal-servers"
-      ],
+      "sourceAttribution": ["https://github.com/cncf/endusers/pull/2137"],
       "membershipSources": [],
       "membershipStatus": "unknown"
     },

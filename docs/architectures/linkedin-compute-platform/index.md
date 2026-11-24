@@ -29,7 +29,7 @@ architecture:
     - "Argo"
     - "Envoy"
     - "SPIFFE"
-  sourceUrl: https://www.linkedin.com/blog/engineering/infrastructure/how-linkedin-runs-compute-self-managed-kubernetes-on-500000-bare-metal-servers
+  sourceUrl: https://github.com/cncf/endusers/pull/2137
   published: 2026-11-24
   updated: 2026-11-24
 ---
