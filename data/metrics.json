@@ -1,11 +1,11 @@
 {
   "generated": true,
-  "generatedAt": "2026-11-23T03:26:43.383Z",
+  "generatedAt": "2026-11-28T03:23:35.978Z",
   "sources": {
     "landscape": {
       "repository": "https://github.com/cncf/landscape",
-      "revision": "dad8b96a85dc5b11fb916be2f138b1ea8a067573",
-      "sourceUrl": "https://github.com/cncf/landscape/blob/dad8b96a85dc5b11fb916be2f138b1ea8a067573/landscape.yml"
+      "revision": "d104eb34ba87a1ec0098e84f62c88f0c027e7141",
+      "sourceUrl": "https://github.com/cncf/landscape/blob/d104eb34ba87a1ec0098e84f62c88f0c027e7141/landscape.yml"
     },
     "architectures": {
       "repository": "https://github.com/cncf/architecture",
@@ -20,7 +20,7 @@
       "value": 268,
       "source": "landscape",
       "sourceUrl": "https://landscape.cncf.io/",
-      "collectedAt": "2026-11-23T03:26:43.383Z",
+      "collectedAt": "2026-11-28T03:23:35.978Z",
       "note": "Projects explicitly marked with a CNCF maturity level in landscape.yml."
     },
     {
@@ -29,7 +29,7 @@
       "value": 10,
       "source": "architectures",
       "sourceUrl": "https://github.com/cncf/architecture/tree/main/content/en/architectures",
-      "collectedAt": "2026-11-23T03:26:43.383Z",
+      "collectedAt": "2026-11-28T03:23:35.978Z",
       "note": "Published architecture directories under content/en/architectures."
     }
   ],
@@ -120,8 +120,8 @@
       "sourceUrl": "https://landscape.cncf.io/",
       "values": [
         {
-          "date": "2026-11-23",
-          "value": 648
+          "date": "2026-11-28",
+          "value": 649
         }
       ]
     },
@@ -165,12 +165,12 @@
     "generated": true,
     "source": "cncf/tab and cncf/architecture GitHub APIs",
     "sourceUrl": "https://github.com/cncf/tab/issues?q=is%3Aissue+label%3Aarea%2Freference-architecture",
-    "observedAt": "2026-11-23T03:26:43.383Z",
+    "observedAt": "2026-11-28T03:23:35.978Z",
     "cards": [
       {
         "id": "open-submissions",
         "label": "Open submissions",
-        "value": 11,
+        "value": 12,
         "note": "Open TAB issues labeled as reference-architecture submissions."
       },
       {
@@ -182,8 +182,8 @@
       {
         "id": "median-submission-age",
         "label": "Median submission age",
-        "since": "2026-04-14T10:51:49.000Z",
-        "sampleSize": 11,
+        "since": "2026-04-15T13:47:49.000Z",
+        "sampleSize": 12,
         "suffix": "days",
         "note": "Time since open submission issue creation; not end-to-end review time."
       },
@@ -226,6 +226,10 @@
           },
           {
             "date": "2026-07",
+            "value": 1
+          },
+          {
+            "date": "2026-11",
             "value": 1
           }
         ]
